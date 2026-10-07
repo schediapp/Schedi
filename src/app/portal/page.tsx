@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
 export default async function PortalPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; session_id?: string; updated?: string }>;
+  searchParams: Promise<{ error?: string; session_id?: string; updated?: string; code?: string; source?: string }>;
 }) {
   const query = await searchParams;
   const owner = await currentOwner();
@@ -55,7 +55,9 @@ export default async function PortalPage({
             <span className="pill">{live ? "Public page is live" : "Public page is paused"}</span>
             <a href={`/b/${business.slug}`}>View booking page</a>
           </div>
-          {query.error ? <p className="banner bad">{query.error}</p> : null}
+          {query.error ? (
+            <p className="banner bad" role="alert">{query.error}</p>
+          ) : null}
           {query.updated ? <p className="note">Subscription updated.</p> : null}
           {!live ? (
             <p className="banner warn">
@@ -84,6 +86,17 @@ export default async function PortalPage({
                 <p className="muted" style={{ margin: "8px 0 16px" }}>
                   Turn on cards to create a Stripe account for {business.name}. Clients pay that account directly. Stripe bills {business.name} for processing. Schedi does not add a fee.
                 </p>
+                {query.source === "connect" && query.error ? (
+                  <div className="banner bad" role="alert">
+                    <strong>Card payments stayed off.</strong>
+                    <p>{query.error}</p>
+                    <p className="debug-note">
+                      {query.code
+                        ? `Stripe code ${query.code}. The server log records the Stripe error type, message, and code on every failed attempt.`
+                        : "The server log records this failure on every attempt."}
+                    </p>
+                  </div>
+                ) : null}
                 <form method="post" action="/api/connect/enable">
                   <button type="submit">Turn on card payments</button>
                 </form>

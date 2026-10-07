@@ -46,7 +46,7 @@ describe("connected account onboarding", () => {
         business_details: { registered_name: "Lumen Studio" },
       },
     });
-    expect(options.idempotencyKey).toContain("schedi_connect_");
+    expect(options.idempotencyKey).toMatch(/^schedi_connect_v2_/);
 
     const saved = store.getBusinessByOwner(owner.id)!;
     expect(saved.stripeAccountId).toBe("acct_created");

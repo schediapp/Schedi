@@ -1,5 +1,5 @@
 import { placeBooking } from "@/lib/bookings";
-import { errorMessage, redirectTo } from "@/lib/http";
+import { errorMessage, publicOrigin, redirectTo } from "@/lib/http";
 import { parsePaymentChoice } from "@/lib/payment-options";
 import { getStore } from "@/lib/store";
 import { stripeOrNull } from "@/lib/stripe";
@@ -10,7 +10,7 @@ export async function POST(request: Request) {
   const form = await request.formData();
   const slug = String(form.get("slug") || "");
   const payment = parsePaymentChoice(String(form.get("payment") || ""));
-  const origin = new URL(request.url).origin;
+  const origin = publicOrigin(request);
 
   if (!payment) {
     return redirectTo(request, `/b/${slug}`, { error: "Choose how you'll pay." });
