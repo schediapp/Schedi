@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://schedi.app/sitemap.xml
