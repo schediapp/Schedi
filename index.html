@@ -11506,7 +11506,7 @@
                         type: mailType || 'mail', ownerTenantId: tenantData.id || '', tenantId: tenantData.id || '', bookingId: (booking && booking.id) || '',
                         manageToken: (booking && booking.manageToken) || ''
                     };
-                    if (paymentLink && /^https:\/\/(www\.)?schedi\.app\//.test(String(paymentLink)) && String(paymentLink).indexOf('pay=checkout') !== -1) {
+                    if (paymentLink && /^https:\\/\\/(www\\.)?schedi\\.app\\//.test(String(paymentLink)) && String(paymentLink).indexOf('pay=checkout') !== -1) {
                         mailObj.paymentLink = String(paymentLink);
                     }
                     if (toOwnerFlag) mailObj.toOwner = true;
@@ -11551,7 +11551,7 @@
             var cardPayUrl = '';
             if (booking && String(booking.paymentMethod || '').toLowerCase() === 'card') {
                 var candidate = String(booking.cardPayLink || '');
-                if (/^https:\/\/(www\.)?schedi\.app\//.test(candidate) && candidate.indexOf('pay=checkout') !== -1 && candidate.indexOf('stripe.com') === -1) {
+                if (/^https:\\/\\/(www\\.)?schedi\\.app\\//.test(candidate) && candidate.indexOf('pay=checkout') !== -1 && candidate.indexOf('stripe.com') === -1) {
                     cardPayUrl = candidate;
                 }
             }
