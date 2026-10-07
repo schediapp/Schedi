@@ -182,4 +182,27 @@ describe("webhook separation", () => {
 
     expect(store.getBooking(booking.id).status).toBe("confirmed");
   });
+
+  it("ignores a public SPA charge when that booking is not in the local database", () => {
+    const store = memoryStore();
+    seedProBusiness(store);
+    expect(() =>
+      applyStripeEvent(
+        store,
+        event({
+          id: "evt_public_spa",
+          type: "checkout.session.completed",
+          account: "acct_northwind",
+          data: {
+            object: {
+              mode: "payment",
+              payment_status: "paid",
+              payment_intent: "pi_public",
+              metadata: { schedi_booking_id: "BK-CB126C75", schedi_public_booking: "1" },
+            },
+          },
+        }),
+      ),
+    ).not.toThrow();
+  });
 });

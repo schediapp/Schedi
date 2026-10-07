@@ -841,7 +841,7 @@
                                 <i class="fa-solid fa-credit-card text-indigo-400 text-lg"></i>
                                 <div>
                                     <div class="font-bold text-white">Credit / Debit Card (Stripe)</div>
-                                    <div id="tenantPayCardNote" class="text-[11px] text-slate-400">Accept direct card payments. Pro only.</div>
+                                    <div id="tenantPayCardNote" class="text-[11px] text-slate-400">Accept card as one option. Clients still choose how to pay. Pro only.</div>
                                 </div>
                             </div>
                             <input type="checkbox" id="tenantPayCardCheck" class="w-4 h-4 accent-brand-500 rounded cursor-pointer">
@@ -948,7 +948,7 @@
                             <div class="flex items-center justify-between gap-3">
                                 <div>
                                     <div class="font-bold text-white">Appointment deposit</div>
-                                    <div id="tenantDepositNote" class="text-[11px] text-slate-400">Pro only. Off unless you turn it on. Clients pay this by card before the appointment is confirmed. The rest is due at the appointment. Percent deposits skip services with no price set; card checkout for those services is also skipped.</div>
+                                    <div id="tenantDepositNote" class="text-[11px] text-slate-400">Pro only. Off unless you turn it on. If a client chooses card, they pay this deposit before the appointment is confirmed. Card is not required — Cash App, Zelle, Venmo, PayPal, and pay at the appointment stay available. The rest is due at the appointment. Percent deposits skip services with no price set.</div>
                                 </div>
                                 <input type="checkbox" id="tenantDepositEnabled" class="w-4 h-4 accent-brand-500 rounded cursor-pointer">
                             </div>
@@ -966,7 +966,7 @@
                             <div class="flex items-center justify-between gap-3">
                                 <div>
                                     <div class="font-bold text-white">Cancellation fee</div>
-                                    <div id="tenantCancelFeeNote" class="text-[11px] text-slate-400">Off unless you turn it on. When a client cancels inside this window, Pro charges the fee on a card already used for that visit. Free and Starter only show the rule and do not charge a card. Cancelling still frees the time if the fee is not collected.</div>
+                                    <div id="tenantCancelFeeNote" class="text-[11px] text-slate-400">Off unless you turn it on. A cancellation fee does not make card the only way to pay. When a client who paid by card cancels inside this window, Pro charges the fee on that card. Other methods stay available. Free and Starter only show the rule and do not charge a card. Cancelling still frees the time if the fee is not collected.</div>
                                 </div>
                                 <input type="checkbox" id="tenantCancelFeeEnabled" class="w-4 h-4 accent-brand-500 rounded cursor-pointer">
                             </div>
@@ -2724,16 +2724,17 @@
                     var catalogPrice = catalogServicePrice(tenant, booking.serviceName);
                     if (catalogPrice !== null) booking.amount = catalogPrice;
                     else if (!hasPricedAmount(booking.amount)) delete booking.amount;
+                    var choseCard = String(booking.paymentMethod || '').toLowerCase() === 'card';
                     var depositQuote = quoteDepositForPrice(tenant, hasPricedAmount(booking.amount) ? booking.amount : null);
-                    if (depositRequiredForTenant(tenant)) {
+                    // A deposit or cancellation fee never rewrites the method the client picked.
+                    if (depositRequiredForTenant(tenant) && choseCard) {
                         if (depositQuote.skippedNoPrice) {
-                            // Percent deposit with no service price: skip charging, keep chosen pay method.
+                            // Percent deposit with no service price: skip charging, keep card as the chosen method.
                         } else if (!depositQuote.required) booking._depositTooSmall = true;
                         else {
                             booking.depositAmount = depositQuote.deposit;
                             booking.depositPaid = false;
                             if (depositQuote.balance != null) booking.balanceDue = depositQuote.balance;
-                            booking.paymentMethod = 'card';
                             booking.paymentStatus = 'AWAITING DEPOSIT';
                             booking.paymentOptionLabel = 'Card deposit';
                         }
@@ -2741,6 +2742,18 @@
                         delete booking.depositAmount;
                         delete booking.depositPaid;
                         delete booking.balanceDue;
+                    }
+                    if (choseCard) {
+                        var incomingLink = raw && typeof raw.cardPayLink === 'string' ? String(raw.cardPayLink) : '';
+                        if (/^https:\/\/(www\.)?schedi\.app\/[a-z0-9](?:[a-z0-9-]{0,40})\/\?pay=checkout&booking=/.test(incomingLink)) {
+                            booking.cardPayLink = incomingLink;
+                        } else {
+                            booking.cardPayLink = durableCardPayLink(
+                                tenant.slug || tenant.id,
+                                [booking.id],
+                                Number(booking.depositAmount) > 0 ? 'deposit' : 'card'
+                            );
+                        }
                     }
                     if (raw && (raw.status === 'pending' || raw.status === 'accepted' || raw.status === 'denied')) booking.status = raw.status;
                     if (raw && raw.manageToken && /^[A-Za-z0-9_-]{16,128}$/.test(String(raw.manageToken))) {
@@ -2772,9 +2785,13 @@
 
                 bookings.slice().reverse().forEach(function (b) { tenant.appointments.unshift(b); });
                 var booking = bookings[0];
-                var needsDepositCheckout = bookings.some(function (b) { return b && Number(b.depositAmount) > 0 && b.depositPaid !== true; });
+                var choseCardPay = String(booking.paymentMethod || '').toLowerCase() === 'card';
+                // The public page owns Checkout when checkoutOwned is set, so the request card stays up.
+                var needsCardCheckout = !event.data.checkoutOwned && event.data.needsCardCheckout !== false && choseCardPay && bookings.some(function (b) {
+                    return b && ((Number(b.depositAmount) > 0 && b.depositPaid !== true) || String(b.paymentStatus || '').toUpperCase().indexOf('CARD') !== -1);
+                });
                 saveState().then(function () {
-                    if (needsDepositCheckout && typeof startPublicCardCheckout === 'function') {
+                    if (needsCardCheckout && typeof startPublicCardCheckout === 'function') {
                         startPublicCardCheckout(tenant.id, bookings.map(function (b) { return b.id; }), booking.clientEmail);
                     }
                 });
@@ -3045,7 +3062,7 @@
                 : (String(settings.percent) + '% of the service price');
             if (settings.type === 'percent' && fee >= 0.5) feeDesc += ' ($' + fee.toFixed(2) + ')';
             var collect = normalizePlan(tenant) === 'pro'
-                ? ' If you pay by card, this fee is charged to that card.'
+                ? ' If you pay by card, this fee is charged to that card. Other ways to pay stay available.'
                 : '';
             return 'If you cancel ' + cancellationWindowLabel(settings.hours) + ', a cancellation fee of ' + feeDesc + ' applies.' + collect;
         }
@@ -4637,8 +4654,14 @@
             try {
                 var payQ = new URLSearchParams(window.location.search || '');
                 var payFlag = payQ.get('pay');
-                if ((payFlag === 'success' || payFlag === 'cancel') && getPublicSlugFromPath()) {
-                    platformState.payBanner = { flag: payFlag, kind: payQ.get('kind') || '', slug: getPublicSlugFromPath() };
+                if ((payFlag === 'success' || payFlag === 'cancel' || payFlag === 'checkout') && getPublicSlugFromPath()) {
+                    platformState.payBanner = {
+                        flag: payFlag,
+                        kind: payQ.get('kind') || '',
+                        slug: getPublicSlugFromPath(),
+                        booking: payQ.get('booking') || '',
+                        bookings: payQ.get('bookings') || ''
+                    };
                     window.history.replaceState({}, '', window.location.pathname);
                 }
             } catch (payBannerErr) {}
@@ -5511,6 +5534,66 @@
 
         var SCHEDI_BILLING_BASE = 'https://schedi.app/billing';
 
+        function isStripePayUrl(value) {
+            try {
+                var url = new URL(String(value || ''));
+                var host = url.hostname.toLowerCase();
+                return url.protocol === 'https:' && (host === 'checkout.stripe.com' || host === 'buy.stripe.com' || host === 'pay.stripe.com');
+            } catch (err) {
+                return false;
+            }
+        }
+
+        function assignStripeCheckout(url) {
+            if (!isStripePayUrl(url)) return false;
+            window.location.assign(url);
+            return true;
+        }
+
+        function durableCardPayLink(slug, bookingIds, kind) {
+            var safeSlug = String(slug || '').trim().toLowerCase();
+            if (!/^[a-z0-9](?:[a-z0-9-]{0,40})$/.test(safeSlug)) return '';
+            if (kind !== 'deposit' && kind !== 'card') return '';
+            var ids = [];
+            var list = Array.isArray(bookingIds) ? bookingIds : [bookingIds];
+            for (var i = 0; i < list.length; i++) {
+                var id = String(list[i] || '').trim();
+                if (!/^[A-Za-z0-9_-]{4,40}$/.test(id) || ids.indexOf(id) !== -1) continue;
+                ids.push(id);
+                if (ids.length === 12) break;
+            }
+            if (!ids.length) return '';
+            var url = 'https://schedi.app/' + safeSlug + '/?pay=checkout&booking=' + encodeURIComponent(ids[0]) + '&kind=' + kind;
+            if (ids.length > 1) url += '&bookings=' + encodeURIComponent(ids.slice(1).join(','));
+            return url;
+        }
+
+        function bookingCardPayLink(tenant, booking) {
+            if (!booking || String(booking.paymentMethod || '').toLowerCase() !== 'card') return '';
+            var existing = String(booking.cardPayLink || '');
+            if (/^https:\/\/(www\.)?schedi\.app\/[a-z0-9](?:[a-z0-9-]{0,40})\/\?pay=checkout&booking=/.test(existing)) return existing;
+            return durableCardPayLink(
+                tenant && (tenant.slug || tenant.id),
+                [booking.id],
+                Number(booking.depositAmount) > 0 ? 'deposit' : 'card'
+            );
+        }
+
+        function cardPayEmailBits(url) {
+            if (!url) return { text: '', html: '' };
+            var safeHref = String(url).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+            return {
+                text: '\nPay by card:\n' + url + '\n',
+                html: '<tr><td align="center" style="padding:8px 28px 4px;">'
+                    + '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"><tr>'
+                    + '<td align="center" bgcolor="#4f46e5" style="background-color:#4f46e5;border-radius:14px;">'
+                    + '<a href="' + safeHref + '" style="display:block;padding:14px 18px;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;">Pay by card</a>'
+                    + '</td></tr></table>'
+                    + '<p style="margin:10px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#64748b;line-height:1.4;">Or copy this link: ' + esc(url) + '</p>'
+                    + '</td></tr>'
+            };
+        }
+
         window.startPublicCardCheckout = async function(tenantId, bookingIds, email) {
             var attempt = 0;
             while (attempt < 4) {
@@ -5523,27 +5606,28 @@
                     var data = {};
                     try { data = await res.json(); } catch (parseErr) { data = {}; }
                     if (data && data.url) {
-                        window.location.href = data.url;
+                        if (assignStripeCheckout(data.url)) return;
+                        showToast('Card checkout did not open. Use the payment link on the booking request. Nothing was charged.', 'error');
                         return;
                     }
                     if (data && data.alreadyPaid) {
-                        showToast('That deposit is already paid.', 'info');
+                        showToast('That card payment is already paid.', 'info');
                         return;
                     }
                     if (res.status !== 404 && data.error !== 'booking_not_found') {
-                        showToast('Card checkout is unavailable. The appointment was saved and is not confirmed until the deposit is paid.', 'error');
+                        showToast('Card checkout is unavailable. The appointment was saved. You can pay another way, or open the payment link again.', 'error');
                         return;
                     }
                 } catch (checkoutErr) {
                     if (attempt >= 3) {
-                        showToast('Card checkout is unavailable. The appointment was saved and is not confirmed until the deposit is paid.', 'error');
+                        showToast('Card checkout is unavailable. The appointment was saved. You can pay another way, or open the payment link again.', 'error');
                         return;
                     }
                 }
                 attempt += 1;
                 await new Promise(function (resolve) { setTimeout(resolve, 700); });
             }
-            showToast('Card checkout is unavailable. The appointment was saved and is not confirmed until the deposit is paid.', 'error');
+            showToast('Card checkout is unavailable. The appointment was saved. You can pay another way, or open the payment link again.', 'error');
         };
 
         function consumeBillingReturn() {
@@ -7868,7 +7952,7 @@
                 cardCheck.disabled = normalizePlan(tenant) !== 'pro';
             }
             var cardNote = document.getElementById('tenantPayCardNote');
-            if (cardNote) cardNote.textContent = normalizePlan(tenant) === 'pro' ? 'Accept direct card payments.' : 'Card checkout is on Pro only.';
+            if (cardNote) cardNote.textContent = normalizePlan(tenant) === 'pro' ? 'Card is one way to pay. Clients still choose Cash App, Zelle, Venmo, PayPal, or pay at the appointment.' : 'Card checkout is on Pro only.';
             var dep = ensureDepositSettings(tenant);
             var depOn = document.getElementById('tenantDepositEnabled');
             var depPercent = document.getElementById('tenantDepositTypePercent');
@@ -7893,7 +7977,7 @@
             var depLabel = document.getElementById('tenantDepositValueLabel');
             if (depLabel) depLabel.textContent = dep.type === 'fixed' ? 'Fixed amount (USD)' : 'Percent of the service price';
             if (depNote) depNote.textContent = proPlan
-                ? 'Off unless you turn it on. Clients pay this by card before the appointment is confirmed. The rest is due at the appointment.'
+                ? 'Off unless you turn it on. If a client chooses card, they pay this deposit before the appointment is confirmed. Card is not required. The rest is due at the appointment.'
                 : 'Card deposits are on Pro only. Free and Starter cannot turn this on.';
             var fee = ensureCancellationFeeSettings(tenant);
             var feeOn = document.getElementById('tenantCancelFeeEnabled');
@@ -8448,6 +8532,7 @@
             var seriesLine = seriesManagePlainNote(booking);
             var feeSentence = cancellationFeeSentence(tenant, booking && booking.amount);
             var payInstr = confirmEmailPaymentInstructions(tenant, booking);
+            var cardPayBits = cardPayEmailBits(bookingCardPayLink(tenant, booking));
             var markUrl = 'https://schedi.app/assets/email-calendar-check.png';
 
             var headline = isPending ? 'Request sent' : "You're booked!";
@@ -8472,6 +8557,7 @@
                 (feeSentence ? ('\n' + feeSentence + '\n') : '') +
                 (note ? ('\nNote: ' + note + '\n') : '') +
                 (payInstr.text ? ('\n' + payInstr.text + '\n') : '') +
+                (cardPayBits.text ? (cardPayBits.text) : '') +
                 (manageUrl ? ('\nManage / reschedule / cancel:\n' + manageUrl + '\n' + (seriesLine ? (seriesLine + '\n') : '')) : '') +
                 '\nQuestions? Contact ' + ownerContactPhrase(tenant, false) + '.\n\n— ' + biz;
 
@@ -8537,6 +8623,7 @@
             if (payInstr.html) {
                 notesHtml += '<tr><td style="padding:10px 28px 0;">' + payInstr.html + '</td></tr>';
             }
+            if (cardPayBits.html) notesHtml += cardPayBits.html;
             var footerLeft = isPending
                 ? 'We will email you when this request is accepted.'
                 : ('Questions? Contact ' + ownerContactPhrase(tenant, true) + '.');
@@ -8684,6 +8771,7 @@
             var subject = (pendingReview ? 'Booking request — ' : (isSeries ? 'New recurring booking — ' : 'New booking — ')) + tenant.name;
             var amountStr = formatBookingAmountLabel(booking && booking.amount);
             var payOpt = paymentOptionLabel(booking);
+            var cardPayUrl = bookingCardPayLink(tenant, booking);
             var text = (pendingReview ? 'A client requested a time. Accept or deny it in the Appointments Roster.\n\n' : 'New booking for ' + tenant.name + '.\n\n') +
                 'Client: ' + (booking.clientName || '') + '\n' +
                 'Phone: ' + (booking.clientPhone || '') + '\n' +
@@ -8696,6 +8784,7 @@
                 'Payment option: ' + payOpt + '\n' +
                 'Payment status: ' + (booking.paymentStatus || '') + '\n' +
                 (amountStr ? ('Amount: ' + amountStr + '\n') : '') +
+                (cardPayUrl ? ('Card payment link: ' + cardPayUrl + '\n') : '') +
                 '\n— Schedi';
             var html = '<div style="font-family:Inter,Arial,sans-serif;line-height:1.5;color:#0f172a">' +
                 '<h2 style="margin:0 0 12px;color:#0ea5e9">' + (isSeries ? 'New recurring booking' : 'New booking') + '</h2>' +
@@ -8712,6 +8801,7 @@
                 '<tr><td style="padding:4px 12px 4px 0;color:#64748b">Payment option</td><td style="padding:4px 0;font-weight:600">' + esc(payOpt) + '</td></tr>' +
                 '<tr><td style="padding:4px 12px 4px 0;color:#64748b">Payment status</td><td style="padding:4px 0;font-weight:600">' + esc(booking.paymentStatus || '') + '</td></tr>' +
                 (amountStr ? ('<tr><td style="padding:4px 12px 4px 0;color:#64748b">Amount</td><td style="padding:4px 0;font-weight:600">' + esc(amountStr) + '</td></tr>') : '') +
+                (cardPayUrl ? ('<tr><td style="padding:4px 12px 4px 0;color:#64748b">Card payment link</td><td style="padding:4px 0;font-weight:600"><a href="' + String(cardPayUrl).replace(/&/g, '&amp;').replace(/"/g, '&quot;') + '">' + esc(cardPayUrl) + '</a></td></tr>') : '') +
                 '</table>' +
                 '<p style="color:#64748b;font-size:13px">— Schedi</p></div>';
             return { subject: subject, text: text, html: html, replyTo: (booking.clientEmail || '') };
@@ -10679,10 +10769,14 @@
             ensureTenantPlan(tenant);
             var payReturnFlag = '';
             var payReturnKind = '';
+            var payReturnBooking = '';
+            var payReturnBookings = '';
             try {
                 if (platformState && platformState.payBanner && platformState.payBanner.slug === String(tenant.slug || tenant.id || '').toLowerCase()) {
                     payReturnFlag = platformState.payBanner.flag || '';
                     payReturnKind = platformState.payBanner.kind || '';
+                    payReturnBooking = platformState.payBanner.booking || '';
+                    payReturnBookings = platformState.payBanner.bookings || '';
                 }
             } catch (payFlagErr) {}
             const schediPlanBadge = normalizePlan(tenant) === 'free'
@@ -10940,8 +11034,8 @@
                 </div>
 
                 <div id="depositNoticeBox" class="hidden p-3 rounded-xl bg-indigo-950/40 border border-indigo-500/40 text-xs space-y-1">
-                    <div class="font-bold text-white">Card deposit required</div>
-                    <p class="text-slate-300">Deposit due now: <strong id="depositDueLabel" class="text-emerald-400"></strong>. The rest (<strong id="depositBalanceLabel" class="text-white"></strong>) is due at the appointment.</p>
+                    <div class="font-bold text-white">Card deposit, if you choose card</div>
+                    <p class="text-slate-300">If you pay by card, a deposit of <strong id="depositDueLabel" class="text-emerald-400"></strong> is due now. The rest (<strong id="depositBalanceLabel" class="text-white"></strong>) is due at the appointment. Card is optional. Cash App, Zelle, Venmo, PayPal, and pay at the appointment stay available.</p>
                 </div>
 
                 <div id="noPricePayNote" class="hidden p-3 rounded-xl bg-slate-900/80 border border-slate-700 text-xs text-slate-300">
@@ -11025,7 +11119,13 @@
                     <span>Amount due:</span>
                     <strong id="resCardAmountLabel" class="text-emerald-400 font-extrabold">$0.00</strong>
                 </div>
-                <a id="resCheckoutBtn" href="#" class="block w-full mt-2 py-2.5 rounded-xl bg-indigo-500 hover:bg-indigo-400 text-white font-black text-center transition-all">
+                <div id="resCardPayLinkWrap" class="space-y-1 pt-1">
+                    <div class="text-slate-400">Payment link</div>
+                    <a id="resCardPayLink" href="#" target="_top" rel="noopener" class="block break-all text-indigo-300 font-semibold underline"></a>
+                    <button type="button" id="resCardPayCopyBtn" class="mt-1 w-full py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-100 font-bold">Copy payment link</button>
+                </div>
+                <p id="resCheckoutError" role="alert" class="hidden text-rose-300 font-semibold"></p>
+                <a id="resCheckoutBtn" href="#" target="_top" rel="noopener" class="block w-full mt-2 py-2.5 rounded-xl bg-indigo-500 hover:bg-indigo-400 text-white font-black text-center transition-all">
                     Continue to secure payment
                 </a>
             </div>
@@ -11223,8 +11323,123 @@
         } catch (err) {}
 
         var STRIPE_CHECKOUT_ENDPOINT = "https://schedi.app/billing/booking-checkout";
+        var CONNECT_PUBLIC_CHECKOUT = "https://schedi-connect-production.up.railway.app/api/public-checkout";
         var SCHEDULE_PAY_RETURN = ${JSON.stringify(payReturnFlag)};
         var SCHEDULE_PAY_KIND = ${JSON.stringify(payReturnKind)};
+        var SCHEDULE_PAY_BOOKING = ${JSON.stringify(payReturnBooking)};
+        var SCHEDULE_PAY_BOOKINGS = ${JSON.stringify(payReturnBookings)};
+
+        function isStripePayUrl(value) {
+            try {
+                var url = new URL(String(value || ''));
+                var host = url.hostname.toLowerCase();
+                return url.protocol === 'https:' && (host === 'checkout.stripe.com' || host === 'buy.stripe.com' || host === 'pay.stripe.com');
+            } catch (err) {
+                return false;
+            }
+        }
+
+        function assignTopStripe(url) {
+            if (!isStripePayUrl(url)) return false;
+            try {
+                if (window.top && window.top !== window) {
+                    window.top.location.assign(url);
+                    return true;
+                }
+            } catch (err) {}
+            window.location.assign(url);
+            return true;
+        }
+
+        function durableCardPayLink(slug, bookingIds, kind) {
+            var safeSlug = String(slug || '').trim().toLowerCase();
+            if (!/^[a-z0-9](?:[a-z0-9-]{0,40})$/.test(safeSlug)) return '';
+            if (kind !== 'deposit' && kind !== 'card') return '';
+            var ids = [];
+            var list = Array.isArray(bookingIds) ? bookingIds : [bookingIds];
+            for (var i = 0; i < list.length; i++) {
+                var id = String(list[i] || '').trim();
+                if (!/^[A-Za-z0-9_-]{4,40}$/.test(id) || ids.indexOf(id) !== -1) continue;
+                ids.push(id);
+                if (ids.length === 12) break;
+            }
+            if (!ids.length) return '';
+            var url = 'https://schedi.app/' + safeSlug + '/?pay=checkout&booking=' + encodeURIComponent(ids[0]) + '&kind=' + kind;
+            if (ids.length > 1) url += '&bookings=' + encodeURIComponent(ids.slice(1).join(','));
+            return url;
+        }
+
+        function visibleCardPayLink(stripeUrl, durable) {
+            if (stripeUrl && isStripePayUrl(stripeUrl)) {
+                try {
+                    var host = new URL(stripeUrl).hostname.toLowerCase();
+                    if (host === 'buy.stripe.com' || host === 'pay.stripe.com') return stripeUrl;
+                } catch (err) {}
+            }
+            return durable;
+        }
+
+        function requestPublicCardCheckout(opts) {
+            opts = opts || {};
+            var kind = opts.chargeKind === 'deposit' ? 'deposit' : 'card';
+            var durable = durableCardPayLink(opts.slug, opts.bookingIds || [], kind);
+            function platformAttempt(attempt) {
+                return fetch(STRIPE_CHECKOUT_ENDPOINT, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        tenantId: opts.tenantId,
+                        bookingIds: opts.bookingIds || [],
+                        bookingId: (opts.bookingIds || [])[0] || '',
+                        email: opts.email || '',
+                        serviceName: opts.serviceName || '',
+                        purpose: kind
+                    })
+                }).then(function (r) {
+                    return r.json().then(function (data) {
+                        return { status: r.status, data: data || {} };
+                    }, function () { return { status: r.status, data: {} }; });
+                }).then(function (out) {
+                    if (out.data && isStripePayUrl(out.data.url)) {
+                        return { url: out.data.url, durableUrl: durable, error: '' };
+                    }
+                    if (out.data && out.data.alreadyPaid) return { url: '', durableUrl: durable, error: 'already_paid' };
+                    if (attempt < 3 && (out.status === 404 || !out.data || out.data.error === 'booking_not_found')) {
+                        return new Promise(function (resolve) { setTimeout(function () { resolve(platformAttempt(attempt + 1)); }, 700); });
+                    }
+                    return { url: '', durableUrl: durable, error: (out.data && out.data.error) || 'checkout_unavailable' };
+                }).catch(function () {
+                    if (attempt < 3) {
+                        return new Promise(function (resolve) { setTimeout(function () { resolve(platformAttempt(attempt + 1)); }, 700); });
+                    }
+                    return { url: '', durableUrl: durable, error: 'checkout_unavailable' };
+                });
+            }
+            if (!(Number(opts.amountCents) >= 50)) return platformAttempt(0);
+            return fetch(CONNECT_PUBLIC_CHECKOUT, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    slug: opts.slug,
+                    tenantId: opts.tenantId,
+                    bookingIds: opts.bookingIds || [],
+                    email: opts.email || '',
+                    serviceName: opts.serviceName || 'Appointment',
+                    amountCents: Math.round(Number(opts.amountCents)),
+                    chargeKind: opts.chargeKind === 'deposit' ? 'deposit' : 'full',
+                    returnOrigin: 'https://schedi.app'
+                })
+            }).then(function (r) {
+                return r.json().then(function (data) {
+                    return { ok: r.ok, data: data || {} };
+                }, function () { return { ok: false, data: {} }; });
+            }).then(function (out) {
+                if (out.ok && out.data && out.data.mode === 'connect' && isStripePayUrl(out.data.url)) {
+                    return { url: out.data.url, durableUrl: out.data.durableUrl || durable, error: '' };
+                }
+                return platformAttempt(0);
+            }).catch(function () { return platformAttempt(0); });
+        }
 
         var PLATFORM_ORIGIN = window.location.origin;
         var SITEFORGE_EMAIL_WEBHOOK = "https://schedi.app/api/send-booking-email";
@@ -11279,7 +11494,7 @@
             function looksPaid(b) {
                 return String((b && b.paymentStatus) || '').toUpperCase().indexOf('PAID') !== -1;
             }
-            function dispatchStandaloneMail(toAddr, subject, textBody, htmlBody, mailType, mailReplyTo) {
+            function dispatchStandaloneMail(toAddr, subject, textBody, htmlBody, mailType, mailReplyTo, paymentLink) {
                 if (!toAddr) return;
                 // Do not write client contact details into Firestore mail.
                 if (SITEFORGE_EMAIL_WEBHOOK) {
@@ -11291,6 +11506,9 @@
                         type: mailType || 'mail', ownerTenantId: tenantData.id || '', tenantId: tenantData.id || '', bookingId: (booking && booking.id) || '',
                         manageToken: (booking && booking.manageToken) || ''
                     };
+                    if (paymentLink && /^https:\/\/(www\.)?schedi\.app\//.test(String(paymentLink)) && String(paymentLink).indexOf('pay=checkout') !== -1) {
+                        mailObj.paymentLink = String(paymentLink);
+                    }
                     if (toOwnerFlag) mailObj.toOwner = true;
                     if (replyOwnerFlag) mailObj.replyToOwner = true;
                     var webhookBody = JSON.stringify(mailObj);
@@ -11330,6 +11548,13 @@
             })(rec && rec.frequency);
 
             var clientTo = (booking && booking.clientEmail) ? String(booking.clientEmail).trim() : '';
+            var cardPayUrl = '';
+            if (booking && String(booking.paymentMethod || '').toLowerCase() === 'card') {
+                var candidate = String(booking.cardPayLink || '');
+                if (/^https:\/\/(www\.)?schedi\.app\//.test(candidate) && candidate.indexOf('pay=checkout') !== -1 && candidate.indexOf('stripe.com') === -1) {
+                    cardPayUrl = candidate;
+                }
+            }
             var feeSentence = '';
             try { feeSentence = cancellationFeeSentencePublic(booking && booking.amount); } catch (feeEmailErr) { feeSentence = ''; }
             if (clientTo) {
@@ -11398,6 +11623,7 @@
                     'Booking ref: #' + (booking.id || '') + nl +
                     (isSeries ? ('Recurrence: ' + recFreqLabelLocal + ' × ' + (rec.total || rec.dates.length) + nl + 'Upcoming dates: ' + seriesDatesLine + nl) : '') +
                     (Number(booking.depositAmount) > 0 ? ('Deposit: ' + String.fromCharCode(36) + Number(booking.depositAmount).toFixed(2) + nl + 'Deposit paid: ' + (booking.depositPaid === true ? 'yes' : 'no') + nl + 'Remaining balance: ' + String.fromCharCode(36) + (Number(booking.balanceDue) || 0).toFixed(2) + nl) : '') +
+                    (cardPayUrl ? ('Pay by card:' + nl + cardPayUrl + nl) : '') +
                     (feeSentence ? (feeSentence + nl) : '') +
                     (extra ? (nl + 'Note: ' + extra + nl) : '') +
                     (manageUrl ? (nl + 'Manage / reschedule / cancel:' + nl + manageUrl + nl + (isSeries ? ('This is one saved record in a recurring series. Cancelling or rescheduling updates this record only, not other visits.' + nl) : '')) : '') +
@@ -11465,6 +11691,16 @@
                     } catch (calStandErr) { console.warn(calStandErr); }
                 }
                 var notesHtml = '';
+                if (cardPayUrl) {
+                    var cardHref = String(cardPayUrl).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+                    notesHtml += '<tr><td align="center" style="padding:8px 28px 4px;">'
+                        + '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"><tr>'
+                        + '<td align="center" bgcolor="#4f46e5" style="background-color:#4f46e5;border-radius:14px;">'
+                        + '<a href="' + cardHref + '" style="display:block;padding:14px 18px;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;">Pay by card</a>'
+                        + '</td></tr></table>'
+                        + '<p style="margin:10px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#64748b;">Or copy this link: ' + safe(cardPayUrl) + '</p>'
+                        + '</td></tr>';
+                }
                 if (feeSentence) notesHtml += '<tr><td style="padding:8px 28px 0;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#94a3b8;">' + safe(feeSentence) + '</td></tr>';
                 if (extra) notesHtml += '<tr><td style="padding:10px 28px 0;"><div style="padding:12px 14px;border-radius:10px;background-color:#111c33;border:1px solid #334155;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#cbd5e1;">' + safe(extra) + '</div></td></tr>';
                 var footerLeft = isPending ? 'We will email you when this request is accepted.' : 'Questions? Reply to this email.';
@@ -11497,7 +11733,7 @@
                     + '</tr></table></td></tr></table>'
                     + '<div style="font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#475569;padding:16px 8px 0;">Powered by Schedi</div>'
                     + '</td></tr></table></body></html>';
-                dispatchStandaloneMail(clientTo, subject, text, htmlBody, 'booking_confirmation', replyTo);
+                dispatchStandaloneMail(clientTo, subject, text, htmlBody, 'booking_confirmation', replyTo, cardPayUrl);
             }
 
             var bookingIsPending = String((booking && booking.status) || '').toLowerCase() === 'pending';
@@ -11518,6 +11754,7 @@
                     'Payment option: ' + payOpt + nl +
                     'Payment status: ' + (booking.paymentStatus || '') + nl +
                     (amountStr ? ('Amount: ' + amountStr + nl) : '') +
+                    (cardPayUrl ? ('Card payment link: ' + cardPayUrl + nl) : '') +
                     nl + '— Schedi';
                 var oHtml = '<div style="font-family:Arial,sans-serif;line-height:1.5">' +
                     '<h2 style="color:#0ea5e9">' + (isSeries ? 'New recurring booking' : 'New booking') + '</h2>' +
@@ -11532,9 +11769,10 @@
                     (isSeries ? ('<strong>Recurrence:</strong> ' + safe(recFreqLabelLocal + ' × ' + (rec.total || rec.dates.length)) + '<br><strong>Upcoming dates:</strong> ' + safe(seriesDatesLine) + '<br>') : '') +
                     '<strong>Payment option:</strong> ' + safe(payOpt) + '<br>' +
                     '<strong>Payment status:</strong> ' + safe(booking.paymentStatus || '') +
-                    (amountStr ? ('<br><strong>Amount:</strong> ' + safe(amountStr)) : '') + '</p>' +
+                    (amountStr ? ('<br><strong>Amount:</strong> ' + safe(amountStr)) : '') +
+                    (cardPayUrl ? ('<br><strong>Card payment link:</strong> <a href="' + String(cardPayUrl).replace(/&/g, '&amp;').replace(/"/g, '&quot;') + '">' + safe(cardPayUrl) + '</a>') : '') + '</p>' +
                     '<p>— Schedi</p></div>';
-                dispatchStandaloneMail(ownerTo, oSubject, oText, oHtml, 'owner_booking_alert', (booking.clientEmail || ''));
+                dispatchStandaloneMail(ownerTo, oSubject, oText, oHtml, 'owner_booking_alert', (booking.clientEmail || ''), cardPayUrl);
 
                 if (looksPaid(booking)) {
                     var payAmt = (booking.amount != null && booking.amount !== '' && isFinite(Number(booking.amount))) ? ('$' + (Number(booking.amount) || 0)) : '';
@@ -11951,7 +12189,7 @@
             var n = settings.hours;
             var when = n <= 0 ? 'at the time of the appointment' : (n === 1 ? 'within 1 hour of the appointment' : ('within ' + n + ' hours of the appointment'));
             var collect = bookingPlan() === 'pro'
-                ? ' If you pay by card, this fee is charged to that card.'
+                ? ' If you pay by card, this fee is charged to that card. Other ways to pay stay available.'
                 : '';
             return 'If you cancel ' + when + ', a cancellation fee of ' + feeDesc + ' applies.' + collect;
         }
@@ -12230,10 +12468,40 @@
                         ? '<div style="padding:12px;border-radius:12px;border:1px solid rgba(16,185,129,.35);background:rgba(16,185,129,.12);color:#6ee7b7;font-size:12px;font-weight:600">Deposit checkout finished. The appointment is confirmed only after the deposit is recorded and the business accepts the time. Any remaining balance is due at the appointment.</div>'
                         : '<div style="padding:12px;border-radius:12px;border:1px solid rgba(16,185,129,.35);background:rgba(16,185,129,.12);color:#6ee7b7;font-size:12px;font-weight:600">Card checkout finished. The business still needs to accept the time on Starter and Pro.</div>';
                 } else {
-                    payBanner.innerHTML = '<div style="padding:12px;border-radius:12px;border:1px solid rgba(245,158,11,.35);background:rgba(245,158,11,.12);color:#fcd34d;font-size:12px;font-weight:600">Checkout canceled. No charge was made. The appointment is not confirmed until the deposit is paid.</div>';
+                    payBanner.innerHTML = '<div style="padding:12px;border-radius:12px;border:1px solid rgba(245,158,11,.35);background:rgba(245,158,11,.12);color:#fcd34d;font-size:12px;font-weight:600">Checkout canceled. No charge was made. You can open the payment link again.</div>';
                 }
                 var headerEl = document.querySelector('header');
                 if (headerEl && headerEl.parentNode) headerEl.parentNode.insertBefore(payBanner, headerEl.nextSibling);
+            }
+            if (typeof SCHEDULE_PAY_RETURN !== 'undefined' && SCHEDULE_PAY_RETURN === 'checkout') {
+                var resumeId = (typeof SCHEDULE_PAY_BOOKING !== 'undefined') ? String(SCHEDULE_PAY_BOOKING || '') : '';
+                var extraIds = (typeof SCHEDULE_PAY_BOOKINGS !== 'undefined') ? String(SCHEDULE_PAY_BOOKINGS || '') : '';
+                var resumeKind = (typeof SCHEDULE_PAY_KIND !== 'undefined' && SCHEDULE_PAY_KIND === 'deposit') ? 'deposit' : 'full';
+                var resumeIds = [resumeId].concat(extraIds ? extraIds.split(',') : []).map(function (id) { return String(id || '').trim(); }).filter(Boolean);
+                var resumeBanner = document.createElement('div');
+                resumeBanner.setAttribute('role', 'status');
+                resumeBanner.style.margin = '12px auto';
+                resumeBanner.style.maxWidth = '56rem';
+                resumeBanner.style.padding = '0 16px';
+                resumeBanner.innerHTML = '<div style="padding:12px;border-radius:12px;border:1px solid rgba(99,102,241,.35);background:rgba(99,102,241,.12);color:#c7d2fe;font-size:12px;font-weight:600">Opening secure card checkout…</div>';
+                var resumeHeader = document.querySelector('header');
+                if (resumeHeader && resumeHeader.parentNode) resumeHeader.parentNode.insertBefore(resumeBanner, resumeHeader.nextSibling);
+                if (resumeIds.length) {
+                    requestPublicCardCheckout({
+                        tenantId: tenantData.id,
+                        slug: tenantData.slug || tenantData.id,
+                        bookingIds: resumeIds,
+                        email: '',
+                        serviceName: 'Appointment',
+                        amountCents: 0,
+                        chargeKind: resumeKind
+                    }).then(function (out) {
+                        if (out && out.url && assignTopStripe(out.url)) return;
+                        resumeBanner.innerHTML = '<div role="alert" style="padding:12px;border-radius:12px;border:1px solid rgba(244,63,94,.35);background:rgba(244,63,94,.12);color:#fecdd3;font-size:12px;font-weight:600">Card checkout did not open. This booking page is still here. Nothing was charged.</div>';
+                    });
+                } else {
+                    resumeBanner.innerHTML = '<div role="alert" style="padding:12px;border-radius:12px;border:1px solid rgba(244,63,94,.35);background:rgba(244,63,94,.12);color:#fecdd3;font-size:12px;font-weight:600">This payment link is missing a booking reference. Nothing was charged.</div>';
+                }
             }
 
             var calPicker = document.getElementById('calendarPickerInput');
@@ -12505,13 +12773,6 @@
             const cardFieldsBox = document.getElementById('cardPaymentFieldsBox');
             var svcQuote = selectedServiceDepositQuote();
             var svcPriced = servicePriceValuePublic(selectedSvc) !== null;
-            if (svcQuote.required) {
-                selectedPay = 'card';
-                if (container) container.innerHTML = '<div class="px-4 py-3 rounded-xl border border-indigo-500/40 text-indigo-200 bg-indigo-500/10 font-bold">Card deposit</div>';
-                if (cardFieldsBox) cardFieldsBox.classList.remove('hidden');
-                updatePayAmounts();
-                return;
-            }
             if (bookingPlan() === 'free') {
                 selectedPay = 'later';
                 if (container) {
@@ -12524,9 +12785,10 @@
             const pg = tenantData.paymentGateways || {};
             let html = '';
 
-            if (selectedPay === 'card' && (bookingPlan() !== 'pro' || !svcPriced)) selectedPay = 'later';
-            // Card checkout needs a priced service (otherwise Stripe amount is $0). Fixed deposits still use card above.
-            if (pg.card && bookingPlan() === 'pro' && svcPriced) {
+            var cardChoice = pg.card && bookingPlan() === 'pro' && (svcPriced || svcQuote.required);
+            if (selectedPay === 'card' && !cardChoice) selectedPay = 'later';
+            // Card stays one choice. A deposit does not hide Cash App, Zelle, Venmo, PayPal, or pay at the appointment.
+            if (cardChoice) {
                 html += \`<button type="button" onclick="selectPay('card')" class="px-4 py-3 flex-1 min-w-[100px] rounded-xl border font-bold \${selectedPay === 'card' ? 'border-emerald-500 text-emerald-400 bg-emerald-500/10 glow-emerald' : 'border-slate-800 text-slate-400 bg-slate-900'}"><i class="fa-solid fa-credit-card block mb-1"></i>Card</button>\`;
             }
             if (pg.cashapp) {
@@ -12557,17 +12819,11 @@
         }
 
         window.selectPay = function(method) {
-            var svcQuote = selectedServiceDepositQuote();
-            if (svcQuote.required) {
-                selectedPay = 'card';
-                renderPay();
-                return;
-            }
             if (bookingPlan() !== 'pro' && method === 'card') {
                 failPublicPay('Card checkout is on Pro only. This booking was not saved.');
                 method = 'later';
             }
-            if (method === 'card' && servicePriceValuePublic(selectedSvc) === null) {
+            if (method === 'card' && servicePriceValuePublic(selectedSvc) === null && !selectedServiceDepositQuote().required) {
                 failPublicPay('This service has no price set, so card checkout is unavailable.');
                 method = 'later';
             }
@@ -12734,15 +12990,14 @@
             }
             var servicePrice = servicePriceValuePublic(selectedSvc);
             var depositQuote = quoteDeposit(servicePrice);
-            if (depositRequiredNow() && !depositQuote.required && !depositQuote.skippedNoPrice) {
-                fail('The deposit for this service is under $0.50, so card checkout cannot take it. This booking was not saved.');
+            if (selectedPay === 'card' && depositRequiredNow() && !depositQuote.required && !depositQuote.skippedNoPrice) {
+                fail('The deposit for this service is under $0.50, so card checkout cannot take it. Choose another way to pay.');
                 return;
             }
             if (selectedPay === 'card' && servicePrice === null && !depositQuote.required) {
                 fail('This service has no price set, so card checkout is unavailable. Choose another payment option or pay at the appointment.');
                 return;
             }
-            if (depositQuote.required) selectedPay = 'card';
             var recCount = (recFreq === 'once') ? 1 : getSelectedRecurrenceCount();
             var seriesDates = generateRecurringDates(selectedDateStr, recFreq, recCount);
             var conflictMsgs = [];
@@ -12777,9 +13032,10 @@
                         : Math.random().toString(36).slice(2, 8).toUpperCase());
                 }
                 const bookingAmount = depositQuote.priced ? depositQuote.price : null;
+                const payByCard = selectedPay === 'card';
                 const payStatus = (function () {
-                        if (depositQuote.required) return 'AWAITING DEPOSIT';
-                        if (selectedPay === 'card') return 'AWAITING CARD CHECKOUT';
+                        if (payByCard && depositQuote.required) return 'AWAITING DEPOSIT';
+                        if (payByCard) return 'AWAITING CARD CHECKOUT';
                         if (selectedPay === 'cashapp') return 'PENDING CASH APP';
                         if (selectedPay === 'zelle') return 'PENDING ZELLE';
                         if (selectedPay === 'venmo') return 'PENDING VENMO';
@@ -12787,8 +13043,8 @@
                         return 'PAY AT APPOINTMENT';
                     })();
                 const payOptLabel = (function () {
-                        if (depositQuote.required) return 'Card deposit';
-                        if (selectedPay === 'card') return 'Card';
+                        if (payByCard && depositQuote.required) return 'Card deposit';
+                        if (payByCard) return 'Card';
                         if (selectedPay === 'cashapp') return 'Cash App';
                         if (selectedPay === 'zelle') return 'Zelle';
                         if (selectedPay === 'venmo') return 'Venmo';
@@ -12838,7 +13094,7 @@
                         durationMins: parseDurationMins(selectedSvc)
                     };
                     if (bookingAmount !== null && bookingAmount !== undefined) b.amount = bookingAmount;
-                    if (depositQuote.required) {
+                    if (payByCard && depositQuote.required) {
                         b.depositAmount = depositQuote.deposit;
                         b.depositPaid = false;
                         b.balanceDue = depositQuote.balance;
@@ -12861,6 +13117,16 @@
                 });
                 var booking = bookings[0];
                 var refId = booking.id;
+                var cardPayKind = (payByCard && depositQuote.required) ? 'deposit' : 'card';
+                var cardPayUrl = payByCard
+                    ? durableCardPayLink(String(tenantData.slug || tenantData.id || ''), bookings.map(function (item) { return item.id; }), cardPayKind)
+                    : '';
+                if (cardPayUrl) bookings.forEach(function (item) { item.cardPayLink = cardPayUrl; });
+                var cardChargeCents = 0;
+                if (payByCard) {
+                    var cardDollars = depositQuote.required ? depositQuote.deposit : Number(bookingAmount);
+                    if (isFinite(cardDollars) && cardDollars > 0) cardChargeCents = Math.round(cardDollars * 100);
+                }
 
                 tenantData.publicSlots = tenantData.publicSlots || [];
                 bookings.forEach(function (b) {
@@ -12884,10 +13150,17 @@
 
                 (function syncBookingsToFirestore(list) {
                     function doUpdate() {
+                        var saved = list.map(function (item) {
+                            var copy = {};
+                            for (var key in item) {
+                                if (Object.prototype.hasOwnProperty.call(item, key) && key !== 'cardPayLink') copy[key] = item[key];
+                            }
+                            return copy;
+                        });
                         fetch('https://schedi.app/api/bookings', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ action: 'create', tenantId: tenantData.id, bookings: list })
+                            body: JSON.stringify({ action: 'create', tenantId: tenantData.id, bookings: saved })
                         }).then(function (r) { return r.json().then(function (data) { return { ok: r.ok, data: data }; }); })
                           .then(function (out) {
                               if (!out.ok) console.warn('Booking save failed', out.data && out.data.error);
@@ -12901,25 +13174,6 @@
                 // Owner notify for pending is handled by the worker (and parent portal alert); skip duplicate owner mail in queueStandalone when pending.
                 var emailQueued = false;
                 try { queueStandaloneConfirmationEmail(booking); emailQueued = true; } catch (err) { console.warn('Confirmation email skipped:', err); }
-                if (depositQuote.required && (!window.parent || window.parent === window)) {
-                    var directAttempt = 0;
-                    (function tryDirect() {
-                        fetch(STRIPE_CHECKOUT_ENDPOINT, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ tenantId: tenantData.id, bookingIds: bookings.map(function (item) { return item.id; }), email: email })
-                        }).then(function (r) { return r.json().then(function (data) { return { status: r.status, data: data }; }); })
-                          .then(function (out) {
-                              if (out.data && out.data.url) window.location.href = out.data.url;
-                              else if (directAttempt < 3 && (!out.data || out.data.error === 'booking_not_found' || out.status === 404)) {
-                                  directAttempt += 1;
-                                  setTimeout(tryDirect, 700);
-                              }
-                          }).catch(function () {
-                              if (directAttempt < 3) { directAttempt += 1; setTimeout(tryDirect, 700); }
-                          });
-                    })();
-                }
                 if (window.parent !== window) {
                     try {
                         window.parent.postMessage({
@@ -12927,7 +13181,8 @@
                             booking: booking,
                             bookings: bookings,
                             emailHandled: emailQueued,
-                            needsCardCheckout: !!depositQuote.required
+                            needsCardCheckout: payByCard,
+                            checkoutOwned: true
                         }, (PLATFORM_ORIGIN && PLATFORM_ORIGIN !== 'null') ? PLATFORM_ORIGIN : '*');
                     } catch (err) {}
                 }
@@ -12959,10 +13214,14 @@
                 document.getElementById('confirmationCard').classList.remove('hidden');
                 var headingEl = document.getElementById('confirmationHeading');
                 var noteEl = document.getElementById('confirmationNote');
-                if (depositQuote.required) {
-                    if (headingEl) headingEl.textContent = 'Deposit required';
+                if (payByCard) {
+                    var cardNote = depositQuote.required
+                        ? ('You chose to pay by card. Pay the $' + depositQuote.deposit.toFixed(2) + ' deposit with the link below. $' + depositQuote.balance.toFixed(2) + ' is due at the appointment.')
+                        : 'You chose to pay by card. Use the payment link below. Nothing is charged until you open it.';
+                    if (bookingIsPendingReview) cardNote += ' The business still needs to accept this time.';
+                    if (headingEl) headingEl.textContent = 'Booking Requested';
                     if (noteEl) {
-                        noteEl.textContent = 'Pay the $' + depositQuote.deposit.toFixed(2) + ' deposit by card before this appointment is confirmed. $' + depositQuote.balance.toFixed(2) + ' is due at the appointment. The business accepts the time after the deposit is paid.';
+                        noteEl.textContent = cardNote;
                         noteEl.classList.remove('hidden');
                     }
                 } else if (bookingIsPendingReview) {
@@ -13055,42 +13314,57 @@
                         cardReceiptBox.classList.remove('hidden');
                         var cardShow = depositQuote.required ? depositQuote.deposit : bookingAmount;
                         document.getElementById('resCardAmountLabel').textContent = (cardShow == null ? '—' : ('$' + Number(cardShow).toFixed(2)));
+                        var payLinkEl = document.getElementById('resCardPayLink');
+                        var payCopyBtn = document.getElementById('resCardPayCopyBtn');
+                        var checkoutErr = document.getElementById('resCheckoutError');
+                        function showCheckoutError(message) {
+                            if (!checkoutErr) return;
+                            checkoutErr.textContent = message;
+                            checkoutErr.classList.remove('hidden');
+                        }
+                        function paintPayLink(href) {
+                            var shown = visibleCardPayLink(href, cardPayUrl);
+                            if (payLinkEl && shown) {
+                                payLinkEl.textContent = shown;
+                                payLinkEl.href = shown;
+                                payLinkEl.target = '_top';
+                            }
+                        }
+                        paintPayLink(cardPayUrl);
+                        if (payCopyBtn) {
+                            payCopyBtn.onclick = function () {
+                                var current = payLinkEl ? (payLinkEl.href || payLinkEl.textContent) : cardPayUrl;
+                                copyTextToClipboard(current);
+                                payCopyBtn.textContent = 'Copied';
+                                setTimeout(function () { payCopyBtn.textContent = 'Copy payment link'; }, 1500);
+                            };
+                        }
 
                         var checkoutBtn = document.getElementById('resCheckoutBtn');
                         if (checkoutBtn) {
-                            if (STRIPE_CHECKOUT_ENDPOINT) {
-                                checkoutBtn.textContent = 'Continue to secure payment';
-                                checkoutBtn.onclick = function (ev) {
-                                    ev.preventDefault();
-                                    checkoutBtn.textContent = 'Opening secure checkout...';
-                                    fetch(STRIPE_CHECKOUT_ENDPOINT, {
-                                        method: 'POST',
-                                        headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({
-                                            bookingId: refId,
-                                            bookingIds: bookings.map(function (item) { return item.id; }),
-                                            tenantId: tenantData.id,
-                                            serviceName: booking.serviceName,
-                                            email: email
-                                        })
-                                    })
-                                        .then(function (r) { return r.json(); })
-                                        .then(function (data) {
-                                            if (data && data.url) {
-                                                window.location.href = data.url;
-                                            } else {
-                                                checkoutBtn.textContent = 'Checkout unavailable — the business will contact you.';
-                                            }
-                                        })
-                                        .catch(function () {
-                                            checkoutBtn.textContent = 'Checkout unavailable — the business will contact you.';
-                                        });
-                                };
-                            } else {
-                                checkoutBtn.textContent = 'Payment link will be emailed to you';
-                                checkoutBtn.removeAttribute('href');
-                                checkoutBtn.classList.add('opacity-70', 'cursor-default');
-                            }
+                            checkoutBtn.textContent = 'Continue to secure payment';
+                            checkoutBtn.target = '_top';
+                            checkoutBtn.href = cardPayUrl || '#';
+                            checkoutBtn.onclick = function (ev) {
+                                ev.preventDefault();
+                                if (checkoutErr) checkoutErr.classList.add('hidden');
+                                checkoutBtn.textContent = 'Opening secure checkout...';
+                                requestPublicCardCheckout({
+                                    tenantId: tenantData.id,
+                                    slug: tenantData.slug || tenantData.id,
+                                    bookingIds: bookings.map(function (item) { return item.id; }),
+                                    email: email,
+                                    serviceName: booking.serviceName,
+                                    amountCents: cardChargeCents,
+                                    chargeKind: depositQuote.required ? 'deposit' : 'full'
+                                }).then(function (out) {
+                                    paintPayLink(out && out.url);
+                                    if (out && out.url && assignTopStripe(out.url)) return;
+                                    checkoutBtn.textContent = 'Continue to secure payment';
+                                    if (out && out.error === 'already_paid') showCheckoutError('That card payment is already paid.');
+                                    else showCheckoutError('Card checkout did not open. The payment link above still works. Nothing was charged.');
+                                });
+                            };
                         }
                     }
                 } else if (selectedPay === 'cashapp') {
