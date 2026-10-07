@@ -1,6 +1,7 @@
 import type Stripe from "stripe";
 import { confirmBooking, failBooking } from "./bookings";
 import type { Store } from "./db";
+import { SchediError } from "./errors";
 import { applySubscriptionState } from "./subscription-state";
 
 /**
@@ -19,6 +20,15 @@ export function applyStripeEvent(store: Store, event: Stripe.Event): void {
   store.markStripeEvent(event.id);
 }
 
+function isPublicSpaCharge(metadata: Stripe.Metadata | null | undefined): boolean {
+  return metadata?.schedi_public_booking === "1";
+}
+
+/** Public SPA bookings live in Firestore. A missing local row must not fail the webhook. */
+function ignoreMissingPublicBooking(error: unknown, metadata: Stripe.Metadata | null | undefined): boolean {
+  return isPublicSpaCharge(metadata) && error instanceof SchediError && error.status === 404;
+}
+
 function applyConnectedEvent(store: Store, event: Stripe.Event): void {
   switch (event.type) {
     case "checkout.session.completed":
@@ -29,19 +39,36 @@ function applyConnectedEvent(store: Store, event: Stripe.Event): void {
       const bookingId = session.metadata?.schedi_booking_id;
       if (!bookingId) return;
       const paymentIntentId = typeof session.payment_intent === "string" ? session.payment_intent : null;
-      confirmBooking(store, bookingId, paymentIntentId);
+      try {
+        confirmBooking(store, bookingId, paymentIntentId);
+      } catch (error) {
+        if (ignoreMissingPublicBooking(error, session.metadata)) return;
+        throw error;
+      }
       return;
     }
     case "checkout.session.async_payment_failed": {
       const session = event.data.object as Stripe.Checkout.Session;
       const bookingId = session.metadata?.schedi_booking_id;
-      if (bookingId) failBooking(store, bookingId);
+      if (!bookingId) return;
+      try {
+        failBooking(store, bookingId);
+      } catch (error) {
+        if (ignoreMissingPublicBooking(error, session.metadata)) return;
+        throw error;
+      }
       return;
     }
     case "payment_intent.payment_failed": {
       const intent = event.data.object as Stripe.PaymentIntent;
       const bookingId = intent.metadata?.schedi_booking_id;
-      if (bookingId) failBooking(store, bookingId);
+      if (!bookingId) return;
+      try {
+        failBooking(store, bookingId);
+      } catch (error) {
+        if (ignoreMissingPublicBooking(error, intent.metadata)) return;
+        throw error;
+      }
       return;
     }
     default:
