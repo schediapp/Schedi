@@ -201,6 +201,8 @@ button.secondary, .button.secondary {
 .note { background: var(--good-bg); }
 .banner.warn { background: var(--warn-bg); color: var(--warn); }
 .banner.bad { background: var(--bad-bg); color: var(--bad); }
+.banner strong, .banner .debug-note { display: block; }
+.banner .debug-note { margin-top: 6px; font-size: 0.92rem; }
 
 .grid-2 {
   display: grid;

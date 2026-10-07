@@ -1,6 +1,6 @@
 import { currentOwner } from "@/lib/auth";
 import { cancelOwnerSubscription, startOwnerSubscription } from "@/lib/billing";
-import { errorMessage, redirectTo } from "@/lib/http";
+import { errorMessage, publicOrigin, redirectTo } from "@/lib/http";
 import { getStore } from "@/lib/store";
 import { getStripe } from "@/lib/stripe";
 
@@ -12,7 +12,7 @@ export async function POST(request: Request) {
 
   const form = await request.formData();
   const plan = String(form.get("plan") || "");
-  const origin = new URL(request.url).origin;
+  const origin = publicOrigin(request);
   const store = getStore();
 
   try {

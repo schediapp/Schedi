@@ -75,8 +75,10 @@ export async function enableCardPayments(
   }
 
   const owner = store.getOwner(ownerId);
+  // Stripe stores the first response for an idempotency key for 24 hours, including
+  // failures. v1 keys from earlier attempts must not be reused after a fix.
   const account = await stripe.v2.core.accounts.create(buildMerchantAccountParams(business, owner), {
-    idempotencyKey: `schedi_connect_${business.id}`,
+    idempotencyKey: `schedi_connect_v2_${business.id}`,
   });
   store.setStripeAccount(business.id, account.id, readCapabilityStatuses(account));
   return { accountId: account.id, created: true };
