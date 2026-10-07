@@ -1,0 +1,10 @@
+{
+  "name": "schedi",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "dev": "wrangler dev",
+    "check": "wrangler check"
+  }
+}

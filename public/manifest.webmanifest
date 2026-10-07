@@ -1,0 +1,24 @@
+{
+  "id": "/?portal=login",
+  "name": "Schedi",
+  "short_name": "Schedi",
+  "start_url": "/?portal=login",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#020617",
+  "theme_color": "#020617",
+  "icons": [
+    {
+      "src": "/assets/homescreen-icon.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/homescreen-icon.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
