@@ -227,7 +227,7 @@ function SignIn({ error }: { error?: string }) {
   const samples = [
     ["ava@lumen.studio", "Ava Chen · Lumen Studio · Pro, cards off"],
     ["nia@harbor.example", "Nia Brooks · Harbor Nails · Pro, cards not active yet"],
-    ["leo@northwind.example", "Leo Park · Northwind Cuts · Pro, cards live"],
+    ["leo@northwind.example", "Leo Park · Northwind Cuts · Pro, demo capabilities active"],
     ["sam@fieldwork.example", "Sam Rivera · Fieldwork · Starter"],
     ["rory@paused.example", "Rory Hale · Paused Studio · subscription past due"],
     ["june@freedesk.example", "June Patel · Free Desk · Free"],
