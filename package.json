@@ -2,9 +2,27 @@
   "name": "schedi",
   "private": true,
   "scripts": {
-    "test": "node test/portal-launch.cjs"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "test": "vitest run",
+    "test:portal": "node test/portal-launch.cjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@stripe/connect-js": "^3.4.6",
+    "@stripe/react-connect-js": "^3.4.4",
+    "next": "^16.3.8",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "stripe": "^23.0.0"
   },
   "devDependencies": {
-    "puppeteer-core": "^24.15.0"
+    "@types/node": "^22.19.1",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "puppeteer-core": "^24.15.0",
+    "typescript": "^5.9.3",
+    "vitest": "^5.0.3"
   }
 }
