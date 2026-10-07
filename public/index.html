@@ -4317,6 +4317,7 @@
         }
 
         function applyPublicBookingDocumentMeta(tenant) {
+            try {
             if (!tenant) return;
             var name = String(tenant.name || 'Schedi');
             var industry = String(tenant.industry || 'Local');
@@ -4342,14 +4343,15 @@
                 document.head.appendChild(link);
             }
             link.setAttribute('href', canonicalUrl);
+            } catch (err) {}
         }
 
         function enterPublicBookingMode(tenant) {
-            applyPublicBookingDocumentMeta(tenant);
             platformState.currentMode = 'public';
             platformState.activeTenantId = tenant.id;
             platformState.publicSlug = tenant.slug || tenant.id;
             try {
+                applyPublicBookingDocumentMeta(tenant);
                 var pageHtml = generateStandaloneHtmlForTenant(tenant);
                 var header = document.querySelector('header');
                 var main = document.querySelector('main');

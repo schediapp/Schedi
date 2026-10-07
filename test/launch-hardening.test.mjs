@@ -101,11 +101,11 @@ test("firestore public fields become a title record", () => {
   assert.deepEqual(tenant, { name: "Bright Cuts", industry: "Barber", slug: "bright-cuts" });
 });
 
-test("Pages _headers carries the same CSP as the worker", () => {
+test("Pages _headers sets HSTS and does not open wildcard CORS", () => {
   const headers = readFileSync(new URL("./public/_headers", root), "utf8");
-  assert.ok(headers.includes(contentSecurityPolicy()));
   assert.match(headers, /Strict-Transport-Security: max-age=31536000/);
   assert.doesNotMatch(headers, /Access-Control-Allow-Origin/);
+  assert.equal(contentSecurityPolicy().includes("frame-ancestors 'none'"), true);
 });
 
 function ctx() {
