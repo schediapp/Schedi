@@ -441,7 +441,7 @@
                                     <span class="text-[11px] text-emerald-400 font-semibold">Server-side</span>
                                 </div>
                                 <p class="text-[11px] text-slate-300 leading-relaxed">Monthly autopay is connected on the server. Owners subscribe from their business portal: <strong class="text-white">Starter $29/mo</strong> or <strong class="text-white">Pro $49/mo</strong>. Free ($0) businesses are not charged. API keys are not entered here.</p>
-                                <p class="text-[11px] text-slate-500">A failed payment or a canceled subscription pauses the public booking page. Agency can still pause or resume a business manually.</p>
+                                <p class="text-[11px] text-slate-500">A failed payment pauses the public booking page. Cancellation takes effect at the end of the current paid billing period; the owner keeps access until then and is not charged again. Agency can still pause or resume a business manually. Complimentary plans are unaffected.</p>
                             </div>
 
                             <div class="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-3">
@@ -639,6 +639,8 @@
                         <div>
                             <h3 class="text-base font-extrabold text-white">Schedi subscription</h3>
                             <p id="tenantBillingSummary" class="text-xs text-slate-400 mt-1">Monthly autopay for this business.</p>
+                            <p id="tenantBillingUntil" class="hidden text-xs font-semibold text-emerald-300 mt-1"></p>
+                            <p id="tenantBillingPolicy" class="text-[11px] text-slate-400 leading-relaxed mt-2">Cancel anytime. Cancellation takes effect at the end of the current paid billing period; you keep access until then and are not charged again. New subscribers may request a full refund of the first payment within 15 days. Renewal payments are not refunded or prorated, except at Schedi's discretion for billing errors or service outages. Complimentary plans are unaffected.</p>
                         </div>
                         <div class="flex flex-wrap items-center gap-2 self-start">
                             <button type="button" onclick="openComparePlansModal()" class="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide bg-slate-800 hover:bg-slate-700 text-brand-400 border border-brand-500/30">
@@ -1164,6 +1166,7 @@
             <div class="text-center space-y-2">
                 <h2 class="text-xl font-extrabold text-white">Start Schedi</h2>
                 <p class="text-xs text-slate-400">Start on Free ($0). Starter is $29/mo and Pro is $49/mo. Card details stay on Stripe. Nothing is charged until checkout finishes.</p>
+                <p class="text-[11px] text-slate-500 leading-relaxed">Cancel anytime. Cancellation takes effect at the end of the current paid billing period; you keep access until then and are not charged again. New subscribers may request a full refund of the first payment within 15 days. Renewal payments are not refunded or prorated, except at Schedi's discretion for billing errors or service outages. Complimentary plans are unaffected.</p>
             </div>
             <form id="publicSignupForm" onsubmit="handlePublicSignup(event)" class="space-y-3 text-xs">
                 <div>
@@ -1385,7 +1388,7 @@
                 <h3 class="text-lg font-bold text-white">Subscription billing</h3>
                 <button type="button" onclick="closeSubPaymentModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <p class="text-xs text-slate-300 leading-relaxed">Schedi does not take card numbers in this screen. Business owners start Starter ($29/mo) or Pro ($49/mo) from their portal, then update the card in the Stripe billing portal.</p>
+            <p class="text-xs text-slate-300 leading-relaxed">Schedi does not take card numbers in this screen. Business owners start Starter ($29/mo) or Pro ($49/mo) from their portal, then update the card in the Stripe billing portal. Cancel anytime. Cancellation takes effect at the end of the current paid billing period; you keep access until then and are not charged again.</p>
             <div class="pt-2 flex justify-end">
                 <button type="button" onclick="closeSubPaymentModal()" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300">Close</button>
             </div>
@@ -2816,6 +2819,15 @@
         });
 
         var SCHEDI_PLAN_FEES = { free: 0, starter: 29, pro: 49 };
+        var SCHEDI_OWNER_POLICY_SHORT = "Cancel anytime. Cancellation takes effect at the end of the current paid billing period; you keep access until then and are not charged again. New subscribers may request a full refund of the first payment within 15 days. Renewal payments are not refunded or prorated, except at Schedi's discretion for billing errors or service outages. Complimentary plans are unaffected.";
+        var SCHEDI_OWNER_POLICY_TERMS = [
+            "Schedi owner subscriptions (Starter $29/mo and Pro $49/mo) are month-to-month, with no contract.",
+            "Cancel anytime. Cancellation takes effect at the end of the current paid billing period; the owner keeps access until then and is not charged again.",
+            "New subscribers may request a full refund of their first payment within 15 days by emailing admin@schedi.app with the business name and the charge date.",
+            "Renewal payments are not refunded or prorated, except at Schedi's discretion for billing errors or service outages.",
+            "Complimentary plans are unaffected.",
+            "This covers Schedi plan fees, not a client's appointment deposit or a payment a business collects from its own customer."
+        ];
 
         function schediPlanCompareRows() {
             // Accurate to portal/help locks: Free limits + Starter manual pay + Pro card/recurring/deposits.
@@ -2867,7 +2879,8 @@
             body += '</tbody>';
             return ''
                 + '<p class="text-[11px] text-slate-400 mb-3">' + note + '</p>'
-                + '<table class="w-full text-xs min-w-[520px]">' + head + body + '</table>';
+                + '<table class="w-full text-xs min-w-[520px]">' + head + body + '</table>'
+                + '<p class="text-[11px] text-slate-400 mt-3">' + SCHEDI_OWNER_POLICY_SHORT + '</p>';
         }
 
         function mountSignupComparePlans() {
@@ -3613,6 +3626,7 @@
                     + '<section><h2 class="text-base font-bold text-white mb-1">Payments</h2><ol class="list-decimal pl-5 space-y-1"><li>Open Payment Options.</li><li>Free only allows Pay at Appointment.</li><li>Starter can use Cash App, Venmo, Zelle, PayPal, and Pay at Appointment. Card checkout is not offered.</li><li>Pro can also turn on Credit / Debit Card (Stripe).</li><li>On Pro, Appointment deposit can be a percent of the service price or a fixed amount. It stays off until you turn it on. Percent deposits skip services with no price; card checkout also needs a price. Free and Starter cannot collect a card deposit.</li><li>Cancellation fee stays off until you turn it on. Set the hours (default 24) and a percent or a fixed amount. Pro charges a card already used for that visit. Free and Starter only show the rule.</li><li>Click Save Payment Gateways.</li></ol></section>'
                     + '<section><h2 class="text-base font-bold text-white mb-1">Appointments</h2><ol class="list-decimal pl-5 space-y-1"><li>Open Appointments Roster.</li><li>Free bookings are confirmed as soon as the client reserves.</li><li>Starter and Pro bookings stay pending. Click Accept or Deny. Deny frees that time.</li><li>Mark paid, Reschedule, and Cancel are on the same row.</li><li>Add Manual Appointment records a visit you took in person.</li></ol></section>'
                     + '<section><h2 class="text-base font-bold text-white mb-1">Repeating visits</h2><ol class="list-decimal pl-5 space-y-1"><li>Open Email Confirmations.</li><li>On Pro, turn on Allow recurring appointments and click Save Email Settings.</li><li>Free and Starter do not show repeating visits on the booking page.</li></ol></section>'
+                    + '<section><h2 class="text-base font-bold text-white mb-1">Your Schedi plan</h2><p>Starter is $29/mo and Pro is $49/mo, month to month, with no contract. ' + SCHEDI_OWNER_POLICY_SHORT + ' Use Cancel subscription to stop renewal at the end of the paid period. Resume subscription if you change your mind before then. Card updates stay in Manage billing. To request a refund of the first payment within 15 days, email <a class="text-brand-400 underline" href="mailto:admin@schedi.app">admin@schedi.app</a> with the business name and the charge date.</p></section>'
                     + '<section><h2 class="text-base font-bold text-white mb-1">Your public page</h2><p>The link at the top of the portal is the booking page. Copy link and Share use https://schedi.app/ and your slug.</p></section>'
                     + '<p><a class="text-slate-400 underline" href="https://schedi.app/">Back to Schedi</a></p>'
                     + '</div>';
@@ -3684,7 +3698,7 @@
                 var otherHref = which === 'privacy' ? 'https://schedi.app/terms' : 'https://schedi.app/privacy';
                 var otherLabel = which === 'privacy' ? 'Terms of Service' : 'Privacy Policy';
                 var refund = which === 'terms'
-                    ? '<p>A business owner can get a refund of their first paid Schedi subscription charge if they ask within 15 days of that charge. After 15 days, that month is not refunded. Canceling still stops the next renewal. This covers Schedi plan fees (Starter $29, Pro $49), not a client\'s appointment deposit or a payment a business collects from its own customer.</p><p>Owners request a refund by emailing admin@schedi.app with the business name and the charge date, within 15 days of the first paid Schedi subscription charge.</p>'
+                    ? SCHEDI_OWNER_POLICY_TERMS.map(function (paragraph) { return '<p>' + paragraph + '</p>'; }).join('')
                     : '';
                 legal.innerHTML = ''
                     + '<h1 class="text-2xl font-black text-white mb-4">' + title + '</h1>'
@@ -5476,6 +5490,30 @@
             return name;
         }
 
+        function ownerPlanActiveUntilText(iso) {
+            var date = new Date(iso);
+            if (!iso || isNaN(date.getTime())) return '';
+            try {
+                var formatted = date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+                return 'Your plan stays active until ' + formatted;
+            } catch (err) {
+                return '';
+            }
+        }
+
+        function syncTenantBillingUntil(tenant) {
+            var untilEl = document.getElementById('tenantBillingUntil');
+            if (!untilEl) return;
+            var until = tenant && tenant.cancelAtPeriodEnd ? ownerPlanActiveUntilText(tenant.currentPeriodEnd) : '';
+            if (until) {
+                untilEl.textContent = until;
+                untilEl.classList.remove('hidden');
+            } else {
+                untilEl.textContent = '';
+                untilEl.classList.add('hidden');
+            }
+        }
+
         function renderTenantBilling(tenant) {
             var card = document.getElementById('tenantBillingCard');
             if (!card) return;
@@ -5495,8 +5533,9 @@
                     badge.textContent = 'COMPLIMENTARY PRO';
                     badge.className = 'self-start text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border bg-brand-500/10 text-brand-400 border-brand-500/20';
                 }
-                if (summary) summary.textContent = 'Complimentary Pro. Monthly fee is $0. There is no Stripe checkout and no charge.';
+                if (summary) summary.textContent = 'Complimentary Pro. Monthly fee is $0. There is no Stripe checkout and no charge. Complimentary plans are unaffected.';
                 if (actions) actions.innerHTML = '';
+                syncTenantBillingUntil(null);
                 return;
             }
             var subscribed = !!String(tenant.stripeSubscriptionId || '').trim() && !paused;
@@ -5509,12 +5548,20 @@
             var starterBtn = '<button type="button" id="subscribeStarterBtn" onclick="startSchediCheckout(\'starter\')" class="px-4 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-slate-950 font-bold text-xs">LABEL</button>';
             var proBtn = '<button type="button" id="subscribeProBtn" onclick="startSchediCheckout(\'pro\')" class="px-4 py-2.5 rounded-xl bg-indigo-500 hover:bg-indigo-400 text-white font-bold text-xs">LABEL</button>';
             var manageBtn = '<button type="button" id="manageBillingBtn" onclick="openSchediBillingPortal()" class="px-4 py-2.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs">Manage billing</button>';
+            var cancelBtn = '<button type="button" id="cancelBillingBtn" onclick="cancelSchediSubscription()" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs border border-slate-700">Cancel subscription</button>';
+            var resumeBtn = '<button type="button" id="resumeBillingBtn" onclick="resumeSchediSubscription()" class="px-4 py-2.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs">Resume subscription</button>';
             var buttons = '';
-            if (subscribed) {
-                if (summary) summary.textContent = 'Current plan: ' + planName + '. Card updates, invoices, and cancelling happen in Stripe (Manage billing). A failed payment pauses the public booking page.';
+            if (subscribed && tenant.cancelAtPeriodEnd) {
+                var untilText = ownerPlanActiveUntilText(tenant.currentPeriodEnd) || 'Your plan stays active until the end of the current paid billing period.';
+                if (summary) summary.textContent = 'Current plan: ' + planName + '. ' + untilText + ' You are not charged again. Card updates stay in Manage billing.';
                 if (plan === 'starter') buttons += proBtn.replace('LABEL', 'Upgrade to Pro · $49/mo');
                 else if (plan === 'pro') buttons += starterBtn.replace('LABEL', 'Switch to Starter · $29/mo');
-                buttons += manageBtn;
+                buttons += resumeBtn + manageBtn;
+            } else if (subscribed) {
+                if (summary) summary.textContent = 'Current plan: ' + planName + '. Cancel anytime. Cancellation takes effect at the end of the current paid billing period; you keep access until then and are not charged again. Card updates and invoices are in Manage billing. A failed payment pauses the public booking page.';
+                if (plan === 'starter') buttons += proBtn.replace('LABEL', 'Upgrade to Pro · $49/mo');
+                else if (plan === 'pro') buttons += starterBtn.replace('LABEL', 'Switch to Starter · $29/mo');
+                buttons += cancelBtn + manageBtn;
             } else {
                 if (summary) summary.textContent = 'Current plan: ' + planName + (paused ? ' (paused)' : '') + '. Upgrade to start monthly autopay. Stripe hosts the card form. Nothing changes and nothing is charged until checkout is finished.';
                 buttons += starterBtn.replace('LABEL', (plan === 'free' ? 'Upgrade to Starter' : 'Subscribe Starter') + ' · $29/mo');
@@ -5522,12 +5569,14 @@
                 if (tenant.stripeCustomerId) buttons += manageBtn;
             }
             if (actions) actions.innerHTML = buttons;
+            syncTenantBillingUntil(tenant);
         }
 
         var SCHEDI_BILLING_ERRORS = {
-            already_subscribed: 'You already have this plan. Use Manage billing to update your card or cancel.',
+            already_subscribed: 'You already have this plan. Use Manage billing to update your card, or Cancel subscription to stop renewal at the end of the paid period.',
             session_required: 'Please log in again to manage billing.',
-            complimentary_no_charge: 'Complimentary Pro is not billed in Stripe.',
+            complimentary_no_charge: 'Complimentary plans are unaffected.',
+            not_found: 'Could not schedule that billing change from this screen. Use Manage billing. Cancellation takes effect at the end of the current paid billing period.',
             owner_email_missing: 'Add an owner email to your profile before subscribing.',
             subscription_lookup_failed: 'Could not check your current subscription. Try again in a minute.'
         };
@@ -5664,13 +5713,18 @@
                 var data = await res.json();
                 if (!data || !data.ok) return;
                 var changed = false;
-                ['subscriptionStatus', 'stripeCustomerId', 'stripeSubscriptionId', 'plan', 'monthlyPrice', 'paymentForm'].forEach(function (k) {
+                ['subscriptionStatus', 'stripeCustomerId', 'stripeSubscriptionId', 'plan', 'monthlyPrice', 'paymentForm', 'currentPeriodEnd'].forEach(function (k) {
                     if (data[k] === undefined || data[k] === null || data[k] === '') return;
                     if (tenant[k] !== data[k]) {
                         tenant[k] = data[k];
                         changed = true;
                     }
                 });
+                if (typeof data.cancelAtPeriodEnd === 'boolean' && tenant.cancelAtPeriodEnd !== data.cancelAtPeriodEnd) {
+                    tenant.cancelAtPeriodEnd = data.cancelAtPeriodEnd;
+                    changed = true;
+                    if (!data.cancelAtPeriodEnd) tenant.currentPeriodEnd = data.currentPeriodEnd || '';
+                }
                 if (changed) {
                     saveState();
                     renderTenantBilling(tenant);
@@ -5749,6 +5803,63 @@
                 showToast('Could not reach billing. Try again.', 'error');
             }
             renderTenantBilling(tenant);
+        };
+
+        async function postSchediBillingAction(path, buttonId, pendingLabel) {
+            var tenant = getTenant();
+            if (!tenant) return null;
+            if (isComplimentaryPro(tenant)) {
+                showToast('Complimentary plans are unaffected.', 'info');
+                return null;
+            }
+            var btn = document.getElementById(buttonId);
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = pendingLabel;
+            }
+            try {
+                var res = await fetch(SCHEDI_BILLING_BASE + path, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tenantId: tenant.id, session: schediAuthSession() })
+                });
+                var data = {};
+                try { data = await res.json(); } catch (e) { data = {}; }
+                if (!res.ok || !data.ok) {
+                    showToast(SCHEDI_BILLING_ERRORS[data.error] || data.error || ('Billing unavailable (' + res.status + ')'), 'error');
+                    renderTenantBilling(tenant);
+                    return null;
+                }
+                return data;
+            } catch (err) {
+                showToast('Could not reach billing. Try again.', 'error');
+                renderTenantBilling(tenant);
+                return null;
+            }
+        }
+
+        window.cancelSchediSubscription = async function() {
+            var tenant = getTenant();
+            if (!tenant) return;
+            if (!window.confirm('Cancel at the end of the current paid period? You keep access until then and are not charged again.')) return;
+            var data = await postSchediBillingAction('/cancel', 'cancelBillingBtn', 'Scheduling cancellation...');
+            if (!data) return;
+            tenant.cancelAtPeriodEnd = true;
+            if (data.activeUntil) tenant.currentPeriodEnd = data.activeUntil;
+            saveState();
+            renderTenantBilling(tenant);
+            showToast(ownerPlanActiveUntilText(tenant.currentPeriodEnd) || 'Your plan stays active until the end of the current paid billing period.', 'success');
+        };
+
+        window.resumeSchediSubscription = async function() {
+            var tenant = getTenant();
+            if (!tenant) return;
+            var data = await postSchediBillingAction('/resume', 'resumeBillingBtn', 'Resuming...');
+            if (!data) return;
+            tenant.cancelAtPeriodEnd = false;
+            saveState();
+            renderTenantBilling(tenant);
+            showToast('Subscription resumed. It will renew at the end of the period.', 'success');
         };
 
         window.openSubPaymentModal = function() {

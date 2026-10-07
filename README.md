@@ -9,7 +9,9 @@ The accepted Connect configuration is in [connect-recommend-plan.md](connect-rec
 - The owner portal embeds `account_onboarding`, `notification_banner`, `account_management`, `payments`, and `payouts`.
 - Card checkout and the deposit stay hidden until `configuration.merchant.capabilities.card_payments.status` and `configuration.merchant.capabilities.stripe_balance.payouts.status` are both `active`.
 - Owner subscriptions (Free $0, Starter $29/month, Pro $49/month) stay on the Schedi platform account. Schedi reuses one customer per owner and does not pass `customer_account`.
-- A failed or canceled owner subscription pauses the public page. A failed client card does not.
+- Plans are month-to-month, with no contract. Cancel anytime. Cancellation takes effect at the end of the current paid billing period; the owner keeps access until then and is not charged again. The Connect app sets Stripe `cancel_at_period_end=true` and shows "Your plan stays active until <date>". Resume is available before the period ends. The public page pauses when Stripe sends `customer.subscription.deleted` at period end, not when the owner requests cancellation.
+- New subscribers may request a full refund of their first payment within 15 days by emailing admin@schedi.app with the business name and the charge date. Renewal payments are not refunded or prorated, except at Schedi's discretion for billing errors or service outages. Complimentary plans are unaffected. This covers Schedi plan fees, not a client's appointment deposit or a payment a business collects from its own customer.
+- A failed owner subscription, or one that has ended, pauses the public page. A failed client card does not.
 - Cash App, Zelle, Venmo, PayPal, and pay-at-appointment never touch the connected account.
 
 ## Run

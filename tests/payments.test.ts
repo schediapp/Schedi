@@ -13,6 +13,8 @@ function business(overrides: Partial<Business> = {}): Business {
     plan: "pro",
     subscriptionStatus: "active",
     stripeSubscriptionId: "sub",
+    cancelAtPeriodEnd: false,
+    currentPeriodEnd: null,
     stripeAccountId: "acct_northwind",
     cardPaymentsStatus: "active",
     payoutsStatus: "active",

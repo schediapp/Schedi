@@ -37,6 +37,10 @@ export interface Business {
   plan: Plan;
   subscriptionStatus: SubscriptionStatus;
   stripeSubscriptionId: string | null;
+  /** True after the owner asks to cancel. Access continues until currentPeriodEnd. */
+  cancelAtPeriodEnd: boolean;
+  /** ISO timestamp for the end of the paid period, when Stripe has one. */
+  currentPeriodEnd: string | null;
   stripeAccountId: string | null;
   cardPaymentsStatus: string | null;
   payoutsStatus: string | null;

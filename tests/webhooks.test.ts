@@ -120,8 +120,67 @@ describe("webhook separation", () => {
     expect(store.getBusiness(failed.business.id).subscriptionStatus).toBe("past_due");
     expect(isPublicPageLive(store.getBusiness(failed.business.id).subscriptionStatus)).toBe(false);
     expect(store.getBusiness(canceled.business.id).subscriptionStatus).toBe("canceled");
+    expect(store.getBusiness(canceled.business.id).cancelAtPeriodEnd).toBe(false);
     expect(isPublicPageLive(store.getBusiness(canceled.business.id).subscriptionStatus)).toBe(false);
     expect(store.getBusiness(canceled.business.id).plan).toBe("pro");
+  });
+
+  it("keeps access when cancellation is scheduled and ignores a canceled update", () => {
+    const store = memoryStore();
+    const scheduled = seedProBusiness(store, {
+      email: "later@example.com",
+      slug: "later",
+      stripeSubscriptionId: "sub_later",
+    });
+    const premature = seedProBusiness(store, {
+      email: "early@example.com",
+      slug: "early",
+      stripeSubscriptionId: "sub_early",
+    });
+
+    applyStripeEvent(
+      store,
+      event({
+        id: "evt_cancel_scheduled",
+        type: "customer.subscription.updated",
+        data: {
+          object: {
+            id: "sub_later",
+            status: "active",
+            cancel_at_period_end: true,
+            cancel_at: 1794009600,
+            metadata: { schedi_owner_id: scheduled.owner.id, plan: "pro" },
+          },
+        },
+      }),
+    );
+    applyStripeEvent(
+      store,
+      event({
+        id: "evt_cancel_request_status",
+        type: "customer.subscription.updated",
+        data: {
+          object: {
+            id: "sub_early",
+            status: "canceled",
+            cancel_at_period_end: true,
+            metadata: { schedi_owner_id: premature.owner.id, plan: "pro" },
+          },
+        },
+      }),
+    );
+
+    const kept = store.getBusiness(scheduled.business.id);
+    expect(kept.subscriptionStatus).toBe("active");
+    expect(kept.cancelAtPeriodEnd).toBe(true);
+    expect(kept.currentPeriodEnd).toBe("2026-11-07T00:00:00.000Z");
+    expect(kept.plan).toBe("pro");
+    expect(isPublicPageLive(kept.subscriptionStatus)).toBe(true);
+
+    const untouched = store.getBusiness(premature.business.id);
+    expect(untouched.subscriptionStatus).toBe("active");
+    expect(untouched.cancelAtPeriodEnd).toBe(false);
+    expect(isPublicPageLive(untouched.subscriptionStatus)).toBe(true);
   });
 
   it("activates a platform subscription checkout without touching a connected account", () => {
