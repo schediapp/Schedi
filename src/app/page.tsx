@@ -1,6 +1,7 @@
 import { SiteHeader } from "@/components/site-header";
 import { isPublicPageLive } from "@/lib/readiness";
 import { getStore } from "@/lib/store";
+import { OWNER_SUBSCRIPTION_POLICY_SHORT } from "@/lib/subscription-policy";
 import { PLANS } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -20,6 +21,7 @@ export default function HomePage() {
               Schedi is {formatPlanPrices()}. A Pro business can turn on cards. The charge is created on that
               business&apos;s account, in the business&apos;s name, and Schedi does not take a cut.
             </p>
+            <p className="muted" style={{ marginTop: 14 }}>{OWNER_SUBSCRIPTION_POLICY_SHORT}</p>
           </div>
           <div className="panel">
             <h2>Owner portal</h2>

@@ -2,6 +2,9 @@ import type Stripe from "stripe";
 import { openStore, type Store } from "../src/lib/db";
 import type { Business, Service } from "../src/lib/types";
 
+export const FAKE_PERIOD_END_UNIX = 1794009600;
+export const FAKE_PERIOD_END_ISO = "2026-11-07T00:00:00.000Z";
+
 export interface RecordedCall {
   method: string;
   args: unknown[];
@@ -95,11 +98,13 @@ export function createFakeStripe() {
         metadata: { plan: "starter", schedi_owner_id: "owner" },
         items: { data: [{ id: "si_1" }] },
       })) as (...args: never[]) => unknown),
-      update: record("subscriptions.update", (async (id: string, params: { metadata?: Stripe.MetadataParam }) => ({
+      update: record("subscriptions.update", (async (id: string, params: { metadata?: Stripe.MetadataParam; cancel_at_period_end?: boolean }) => ({
         id,
         status: "active",
+        cancel_at_period_end: params.cancel_at_period_end === true,
+        cancel_at: params.cancel_at_period_end ? FAKE_PERIOD_END_UNIX : null,
         metadata: params.metadata,
-        items: { data: [{ id: "si_1" }] },
+        items: { data: [{ id: "si_1", current_period_end: FAKE_PERIOD_END_UNIX }] },
       })) as (...args: never[]) => unknown),
       cancel: record("subscriptions.cancel", (async (id: string) => ({
         id,

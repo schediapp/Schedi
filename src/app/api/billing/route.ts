@@ -1,5 +1,5 @@
 import { currentOwner } from "@/lib/auth";
-import { cancelOwnerSubscription, startOwnerSubscription } from "@/lib/billing";
+import { cancelOwnerSubscription, resumeOwnerSubscription, startOwnerSubscription } from "@/lib/billing";
 import { errorMessage, publicOrigin, redirectTo } from "@/lib/http";
 import { getStore } from "@/lib/store";
 import { getStripe } from "@/lib/stripe";
@@ -19,6 +19,10 @@ export async function POST(request: Request) {
     const stripe = getStripe();
     if (plan === "cancel") {
       await cancelOwnerSubscription(store, stripe, owner.id);
+      return redirectTo(request, "/portal", { updated: "1" });
+    }
+    if (plan === "resume") {
+      await resumeOwnerSubscription(store, stripe, owner.id);
       return redirectTo(request, "/portal", { updated: "1" });
     }
     if (plan !== "starter" && plan !== "pro") {

@@ -8,6 +8,7 @@ import { isCardCheckoutReady, isPublicPageLive } from "@/lib/readiness";
 import { formatSlot } from "@/lib/slots";
 import { getStore } from "@/lib/store";
 import { stripeOrNull } from "@/lib/stripe";
+import { OWNER_SUBSCRIPTION_POLICY_SHORT, planStaysActiveUntil } from "@/lib/subscription-policy";
 import { PLANS } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -61,7 +62,7 @@ export default async function PortalPage({
           {query.updated ? <p className="note">Subscription updated.</p> : null}
           {!live ? (
             <p className="banner warn">
-              A failed or canceled subscription pauses the public page. A failed client card does not.
+              A failed payment or a subscription that has ended pauses the public page. A failed client card does not.
             </p>
           ) : null}
         </section>
@@ -71,9 +72,10 @@ export default async function PortalPage({
             <h2>Card payments</h2>
             {business.plan !== "pro" || business.subscriptionStatus !== "active" ? (
               <>
-                <p className="muted" style={{ margin: "8px 0 16px" }}>
+                <p className="muted" style={{ margin: "8px 0 12px" }}>
                   Card payments are on an active Pro plan ({formatUsd(PLANS.pro.monthlyCents)} a month). Cash App, Zelle, Venmo, PayPal, and pay-at-appointment stay available on every plan.
                 </p>
+                <p className="muted" style={{ margin: "0 0 16px" }}>{OWNER_SUBSCRIPTION_POLICY_SHORT}</p>
                 <form method="post" action="/api/billing">
                   <input type="hidden" name="plan" value="pro" />
                   <button type="submit">Subscribe to Pro</button>
@@ -131,9 +133,13 @@ export default async function PortalPage({
           <div className="stack">
             <form className="panel" method="post" action="/api/billing">
               <h2>Subscription</h2>
-              <p className="muted" style={{ margin: "8px 0 16px" }}>
+              <p className="muted" style={{ margin: "8px 0 12px" }}>
                 Owner billing stays on the Schedi Stripe account. Free is {formatUsd(0)}, Starter is {formatUsd(2900)}, Pro is {formatUsd(4900)}.
               </p>
+              <p className="muted" style={{ margin: "0 0 16px" }}>{OWNER_SUBSCRIPTION_POLICY_SHORT}</p>
+              {business.cancelAtPeriodEnd && business.currentPeriodEnd ? (
+                <p className="note">{planStaysActiveUntil(business.currentPeriodEnd)}</p>
+              ) : null}
               <div className="actions">
                 {business.plan !== "starter" ? (
                   <button className="secondary" name="plan" value="starter" type="submit">Starter · $29/mo</button>
@@ -144,7 +150,12 @@ export default async function PortalPage({
                   <button className="secondary" name="plan" value="pro" type="submit" disabled>Pro is current</button>
                 )}
               </div>
-              {business.stripeSubscriptionId && business.subscriptionStatus !== "canceled" && business.subscriptionStatus !== "none" ? (
+              {business.cancelAtPeriodEnd && business.stripeSubscriptionId && business.subscriptionStatus !== "canceled" ? (
+                <div style={{ marginTop: 12 }}>
+                  <button className="secondary" name="plan" value="resume" type="submit">Resume subscription</button>
+                </div>
+              ) : null}
+              {!business.cancelAtPeriodEnd && business.stripeSubscriptionId && business.subscriptionStatus !== "canceled" && business.subscriptionStatus !== "none" ? (
                 <div style={{ marginTop: 12 }}>
                   <button className="secondary" name="plan" value="cancel" type="submit">Cancel subscription</button>
                 </div>
