@@ -38,6 +38,7 @@ describe("owner subscription refund and cancellation policy", () => {
   });
 
   it("schedules cancel at period end and downgrades only when the subscription is deleted", () => {
+    expect(billing).toContain("custom_text: ownerCheckoutCustomText()");
     expect(billing).toContain("cancel_at_period_end: true");
     expect(billing).toContain("cancel_at_period_end: false");
     expect(billing).not.toContain("subscriptions.cancel");

@@ -2,6 +2,7 @@ import type Stripe from "stripe";
 import type { Store } from "./db";
 import { SchediError } from "./errors";
 import { assertNoForbiddenKeys, integrationIdentifier } from "./statement";
+import { ownerCheckoutCustomText } from "./public-owner-billing";
 import { applySubscriptionState } from "./subscription-state";
 import type { Owner, Plan } from "./types";
 import { PLANS } from "./types";
@@ -89,6 +90,7 @@ export async function startOwnerSubscription(
     subscription_data: {
       metadata: { schedi_owner_id: owner.id, plan },
     },
+    custom_text: ownerCheckoutCustomText(),
     integration_identifier: integrationIdentifier("schedi_owner_sub"),
   };
   assertNoForbiddenKeys(params);

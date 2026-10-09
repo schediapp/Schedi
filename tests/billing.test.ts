@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { cancelOwnerSubscription, ensureOwnerCustomer, resumeOwnerSubscription, startOwnerSubscription } from "../src/lib/billing";
 import { isPublicPageLive } from "../src/lib/readiness";
-import { planStaysActiveUntil } from "../src/lib/subscription-policy";
+import { OWNER_SUBSCRIPTION_POLICY_SHORT, planStaysActiveUntil } from "../src/lib/subscription-policy";
+import { STRIPE_CHECKOUT_SUBMIT_MESSAGE_MAX } from "../src/lib/public-owner-billing";
 import { PLANS } from "../src/lib/types";
 import { createFakeStripe, FAKE_PERIOD_END_ISO, keysDeep, memoryStore, seedProBusiness } from "./helpers";
 
@@ -30,12 +31,17 @@ describe("owner subscriptions on the platform account", () => {
       customer: string;
       line_items: Array<{ price: string }>;
       integration_identifier: string;
+      custom_text?: { submit?: { message?: string } };
     };
     const options = checkout?.args[1] as { stripeAccount?: string } | undefined;
     expect(params.mode).toBe("subscription");
     expect(params.customer).toBe("cus_existing");
     expect(params.line_items[0]?.price).toBe("price_schedi_pro_monthly");
     expect(params.integration_identifier).toMatch(/^schedi_owner_sub_[a-z]{8}$/);
+    expect(params).toMatchObject({
+      custom_text: { submit: { message: OWNER_SUBSCRIPTION_POLICY_SHORT } },
+    });
+    expect(OWNER_SUBSCRIPTION_POLICY_SHORT.length).toBeLessThanOrEqual(STRIPE_CHECKOUT_SUBMIT_MESSAGE_MAX);
     expect(options?.stripeAccount).toBeUndefined();
     expect(keysDeep(params).has("customer_account")).toBe(false);
     expect(keysDeep(params).has("application_fee_amount")).toBe(false);
