@@ -194,6 +194,74 @@ describe("crawler files and app routes", () => {
     expect(await response.text()).not.toContain("<title>");
   });
 
+  it("returns 304 when a conditional asset request matches the ETag", async () => {
+    const etag = '"logo-v1"';
+    let forwarded: string | null = null;
+    const assets: SchediEnv["ASSETS"] = {
+      async fetch(request: Request) {
+        forwarded = request.headers.get("if-none-match");
+        const path = new URL(request.url).pathname;
+        if (path === "/assets/logo-dark.svg" && forwarded === etag) {
+          return new Response(null, {
+            status: 304,
+            statusText: "Not Modified",
+            headers: {
+              ETag: etag,
+              "Cache-Control": "public, max-age=86400",
+              "Content-Length": "1200",
+              "Content-Type": "image/svg+xml",
+            },
+          });
+        }
+        return new Response("missing", { status: 404, headers: { "content-type": "text/plain" } });
+      },
+    };
+    const response = await handleRequest(
+      new Request("https://schedi.app/assets/logo-dark.svg", {
+        headers: { "If-None-Match": etag },
+      }),
+      envWith(assets),
+      ctx(),
+    );
+    expect(forwarded).toBe(etag);
+    expect(response.status).toBe(304);
+    expect(response.statusText).toBe("Not Modified");
+    expect(response.headers.get("etag")).toBe(etag);
+    expect(response.headers.get("cache-control")).toBe("public, max-age=86400");
+    expect(response.headers.get("content-type")).toBe("image/svg+xml");
+    expect(response.headers.get("content-length")).toBe("1200");
+    expect(response.headers.get("strict-transport-security")).toBe("max-age=31536000");
+    expect(response.headers.get("x-content-type-options")).toBe("nosniff");
+    expect(response.headers.get("referrer-policy")).toBe("strict-origin-when-cross-origin");
+    expect(response.body).toBeNull();
+    expect(await response.text()).toBe("");
+  });
+
+  it("passes other 3xx asset responses through with security headers", async () => {
+    const assets: SchediEnv["ASSETS"] = {
+      async fetch() {
+        return new Response("moved", {
+          status: 301,
+          headers: {
+            Location: "https://schedi.app/assets/logo-dark.svg",
+            "Cache-Control": "public, max-age=3600",
+            "Content-Type": "text/plain; charset=utf-8",
+          },
+        });
+      },
+    };
+    const response = await handleRequest(
+      new Request("https://schedi.app/assets/logo.svg"),
+      envWith(assets),
+      ctx(),
+    );
+    expect(response.status).toBe(301);
+    expect(response.headers.get("location")).toBe("https://schedi.app/assets/logo-dark.svg");
+    expect(response.headers.get("cache-control")).toBe("public, max-age=3600");
+    expect(response.headers.get("x-content-type-options")).toBe("nosniff");
+    expect(await response.text()).toBe("moved");
+  });
+
   it("indexes a tenant page only when seoPublic is true", async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const target = String(input);
