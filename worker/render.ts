@@ -55,6 +55,24 @@ ${urls}
 `;
 }
 
+// Theme toggle for marketing pages. Served as an external file (CSP: script-src 'self').
+// Shares the app's localStorage key "schedi.theme" so the choice carries into the portal.
+export const THEME_SCRIPT_PATH = "/marketing-theme.js";
+export function renderMarketingTheme(): string {
+  return `(function(){
+var d=document.documentElement,K="schedi.theme";
+function stored(){try{var v=localStorage.getItem(K);return v==="light"||v==="dark"?v:null;}catch(e){return null;}}
+function sys(){try{return window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark";}catch(e){return "dark";}}
+function apply(m){d.setAttribute("data-theme",m);d.classList.add("theme-js");
+var c=m==="light"?"#f8fafc":"#06080d";var ms=document.querySelectorAll('meta[name="theme-color"]');for(var i=0;i<ms.length;i++)ms[i].setAttribute("content",c);
+var bs=document.querySelectorAll(".theme-btn");for(var j=0;j<bs.length;j++){var b=bs[j],t=m==="light"?"Switch to dark theme":"Switch to light theme";b.title=t;b.setAttribute("aria-label",t);var l=b.querySelector(".theme-btn-label");if(l)l.textContent=m==="light"?"Dark":"Light";}}
+apply(stored()||sys());
+function wire(){apply(d.getAttribute("data-theme")||"dark");var bs=document.querySelectorAll(".theme-btn");for(var i=0;i<bs.length;i++)bs[i].addEventListener("click",function(){var n=d.getAttribute("data-theme")==="light"?"dark":"light";try{localStorage.setItem(K,n);}catch(e){}apply(n);});}
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",wire);else wire();
+})();
+`;
+}
+
 export function renderMarketingBoot(): string {
   // Intentionally a no-op: "/" must stay on the landing page for everyone.
   // Logged-in owners reach the portal via Log in (/?portal=login).
@@ -134,14 +152,13 @@ function siteHeader(): string {
   return `<header class="site-header">
   <div class="wrap bar">
     <a class="brand" href="/" aria-label="Schedi home">
-      <picture>
-        <source srcset="/assets/logo-light.svg" media="(prefers-color-scheme: light)">
-        <img src="/assets/logo-dark.svg" alt="Schedi" width="120" height="32" loading="lazy" decoding="async">
-      </picture>
+      <img class="logo-dark" src="/assets/logo-dark.svg" alt="Schedi" width="120" height="32" loading="lazy" decoding="async">
+      <img class="logo-light" src="/assets/logo-light.svg" alt="Schedi" width="120" height="32" loading="lazy" decoding="async">
     </a>
     <nav class="nav" aria-label="Primary">
       <a class="nav-link" href="/pricing">Pricing</a>
       <a class="nav-link" href="/help">Help</a>
+      <button type="button" class="theme-btn" title="Switch theme" aria-label="Switch theme"><svg class="ico i-sun" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg><svg class="ico i-moon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg><span class="theme-btn-label">Light</span></button>
       <a class="btn btn-ghost btn-sm login" href="${LOGIN_HREF}">${icon("login")}<span>Log in</span></a>
       <a class="btn btn-primary btn-sm" href="/signup"><span class="hide-xs">Get started free</span><span class="show-xs">Sign up</span></a>
     </nav>
@@ -157,7 +174,7 @@ function footer(): string {
   <div class="wrap">
     <div class="foot-top">
       <div>
-        <picture><source srcset="/assets/logo-light.svg" media="(prefers-color-scheme: light)"><img class="foot-logo" src="/assets/logo-dark.svg" alt="Schedi" width="110" height="30" loading="lazy"></picture>
+        <img class="foot-logo logo-dark" src="/assets/logo-dark.svg" alt="Schedi" width="110" height="30" loading="lazy"><img class="foot-logo logo-light" src="/assets/logo-light.svg" alt="Schedi" width="110" height="30" loading="lazy">
         <p class="muted">Simple online booking for small service businesses.</p>
       </div>
       <nav aria-label="Schedi for">
@@ -331,6 +348,20 @@ function ctaBand(): string {
 const CSS = `
 :root{color-scheme:dark;--bg:#06080d;--bg2:#0b111c;--card:#0f1724;--line:#1e293b;--text:#e2e8f0;--head:#f8fafc;--muted:#94a3b8;--brand:#10b981;--brand2:#34d399;--brand-ink:#04130d;--brand-soft:rgba(16,185,129,.12);--shadow:0 20px 50px -24px rgba(0,0,0,.7)}
 @media (prefers-color-scheme:light){:root{color-scheme:light;--bg:#f8fafc;--bg2:#eef7f3;--card:#ffffff;--line:#e2e8f0;--text:#334155;--head:#0f172a;--muted:#64748b;--brand:#059669;--brand2:#047857;--brand-ink:#ffffff;--brand-soft:rgba(16,185,129,.1);--shadow:0 20px 40px -24px rgba(15,23,42,.25)}}
+:root[data-theme=light]{color-scheme:light;--bg:#f8fafc;--bg2:#eef7f3;--card:#ffffff;--line:#e2e8f0;--text:#334155;--head:#0f172a;--muted:#64748b;--brand:#059669;--brand2:#047857;--brand-ink:#ffffff;--brand-soft:rgba(16,185,129,.1);--shadow:0 20px 40px -24px rgba(15,23,42,.25)}
+:root[data-theme=dark]{color-scheme:dark;--bg:#06080d;--bg2:#0b111c;--card:#0f1724;--line:#1e293b;--text:#e2e8f0;--head:#f8fafc;--muted:#94a3b8;--brand:#10b981;--brand2:#34d399;--brand-ink:#04130d;--brand-soft:rgba(16,185,129,.12);--shadow:0 20px 50px -24px rgba(0,0,0,.7)}
+.logo-light{display:none}
+@media (prefers-color-scheme:light){.logo-dark{display:none}.logo-light{display:inline}}
+:root[data-theme=dark] .logo-dark{display:inline}:root[data-theme=dark] .logo-light{display:none}
+:root[data-theme=light] .logo-dark{display:none}:root[data-theme=light] .logo-light{display:inline}
+.theme-btn{display:none;align-items:center;justify-content:center;gap:.35rem;padding:.375rem .7rem;min-height:2rem;border-radius:.75rem;font:inherit;font-size:.75rem;font-weight:700;line-height:1.2;cursor:pointer;transition:background-color .15s,color .15s,border-color .15s;background:#ffffff;color:#0f172a;border:1px solid #d7dee8;box-shadow:0 1px 2px rgba(15,23,42,.08)}
+.theme-js .theme-btn{display:inline-flex}
+.theme-btn:hover{background:#f4f7fb;border-color:#cbd5e1;color:#020617}
+.theme-btn:focus-visible{outline:2px solid #10b981;outline-offset:2px}
+.theme-btn .ico{width:.9rem;height:.9rem}.theme-btn .i-moon{display:none}
+:root[data-theme=light] .theme-btn{background:#0f172a;color:#f1f5f9;border-color:#334155;box-shadow:none}
+:root[data-theme=light] .theme-btn:hover{background:#1e293b;border-color:#475569;color:#fff}
+:root[data-theme=light] .theme-btn .i-sun{display:none}:root[data-theme=light] .theme-btn .i-moon{display:inline}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--text);line-height:1.6;overflow-x:hidden}
@@ -440,7 +471,7 @@ figure img,figure video{max-width:100%;height:auto;border-radius:12px}
 .site-footer a{color:var(--muted);text-decoration:none}.site-footer a:hover{color:var(--brand2)}
 @media (max-width:900px){.hero-grid{grid-template-columns:1fr;gap:2.5rem}.grid3,.steps{grid-template-columns:1fr 1fr}.plans{grid-template-columns:1fr;max-width:460px;margin-left:auto;margin-right:auto}.plan.popular{order:-1}.blurb{min-height:0}.foot-top{grid-template-columns:1fr 1fr}.foot-top>div:first-child{grid-column:1/-1}}
 @media (max-width:640px){.wrap{width:calc(100% - 2rem)}.nav-link{display:none}.hero-sec{padding:2.5rem 0 2.5rem}.grid3,.steps{grid-template-columns:1fr}.ctas .btn{flex:1 1 100%}.sec{padding:3rem 0}.band{padding:1.5rem}.toast{left:.25rem;bottom:.5rem}th,td{padding:.55rem .5rem}table{font-size:.82rem}}
-@media (max-width:400px){.hide-xs{display:none}.show-xs{display:inline}.brand img{height:28px}.btn-sm{padding:.48rem .7rem;font-size:.86rem}.login .ico{display:none}.bar{gap:.4rem}}
+@media (max-width:400px){.theme-btn{padding:.375rem .5rem}.theme-btn-label{display:none}.hide-xs{display:none}.show-xs{display:inline}.brand img{height:28px}.btn-sm{padding:.48rem .7rem;font-size:.86rem}.login .ico{display:none}.bar{gap:.4rem}}
 `;
 
 export function renderMarketingPage(page: MarketingPage): string {
@@ -486,6 +517,7 @@ export function renderMarketingPage(page: MarketingPage): string {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="${THEME_SCRIPT_PATH}"></script>
 <meta name="theme-color" content="#06080d" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#f8fafc" media="(prefers-color-scheme: light)">
 <title>${title}</title>

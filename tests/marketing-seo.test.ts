@@ -303,3 +303,13 @@ describe("crawler files and app routes", () => {
     ).toEqual({ name: "Bright Cuts", industry: "Barber", slug: "bright-cuts", seoPublic: true });
   });
 });
+
+import { renderMarketingTheme, THEME_SCRIPT_PATH } from "../worker/render";
+describe("marketing theme toggle", () => {
+  it("uses the app's schedi.theme key and never redirects", () => {
+    const js = renderMarketingTheme();
+    expect(THEME_SCRIPT_PATH).toBe("/marketing-theme.js");
+    expect(js).toContain('"schedi.theme"');
+    expect(js).not.toMatch(/location|replace\(|href\s*=/);
+  });
+});

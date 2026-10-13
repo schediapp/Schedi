@@ -7,6 +7,8 @@ import {
   HERO_PATH,
   HERO_SVG,
   renderMarketingBoot,
+  renderMarketingTheme,
+  THEME_SCRIPT_PATH,
   renderMarketingPage,
   renderNotFound,
   renderRobots,
@@ -55,6 +57,7 @@ const RESERVED = new Set([
   "for",
   "pricing",
   "marketing-boot.js",
+  "marketing-theme.js",
 ]);
 
 const STATIC_TYPES: Record<string, string> = {
@@ -150,7 +153,7 @@ function hasFileExtension(pathname: string): boolean {
 }
 
 function isStaticFile(pathname: string): boolean {
-  if (pathname === HERO_PATH || pathname === "/marketing-boot.js") return false;
+  if (pathname === HERO_PATH || pathname === "/marketing-boot.js" || pathname === THEME_SCRIPT_PATH) return false;
   if (pathname === "/robots.txt" || pathname === "/sitemap.xml") return false;
   if (STATIC_TYPES[pathname]) return true;
   if (pathname.startsWith("/assets/")) return true;
@@ -434,6 +437,15 @@ export async function handleRequest(request: Request, env: SchediEnv, ctx: Sched
       renderSitemap(),
       200,
       "application/xml; charset=utf-8",
+      { "Cache-Control": "public, max-age=3600" },
+      method,
+    );
+  }
+  if (collapsed === THEME_SCRIPT_PATH) {
+    return textResponse(
+      renderMarketingTheme(),
+      200,
+      "text/javascript; charset=utf-8",
       { "Cache-Control": "public, max-age=3600" },
       method,
     );
