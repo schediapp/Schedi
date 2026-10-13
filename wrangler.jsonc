@@ -1,9 +1,9 @@
 {
   // Public site worker for schedi.app. Marketing HTML is rendered in the script.
-  // The SPA shell and existing files (logos, help videos, icons) are static assets.
-  // site/ currently contains the app shell only. Do not deploy over production
-  // until the live asset bucket (logos, help videos, favicon, manifest) is in site/.
-  // /api/* and /billing/* stay on their more specific workers.
+  // Git's site/ is the SPA shell (index.html) only. Logos, help videos, favicon,
+  // manifests, and _headers stay in the deploy directory and are copied in beside
+  // that shell at deploy time. See README. /api/* and /billing/* stay on their
+  // more specific workers.
   "name": "schedi-web",
   "compatibility_date": "2026-10-13",
   "main": "worker/index.ts",
@@ -27,5 +27,9 @@
       "enabled": true,
       "head_sampling_rate": 0.01
     }
-  }
+  },
+  "routes": [
+    { "pattern": "schedi.app/*", "zone_name": "schedi.app" },
+    { "pattern": "www.schedi.app/*", "zone_name": "schedi.app" }
+  ]
 }
