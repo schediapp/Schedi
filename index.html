@@ -97,6 +97,12 @@
         html.schedi-light .glass-card { background: #ffffff; border-color: #d7dee8; color: #0f172a; }
         html.schedi-light .glass-input { background: #ffffff; color: #0f172a; border-color: #94a3b8; }
         html.schedi-light .text-white { color: #0f172a !important; }
+        /* Light theme: darker green/amber text for WCAG AA (>=4.5:1) */
+        html.schedi-light .schedi-compare-cards .bg-slate-900\/60 { background-color: #f8fafc !important; }
+        html.schedi-light .text-brand-200, html.schedi-light .text-brand-300, html.schedi-light .text-brand-400, html.schedi-light .text-brand-500,
+        html.schedi-light .text-emerald-200, html.schedi-light .text-emerald-300, html.schedi-light .text-emerald-400, html.schedi-light .text-emerald-500 { color: #047857 !important; }
+        html.schedi-light .text-amber-200, html.schedi-light .text-amber-300, html.schedi-light .text-amber-400, html.schedi-light .text-amber-500,
+        html.schedi-light .text-amber-200\/80, html.schedi-light .text-amber-400\/90 { color: #b45309 !important; }
         html.schedi-light .text-slate-200 { color: #1e293b !important; }
         html.schedi-light .text-slate-300 { color: #334155 !important; }
         html.schedi-light .text-slate-400,
@@ -2683,6 +2689,7 @@
             populateTenantSelect();
             updateLivePreviewControlsVisibility();
             if (window.db) attachCloudDbSync();
+            try { applySchediTheme(localStorage.getItem('schedi.theme') === 'light' ? 'light' : 'dark'); } catch (errTheme) { applySchediTheme('dark'); }
             if (isSignupRoute()) {
                 showSignupPage();
                 return;
@@ -2703,7 +2710,6 @@
                 showHelpPage();
                 return;
             }
-            try { applySchediTheme(localStorage.getItem('schedi.theme') === 'light' ? 'light' : 'dark'); } catch (errTheme) { applySchediTheme('dark'); }
             consumeBillingReturn();
             if (bootPublicOrAgency()) return;
             // F0002: restore Business Portal session across reload before painting login UI.
@@ -11155,6 +11161,12 @@
         html.schedi-light .glass-card { background: #ffffff; border-color: #d7dee8; color: #0f172a; }
         html.schedi-light .glass-input { background: #ffffff; color: #0f172a; border-color: #94a3b8; }
         html.schedi-light .text-white { color: #0f172a !important; }
+        /* Light theme: darker green/amber text for WCAG AA (>=4.5:1) */
+        html.schedi-light .schedi-compare-cards .bg-slate-900\/60 { background-color: #f8fafc !important; }
+        html.schedi-light .text-brand-200, html.schedi-light .text-brand-300, html.schedi-light .text-brand-400, html.schedi-light .text-brand-500,
+        html.schedi-light .text-emerald-200, html.schedi-light .text-emerald-300, html.schedi-light .text-emerald-400, html.schedi-light .text-emerald-500 { color: #047857 !important; }
+        html.schedi-light .text-amber-200, html.schedi-light .text-amber-300, html.schedi-light .text-amber-400, html.schedi-light .text-amber-500,
+        html.schedi-light .text-amber-200\/80, html.schedi-light .text-amber-400\/90 { color: #b45309 !important; }
         html.schedi-light .text-slate-200 { color: #1e293b !important; }
         html.schedi-light .text-slate-300 { color: #334155 !important; }
         html.schedi-light .text-slate-400 { color: #475569 !important; }

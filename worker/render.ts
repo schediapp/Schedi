@@ -347,8 +347,8 @@ function ctaBand(): string {
 
 const CSS = `
 :root{color-scheme:dark;--bg:#06080d;--bg2:#0b111c;--card:#0f1724;--line:#1e293b;--text:#e2e8f0;--head:#f8fafc;--muted:#94a3b8;--brand:#10b981;--brand2:#34d399;--brand-ink:#04130d;--brand-soft:rgba(16,185,129,.12);--shadow:0 20px 50px -24px rgba(0,0,0,.7)}
-@media (prefers-color-scheme:light){:root{color-scheme:light;--bg:#f8fafc;--bg2:#eef7f3;--card:#ffffff;--line:#e2e8f0;--text:#334155;--head:#0f172a;--muted:#64748b;--brand:#059669;--brand2:#047857;--brand-ink:#ffffff;--brand-soft:rgba(16,185,129,.1);--shadow:0 20px 40px -24px rgba(15,23,42,.25)}}
-:root[data-theme=light]{color-scheme:light;--bg:#f8fafc;--bg2:#eef7f3;--card:#ffffff;--line:#e2e8f0;--text:#334155;--head:#0f172a;--muted:#64748b;--brand:#059669;--brand2:#047857;--brand-ink:#ffffff;--brand-soft:rgba(16,185,129,.1);--shadow:0 20px 40px -24px rgba(15,23,42,.25)}
+@media (prefers-color-scheme:light){:root{color-scheme:light;--bg:#f8fafc;--bg2:#eef7f3;--card:#ffffff;--line:#e2e8f0;--text:#334155;--head:#0f172a;--muted:#64748b;--brand:#047857;--brand2:#065f46;--brand-ink:#ffffff;--brand-soft:rgba(16,185,129,.1);--shadow:0 20px 40px -24px rgba(15,23,42,.25)}}
+:root[data-theme=light]{color-scheme:light;--bg:#f8fafc;--bg2:#eef7f3;--card:#ffffff;--line:#e2e8f0;--text:#334155;--head:#0f172a;--muted:#64748b;--brand:#047857;--brand2:#065f46;--brand-ink:#ffffff;--brand-soft:rgba(16,185,129,.1);--shadow:0 20px 40px -24px rgba(15,23,42,.25)}
 :root[data-theme=dark]{color-scheme:dark;--bg:#06080d;--bg2:#0b111c;--card:#0f1724;--line:#1e293b;--text:#e2e8f0;--head:#f8fafc;--muted:#94a3b8;--brand:#10b981;--brand2:#34d399;--brand-ink:#04130d;--brand-soft:rgba(16,185,129,.12);--shadow:0 20px 50px -24px rgba(0,0,0,.7)}
 .logo-light{display:none}
 @media (prefers-color-scheme:light){.logo-dark{display:none}.logo-light{display:inline}}
