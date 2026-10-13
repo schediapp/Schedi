@@ -5031,6 +5031,7 @@
             }
             syncAgencyChrome();
             syncPublicHomeFooter();
+            try { updateTenantSelectorVisibility(); } catch (errTs) {}
         }
 
         function updateTenantSelectorVisibility() {
@@ -5038,7 +5039,13 @@
             if (!container) return;
             // Privacy: never expose the full business list to owners or anonymous visitors.
             // Agency HQ master may switch active context for preview / impersonation.
-            if (platformState.isAgencyMasterLoggedIn) {
+            // Never on the Business Owner login screen (privacy: no business list on login).
+            var onOwnerLogin = false;
+            try {
+                var lb = document.getElementById('tenantLoginBox');
+                onOwnerLogin = isPortalLoginRoute() || (platformState.currentMode === 'tenant' && !platformState.isTenantOwnerLoggedIn) || !!(lb && !lb.classList.contains('hidden') && lb.offsetParent);
+            } catch (errLg) {}
+            if (platformState.isAgencyMasterLoggedIn && !onOwnerLogin) {
                 container.classList.remove('hidden');
                 container.classList.add('flex');
             } else {
