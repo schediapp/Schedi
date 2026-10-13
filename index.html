@@ -298,6 +298,11 @@
         @media (max-width: 639px) { .schedi-compare-table { display: none; } .schedi-compare-cards { display: block; } }
     </style>
     <style id="schedi-portal-phone-fit">
+        /* Landing refresh: always-visible Log in on the signup screen (CSS only; portal/session logic untouched). */
+        .schedi-signup-login{display:none;align-items:center;gap:.4rem;padding:.5rem .9rem;border-radius:.75rem;font-weight:800;font-size:.8rem;background:#10b981;color:#04130d;text-decoration:none;box-shadow:0 6px 18px -8px rgba(16,185,129,.7)}
+        .schedi-signup-login:hover{background:#34d399}
+        body:has(#signupSection:not(.hidden)) .schedi-signup-login{display:inline-flex}
+        body:has(#signupSection:not(.hidden)) #platformModeNav{display:none}
         /* Business Portal: keep every card inside the screen on phones (no sideways scroll). */
         #tenantPortalSection, #tenantDashboard, #tenantDashboard > *, #tenantDashboard .glass-card { min-width: 0; max-width: 100%; box-sizing: border-box; }
         #tenantDashboard .glass-card > div, #tenantDashboard .glass-card .min-w-0 { min-width: 0; max-width: 100%; }
@@ -317,12 +322,13 @@
             
             <!-- Platform Brand Logo -->
             <div class="flex items-center">
-                <img id="schediLogo" class="schedi-logo" src="/assets/logo-dark.svg" alt="Schedi" height="36" style="height:36px;width:auto;">
+                <a href="/" id="schediHomeLink" aria-label="Schedi home" class="inline-flex rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400"><img id="schediLogo" class="schedi-logo" src="/assets/logo-dark.svg" alt="Schedi" height="36" style="height:36px;width:auto;"></a>
             </div>
 
             <!-- Platform Navigation & Active Tenant Context -->
             <div class="flex flex-wrap items-center justify-center sm:justify-end gap-2 text-xs">
                 
+                <a id="signupLoginBtn" href="/?portal=login" class="schedi-signup-login" aria-label="Log in to your Business Portal"><i class="fa-solid fa-right-to-bracket" aria-hidden="true"></i><span>Log in</span></a>
                 <div id="platformModeNav" class="flex items-center bg-slate-900/90 p-1 rounded-xl border border-slate-800">
                     <button type="button" id="navModeAgency" onclick="switchPlatformMode('agency')" class="hidden px-3.5 py-1.5 rounded-lg font-medium transition-all text-slate-400 hover:text-white items-center space-x-1.5">
                         <i class="fa-solid fa-chart-pie"></i>

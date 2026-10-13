@@ -15,6 +15,10 @@ export type MarketingPage = {
   /** Hero illustration is the LCP image and is preloaded. */
   hero?: boolean;
   softwareJsonLd?: boolean;
+  /** Rich marketing layout (hero, features, plan cards). Omit for plain article pages. */
+  layout?: "home" | "pricing";
+  /** Short line under the H1 in the rich layouts. */
+  lede?: string;
   faqs: Faq[];
   /** HTML placed inside <article id="copy"> after the H1. Already safe. */
   bodyHtml: string;
@@ -22,6 +26,41 @@ export type MarketingPage = {
 
 const PLAN_FACTS =
   "Free is $0: pay at the appointment, one service, and five bookings a week. Those bookings confirm as soon as the client reserves. Starter is $29 a month: more than one service, no weekly booking cap, and Cash App, Venmo, Zelle, PayPal, plus pay at the appointment. Starter and Pro bookings stay pending until you accept or deny them. Pro is $49 a month and includes Starter. Card checkout and an appointment deposit are Pro settings. Both stay off until you turn them on. A card charge, including a deposit, is created on the business's Stripe account. Schedi does not take a cut of that charge. Repeating visits (weekly, biweekly, or monthly) are Pro only and stay off until you turn them on.";
+
+export type PlanRow = { label: string; free: string; starter: string; pro: string };
+
+/**
+ * Mirror of schediPlanCompareRows() in site/index.html (signup Compare Plans).
+ * tests/plan-rows-sync.test.ts fails if the two drift apart.
+ */
+export const PLAN_COMPARE_ROWS: PlanRow[] = [
+  { label: "Monthly price", free: "$0", starter: "$29", pro: "$49" },
+  { label: "Services", free: "1", starter: "Unlimited", pro: "Unlimited" },
+  { label: "Bookings per week", free: "5", starter: "Unlimited", pro: "Unlimited" },
+  { label: "Pay at appointment", free: "Yes", starter: "Yes", pro: "Yes" },
+  { label: "Manual pay (Cash App, Venmo, Zelle, PayPal)", free: "No", starter: "Yes", pro: "Yes" },
+  { label: "Card checkout (Stripe)", free: "No", starter: "No", pro: "Yes" },
+  { label: "Appointment deposits", free: "No", starter: "No", pro: "Yes" },
+  { label: "Cancellation fee on card", free: "Rule only", starter: "Rule only", pro: "Can charge" },
+  { label: "Booking approval", free: "Auto-confirm", starter: "Accept / Deny", pro: "Accept / Deny" },
+  { label: "Repeating appointments", free: "No", starter: "No", pro: "Yes" },
+  { label: "Agency Management", free: "No", starter: "No", pro: "Yes" },
+];
+
+export function planCompareTableHtml(): string {
+  const body = PLAN_COMPARE_ROWS.map(
+    (r) => `<tr><th scope="row">${escapeHtml(r.label)}</th><td>${escapeHtml(r.free)}</td><td>${escapeHtml(r.starter)}</td><td>${escapeHtml(r.pro)}</td></tr>`,
+  ).join("\n          ");
+  return `<div class="table-wrap"><table>
+        <caption>Compare every plan</caption>
+        <thead>
+          <tr><th scope="col">Feature</th><th scope="col">Free</th><th scope="col">Starter</th><th scope="col">Pro</th></tr>
+        </thead>
+        <tbody>
+          ${body}
+        </tbody>
+      </table></div>`;
+}
 
 export const VERTICALS: { path: string; label: string }[] = [
   { path: "/for/barbers", label: "Barbers" },
@@ -76,7 +115,9 @@ export const MARKETING_PAGES: MarketingPage[] = [
     title: "Schedi | Booking pages for service businesses",
     description:
       "Clients book on your link instead of texts and paper forms. Free, Starter $29/mo, or Pro $49/mo with card payments and deposits.",
-    h1: "Clients book on your page. You stop collecting appointments by text and paper forms.",
+    h1: "Your clients book online. You get your time back.",
+    lede: "Schedi gives your business one simple booking link. Clients pick a service and a time, and the appointment lands in your portal. No more back-and-forth texts or paper forms.",
+    layout: "home",
     portalBoot: true,
     hero: true,
     softwareJsonLd: true,
@@ -121,17 +162,6 @@ export const MARKETING_PAGES: MarketingPage[] = [
           <li><strong>Send the link.</strong> The client chooses a time. You manage it in the business portal.</li>
         </ol>
       </section>`,
-      `<section>
-        <h2>Plans</h2>
-        <p>Free is $0. Starter is $29/mo. Pro is $49/mo. Nothing is charged until checkout finishes.</p>
-        <h3>Free</h3>
-        <p>$0. Pay at the appointment. One service. Five bookings a week.</p>
-        <h3>Starter</h3>
-        <p>$29/mo. Pay at the appointment. Cash App, Venmo, Zelle, and PayPal. More than one service. No weekly booking cap.</p>
-        <h3>Pro</h3>
-        <p>$49/mo. Everything in Starter. Card checkout, off until you turn it on. Card deposit, off until you turn it on. Repeating visits, off until you turn it on.</p>
-        <p>Card checkout, a card deposit, and repeating visits are Pro settings. They stay off until you turn them on. Free only allows pay at the appointment.</p>
-      </section>`,
       p(shareLink),
       p(reminders),
       p(noShow),
@@ -143,7 +173,9 @@ export const MARKETING_PAGES: MarketingPage[] = [
     title: "Schedi pricing | Free, Starter, and Pro",
     description:
       "Compare Free at $0, Starter at $29/mo, and Pro at $49/mo. Pro adds client card payments and deposits through Stripe.",
-    h1: "Schedi pricing",
+    h1: "Simple pricing that grows with you",
+    lede: "Start free and upgrade when you're ready. Prices are monthly, and nothing is charged until checkout finishes.",
+    layout: "pricing",
     softwareJsonLd: true,
     faqs: [
       {
@@ -169,24 +201,7 @@ export const MARKETING_PAGES: MarketingPage[] = [
     ],
     bodyHtml: [
       p("Prices are monthly. Upgrade or switch from the business portal. Nothing is charged until checkout finishes."),
-      `<table>
-        <caption>Plan comparison</caption>
-        <thead>
-          <tr><th>Feature</th><th>Free</th><th>Starter</th><th>Pro</th></tr>
-        </thead>
-        <tbody>
-          <tr><th>Monthly price</th><td>$0</td><td>$29</td><td>$49</td></tr>
-          <tr><th>Services</th><td>1</td><td>Unlimited</td><td>Unlimited</td></tr>
-          <tr><th>Bookings per week</th><td>5</td><td>Unlimited</td><td>Unlimited</td></tr>
-          <tr><th>Pay at appointment</th><td>Yes</td><td>Yes</td><td>Yes</td></tr>
-          <tr><th>Manual pay (Cash App, Venmo, Zelle, PayPal)</th><td>No</td><td>Yes</td><td>Yes</td></tr>
-          <tr><th>Card checkout (Stripe)</th><td>No</td><td>No</td><td>Yes</td></tr>
-          <tr><th>Appointment deposits</th><td>No</td><td>No</td><td>Yes</td></tr>
-          <tr><th>Cancellation fee on card</th><td>Rule only</td><td>Rule only</td><td>Can charge</td></tr>
-          <tr><th>Booking approval</th><td>Auto-confirm</td><td>Accept / Deny</td><td>Accept / Deny</td></tr>
-          <tr><th>Repeating appointments</th><td>No</td><td>No</td><td>Yes</td></tr>
-        </tbody>
-      </table>`,
+      planCompareTableHtml(),
       p(PLAN_FACTS),
       p("Owner subscriptions bill on the Schedi platform account. Client card payments are separate: they are direct charges on the connected account the business finishes in Stripe. Cash App, Zelle, Venmo, PayPal, and pay at the appointment do not create a Stripe charge."),
       p(reminders + " " + shareLink),
