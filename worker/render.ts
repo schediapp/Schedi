@@ -56,16 +56,9 @@ ${urls}
 }
 
 export function renderMarketingBoot(): string {
-  return `(() => {
-  try {
-    var params = new URLSearchParams(location.search);
-    if (params.get("portal") === "login" || params.get("forgot") === "1" || params.get("billing")) return;
-    var session = localStorage.getItem("schedi.authSession");
-    var meta = localStorage.getItem("schedi.authMeta");
-    if (session && meta) location.replace("/?portal=login");
-  } catch (err) {}
-})();
-`;
+  // Intentionally a no-op: "/" must stay on the landing page for everyone.
+  // Logged-in owners reach the portal via Log in (/?portal=login).
+  return `/* no-op */\n`;
 }
 
 function jsonLd(page: MarketingPage): string {

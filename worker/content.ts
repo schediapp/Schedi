@@ -118,7 +118,6 @@ export const MARKETING_PAGES: MarketingPage[] = [
     h1: "Your clients book online. You get your time back.",
     lede: "Schedi gives your business one simple booking link. Clients pick a service and a time, and the appointment lands in your portal. No more back-and-forth texts or paper forms.",
     layout: "home",
-    portalBoot: true,
     hero: true,
     softwareJsonLd: true,
     faqs: [
