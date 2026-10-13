@@ -518,17 +518,20 @@ async function guardStatic(asset: Response | null, pathname: string, method: str
     return textResponse("Not found\n", 404, fallbackType, { "Cache-Control": "no-store", "X-Robots-Tag": "noindex" }, method);
   }
   const type = asset.headers.get("content-type") || "";
-  if (!asset.ok || type.includes("text/html")) {
+  // asset.ok is false for 304 and other 3xx. Those are cache and redirect
+  // outcomes and must be returned as-is. 304 is not allowed to carry a body.
+  const passthrough = asset.status >= 300 && asset.status < 400;
+  if (!passthrough && (!asset.ok || type.includes("text/html"))) {
     await discard(asset);
     return textResponse("Not found\n", 404, fallbackType, { "Cache-Control": "no-store", "X-Robots-Tag": "noindex" }, method);
   }
   const headers = new Headers(asset.headers);
   applySecurityHeaders(headers, false);
-  if (method === "HEAD") {
+  if (method === "HEAD" || asset.status === 304) {
     await discard(asset);
-    return new Response(null, { status: asset.status, headers });
+    return new Response(null, { status: asset.status, statusText: asset.statusText, headers });
   }
-  return new Response(asset.body, { status: asset.status, headers });
+  return new Response(asset.body, { status: asset.status, statusText: asset.statusText, headers });
 }
 
 async function serveSpa(
