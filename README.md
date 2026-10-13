@@ -38,3 +38,22 @@ Only the Dashboard can supply these:
 - Run one Pro test business through onboarding, a deposit, a full card payment, a refund, and a failed owner subscription. The public page pauses only for the subscription failure.
 
 Stripe Tax is not enabled. Client card charges do not set `application_fee_amount`. The app needs a persistent disk for `SCHEDI_DB_PATH`.
+
+## Deploy the public site
+
+`wrangler.jsonc` is the `schedi-web` worker. It serves `site/` as static assets with `run_worker_first`, on `schedi.app/*` and `www.schedi.app/*`. `/api/*` and `/billing/*` stay on their more specific workers. Marketing HTML is rendered in the worker. App and tenant routes use the SPA shell.
+
+Git tracks that shell only. `site/index.html` is a symlink to `../index.html`, which is the file the booking tests read. The rest of the live asset bucket is not in this repository. It lives in the deploy directory production wrangler already uses:
+
+- `assets/` — logos, email marks, the home-screen icon, help-video posters, and help-video mp4s
+- `favicon.ico`
+- `manifest.json` and `manifest.webmanifest`
+- `_headers` — Cloudflare asset headers for that directory. It is not a public URL.
+
+On 13 Oct 2026 the public non-video files the shell references, plus the favicon and both manifests, were about 1.2 MB. The help-video mp4s are separate and larger. That non-video set is under 40 MB, so it stays out of git.
+
+A production deploy assembles the assets directory instead of uploading `site/` from git by itself:
+
+1. Start from the deploy directory that already contains `assets/`, `favicon.ico`, `manifest.json`, `manifest.webmanifest`, and `_headers` next to the shell.
+2. Copy `site/index.html` from this repo over that directory's `index.html`. Leave the asset bucket in place.
+3. Deploy that combined directory with `schedi-web`. Do not replace the bucket with the repo's `site/` folder alone.
