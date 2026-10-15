@@ -604,6 +604,38 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-demo-note { color: #03
 #tenantPortalSection.schedi-newdash .sd-chip-count { margin-left: 4px; color: var(--sd-muted); font-weight: 700; }
 #tenantPortalSection.schedi-newdash .sd-chip.is-on .sd-chip-count { color: inherit; }
 #tenantPortalSection.schedi-newdash .sd-pay-filter-select { display: none; }
+#tenantPortalSection.schedi-newdash .sd-client-list { display: flex; flex-direction: column; }
+#tenantPortalSection.schedi-newdash .sd-client { display: block; padding: 12px 0; border-top: 1px solid var(--sd-line); }
+#tenantPortalSection.schedi-newdash .sd-client:first-child { border-top: 0; }
+#tenantPortalSection.schedi-newdash .sd-client-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+#tenantPortalSection.schedi-newdash .sd-client-main { min-width: 0; }
+#tenantPortalSection.schedi-newdash .sd-client-name { font-weight: 800; font-size: 14px; color: var(--sd-text); background: transparent; border: 0; padding: 0; text-align: left; cursor: pointer; }
+#tenantPortalSection.schedi-newdash .sd-client-contact,
+#tenantPortalSection.schedi-newdash .sd-client-notes { color: var(--sd-muted); font-size: 12px; }
+#tenantPortalSection.schedi-newdash .sd-client-notes { margin-top: 4px; overflow-wrap: anywhere; }
+#tenantPortalSection.schedi-newdash .sd-client-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+#tenantPortalSection.schedi-newdash .sd-tag { display: inline-flex; align-items: center; border-radius: 999px; padding: 2px 8px; font-size: 11px; font-weight: 800; color: var(--sd-brand-2); background: rgba(16, 185, 129, 0.14); border: 1px solid rgba(16, 185, 129, 0.35); }
+#tenantPortalSection.schedi-newdash .sd-client-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+#tenantPortalSection.schedi-newdash .sd-client-actions button,
+#tenantPortalSection.schedi-newdash .sd-client-actions-form button { min-height: 36px; border-radius: 12px; padding: 6px 12px; font-weight: 800; font-size: 12px; cursor: pointer; }
+#tenantPortalSection.schedi-newdash .sd-client-edit-btn,
+#tenantPortalSection.schedi-newdash .sd-client-cancel { background: transparent; color: var(--sd-text); border: 1px solid var(--sd-line); }
+#tenantPortalSection.schedi-newdash .sd-client-remove { color: var(--sd-rose); border: 1px solid rgba(244, 63, 94, 0.35); background: rgba(244, 63, 94, 0.08); }
+#tenantPortalSection.schedi-newdash .sd-client-save { background: #10b981; color: #022c22; border: 0; }
+#tenantPortalSection.schedi-newdash .sd-client-detail,
+#tenantPortalSection.schedi-newdash .sd-client-edit { margin-top: 10px; padding: 12px; border: 1px solid var(--sd-line); border-radius: 16px; background: color-mix(in srgb, var(--sd-panel) 82%, var(--sd-bg)); color: var(--sd-text); }
+#tenantPortalSection.schedi-newdash .sd-client-edit { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+#tenantPortalSection.schedi-newdash .sd-client-edit label { display: block; min-width: 0; font-size: 11px; font-weight: 800; color: var(--sd-muted); }
+#tenantPortalSection.schedi-newdash .sd-client-edit input,
+#tenantPortalSection.schedi-newdash .sd-client-edit textarea { display: block; width: 100%; margin-top: 4px; min-height: 40px; border-radius: 12px; border: 1px solid var(--sd-line); background: var(--sd-panel); color: var(--sd-text); padding: 8px 10px; font-size: 14px; }
+#tenantPortalSection.schedi-newdash .sd-client-edit textarea { min-height: 72px; resize: vertical; }
+#tenantPortalSection.schedi-newdash .sd-client-edit input.is-invalid,
+#tenantPortalSection.schedi-newdash .sd-client-edit textarea.is-invalid { border-color: var(--sd-rose); box-shadow: 0 0 0 1px var(--sd-rose); }
+#tenantPortalSection.schedi-newdash .sd-client-span { grid-column: 1 / -1; }
+#tenantPortalSection.schedi-newdash .sd-client-error { margin: 0; min-height: 1.1em; color: var(--sd-rose); font-size: 12px; font-weight: 700; }
+#tenantPortalSection.schedi-newdash .sd-client-error:empty { display: none; }
+#tenantPortalSection.schedi-newdash .sd-client-hint { margin: 0; color: var(--sd-muted); font-size: 11px; line-height: 1.4; }
+#tenantPortalSection.schedi-newdash .sd-client-actions-form { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
 #tenantPortalSection.schedi-newdash .roster-appt .sd-pay { margin-top: 4px; white-space: normal; }
 #tenantPortalSection.schedi-newdash .sd-more { position: relative; }
 #tenantPortalSection.schedi-newdash .sd-more > summary {
@@ -934,6 +966,14 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
     #tenantPortalSection.schedi-newdash .sd-pay-filters { display: none; }
     #tenantPortalSection.schedi-newdash .sd-pay-filter-select { display: block; }
     #tenantPortalSection.schedi-newdash .sd-pay-filter-select select { min-height: 44px; width: 100%; }
+    #tenantPortalSection.schedi-newdash .sd-client-edit { grid-template-columns: 1fr; }
+    #tenantPortalSection.schedi-newdash .sd-client-actions button,
+    #tenantPortalSection.schedi-newdash .sd-client-actions-form button,
+    #tenantPortalSection.schedi-newdash .sd-client-edit input,
+    #tenantPortalSection.schedi-newdash .sd-client-edit textarea { min-height: 44px; }
+    #tenantPortalSection.schedi-newdash .sd-client-edit textarea { min-height: 88px; }
+    #tenantPortalSection.schedi-newdash .sd-client-actions { width: 100%; }
+    #tenantPortalSection.schedi-newdash .sd-client-actions button { flex: 1 1 8rem; }
 }
 
 </style>
@@ -1801,7 +1841,7 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
                         <div class="sm:col-span-2 flex flex-wrap justify-end gap-2"><button type="button" onclick="toggleClientAddForm(false)" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 font-bold">Cancel</button><button type="submit" class="px-4 py-2 rounded-xl bg-brand-500 hover:bg-brand-600 text-slate-950 font-bold">Save client</button></div>
                     </form>
                     <div class="flex flex-col sm:flex-row sm:items-center gap-2">
-                        <div class="relative flex-1"><i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i><input id="clientSearch" type="search" oninput="renderClientList()" placeholder="Search by name, email, phone, or notes" class="w-full pl-8 pr-3 py-2 rounded-xl glass-input text-xs"></div>
+                        <div class="relative flex-1"><i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i><input id="clientSearch" type="search" oninput="renderClientList()" placeholder="Search by name, email, phone, notes, or tags" class="w-full pl-8 pr-3 py-2 rounded-xl glass-input text-xs"></div>
                         <span id="clientCount" class="text-[11px] text-slate-400"></span>
                     </div>
                     <div id="clientListBody" class="text-xs"></div>
@@ -6381,20 +6421,49 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
             if (d.length === 11 && d.charAt(0) === '1') d = d.slice(1);
             return d;
         }
+        function clientTagList(value) {
+            var list = Array.isArray(value) ? value : String(value == null ? '' : value).split(/[,;\n]/);
+            var out = [];
+            var seen = {};
+            for (var i = 0; i < list.length && out.length < 12; i++) {
+                var item = list[i];
+                if (item != null && typeof item !== 'string' && typeof item !== 'number') continue;
+                var tag = clientCleanText(item, 24);
+                if (!tag) continue;
+                var key = tag.toLowerCase();
+                if (seen[key]) continue;
+                seen[key] = true;
+                out.push(tag);
+            }
+            return out;
+        }
         function validateClientRow(raw) {
+            raw = raw || {};
             var name = clientCleanText(raw.name, 120);
             if (!name) name = clientCleanText([clientCleanText(raw.firstName, 60), clientCleanText(raw.lastName, 60)].filter(Boolean).join(' '), 120);
             var email = clientCleanText(raw.email, 254).toLowerCase();
             var phone = clientCleanText(raw.phone, 40);
             var notes = clientCleanText(raw.notes, 500);
+            var tags = clientTagList(raw.tags);
             var pk = clientPhoneKey(phone);
             if (!name && !email && !phone) return { empty: true };
-            var client = { name: name, email: email, phone: phone, notes: notes };
+            var client = { name: name, email: email, phone: phone, notes: notes, tags: tags };
             if (!name) return { client: client, error: 'missing_name' };
             if (email && !CLIENT_EMAIL_RE.test(email)) return { client: client, error: 'invalid_email' };
             if (phone && (pk.length < 7 || pk.length > 15)) return { client: client, error: 'invalid_phone' };
             if (!email && !phone) return { client: client, error: 'missing_contact' };
             return { client: client };
+        }
+        function clientEditErrorText(reason) {
+            if (reason === 'missing_name') return 'Enter the client\'s name.';
+            if (reason === 'invalid_email') return 'That email does not look right. Use an address like name@example.com.';
+            if (reason === 'invalid_phone') return 'That phone number does not look right. Use 7 to 15 digits.';
+            if (reason === 'missing_contact') return 'Add an email or a phone number.';
+            if (reason === 'duplicate_email' || reason === 'duplicate_phone') return 'Another client already uses that email or phone.';
+            if (reason === 'session_required') return 'Sign in again, then save.';
+            if (reason === 'not_found') return 'That client is no longer in your list. Refresh and try again.';
+            if (reason === 'rate_limited') return 'Too many saves in a minute. Wait a moment and try again.';
+            return 'Could not save this client. Try again.';
         }
 
         async function clientsApi(payload) {
@@ -6497,7 +6566,7 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
             var qDigits = q.replace(/[^0-9]/g, '');
             var list = c.clients.slice().sort(function (a, b) { return String(a.name || '').localeCompare(String(b.name || ''), undefined, { sensitivity: 'base' }); });
             var shown = q ? list.filter(function (x) {
-                var hay = (String(x.name || '') + ' ' + String(x.email || '') + ' ' + String(x.notes || '')).toLowerCase();
+                var hay = (String(x.name || '') + ' ' + String(x.email || '') + ' ' + String(x.notes || '') + ' ' + clientTagList(x.tags).join(' ')).toLowerCase();
                 if (hay.indexOf(q) !== -1) return true;
                 return qDigits.length >= 3 && clientPhoneKey(x.phone).indexOf(qDigits) !== -1;
             }) : list;
@@ -6511,28 +6580,59 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
                 return;
             }
             var cap = 300;
-            body.innerHTML = '<div class="divide-y divide-slate-800/80">' + shown.slice(0, cap).map(function (x) {
+            body.innerHTML = '<div class="sd-client-list">' + shown.slice(0, cap).map(function (x) {
                 var contact = [x.phone ? ('<span><i class="fa-solid fa-phone mr-1 text-slate-500"></i>' + esc(x.phone) + '</span>') : '', x.email ? ('<span class="break-all"><i class="fa-solid fa-envelope mr-1 text-slate-500"></i>' + esc(x.email) + '</span>') : ''].filter(Boolean).join('');
-                var open = ownerClientDetailId === x.id;
+                var editing = ownerClientEditId === x.id;
+                var open = ownerClientDetailId === x.id && !editing;
+                var tags = clientTagsHtml(x);
                 var detail = open
-                    ? ('<div class="mt-2 rounded-xl border border-slate-800 bg-slate-950/40 p-3 space-y-2">'
+                    ? ('<div class="sd-client-detail mt-2 rounded-xl border border-slate-800 bg-slate-900 p-3 space-y-2">'
                         + '<p class="text-[11px] text-slate-400">Client details</p>'
-                        + (contact ? ('<div class="text-[11px] text-slate-300 flex flex-wrap gap-x-4 gap-y-0.5">' + contact + '</div>') : '')
-                        + (x.notes ? ('<p class="text-[11px] text-slate-400 break-words">' + esc(x.notes) + '</p>') : '')
+                        + (contact ? ('<div class="sd-client-contact text-[11px] text-slate-300 flex flex-wrap gap-x-4 gap-y-0.5">' + contact + '</div>') : '')
+                        + (x.notes ? ('<p class="sd-client-notes text-[11px] text-slate-400 break-words">' + esc(x.notes) + '</p>') : '')
+                        + tags
                         + clientVisitHistoryHtml(x)
                         + '<button type="button" onclick="openClientRecurring(' + jsArg(x.id) + ')" class="px-3 py-2 rounded-xl bg-brand-500 hover:bg-brand-600 text-slate-950 font-bold text-[11px]">New recurring appointment</button>'
                         + '</div>')
                     : '';
-                return '<div class="py-3 flex flex-wrap items-start justify-between gap-2">'
-                    + '<div class="min-w-0 flex-1"><div class="text-sm break-words"><button type="button" class="font-bold text-white text-left" onclick="openClientDetail(' + jsArg(x.id) + ')" aria-expanded="' + (open ? 'true' : 'false') + '">' + esc(x.name) + '</button>' + clientSourceTag(x) + '</div>'
-                    + '<div class="text-[11px] text-slate-400 flex flex-wrap gap-x-4 gap-y-0.5 mt-0.5">' + contact + '</div>'
-                    + (x.notes ? ('<div class="text-[11px] text-slate-500 mt-1 break-words">' + esc(x.notes) + '</div>') : '')
+                var editor = editing ? clientEditFormHtml(x) : '';
+                var summary = (editing || open) ? '' : ('<div class="sd-client-contact text-[11px] text-slate-400 flex flex-wrap gap-x-4 gap-y-0.5 mt-0.5">' + contact + '</div>'
+                    + (x.notes ? ('<div class="sd-client-notes text-[11px] text-slate-500 mt-1 break-words">' + esc(x.notes) + '</div>') : '')
+                    + tags);
+                return '<div class="sd-client py-3">'
+                    + '<div class="sd-client-head"><div class="sd-client-main min-w-0 text-sm break-words"><button type="button" class="sd-client-name font-bold text-white text-left" onclick="openClientDetail(' + jsArg(x.id) + ')" aria-expanded="' + ((open || editing) ? 'true' : 'false') + '">' + esc(x.name) + '</button>' + clientSourceTag(x) + '</div>'
+                    + '<div class="sd-client-actions">'
+                    + (editing ? '' : ('<button type="button" class="sd-client-edit-btn px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold text-[11px] border border-slate-700" onclick="startOwnerClientEdit(' + jsArg(x.id) + ')" aria-label="Edit ' + esc(x.name) + '">Edit</button>'))
+                    + '<button type="button" class="sd-client-remove px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-bold text-[11px] border border-rose-500/30" onclick="deleteOwnerClient(' + jsArg(x.id) + ')">Remove</button>'
+                    + '</div></div>'
+                    + summary
+                    + editor
                     + detail
-                    + '</div>'
-                    + '<button type="button" onclick="deleteOwnerClient(' + jsArg(x.id) + ')" class="px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-bold text-[11px] border border-rose-500/30 shrink-0">Remove</button>'
                     + '</div>';
             }).join('') + '</div>' + (shown.length > cap ? ('<p class="text-[11px] text-slate-500 pt-2">Showing the first ' + cap + '. Search to find others.</p>') : '');
         };
+
+        function clientTagsHtml(x) {
+            var tags = clientTagList(x && x.tags);
+            if (!tags.length) return '';
+            return '<div class="sd-client-tags">' + tags.map(function (tag) { return '<span class="sd-tag">' + esc(tag) + '</span>'; }).join('') + '</div>';
+        }
+
+        function clientEditFormHtml(x) {
+            var tags = clientTagList(x.tags).join(', ');
+            return '<form class="sd-client-edit" onsubmit="saveOwnerClientEdit(event,' + jsArg(x.id) + ')" oninput="clearClientEditError()">'
+                + '<label>Name<input id="clientEditName" type="text" maxlength="120" autocomplete="name" value="' + esc(x.name || '') + '"></label>'
+                + '<label>Phone<input id="clientEditPhone" type="tel" maxlength="40" autocomplete="tel" inputmode="tel" value="' + esc(x.phone || '') + '"></label>'
+                + '<label class="sd-client-span">Email<input id="clientEditEmail" type="text" maxlength="254" autocomplete="email" inputmode="email" value="' + esc(x.email || '') + '"></label>'
+                + '<label class="sd-client-span">Private notes<textarea id="clientEditNotes" maxlength="500" rows="3">' + esc(x.notes || '') + '</textarea></label>'
+                + '<label class="sd-client-span">Tags<input id="clientEditTags" type="text" maxlength="400" value="' + esc(tags) + '" placeholder="regular, fade"></label>'
+                + '<p id="clientEditError" class="sd-client-error sd-client-span" role="status"></p>'
+                + '<p class="sd-client-hint sd-client-span">This updates the client list and new bookings. Visits already on the calendar stay as booked.</p>'
+                + '<div class="sd-client-actions-form sd-client-span">'
+                + '<button type="button" class="sd-client-cancel px-4 py-2 rounded-xl bg-slate-800 text-slate-300 font-bold" onclick="cancelOwnerClientEdit()">Cancel</button>'
+                + '<button type="submit" class="sd-client-save px-4 py-2 rounded-xl bg-brand-500 hover:bg-brand-600 text-slate-950 font-bold">Save</button>'
+                + '</div></form>';
+        }
 
         function clientMatchesAppointment(client, app) {
             if (!client || !app) return false;
@@ -6561,11 +6661,102 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
         }
 
         var ownerClientDetailId = '';
+        var ownerClientEditId = '';
 
         window.openClientDetail = function (clientId) {
+            if (ownerClientEditId === clientId) return;
+            if (ownerClientEditId) ownerClientEditId = '';
             ownerClientDetailId = ownerClientDetailId === clientId ? '' : clientId;
             renderClientList();
         };
+
+        window.startOwnerClientEdit = function (clientId) {
+            ownerClientEditId = clientId;
+            ownerClientDetailId = clientId;
+            renderClientList();
+            var name = document.getElementById('clientEditName');
+            if (name && name.focus) name.focus();
+        };
+
+        window.cancelOwnerClientEdit = function () {
+            ownerClientEditId = '';
+            renderClientList();
+        };
+
+        function clearClientEditError() {
+            var el = document.getElementById('clientEditError');
+            if (el) el.textContent = '';
+            ['clientEditName', 'clientEditEmail', 'clientEditPhone'].forEach(function (id) {
+                var input = document.getElementById(id);
+                if (!input) return;
+                input.classList.remove('is-invalid');
+                input.removeAttribute('aria-invalid');
+            });
+        }
+        window.clearClientEditError = clearClientEditError;
+
+        function paintClientEditError(reason) {
+            var el = document.getElementById('clientEditError');
+            if (el) el.textContent = clientEditErrorText(reason);
+            ['clientEditName', 'clientEditEmail', 'clientEditPhone'].forEach(function (id) {
+                var input = document.getElementById(id);
+                if (input) input.classList.remove('is-invalid');
+            });
+            var ids = [];
+            if (reason === 'missing_name') ids = ['clientEditName'];
+            else if (reason === 'invalid_email') ids = ['clientEditEmail'];
+            else if (reason === 'invalid_phone') ids = ['clientEditPhone'];
+            else if (reason === 'missing_contact') ids = ['clientEditEmail', 'clientEditPhone'];
+            ids.forEach(function (id, index) {
+                var node = document.getElementById(id);
+                if (!node) return;
+                node.classList.add('is-invalid');
+                node.setAttribute('aria-invalid', 'true');
+                if (index === 0 && node.focus) node.focus();
+            });
+        }
+
+        async function saveOwnerClientEdit(event, clientId) {
+            if (event && event.preventDefault) event.preventDefault();
+            var t = getTenant();
+            var cache = t && ownerClientCache[t.id];
+            if (!t || !cache) return;
+            var raw = {
+                name: (document.getElementById('clientEditName') || {}).value,
+                email: (document.getElementById('clientEditEmail') || {}).value,
+                phone: (document.getElementById('clientEditPhone') || {}).value,
+                notes: (document.getElementById('clientEditNotes') || {}).value,
+                tags: (document.getElementById('clientEditTags') || {}).value
+            };
+            var v = validateClientRow(raw);
+            if (v.empty || v.error) {
+                paintClientEditError(v.empty ? 'missing_name' : v.error);
+                return;
+            }
+            var dupIdx = clientDedupeIndex((cache.clients || []).filter(function (k) { return k && k.id !== clientId; }));
+            var phoneKey = clientPhoneKey(v.client.phone);
+            if (v.client.email && dupIdx.emails[v.client.email]) {
+                paintClientEditError('duplicate_email');
+                return;
+            }
+            if (phoneKey && dupIdx.phones[phoneKey]) {
+                paintClientEditError('duplicate_phone');
+                return;
+            }
+            var data = await clientsApi({ action: 'update', tenantId: t.id, clientId: clientId, client: v.client });
+            if (!data || !data.ok || !data.client) {
+                paintClientEditError((data && data.error) || 'save_failed');
+                return;
+            }
+            var idx = (cache.clients || []).findIndex(function (k) { return k && k.id === clientId; });
+            if (idx >= 0) cache.clients[idx] = data.client;
+            else cache.clients.push(data.client);
+            ownerClientEditId = '';
+            ownerClientDetailId = clientId;
+            renderClientList();
+            showToast('Client saved.', 'success');
+        }
+        window.saveOwnerClientEdit = saveOwnerClientEdit;
 
         window.openClientRecurring = function (clientId) {
             var t = getTenant();
@@ -6622,10 +6813,10 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
         };
 
         window.downloadClientSampleCsv = function () {
-            var csv = 'name,email,phone,notes\r\n'
-                + 'Maria Lopez,maria@example.com,(555) 201-3344,Prefers mornings\r\n'
-                + 'James Carter,,555-778-9012,"Allergic to latex, use gloves"\r\n'
-                + 'Aisha Khan,aisha.khan@example.com,,\r\n';
+            var csv = 'name,email,phone,notes,tags\r\n'
+                + 'Maria Lopez,maria@example.com,(555) 201-3344,Prefers mornings,"regular, mornings"\r\n'
+                + 'James Carter,,555-778-9012,"Allergic to latex, use gloves",walk-in\r\n'
+                + 'Aisha Khan,aisha.khan@example.com,,,\r\n';
             var blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
             var url = URL.createObjectURL(blob);
             var a = document.createElement('a');
@@ -6701,6 +6892,8 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
             }
             map.notes = exact(['notes', 'note', 'memo', 'comments', 'comment', 'clientnotes', 'customernotes']);
             if (map.notes === -1) map.notes = fuzzy(function (h) { return h.indexOf('note') !== -1 || h.indexOf('memo') !== -1; });
+            map.tags = exact(['tags', 'tag', 'labels', 'clienttags', 'customertags']);
+            if (map.tags === -1) map.tags = fuzzy(function (h) { return h === 'tags' || h.indexOf('tag') === 0; });
             return map;
         }
 
@@ -6715,7 +6908,7 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
             st.items = [];
             st.dataRows.forEach(function (r, i) {
                 var rowNo = i + 2;
-                var raw = { row: rowNo, name: cell(r, m.name), firstName: cell(r, m.first), lastName: cell(r, m.last), email: cell(r, m.email), phone: cell(r, m.phone), notes: cell(r, m.notes) };
+                var raw = { row: rowNo, name: cell(r, m.name), firstName: cell(r, m.first), lastName: cell(r, m.last), email: cell(r, m.email), phone: cell(r, m.phone), notes: cell(r, m.notes), tags: cell(r, m.tags) };
                 var v = validateClientRow(raw);
                 if (v.empty) return;
                 var item = { row: rowNo, client: v.client, status: 'ready', reason: '' };
@@ -6835,7 +7028,7 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
                     + '</label>'
                     + '<p id="clientImportError" class="hidden text-xs text-rose-300"></p>'
                     + '<ul class="text-[11px] text-slate-400 space-y-1 list-disc pl-5">'
-                    + '<li>We look for name (or first and last name), email, phone, and notes. You can fix the matching on the next step.</li>'
+                    + '<li>We look for name (or first and last name), email, phone, notes, and tags. You can fix the matching on the next step.</li>'
                     + '<li>Each client needs a name and an email or phone. Clients already in your list are skipped.</li>'
                     + '<li>Schedi never emails or texts the clients you import.</li>'
                     + '</ul>'
@@ -6849,7 +7042,7 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
                 var ready = st.items.filter(function (x) { return x.status === 'ready'; }).length;
                 var skips = st.items.filter(function (x) { return x.status === 'skip'; }).length;
                 var errs = st.items.filter(function (x) { return x.status === 'error'; }).length;
-                var fields = [['name', 'Full name'], ['first', 'First name'], ['last', 'Last name'], ['email', 'Email'], ['phone', 'Phone'], ['notes', 'Notes']];
+                var fields = [['name', 'Full name'], ['first', 'First name'], ['last', 'Last name'], ['email', 'Email'], ['phone', 'Phone'], ['notes', 'Notes'], ['tags', 'Tags']];
                 var mapHtml = fields.map(function (f) {
                     var cur = st.map[f[0]];
                     var opts = '<option value="-1">Not in file</option>' + st.headers.map(function (h, i) { return '<option value="' + i + '"' + (cur === i ? ' selected' : '') + '>' + esc(h) + '</option>'; }).join('');
@@ -7711,10 +7904,10 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
 
         function schediDemoClientRows() {
             return [
-                { id: 'CL-MAYA', name: 'Maya Chen', email: 'maya@example.com', phone: '(555) 201-0142', notes: 'Likes a low fade', source: 'booking', firstBookingDate: schediDemoTodayIso() },
-                { id: 'CL-LUIS', name: 'Luis Ortega', email: 'luis@example.com', phone: '(555) 201-2288', notes: '', source: 'manual' },
-                { id: 'CL-JORDAN', name: 'Jordan Lee', email: '', phone: '(555) 201-7730', notes: 'Walk-in regular', source: 'manual' },
-                { id: 'CL-ELENA', name: 'Elena Vasquez', email: 'elena@example.com', phone: '(555) 201-4419', notes: 'Color series', source: 'booking', firstBookingDate: schediDemoAddDays(schediDemoTodayIso(), -7) }
+                { id: 'CL-MAYA', name: 'Maya Chen', email: 'maya@example.com', phone: '(555) 201-0142', notes: 'Likes a low fade', tags: ['regular', 'fade'], source: 'booking', firstBookingDate: schediDemoTodayIso() },
+                { id: 'CL-LUIS', name: 'Luis Ortega', email: 'luis@example.com', phone: '(555) 201-2288', notes: '', tags: [], source: 'manual' },
+                { id: 'CL-JORDAN', name: 'Jordan Lee', email: '', phone: '(555) 201-7730', notes: 'Walk-in regular', tags: ['walk-in'], source: 'manual' },
+                { id: 'CL-ELENA', name: 'Elena Vasquez', email: 'elena@example.com', phone: '(555) 201-4419', notes: 'Color series', tags: ['color'], source: 'booking', firstBookingDate: schediDemoAddDays(schediDemoTodayIso(), -7) }
             ];
         }
 
@@ -7726,9 +7919,35 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
             var list = window.__schediDemoClientRows[id];
             if (payload.action === 'list') return Promise.resolve({ ok: true, clients: list.slice() });
             if (payload.action === 'add' && payload.client) {
-                var added = Object.assign({ id: uid('CL'), source: 'manual' }, payload.client);
+                var added = Object.assign({ id: uid('CL'), source: 'manual', tags: [] }, payload.client);
+                added.tags = clientTagList(added.tags);
                 list.push(added);
                 return Promise.resolve({ ok: true, client: added });
+            }
+            if (payload.action === 'update') {
+                var idx = list.findIndex(function (row) { return row && row.id === payload.clientId; });
+                if (idx < 0) return Promise.resolve({ ok: false, error: 'not_found' });
+                var checked = validateClientRow(payload.client || {});
+                if (checked.empty || checked.error || !checked.client) return Promise.resolve({ ok: false, error: checked.error || 'missing_name' });
+                var others = list.filter(function (row) { return row && row.id !== payload.clientId; });
+                var dupIdx = clientDedupeIndex(others);
+                var nextPhone = clientPhoneKey(checked.client.phone);
+                if (checked.client.email && dupIdx.emails[checked.client.email]) return Promise.resolve({ ok: false, error: 'duplicate_email' });
+                if (nextPhone && dupIdx.phones[nextPhone]) return Promise.resolve({ ok: false, error: 'duplicate_phone' });
+                var prev = list[idx];
+                var next = {
+                    id: prev.id,
+                    name: checked.client.name,
+                    email: checked.client.email,
+                    phone: checked.client.phone,
+                    notes: checked.client.notes,
+                    tags: checked.client.tags.slice(),
+                    source: prev.source || '',
+                    firstBookingDate: prev.firstBookingDate || '',
+                    createdAt: prev.createdAt || ''
+                };
+                list[idx] = next;
+                return Promise.resolve({ ok: true, client: next });
             }
             if (payload.action === 'delete') {
                 window.__schediDemoClientRows[id] = list.filter(function (row) { return row && row.id !== payload.clientId; });
