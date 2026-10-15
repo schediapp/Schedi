@@ -46,7 +46,7 @@ Before a business can take a live card payment, retrieve the account and require
 Client pays the service price, the charge is created on the business's connected account, Stripe deducts its processing fee there, and the business keeps the rest. Schedi keeps $0 of this charge.
 
 ### I. SaaS monetization
-Schedi makes money from the subscription, not from the booking. Starter is $29 a month, Pro is $49, Free is $0. Keep billing those on the Schedi Stripe account as normal customers. Do not use `customer_account`, and do not create a second customer record for the same owner. A failed or canceled subscription still pauses the public page.
+Schedi makes money from the subscription, not from the booking. Starter is $29 a month, Pro is $49, Free is $0. Keep billing those on the Schedi Stripe account as normal customers. Do not use `customer_account`, and do not create a second customer record for the same owner. Plans are month-to-month, with no contract. Cancel anytime. Cancellation takes effect at the end of the current paid billing period; the owner keeps access until then and is not charged again. New subscribers may request a full refund of their first payment within 15 days. Renewal payments are not refunded or prorated, except at Schedi's discretion for billing errors or service outages. Complimentary plans are unaffected. A failed subscription, or one that has ended, pauses the public page. Requesting cancellation does not.
 
 ### J. Implementation plan
 1. In the Stripe Dashboard, finish the Connect platform profile for Schedi.

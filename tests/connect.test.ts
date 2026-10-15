@@ -92,6 +92,8 @@ describe("connected account onboarding", () => {
       plan: "pro" as const,
       subscriptionStatus: "active" as const,
       stripeSubscriptionId: null,
+      cancelAtPeriodEnd: false,
+      currentPeriodEnd: null,
       stripeAccountId: null,
       cardPaymentsStatus: null,
       payoutsStatus: null,
