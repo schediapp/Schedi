@@ -855,14 +855,53 @@
                         <div id="perDayShiftsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
                             <!-- Injected via JS -->
                         </div>
-                        <div class="pt-2 border-t border-slate-800/80 space-y-2 max-w-md">
-                            <label for="tenantSlotInterval" class="block text-xs font-semibold text-slate-300">Start times every</label>
-                            <select id="tenantSlotInterval" class="w-full sm:w-56 px-3 py-2 rounded-xl glass-input text-xs font-bold text-brand-400">
-                                <option value="15">15 minutes</option>
-                                <option value="30">30 minutes</option>
-                                <option value="60">1 hour</option>
-                            </select>
-                            <p class="text-[10px] text-slate-500">How often clients can start an appointment (for example 9:00, 9:30, 10:00). Service length stays the same.</p>
+                        <div class="pt-2 border-t border-slate-800/80 space-y-3 max-w-xl">
+                            <div>
+                                <h4 class="text-sm font-bold text-white">Booking rules</h4>
+                                <p class="text-[11px] text-slate-500">These apply on your public booking page.</p>
+                            </div>
+                            <div class="space-y-2">
+                                <label for="tenantSlotInterval" class="block text-xs font-semibold text-slate-300">Start times every</label>
+                                <select id="tenantSlotInterval" class="w-full sm:w-56 px-3 py-2 rounded-xl glass-input text-xs font-bold text-brand-400">
+                                    <option value="15">15 minutes</option>
+                                    <option value="30">30 minutes</option>
+                                    <option value="60">1 hour</option>
+                                </select>
+                                <p class="text-[10px] text-slate-500">How often clients can start an appointment (for example 9:00, 9:30, 10:00). Service length stays the same.</p>
+                            </div>
+                            <div class="space-y-2">
+                                <label for="tenantMinNotice" class="block text-xs font-semibold text-slate-300">Minimum booking notice</label>
+                                <select id="tenantMinNotice" class="w-full sm:w-56 px-3 py-2 rounded-xl glass-input text-xs font-bold text-brand-400">
+                                    <option value="0">None</option>
+                                    <option value="1">1 hour</option>
+                                    <option value="2">2 hours</option>
+                                    <option value="4">4 hours</option>
+                                    <option value="12">12 hours</option>
+                                    <option value="24">24 hours</option>
+                                    <option value="48">48 hours</option>
+                                </select>
+                                <p class="text-[10px] text-slate-500">Clients cannot request a start time inside this window. The default is 2 hours.</p>
+                            </div>
+                        </div>
+                        <div class="pt-2 border-t border-slate-800/80 space-y-3 max-w-xl">
+                            <div>
+                                <h4 class="text-sm font-bold text-white">Booking page</h4>
+                                <p class="text-[11px] text-slate-500">Shown at the top of your public page. Logo and cover are optional.</p>
+                            </div>
+                            <div>
+                                <label for="tenantAddress" class="block text-xs font-semibold text-slate-300 mb-1">Address</label>
+                                <input type="text" id="tenantAddress" maxlength="200" placeholder="123 Main Street, City" class="w-full px-3 py-2 rounded-xl glass-input text-xs">
+                                <p class="text-[10px] text-slate-500 mt-1">Linked to a map. Leave blank to hide it.</p>
+                            </div>
+                            <div>
+                                <label for="tenantLogoUrl" class="block text-xs font-semibold text-slate-300 mb-1">Logo URL <span class="text-slate-500">(optional)</span></label>
+                                <input type="url" id="tenantLogoUrl" inputmode="url" placeholder="https://…" class="w-full px-3 py-2 rounded-xl glass-input text-xs font-mono">
+                            </div>
+                            <div>
+                                <label for="tenantCoverUrl" class="block text-xs font-semibold text-slate-300 mb-1">Cover photo URL <span class="text-slate-500">(optional)</span></label>
+                                <input type="url" id="tenantCoverUrl" inputmode="url" placeholder="https://…" class="w-full px-3 py-2 rounded-xl glass-input text-xs font-mono">
+                                <p class="text-[10px] text-slate-500 mt-1">Use an https link to an image. Leave blank to hide.</p>
+                            </div>
                         </div>
                         <div class="flex justify-end">
                             <button type="submit" class="px-5 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-slate-950 font-bold text-xs shadow-md glow-emerald">
@@ -1523,6 +1562,19 @@
                     </span>
                 </label>
                 <div>
+                    <label class="block font-semibold text-slate-300 mb-1">Business address</label>
+                    <input type="text" id="editTenantAddress" maxlength="200" placeholder="123 Main Street, City" class="w-full px-3 py-2 rounded-xl glass-input">
+                    <p class="text-[10px] text-slate-500 mt-1">Shown on the booking page and linked to a map. Optional.</p>
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-300 mb-1">Logo URL <span class="text-slate-500">(optional)</span></label>
+                    <input type="url" id="editTenantLogoUrl" inputmode="url" placeholder="https://…" class="w-full px-3 py-2 rounded-xl glass-input font-mono">
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-300 mb-1">Cover photo URL <span class="text-slate-500">(optional)</span></label>
+                    <input type="url" id="editTenantCoverUrl" inputmode="url" placeholder="https://…" class="w-full px-3 py-2 rounded-xl glass-input font-mono">
+                </div>
+                <div>
                     <label class="block font-semibold text-slate-300 mb-1">Business Cash App Tag</label>
                     <input type="text" id="editCashAppTag" class="w-full px-3 py-2 rounded-xl glass-input font-mono">
                 </div>
@@ -2154,6 +2206,7 @@
                     },
                     specialHours: {},
                     slotInterval: 30,
+                    minNoticeHours: 2,
                     blockedRules: [],
                     blockedTimes: [],
                     timeSlots: [
@@ -5679,6 +5732,7 @@
                 },
                 specialHours: {},
                 slotInterval: 30,
+                minNoticeHours: 2,
                 blockedRules: [],
                 blockedTimes: [],
                 timeSlots: [
@@ -5772,6 +5826,12 @@
                 document.getElementById('editMonthlyPrice').value = (tenant.monthlyPrice == null ? '' : tenant.monthlyPrice);
             }
             document.getElementById('editCashAppTag').value = tenant.cashAppTag;
+            var editAddress = document.getElementById('editTenantAddress');
+            if (editAddress) editAddress.value = getTenantLocation(tenant);
+            var editLogo = document.getElementById('editTenantLogoUrl');
+            if (editLogo) editLogo.value = tenant.logoUrl || tenant.logo || '';
+            var editCover = document.getElementById('editTenantCoverUrl');
+            if (editCover) editCover.value = tenant.coverUrl || tenant.coverPhoto || tenant.coverPhotoUrl || '';
 
             document.getElementById('editTenantModal').classList.remove('hidden');
             document.getElementById('editTenantModal').scrollTop = 0;
@@ -5786,6 +5846,12 @@
             const tenantId = document.getElementById('editTenantId').value;
             const tenant = getTenant(tenantId);
             if (!tenant) return;
+            var editLogoRaw = String((document.getElementById('editTenantLogoUrl') || {}).value || '').trim();
+            var editCoverRaw = String((document.getElementById('editTenantCoverUrl') || {}).value || '').trim();
+            if ((editLogoRaw && !safeHttpsUrl(editLogoRaw)) || (editCoverRaw && !safeHttpsUrl(editCoverRaw))) {
+                showToast('Logo and cover photo need an https link, or leave them blank.', 'error');
+                return;
+            }
 
             const oldSlug = tenant.slug || tenant.id;
             const oldId = tenant.id;
@@ -5860,6 +5926,16 @@
             var feeEl = document.getElementById('editMonthlyPrice');
             if (feeEl) feeEl.value = String(mappedFee);
             tenant.cashAppTag = document.getElementById('editCashAppTag').value.trim();
+            var editAddressEl = document.getElementById('editTenantAddress');
+            var editAddressValue = cleanPublicAddress(editAddressEl ? editAddressEl.value : (tenant.address || ''));
+            tenant.address = editAddressValue;
+            if (!editAddressValue) {
+                tenant.location = '';
+                tenant.businessAddress = '';
+                tenant.businessLocation = '';
+            }
+            tenant.logoUrl = safeHttpsUrl(editLogoRaw);
+            tenant.coverUrl = safeHttpsUrl(editCoverRaw);
 
             const slugChanged = newSlug !== String(oldSlug).toLowerCase();
             const idWillChange = slugChanged && (tenant.id === oldSlug || String(tenant.id).toLowerCase() === String(oldSlug).toLowerCase());
@@ -7766,8 +7842,17 @@
             const shiftsGrid = document.getElementById('perDayShiftsGrid');
             const rulesList = document.getElementById('tenantBlockedRulesList');
             ensureSlotInterval(tenant);
+            ensureMinNoticeHours(tenant);
             var slotIntervalEl = document.getElementById('tenantSlotInterval');
             if (slotIntervalEl) slotIntervalEl.value = String(getSlotIntervalMins(tenant));
+            var minNoticeEl = document.getElementById('tenantMinNotice');
+            if (minNoticeEl) minNoticeEl.value = String(getMinNoticeHours(tenant));
+            var addressEl = document.getElementById('tenantAddress');
+            if (addressEl) addressEl.value = getTenantLocation(tenant);
+            var logoEl = document.getElementById('tenantLogoUrl');
+            if (logoEl) logoEl.value = tenant.logoUrl || tenant.logo || '';
+            var coverEl = document.getElementById('tenantCoverUrl');
+            if (coverEl) coverEl.value = tenant.coverUrl || tenant.coverPhoto || tenant.coverPhotoUrl || '';
 
             if (shiftsGrid) {
                 const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -7907,6 +7992,12 @@
             e.preventDefault();
             const tenant = getTenant();
             if (!tenant) return;
+            var logoRaw = String(((document.getElementById('tenantLogoUrl') || {}).value) || '').trim();
+            var coverRaw = String(((document.getElementById('tenantCoverUrl') || {}).value) || '').trim();
+            if ((logoRaw && !safeHttpsUrl(logoRaw)) || (coverRaw && !safeHttpsUrl(coverRaw))) {
+                showToast('Logo and cover photo need an https link, or leave them blank.', 'error');
+                return;
+            }
 
             const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
             days.forEach(day => {
@@ -7920,6 +8011,18 @@
             var slotIntervalEl = document.getElementById('tenantSlotInterval');
             var rawInterval = slotIntervalEl ? Number(slotIntervalEl.value) : 30;
             tenant.slotInterval = (rawInterval === 15 || rawInterval === 30 || rawInterval === 60) ? rawInterval : 30;
+            var minNoticeEl = document.getElementById('tenantMinNotice');
+            tenant.minNoticeHours = getMinNoticeHours({ minNoticeHours: minNoticeEl ? minNoticeEl.value : 2 });
+            var addressEl = document.getElementById('tenantAddress');
+            var address = cleanPublicAddress(addressEl ? addressEl.value : '');
+            tenant.address = address;
+            if (!address) {
+                tenant.location = '';
+                tenant.businessAddress = '';
+                tenant.businessLocation = '';
+            }
+            tenant.logoUrl = safeHttpsUrl(logoRaw);
+            tenant.coverUrl = safeHttpsUrl(coverRaw);
 
             saveState();
             renderTenantHours(tenant);
@@ -8651,6 +8754,7 @@
             if (!Array.isArray(tenant.blockedTimes)) tenant.blockedTimes = [];
             ensureSpecialHours(tenant);
             ensureSlotInterval(tenant);
+            ensureMinNoticeHours(tenant);
             return tenant;
         }
 
@@ -8673,6 +8777,30 @@
             if (!tenant || typeof tenant !== 'object') return 30;
             tenant.slotInterval = getSlotIntervalMins(tenant);
             return tenant.slotInterval;
+        }
+
+        var MIN_NOTICE_CHOICES = [0, 1, 2, 4, 12, 24, 48];
+        function getMinNoticeHours(tenant) {
+            var raw = tenant && tenant.minNoticeHours;
+            if (raw == null || raw === '') return 2;
+            if (raw === 'none' || raw === 'None') return 0;
+            var n = Number(raw);
+            if (MIN_NOTICE_CHOICES.indexOf(n) !== -1) return n;
+            return 2;
+        }
+        function ensureMinNoticeHours(tenant) {
+            if (!tenant || typeof tenant !== 'object') return 2;
+            tenant.minNoticeHours = getMinNoticeHours(tenant);
+            return tenant.minNoticeHours;
+        }
+        function safeHttpsUrl(raw) {
+            var s = String(raw || '').trim();
+            if (!s || s.length > 500) return '';
+            if (!/^https:\/\/[^\s<>"']+$/i.test(s)) return '';
+            return s;
+        }
+        function cleanPublicAddress(raw) {
+            return String(raw || '').replace(/[\u0000-\u001f\u007f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 200);
         }
 
         /** Effective open windows for a local YYYY-MM-DD. Special hours replace weekly hours that day. */
@@ -11589,20 +11717,76 @@
             border-color: #475569 !important;
             color: #ffffff !important;
         }
+        /* booking-day-contrast */
+        .cal-day { padding: 0.5rem 0.25rem; border-radius: 0.75rem; border: 1px solid transparent; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 3.25rem; line-height: 1.15; background: transparent; cursor: pointer; }
+        .cal-day:focus-visible { outline: 2px solid #047857; outline-offset: 2px; }
+        .cal-day-num { font-size: 0.875rem; font-weight: 700; }
+        .cal-day-label { font-size: 0.625rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+        .cal-day-open { background: #1e293b; border-color: #334155; color: #f8fafc; }
+        .cal-day-open .cal-day-label { color: #6ee7b7; }
+        .cal-day-open:hover { border-color: #34d399; }
+        .cal-day-special { background: #0c4a6e; border-color: #0369a1; color: #f0f9ff; }
+        .cal-day-special .cal-day-label { color: #bae6fd; }
+        .cal-day-special:hover { border-color: #38bdf8; }
+        .cal-day-away { background: #78350f; border-color: #b45309; color: #fffbeb; }
+        .cal-day-away .cal-day-label { color: #fde68a; }
+        .cal-day-away:hover { border-color: #fbbf24; }
+        .cal-day-selected { background: #047857; border-color: #065f46; color: #ffffff; box-shadow: 0 0 0 2px #6ee7b7; }
+        .cal-day-selected .cal-day-label { color: #ecfdf5; }
+        .cal-day-disabled { background: #0f172a; border-color: #1e293b; color: #cbd5e1; cursor: not-allowed; }
+        .cal-day-disabled .cal-day-label { color: #94a3b8; }
+        .cal-day-today { box-shadow: inset 0 0 0 2px #f8fafc; }
+        .cal-day-selected.cal-day-today { box-shadow: 0 0 0 2px #6ee7b7, inset 0 0 0 2px #ffffff; }
+        html.schedi-light .cal-day-open { background: #ffffff; border-color: #475569; color: #0f172a; }
+        html.schedi-light .cal-day-open .cal-day-label { color: #047857; }
+        html.schedi-light .cal-day-open:hover { border-color: #047857; }
+        html.schedi-light .cal-day-special { background: #e0f2fe; border-color: #0369a1; color: #0c4a6e; }
+        html.schedi-light .cal-day-special .cal-day-label { color: #075985; }
+        html.schedi-light .cal-day-away { background: #fffbeb; border-color: #b45309; color: #78350f; }
+        html.schedi-light .cal-day-away .cal-day-label { color: #92400e; }
+        html.schedi-light .cal-day-selected { background: #047857; border-color: #065f46; color: #ffffff; box-shadow: 0 0 0 2px #065f46; }
+        html.schedi-light .cal-day-selected .cal-day-label { color: #ecfdf5; }
+        html.schedi-light .cal-day-disabled { background: #e2e8f0; border-color: #94a3b8; color: #1e293b; }
+        html.schedi-light .cal-day-disabled .cal-day-label { color: #334155; }
+        html.schedi-light .cal-day-today { box-shadow: inset 0 0 0 2px #0f172a; }
+        html.schedi-light .cal-day-selected.cal-day-today { box-shadow: 0 0 0 2px #065f46, inset 0 0 0 2px #ffffff; }
+        /* /booking-day-contrast */
+        .biz-header { border-radius: 1rem; overflow: hidden; border: 1px solid rgba(255,255,255,0.08); background: rgba(17, 24, 39, 0.8); }
+        html.schedi-light .biz-header { background: #ffffff; border-color: #d7dee8; }
+        .biz-cover { background: #0f172a; }
+        .biz-cover[hidden], .biz-logo-wrap[hidden], .biz-address[hidden], .biz-hours[hidden], .biz-industry[hidden] { display: none !important; }
+        .biz-cover img { width: 100%; height: 140px; object-fit: cover; display: block; }
+        .biz-header-body { display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; }
+        .biz-header.has-cover .biz-header-body { margin-top: -28px; position: relative; }
+        .biz-logo-wrap { flex: 0 0 auto; }
+        .biz-logo { width: 48px; height: 48px; border-radius: 14px; object-fit: cover; display: block; background: #ffffff; border: 2px solid #ffffff; }
+        .biz-header.has-cover .biz-logo { box-shadow: 0 4px 14px rgba(15, 23, 42, 0.28); }
+        .biz-title { margin: 0; font-size: 1.2rem; font-weight: 800; line-height: 1.25; color: #f8fafc; word-break: break-word; }
+        html.schedi-light .biz-title { color: #0f172a; }
+        .biz-industry { margin: 2px 0 0; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #cbd5e1; }
+        html.schedi-light .biz-industry { color: #475569; }
+        .biz-address { display: inline-block; margin-top: 6px; color: #7dd3fc; font-size: 0.8125rem; font-weight: 600; text-decoration: underline; text-underline-offset: 2px; word-break: break-word; }
+        html.schedi-light .biz-address { color: #075985; }
+        .biz-hours { margin: 4px 0 0; font-size: 0.75rem; line-height: 1.45; color: #e2e8f0; }
+        html.schedi-light .biz-hours { color: #334155; }
+        .tz-note { margin: 4px 0 0; font-size: 0.75rem; line-height: 1.45; color: #e2e8f0; }
+        html.schedi-light .tz-note { color: #334155; }
+        @media (min-width: 640px) {
+            .biz-cover img { height: 200px; }
+            .biz-logo { width: 64px; height: 64px; }
+            .biz-title { font-size: 1.5rem; }
+            .biz-header-body { align-items: center; padding: 16px 20px; }
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col justify-between selection:bg-emerald-500 selection:text-slate-950">
 
-    <header class="sticky top-0 z-40 glass-card border-b border-slate-800 px-4 py-3">
-        <div class="max-w-4xl mx-auto flex items-center justify-between">
-            <div class="flex items-center space-x-3 min-w-0">
-                <img id="schediLogo" class="schedi-logo" src="/assets/logo-dark.svg" alt="Schedi" height="36" style="height:36px;width:auto;">
-                <div class="min-w-0">
-                    <h1 class="text-base font-bold text-white tracking-tight">${safeName}</h1>
-                    <span class="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">${safeIndustry} Portal</span>
-                </div>
-            </div>
-            <span class="flex items-center gap-2">
+    <header class="sticky top-0 z-40 glass-card border-b border-slate-800 px-4 py-2.5">
+        <div class="max-w-4xl mx-auto flex flex-wrap items-center justify-between gap-2">
+            <a href="https://schedi.app/" class="inline-flex items-center shrink-0" aria-label="Schedi home">
+                <img id="schediLogo" class="schedi-logo" src="/assets/logo-dark.svg" alt="Schedi" height="28" style="height:28px;width:auto;">
+            </a>
+            <span class="flex flex-wrap items-center justify-end gap-2">
                 <button type="button" id="schediThemeBtn" class="schedi-theme-btn" onclick="toggleSchediTheme()" title="Switch to light theme" aria-label="Switch to light theme"><i class="fa-solid fa-sun" aria-hidden="true"></i><span class="schedi-theme-btn-label">Light</span></button>
                 <a href="${clientHelpHref}" target="_blank" rel="noopener" class="text-xs text-slate-300 underline">Help</a>
                 ${schediPlanBadge}
@@ -11614,7 +11798,24 @@
     </header>
 
     <main class="max-w-4xl w-full mx-auto px-4 py-6 flex-grow space-y-6">
-        
+
+        <section id="bizHeader" class="biz-header" aria-label="Business">
+            <div id="bizCoverWrap" class="biz-cover" hidden>
+                <img id="bizCover" alt="" onerror="hideBrokenBizImage(this)">
+            </div>
+            <div class="biz-header-body">
+                <div id="bizLogoWrap" class="biz-logo-wrap" hidden>
+                    <img id="bizLogo" class="biz-logo" alt="" onerror="hideBrokenBizImage(this)">
+                </div>
+                <div class="min-w-0">
+                    <h1 id="bizTitle" class="biz-title">${safeName}</h1>
+                    <p id="bizIndustry" class="biz-industry">${safeIndustry}</p>
+                    <a id="bizAddress" class="biz-address" hidden target="_blank" rel="noopener noreferrer"></a>
+                    <p id="bizHours" class="biz-hours" hidden></p>
+                </div>
+            </div>
+        </section>
+
         <div class="glass-card rounded-2xl p-6 space-y-5">
             <div>
                 <h2 class="text-xl font-extrabold text-white">1. Select a Service</h2>
@@ -11662,6 +11863,7 @@
                     <div class="min-w-0">
                         <label class="text-xs font-bold text-white uppercase tracking-wider">Available Dynamic Time Slots</label>
                         <p id="selectedDateDisplayLabel" class="text-[11px] text-emerald-400 font-semibold mt-0.5"></p>
+                        <p id="tzNote" class="tz-note"></p>
                     </div>
                     <div class="text-right shrink-0">
                         <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total time</div>
@@ -11822,6 +12024,7 @@
             <p id="confirmationNote" class="text-xs text-slate-400 hidden"></p>
             <p class="text-xs text-slate-400">Confirmation code: <strong id="resCode" class="text-white font-mono"></strong></p>
             <p class="text-xs text-brand-400 font-bold">Scheduled for: <span id="resDateDisplay" class="text-white"></span> at <span id="resTimeDisplay" class="text-white"></span></p>
+            <p id="resTzNote" class="tz-note"></p>
             <p id="resServiceLine" class="hidden text-xs text-slate-300 font-semibold"></p>
             <div id="resSeriesBox" class="hidden p-3 rounded-xl bg-sky-950/40 border border-sky-500/30 text-left text-xs space-y-1">
                 <div class="font-bold text-sky-300"><i class="fa-solid fa-arrows-rotate mr-1"></i><span id="resSeriesLabel">Recurring series</span></div>
@@ -12707,6 +12910,173 @@
         function getPubLocation() {
             return String((tenantData && (tenantData.address || tenantData.location || tenantData.businessAddress || tenantData.businessLocation)) || '').trim();
         }
+        function publicHttpsUrl(raw) {
+            var s = String(raw || '').trim();
+            if (!s || s.length > 500) return '';
+            if (s.slice(0, 8).toLowerCase() !== 'https://') return '';
+            if (s.indexOf(' ') !== -1 || s.indexOf('<') !== -1 || s.indexOf('>') !== -1 || s.indexOf('"') !== -1 || s.indexOf("'") !== -1) return '';
+            return s;
+        }
+        function zonedNow(timeZone) {
+            var tz = timeZone || 'America/New_York';
+            try {
+                var fmt = new Intl.DateTimeFormat('en-US', {
+                    timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
+                    hour: '2-digit', minute: '2-digit', hour12: false
+                });
+                var map = {};
+                fmt.formatToParts(new Date()).forEach(function (part) {
+                    if (part.type !== 'literal') map[part.type] = part.value;
+                });
+                var hour = parseInt(map.hour, 10);
+                if (hour === 24) hour = 0;
+                return { iso: map.year + '-' + map.month + '-' + map.day, minutes: hour * 60 + parseInt(map.minute, 10) };
+            } catch (e) {
+                var d = new Date();
+                return { iso: localISODate(d), minutes: d.getHours() * 60 + d.getMinutes() };
+            }
+        }
+        function bizTodayIso() { return zonedNow(getPubTimezone()).iso; }
+        function getMinNoticeHoursPub(tenant) {
+            var raw = tenant && tenant.minNoticeHours;
+            if (raw == null || raw === '') return 2;
+            if (raw === 'none' || raw === 'None') return 0;
+            var n = Number(raw);
+            if (n === 0 || n === 1 || n === 2 || n === 4 || n === 12 || n === 24 || n === 48) return n;
+            return 2;
+        }
+        function slotInsideNotice(dateStr, startMins) {
+            var hours = getMinNoticeHoursPub(tenantData);
+            if (!(hours > 0)) return false;
+            var startUtc = wallTimeToUtcDatePub(dateStr, startMins, getPubTimezone());
+            if (!startUtc || isNaN(startUtc.getTime())) return false;
+            return startUtc.getTime() < Date.now() + hours * 60 * 60 * 1000;
+        }
+        function noticeReasonText() {
+            var hours = getMinNoticeHoursPub(tenantData);
+            if (hours === 1) return 'Needs at least 1 hour notice';
+            return 'Needs at least ' + hours + ' hours notice';
+        }
+        function zoneGenericName(timeZone) {
+            var tz = String(timeZone || 'America/New_York').trim() || 'America/New_York';
+            try {
+                function part(style) {
+                    var parts = new Intl.DateTimeFormat('en-US', { timeZone: tz, timeZoneName: style }).formatToParts(new Date());
+                    var found = parts.find(function (p) { return p.type === 'timeZoneName'; });
+                    return found ? found.value : '';
+                }
+                var longName = part('longGeneric');
+                var shortName = part('shortGeneric');
+                if (!longName) return tz;
+                if (!shortName || shortName.toLowerCase() === longName.toLowerCase()) return longName;
+                return longName + ' (' + shortName + ')';
+            } catch (e) { return tz; }
+        }
+        function timesShownNote() {
+            var biz = getPubTimezone();
+            var line = 'Times shown in ' + zoneGenericName(biz) + '.';
+            var visitor = '';
+            try { visitor = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) {}
+            if (visitor && visitor !== biz) line += ' Your browser is in ' + zoneGenericName(visitor) + '.';
+            return line;
+        }
+        function paintTimezoneNotes() {
+            var text = timesShownNote();
+            var a = document.getElementById('tzNote');
+            var b = document.getElementById('resTzNote');
+            if (a) a.textContent = text;
+            if (b) b.textContent = text;
+        }
+        function formatPublicHours(tenant) {
+            var order = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+            var hours = tenant && tenant.operatingHours;
+            if (!hours || typeof hours !== 'object') return '';
+            var groups = [];
+            for (var i = 0; i < order.length; i++) {
+                var day = order[i];
+                var h = hours[day];
+                var closed = !h || h.open === false;
+                var key = closed ? 'Closed' : (String(h.start || '').trim() + '–' + String(h.end || '').trim());
+                var last = groups.length ? groups[groups.length - 1] : null;
+                if (last && last.key === key) last.days.push(day);
+                else groups.push({ key: key, days: [day] });
+            }
+            return groups.map(function (g) {
+                var span = g.days.length === 1 ? g.days[0] : (g.days[0] + '–' + g.days[g.days.length - 1]);
+                return span + ' ' + g.key;
+            }).join(' · ');
+        }
+        function mapsHref(address) {
+            return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(address);
+        }
+        function hideBizImage(img) {
+            if (!img) return;
+            if (img.id === 'bizCover') {
+                var wrap = document.getElementById('bizCoverWrap');
+                if (wrap) wrap.hidden = true;
+                var header = document.getElementById('bizHeader');
+                if (header) header.classList.remove('has-cover');
+            } else if (img.id === 'bizLogo') {
+                var logoWrap = document.getElementById('bizLogoWrap');
+                if (logoWrap) logoWrap.hidden = true;
+            } else {
+                img.hidden = true;
+            }
+        }
+        window.hideBrokenBizImage = hideBizImage;
+        function paintBizHeader() {
+            var title = document.getElementById('bizTitle');
+            if (title) title.textContent = String((tenantData && tenantData.name) || 'Book an appointment');
+            var industryEl = document.getElementById('bizIndustry');
+            var industry = String((tenantData && tenantData.industry) || '').trim();
+            if (industryEl) {
+                industryEl.textContent = industry;
+                industryEl.hidden = !industry;
+            }
+            var address = getPubLocation();
+            var addrEl = document.getElementById('bizAddress');
+            if (addrEl) {
+                if (address) {
+                    addrEl.textContent = address;
+                    addrEl.href = mapsHref(address);
+                    addrEl.hidden = false;
+                } else {
+                    addrEl.hidden = true;
+                    addrEl.removeAttribute('href');
+                }
+            }
+            var hoursEl = document.getElementById('bizHours');
+            if (hoursEl) {
+                var hoursText = formatPublicHours(tenantData);
+                hoursEl.textContent = hoursText;
+                hoursEl.hidden = !hoursText;
+            }
+            var logo = publicHttpsUrl(tenantData && (tenantData.logoUrl || tenantData.logo || tenantData.businessLogo));
+            var logoEl = document.getElementById('bizLogo');
+            var logoWrap = document.getElementById('bizLogoWrap');
+            if (logoEl && logoWrap) {
+                if (logo) {
+                    logoEl.src = logo;
+                    logoEl.alt = String((tenantData && tenantData.name) || 'Business') + ' logo';
+                    logoWrap.hidden = false;
+                } else {
+                    logoWrap.hidden = true;
+                    logoEl.removeAttribute('src');
+                }
+            }
+            var cover = publicHttpsUrl(tenantData && (tenantData.coverUrl || tenantData.coverPhoto || tenantData.coverPhotoUrl));
+            var coverWrap = document.getElementById('bizCoverWrap');
+            var coverEl = document.getElementById('bizCover');
+            var header = document.getElementById('bizHeader');
+            if (cover && coverEl && coverWrap) {
+                coverEl.src = cover;
+                coverWrap.hidden = false;
+                if (header) header.classList.add('has-cover');
+            } else if (coverWrap) {
+                coverWrap.hidden = true;
+                if (header) header.classList.remove('has-cover');
+            }
+        }
         function pad2Cal(n) { return String(n).padStart(2, '0'); }
         function wallTimeToUtcDatePub(dateStr, minutesOfDay, timeZone) {
             var p = String(dateStr || '').split('-');
@@ -12862,10 +13232,15 @@
             }
         }
 
-        var selectedDateStr = localISODate();
-        var viewDate = new Date();
-        var viewMonth = viewDate.getMonth();
-        var viewYear = viewDate.getFullYear();
+        var selectedDateStr = bizTodayIso();
+        var viewParts = String(selectedDateStr || '').split('-');
+        var viewYear = parseInt(viewParts[0], 10);
+        var viewMonth = parseInt(viewParts[1], 10) - 1;
+        if (!viewYear || viewMonth < 0 || viewMonth > 11) {
+            var viewDate = new Date();
+            viewMonth = viewDate.getMonth();
+            viewYear = viewDate.getFullYear();
+        }
 
         function bookingPlan() {
             if (tenantData && (tenantData.complimentaryPro === true || tenantData.billingExempt === true)) return 'pro';
@@ -13177,6 +13552,9 @@
                     return 'Needs 15 minutes after the previous appointment';
                 }
             }
+            if (slotInsideNotice(dateStr, start)) return noticeReasonText();
+            var bizNow = zonedNow(getPubTimezone());
+            if (dateStr < bizNow.iso || (dateStr === bizNow.iso && start <= bizNow.minutes)) return 'That time has already passed';
             return null;
         }
 
@@ -13194,12 +13572,13 @@
             if (resolved.closed || isDateFullyBlocked(dateStr)) return [];
             var dur = cartDurationMins();
             var interval = getSlotIntervalMins(tenantData);
-            var isToday = dateStr === localISODate();
-            var now = new Date();
-            var nowMins = now.getHours() * 60 + now.getMinutes();
+            var bizNow = zonedNow(getPubTimezone());
+            var isToday = dateStr === bizNow.iso;
+            var nowMins = bizNow.minutes;
             var out = [];
             for (var ri = 0; ri < resolved.ranges.length; ri++) {
                 for (var t = resolved.ranges[ri].startMins; t + dur <= resolved.ranges[ri].endMins; t += interval) {
+                    if (slotInsideNotice(dateStr, t)) continue;
                     if (isToday && t <= nowMins) continue;
                     var label = fromMinutes(t);
                     if (!slotConflictReason(dateStr, label)) out.push(label);
@@ -13240,7 +13619,7 @@
             if (title) title.textContent = names[customViewMonth] + ' ' + customViewYear;
             var first = new Date(customViewYear, customViewMonth, 1).getDay();
             var days = new Date(customViewYear, customViewMonth + 1, 0).getDate();
-            var today = localISODate();
+            var today = bizTodayIso();
             var picked = Object.keys(customDates).length;
             var full = picked >= MAX_SERIES_VISITS - 1;
             var html = '';
@@ -13252,13 +13631,11 @@
                 var resolved = resolveHoursForDate(tenantData, iso);
                 var closed = resolved.closed || !!isDateFullyBlocked(iso);
                 var disabled = iso <= today && !isPicked || isFirst || (closed && !isPicked) || (full && !isPicked) || iso < selectedDateStr;
-                var cls = isFirst ? 'bg-sky-500/20 border-sky-500 text-sky-300'
-                    : isPicked ? 'bg-emerald-500 border-emerald-500 text-slate-950 font-black'
-                    : disabled ? 'bg-slate-950/40 border-slate-900 text-slate-600 opacity-60 cursor-not-allowed'
-                    : 'bg-slate-900 border-slate-800 text-slate-200 hover:border-emerald-500/60';
-                var sub = isFirst ? 'First' : isPicked ? 'Added' : closed ? 'Closed' : '';
-                html += '<button type="button" ' + (disabled ? 'disabled ' : '') + 'onclick="toggleCustomDate(' + JSON.stringify(iso).split('"').join("'") + ')" aria-pressed="' + (isPicked ? 'true' : 'false') + '" aria-label="' + escHtml(prettyDatePub(iso)) + (isPicked ? ', added' : '') + '" class="p-1.5 rounded-lg border text-center ' + cls + '">'
-                    + '<span class="block text-xs font-bold">' + day + '</span><span class="block text-[8px] uppercase leading-tight">' + sub + '</span></button>';
+                var state = isFirst ? 'special' : isPicked ? 'selected' : disabled ? 'disabled' : 'open';
+                var todayCls = iso === today ? ' cal-day-today' : '';
+                var sub = isFirst ? 'First' : isPicked ? 'Added' : closed ? 'Closed' : (iso === today ? 'Today' : '');
+                html += '<button type="button" ' + (disabled ? 'disabled ' : '') + 'onclick="toggleCustomDate(' + JSON.stringify(iso).split('"').join("'") + ')" aria-pressed="' + (isPicked ? 'true' : 'false') + '" aria-label="' + escHtml(prettyDatePub(iso) + ' ' + sub) + '" class="cal-day cal-day-' + state + todayCls + '">'
+                    + '<span class="cal-day-num">' + day + '</span><span class="cal-day-label">' + sub + '</span></button>';
             }
             grid.innerHTML = html;
             var note = document.getElementById('customDatesCountNote');
@@ -13355,6 +13732,8 @@
         }
 
         window.addEventListener('DOMContentLoaded', function () {
+            paintBizHeader();
+            paintTimezoneNotes();
             renderSvc();
             renderMonthCalendar();
             generateDynamicTimeSlots();
@@ -13574,13 +13953,13 @@
 
             const firstDay = new Date(viewYear, viewMonth, 1).getDay();
             const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
-            const todayStr = localISODate();
+            const todayStr = bizTodayIso();
             const dayMap = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
             let html = '';
 
             for (let i = 0; i < firstDay; i++) {
-                html += \`<div class="p-2 sm:p-3 rounded-xl bg-slate-950/20 border border-transparent"></div>\`;
+                html += \`<div class="p-2 sm:p-3 rounded-xl border border-transparent"></div>\`;
             }
 
             for (let day = 1; day <= daysInMonth; day++) {
@@ -13595,29 +13974,28 @@
                 const isOpen = !resolvedDay.closed;
                 const isSpecialOpen = !!(resolvedDay.special && isOpen);
                 const isSelected = isoStr === selectedDateStr;
+                const isToday = isoStr === todayStr;
                 const isPast = isoStr < todayStr;
                 const awayLabel = (!isPast && isOpen) ? isDateFullyBlocked(isoStr) : null;
                 const isAway = Boolean(awayLabel);
 
-                let btnClasses = "p-2 sm:p-2.5 rounded-xl border text-center transition-all flex flex-col items-center justify-center ";
+                let state = 'open';
+                if (isSelected) state = 'selected';
+                else if (isPast || !isOpen) state = 'disabled';
+                else if (isAway) state = 'away';
+                else if (isSpecialOpen) state = 'special';
 
-                if (isSelected) {
-                    btnClasses += "bg-emerald-500 border-emerald-500 text-slate-950 font-black shadow-lg glow-emerald ring-2 ring-emerald-400/50";
-                } else if (isPast) {
-                    btnClasses += "bg-slate-950/40 border-slate-900 text-slate-600 cursor-not-allowed opacity-50";
-                } else if (isAway) {
-                    btnClasses += "bg-amber-950/40 border-amber-500/30 text-amber-200/80 hover:border-amber-500/50";
-                } else if (!isOpen) {
-                    btnClasses += "bg-slate-950/70 border-slate-900/80 text-slate-600 hover:border-slate-800";
-                } else {
-                    btnClasses += "bg-slate-900/90 border-slate-800 text-slate-200 hover:border-emerald-500/50 hover:text-white";
-                }
+                let label = 'Open';
+                if (isAway) label = 'Away';
+                else if (!isOpen || isPast) label = isPast && isOpen ? 'Past' : 'Closed';
+                else if (isSelected && isToday) label = 'Today';
+                else if (isSelected) label = 'Selected';
+                else if (isSpecialOpen) label = 'Special';
+                else if (isToday) label = 'Today';
 
-                html += \`<button type="button" onclick="selectDate('\${isoStr}')" \${isPast ? 'disabled' : ''} class="\${btnClasses}">
-                    <span class="text-xs sm:text-sm font-bold">\${day}</span>
-                    <span class="text-[8px] uppercase tracking-tighter \${isSelected ? 'text-slate-900 font-bold' : isAway ? 'text-amber-400 font-semibold' : isSpecialOpen ? 'text-sky-400 font-semibold' : isOpen ? 'text-emerald-400 font-semibold' : 'text-slate-600'}">
-                        \${isAway ? 'Away' : !isOpen ? 'Closed' : isSelected ? 'Selected' : isSpecialOpen ? 'Special' : 'Open'}
-                    </span>
+                html += \`<button type="button" onclick="selectDate('\${isoStr}')" \${isPast ? 'disabled' : ''} class="cal-day cal-day-\${state}\${isToday ? ' cal-day-today' : ''}" aria-pressed="\${isSelected ? 'true' : 'false'}"\${isToday ? ' aria-current="date"' : ''} aria-label="\${label} \${monthNames[viewMonth]} \${day}">
+                    <span class="cal-day-num">\${day}</span>
+                    <span class="cal-day-label">\${label}</span>
                 </button>\`;
             }
 
@@ -13639,6 +14017,7 @@
             var info = document.getElementById('slotCountInfo');
             var displayLabel = document.getElementById('selectedDateDisplayLabel');
             if (!container) return;
+            paintTimezoneNotes();
 
             var parts = selectedDateStr.split('-');
             var dObj = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
@@ -13681,16 +14060,18 @@
                 .map(function (a) { var st = toMinutes(a.time); return st === null ? null : { start: st, end: st + appointmentSpanMins(a) }; })
                 .filter(function (v) { return v !== null; });
 
-            var now = new Date();
-            var isToday = selectedDateStr === localISODate();
-            var nowMins = now.getHours() * 60 + now.getMinutes();
+            var bizNow = zonedNow(getPubTimezone());
+            var isToday = selectedDateStr === bizNow.iso;
+            var nowMins = bizNow.minutes;
 
             var intervalMins = getSlotIntervalMins(tenantData);
             var slots = [];
+            var hiddenByNotice = 0;
             for (var ri = 0; ri < resolved.ranges.length; ri++) {
                 var openMins = resolved.ranges[ri].startMins;
                 var closeMins = resolved.ranges[ri].endMins;
                 for (var t = openMins; t + durationMins <= closeMins; t += intervalMins) {
+                    if (slotInsideNotice(selectedDateStr, t)) { hiddenByNotice++; continue; }
                     var slotEnd = t + durationMins;
 
                     var blockedBy = dateBlockConflictReason(selectedDateStr, t, slotEnd);
@@ -13728,7 +14109,9 @@
             }
 
             if (!slots.length) {
-                container.innerHTML = '<div class="col-span-full p-4 text-center text-slate-400 bg-slate-900 border border-slate-800 rounded-xl text-xs font-bold">This appointment is longer than the opening hours for this day.</div>';
+                container.innerHTML = hiddenByNotice
+                    ? '<div class="col-span-full p-4 text-center text-slate-700 bg-slate-100 border border-slate-300 rounded-xl text-xs font-bold">No times left outside the ' + escHtml(String(getMinNoticeHoursPub(tenantData))) + '-hour booking notice. Choose a later day.</div>'
+                    : '<div class="col-span-full p-4 text-center text-slate-400 bg-slate-900 border border-slate-800 rounded-xl text-xs font-bold">This appointment is longer than the opening hours for this day.</div>';
                 return;
             }
 
@@ -14260,6 +14643,21 @@
                         }).then(function (r) { return r.json().then(function (data) { return { ok: r.ok, data: data }; }); })
                           .then(function (out) {
                               if (!out.ok) console.warn('Booking save failed', out.data && out.data.error);
+                              if (!out.ok && out.data && out.data.error === 'too_soon') {
+                                  var dropped = {};
+                                  list.forEach(function (item) { if (item && item.id) dropped[item.id] = true; });
+                                  tenantData.publicSlots = (tenantData.publicSlots || []).filter(function (slot) { return !(slot && dropped[slot.id]); });
+                                  var errBox = document.getElementById('bookingErrMsg');
+                                  if (errBox) {
+                                      errBox.textContent = noticeReasonText() + '. Choose a later time.';
+                                      errBox.classList.remove('hidden');
+                                  }
+                                  var cards = document.querySelectorAll('main > .glass-card, main > .biz-header');
+                                  cards.forEach(function (card) { card.classList.remove('hidden'); });
+                                  var confirmCard = document.getElementById('confirmationCard');
+                                  if (confirmCard) confirmCard.classList.add('hidden');
+                                  generateDynamicTimeSlots();
+                              }
                           })
                           .catch(function (err) { console.warn('Booking save failed', err); });
                     }
@@ -14286,6 +14684,7 @@
                 document.getElementById('resCode').textContent = '#' + refId;
                 document.getElementById('resDateDisplay').textContent = selectedDateStr;
                 document.getElementById('resTimeDisplay').textContent = selectedTime;
+                paintTimezoneNotes();
                 var resSvc = document.getElementById('resServiceLine');
                 if (resSvc) {
                     if (cartIsMulti()) {
