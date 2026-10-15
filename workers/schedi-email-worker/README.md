@@ -241,3 +241,22 @@ Checkout rules (`checkoutEligibility`):
 - Setup that needs the Resend dashboard (our API key is send-only): enable open/click tracking on schedi.app with a tracking
   subdomain (CNAME, DNS-only), create the webhook to the URL above, then
   `XDG_CACHE_HOME=/tmp/wrangler-cache npx -y wrangler@3.114.1 secret put RESEND_WEBHOOK_SECRET`.
+
+## Deploying from this repo
+
+Run from this directory and name the config explicitly so Wrangler never picks up the repo-root `wrangler.jsonc` (that one is `schedi-web`):
+
+```
+npx wrangler deploy -c wrangler.toml
+```
+
+Secrets stay in Cloudflare (`wrangler secret put`). Nothing secret is in this directory.
+
+## Owner cancel / resume
+
+`POST /billing/cancel` and `POST /billing/resume` (`src/owner-billing-schedule.js`) take `{ tenantId, session }`.
+The session must be the owner of that business (or agency). Complimentary and billing-exempt plans are refused,
+and the Stripe subscription's customer must match the stored `stripeCustomerId`. Cancel sets
+`cancel_at_period_end=true`; resume clears it only when a cancel is scheduled. Access ends when Stripe sends
+`customer.subscription.deleted`. `cancelAtPeriodEnd` / `currentPeriodEnd` are kept on the private tenant doc
+and returned by `/billing/status` for a signed-in owner.

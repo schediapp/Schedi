@@ -23,6 +23,8 @@ export const PRIVATE_TENANT_KEYS = [
   'monthlyPrice',
   'paymentForm',
   'hqTags',
+  'cancelAtPeriodEnd',
+  'currentPeriodEnd',
 ];
 /** notifications.replyTo (an email address) is stored privately as this key. */
 export const PRIVATE_REPLY_TO_KEY = 'notificationsReplyTo';
@@ -35,6 +37,8 @@ export const AGENCY_ONLY_PRIVATE_KEYS = new Set([
   'monthlyPrice',
   'paymentForm',
   'hqTags',
+  'cancelAtPeriodEnd',
+  'currentPeriodEnd',
 ]);
 
 const PRIVATE_SET = new Set(PRIVATE_TENANT_KEYS);

@@ -39,6 +39,7 @@ import { notifyOwnerOfNewBooking, notifyOwnerOfCancellation, ownerNotifyEnabledF
 import { handleBookingIcs } from './booking-ics.js';
 import { handleBookingMailPost } from './booking-mail.js';
 import { rateLimitOk } from './rate-limit.js';
+import { handleOwnerBillingSchedule, ownerBillingScheduleAction } from './owner-billing-schedule.js';
 import {
   splitTenant,
   mergePrivateInto,
@@ -1968,6 +1969,8 @@ async function handleBillingStatus(request, env, origin, url) {
       plan: tenant.plan || null,
       monthlyPrice: feeNumber(tenant),
       paymentForm: tenant.paymentForm || null,
+      cancelAtPeriodEnd: tenant.cancelAtPeriodEnd === true,
+      currentPeriodEnd: tenant.currentPeriodEnd || null,
       source: 'firestore',
     },
     200,
@@ -2080,6 +2083,15 @@ async function handleStripeWebhook(request, env) {
         subscriptionId: obj.id,
       });
       const result = await markSubscriptionPaused(env, tenantId, obj.id);
+      if (result.ok && !result.ignored) {
+        // The paid period ended; a scheduled cancel is no longer pending.
+        try {
+          const idToken = await firebaseAnonymousToken(env);
+          await patchTenantFields(env, idToken, result.tenantId, { cancelAtPeriodEnd: false, currentPeriodEnd: '' });
+        } catch (_) {
+          console.warn('clear cancel schedule failed');
+        }
+      }
       return json({ ok: true, result }, result.ok || result.ignored ? 200 : 500, '');
     }
     return json({ ok: true, ignored: true }, 200, '');
@@ -2762,6 +2774,25 @@ function bookingCheckoutCorsHeaders() {
   };
 }
 
+/** Wiring for POST /billing/cancel and /billing/resume (owner-billing-schedule.js). */
+function ownerBillingScheduleDeps(env) {
+  return {
+    sessionAllows: (session, tenantId) => billingSessionAllows(env, session, tenantId),
+    loadTenant: async (tenantId) => {
+      const idToken = await firebaseAnonymousToken(env);
+      return getTenantById(env, idToken, tenantId);
+    },
+    stripeForm: (path, init) => stripeRequest(env, path, init || {}),
+    saveSchedule: async (tenantId, patch) => {
+      const idToken = await firebaseAnonymousToken(env);
+      await patchTenantFields(env, idToken, tenantId, {
+        cancelAtPeriodEnd: patch.cancelAtPeriodEnd === true,
+        currentPeriodEnd: String(patch.currentPeriodEnd || ''),
+      });
+    },
+  };
+}
+
 async function handleBillingRequest(request, env, origin, path, url) {
   if (request.method === 'OPTIONS' && path === '/billing/booking-checkout') {
     return new Response(null, { status: 204, headers: bookingCheckoutCorsHeaders() });
@@ -2805,12 +2836,16 @@ async function handleBillingRequest(request, env, origin, path, url) {
     if (request.method !== 'POST') return json({ ok: false, error: 'method_not_allowed' }, 405, origin);
     return handleBillingPortal(request, env, origin);
   }
+  if (ownerBillingScheduleAction(path)) {
+    const scheduled = await handleOwnerBillingSchedule(request, path, ownerBillingScheduleDeps(env));
+    return json(scheduled.body, scheduled.status, origin);
+  }
   if (path === '/billing/status') {
     if (request.method !== 'GET' && request.method !== 'POST') return json({ ok: false, error: 'method_not_allowed' }, 405, origin);
     return handleBillingStatus(request, env, origin, url);
   }
   if (path === '/billing' && request.method === 'GET') {
-    return json({ ok: true, service: 'schedi-billing', endpoints: ['checkout', 'booking-checkout', 'portal', 'status', 'webhook'] }, 200, origin);
+    return json({ ok: true, service: 'schedi-billing', endpoints: ['checkout', 'booking-checkout', 'portal', 'status', 'cancel', 'resume', 'webhook'] }, 200, origin);
   }
   return json({ ok: false, error: 'not_found' }, 404, origin);
 }
