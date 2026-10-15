@@ -7,7 +7,8 @@
  * Portal saves (`sync`) merge by booking id. A booking the client did not send stays
  * as stored, so a stale roster cannot delete or replace a booking it never loaded.
  * Only action `delete` removes a booking, and only that id. A client that sends the
- * rosterRevision from an older read gets 409 and must reload.
+ * rosterRevision from an older read gets 409 and must reload. Successful writes
+ * return the new rosterRevision so the same page can save again without a 409.
  */
 import { readSession } from './owner-auth.js';
 import { isUnpaidPast } from './unpaid-digest.js';
@@ -759,6 +760,12 @@ function clientRosterRevision(value) {
   return Math.floor(n);
 }
 
+function publishedRosterRevision(list) {
+  const n = Number(list && list.rosterRevision);
+  if (!Number.isFinite(n) || n < 0) return 0;
+  return Math.floor(n);
+}
+
 async function sessionCanAccess(env, sessionToken, tenantId) {
   const session = await readSession(env, sessionToken);
   if (!session) return null;
@@ -996,7 +1003,7 @@ export async function handlePrivateBookingHttp(request, env, origin, path, deps,
     return respond(json, {
       ok: true,
       count: saved.length,
-      rosterRevision: Number(saved.rosterRevision) || 0,
+      rosterRevision: publishedRosterRevision(saved),
     }, 200, origin, isAllowedOrigin);
   }
 
@@ -1052,7 +1059,7 @@ export async function handlePrivateBookingHttp(request, env, origin, path, deps,
     appts[idx] = next;
     const feePi = validServerId(next.cancellationFeePaymentIntentId, 'pi');
     delete next.cancellationFeePaymentIntentId;
-    await persistTenantAppointments(env, idToken, tenant.id, appts, {
+    const persisted = await persistTenantAppointments(env, idToken, tenant.id, appts, {
       trustFee: body.cancel === true,
       feeBookingId: next.id,
       feePaymentIntentId: feePi,
@@ -1066,6 +1073,7 @@ export async function handlePrivateBookingHttp(request, env, origin, path, deps,
     return respond(json, {
       ok: true,
       appointment: bookingForClient(saved),
+      rosterRevision: publishedRosterRevision(persisted),
       cancellationFee: saved.cancellationFeeStatus ? {
         status: saved.cancellationFeeStatus,
         amount: Number(saved.cancellationFeeAmount) || 0,
@@ -1096,7 +1104,12 @@ export async function handlePrivateBookingHttp(request, env, origin, path, deps,
     try { await deleteReminderDoc(env, tenantId, bookingId); } catch (errRem) {
       console.warn('delete reminder cleanup', errRem && errRem.message ? errRem.message : errRem);
     }
-    return respond(json, { ok: true, deleted: bookingId, count: next.length }, 200, origin, isAllowedOrigin);
+    return respond(json, {
+      ok: true,
+      deleted: bookingId,
+      count: next.length,
+      rosterRevision: publishedRosterRevision(next),
+    }, 200, origin, isAllowedOrigin);
   }
 
   if (action === 'create') {
@@ -1144,7 +1157,7 @@ export async function handlePrivateBookingHttp(request, env, origin, path, deps,
       created.push(booking);
     }
     const saved = existing.concat(created);
-    await persistTenantAppointments(env, idToken, tenant.id, saved);
+    const persisted = await persistTenantAppointments(env, idToken, tenant.id, saved);
     if (typeof deps.notifyOwnerOfNewBookings === 'function') {
       const notifyTask = Promise.resolve()
         .then(() => deps.notifyOwnerOfNewBookings(env, tenant, created))
@@ -1154,7 +1167,11 @@ export async function handlePrivateBookingHttp(request, env, origin, path, deps,
       if (ctx && typeof ctx.waitUntil === 'function') ctx.waitUntil(notifyTask);
       else await notifyTask.catch(() => {});
     }
-    return respond(json, { ok: true, bookings: created }, 200, origin, isAllowedOrigin);
+    return respond(json, {
+      ok: true,
+      bookings: created,
+      rosterRevision: publishedRosterRevision(persisted),
+    }, 200, origin, isAllowedOrigin);
   }
 
   return respond(json, { ok: false, error: 'not_found' }, 404, origin, isAllowedOrigin);

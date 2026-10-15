@@ -2448,6 +2448,12 @@
             });
         }
 
+        function rememberRosterRevision(tenant, data) {
+            if (!tenant || !data) return;
+            var rev = data.rosterRevision;
+            if (typeof rev === 'number' && isFinite(rev)) tenant._rosterRevision = rev;
+        }
+
         async function refreshPrivateBookings() {
             var session = schediAuthSession();
             if (!session) return;
@@ -2465,7 +2471,7 @@
                     if (!tenant) return;
                     tenant.appointments = Array.isArray(row.appointments) ? row.appointments : [];
                     tenant._privateBookingsLoaded = true;
-                    if (typeof row.rosterRevision === 'number' && isFinite(row.rosterRevision)) tenant._rosterRevision = row.rosterRevision;
+                    rememberRosterRevision(tenant, row);
                 });
                 window.__schediRosterLoadedAt = Date.now();
                 try { if (window.schediRosterStamp) window.schediRosterStamp(); } catch (errStamp) {}
@@ -2525,7 +2531,7 @@
                     return { ok: false, skipped: false, error: 'stale_roster', status: 409 };
                 }
                 if (!res.ok || !data.ok) return { ok: false, skipped: false, error: data.error || ('http_' + res.status), status: res.status };
-                if (typeof data.rosterRevision === 'number' && isFinite(data.rosterRevision)) tenant._rosterRevision = data.rosterRevision;
+                rememberRosterRevision(tenant, data);
                 return { ok: true };
             } catch (err) {
                 return { ok: false, skipped: false, error: 'network' };
@@ -3009,6 +3015,7 @@
                 }
 
                 bookings.slice().reverse().forEach(function (b) { tenant.appointments.unshift(b); });
+                rememberRosterRevision(tenant, event.data);
                 var booking = bookings[0];
                 var choseCardPay = String(booking.paymentMethod || '').toLowerCase() === 'card';
                 // The public page owns Checkout when checkoutOwned is set, so the request card stays up.
@@ -4967,6 +4974,7 @@
                     setManageActionMsg('Could not cancel this appointment.', 'error');
                     return;
                 }
+                rememberRosterRevision(tenant, out.data);
                 var feeResult = out.data && out.data.cancellationFee;
                 platformState.manageFeeNote = '';
                 if (feeResult && feeResult.status === 'collected') {
@@ -5018,6 +5026,7 @@
                     setManageActionMsg((out.data && out.data.error === 'slot_taken') ? 'That time was just taken.' : 'Could not reschedule.', 'error');
                     return;
                 }
+                rememberRosterRevision(found.tenant, out.data);
                 var prevSlot = { date: found.appt.date, time: found.appt.time };
                 found.appt.date = newDate;
                 found.appt.time = newTime;
@@ -11080,7 +11089,10 @@
                     });
                     var data = {};
                     try { data = await res.json(); } catch (errJ) { data = {}; }
-                    if (res.ok && data && data.ok) usedWorkerDelete = true;
+                    if (res.ok && data && data.ok) {
+                        usedWorkerDelete = true;
+                        rememberRosterRevision(tenant, data);
+                    }
                 }
             } catch (errDel) {}
             await saveState();
@@ -14294,6 +14306,10 @@
                 } catch (holdErr) {}
                 window.__schediHoldPublicConfirm = true;
 
+                // Always email the client on create: Free/"You're booked!", Starter+Pro pending/"Request sent".
+                // Owner notify for pending is handled by the worker (and parent portal alert); skip duplicate owner mail in queueStandalone when pending.
+                var emailQueued = false;
+                try { queueStandaloneConfirmationEmail(booking); emailQueued = true; } catch (err) { console.warn('Confirmation email skipped:', err); }
                 (function syncBookingsToFirestore(list) {
                     function doUpdate() {
                         var saved = list.map(function (item) {
@@ -14303,35 +14319,38 @@
                             }
                             return copy;
                         });
-                        fetch('https://schedi.app/api/bookings', {
+                        return fetch('https://schedi.app/api/bookings', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ action: 'create', tenantId: tenantData.id, bookings: saved })
                         }).then(function (r) { return r.json().then(function (data) { return { ok: r.ok, data: data }; }); })
                           .then(function (out) {
                               if (!out.ok) console.warn('Booking save failed', out.data && out.data.error);
+                              return out;
                           })
-                          .catch(function (err) { console.warn('Booking save failed', err); });
+                          .catch(function (err) {
+                              console.warn('Booking save failed', err);
+                              return null;
+                          });
                     }
-                    doUpdate();
-                })(bookings);
-
-                // Always email the client on create: Free/"You're booked!", Starter+Pro pending/"Request sent".
-                // Owner notify for pending is handled by the worker (and parent portal alert); skip duplicate owner mail in queueStandalone when pending.
-                var emailQueued = false;
-                try { queueStandaloneConfirmationEmail(booking); emailQueued = true; } catch (err) { console.warn('Confirmation email skipped:', err); }
-                if (window.parent !== window) {
-                    try {
-                        window.parent.postMessage({
+                    // Tell the portal only after create returns, so it can store rosterRevision before saveState.
+                    doUpdate().then(function (out) {
+                        if (window.parent === window) return;
+                        var msg = {
                             type: 'NEW_BOOKING_SUBMITTED',
                             booking: booking,
                             bookings: bookings,
                             emailHandled: emailQueued,
                             needsCardCheckout: payByCard,
                             checkoutOwned: true
-                        }, (PLATFORM_ORIGIN && PLATFORM_ORIGIN !== 'null') ? PLATFORM_ORIGIN : '*');
-                    } catch (err) {}
-                }
+                        };
+                        var rev = out && out.ok && out.data && out.data.ok ? out.data.rosterRevision : undefined;
+                        if (typeof rev === 'number' && isFinite(rev)) msg.rosterRevision = rev;
+                        try {
+                            window.parent.postMessage(msg, (PLATFORM_ORIGIN && PLATFORM_ORIGIN !== 'null') ? PLATFORM_ORIGIN : '*');
+                        } catch (errMsg) {}
+                    });
+                })(bookings);
 
                 document.getElementById('resCode').textContent = '#' + refId;
                 document.getElementById('resDateDisplay').textContent = selectedDateStr;
