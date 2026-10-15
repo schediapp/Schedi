@@ -7,6 +7,8 @@ import {
   HERO_PATH,
   HERO_SVG,
   renderMarketingBoot,
+  renderMarketingTheme,
+  THEME_SCRIPT_PATH,
   renderMarketingPage,
   renderNotFound,
   renderRobots,
@@ -54,7 +56,9 @@ const RESERVED = new Set([
   "portal",
   "for",
   "pricing",
+  "login",
   "marketing-boot.js",
+  "marketing-theme.js",
 ]);
 
 const STATIC_TYPES: Record<string, string> = {
@@ -63,7 +67,7 @@ const STATIC_TYPES: Record<string, string> = {
   "/manifest.webmanifest": "application/manifest+json; charset=utf-8",
 };
 
-const SPA_EXACT = new Set(["signup", "reset", "auth", "agency", "hq", "hq-9h7p52"]);
+const SPA_EXACT = new Set(["login", "signup", "reset", "auth", "agency", "hq", "hq-9h7p52"]);
 
 export function contentSecurityPolicy(html: boolean): string {
   if (!html) return "";
@@ -150,7 +154,7 @@ function hasFileExtension(pathname: string): boolean {
 }
 
 function isStaticFile(pathname: string): boolean {
-  if (pathname === HERO_PATH || pathname === "/marketing-boot.js") return false;
+  if (pathname === HERO_PATH || pathname === "/marketing-boot.js" || pathname === THEME_SCRIPT_PATH) return false;
   if (pathname === "/robots.txt" || pathname === "/sitemap.xml") return false;
   if (STATIC_TYPES[pathname]) return true;
   if (pathname.startsWith("/assets/")) return true;
@@ -438,6 +442,15 @@ export async function handleRequest(request: Request, env: SchediEnv, ctx: Sched
       method,
     );
   }
+  if (collapsed === THEME_SCRIPT_PATH) {
+    return textResponse(
+      renderMarketingTheme(),
+      200,
+      "text/javascript; charset=utf-8",
+      { "Cache-Control": "public, max-age=3600" },
+      method,
+    );
+  }
   if (collapsed === "/marketing-boot.js") {
     return textResponse(
       renderMarketingBoot(),
@@ -466,6 +479,15 @@ export async function handleRequest(request: Request, env: SchediEnv, ctx: Sched
     return notFound(method);
   }
 
+  if (lower === "/" && url.searchParams.get("portal") === "login") {
+    // Clean owner login URL. Old links and installed shortcuts keep working.
+    const dest = new URL(url.toString());
+    dest.protocol = "https:";
+    dest.port = "";
+    dest.pathname = "/login";
+    dest.searchParams.delete("portal");
+    return redirect(dest.toString(), 302);
+  }
   if (lower === "/" && wantsPortal(url)) {
     return serveSpa(request, env, ctx, method, null, false);
   }

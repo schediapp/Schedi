@@ -17,6 +17,10 @@ export type MarketingPage = {
   /** Hero illustration is the LCP image and is preloaded. */
   hero?: boolean;
   softwareJsonLd?: boolean;
+  /** Rich marketing layout (hero, features, plan cards). Omit for plain article pages. */
+  layout?: "home" | "pricing";
+  /** Short line under the H1 in the rich layouts. */
+  lede?: string;
   faqs: Faq[];
   /** HTML placed inside <article id="copy"> after the H1. Already safe. */
   bodyHtml: string;
@@ -24,6 +28,41 @@ export type MarketingPage = {
 
 const PLAN_FACTS =
   "Free is $0: pay at the appointment, one service, and five bookings a week. Those bookings confirm as soon as the client reserves. Starter is $29 a month: more than one service, no weekly booking cap, and Cash App, Venmo, Zelle, PayPal, plus pay at the appointment. Starter and Pro bookings stay pending until you accept or deny them. Pro is $49 a month and includes Starter. Card checkout and an appointment deposit are Pro settings. Both stay off until you turn them on. A card charge, including a deposit, is created on the business's Stripe account. Schedi does not take a cut of that charge. Repeating visits (weekly, biweekly, or monthly) are Pro only and stay off until you turn them on.";
+
+export type PlanRow = { label: string; free: string; starter: string; pro: string };
+
+/**
+ * Mirror of schediPlanCompareRows() in site/index.html (signup Compare Plans).
+ * tests/plan-rows-sync.test.ts fails if the two drift apart.
+ */
+export const PLAN_COMPARE_ROWS: PlanRow[] = [
+  { label: "Monthly price", free: "$0", starter: "$29", pro: "$49" },
+  { label: "Services", free: "1", starter: "Unlimited", pro: "Unlimited" },
+  { label: "Bookings per week", free: "5", starter: "Unlimited", pro: "Unlimited" },
+  { label: "Pay at appointment", free: "Yes", starter: "Yes", pro: "Yes" },
+  { label: "Manual pay (Cash App, Venmo, Zelle, PayPal)", free: "No", starter: "Yes", pro: "Yes" },
+  { label: "Card checkout (Stripe)", free: "No", starter: "No", pro: "Yes" },
+  { label: "Appointment deposits", free: "No", starter: "No", pro: "Yes" },
+  { label: "Cancellation fee on card", free: "Rule only", starter: "Rule only", pro: "Can charge" },
+  { label: "Booking approval", free: "Auto-confirm", starter: "Accept / Deny", pro: "Accept / Deny" },
+  { label: "Repeating appointments", free: "No", starter: "No", pro: "Yes" },
+  { label: "Agency Management", free: "No", starter: "No", pro: "Yes" },
+];
+
+export function planCompareTableHtml(): string {
+  const body = PLAN_COMPARE_ROWS.map(
+    (r) => `<tr><th scope="row">${escapeHtml(r.label)}</th><td>${escapeHtml(r.free)}</td><td>${escapeHtml(r.starter)}</td><td>${escapeHtml(r.pro)}</td></tr>`,
+  ).join("\n          ");
+  return `<div class="table-wrap"><table>
+        <caption>Compare every plan</caption>
+        <thead>
+          <tr><th scope="col">Feature</th><th scope="col">Free</th><th scope="col">Starter</th><th scope="col">Pro</th></tr>
+        </thead>
+        <tbody>
+          ${body}
+        </tbody>
+      </table></div>`;
+}
 
 export const VERTICALS: { path: string; label: string }[] = [
   { path: "/for/barbers", label: "Barbers" },
@@ -62,14 +101,27 @@ const reminders =
 const noShow =
   "A no-show still costs the time you held. The reminder email is the nudge the morning of the visit. On Pro, a card deposit can be required before the appointment is confirmed, and it stays off until you turn it on. Free and Starter cannot collect a card deposit. If a client who already paid by card cancels inside the window you set, Pro can charge that cancellation fee. Free and Starter can show the rule and do not charge a card.";
 
-const HELP_VIDEOS: { slug: string; title: string; desc: string; dur: string }[] = [
-  { slug: "owner-01-create-your-page", title: "Create your booking page", desc: "Sign up, get your free page, and compare Free, Starter, and Pro.", dur: "0:24" },
-  { slug: "owner-02-add-services", title: "Add your services", desc: "Add each service with its length and an optional price.", dur: "0:21" },
-  { slug: "owner-03-set-hours", title: "Set your hours", desc: "Pick the days you work and your open and close times.", dur: "0:20" },
-  { slug: "owner-04-payment-options", title: "Payment options", desc: "Turn on Cash App, Zelle, Venmo, or PayPal on Starter and Pro, or keep pay at appointment.", dur: "0:28" },
-  { slug: "owner-05-share-booking-link", title: "Share your booking link", desc: "Copy your link for your bio and see what clients see.", dur: "0:20" },
-  { slug: "owner-14-email-confirmations", title: "Email confirmations and reminders", desc: "Set your reply-to email and same-day reminder emails.", dur: "0:23" },
-  { slug: "client-booking-demo", title: "How clients book", desc: "Clients pick a service, a day and time, enter their info, and choose how to pay.", dur: "0:29" },
+const HELP_VIDEOS: { slug: string; title: string; desc: string; dur: string; v: number }[] = [
+  { slug: "owner-01-create-your-page", title: "Create your booking page", desc: "Sign up and get your booking page ready in a few minutes.", dur: "0:24", v: 7 },
+  { slug: "owner-02-add-services", title: "Add your services", desc: "Add each service with its length and an optional price.", dur: "0:21", v: 7 },
+  { slug: "owner-03-set-hours", title: "Set your hours", desc: "Pick the days you work and your open and close times.", dur: "0:20", v: 7 },
+  { slug: "owner-04-payment-options", title: "Payment options", desc: "Turn on Cash App, Zelle, Venmo, or PayPal, or keep pay at appointment.", dur: "0:28", v: 7 },
+  { slug: "owner-05-share-booking-link", title: "Share your booking link", desc: "Copy or Share your link from the top of your portal. Open Public Page and Add to home screen are in More & settings.", dur: "0:20", v: 7 },
+  { slug: "owner-06-accept-booking-request", title: "Accept a booking request", desc: "On phones, each booking is a card. Tap Accept and it shows as Accepted.", dur: "0:20", v: 7 },
+  { slug: "owner-07-appointments-report", title: "Appointments report", desc: "See counts, recorded prices, marked paid, and walk-ins; export CSV or print.", dur: "0:21", v: 7 },
+  { slug: "owner-08-add-manual-appointment", title: "Add a walk-in or phone booking", desc: "Log a walk-in or phone booking with the Walk-in toggle, saved-client suggest, open time slot, and payment status.", dur: "0:28", v: 7 },
+  { slug: "owner-09-mark-paid", title: "Mark an appointment paid", desc: "Tap Mark paid, pick how the client paid, and the booking turns green.", dur: "0:22", v: 7 },
+  { slug: "owner-10-reschedule", title: "Reschedule an appointment", desc: "Pick a new date and an open time slot, then tap Update Reservation.", dur: "0:23", v: 7 },
+  { slug: "owner-11-cancel-appointment", title: "Cancel an appointment", desc: "Tap Cancel and confirm; the booking stays on your roster as Cancelled.", dur: "0:20", v: 7 },
+  { slug: "owner-12-special-hours", title: "Special hours", desc: "Close or change your hours for one date without touching your weekly hours.", dur: "0:21", v: 7 },
+  { slug: "owner-13-date-blocks", title: "Vacation and date blocks", desc: "Block a range of dates so clients cannot book them.", dur: "0:22", v: 7 },
+  { slug: "owner-14-email-confirmations", title: "Email confirmations and reminders", desc: "Set your Reply-To email, an extra note, and same-day reminder emails.", dur: "0:23", v: 7 },
+  { slug: "owner-15-recurring-visits-pro", title: "Recurring appointments", desc: "Let clients book weekly, every two weeks, or monthly. It stays off until you turn it on.", dur: "0:21", v: 7 },
+  { slug: "owner-16-clients", title: "Clients list", desc: "Search, add, or remove clients. Clients added from a booking are labeled so you can tell.", dur: "0:24", v: 7 },
+  { slug: "owner-17-import-clients-csv", title: "Import clients from CSV", desc: "Upload a CSV, match columns, preview, and import. Schedi never emails imports.", dur: "0:22", v: 7 },
+  { slug: "owner-18-compare-plans", title: "Compare plans", desc: "Open the plan chart from your Schedi subscription card to see what each plan includes.", dur: "0:18", v: 7 },
+  { slug: "owner-19-roster-week-month", title: "Week and month roster", desc: "Switch to Week or Month, move with Previous, Next, or Today, tap a booking for details, and tap a busy day.", dur: "0:22", v: 7 },
+  { slug: "client-booking-demo", title: "How clients book", desc: "Clients pick a service, a day and time, enter their info, and choose how to pay.", dur: "0:29", v: 4 },
 ];
 
 export const MARKETING_PAGES: MarketingPage[] = [
@@ -78,8 +130,9 @@ export const MARKETING_PAGES: MarketingPage[] = [
     title: "Schedi | Booking pages for service businesses",
     description:
       "Clients book on your link instead of texts and paper forms. Free, Starter $29/mo, or Pro $49/mo with card payments and deposits.",
-    h1: "Clients book on your page. You stop collecting appointments by text and paper forms.",
-    portalBoot: true,
+    h1: "Your clients book online. You get your time back.",
+    lede: "Schedi gives your business one simple booking link. Clients pick a service and a time, and the appointment lands in your portal. No more back-and-forth texts or paper forms.",
+    layout: "home",
     hero: true,
     softwareJsonLd: true,
     faqs: [
@@ -124,17 +177,6 @@ export const MARKETING_PAGES: MarketingPage[] = [
           <li><strong>Send the link.</strong> The client chooses a time. You manage it in the business portal.</li>
         </ol>
       </section>`,
-      `<section>
-        <h2>Plans</h2>
-        <p>Free is $0. Starter is $29/mo. Pro is $49/mo. Nothing is charged until checkout finishes.</p>
-        <h3>Free</h3>
-        <p>$0. Pay at the appointment. One service. Five bookings a week.</p>
-        <h3>Starter</h3>
-        <p>$29/mo. Pay at the appointment. Cash App, Venmo, Zelle, and PayPal. More than one service. No weekly booking cap.</p>
-        <h3>Pro</h3>
-        <p>$49/mo. Everything in Starter. Card checkout, off until you turn it on. Card deposit, off until you turn it on. Repeating visits, off until you turn it on.</p>
-        <p>Card checkout, a card deposit, and repeating visits are Pro settings. They stay off until you turn them on. Free only allows pay at the appointment.</p>
-      </section>`,
       p(shareLink),
       p(reminders),
       p(noShow),
@@ -146,7 +188,9 @@ export const MARKETING_PAGES: MarketingPage[] = [
     title: "Schedi pricing | Free, Starter, and Pro",
     description:
       "Compare Free at $0, Starter at $29/mo, and Pro at $49/mo. Pro adds client card payments and deposits through Stripe.",
-    h1: "Schedi pricing",
+    h1: "Simple pricing that grows with you",
+    lede: "Start free and upgrade when you're ready. Prices are monthly, and nothing is charged until checkout finishes.",
+    layout: "pricing",
     softwareJsonLd: true,
     faqs: [
       {
@@ -172,24 +216,7 @@ export const MARKETING_PAGES: MarketingPage[] = [
     bodyHtml: [
       p("Prices are monthly. Upgrade or switch from the business portal. Nothing is charged until checkout finishes."),
       ...OWNER_SUBSCRIPTION_POLICY_TERMS.map((paragraph) => p(paragraph)),
-      `<table>
-        <caption>Plan comparison</caption>
-        <thead>
-          <tr><th>Feature</th><th>Free</th><th>Starter</th><th>Pro</th></tr>
-        </thead>
-        <tbody>
-          <tr><th>Monthly price</th><td>$0</td><td>$29</td><td>$49</td></tr>
-          <tr><th>Services</th><td>1</td><td>Unlimited</td><td>Unlimited</td></tr>
-          <tr><th>Bookings per week</th><td>5</td><td>Unlimited</td><td>Unlimited</td></tr>
-          <tr><th>Pay at appointment</th><td>Yes</td><td>Yes</td><td>Yes</td></tr>
-          <tr><th>Manual pay (Cash App, Venmo, Zelle, PayPal)</th><td>No</td><td>Yes</td><td>Yes</td></tr>
-          <tr><th>Card checkout (Stripe)</th><td>No</td><td>No</td><td>Yes</td></tr>
-          <tr><th>Appointment deposits</th><td>No</td><td>No</td><td>Yes</td></tr>
-          <tr><th>Cancellation fee on card</th><td>Rule only</td><td>Rule only</td><td>Can charge</td></tr>
-          <tr><th>Booking approval</th><td>Auto-confirm</td><td>Accept / Deny</td><td>Accept / Deny</td></tr>
-          <tr><th>Repeating appointments</th><td>No</td><td>No</td><td>Yes</td></tr>
-        </tbody>
-      </table>`,
+      planCompareTableHtml(),
       p(PLAN_FACTS),
       p("Owner subscriptions bill on the Schedi platform account. Client card payments are separate: they are direct charges on the connected account the business finishes in Stripe. Cash App, Zelle, Venmo, PayPal, and pay at the appointment do not create a Stripe charge."),
       p(reminders + " " + shareLink),
@@ -412,8 +439,8 @@ function vertical(input: {
 
 function helpVideosHtml(): string {
   const cards = HELP_VIDEOS.map((video) => {
-    const poster = `/assets/help-videos/${video.slug}.jpg?v=4`;
-    const file = `/assets/help-videos/${video.slug}.mp4?v=4`;
+    const poster = `/assets/help-videos/${video.slug}.jpg?v=${video.v}`;
+    const file = `/assets/help-videos/${video.slug}.mp4?v=${video.v}`;
     const title = escapeHtml(video.title);
     const desc = escapeHtml(video.desc);
     return `<figure>
