@@ -100,20 +100,32 @@ describe("nextPushDoc", () => {
 });
 
 describe("buildFcmMessage", () => {
-  const meta = { kind: "new", tenantId: "acme", bookingId: "b1", tag: "booking-b1-new" };
-  it("gives web tokens a webpush notification with icon and link", () => {
+  const meta = { kind: "new", tenantId: "acme", bookingId: "BK-0BC6FEE5", date: "2026-10-19", tag: "booking-BK-0BC6FEE5-new" };
+  const LINK = "https://schedi.app/login?booking=BK-0BC6FEE5";
+  it("gives web tokens a webpush notification with icon and a deep link to the booking", () => {
     const m = push.buildFcmMessage(WEB, true, { title: "New booking", body: "Ana, Cut, Fri Oct 16 2:00 PM" }, meta);
     expect(m.notification).toBeUndefined();
     expect(m.android).toBeUndefined();
-    expect(m.webpush.notification).toMatchObject({ title: "New booking", body: "Ana, Cut, Fri Oct 16 2:00 PM", icon: "https://schedi.app/assets/homescreen-icon.png", tag: "booking-b1-new" });
-    expect(m.webpush.fcm_options.link).toBe("https://schedi.app/login");
-    expect(m.data.url).toBe("https://schedi.app/login");
+    expect(m.webpush.notification).toMatchObject({ title: "New booking", body: "Ana, Cut, Fri Oct 16 2:00 PM", icon: "https://schedi.app/assets/homescreen-icon.png", tag: "booking-BK-0BC6FEE5-new" });
+    expect(m.webpush.fcm_options.link).toBe(LINK);
+    expect(m.data).toEqual({ kind: "new", tenantId: "acme", bookingId: "BK-0BC6FEE5", date: "2026-10-19", url: LINK });
   });
-  it("keeps the Android app payload unchanged", () => {
+  it("gives the Android app the booking id, date and deep link in data", () => {
     const m = push.buildFcmMessage(APP, false, { title: "New booking", body: "x" }, meta);
     expect(m.notification).toEqual({ title: "New booking", body: "x" });
-    expect(m.android).toEqual({ priority: "HIGH", notification: { sound: "default", tag: "booking-b1-new" } });
+    expect(m.android).toEqual({ priority: "HIGH", notification: { sound: "default", tag: "booking-BK-0BC6FEE5-new" } });
     expect(m.webpush).toBeUndefined();
+    expect(m.data).toEqual({ kind: "new", tenantId: "acme", bookingId: "BK-0BC6FEE5", date: "2026-10-19", url: LINK });
+  });
+  it("falls back to the plain portal link without a usable booking id", () => {
+    const t = push.buildFcmMessage(WEB, true, { title: "t", body: "b" }, { kind: "test", tenantId: "acme", bookingId: "", tag: "schedi-test" });
+    expect(t.webpush.fcm_options.link).toBe("https://schedi.app/login");
+    expect(t.data.bookingId).toBe("");
+    expect(t.data.date).toBe("");
+    const bad = push.buildFcmMessage(APP, false, { title: "t", body: "b" }, { kind: "new", tenantId: "acme", bookingId: "x/../y?z", date: "soon", tag: "x" });
+    expect(bad.data.url).toBe("https://schedi.app/login");
+    expect(bad.data.bookingId).toBe("");
+    expect(bad.data.date).toBe("");
   });
 });
 

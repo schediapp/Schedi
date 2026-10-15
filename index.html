@@ -363,6 +363,23 @@
             padding-right: max(0.75rem, env(safe-area-inset-right, 0px)) !important;
         }
         .fixed.inset-0[role="dialog"] > * { margin: auto !important; }
+        /* Booking alert deep link: briefly pulse the booking the alert was about. */
+        @keyframes schediHitRow { 0% { outline-color: rgba(52, 211, 153, 0.95); background-color: rgba(16, 185, 129, 0.26); } 50% { outline-color: rgba(52, 211, 153, 0.3); } 100% { outline-color: rgba(52, 211, 153, 0.95); background-color: rgba(16, 185, 129, 0.08); } }
+        #tenantRosterTableBody > tr.schedi-deeplink-hit { outline: 2px solid rgba(52, 211, 153, 0.95); outline-offset: -2px; border-radius: 12px; background-color: rgba(16, 185, 129, 0.08); animation: schediHitRow 0.9s ease-in-out 4; }
+        @media (prefers-reduced-motion: reduce) { #tenantRosterTableBody > tr.schedi-deeplink-hit { animation: none; background-color: rgba(16, 185, 129, 0.15); } }
+        /* Booking decision pop-up (pending booking opened from an alert). Solid buttons keep white text in both themes. */
+        #bookingDecisionModal .bdm-btn { min-height: 48px; }
+        #bookingDecisionModal .bdm-accept { background-color: #059669; color: #ffffff; border: 1px solid rgba(52, 211, 153, 0.45); }
+        #bookingDecisionModal .bdm-accept:hover { background-color: #10b981; }
+        #bookingDecisionModal .bdm-deny { background-color: #e11d48; color: #ffffff; border: 1px solid rgba(251, 113, 133, 0.45); }
+        #bookingDecisionModal .bdm-deny:hover { background-color: #f43f5e; }
+        #bookingDecisionModal .bdm-btn:focus-visible { outline: 3px solid #34d399; outline-offset: 2px; }
+        #bookingDecisionModal .bdm-deny:focus-visible { outline-color: #fb7185; }
+        html.schedi-light #bookingDecisionModal .bdm-accept, html.schedi-light #bookingDecisionModal .bdm-deny { color: #ffffff !important; }
+        html.schedi-light #bookingDecisionModal .bdm-later { background-color: #e2e8f0 !important; color: #1e293b !important; }
+        html.schedi-light #bookingDecisionModal .bdm-later:hover { background-color: #cbd5e1 !important; }
+        html.schedi-light #bookingDecisionModal .bdm-kicker { color: #047857 !important; }
+        html.schedi-light #bookingDecisionModal .divide-slate-800\/80 > * { border-color: #e2e8f0 !important; }
     </style>
     <style id="schedi-portal-phone-fit">
         /* Landing refresh: always-visible Log in on the signup screen (CSS only; portal/session logic untouched). */
@@ -1898,6 +1915,28 @@
                 <button type="button" onclick="closeRosterApptModal()" aria-label="Close" class="w-11 h-11 -mr-2 -mt-1 shrink-0 flex items-center justify-center rounded-xl text-slate-400 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div id="rosterApptBody" class="space-y-4 text-xs"></div>
+        </div>
+    </div>
+
+    <!-- Booking decision pop-up: opened when an owner lands on a pending booking from a booking alert. -->
+    <div id="bookingDecisionModal" role="dialog" aria-modal="true" aria-labelledby="bookingDecisionTitle" aria-describedby="bookingDecisionLead" tabindex="-1" class="fixed inset-0 z-[60] bg-slate-950/80 backdrop-blur-md flex items-start sm:items-center justify-center p-3 sm:p-4 overflow-y-auto overscroll-contain hidden" onclick="if (event.target === this) schediDecisionLater()">
+        <div class="max-w-md w-full glass-card rounded-2xl p-5 sm:p-6 space-y-4 fade-in border border-emerald-500/25 my-4 min-w-0">
+            <div class="flex items-start gap-3">
+                <div class="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0" aria-hidden="true">
+                    <i class="fa-solid fa-bell"></i>
+                </div>
+                <div class="min-w-0">
+                    <p class="bdm-kicker text-[11px] font-bold uppercase tracking-wider text-emerald-400">New booking request</p>
+                    <h3 id="bookingDecisionTitle" class="text-lg font-bold text-white break-words"></h3>
+                    <p id="bookingDecisionLead" class="text-sm text-slate-300 mt-1">Take a look and let them know.</p>
+                </div>
+            </div>
+            <dl id="bookingDecisionBody" class="divide-y divide-slate-800/80 rounded-xl bg-slate-900 border border-slate-800 px-3"></dl>
+            <div class="pt-1 flex flex-col sm:flex-row gap-2">
+                <button type="button" id="bookingDecisionAccept" onclick="schediDecisionAccept()" class="bdm-btn bdm-accept px-4 py-2.5 rounded-xl font-bold text-sm transition-all sm:flex-1"><i class="fa-solid fa-check mr-1.5" aria-hidden="true"></i>Accept</button>
+                <button type="button" id="bookingDecisionDeny" onclick="schediDecisionDeny()" class="bdm-btn bdm-deny px-4 py-2.5 rounded-xl font-bold text-sm transition-all sm:flex-1"><i class="fa-solid fa-xmark mr-1.5" aria-hidden="true"></i>Deny</button>
+                <button type="button" id="bookingDecisionLater" onclick="schediDecisionLater()" class="bdm-btn bdm-later px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-sm transition-all">Decide later</button>
+            </div>
         </div>
     </div>
 
@@ -7654,7 +7693,7 @@
 
             var rosterRows = tenant.appointments.slice().sort(compareRosterAppointmentsNewestFirst);
             tbody.innerHTML = rosterRows.map(app => `
-                <tr class="roster-row hover:bg-slate-900/40 transition-all">
+                <tr data-booking-id="${esc(app.id)}" class="roster-row hover:bg-slate-900/40 transition-all${window.schediRosterHitClass ? window.schediRosterHitClass(app) : ''}">
                     <td class="roster-cell-ref p-3 font-mono font-bold text-white">#${esc(app.id)}${app.payCode ? ('<br>' + payCodeChipHtml(app)) : ''}</td>
                     <td class="roster-cell-client p-3">
                         <div class="font-bold text-white">${esc(app.clientName)}${app.walkIn === true ? ' <span class="ml-1 align-middle inline-block px-1.5 py-0.5 rounded-md bg-slate-800 border border-slate-700 text-slate-300 text-[10px] font-semibold whitespace-nowrap"><i class="fa-solid fa-person-walking mr-1"></i>Walk-in</span>' : ''}</div>
@@ -14611,6 +14650,20 @@
         if (!P) return;
         var API = 'https://schedi.app/api/push-token';
         var DONE_KEY = 'schedi.pushRegistered';
+        // Tapping a booking alert opens the portal at that booking (after sign-in if needed).
+        // Registered right away, so a tap that launched the app is not missed.
+        P.addListener('pushNotificationActionPerformed', function (a) {
+            var d = (a && a.notification && a.notification.data) || {};
+            var id = String(d.bookingId || '');
+            var onPortal = /^\/(login|portal)(\/|$)/.test(location.pathname || '');
+            if (/^[A-Za-z0-9_-]{1,80}$/.test(id)) {
+                if (onPortal && typeof window.schediOpenBooking === 'function') { window.schediOpenBooking(id, d.date); return; }
+                location.href = 'https://schedi.app/login?booking=' + encodeURIComponent(id);
+                return;
+            }
+            var url = d.url || 'https://schedi.app/login';
+            if (/^https:\/\/schedi\.app\//.test(url) && location.href.indexOf('/login') === -1) location.href = url;
+        });
         var fcmToken = '';
         var busy = false;
         var listenersOn = false;
@@ -14641,10 +14694,6 @@
                 listenersOn = true;
                 P.addListener('registration', function (t) { fcmToken = String((t && t.value) || ''); save(); });
                 P.addListener('registrationError', function () {});
-                P.addListener('pushNotificationActionPerformed', function (a) {
-                    var url = (a && a.notification && a.notification.data && a.notification.data.url) || 'https://schedi.app/login';
-                    if (/^https:\/\/schedi\.app\//.test(url) && location.href.indexOf('/login') === -1) location.href = url;
-                });
             }
             Promise.resolve(P.checkPermissions()).then(function (st) {
                 if (st && st.receive === 'prompt') return P.requestPermissions();
@@ -14797,10 +14846,13 @@
         M.onMessage(messaging, function (p) {
             var n = (p && p.notification) || {};
             var title = n.title || 'Schedi', body = n.body || '';
+            var pd = (p && p.data) || {};
+            var bid = /^[A-Za-z0-9_-]{1,80}$/.test(String(pd.bookingId || '')) ? String(pd.bookingId) : '';
+            var link = bid ? PORTAL + '?booking=' + encodeURIComponent(bid) : PORTAL;
             if (typeof window.schediRefreshRoster === 'function') window.schediRefreshRoster('push');
             if (document.hasFocus()) { showToast(body ? title + ': ' + body : title, 'success'); return; }
             navigator.serviceWorker.getRegistration(SW_SCOPE).then(function (reg) {
-                if (reg) reg.showNotification(title, { body: body, icon: ICON, tag: 'schedi-' + Date.now(), data: { url: PORTAL } });
+                if (reg) reg.showNotification(title, { body: body, icon: ICON, tag: 'schedi-' + Date.now(), data: { url: link, bookingId: bid, date: String(pd.date || '') } });
             }).catch(function () {});
         });
     }
@@ -14901,7 +14953,9 @@
     }
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.addEventListener('message', function (e) {
-            if (e.data && e.data.type === 'schedi-alert-opened' && typeof window.schediRefreshRoster === 'function') window.schediRefreshRoster('push');
+            if (!e.data || e.data.type !== 'schedi-alert-opened') return;
+            if (e.data.bookingId && typeof window.schediOpenBooking === 'function' && window.schediOpenBooking(e.data.bookingId, e.data.date)) return;
+            if (typeof window.schediRefreshRoster === 'function') window.schediRefreshRoster('push');
         });
     }
     function tick() { render(); keepFresh(); }
@@ -14992,6 +15046,290 @@
         } else { el.style.opacity = 0; el.style.transform = 'translate(-50%,-48px)'; }
         dy = 0;
     }, { passive: true });
+})();
+</script>
+<script>
+/* Booking alert deep link. /login?booking=<id> (or #booking=<id>) opens the owner portal at that booking,
+   after sign-in if needed. The id is kept in sessionStorage so it survives the sign-in. Also used when an
+   alert is tapped while a portal tab is open (service worker message) and by the Android app.
+   Does nothing on normal visits. */
+(function () {
+    var KEY = 'schedi.openBooking';
+    var MAX_AGE = 30 * 60 * 1000;
+    var ID_RE = /^[A-Za-z0-9_-]{1,80}$/;
+    var HIT_MS = 4500;
+    var timer = null, running = false, loadTries = 0, hit = null;
+
+    function onPortalPath() { return /^\/(login|portal)(\/|$)/.test(location.pathname || ''); }
+    function cleanDate(d) { d = String(d || ''); return /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : ''; }
+    function fromUrl() {
+        try {
+            var q = new URLSearchParams(location.search || '');
+            var id = q.get('booking') || '', date = q.get('date') || '';
+            if (!id && location.hash && location.hash.indexOf('booking=') !== -1) {
+                var h = new URLSearchParams(location.hash.slice(1));
+                id = h.get('booking') || ''; date = h.get('date') || '';
+            }
+            return ID_RE.test(id) ? { id: id, date: cleanDate(date) } : null;
+        } catch (e) { return null; }
+    }
+    function clearPending() { try { sessionStorage.removeItem(KEY); } catch (e) {} }
+    function pending() {
+        var p = null;
+        try { p = JSON.parse(sessionStorage.getItem(KEY) || 'null'); } catch (e) { p = null; }
+        if (p && ID_RE.test(String(p.id || '')) && Date.now() - (Number(p.at) || 0) < MAX_AGE) return p;
+        if (p) clearPending();
+        return null;
+    }
+    function setPending(id, date) {
+        try { sessionStorage.setItem(KEY, JSON.stringify({ id: id, date: cleanDate(date), at: Date.now() })); } catch (e) {}
+    }
+    function clearUrl() {
+        try {
+            var u = new URL(location.href), changed = false;
+            ['booking', 'date'].forEach(function (k) { if (u.searchParams.has(k)) { u.searchParams.delete(k); changed = true; } });
+            if (u.hash && u.hash.indexOf('booking=') !== -1) {
+                var h = new URLSearchParams(u.hash.slice(1));
+                h.delete('booking'); h.delete('date');
+                var hs = h.toString();
+                u.hash = hs ? '#' + hs : '';
+                changed = true;
+            }
+            if (changed) history.replaceState(history.state, '', u.pathname + u.search + u.hash);
+        } catch (e) {}
+    }
+    function portalReady() {
+        var sec = document.getElementById('tenantPortalSection');
+        if (!sec || sec.classList.contains('hidden')) return false;
+        if (typeof schediAuthSession !== 'function' || !schediAuthSession()) return false;
+        return typeof getTenant === 'function' && !!getTenant();
+    }
+    function findAppt(tenant, id) {
+        return ((tenant && tenant.appointments) || []).find(function (a) { return a && String(a.id) === id; }) || null;
+    }
+    function rowFor(id) {
+        var rows = document.querySelectorAll('#tenantRosterTableBody > tr[data-booking-id]');
+        for (var i = 0; i < rows.length; i++) if (rows[i].getAttribute('data-booking-id') === id) return rows[i];
+        return null;
+    }
+    function toast(msg, type) { try { if (typeof showToast === 'function') showToast(msg, type || 'info'); } catch (e) {} }
+    function stop() { if (timer) { clearInterval(timer); timer = null; } }
+    function start() { if (!timer) timer = setInterval(run, 700); run(); }
+
+    // Roster rows re-rendered while the highlight is running keep it.
+    window.schediRosterHitClass = function (app) {
+        return hit && app && String(app.id) === hit.id && Date.now() < hit.until ? ' schedi-deeplink-hit' : '';
+    };
+
+    async function run() {
+        if (running) return;
+        var p = pending();
+        if (!p) { stop(); return; }
+        if (!portalReady()) return;
+        running = true;
+        try {
+            var tenant = getTenant();
+            if (!tenant._privateBookingsLoaded || !findAppt(tenant, p.id)) {
+                if (typeof refreshPrivateBookings === 'function') { try { await refreshPrivateBookings(); } catch (e) {} }
+                tenant = getTenant();
+                if (!tenant || !tenant._privateBookingsLoaded) {
+                    loadTries++;
+                    if (loadTries < 4) return;
+                    clearPending(); stop(); clearUrl(); loadTries = 0;
+                    toast('We couldn\u2019t load your bookings right now. Tap Refresh to try again.', 'error');
+                    return;
+                }
+            }
+            loadTries = 0;
+            clearPending(); stop();
+            var app = findAppt(tenant, p.id);
+            if (typeof switchTenantTab === 'function') switchTenantTab('roster');
+            if (!app) {
+                clearUrl();
+                toast('That booking is no longer available.', 'info');
+                return;
+            }
+            hit = { id: String(app.id), until: Date.now() + HIT_MS };
+            // List shows every booking (past and upcoming). The calendar cursor follows the booking date too.
+            try { if (typeof rosterCalendarCursor !== 'undefined' && cleanDate(app.date)) rosterCalendarCursor = app.date; } catch (e) {}
+            if (typeof setRosterCalendarView === 'function') setRosterCalendarView('list');
+            else if (typeof renderTenantRoster === 'function') renderTenantRoster(tenant);
+            var row = rowFor(hit.id);
+            if (row) {
+                try { row.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) { row.scrollIntoView(); }
+                setTimeout(function () {
+                    var r = rowFor(hit.id);
+                    if (r) r.classList.remove('schedi-deeplink-hit');
+                }, HIT_MS);
+            }
+            clearUrl();
+            if (canDecide(tenant, app)) openDecision(tenant, app);
+            else toast(statusNote(app), 'info');
+        } finally {
+            running = false;
+        }
+    }
+
+    // ---- Decision pop-up: Accept / Deny / Decide later for a pending booking opened from an alert. ----
+    // Accept and Deny call the roster's own acceptAppointment / denyAppointment (same save, emails, confirm and toasts).
+    var dm = { id: null, back: null };
+    function dmEl() { return document.getElementById('bookingDecisionModal'); }
+    function h(v) {
+        if (typeof esc === 'function') return esc(v);
+        return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; });
+    }
+    function statusOf(app) { return String((app && app.status) || '').toLowerCase(); }
+    function isCancelled(app) {
+        if (typeof appointmentIsCancelled === 'function') return appointmentIsCancelled(app);
+        return !!app && (app.cancelled === true || statusOf(app) === 'cancelled' || statusOf(app) === 'canceled');
+    }
+    function isPending(app) { return !!app && !isCancelled(app) && statusOf(app) === 'pending'; }
+    // The roster's Accept turns nothing into a decision for businesses whose bookings confirm on their own.
+    function canDecide(tenant, app) {
+        if (!isPending(app)) return false;
+        try { if (typeof normalizePlan === 'function' && normalizePlan(tenant) === 'free') return false; } catch (e) {}
+        return true;
+    }
+    function statusNote(app) {
+        if (isCancelled(app)) return 'This booking was cancelled.';
+        var st = statusOf(app);
+        if (st === 'denied') return 'Already denied.';
+        if (st === 'accepted') return 'Already accepted.';
+        return 'Already confirmed.';
+    }
+    function fmtMins(m) {
+        m = Math.round(Number(m) || 0);
+        if (m <= 0) return '';
+        var hr = Math.floor(m / 60), r = m % 60;
+        if (!hr) return r + ' min';
+        return hr + ' hr' + (r ? (' ' + r + ' min') : '');
+    }
+    function fmtMoney(n) {
+        n = Number(n) || 0;
+        return '$' + (Math.round(n * 100) % 100 ? n.toFixed(2) : String(Math.round(n)));
+    }
+    function priced(v) { return typeof hasPricedAmount === 'function' ? hasPricedAmount(v) : (v !== null && v !== undefined && v !== '' && isFinite(Number(v))); }
+    function dmRow(label, valueHtml) {
+        return '<div class="grid grid-cols-[6rem_minmax(0,1fr)] gap-3 py-2.5">' +
+            '<dt class="text-[11px] font-bold uppercase tracking-wider text-slate-400 pt-0.5">' + label + '</dt>' +
+            '<dd class="text-sm text-white min-w-0 break-words">' + valueHtml + '</dd></div>';
+    }
+    function decisionRowsHtml(tenant, app) {
+        var items = Array.isArray(app.items) ? app.items.filter(function (it) { return it && it.name; }) : [];
+        var services = items.length
+            ? items.map(function (it) { var q = Math.max(1, Math.round(Number(it.qty) || 1)); return '<span class="block">' + h(it.name) + (q > 1 ? (' \u00d7' + q) : '') + '</span>'; }).join('')
+            : h(app.serviceName || 'Appointment');
+        var dateTxt = app.date ? ((typeof rosterPrettyDate === 'function' && rosterPrettyDate(app.date)) || app.date) : 'Date not set';
+        var mins = 0;
+        try { mins = typeof appointmentDurationMins === 'function' ? appointmentDurationMins(tenant, app) : Number(app.durationMins); } catch (e) { mins = Number(app.durationMins) || 0; }
+        var total = priced(app.amount) ? fmtMoney(app.amount) : 'No price set';
+        if (Number(app.depositAmount) > 0) {
+            total += '<span class="block text-xs text-slate-400">Card deposit ' + fmtMoney(app.depositAmount) + (app.depositPaid === true ? ' (paid)' : ' (not paid yet)') + '</span>';
+        }
+        var pay = String(app.paymentOptionLabel || '').trim() || (typeof rosterPaymentLabel === 'function' ? rosterPaymentLabel(app) : '') || 'Not chosen';
+        var notes = [app.notes, app.note, app.clientNotes, app.clientNote].map(function (v) { return String(v || '').trim(); }).filter(Boolean)[0] || '';
+        var who = '<span class="font-bold">' + h(app.clientName || 'Client') + '</span>' +
+            [app.clientPhone, app.clientEmail].filter(function (v) { return String(v || '').trim(); }).map(function (v) { return '<span class="block text-xs text-slate-400">' + h(v) + '</span>'; }).join('');
+        return dmRow('Client', who) +
+            dmRow(items.length > 1 ? 'Services' : 'Service', services) +
+            dmRow('When', '<span class="font-bold text-emerald-400">' + h(dateTxt) + '</span><span class="block">' + h(app.time || 'Time not set') + '</span>') +
+            (fmtMins(mins) ? dmRow('Duration', h(fmtMins(mins))) : '') +
+            dmRow('Total', total) +
+            dmRow('Payment', h(pay)) +
+            (notes ? dmRow('Notes', '<span class="whitespace-pre-line">' + h(notes) + '</span>') : '');
+    }
+    function focusables() {
+        var m = dmEl();
+        if (!m) return [];
+        return Array.prototype.filter.call(m.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'), function (el) {
+            return !el.disabled && el.offsetParent !== null;
+        });
+    }
+    function openDecision(tenant, app) {
+        var m = dmEl();
+        if (!m) return;
+        if (!dm.id) dm.back = document.activeElement;
+        dm.id = String(app.id);
+        var first = String(app.clientName || '').trim().split(/\s+/)[0] || 'A client';
+        document.getElementById('bookingDecisionTitle').textContent = first + ' would like to book';
+        document.getElementById('bookingDecisionLead').textContent = 'Take a look and let ' + (app.clientName ? first : 'them') + ' know if this time works.';
+        document.getElementById('bookingDecisionBody').innerHTML = decisionRowsHtml(tenant, app);
+        m.classList.remove('hidden');
+        m.scrollTop = 0;
+        setTimeout(function () { var b = document.getElementById('bookingDecisionAccept'); if (b && dm.id) { try { b.focus({ preventScroll: true }); } catch (e) { b.focus(); } } }, 40);
+    }
+    // Re-render the roster and pulse the row again (the first pulse ran behind the pop-up).
+    function rehighlight(id) {
+        hit = { id: id, until: Date.now() + HIT_MS };
+        var t = (typeof getTenant === 'function') ? getTenant() : null;
+        if (t && typeof renderTenantRoster === 'function') { try { renderTenantRoster(t); } catch (e) {} }
+        var row = rowFor(id);
+        if (!row) return;
+        try { row.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) { row.scrollIntoView(); }
+        setTimeout(function () { var r = rowFor(id); if (r && (!hit || hit.id !== id || Date.now() >= hit.until - 50)) r.classList.remove('schedi-deeplink-hit'); }, HIT_MS);
+    }
+    function closeDecision() {
+        var m = dmEl();
+        if (m) m.classList.add('hidden');
+        var id = dm.id, back = dm.back;
+        dm.id = null; dm.back = null;
+        if (id) rehighlight(id);
+        if (back && back !== document.body && document.contains(back) && typeof back.focus === 'function') { try { back.focus({ preventScroll: true }); } catch (e) {} }
+    }
+    function decisionApp() {
+        var t = (typeof getTenant === 'function') ? getTenant() : null;
+        return dm.id && t ? findAppt(t, dm.id) : null;
+    }
+    window.schediDecisionLater = function () { closeDecision(); };
+    window.schediDecisionAccept = function () {
+        var app = decisionApp();
+        if (!app || !isPending(app) || typeof acceptAppointment !== 'function') { closeDecision(); return; }
+        acceptAppointment(app.id);
+        var now = decisionApp();
+        if (!now || !isPending(now)) closeDecision();
+    };
+    window.schediDecisionDeny = function () {
+        var app = decisionApp();
+        if (!app || !isPending(app) || typeof denyAppointment !== 'function') { closeDecision(); return; }
+        var email = String(app.clientEmail || '').trim(), name = String(app.clientName || '').trim().split(/\s+/)[0];
+        denyAppointment(app.id);   // shows the roster's own "Deny this appointment?" confirm
+        var now = decisionApp();
+        if (now && isPending(now)) {   // owner backed out of the confirm: keep the pop-up open
+            var b = document.getElementById('bookingDecisionDeny');
+            if (b) { try { b.focus({ preventScroll: true }); } catch (e) {} }
+            return;
+        }
+        closeDecision();
+        if (now && statusOf(now) === 'denied' && email) toast((name || 'Your client') + ' will get an email letting them know.', 'success');
+    };
+    // Esc = Decide later; Tab stays inside the pop-up. Capture phase so this runs before the page-wide Esc handler.
+    window.addEventListener('keydown', function (ev) {
+        if (!dm.id) return;
+        var m = dmEl();
+        if (!m || m.classList.contains('hidden')) { if (ev.key === 'Escape') closeDecision(); return; }
+        if (ev.key === 'Escape') { ev.preventDefault(); closeDecision(); return; }
+        if (ev.key !== 'Tab') return;
+        var f = focusables();
+        if (!f.length) { ev.preventDefault(); return; }
+        var i = f.indexOf(document.activeElement);
+        if (ev.shiftKey && (i <= 0)) { ev.preventDefault(); f[f.length - 1].focus(); }
+        else if (!ev.shiftKey && (i === -1 || i === f.length - 1)) { ev.preventDefault(); f[0].focus(); }
+    }, true);
+    /** Open the portal at a booking: now if signed in, otherwise right after sign-in. */
+    window.schediOpenBooking = function (id, date) {
+        id = String(id || '');
+        if (!ID_RE.test(id)) return false;
+        loadTries = 0;
+        setPending(id, date);
+        start();
+        return true;
+    };
+
+    if (onPortalPath()) {
+        var u = fromUrl();
+        if (u) setPending(u.id, u.date);
+    }
+    if (pending()) start();
 })();
 </script>
 </body>
