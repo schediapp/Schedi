@@ -32,3 +32,21 @@ export async function requireAgency(env, request, body) {
   if (session.role !== 'agency') return { ok: false, status: 403, error: 'forbidden' };
   return { ok: true, session, token };
 }
+
+/**
+ * Ops routes that accept a server bearer OR an agency session.
+ * A presented session is checked first: unknown → 401, owner → 403, agency → allowed
+ * (bearer optional). With no session, only bearerOk is allowed; anything else is 401.
+ * @returns {{ ok: true, session: object|null, token: string } | { ok: false, status: number, error: string }}
+ */
+export async function authorizeBearerOrAgency(env, request, body, bearerOk) {
+  const token = sessionTokenFromRequest(request, body || {});
+  if (token) {
+    const session = await readSession(env, token);
+    if (!session) return { ok: false, status: 401, error: 'session_required' };
+    if (session.role !== 'agency') return { ok: false, status: 403, error: 'forbidden' };
+    return { ok: true, session, token };
+  }
+  if (bearerOk) return { ok: true, session: null, token: '' };
+  return { ok: false, status: 401, error: 'unauthorized' };
+}

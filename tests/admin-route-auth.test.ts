@@ -89,8 +89,6 @@ describe("admin routes reject anonymous and owner sessions", () => {
     ["/api/profile", { action: "delete", tenantIds: ["other-biz"] }],
     ["/api/bookings", { action: "counts" }],
     ["/api/bookings", { action: "migrate" }],
-    ["/api/ops-snapshot", {}, { Authorization: "Bearer " + TOKEN, "x-method": "GET" }],
-    ["/api/ops-snapshot", {}, { Authorization: "Bearer " + TOKEN }],
     ["/auth/password", { tenantId: "other-biz", ownerEmail: "a@b.co", newPassword: "password1" }],
     ["/auth/email", { tenantId: "other-biz", ownerEmail: "a@b.co" }],
     ["/auth/rename", { fromId: "other-biz", toId: "other-biz-2" }],
@@ -130,10 +128,6 @@ describe("agency gate is the first check", () => {
     const migrate = await statusOf("/api/profile", { action: "migrate_private" }, "agency");
     expect(migrate.status).toBe(401);
     expect(migrate.data.error).toBe("unauthorized");
-
-    const snap = await statusOf("/api/ops-snapshot", {}, "agency", { "x-method": "GET" });
-    expect(snap.status).toBe(401);
-    expect(snap.data.error).toBe("unauthorized");
   });
 
   it("treats a presented owner session as forbidden for reminder maintenance, even with the server bearer", async () => {
@@ -141,6 +135,42 @@ describe("agency gate is the first check", () => {
     expect(owner.status).toBe(403);
     const anon = await statusOf("/", { action: "run_reminders" }, "none");
     expect(anon.status).toBe(401);
+  });
+
+  it("lets ops-snapshot accept a bearer or an agency session", async () => {
+    const bearer = await statusOf("/api/ops-snapshot", {}, "none", { Authorization: "Bearer " + TOKEN, "x-method": "GET" });
+    expect(bearer.status).toBe(200);
+    const posted = await statusOf("/api/ops-snapshot", {}, "none", { Authorization: "Bearer " + TOKEN });
+    expect(posted.status).toBe(200);
+    const agency = await statusOf("/api/ops-snapshot", {}, "agency", { "x-method": "GET" });
+    expect(agency.status).toBe(200);
+    const agencyWithBadBearer = await statusOf("/api/ops-snapshot", {}, "agency", { Authorization: "Bearer nope", "x-method": "GET" });
+    expect(agencyWithBadBearer.status).toBe(200);
+    const cookie = await statusOf("/api/ops-snapshot", {}, "none", { "x-method": "GET", Cookie: "schedi_hq=agency-token" });
+    expect(cookie.status).toBe(200);
+  });
+
+  it("rejects an owner session on ops-snapshot with 403 and anything else with 401", async () => {
+    const owner = await statusOf("/api/ops-snapshot", {}, "owner", { Authorization: "Bearer " + TOKEN, "x-method": "GET" });
+    expect(owner.status).toBe(403);
+    expect(owner.data.error).toBe("forbidden");
+    const ownerOnly = await statusOf("/api/ops-snapshot", {}, "owner", { "x-method": "GET" });
+    expect(ownerOnly.status).toBe(403);
+    expect(ownerOnly.data.error).toBe("forbidden");
+
+    const none = await statusOf("/api/ops-snapshot", {}, "none", { "x-method": "GET" });
+    expect(none.status).toBe(401);
+    expect(none.data.error).toBe("unauthorized");
+    const bad = await statusOf("/api/ops-snapshot", {}, "none", { Authorization: "Bearer nope", "x-method": "GET" });
+    expect(bad.status).toBe(401);
+    expect(bad.data.error).toBe("unauthorized");
+    const stale = await statusOf("/api/ops-snapshot", {}, "none", {
+      Authorization: "Bearer " + TOKEN,
+      "X-Schedi-Session": "missing-session",
+      "x-method": "GET",
+    });
+    expect(stale.status).toBe(401);
+    expect(stale.data.error).toBe("session_required");
   });
 
   it("keeps HQ tags off an owner's private profile", async () => {

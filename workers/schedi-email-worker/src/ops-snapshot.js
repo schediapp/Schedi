@@ -2,8 +2,9 @@
  * Read-only daily ops snapshot for internal Schedi agents (Avery support watch, Sales).
  *
  * GET|POST /api/ops-snapshot
- *   Requires an agency session (X-Schedi-Session, schedi_hq cookie, or JSON session)
- *   AND Authorization: Bearer <OPS_SNAPSHOT_TOKEN>
+ *   Authorization: Bearer <OPS_SNAPSHOT_TOKEN>
+ *   OR an agency session (X-Schedi-Session, schedi_hq cookie, or JSON session).
+ *   A presented owner session is 403. No valid bearer and no valid agency session is 401.
  *   ?history=N   return the last N stored daily snapshots from KV (max 60) instead of a live one
  *
  * STRICTLY READ-ONLY toward Firestore and Stripe: only GET requests. Sends no email.
@@ -14,7 +15,7 @@
 
 import { listPrivateTenants, mergePrivateInto } from './tenant-private.js';
 import { buildEmailEngagement } from './email-events.js';
-import { requireAgency } from './agency-session.js';
+import { authorizeBearerOrAgency } from './agency-session.js';
 
 const OWNER_PRICES = {
   price_1UMH8jGh1H5O3dkraHpGvCEN: { plan: 'starter', amount: 29 },
@@ -581,12 +582,12 @@ export async function handleOpsSnapshotHttp(request, env, deps) {
   if (request.method === 'POST') {
     try { body = await request.clone().json(); } catch (_) { body = {}; }
   }
-  const gate = await requireAgency(env, request, body);
-  if (!gate.ok) return opsJson({ ok: false, error: gate.error }, gate.status);
   const expected = String(env.OPS_SNAPSHOT_TOKEN || '').trim();
   const auth = String(request.headers.get('Authorization') || '');
   const given = auth.startsWith('Bearer ') ? auth.slice(7).trim() : '';
-  if (!expected || !given || !timingSafeEqualStr(given, expected)) return opsJson({ ok: false, error: 'unauthorized' }, 401);
+  const bearerOk = !!(expected && given && timingSafeEqualStr(given, expected));
+  const gate = await authorizeBearerOrAgency(env, request, body, bearerOk);
+  if (!gate.ok) return opsJson({ ok: false, error: gate.error }, gate.status);
   const url = new URL(request.url);
   const history = Math.min(60, Math.max(0, parseInt(url.searchParams.get('history') || '0', 10) || 0));
   if (history > 0) {
