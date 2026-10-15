@@ -1,0 +1,110 @@
+name = "schedi-email-worker"
+workers_dev = true
+main = "src/index.js"
+compatibility_date = "2026-09-28"
+
+# Secrets (set via `wrangler secret put`, never commit real values):
+#   RESEND_API_KEY
+#   WEBHOOK_SECRET  (server-side maintenance Bearer for run_reminders only; never put it in page code)
+#   TWILIO_ACCOUNT_SID
+#   TWILIO_AUTH_TOKEN
+#   TWILIO_FROM
+#   STRIPE_SECRET_KEY
+#   STRIPE_WEBHOOK_SECRET
+#   RESEND_WEBHOOK_SECRET  (whsec_... from the Resend webhook for POST /api/resend-events; opens/clicks for the ops snapshot)
+# SMS sends are skipped until all three Twilio secrets are set.
+# Stripe secrets are wrangler secrets only. Never put them in this file or in HTML.
+# FIREBASE_SERVICE_ACCOUNT_JSON is a wrangler secret. Never commit it or put it in HTML.
+#
+[[routes]]
+pattern = "schedi.app/api/send-booking-email"
+zone_name = "schedi.app"
+
+[[routes]]
+pattern = "schedi.app/billing/*"
+zone_name = "schedi.app"
+
+[[routes]]
+pattern = "schedi.app/auth/*"
+zone_name = "schedi.app"
+
+[[routes]]
+pattern = "schedi.app/api/bookings"
+zone_name = "schedi.app"
+
+[[routes]]
+pattern = "schedi.app/api/booking-ics*"
+zone_name = "schedi.app"
+
+[[routes]]
+pattern = "schedi.app/api/manage*"
+zone_name = "schedi.app"
+
+[[routes]]
+pattern = "schedi.app/api/profile"
+zone_name = "schedi.app"
+
+[[routes]]
+pattern = "schedi.app/api/push-token"
+zone_name = "schedi.app"
+
+[[routes]]
+pattern = "schedi.app/api/clients"
+zone_name = "schedi.app"
+
+# Hourly: each tenant sends when local hour matches tenant.reminderHour (default 8).
+# Handler skips tenants with remindersEnabled === false.
+[triggers]
+crons = ["0 * * * *"]
+
+[vars]
+# Public Firebase web config (same values already embedded in SiteForge.html).
+# Used by the Worker for anonymous Auth + Firestore REST (same path as booking UI).
+FIREBASE_API_KEY = "AIzaSyBYKvxQQGIkBNRej33pTYcqKm8G1qTPDZ0"
+FIREBASE_PROJECT_ID = "siteforge-97699"
+FIREBASE_APP_ID = "siteforge-97699"
+DEFAULT_TIMEZONE = "America/New_York"
+
+[[kv_namespaces]]
+binding = "AUTH_KV"
+id = "d53378ec0cfb4d089d73add2ff01c62d"
+
+# Rate limits (Workers rate limiting binding; counters per key per 60s, per Cloudflare location).
+# RL_MAIL: booking mail per IP. RL_MAIL_TENANT: per business (only after a valid session / manage token).
+# RL_SIGNUP: public signup per IP. RL_SIGNUP_GLOBAL: all signups. RL_BOOKING_CREATE: public booking saves per IP.
+[[unsafe.bindings]]
+name = "RL_MAIL"
+type = "ratelimit"
+namespace_id = "41001"
+simple = { limit = 30, period = 60 }
+
+[[unsafe.bindings]]
+name = "RL_MAIL_TENANT"
+type = "ratelimit"
+namespace_id = "41002"
+simple = { limit = 40, period = 60 }
+
+[[unsafe.bindings]]
+name = "RL_SIGNUP"
+type = "ratelimit"
+namespace_id = "41003"
+simple = { limit = 3, period = 60 }
+
+[[unsafe.bindings]]
+name = "RL_SIGNUP_GLOBAL"
+type = "ratelimit"
+namespace_id = "41004"
+simple = { limit = 20, period = 60 }
+
+[[unsafe.bindings]]
+name = "RL_BOOKING_CREATE"
+type = "ratelimit"
+namespace_id = "41005"
+simple = { limit = 12, period = 60 }
+
+# RL_CLIENTS: owner client list API (/api/clients) per IP and per business.
+[[unsafe.bindings]]
+name = "RL_CLIENTS"
+type = "ratelimit"
+namespace_id = "41006"
+simple = { limit = 60, period = 60 }
