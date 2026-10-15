@@ -363,6 +363,10 @@
             padding-right: max(0.75rem, env(safe-area-inset-right, 0px)) !important;
         }
         .fixed.inset-0[role="dialog"] > * { margin: auto !important; }
+        /* Booking alert deep link: briefly pulse the booking the alert was about. */
+        @keyframes schediHitRow { 0% { outline-color: rgba(52, 211, 153, 0.95); background-color: rgba(16, 185, 129, 0.26); } 50% { outline-color: rgba(52, 211, 153, 0.3); } 100% { outline-color: rgba(52, 211, 153, 0.95); background-color: rgba(16, 185, 129, 0.08); } }
+        #tenantRosterTableBody > tr.schedi-deeplink-hit { outline: 2px solid rgba(52, 211, 153, 0.95); outline-offset: -2px; border-radius: 12px; background-color: rgba(16, 185, 129, 0.08); animation: schediHitRow 0.9s ease-in-out 4; }
+        @media (prefers-reduced-motion: reduce) { #tenantRosterTableBody > tr.schedi-deeplink-hit { animation: none; background-color: rgba(16, 185, 129, 0.15); } }
     </style>
     <style id="schedi-portal-phone-fit">
         /* Landing refresh: always-visible Log in on the signup screen (CSS only; portal/session logic untouched). */
@@ -7654,7 +7658,7 @@
 
             var rosterRows = tenant.appointments.slice().sort(compareRosterAppointmentsNewestFirst);
             tbody.innerHTML = rosterRows.map(app => `
-                <tr class="roster-row hover:bg-slate-900/40 transition-all">
+                <tr data-booking-id="${esc(app.id)}" class="roster-row hover:bg-slate-900/40 transition-all${window.schediRosterHitClass ? window.schediRosterHitClass(app) : ''}">
                     <td class="roster-cell-ref p-3 font-mono font-bold text-white">#${esc(app.id)}${app.payCode ? ('<br>' + payCodeChipHtml(app)) : ''}</td>
                     <td class="roster-cell-client p-3">
                         <div class="font-bold text-white">${esc(app.clientName)}${app.walkIn === true ? ' <span class="ml-1 align-middle inline-block px-1.5 py-0.5 rounded-md bg-slate-800 border border-slate-700 text-slate-300 text-[10px] font-semibold whitespace-nowrap"><i class="fa-solid fa-person-walking mr-1"></i>Walk-in</span>' : ''}</div>
@@ -14611,6 +14615,20 @@
         if (!P) return;
         var API = 'https://schedi.app/api/push-token';
         var DONE_KEY = 'schedi.pushRegistered';
+        // Tapping a booking alert opens the portal at that booking (after sign-in if needed).
+        // Registered right away, so a tap that launched the app is not missed.
+        P.addListener('pushNotificationActionPerformed', function (a) {
+            var d = (a && a.notification && a.notification.data) || {};
+            var id = String(d.bookingId || '');
+            var onPortal = /^\/(login|portal)(\/|$)/.test(location.pathname || '');
+            if (/^[A-Za-z0-9_-]{1,80}$/.test(id)) {
+                if (onPortal && typeof window.schediOpenBooking === 'function') { window.schediOpenBooking(id, d.date); return; }
+                location.href = 'https://schedi.app/login?booking=' + encodeURIComponent(id);
+                return;
+            }
+            var url = d.url || 'https://schedi.app/login';
+            if (/^https:\/\/schedi\.app\//.test(url) && location.href.indexOf('/login') === -1) location.href = url;
+        });
         var fcmToken = '';
         var busy = false;
         var listenersOn = false;
@@ -14641,10 +14659,6 @@
                 listenersOn = true;
                 P.addListener('registration', function (t) { fcmToken = String((t && t.value) || ''); save(); });
                 P.addListener('registrationError', function () {});
-                P.addListener('pushNotificationActionPerformed', function (a) {
-                    var url = (a && a.notification && a.notification.data && a.notification.data.url) || 'https://schedi.app/login';
-                    if (/^https:\/\/schedi\.app\//.test(url) && location.href.indexOf('/login') === -1) location.href = url;
-                });
             }
             Promise.resolve(P.checkPermissions()).then(function (st) {
                 if (st && st.receive === 'prompt') return P.requestPermissions();
@@ -14797,10 +14811,13 @@
         M.onMessage(messaging, function (p) {
             var n = (p && p.notification) || {};
             var title = n.title || 'Schedi', body = n.body || '';
+            var pd = (p && p.data) || {};
+            var bid = /^[A-Za-z0-9_-]{1,80}$/.test(String(pd.bookingId || '')) ? String(pd.bookingId) : '';
+            var link = bid ? PORTAL + '?booking=' + encodeURIComponent(bid) : PORTAL;
             if (typeof window.schediRefreshRoster === 'function') window.schediRefreshRoster('push');
             if (document.hasFocus()) { showToast(body ? title + ': ' + body : title, 'success'); return; }
             navigator.serviceWorker.getRegistration(SW_SCOPE).then(function (reg) {
-                if (reg) reg.showNotification(title, { body: body, icon: ICON, tag: 'schedi-' + Date.now(), data: { url: PORTAL } });
+                if (reg) reg.showNotification(title, { body: body, icon: ICON, tag: 'schedi-' + Date.now(), data: { url: link, bookingId: bid, date: String(pd.date || '') } });
             }).catch(function () {});
         });
     }
@@ -14901,7 +14918,9 @@
     }
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.addEventListener('message', function (e) {
-            if (e.data && e.data.type === 'schedi-alert-opened' && typeof window.schediRefreshRoster === 'function') window.schediRefreshRoster('push');
+            if (!e.data || e.data.type !== 'schedi-alert-opened') return;
+            if (e.data.bookingId && typeof window.schediOpenBooking === 'function' && window.schediOpenBooking(e.data.bookingId, e.data.date)) return;
+            if (typeof window.schediRefreshRoster === 'function') window.schediRefreshRoster('push');
         });
     }
     function tick() { render(); keepFresh(); }
@@ -14992,6 +15011,143 @@
         } else { el.style.opacity = 0; el.style.transform = 'translate(-50%,-48px)'; }
         dy = 0;
     }, { passive: true });
+})();
+</script>
+<script>
+/* Booking alert deep link. /login?booking=<id> (or #booking=<id>) opens the owner portal at that booking,
+   after sign-in if needed. The id is kept in sessionStorage so it survives the sign-in. Also used when an
+   alert is tapped while a portal tab is open (service worker message) and by the Android app.
+   Does nothing on normal visits. */
+(function () {
+    var KEY = 'schedi.openBooking';
+    var MAX_AGE = 30 * 60 * 1000;
+    var ID_RE = /^[A-Za-z0-9_-]{1,80}$/;
+    var HIT_MS = 4500;
+    var timer = null, running = false, loadTries = 0, hit = null;
+
+    function onPortalPath() { return /^\/(login|portal)(\/|$)/.test(location.pathname || ''); }
+    function cleanDate(d) { d = String(d || ''); return /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : ''; }
+    function fromUrl() {
+        try {
+            var q = new URLSearchParams(location.search || '');
+            var id = q.get('booking') || '', date = q.get('date') || '';
+            if (!id && location.hash && location.hash.indexOf('booking=') !== -1) {
+                var h = new URLSearchParams(location.hash.slice(1));
+                id = h.get('booking') || ''; date = h.get('date') || '';
+            }
+            return ID_RE.test(id) ? { id: id, date: cleanDate(date) } : null;
+        } catch (e) { return null; }
+    }
+    function clearPending() { try { sessionStorage.removeItem(KEY); } catch (e) {} }
+    function pending() {
+        var p = null;
+        try { p = JSON.parse(sessionStorage.getItem(KEY) || 'null'); } catch (e) { p = null; }
+        if (p && ID_RE.test(String(p.id || '')) && Date.now() - (Number(p.at) || 0) < MAX_AGE) return p;
+        if (p) clearPending();
+        return null;
+    }
+    function setPending(id, date) {
+        try { sessionStorage.setItem(KEY, JSON.stringify({ id: id, date: cleanDate(date), at: Date.now() })); } catch (e) {}
+    }
+    function clearUrl() {
+        try {
+            var u = new URL(location.href), changed = false;
+            ['booking', 'date'].forEach(function (k) { if (u.searchParams.has(k)) { u.searchParams.delete(k); changed = true; } });
+            if (u.hash && u.hash.indexOf('booking=') !== -1) {
+                var h = new URLSearchParams(u.hash.slice(1));
+                h.delete('booking'); h.delete('date');
+                var hs = h.toString();
+                u.hash = hs ? '#' + hs : '';
+                changed = true;
+            }
+            if (changed) history.replaceState(history.state, '', u.pathname + u.search + u.hash);
+        } catch (e) {}
+    }
+    function portalReady() {
+        var sec = document.getElementById('tenantPortalSection');
+        if (!sec || sec.classList.contains('hidden')) return false;
+        if (typeof schediAuthSession !== 'function' || !schediAuthSession()) return false;
+        return typeof getTenant === 'function' && !!getTenant();
+    }
+    function findAppt(tenant, id) {
+        return ((tenant && tenant.appointments) || []).find(function (a) { return a && String(a.id) === id; }) || null;
+    }
+    function rowFor(id) {
+        var rows = document.querySelectorAll('#tenantRosterTableBody > tr[data-booking-id]');
+        for (var i = 0; i < rows.length; i++) if (rows[i].getAttribute('data-booking-id') === id) return rows[i];
+        return null;
+    }
+    function toast(msg, type) { try { if (typeof showToast === 'function') showToast(msg, type || 'info'); } catch (e) {} }
+    function stop() { if (timer) { clearInterval(timer); timer = null; } }
+    function start() { if (!timer) timer = setInterval(run, 700); run(); }
+
+    // Roster rows re-rendered while the highlight is running keep it.
+    window.schediRosterHitClass = function (app) {
+        return hit && app && String(app.id) === hit.id && Date.now() < hit.until ? ' schedi-deeplink-hit' : '';
+    };
+
+    async function run() {
+        if (running) return;
+        var p = pending();
+        if (!p) { stop(); return; }
+        if (!portalReady()) return;
+        running = true;
+        try {
+            var tenant = getTenant();
+            if (!tenant._privateBookingsLoaded || !findAppt(tenant, p.id)) {
+                if (typeof refreshPrivateBookings === 'function') { try { await refreshPrivateBookings(); } catch (e) {} }
+                tenant = getTenant();
+                if (!tenant || !tenant._privateBookingsLoaded) {
+                    loadTries++;
+                    if (loadTries < 4) return;
+                    clearPending(); stop(); clearUrl(); loadTries = 0;
+                    toast('We couldn\u2019t load your bookings right now. Tap Refresh to try again.', 'error');
+                    return;
+                }
+            }
+            loadTries = 0;
+            clearPending(); stop();
+            var app = findAppt(tenant, p.id);
+            if (typeof switchTenantTab === 'function') switchTenantTab('roster');
+            if (!app) {
+                clearUrl();
+                toast('That booking is no longer available.', 'info');
+                return;
+            }
+            hit = { id: String(app.id), until: Date.now() + HIT_MS };
+            // List shows every booking (past and upcoming). The calendar cursor follows the booking date too.
+            try { if (typeof rosterCalendarCursor !== 'undefined' && cleanDate(app.date)) rosterCalendarCursor = app.date; } catch (e) {}
+            if (typeof setRosterCalendarView === 'function') setRosterCalendarView('list');
+            else if (typeof renderTenantRoster === 'function') renderTenantRoster(tenant);
+            var row = rowFor(hit.id);
+            if (row) {
+                try { row.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) { row.scrollIntoView(); }
+                setTimeout(function () {
+                    var r = rowFor(hit.id);
+                    if (r) r.classList.remove('schedi-deeplink-hit');
+                }, HIT_MS);
+            }
+            clearUrl();
+        } finally {
+            running = false;
+        }
+    }
+
+    /** Open the portal at a booking: now if signed in, otherwise right after sign-in. */
+    window.schediOpenBooking = function (id, date) {
+        id = String(id || '');
+        if (!ID_RE.test(id)) return false;
+        loadTries = 0;
+        setPending(id, date);
+        start();
+        return true;
+    };
+
+    if (onPortalPath()) {
+        var u = fromUrl();
+        if (u) setPending(u.id, u.date);
+    }
+    if (pending()) start();
 })();
 </script>
 </body>
