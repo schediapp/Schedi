@@ -57,5 +57,14 @@ On 13 Oct 2026 the public non-video files the shell references, plus the favicon
 A production deploy assembles the assets directory instead of uploading `site/` from git by itself:
 
 1. Start from the deploy directory that already contains `assets/`, `favicon.ico`, `manifest.json`, `manifest.webmanifest`, and `_headers` next to the shell.
-2. Copy `site/index.html` from this repo over that directory's `index.html`. Leave the asset bucket in place.
+2. Copy `site/index.html` and `site/firebase-messaging-sw.js` from this repo over that directory's copies. Leave the asset bucket in place.
 3. Deploy that combined directory with `schedi-web`. Do not replace the bucket with the repo's `site/` folder alone.
+
+## Booking alerts (owner push)
+
+Owners get a pop-up for new and cancelled bookings on the Android app and in web browsers (desktop, Android, and iPhone/iPad once Schedi is on the Home Screen).
+
+- Portal: Email Confirmations tab, "Booking alerts" card, plus a bell button next to Refresh on the roster. The browser code is the `schedi.webPush` script near the end of `index.html`; it stays off inside the Capacitor app, which has its own push code.
+- `site/firebase-messaging-sw.js` is the Firebase Cloud Messaging service worker. It is registered with scope `/firebase-cloud-messaging-push-scope`, has no fetch handler, and opens `https://schedi.app/login` when an alert is tapped. It must be deployed next to the shell.
+- Firebase web app `1:350589852487:web:c7b4017d8880f0761b0a62` (project `siteforge-97699`). `window.SCHEDI_WEB_PUSH_VAPID_KEY` may hold the public key from Firebase console > Project settings > Cloud Messaging > Web Push certificates; empty uses Firebase's built-in key.
+- Server (`workers/schedi-email-worker/src/owner-push.js`): `POST /api/push-token` stores every token in `pushTokens/{business}.tokens` and browser ones also in `webTokens`; web tokens get an FCM `webpush` payload with the Schedi icon and the portal link. Tokens FCM reports as unregistered are pruned. `POST /api/push-test` sends one test alert to the calling device, owner only, once per business per minute.

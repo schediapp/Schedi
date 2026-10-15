@@ -266,3 +266,12 @@ for the business's current subscription, so the portal shows "Active until" eith
 `cancel_at` only (newer Stripe API versions) counts as a scheduled cancel too. The Stripe webhook endpoint for
 `https://schedi.app/billing/webhook` must be subscribed to `customer.subscription.updated` (in addition to
 `checkout.session.completed`, `invoice.paid`, `invoice.payment_failed`, `customer.subscription.deleted`).
+
+## Owner booking alerts (push)
+
+`src/owner-push.js`. Needs the `FIREBASE_SERVICE_ACCOUNT_JSON` secret.
+
+- `POST /api/push-token` `{action:'register'|'unregister', session, tenantId, token, platform?:'web'|'android'}`. Owner of that business (or agency) only. Keeps up to 20 tokens per business; web tokens are also listed in `webTokens`.
+- `POST /api/push-test` `{session, tenantId, token}`. Sends a test alert to that one token if it is registered for the business. One per business per minute (KV `pushtest:{business}`). Route `schedi.app/api/push-test` is in `wrangler.toml`.
+- New and cancelled bookings call `sendOwnerPush`. App tokens get the Android payload; web tokens get a `webpush` notification (title, body, `https://schedi.app/assets/homescreen-icon.png`, link `https://schedi.app/login`). UNREGISTERED / NOT_FOUND tokens are pruned.
+- Always run wrangler here with `--config ./wrangler.toml`: without it, wrangler can pick up the repo-root `wrangler.jsonc` (`schedi-web`).

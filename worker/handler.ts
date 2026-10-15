@@ -52,6 +52,7 @@ const RESERVED = new Set([
   "sitemap.xml",
   "manifest.json",
   "manifest.webmanifest",
+  "firebase-messaging-sw.js",
   "hq-9h7p52",
   "portal",
   "for",
@@ -65,6 +66,7 @@ const STATIC_TYPES: Record<string, string> = {
   "/favicon.ico": "image/x-icon",
   "/manifest.json": "application/json; charset=utf-8",
   "/manifest.webmanifest": "application/manifest+json; charset=utf-8",
+  "/firebase-messaging-sw.js": "text/javascript; charset=utf-8",
 };
 
 const SPA_EXACT = new Set(["login", "signup", "reset", "auth", "agency", "hq", "hq-9h7p52"]);

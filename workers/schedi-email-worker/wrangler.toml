@@ -49,6 +49,10 @@ pattern = "schedi.app/api/push-token"
 zone_name = "schedi.app"
 
 [[routes]]
+pattern = "schedi.app/api/push-test"
+zone_name = "schedi.app"
+
+[[routes]]
 pattern = "schedi.app/api/clients"
 zone_name = "schedi.app"
 

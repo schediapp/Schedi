@@ -31,7 +31,7 @@ import { hydrateTenantBookings, persistTenantAppointments, handlePrivateBookingH
 import { handleClientsHttp, runClientsBackfillOnce } from './private-clients.js';
 import { adminAuthHeaders } from './firebase-admin.js';
 import { handleProfileRequest } from './profile-store.js';
-import { handlePushTokenHttp } from './owner-push.js';
+import { handlePushTokenHttp, handlePushTestHttp } from './owner-push.js';
 import { applyCancellationFee, cancellationFeeSentence } from './cancellation-fee.js';
 import { handleOpsSnapshotHttp, runOpsSnapshotCron } from './ops-snapshot.js';
 import { handleResendEventsHttp } from './email-events.js';
@@ -2948,6 +2948,9 @@ export default {
     }
     if (path === '/api/push-token') {
       return handlePushTokenHttp(request, env, origin, { isAllowedOrigin });
+    }
+    if (path === '/api/push-test') {
+      return handlePushTestHttp(request, env, origin, { isAllowedOrigin, rateLimitOk });
     }
     if (path === '/api/clients') {
       return handleClientsHttp(request, env, origin, { isAllowedOrigin });
