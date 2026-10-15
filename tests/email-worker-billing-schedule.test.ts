@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
 // @ts-expect-error plain JS worker module
-import { handleOwnerBillingSchedule, ownerBillingScheduleAction, subscriptionPeriodEndIso } from "../workers/schedi-email-worker/src/owner-billing-schedule.js";
+import { handleOwnerBillingSchedule, ownerBillingScheduleAction, subscriptionPeriodEndIso, subscriptionScheduleFromStripe } from "../workers/schedi-email-worker/src/owner-billing-schedule.js";
 // @ts-expect-error plain JS worker module
 import worker from "../workers/schedi-email-worker/src/index.js";
 
@@ -135,6 +135,27 @@ describe("handleOwnerBillingSchedule", () => {
   it("prefers cancel_at for the period end", () => {
     expect(subscriptionPeriodEndIso({ cancel_at_period_end: true, cancel_at: 1000, current_period_end: 2000 })).toBe(new Date(1000_000).toISOString());
     expect(subscriptionPeriodEndIso({ items: { data: [{ current_period_end: 3000 }] } })).toBe(new Date(3000_000).toISOString());
+  });
+});
+
+describe("subscriptionScheduleFromStripe (customer.subscription.updated)", () => {
+  const NOW = 1_700_000_000_000;
+  it("reads a billing-portal cancel at period end", () => {
+    expect(subscriptionScheduleFromStripe({ status: "active", cancel_at_period_end: true, cancel_at: PERIOD_END, current_period_end: PERIOD_END }, NOW))
+      .toEqual({ cancelAtPeriodEnd: true, currentPeriodEnd: new Date(PERIOD_END * 1000).toISOString() });
+    expect(subscriptionScheduleFromStripe({ status: "active", cancel_at_period_end: true, items: { data: [{ current_period_end: PERIOD_END }] } }, NOW))
+      .toEqual({ cancelAtPeriodEnd: true, currentPeriodEnd: new Date(PERIOD_END * 1000).toISOString() });
+  });
+  it("reads a cancel_at-only schedule (newer Stripe API versions)", () => {
+    expect(subscriptionScheduleFromStripe({ status: "active", cancel_at_period_end: false, cancel_at: PERIOD_END }, NOW))
+      .toEqual({ cancelAtPeriodEnd: true, currentPeriodEnd: new Date(PERIOD_END * 1000).toISOString() });
+  });
+  it("clears the schedule on resume, past cancel_at, or a canceled subscription", () => {
+    const clear = { cancelAtPeriodEnd: false, currentPeriodEnd: "" };
+    expect(subscriptionScheduleFromStripe({ status: "active", cancel_at_period_end: false, cancel_at: null, current_period_end: PERIOD_END }, NOW)).toEqual(clear);
+    expect(subscriptionScheduleFromStripe({ status: "active", cancel_at_period_end: false, cancel_at: 1000 }, NOW)).toEqual(clear);
+    expect(subscriptionScheduleFromStripe({ status: "canceled", cancel_at_period_end: true, cancel_at: PERIOD_END }, NOW)).toEqual(clear);
+    expect(subscriptionScheduleFromStripe(null, NOW)).toEqual(clear);
   });
 });
 
