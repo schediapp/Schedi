@@ -722,19 +722,19 @@ function releasesSlot(booking) {
   return status === 'cancelled' || status === 'canceled' || status === 'denied';
 }
 
-export const APPOINTMENT_BUFFER_CHOICES = [0, 5, 10, 15, 30, 45, 60];
+export const APPOINTMENT_BUFFER_CHOICES = [0, 5, 10, 15, 20, 30, 45, 60];
 
 export function appointmentBufferMins(tenant) {
   const raw = tenant && tenant.appointmentBufferMins;
-  if (raw == null || raw === '') return 15;
+  if (raw == null || raw === '') return 0;
   const n = Number(raw);
   if (APPOINTMENT_BUFFER_CHOICES.includes(n)) return n;
-  return 15;
+  return 0;
 }
 
 function bufferedOverlap(aStart, aEnd, bStart, bEnd, gap) {
-  const g = gap == null || gap === '' ? 15 : Number(gap);
-  const buf = Number.isFinite(g) && g >= 0 ? g : 15;
+  const g = gap == null || gap === '' ? 0 : Number(gap);
+  const buf = Number.isFinite(g) && g >= 0 ? g : 0;
   return aStart < bEnd + buf && bStart < aEnd + buf;
 }
 
@@ -750,7 +750,7 @@ function slotTaken(existing, booking, ignoreId, bufferMins) {
     const tStart = toMinutes(other.time);
     if (tStart === null) return false;
     const tDur = Number(other.durationMins) > 0 ? Math.round(Number(other.durationMins)) : 60;
-    return bufferedOverlap(start, end, tStart, tStart + tDur, bufferMins == null ? 15 : bufferMins);
+    return bufferedOverlap(start, end, tStart, tStart + tDur, bufferMins == null ? 0 : bufferMins);
   });
 }
 

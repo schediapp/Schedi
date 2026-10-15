@@ -1667,11 +1667,12 @@ body.schedi-newdash #addBlockedTimeModal button { min-height: 44px; }
                                     <option value="5">5 minutes</option>
                                     <option value="10">10 minutes</option>
                                     <option value="15">15 minutes</option>
+                                    <option value="20">20 minutes</option>
                                     <option value="30">30 minutes</option>
                                     <option value="45">45 minutes</option>
-                                    <option value="60">1 hour</option>
+                                    <option value="60">60 minutes</option>
                                 </select>
-                                <p class="text-[10px] text-slate-500">Free time after each appointment before the next one can start. If you have not saved a break, Schedi keeps 15 minutes. None means the next visit can start as soon as the last one ends.</p>
+                                <p class="text-[10px] text-slate-500">Free time after each appointment before the next one can start. None is the default, so a business that has not saved a break stays back-to-back.</p>
                             </div>
                             <div class="space-y-2">
                                 <label for="tenantMinNotice" class="block text-xs font-semibold text-slate-300">Minimum booking notice</label>
@@ -4409,8 +4410,8 @@ body.schedi-newdash #addBlockedTimeModal button { min-height: 44px; }
             app.cancelledBy = by === 'owner' ? 'owner' : 'client';
         }
 
-        var APPOINTMENT_BUFFER_MINS = 15;
-        var APPOINTMENT_BUFFER_CHOICES = [0, 5, 10, 15, 30, 45, 60];
+        var APPOINTMENT_BUFFER_MINS = 0;
+        var APPOINTMENT_BUFFER_CHOICES = [0, 5, 10, 15, 20, 30, 45, 60];
 
         function appointmentDurationMins(tenant, app) {
             if (app && Number(app.durationMins) > 0) return Math.round(Number(app.durationMins));
@@ -9924,7 +9925,7 @@ body.schedi-newdash #addBlockedTimeModal button { min-height: 44px; }
             var rawInterval = slotIntervalEl ? Number(slotIntervalEl.value) : 30;
             tenant.slotInterval = (rawInterval === 15 || rawInterval === 30 || rawInterval === 60) ? rawInterval : 30;
             var breakEl = document.getElementById('tenantBreakAfter');
-            tenant.appointmentBufferMins = getAppointmentBufferMins({ appointmentBufferMins: breakEl ? breakEl.value : 15 });
+            tenant.appointmentBufferMins = getAppointmentBufferMins({ appointmentBufferMins: breakEl ? breakEl.value : 0 });
             var minNoticeEl = document.getElementById('tenantMinNotice');
             tenant.minNoticeHours = getMinNoticeHours({ minNoticeHours: minNoticeEl ? minNoticeEl.value : 0 });
             var addressEl = document.getElementById('tenantAddress');
@@ -15984,15 +15985,15 @@ body.schedi-newdash #addBlockedTimeModal button { min-height: 44px; }
 
         function appointmentBufferMins(tenant) {
             var raw = tenant && tenant.appointmentBufferMins;
-            if (raw == null || raw === '') return 15;
+            if (raw == null || raw === '') return 0;
             var n = Number(raw);
-            if (n === 0 || n === 5 || n === 10 || n === 15 || n === 30 || n === 45 || n === 60) return n;
-            return 15;
+            if (n === 0 || n === 5 || n === 10 || n === 15 || n === 20 || n === 30 || n === 45 || n === 60) return n;
+            return 0;
         }
 
         function bufferedOverlap(start, end, otherStart, otherEnd, gap) {
-            var g = (gap == null || gap === '') ? 15 : Number(gap);
-            if (!isFinite(g) || g < 0) g = 15;
+            var g = (gap == null || gap === '') ? 0 : Number(gap);
+            if (!isFinite(g) || g < 0) g = 0;
             return start < otherEnd + g && otherStart < end + g;
         }
 
