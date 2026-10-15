@@ -17,6 +17,7 @@ import { applyCancellationFee, cancellationPolicyPublic } from './cancellation-f
 import { proOnlyBookingError } from './entitlements.js';
 import { rateLimitOk } from './rate-limit.js';
 import { bookingMakesClient, upsertClientsFromBookings } from './private-clients.js';
+import { bookingNoticeError } from './booking-notice.js';
 
 const PRIVATE_PREFIX = 'privateAppts:';
 const MAX_BOOKINGS = 800;
@@ -1143,6 +1144,8 @@ export async function handlePrivateBookingHttp(request, env, origin, path, deps,
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(booking.clientEmail).trim())) {
         return respond(json, { ok: false, error: 'email_required' }, 400, origin, isAllowedOrigin);
       }
+      const noticeErr = bookingNoticeError(tenant, booking, new Date());
+      if (noticeErr) return respond(json, { ok: false, error: noticeErr }, 400, origin, isAllowedOrigin);
       const itemsErr = normalizeBookingItems(tenant, booking);
       if (itemsErr) return respond(json, { ok: false, error: itemsErr }, 400, origin, isAllowedOrigin);
       const planErr = proOnlyBookingError(tenant, booking);
