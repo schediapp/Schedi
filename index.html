@@ -1003,6 +1003,178 @@ html.schedi-light #tenantPortalSection.schedi-newdash button.bg-indigo-400,
 html.schedi-light #tenantPortalSection.schedi-newdash button.bg-rose-600,
 html.schedi-light #tenantPortalSection.schedi-newdash button.bg-rose-500,
 html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !important; }
+#tenantPortalSection.schedi-newdash .sd-hours-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+}
+#tenantPortalSection.schedi-newdash .sd-hours-day {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+    padding: 12px;
+    border-radius: 16px;
+    border: 1px solid rgba(148, 163, 184, 0.4);
+    background: rgba(15, 23, 42, 0.55);
+}
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-hours-day { background: #ffffff; border-color: #cbd5e1; }
+#tenantPortalSection.schedi-newdash .sd-hours-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 44px;
+}
+#tenantPortalSection.schedi-newdash .sd-hours-name { font-size: 16px; font-weight: 800; color: #f8fafc; }
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-hours-name { color: #0f172a; }
+#tenantPortalSection.schedi-newdash .sd-hours-open {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: #e2e8f0;
+    cursor: pointer;
+}
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-hours-open { color: #0f172a; }
+#tenantPortalSection.schedi-newdash .sd-hours-open input { width: 20px; height: 20px; }
+#tenantPortalSection.schedi-newdash .sd-hours-times,
+body.schedi-newdash .sd-time-pair-fields {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 12px;
+    align-items: end;
+}
+body.schedi-newdash .sd-time-pair-fields.has-remove { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; }
+#tenantPortalSection.schedi-newdash .sd-hours-hint,
+body.schedi-newdash .sd-hours-hint {
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.4;
+    color: #cbd5e1;
+}
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-hours-hint,
+html.schedi-light body.schedi-newdash .sd-hours-hint { color: #334155; }
+body.schedi-newdash .sd-time { min-width: 0; position: relative; }
+body.schedi-newdash .sd-time.is-open { z-index: 30; }
+body.schedi-newdash .sd-time-label {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 16px;
+    font-weight: 700;
+    color: #cbd5e1;
+}
+html.schedi-light body.schedi-newdash .sd-time-label { color: #334155; }
+body.schedi-newdash .sd-time-field { position: relative; }
+body.schedi-newdash .sd-time-input {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 44px;
+    padding: 8px 48px 8px 12px;
+    border-radius: 12px;
+    border: 1px solid #64748b;
+    background: #0f172a;
+    color: #f8fafc;
+    font-size: 16px;
+    line-height: 1.2;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+html.schedi-light body.schedi-newdash .sd-time-input {
+    background: #ffffff;
+    color: #0f172a;
+    border-color: #64748b;
+}
+body.schedi-newdash .sd-time-input[aria-invalid="true"] { border-color: #fb7185; }
+html.schedi-light body.schedi-newdash .sd-time-input[aria-invalid="true"] { border-color: #be123c; }
+body.schedi-newdash .sd-time-input:focus-visible,
+body.schedi-newdash .sd-time-open:focus-visible { outline: 2px solid #38bdf8; outline-offset: 2px; }
+body.schedi-newdash .sd-time-open {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 44px;
+    height: 44px;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    color: #e2e8f0;
+    font-size: 16px;
+    cursor: pointer;
+}
+html.schedi-light body.schedi-newdash .sd-time-open { color: #0f172a; }
+body.schedi-newdash .sd-time-list {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(100% + 4px);
+    z-index: 40;
+    max-height: 240px;
+    margin: 0;
+    padding: 4px;
+    overflow: auto;
+    list-style: none;
+    border-radius: 12px;
+    border: 1px solid #334155;
+    background: #0f172a;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+}
+html.schedi-light body.schedi-newdash .sd-time-list { background: #ffffff; border-color: #cbd5e1; color: #0f172a; }
+body.schedi-newdash .sd-time-list [role="option"] {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 12px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 700;
+    color: #f8fafc;
+    cursor: pointer;
+}
+html.schedi-light body.schedi-newdash .sd-time-list [role="option"] { color: #0f172a; }
+body.schedi-newdash .sd-time-list [role="option"].is-active { background: #064e3b; color: #ecfdf5; }
+html.schedi-light body.schedi-newdash .sd-time-list [role="option"].is-active { background: #d1fae5; color: #064e3b; }
+body.schedi-newdash .sd-hours-error {
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.35;
+    font-weight: 700;
+    color: #fb7185;
+}
+body.schedi-newdash .sd-hours-error:empty { display: none; }
+html.schedi-light body.schedi-newdash .sd-hours-error { color: #be123c; }
+body.schedi-newdash .sd-time-remove {
+    min-height: 44px;
+    min-width: 44px;
+    border-radius: 12px;
+    border: 1px solid rgba(244, 63, 94, 0.35);
+    background: rgba(244, 63, 94, 0.1);
+    color: #fb7185;
+    font-size: 16px;
+}
+html.schedi-light body.schedi-newdash .sd-time-remove { color: #be123c; background: #fff1f2; }
+body.schedi-newdash .sd-time-pair-fields select { min-height: 44px; width: 100%; font-size: 16px; box-sizing: border-box; }
+#tenantPortalSection.schedi-newdash #tenantHoursSaveRow button,
+body.schedi-newdash #addSpecialHoursModal button,
+body.schedi-newdash #addDateBlockModal button,
+body.schedi-newdash #addBlockedTimeModal button { min-height: 44px; }
+#tenantPortalSection.schedi-newdash #tenantHoursSaveRow button { font-size: 16px; }
+#tenantPortalSection.schedi-newdash .sd-hours-day,
+#tenantPortalSection.schedi-newdash #tenantHoursShiftBlock { overflow: visible; }
+@media (min-width: 900px) {
+    #tenantPortalSection.schedi-newdash .sd-hours-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 480px) {
+    #tenantPortalSection.schedi-newdash #tenantSectionHours { padding: 16px; }
+    #tenantPortalSection.schedi-newdash .sd-hours-day { padding: 10px 8px; }
+    #tenantPortalSection.schedi-newdash .sd-hours-times,
+    body.schedi-newdash .sd-time-pair-fields { gap: 8px; }
+    body.schedi-newdash .sd-time-pair-fields.has-remove { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+    body.schedi-newdash .sd-time-pair-fields.has-remove .sd-time-remove { grid-column: 1 / -1; justify-self: start; }
+}
 @media (max-width: 859px) {
     body.schedi-newdash #toastContainer {
         left: 12px;
@@ -1472,9 +1644,8 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
 
                     <form onsubmit="handleUpdateShiftsSubmit(event)" class="space-y-4 border-b border-slate-800 pb-6">
                         <div id="tenantHoursShiftBlock">
-                        <div id="perDayShiftsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
-                            <!-- Injected via JS -->
-                        </div>
+                        <div id="perDayShiftsGrid" class="sd-hours-grid"></div>
+                        <p class="sd-hours-hint">Type a time or pick one. With no am or pm, 7–11 are morning, 12 is noon, and 1–6 are afternoon, so 9 is 9:00 AM and 5 is 5:00 PM. Type 6a for 6:00 AM, or 17:00 for 5:00 PM. The list follows your start-times interval.</p>
                         <div class="pt-2 border-t border-slate-800/80 space-y-3 max-w-xl">
                             <div>
                                 <h4 class="text-sm font-bold text-white">Booking rules</h4>
@@ -2224,18 +2395,15 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
                     <label class="block font-semibold text-slate-300 mb-1">Outage Title / Reason *</label>
                     <input type="text" id="newBlockTitle" required placeholder="Daily Lunch & Staff Sync" class="w-full px-3 py-2 rounded-xl glass-input">
                 </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block font-semibold text-slate-300 mb-1">Start Time Slot *</label>
-                        <select id="newBlockTime" class="w-full px-3 py-2 rounded-xl glass-input font-bold text-brand-400">
-                            <option value="09:00 AM">09:00 AM</option>
-                            <option value="10:30 AM">10:30 AM</option>
-                            <option value="12:00 PM">12:00 PM</option>
-                            <option value="01:00 PM">01:00 PM</option>
-                            <option value="02:30 PM">02:30 PM</option>
-                            <option value="03:30 PM">03:30 PM</option>
-                            <option value="05:00 PM">05:00 PM</option>
-                        </select>
+                <div class="sd-time-pair">
+                    <div class="sd-time-pair-fields">
+                    <div class="sd-time" data-time-combo>
+                        <label class="sd-time-label" for="newBlockTime">Start time</label>
+                        <div class="sd-time-field">
+                            <input id="newBlockTime" class="sd-time-input" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="newBlockTimeList" autocomplete="off" spellcheck="false" value="09:00 AM">
+                            <button type="button" class="sd-time-open" aria-label="Show start times"><span aria-hidden="true">▾</span></button>
+                            <ul id="newBlockTimeList" class="sd-time-list" role="listbox" hidden></ul>
+                        </div>
                     </div>
                     <div>
                         <label class="block font-semibold text-slate-300 mb-1">Duration / Block Length *</label>
@@ -2250,6 +2418,8 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
                             <option value="8 hours (Full Day)">8 hours (Full Day)</option>
                         </select>
                     </div>
+                    </div>
+                    <p id="blockTimeError" class="sd-hours-error" role="alert"></p>
                 </div>
                 <div>
                     <label class="block font-semibold text-slate-300 mb-1">Repeat Frequency *</label>
@@ -2295,15 +2465,27 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
                     <input type="checkbox" id="newVacAllDay" checked onchange="toggleVacTimeFields()" class="accent-amber-500 rounded">
                     <span class="font-semibold text-slate-200">All day (block every slot on these dates)</span>
                 </label>
-                <div id="vacTimeFields" class="grid grid-cols-2 gap-3 hidden">
-                    <div>
-                        <label class="block font-semibold text-slate-300 mb-1">Start Time *</label>
-                        <select id="newVacStartTime" class="w-full px-3 py-2 rounded-xl glass-input font-bold text-brand-400"></select>
+                <div id="vacTimeFields" class="sd-time-pair hidden">
+                    <div class="sd-time-pair-fields">
+                        <div class="sd-time" data-time-combo>
+                            <label class="sd-time-label" for="newVacStartTime">Opens</label>
+                            <div class="sd-time-field">
+                                <input id="newVacStartTime" class="sd-time-input" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="newVacStartTimeList" autocomplete="off" spellcheck="false" value="09:00 AM">
+                                <button type="button" class="sd-time-open" aria-label="Show open times"><span aria-hidden="true">▾</span></button>
+                                <ul id="newVacStartTimeList" class="sd-time-list" role="listbox" hidden></ul>
+                            </div>
+                        </div>
+                        <div class="sd-time" data-time-combo>
+                            <label class="sd-time-label" for="newVacEndTime">Closes</label>
+                            <div class="sd-time-field">
+                                <input id="newVacEndTime" class="sd-time-input" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="newVacEndTimeList" autocomplete="off" spellcheck="false" value="05:00 PM">
+                                <button type="button" class="sd-time-open" aria-label="Show close times"><span aria-hidden="true">▾</span></button>
+                                <ul id="newVacEndTimeList" class="sd-time-list" role="listbox" hidden></ul>
+                            </div>
+                        </div>
                     </div>
-                    <div>
-                        <label class="block font-semibold text-slate-300 mb-1">End Time *</label>
-                        <select id="newVacEndTime" class="w-full px-3 py-2 rounded-xl glass-input font-bold text-amber-400"></select>
-                    </div>
+                    <p id="vacTimeError" class="sd-hours-error" role="alert"></p>
+                    <p class="sd-hours-hint">Type 9, 930, 9:30a, or 5p, or pick a time. Close needs to be after open.</p>
                 </div>
                 <div class="pt-2 flex justify-end space-x-2">
                     <button type="button" onclick="closeAddDateBlockModal()" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300">Cancel</button>
@@ -2338,6 +2520,7 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
                             <i class="fa-solid fa-plus mr-1"></i>Add window
                         </button>
                     </div>
+                    <p class="sd-hours-hint">Type 9, 930, 9:30a, or 5p, or pick a time. Close needs to be after open.</p>
                     <div id="specialHoursRangesList" class="space-y-2"></div>
                 </div>
                 <div class="pt-2 flex justify-end space-x-2">
@@ -2930,6 +3113,90 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
             var ampm = h >= 12 ? 'PM' : 'AM';
             var h12 = h % 12 === 0 ? 12 : h % 12;
             return String(h12).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ' ' + ampm;
+        }
+
+        /**
+         * Normalize a typed clock time to "hh:mm AM/PM", or "" when it is not a time.
+         * Bare hours with no am/pm use business hours: 7–11 are morning, 12 is noon,
+         * and 1–6 are afternoon (so 9 is 9:00 AM and 5 is 5:00 PM). 0 is midnight.
+         * 13–23 are 24-hour times. Type 6a for 6:00 AM.
+         */
+        function parseOwnerClock(raw) {
+            var text = String(raw == null ? '' : raw).trim().toLowerCase();
+            if (!text) return '';
+            text = text.replace(/a\.m\.?/g, 'am').replace(/p\.m\.?/g, 'pm');
+            text = text.replace(/(\d)\.(\d)/g, '$1:$2').replace(/\./g, '');
+            text = text.replace(/\s+/g, ' ').trim();
+            var mer = '';
+            var merMatch = text.match(/^(.*?)(?:\s*)(am|pm|a|p)$/);
+            var body = text;
+            if (merMatch && merMatch[1].trim()) {
+                body = merMatch[1].trim();
+                mer = merMatch[2].charAt(0);
+            }
+            body = body.replace(/\s*:\s*/g, ':');
+            var hour = null;
+            var minute = null;
+            var colon = body.match(/^(\d{1,2}):(\d{1,2})$/);
+            var compact = body.match(/^(\d{1,4})$/);
+            if (colon) {
+                hour = parseInt(colon[1], 10);
+                minute = parseInt(colon[2], 10);
+            } else if (compact) {
+                var digits = compact[1];
+                if (digits.length <= 2) {
+                    hour = parseInt(digits, 10);
+                    minute = 0;
+                } else if (digits.length === 3) {
+                    hour = parseInt(digits.slice(0, 1), 10);
+                    minute = parseInt(digits.slice(1), 10);
+                } else {
+                    hour = parseInt(digits.slice(0, 2), 10);
+                    minute = parseInt(digits.slice(2), 10);
+                }
+            } else return '';
+            if (minute < 0 || minute > 59 || hour < 0 || hour > 23) return '';
+            if (mer) {
+                if (hour < 1 || hour > 12) return '';
+                if (hour === 12) hour = mer === 'a' ? 0 : 12;
+                else if (mer === 'p') hour += 12;
+            } else if (hour === 0 || hour >= 13 || hour === 12 || (hour >= 7 && hour <= 11)) {
+                hour = hour;
+            } else if (hour >= 1 && hour <= 6) {
+                hour += 12;
+            } else return '';
+            var ampm = hour >= 12 ? 'PM' : 'AM';
+            var h12 = hour % 12;
+            if (h12 === 0) h12 = 12;
+            return String(h12).padStart(2, '0') + ':' + String(minute).padStart(2, '0') + ' ' + ampm;
+        }
+
+        function ownerClockMinutes(label) {
+            var m = /^(\d{2}):(\d{2}) (AM|PM)$/.exec(String(label || ''));
+            if (!m) return null;
+            var h = parseInt(m[1], 10);
+            var minute = parseInt(m[2], 10);
+            if (m[3] === 'PM' && h !== 12) h += 12;
+            if (m[3] === 'AM' && h === 12) h = 0;
+            if (h > 23 || minute > 59) return null;
+            return h * 60 + minute;
+        }
+
+        function ownerHoursOrderError(startRaw, endRaw) {
+            var start = parseOwnerClock(startRaw);
+            var end = parseOwnerClock(endRaw);
+            if (!start || !end) return 'Use a time like 9:30 AM.';
+            var s = ownerClockMinutes(start);
+            var e = ownerClockMinutes(end);
+            if (s == null || e == null || e <= s) return 'Close needs to be after open.';
+            return '';
+        }
+
+        function ownerClockChoices(stepMins) {
+            var step = stepMins === 15 || stepMins === 30 || stepMins === 60 ? stepMins : 30;
+            var labels = [];
+            for (var m = 0; m < 24 * 60; m += step) labels.push(fromMinutes(m));
+            return labels;
         }
 
         function parseDurationMins(text, fallback) {
@@ -8710,6 +8977,296 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
             `).join('');
         }
 
+        function ownerTimeStepMins() {
+            var el = document.getElementById('tenantSlotInterval');
+            var n = el ? Number(el.value) : NaN;
+            if (n === 15 || n === 30 || n === 60) return n;
+            return getSlotIntervalMins(typeof getTenant === 'function' ? getTenant() : null);
+        }
+
+        function ownerTimeComboHtml(id, value, labelText, listLabel, extraClass, describedBy) {
+            var safeId = String(id || '').replace(/[^A-Za-z0-9_-]/g, '');
+            var shown = esc(parseOwnerClock(value) || value || '');
+            var klass = 'sd-time-input' + (extraClass ? ' ' + extraClass : '');
+            var described = describedBy ? ' aria-describedby="' + esc(describedBy) + '"' : '';
+            return '<div class="sd-time" data-time-combo>'
+                + '<label class="sd-time-label" for="' + safeId + '">' + esc(labelText) + '</label>'
+                + '<div class="sd-time-field">'
+                + '<input type="text" id="' + safeId + '" class="' + klass + '" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-haspopup="listbox" aria-controls="' + safeId + 'List"' + described + ' autocomplete="off" spellcheck="false" value="' + shown + '">'
+                + '<button type="button" class="sd-time-open" aria-label="' + esc(listLabel || ('Show ' + labelText + ' times')) + '"><span aria-hidden="true">▾</span></button>'
+                + '<ul id="' + safeId + 'List" class="sd-time-list" role="listbox" hidden></ul>'
+                + '</div></div>';
+        }
+
+        function ownerTimeFilterChoices(choices, typed) {
+            var raw = String(typed || '').trim();
+            var parsed = parseOwnerClock(raw);
+            if (!raw || (parsed && parsed.toLowerCase() === raw.toLowerCase())) return choices.slice();
+            var q = raw.toLowerCase().replace(/\s+/g, '');
+            var hits = choices.filter(function (label) {
+                return label.toLowerCase().replace(/\s+/g, '').indexOf(q) !== -1;
+            });
+            if (parsed && choices.indexOf(parsed) !== -1 && hits.indexOf(parsed) === -1) hits.unshift(parsed);
+            return hits.length ? hits : choices.slice();
+        }
+
+        var ownerTimeComboBound = false;
+
+        function ownerTimeRoot(node) {
+            return node && node.closest ? node.closest('[data-time-combo]') : null;
+        }
+
+        function closeOwnerTimeList(root) {
+            if (!root) return;
+            var input = root.querySelector('.sd-time-input');
+            var list = root.querySelector('.sd-time-list');
+            root.classList.remove('is-open');
+            root.removeAttribute('data-time-moved');
+            if (input) {
+                input.setAttribute('aria-expanded', 'false');
+                input.removeAttribute('aria-activedescendant');
+            }
+            if (list) {
+                list.hidden = true;
+                list.innerHTML = '';
+            }
+        }
+
+        function closeAllOwnerTimeLists(except) {
+            document.querySelectorAll('[data-time-combo].is-open').forEach(function (root) {
+                if (root !== except) closeOwnerTimeList(root);
+            });
+        }
+
+        function fillOwnerTimeList(root, typed) {
+            var list = root.querySelector('.sd-time-list');
+            var input = root.querySelector('.sd-time-input');
+            if (!list || !input) return;
+            var choices = ownerTimeFilterChoices(ownerClockChoices(ownerTimeStepMins()), typed);
+            var parsed = parseOwnerClock(typed);
+            var active = 0;
+            if (parsed) {
+                var found = choices.indexOf(parsed);
+                if (found >= 0) active = found;
+            }
+            list.innerHTML = choices.map(function (label, i) {
+                var on = i === active;
+                return '<li id="' + input.id + 'Opt' + i + '" role="option" data-value="' + esc(label) + '"'
+                    + (on ? ' class="is-active" aria-selected="true"' : ' aria-selected="false"')
+                    + '>' + esc(label) + '</li>';
+            }).join('');
+            var activeEl = list.querySelector('.is-active');
+            if (activeEl) input.setAttribute('aria-activedescendant', activeEl.id);
+        }
+
+        function openOwnerTimeList(root, typed) {
+            if (!root) return;
+            closeAllOwnerTimeLists(root);
+            var input = root.querySelector('.sd-time-input');
+            var list = root.querySelector('.sd-time-list');
+            if (!input || !list) return;
+            root.removeAttribute('data-time-moved');
+            fillOwnerTimeList(root, typed == null ? input.value : typed);
+            list.hidden = false;
+            root.classList.add('is-open');
+            input.setAttribute('aria-expanded', 'true');
+            var activeEl = list.querySelector('.is-active');
+            if (activeEl && activeEl.scrollIntoView) activeEl.scrollIntoView({ block: 'nearest' });
+        }
+
+        function ownerTimeMove(root, dir) {
+            var list = root.querySelector('.sd-time-list');
+            var input = root.querySelector('.sd-time-input');
+            if (!list || !input) return;
+            var opts = list.querySelectorAll('[role="option"]');
+            if (!opts.length) return;
+            var current = 0;
+            for (var i = 0; i < opts.length; i++) {
+                if (opts[i].classList.contains('is-active')) { current = i; break; }
+            }
+            var next = current;
+            if (dir === 'home') next = 0;
+            else if (dir === 'end') next = opts.length - 1;
+            else next = current + dir;
+            if (next < 0) next = opts.length - 1;
+            if (next >= opts.length) next = 0;
+            for (var j = 0; j < opts.length; j++) {
+                var on = j === next;
+                opts[j].classList.toggle('is-active', on);
+                opts[j].setAttribute('aria-selected', on ? 'true' : 'false');
+            }
+            root.setAttribute('data-time-moved', '1');
+            input.setAttribute('aria-activedescendant', opts[next].id);
+            if (opts[next].scrollIntoView) opts[next].scrollIntoView({ block: 'nearest' });
+        }
+
+        function ownerTimePairFromInput(input) {
+            if (!input) return null;
+            var id = input.id || '';
+            if (id.indexOf('shiftStart_') === 0 || id.indexOf('shiftEnd_') === 0) {
+                var day = id.replace(/^shift(?:Start|End)_/, '');
+                return {
+                    kind: 'pair',
+                    start: document.getElementById('shiftStart_' + day),
+                    end: document.getElementById('shiftEnd_' + day),
+                    err: document.getElementById('shiftError_' + day)
+                };
+            }
+            var row = input.closest && input.closest('.special-hours-range-row');
+            if (row) {
+                return {
+                    kind: 'pair',
+                    start: row.querySelector('.special-hours-start'),
+                    end: row.querySelector('.special-hours-end'),
+                    err: row.querySelector('.sd-hours-error')
+                };
+            }
+            if (id === 'newVacStartTime' || id === 'newVacEndTime') {
+                return {
+                    kind: 'pair',
+                    start: document.getElementById('newVacStartTime'),
+                    end: document.getElementById('newVacEndTime'),
+                    err: document.getElementById('vacTimeError')
+                };
+            }
+            if (id === 'newBlockTime') {
+                return { kind: 'single', input: input, err: document.getElementById('blockTimeError') };
+            }
+            return null;
+        }
+
+        function ownerTimeCommit(root, label) {
+            var input = root ? root.querySelector('.sd-time-input') : null;
+            if (!input) return;
+            input.value = label;
+            input.setAttribute('aria-invalid', 'false');
+            closeOwnerTimeList(root);
+            var pair = ownerTimePairFromInput(input);
+            if (pair && pair.err && pair.kind === 'pair' && pair.start && pair.end && !ownerHoursOrderError(pair.start.value, pair.end.value)) {
+                pair.err.textContent = '';
+                pair.start.setAttribute('aria-invalid', 'false');
+                pair.end.setAttribute('aria-invalid', 'false');
+            }
+            if (pair && pair.kind === 'single' && pair.err) pair.err.textContent = '';
+            input.focus();
+        }
+
+        function normalizeOwnerTimeInput(input) {
+            if (!input) return;
+            var parsed = parseOwnerClock(input.value);
+            if (parsed) input.value = parsed;
+        }
+
+        function syncOwnerTimePair(input) {
+            normalizeOwnerTimeInput(input);
+            var pair = ownerTimePairFromInput(input);
+            if (!pair || !pair.err) return;
+            if (pair.kind === 'single') {
+                var raw = String(input.value || '').trim();
+                if (raw && !parseOwnerClock(raw)) {
+                    pair.err.textContent = 'Use a time like 9:30 AM.';
+                    input.setAttribute('aria-invalid', 'true');
+                } else if (parseOwnerClock(raw) || !raw) {
+                    pair.err.textContent = '';
+                    input.setAttribute('aria-invalid', 'false');
+                }
+                return;
+            }
+            if (!pair.start || !pair.end) return;
+            if (!String(pair.start.value || '').trim() && !String(pair.end.value || '').trim()) {
+                pair.err.textContent = '';
+                return;
+            }
+            var err = ownerHoursOrderError(pair.start.value, pair.end.value);
+            pair.err.textContent = err;
+            pair.start.setAttribute('aria-invalid', err ? 'true' : 'false');
+            pair.end.setAttribute('aria-invalid', err ? 'true' : 'false');
+        }
+
+        function bindOwnerTimeCombos() {
+            if (ownerTimeComboBound) return;
+            ownerTimeComboBound = true;
+            document.addEventListener('mousedown', function (event) {
+                var t = event.target;
+                if (!t || !t.closest) return;
+                if (t.closest('.sd-time-open') || t.closest('.sd-time-list')) event.preventDefault();
+            });
+            document.addEventListener('click', function (event) {
+                var t = event.target;
+                if (!t || !t.closest) return;
+                var opt = t.closest('.sd-time-list [role="option"]');
+                if (opt) {
+                    ownerTimeCommit(ownerTimeRoot(opt), opt.getAttribute('data-value') || opt.textContent || '');
+                    return;
+                }
+                var btn = t.closest('.sd-time-open');
+                if (btn) {
+                    var rootBtn = ownerTimeRoot(btn);
+                    if (rootBtn && rootBtn.classList.contains('is-open')) closeOwnerTimeList(rootBtn);
+                    else openOwnerTimeList(rootBtn);
+                    var stay = rootBtn && rootBtn.querySelector('.sd-time-input');
+                    if (stay) stay.focus();
+                    return;
+                }
+                var typed = t.closest('.sd-time-input');
+                if (typed) {
+                    var rootIn = ownerTimeRoot(typed);
+                    if (rootIn && !rootIn.classList.contains('is-open')) openOwnerTimeList(rootIn);
+                    return;
+                }
+                if (!t.closest('[data-time-combo]')) closeAllOwnerTimeLists(null);
+            });
+            document.addEventListener('input', function (event) {
+                var input = event.target;
+                if (!input || !input.classList || !input.classList.contains('sd-time-input')) return;
+                openOwnerTimeList(ownerTimeRoot(input), input.value);
+            });
+            document.addEventListener('focusin', function (event) {
+                var input = event.target;
+                if (!input || !input.classList || !input.classList.contains('sd-time-input')) return;
+                closeAllOwnerTimeLists(ownerTimeRoot(input));
+            });
+            document.addEventListener('focusout', function (event) {
+                var input = event.target;
+                if (!input || !input.classList || !input.classList.contains('sd-time-input')) return;
+                var root = ownerTimeRoot(input);
+                setTimeout(function () {
+                    if (root && root.contains(document.activeElement)) return;
+                    syncOwnerTimePair(input);
+                    closeOwnerTimeList(root);
+                }, 0);
+            });
+            document.addEventListener('keydown', function (event) {
+                var input = event.target;
+                if (!input || !input.classList || !input.classList.contains('sd-time-input')) return;
+                var root = ownerTimeRoot(input);
+                var open = !!(root && root.classList.contains('is-open'));
+                if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+                    event.preventDefault();
+                    if (!open) openOwnerTimeList(root);
+                    if (root) ownerTimeMove(root, event.key === 'ArrowDown' ? 1 : -1);
+                } else if (open && event.key === 'Home') {
+                    event.preventDefault();
+                    ownerTimeMove(root, 'home');
+                } else if (open && event.key === 'End') {
+                    event.preventDefault();
+                    ownerTimeMove(root, 'end');
+                } else if (open && event.key === 'Enter') {
+                    event.preventDefault();
+                    var moved = root.getAttribute('data-time-moved') === '1';
+                    var active = root.querySelector('[role="option"].is-active');
+                    var typedTime = parseOwnerClock(input.value);
+                    if (moved && active) ownerTimeCommit(root, active.getAttribute('data-value') || '');
+                    else if (typedTime) ownerTimeCommit(root, typedTime);
+                    else closeOwnerTimeList(root);
+                } else if (open && event.key === 'Escape') {
+                    event.preventDefault();
+                    closeOwnerTimeList(root);
+                }
+            });
+        }
+        bindOwnerTimeCombos();
+
         function renderTenantHours(tenant) {
             const shiftsGrid = document.getElementById('perDayShiftsGrid');
             const rulesList = document.getElementById('tenantBlockedRulesList');
@@ -8732,31 +9289,28 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
 
             if (shiftsGrid) {
                 const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+                const dayLabels = { Mon: 'Monday', Tue: 'Tuesday', Wed: 'Wednesday', Thu: 'Thursday', Fri: 'Friday', Sat: 'Saturday', Sun: 'Sunday' };
                 shiftsGrid.innerHTML = days.map(day => {
                     const h = tenant.operatingHours[day] || { open: true, start: '09:00 AM', end: '05:00 PM' };
                     return `
-                        <div class="p-3 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2">
-                            <div class="flex items-center justify-between">
-                                <span class="font-bold text-white uppercase text-xs">${day}</span>
-                                <label class="flex items-center space-x-1 cursor-pointer">
-                                    <input type="checkbox" id="shiftOpen_${day}" ${h.open ? 'checked' : ''} class="accent-brand-500 rounded">
-                                    <span class="text-[10px] text-slate-400 font-semibold">Open</span>
+                        <div class="sd-hours-day">
+                            <div class="sd-hours-head">
+                                <span class="sd-hours-name">${dayLabels[day]}</span>
+                                <label class="sd-hours-open">
+                                    <input type="checkbox" id="shiftOpen_${day}" ${h.open ? 'checked' : ''}>
+                                    <span>Open</span>
                                 </label>
                             </div>
-                            <div class="grid grid-cols-2 gap-1.5 text-[10px]">
-                                <div>
-                                    <label class="text-slate-400">Start</label>
-                                    <input type="text" id="shiftStart_${day}" value="${esc(h.start)}" class="w-full px-2 py-1 rounded glass-input font-mono">
-                                </div>
-                                <div>
-                                    <label class="text-slate-400">End</label>
-                                    <input type="text" id="shiftEnd_${day}" value="${esc(h.end)}" class="w-full px-2 py-1 rounded glass-input font-mono">
-                                </div>
+                            <div class="sd-hours-times">
+                                ${ownerTimeComboHtml('shiftStart_' + day, h.start, 'Opens', 'Show open times', '', 'shiftError_' + day)}
+                                ${ownerTimeComboHtml('shiftEnd_' + day, h.end, 'Closes', 'Show close times', '', 'shiftError_' + day)}
                             </div>
+                            <p id="shiftError_${day}" class="sd-hours-error" role="alert"></p>
                         </div>
                     `;
                 }).join('');
             }
+            bindOwnerTimeCombos();
 
             if (rulesList) {
                 ensureBlockedArrays(tenant);
@@ -9331,12 +9885,39 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
             }
 
             const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+            var nextHours = {};
+            var invalidHours = false;
+            var firstHoursError = null;
             days.forEach(day => {
-                const open = document.getElementById(`shiftOpen_${day}`).checked;
-                const start = document.getElementById(`shiftStart_${day}`).value.trim();
-                const end = document.getElementById(`shiftEnd_${day}`).value.trim();
-
-                tenant.operatingHours[day] = { open, start, end };
+                const openEl = document.getElementById(`shiftOpen_${day}`);
+                const startEl = document.getElementById(`shiftStart_${day}`);
+                const endEl = document.getElementById(`shiftEnd_${day}`);
+                const errEl = document.getElementById(`shiftError_${day}`);
+                const open = !!(openEl && openEl.checked);
+                const startRaw = startEl ? startEl.value : '';
+                const endRaw = endEl ? endEl.value : '';
+                const err = ownerHoursOrderError(startRaw, endRaw);
+                if (errEl) errEl.textContent = err;
+                if (startEl) startEl.setAttribute('aria-invalid', err ? 'true' : 'false');
+                if (endEl) endEl.setAttribute('aria-invalid', err ? 'true' : 'false');
+                if (err) {
+                    invalidHours = true;
+                    if (!firstHoursError) firstHoursError = errEl || startEl;
+                    return;
+                }
+                const start = parseOwnerClock(startRaw);
+                const end = parseOwnerClock(endRaw);
+                if (startEl) startEl.value = start;
+                if (endEl) endEl.value = end;
+                nextHours[day] = { open, start, end };
+            });
+            if (invalidHours) {
+                if (firstHoursError && firstHoursError.scrollIntoView) firstHoursError.scrollIntoView({ block: 'nearest' });
+                showToast('Fix the hours marked below.', 'error');
+                return;
+            }
+            days.forEach(day => {
+                if (nextHours[day]) tenant.operatingHours[day] = nextHours[day];
             });
 
             var slotIntervalEl = document.getElementById('tenantSlotInterval');
@@ -9371,6 +9952,10 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
             if (!el) return;
             var v = value == null ? '' : String(value);
             if (!v) return;
+            if (el.classList && el.classList.contains('sd-time-input')) {
+                el.value = parseOwnerClock(v) || v;
+                return;
+            }
             var exists = false;
             for (var i = 0; i < el.options.length; i++) {
                 if (el.options[i].value === v) { exists = true; break; }
@@ -9407,7 +9992,12 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
             var timeEl = document.getElementById('newBlockTime');
             var durEl = document.getElementById('newBlockDuration');
             var freqEl = document.getElementById('newBlockFrequency');
-            if (timeEl) timeEl.value = '09:00 AM';
+            if (timeEl) {
+                timeEl.value = '09:00 AM';
+                timeEl.setAttribute('aria-invalid', 'false');
+            }
+            var blockErr = document.getElementById('blockTimeError');
+            if (blockErr) blockErr.textContent = '';
             if (durEl) durEl.value = '1 hour';
             if (freqEl) freqEl.value = 'Daily';
             setBlockedTimeModalMode(false);
@@ -9436,6 +10026,10 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
             ensureSelectHasValue(document.getElementById('newBlockTime'), rule.time || '09:00 AM');
             ensureSelectHasValue(document.getElementById('newBlockDuration'), rule.duration || '1 hour');
             ensureSelectHasValue(document.getElementById('newBlockFrequency'), rule.frequency || 'Daily');
+            var blockErr = document.getElementById('blockTimeError');
+            if (blockErr) blockErr.textContent = '';
+            var blockTimeEl = document.getElementById('newBlockTime');
+            if (blockTimeEl) blockTimeEl.setAttribute('aria-invalid', 'false');
             setBlockedTimeModalMode(true);
             document.getElementById('addBlockedTimeModal').classList.remove('hidden');
             document.getElementById('addBlockedTimeModal').scrollTop = 0;
@@ -9449,7 +10043,19 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
             ensureBlockedArrays(tenant);
 
             const title = document.getElementById('newBlockTitle').value.trim();
-            const time = document.getElementById('newBlockTime').value;
+            const timeEl = document.getElementById('newBlockTime');
+            const time = parseOwnerClock(timeEl ? timeEl.value : '');
+            const blockErr = document.getElementById('blockTimeError');
+            if (!time) {
+                if (blockErr) blockErr.textContent = 'Use a time like 9:30 AM.';
+                if (timeEl) timeEl.setAttribute('aria-invalid', 'true');
+                return;
+            }
+            if (timeEl) {
+                timeEl.value = time;
+                timeEl.setAttribute('aria-invalid', 'false');
+            }
+            if (blockErr) blockErr.textContent = '';
             const duration = document.getElementById('newBlockDuration').value;
             const frequency = document.getElementById('newBlockFrequency').value;
             const editId = (document.getElementById('blockRuleEditId').value || '').trim();
@@ -9622,15 +10228,15 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
         }
 
         function populateVacTimeSelects() {
-            var opts = vacTimeOptionLabels();
             ['newVacStartTime', 'newVacEndTime'].forEach(function (id, idx) {
                 var el = document.getElementById(id);
                 if (!el) return;
                 var preferred = idx === 0 ? '09:00 AM' : '05:00 PM';
-                el.innerHTML = opts.map(function (t) {
-                    return '<option value="' + t + '"' + (t === preferred ? ' selected' : '') + '>' + t + '</option>';
-                }).join('');
+                el.value = preferred;
+                el.setAttribute('aria-invalid', 'false');
             });
+            var vacErr = document.getElementById('vacTimeError');
+            if (vacErr) vacErr.textContent = '';
         }
 
         window.toggleVacTimeFields = function() {
@@ -9708,8 +10314,11 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
             var endDate = (document.getElementById('newVacEndDate').value || '').trim();
             var note = (document.getElementById('newVacNote').value || '').trim().slice(0, 80);
             var allDay = document.getElementById('newVacAllDay').checked;
-            var startTime = document.getElementById('newVacStartTime').value;
-            var endTime = document.getElementById('newVacEndTime').value;
+            var startTimeEl = document.getElementById('newVacStartTime');
+            var endTimeEl = document.getElementById('newVacEndTime');
+            var startTime = startTimeEl ? startTimeEl.value : '';
+            var endTime = endTimeEl ? endTimeEl.value : '';
+            var vacErr = document.getElementById('vacTimeError');
 
             if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate)) {
                 showToast('Start date is required', 'error');
@@ -9724,12 +10333,29 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
                 showToast('End date must be on or after start date', 'error');
                 return;
             }
-            if (!allDay) {
-                var s = toMinutes(startTime), en = toMinutes(endTime);
-                if (s === null || en === null || en <= s) {
-                    showToast('End time must be after start time', 'error');
+            if (allDay) {
+                if (vacErr) vacErr.textContent = '';
+                if (startTimeEl) startTimeEl.setAttribute('aria-invalid', 'false');
+                if (endTimeEl) endTimeEl.setAttribute('aria-invalid', 'false');
+            } else {
+                var orderErr = ownerHoursOrderError(startTime, endTime);
+                if (orderErr) {
+                    if (vacErr) vacErr.textContent = orderErr;
+                    if (startTimeEl) startTimeEl.setAttribute('aria-invalid', 'true');
+                    if (endTimeEl) endTimeEl.setAttribute('aria-invalid', 'true');
                     return;
                 }
+                startTime = parseOwnerClock(startTime);
+                endTime = parseOwnerClock(endTime);
+                if (startTimeEl) {
+                    startTimeEl.value = startTime;
+                    startTimeEl.setAttribute('aria-invalid', 'false');
+                }
+                if (endTimeEl) {
+                    endTimeEl.value = endTime;
+                    endTimeEl.setAttribute('aria-invalid', 'false');
+                }
+                if (vacErr) vacErr.textContent = '';
             }
 
             var payload = {
@@ -9802,24 +10428,24 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
             return vacTimeOptionLabels();
         }
 
+        var specialHoursComboSeq = 0;
         function addSpecialHoursRangeRow(startVal, endVal) {
             var list = document.getElementById('specialHoursRangesList');
             if (!list) return;
-            var opts = specialHoursOptionLabels();
-            var start = startVal || '09:00 AM';
-            var end = endVal || '05:00 PM';
+            var n = ++specialHoursComboSeq;
+            var start = parseOwnerClock(startVal) || startVal || '09:00 AM';
+            var end = parseOwnerClock(endVal) || endVal || '05:00 PM';
+            var errId = 'specialHoursError' + n;
             var row = document.createElement('div');
-            row.className = 'grid grid-cols-[1fr_1fr_auto] gap-2 items-end special-hours-range-row';
-            row.innerHTML = '<div><label class="block text-slate-400 mb-1">Start</label>'
-                + '<select class="special-hours-start w-full px-3 py-2 rounded-xl glass-input font-bold text-brand-400">'
-                + opts.map(function (t) { return '<option value="' + t + '"' + (t === start ? ' selected' : '') + '>' + t + '</option>'; }).join('')
-                + '</select></div>'
-                + '<div><label class="block text-slate-400 mb-1">End</label>'
-                + '<select class="special-hours-end w-full px-3 py-2 rounded-xl glass-input font-bold text-sky-400">'
-                + opts.map(function (t) { return '<option value="' + t + '"' + (t === end ? ' selected' : '') + '>' + t + '</option>'; }).join('')
-                + '</select></div>'
-                + '<button type="button" onclick="this.closest(\'.special-hours-range-row\').remove()" aria-label="Remove window" class="px-2 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-bold"><i class="fa-solid fa-trash"></i></button>';
+            row.className = 'special-hours-range-row sd-time-pair';
+            row.innerHTML = '<div class="sd-time-pair-fields has-remove">'
+                + ownerTimeComboHtml('specialStart' + n, start, 'Opens', 'Show open times', 'special-hours-start', errId)
+                + ownerTimeComboHtml('specialEnd' + n, end, 'Closes', 'Show close times', 'special-hours-end', errId)
+                + '<button type="button" class="sd-time-remove" aria-label="Remove window" onclick="this.closest(\'.special-hours-range-row\').remove()"><i class="fa-solid fa-trash" aria-hidden="true"></i></button>'
+                + '</div>'
+                + '<p id="' + errId + '" class="sd-hours-error" role="alert"></p>';
             list.appendChild(row);
+            bindOwnerTimeCombos();
         }
         window.addSpecialHoursRangeRow = addSpecialHoursRangeRow;
 
@@ -9918,18 +10544,28 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
             } else {
                 var rows = document.querySelectorAll('#specialHoursRangesList .special-hours-range-row');
                 var ranges = [];
+                var badWindow = false;
                 for (var i = 0; i < rows.length; i++) {
                     var sEl = rows[i].querySelector('.special-hours-start');
                     var eEl = rows[i].querySelector('.special-hours-end');
-                    var start = sEl ? sEl.value : '';
-                    var end = eEl ? eEl.value : '';
-                    var s = toMinutes(start), en = toMinutes(end);
-                    if (s === null || en === null || en <= s) {
-                        showToast('Each window needs an end time after its start', 'error');
-                        return;
+                    var rowErr = rows[i].querySelector('.sd-hours-error');
+                    var startRaw = sEl ? sEl.value : '';
+                    var endRaw = eEl ? eEl.value : '';
+                    var windowErr = ownerHoursOrderError(startRaw, endRaw);
+                    if (rowErr) rowErr.textContent = windowErr;
+                    if (sEl) sEl.setAttribute('aria-invalid', windowErr ? 'true' : 'false');
+                    if (eEl) eEl.setAttribute('aria-invalid', windowErr ? 'true' : 'false');
+                    if (windowErr) {
+                        badWindow = true;
+                        continue;
                     }
+                    var start = parseOwnerClock(startRaw);
+                    var end = parseOwnerClock(endRaw);
+                    if (sEl) sEl.value = start;
+                    if (eEl) eEl.value = end;
                     ranges.push({ start: start, end: end });
                 }
+                if (badWindow) return;
                 if (!ranges.length) {
                     showToast('Add at least one open window, or mark Closed all day', 'error');
                     return;
