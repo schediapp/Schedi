@@ -81,6 +81,25 @@ describe("booking page audit copy", () => {
     expect(html).toContain("error === 'too_soon'");
   });
 
+  it("queues the client confirmation email only after create succeeds", () => {
+    const start = html.indexOf("function syncBookingsToFirestore");
+    expect(start).toBeGreaterThan(0);
+    const before = html.slice(Math.max(0, start - 500), start);
+    expect(before).not.toContain("queueStandaloneConfirmationEmail");
+    const end = html.indexOf("document.getElementById('resCode')", start);
+    expect(end).toBeGreaterThan(start);
+    const fn = html.slice(start, end);
+    const fetchAt = fn.indexOf("fetch('https://schedi.app/api/bookings'");
+    const createdAt = fn.indexOf("var created = !!(out && out.ok && out.data && out.data.ok)");
+    const queueAt = fn.indexOf("queueStandaloneConfirmationEmail");
+    expect(fetchAt).toBeGreaterThan(0);
+    expect(createdAt).toBeGreaterThan(fetchAt);
+    expect(queueAt).toBeGreaterThan(createdAt);
+    expect(fn).toContain("if (created)");
+    expect(fn).toContain("emailHandled: created ? emailQueued : true");
+    expect(fn.indexOf("queueStandaloneConfirmationEmail")).toBe(fn.lastIndexOf("queueStandaloneConfirmationEmail"));
+  });
+
   it("leads the booking page with logo, cover, name, map address, and hours", () => {
     expect(html).toContain('id="bizHeader"');
     expect(html).toContain('id="bizCover"');

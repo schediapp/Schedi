@@ -14689,10 +14689,8 @@
                 } catch (holdErr) {}
                 window.__schediHoldPublicConfirm = true;
 
-                // Always email the client on create: Free/"You're booked!", Starter+Pro pending/"Request sent".
-                // Owner notify for pending is handled by the worker (and parent portal alert); skip duplicate owner mail in queueStandalone when pending.
-                var emailQueued = false;
-                try { queueStandaloneConfirmationEmail(booking); emailQueued = true; } catch (err) { console.warn('Confirmation email skipped:', err); }
+                // Client "Request sent" / "You're booked!" mail is sent only after create succeeds.
+                // Owner notify for pending is handled by the worker (and parent portal alert).
                 (function syncBookingsToFirestore(list) {
                     function doUpdate() {
                         var saved = list.map(function (item) {
@@ -14733,6 +14731,11 @@
                     }
                     // Tell the portal only after create returns, so it can store rosterRevision before saveState.
                     doUpdate().then(function (out) {
+                        var created = !!(out && out.ok && out.data && out.data.ok);
+                        var emailQueued = false;
+                        if (created) {
+                            try { queueStandaloneConfirmationEmail(booking); emailQueued = true; } catch (err) { console.warn('Confirmation email skipped:', err); }
+                        }
                         if (window.parent === window) return;
                         // A too_soon reject was not saved; do not hand the portal a booking the server refused.
                         if (out && !out.ok && out.data && out.data.error === 'too_soon') return;
@@ -14740,7 +14743,8 @@
                             type: 'NEW_BOOKING_SUBMITTED',
                             booking: booking,
                             bookings: bookings,
-                            emailHandled: emailQueued,
+                            // A rejected create must not fall through to the portal's client email.
+                            emailHandled: created ? emailQueued : true,
                             needsCardCheckout: payByCard,
                             checkoutOwned: true
                         };
