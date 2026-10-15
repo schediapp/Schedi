@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
 import { MARKETING_PAGES, escapeHtml, publicPaths } from "../worker/content";
 import { handleRequest, tenantFromFirestore, type SchediEnv } from "../worker/handler";
-import { copyWordCount, renderSitemap } from "../worker/render";
+import { copyWordCount, renderMarketingPage, renderSitemap } from "../worker/render";
 
 const SHELL = "<!DOCTYPE html><html><head><title>Schedi</title></head><body>app</body></html>";
 
@@ -152,16 +152,28 @@ describe("crawler files and app routes", () => {
     }
   });
 
-  it("opens the business portal shell for /?portal=login", async () => {
-    const response = await handleRequest(
-      new Request("https://schedi.app/?portal=login"),
-      envWith(shellAssets()),
-      ctx(),
-    );
-    expect(response.status).toBe(200);
-    const html = await response.text();
-    expect(html).toContain("<title>Schedi</title>");
-    expect(html).not.toContain("Clients book on your page");
+  it("redirects /?portal=login to /login and keeps other params", async () => {
+    const response = await handleRequest(new Request("https://schedi.app/?portal=login&forgot=1"), envWith(shellAssets()), ctx());
+    expect(response.status).toBe(302);
+    expect(response.headers.get("location")).toBe("https://schedi.app/login?forgot=1");
+  });
+
+  it("opens the business portal shell for /login", async () => {
+    for (const path of ["/login", "/login/", "/LOGIN"]) {
+      const response = await handleRequest(new Request("https://schedi.app" + path), envWith(shellAssets()), ctx());
+      expect(response.status).toBe(200);
+      const html = await response.text();
+      expect(html).toContain("<title>Schedi</title>");
+      expect(html).not.toContain("Clients book on your page");
+    }
+  });
+
+  it("marketing Log in links point to /login", () => {
+    for (const page of MARKETING_PAGES) {
+      const html = renderMarketingPage(page);
+      expect(html).not.toContain("portal=login");
+      expect(html).toContain('href="/login"');
+    }
   });
 
   it("redirects www to the apex and keeps the path", async () => {
@@ -311,5 +323,17 @@ describe("marketing theme toggle", () => {
     expect(THEME_SCRIPT_PATH).toBe("/marketing-theme.js");
     expect(js).toContain('"schedi.theme"');
     expect(js).not.toMatch(/location|replace\(|href\s*=/);
+  });
+});
+
+describe("social preview image", () => {
+  it("marketing pages use the 1200x630 PNG", () => {
+    for (const page of MARKETING_PAGES) {
+      const html = renderMarketingPage(page);
+      expect(html).toContain('<meta property="og:image" content="https://schedi.app/assets/og/schedi-og.png">');
+      expect(html).toContain('<meta name="twitter:image" content="https://schedi.app/assets/og/schedi-og.png">');
+      expect(html).toContain('<meta property="og:image:width" content="1200">');
+      expect(html).not.toContain('og:image" content="https://schedi.app/assets/marketing/hero.svg');
+    }
   });
 });

@@ -75,7 +75,7 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
 
 export function renderMarketingBoot(): string {
   // Intentionally a no-op: "/" must stay on the landing page for everyone.
-  // Logged-in owners reach the portal via Log in (/?portal=login).
+  // Logged-in owners reach the portal via Log in (/login).
   return `/* no-op */\n`;
 }
 
@@ -130,7 +130,9 @@ function jsonLd(page: MarketingPage): string {
   return `<script type="application/ld+json">${JSON.stringify(payload).replace(/</g, "\\u003c")}</script>`;
 }
 
-const LOGIN_HREF = "/?portal=login";
+const LOGIN_HREF = "/login";
+export const OG_IMAGE = "https://schedi.app/assets/og/schedi-og.png";
+const OG_IMAGE_ALT = "Schedi logo. Booking pages for service businesses.";
 
 function icon(name: string): string {
   const paths: Record<string, string> = {
@@ -529,11 +531,16 @@ export function renderMarketingPage(page: MarketingPage): string {
 <meta property="og:title" content="${title}">
 <meta property="og:description" content="${description}">
 <meta property="og:url" content="${canonical}">
-<meta property="og:image" content="${APEX_ORIGIN}${HERO_PATH}">
+<meta property="og:image" content="${OG_IMAGE}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:alt" content="${OG_IMAGE_ALT}">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="${title}">
 <meta name="twitter:description" content="${description}">
-<meta name="twitter:image" content="${APEX_ORIGIN}${HERO_PATH}">
+<meta name="twitter:image" content="${OG_IMAGE}">
+<meta name="twitter:image:alt" content="${OG_IMAGE_ALT}">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preload" href="${FONT_STYLESHEET}" as="style">

@@ -3,13 +3,20 @@
 <head>
 <!-- schedi-deploy 7c4a91e0-no-store-html stale-first-paint-fix -->
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Schedi</title>
     <link rel="icon" href="/assets/homescreen-icon.png" type="image/png">
     <link rel="shortcut icon" href="/assets/homescreen-icon.png" type="image/png">
     <link rel="manifest" href="/manifest.webmanifest">
     <link rel="apple-touch-icon" href="/assets/homescreen-icon.png" type="image/png">
     <meta name="apple-mobile-web-app-title" content="Schedi">
+    <meta property="og:image" content="https://schedi.app/assets/og/schedi-og.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:alt" content="Schedi logo. Booking pages for service businesses.">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://schedi.app/assets/og/schedi-og.png">
     
     <!-- Tailwind CSS via CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -99,7 +106,26 @@
         html.schedi-light .text-white { color: #0f172a !important; }
         /* Light theme: darker green/amber text for WCAG AA (>=4.5:1) */
         html.schedi-light .schedi-compare-cards .bg-slate-900\/60 { background-color: #f8fafc !important; }
-        html.schedi-light .text-brand-200, html.schedi-light .text-brand-300, html.schedi-light .text-brand-400, html.schedi-light .text-brand-500,
+        html.schedi-light .text-brand-200, html.schedi-light .text-brand-300, html.schedi-light .text-brand-400, html.schedi-light .text-brand-500 { color: #047857 !important; }
+        .hq-table th { text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: #94a3b8; font-weight: 700; padding: 8px 10px; border-bottom: 1px solid #1e293b; white-space: nowrap; }
+        .hq-table td { padding: 10px; border-bottom: 1px solid rgba(30,41,59,.7); vertical-align: top; }
+        .hq-table tbody tr:hover { background: rgba(15,23,42,.6); }
+        .hq-badge { display: inline-block; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; padding: 2px 8px; border-radius: 6px; white-space: nowrap; }
+        .hq-tag { display: inline-block; font-size: 10px; font-weight: 700; padding: 1px 8px; border-radius: 999px; border: 1px solid; }
+        .hq-warn { display: inline-block; font-size: 10px; font-weight: 700; color: #fca5a5; background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.3); padding: 1px 7px; border-radius: 6px; white-space: nowrap; }
+        .hq-stat { background: rgba(15,23,42,.8); border: 1px solid #1e293b; border-radius: 10px; padding: 6px 2px; }
+        .hq-stat div { font-weight: 800; color: #fff; font-size: 13px; }
+        .hq-stat span { display: block; font-size: 9px; color: #94a3b8; text-transform: uppercase; letter-spacing: .05em; }
+        .hq-collapse-btn { margin-left: auto; width: 32px; height: 32px; border-radius: 10px; color: #94a3b8; border: 1px solid #334155; background: rgba(15,23,42,.6); flex-shrink: 0; }
+        .hq-collapse-btn i { transition: transform .15s; }
+        html.schedi-light .hq-table th { color: #475569; border-color: #e2e8f0; }
+        html.schedi-light .hq-table td { border-color: #e2e8f0; }
+        html.schedi-light .hq-table tbody tr:hover { background: #f8fafc; }
+        html.schedi-light .hq-stat { background: #f8fafc; border-color: #e2e8f0; }
+        html.schedi-light .hq-stat div { color: #0f172a; }
+        html.schedi-light .hq-stat span { color: #475569; }
+        html.schedi-light .hq-warn { color: #b91c1c; }
+        html.schedi-light .hq-collapse-btn { background: #fff; border-color: #cbd5e1; color: #475569; }
         html.schedi-light .text-emerald-200, html.schedi-light .text-emerald-300, html.schedi-light .text-emerald-400, html.schedi-light .text-emerald-500 { color: #047857 !important; }
         html.schedi-light .text-amber-200, html.schedi-light .text-amber-300, html.schedi-light .text-amber-400, html.schedi-light .text-amber-500,
         html.schedi-light .text-amber-200\/80, html.schedi-light .text-amber-400\/90 { color: #b45309 !important; }
@@ -192,6 +218,9 @@
         .roster-month-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
         .roster-month-compact { display: none; }
         .roster-appt { word-break: break-word; }
+        #schediPtr { position: fixed; top: env(safe-area-inset-top, 0px); left: 50%; z-index: 9999; transform: translate(-50%, -48px); width: 40px; height: 40px; border-radius: 9999px; display: flex; align-items: center; justify-content: center; background: #0f172a; border: 1px solid #1e293b; color: #34d399; box-shadow: 0 4px 14px rgba(0,0,0,.35); opacity: 0; pointer-events: none; transition: opacity .15s; }
+        html.schedi-light #schediPtr { background: #ffffff; border-color: #e2e8f0; color: #047857; }
+        html.schedi-light #rosterRefreshBtn { background: #ffffff; border-color: #e2e8f0; color: #334155; }
         .roster-nav-step { width: 6.5rem; flex: 0 0 6.5rem; text-align: center; white-space: nowrap; }
         @media (max-width: 639px) { .roster-nav-step { width: 100%; padding-left: 4px; padding-right: 4px; } }
         @media (max-width: 639px) {
@@ -302,6 +331,16 @@
         /* Compare Plans: table on desktop, stacked plan cards on phones (<640px). */
         .schedi-compare-cards { display: none; }
         @media (max-width: 639px) { .schedi-compare-table { display: none; } .schedi-compare-cards { display: block; } }
+        /* confirm-center: center all dialog overlays (confirm/alert + forms) on phones and desktop.
+           margin:auto centers when content fits; tall modals fall back to top-aligned and scroll. */
+        .fixed.inset-0[role="dialog"] {
+            align-items: flex-start !important;
+            padding-top: max(1rem, calc(env(safe-area-inset-top, 0px) + 0.75rem)) !important;
+            padding-bottom: max(1rem, calc(env(safe-area-inset-bottom, 0px) + 0.75rem)) !important;
+            padding-left: max(0.75rem, env(safe-area-inset-left, 0px)) !important;
+            padding-right: max(0.75rem, env(safe-area-inset-right, 0px)) !important;
+        }
+        .fixed.inset-0[role="dialog"] > * { margin: auto !important; }
     </style>
     <style id="schedi-portal-phone-fit">
         /* Landing refresh: always-visible Log in on the signup screen (CSS only; portal/session logic untouched). */
@@ -319,6 +358,16 @@
         }
         #tenantDashboard .flex-wrap > * { max-width: 100%; }
         #tenantPortalSection { overflow-x: clip; }
+        /* Header: theme toggle stays in the same slot in dark + light. On phones the Active business picker
+           always takes its own row, so the toggle never jumps based on name length / theme font metrics. */
+        @media (max-width: 639px) {
+            #tenantSelectorContainer.flex { flex: 1 1 100%; max-width: 100%; min-width: 0; justify-content: center; box-sizing: border-box; }
+            #activeTenantSelect { min-width: 0; max-width: calc(100% - 3.5rem); text-overflow: ellipsis; }
+        }
+        #schediThemeBtn { min-width: 4.75rem; }
+        html.schedi-light #activeTenantSelect { color: #047857; background-color: transparent; }
+        html.schedi-light #platformModeNav, html.schedi-light #tenantSelectorContainer { background-color: #ffffff !important; }
+        html.schedi-light #navModeAgency.bg-slate-800, html.schedi-light #navModeTenant.bg-slate-800 { background-color: #e2e8f0 !important; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col justify-between selection:bg-brand-500 selection:text-slate-950">
@@ -334,7 +383,7 @@
             <!-- Platform Navigation & Active Tenant Context -->
             <div class="flex flex-wrap items-center justify-center sm:justify-end gap-2 text-xs">
                 
-                <a id="signupLoginBtn" href="/?portal=login" class="schedi-signup-login" aria-label="Log in to your Business Portal"><i class="fa-solid fa-right-to-bracket" aria-hidden="true"></i><span>Log in</span></a>
+                <a id="signupLoginBtn" href="/login" class="schedi-signup-login" aria-label="Log in to your Business Portal"><i class="fa-solid fa-right-to-bracket" aria-hidden="true"></i><span>Log in</span></a>
                 <div id="platformModeNav" class="flex items-center bg-slate-900/90 p-1 rounded-xl border border-slate-800">
                     <button type="button" id="navModeAgency" onclick="switchPlatformMode('agency')" class="hidden px-3.5 py-1.5 rounded-lg font-medium transition-all text-slate-400 hover:text-white items-center space-x-1.5">
                         <i class="fa-solid fa-chart-pie"></i>
@@ -343,10 +392,6 @@
                     <button type="button" id="navModeTenant" aria-current="page" onclick="switchPlatformMode('tenant')" class="px-3.5 py-1.5 rounded-lg font-bold transition-all text-brand-400 bg-slate-800 shadow-sm flex items-center space-x-1.5">
                         <i class="fa-solid fa-store"></i>
                         <span>Business Portal</span>
-                    </button>
-                    <button type="button" id="navModePreview" onclick="switchPlatformMode('preview')" class="hidden px-3.5 py-1.5 rounded-lg font-medium transition-all text-slate-400 hover:text-white items-center space-x-1.5" title="Business Portal login required">
-                        <i class="fa-solid fa-laptop-code"></i>
-                        <span>Live Preview</span>
                     </button>
                 </div>
 
@@ -453,8 +498,8 @@
                 </div>
 
                 <!-- HQ Gateways -->
-                <div class="glass-card rounded-2xl p-6 space-y-5">
-                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+                <div class="glass-card rounded-2xl p-6 space-y-5" data-hq-collapse="gateways">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4" data-hq-collapse-head>
                         <div class="flex items-center space-x-3">
                             <div class="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center text-xl border border-indigo-500/20">
                                 <i class="fa-solid fa-plug text-lg"></i>
@@ -473,7 +518,7 @@
                         </div>
                     </div>
 
-                    <form onsubmit="handleSaveAgencyGateways(event)" class="space-y-4 text-xs">
+                    <form onsubmit="handleSaveAgencyGateways(event)" class="space-y-4 text-xs" data-hq-collapse-body>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div class="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-3">
                                 <div class="flex items-center justify-between border-b border-slate-800 pb-2">
@@ -520,8 +565,8 @@
                 </div>
 
                 <!-- Booking email delivery -->
-                <div class="glass-card rounded-2xl p-6 space-y-4">
-                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+                <div class="glass-card rounded-2xl p-6 space-y-4" data-hq-collapse="email">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4" data-hq-collapse-head>
                         <div class="flex items-center space-x-3">
                             <div class="w-10 h-10 rounded-xl bg-brand-500/10 text-brand-400 flex items-center justify-center text-xl border border-brand-500/20">
                                 <i class="fa-solid fa-envelope"></i>
@@ -533,7 +578,7 @@
                         </div>
                         <span id="agencyEmailDeliveryBadge" class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">Connected</span>
                     </div>
-                    <form onsubmit="handleSaveEmailSender(event)" class="space-y-3 text-xs max-w-3xl">
+                    <form onsubmit="handleSaveEmailSender(event)" class="space-y-3 text-xs max-w-3xl" data-hq-collapse-body>
                         <div>
                             <label class="block text-[11px] font-semibold text-slate-400 mb-1">Booking email webhook URL</label>
                             <input type="url" id="agencyEmailWebhook" value="https://schedi.app/api/send-booking-email" placeholder="https://schedi.app/api/send-booking-email" class="w-full px-3 py-2 rounded-lg glass-input font-mono text-[11px]">
@@ -559,7 +604,7 @@
                         </div>
 
                         <div class="flex flex-wrap items-center gap-2">
-                            <input type="text" id="agencySearchInput" oninput="filterAgencyTenants(this.value)" placeholder="Search business name or owner..." class="px-3.5 py-2 rounded-xl glass-input text-xs w-full sm:w-64">
+                            <input type="search" id="agencySearchInput" oninput="filterAgencyTenants(this.value)" placeholder="Search name, owner email, or slug" aria-label="Search businesses" class="px-3.5 py-2 rounded-xl glass-input text-xs w-full sm:w-64">
                             <button type="button" onclick="openProvisionModal()" class="px-4 py-2 rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-slate-950 font-bold text-xs shadow-md glow-emerald flex items-center space-x-2 transition-all">
                                 <i class="fa-solid fa-plus"></i>
                                 <span>Provision New Site</span>
@@ -567,8 +612,27 @@
                         </div>
                     </div>
 
-                    <div id="agencyTenantGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                        <!-- Tenant Cards injected via JS -->
+                    <div id="hqDirControls" class="flex flex-wrap items-center gap-2 text-xs">
+                        <label class="sr-only" for="hqDirSort">Sort</label>
+                        <select id="hqDirSort" onchange="hqDirSet('sort', this.value)" class="w-auto max-w-[11rem] px-2.5 py-1.5 rounded-lg glass-input text-xs">
+                            <option value="name">Sort: Name</option>
+                            <option value="newest">Sort: Newest</option>
+                            <option value="plan">Sort: Plan</option>
+                            <option value="lastBooking">Sort: Last booking</option>
+                        </select>
+                        <select id="hqDirPlan" onchange="hqDirSet('plan', this.value)" aria-label="Plan filter" class="w-auto max-w-[11rem] px-2.5 py-1.5 rounded-lg glass-input text-xs">
+                            <option value="">All plans</option><option value="free">Free</option><option value="starter">Starter</option><option value="pro">Pro</option>
+                        </select>
+                        <select id="hqDirStatus" onchange="hqDirSet('status', this.value)" aria-label="Status filter" class="w-auto max-w-[11rem] px-2.5 py-1.5 rounded-lg glass-input text-xs">
+                            <option value="">All statuses</option><option value="active">Active</option><option value="paused">Paused</option><option value="setup">Needs setup</option>
+                        </select>
+                        <select id="hqDirType" onchange="hqDirSet('type', this.value)" aria-label="Business type filter" class="w-auto max-w-[11rem] px-2.5 py-1.5 rounded-lg glass-input text-xs"></select>
+                        <select id="hqDirTag" onchange="hqDirSet('tag', this.value)" aria-label="Tag filter" class="w-auto max-w-[11rem] px-2.5 py-1.5 rounded-lg glass-input text-xs"></select>
+                        <button type="button" onclick="hqDirReset()" class="px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-white">Clear</button>
+                        <span id="hqDirCount" class="ml-auto text-[11px] text-slate-400"></span>
+                    </div>
+                    <div id="agencyTenantGrid">
+                        <!-- Directory injected via JS -->
                     </div>
                 </div>
 
@@ -612,6 +676,10 @@
             </div>
 
             <div id="tenantDashboard" class="space-y-6 hidden">
+                <div id="hqManagingBanner" class="hidden flex items-center justify-between gap-3 px-4 py-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/30 text-xs">
+                    <span class="text-indigo-200 min-w-0 truncate"><i class="fa-solid fa-user-shield mr-1.5"></i>Managing: <strong id="hqManagingName" class="text-white"></strong></span>
+                    <button type="button" onclick="hqBackToDirectory()" class="shrink-0 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold border border-slate-700"><i class="fa-solid fa-arrow-left mr-1"></i>Back to HQ</button>
+                </div>
                 <!-- ROSTER-FIRST: slim header card (name, slug, public link, Copy/Share, Sign out) -->
                 <div id="tenantHeaderCard" class="glass-card rounded-2xl p-4 space-y-2.5 border-l-4 border-l-brand-500 min-w-0">
                     <div class="flex items-start justify-between gap-2 min-w-0">
@@ -652,10 +720,17 @@
                             <h3 class="text-lg font-bold text-white">Client Appointments Roster</h3>
                             <p class="text-xs text-slate-400">Manage client bookings, reschedule, cancel, or manually register walk-in appointments. List is the default. Week and Month show the same appointments.</p>
                         </div>
+                        <div class="flex flex-wrap items-center gap-2">
+                        <button type="button" id="rosterRefreshBtn" onclick="schediRefreshRoster('button')" class="px-4 py-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white font-bold text-xs flex items-center space-x-1.5" aria-label="Refresh appointments">
+                            <i id="rosterRefreshIcon" class="fa-solid fa-rotate-right"></i>
+                            <span>Refresh</span>
+                        </button>
+                        <span id="rosterUpdatedAt" class="text-[11px] text-slate-500" aria-live="polite"></span>
                         <button type="button" onclick="openManualBookingModal()" class="px-4 py-2 rounded-xl bg-brand-500 hover:bg-brand-600 text-slate-950 font-bold text-xs shadow-md glow-emerald flex items-center space-x-1.5">
                             <i class="fa-solid fa-calendar-plus"></i>
                             <span>Add Manual Appointment</span>
                         </button>
+                        </div>
                     </div>
 
                     <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -1114,10 +1189,6 @@
                                     <i class="fa-solid fa-arrow-up-right-from-square"></i>
                                     <span>Open Public Page</span>
                                 </button>
-                        <button type="button" onclick="switchPlatformMode('preview')" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-brand-400 font-bold text-xs flex items-center space-x-1.5 transition-all">
-                            <i class="fa-solid fa-eye"></i>
-                            <span>View Public Site</span>
-                        </button>
                         <button type="button" id="tenantAddHomeScreenBtn" onclick="addTenantPortalToHomeScreen()" class="hidden px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs flex items-center space-x-1.5 transition-all" title="Add a home screen link to the business portal login">
                                     <i class="fa-solid fa-mobile-screen-button" aria-hidden="true"></i>
                                     <span>Add to home screen</span>
@@ -1182,31 +1253,6 @@
         </div>
 
         <!-- LIVE SITE PREVIEW SECTION -->
-        <div id="previewSection" class="space-y-4 hidden fade-in">
-            <div class="glass-card rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-                <div class="flex items-center space-x-3">
-                    <div class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></div>
-                    <span class="text-xs font-bold text-white">Live Client Preview Mode</span>
-                    <span id="previewTenantLabel" class="text-xs text-brand-400 font-mono bg-slate-900 px-2 py-0.5 rounded border border-slate-800">-</span>
-                </div>
-
-                <div class="flex items-center space-x-2">
-                    <button type="button" onclick="setPreviewViewport('desktop')" id="vpDesktopBtn" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-brand-500 text-slate-950">
-                        <i class="fa-solid fa-desktop mr-1"></i> Desktop
-                    </button>
-                    <button type="button" onclick="setPreviewViewport('mobile')" id="vpMobileBtn" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 hover:text-white">
-                        <i class="fa-solid fa-mobile-screen mr-1"></i> Mobile
-                    </button>
-                </div>
-            </div>
-
-            <div class="flex justify-center w-full">
-                <div id="previewIframeContainer" class="w-full transition-all duration-300 rounded-2xl overflow-hidden border border-slate-800 shadow-2xl bg-slate-950" style="height: 780px;">
-                    <iframe id="livePreviewIframe" class="w-full h-full border-none" allow="clipboard-write"></iframe>
-                </div>
-            </div>
-        </div>
-
     </main>
 
     <div id="signupSection" class="hidden max-w-3xl mx-auto px-4 pb-16 space-y-5">
@@ -2218,13 +2264,16 @@
             delete copy.appointments;
             delete copy.publicSlots;
             delete copy._privateBookingsLoaded;
+            if (!schediHqTagsServer) delete copy.hqTags;
             return copy;
         }
 
         // Owner contact + billing fields are NOT on the public tenant docs anymore. The worker keeps them in an
         // Admin-only private doc. Signed-in owners (own business) and the agency (all) load them with
         // POST /api/profile {action:'private'}; they live in memory only (never localStorage, never the public page).
-        var SCHEDI_PRIVATE_TENANT_KEYS = ['ownerName', 'ownerEmail', 'ownerPhone', 'stripeCustomerId', 'stripeSubscriptionId', 'billingExempt', 'complimentaryPro', 'monthlyPrice', 'paymentForm'];
+        var SCHEDI_PRIVATE_TENANT_KEYS = ['ownerName', 'ownerEmail', 'ownerPhone', 'stripeCustomerId', 'stripeSubscriptionId', 'billingExempt', 'complimentaryPro', 'monthlyPrice', 'paymentForm', 'hqTags'];
+        // HQ-only tags are saved only once the worker says it keeps them private (otherwise they stay local to this tab).
+        var schediHqTagsServer = false;
         var SCHEDI_OWNER_SENTINEL = '__schedi_owner__';
         var SCHEDI_OWNER_CONTACT_TOKEN = '{{schedi_owner_contact}}';
         var schediPrivateProfiles = {};
@@ -2289,6 +2338,7 @@
                 data.tenants.forEach(function (row) { if (row && row.id) next[row.id] = row; });
                 schediPrivateProfiles = next;
                 schediPrivateProfilesLoaded = true;
+                schediHqTagsServer = Array.isArray(data.features) && data.features.indexOf('hqTags') !== -1;
                 applyPrivateProfiles(platformState.tenants);
                 try { renderAgencyDashboard(); } catch (errDash) {}
                 try {
@@ -2327,6 +2377,8 @@
                     tenant.appointments = Array.isArray(row.appointments) ? row.appointments : [];
                     tenant._privateBookingsLoaded = true;
                 });
+                window.__schediRosterLoadedAt = Date.now();
+                try { if (window.schediRosterStamp) window.schediRosterStamp(); } catch (errStamp) {}
                 try { renderAgencyDashboard(); } catch (errDash) {}
                 var rosterTenant = (typeof getTenant === 'function') ? getTenant() : null;
                 if (rosterTenant && document.getElementById('tenantRosterTableBody')) {
@@ -2355,6 +2407,7 @@
                     return;
                 }
                 platformState.appointmentCounts = data.counts;
+                platformState.tenantHealth = (data.health && typeof data.health === 'object') ? data.health : null;
                 try { renderAgencyDashboard(); } catch (errDash) {}
             } catch (err) {
                 platformState.appointmentCounts = null;
@@ -2390,12 +2443,14 @@
             return 'Could not save ' + what + ' to your account. Check your connection and try again.';
         }
 
-        async function pushTenantProfiles(deleteIds) {
+        async function pushTenantProfiles(deleteIds, onlyIds) {
             var session = schediAuthSession();
             if (!session) return { ok: false, skipped: true };
             var list = [];
             if (platformState.isAgencyMasterLoggedIn) {
-                list = (platformState.tenants || []).map(publicTenantForCloud);
+                var pool = platformState.tenants || [];
+                if (Array.isArray(onlyIds) && onlyIds.length) pool = pool.filter(function (t) { return t && onlyIds.indexOf(t.id) !== -1; });
+                list = pool.map(publicTenantForCloud);
             } else if (platformState.isTenantOwnerLoggedIn) {
                 var own = (typeof getTenant === 'function') ? getTenant() : null;
                 if (own) list = [publicTenantForCloud(own)];
@@ -2451,13 +2506,17 @@
             // appointments, which used to make this sync skip new bookings.
             var opts = arguments[0] || {};
             var result = { appointments: {}, profile: null };
-            var tenantsNow = (platformState.tenants || []).slice();
+            var tenantsNow = opts.profileOnly ? [] : (platformState.tenants || []).slice();
             var syncFailed = null;
-            for (const t of tenantsNow) {
-                var r = await pushPrivateAppointments(t);
+            // In parallel: one request per tenant used to run one after another (slow in Agency HQ).
+            var apptResults = await Promise.all(tenantsNow.map(function (t) {
+                return pushPrivateAppointments(t).catch(function () { return { ok: false, skipped: false, error: 'network' }; });
+            }));
+            tenantsNow.forEach(function (t, i) {
+                var r = apptResults[i];
                 if (t && t.id) result.appointments[t.id] = r;
                 if (r && r.ok === false && !r.skipped && !syncFailed) syncFailed = r;
-            }
+            });
             if (syncFailed) {
                 console.error('Error saving appointments:', syncFailed.error);
                 if (!opts.quietSyncErrors && typeof showToast === 'function') {
@@ -2465,7 +2524,7 @@
                 }
             }
             try {
-                var pushed = await pushTenantProfiles();
+                var pushed = await pushTenantProfiles(null, opts.tenantIds);
                 result.profile = pushed;
                 if (pushed && pushed.ok === false && !pushed.skipped) {
                     console.error('Error saving state to backend:', pushed.error || 'profile_write_failed');
@@ -2509,11 +2568,9 @@
                 if (!raw) return;
                 var saved = JSON.parse(raw);
                 if (saved && Array.isArray(saved.tenants) && saved.tenants.length) {
-                    var defTenants = platformState.tenants || [];
-                    var existingIds = new Set(saved.tenants.map(function(t) { return t.id; }));
-                    defTenants.forEach(function(dt) {
-                        if (!existingIds.has(dt.id)) saved.tenants.push(dt);
-                    });
+                    // Do not merge hardcoded demo seed tenants (e.g. aura-exec) into the cached list; cloud is source of truth.
+                    saved.tenants = saved.tenants.filter(function (t) { return t && t.id !== 'aura-exec'; });
+                    if (!saved.tenants.length) return;
                     platformState.tenants = saved.tenants.map(stripPrivateTenantFields);
                     platformState.tenants.forEach(stripTenantSecrets);
                     platformState.tenants.forEach(function (t) { ensurePaymentGateways(t); ensureDepositSettings(t); ensureCancellationFeeSettings(t); ensureAllowRecurringBookings(t); ensureBlockedArrays(t); ensureTenantPlan(t); });
@@ -2544,6 +2601,7 @@
             }
             const tenantsCol = window.collection(window.db, 'artifacts', window.appId, 'public', 'data', 'tenants');
             window.onSnapshot(tenantsCol, (snapshot) => {
+                if (snapshot.empty) window.__schediCloudTenantsLoaded = true;
                 // Local cache may be stale (e.g. missing ownerPassword). Only push
                 // local → cloud when cloud is empty; otherwise cloud wins.
                 if (hydratedFromLocal) {
@@ -2596,6 +2654,7 @@
                         platformState.activeTenantId = loadedTenants[0].id;
                     }
                     platformState.tenants = loadedTenants;
+                    window.__schediCloudTenantsLoaded = true;
                     try {
                         window.localStorage.setItem(STORAGE_KEY, JSON.stringify({
                             activeTenantId: platformState.activeTenantId,
@@ -2728,7 +2787,7 @@
             try {
                 var forgotQ = new URLSearchParams(window.location.search || '');
                 if (forgotQ.get('forgot') === '1' && !isAgencyHqRoute()) {
-                    window.history.replaceState({}, '', '/?portal=login');
+                    window.history.replaceState({}, '', '/login');
                     setTimeout(function () { if (typeof window.openTenantForgotModal === 'function') window.openTenantForgotModal(); }, 300);
                 }
             } catch (errForgotQ) {}
@@ -2760,6 +2819,8 @@
                         createdAt: String((raw && raw.createdAt) || new Date().toISOString()).slice(0, 40)
                     };
                     if (hasPricedAmount(raw && raw.amount)) booking.amount = roundMoney(raw.amount);
+                    if (raw && Array.isArray(raw.items) && raw.items.length) booking.items = raw.items.slice(0, 10);
+                    if (raw && Number(raw.durationMins) > 0) booking.durationMins = Math.min(480, Math.round(Number(raw.durationMins)));
                     if (raw && raw.seriesId) booking.seriesId = String(raw.seriesId).slice(0, 80);
                     if (raw && raw.recurrence && typeof raw.recurrence === 'object') {
                         booking.recurrence = {
@@ -2769,6 +2830,7 @@
                             total: Math.min(52, Math.max(1, Number(raw.recurrence.total) || 1)),
                             dates: Array.isArray(raw.recurrence.dates) ? raw.recurrence.dates.map(String).slice(0, 52) : []
                         };
+                        if (Array.isArray(raw.recurrence.times)) booking.recurrence.times = raw.recurrence.times.map(String).slice(0, 52);
                     }
                     if (!booking.paymentOptionLabel) {
                         booking.paymentOptionLabel = paymentOptionLabel(booking);
@@ -3406,7 +3468,7 @@
             var first = String(slug || '').toLowerCase();
             if (!first) return true;
             if (first === SCHEDI_AGENCY_HQ_SEGMENT) return true;
-            if (first === 'index.html' || first === 'agency' || first === 'admin' || first === 'hq' || first === 'signup' || first === 'terms' || first === 'privacy' || first === 'help' || first === 'auth' || first === 'reset' || first === 'billing' || first === 'api' || first === 'www' || first === 'schedi' || first === 'index') return true;
+            if (first === 'index.html' || first === 'agency' || first === 'admin' || first === 'hq' || first === 'signup' || first === 'terms' || first === 'privacy' || first === 'help' || first === 'auth' || first === 'reset' || first === 'billing' || first === 'api' || first === 'www' || first === 'schedi' || first === 'index' || first === 'login') return true;
             return false;
         }
 
@@ -3454,6 +3516,8 @@
         function isPortalLoginRoute() {
             try {
                 if (getPublicSlugFromPath() || isSignupRoute()) return false;
+                var lp = (window.location.pathname || '/').replace(/\/+/g, '/').replace(/\/$/, '').toLowerCase();
+                if (lp === '/login') return true;
                 var q = new URLSearchParams(window.location.search || '');
                 return q.get('portal') === 'login';
             } catch (err) {
@@ -3661,7 +3725,7 @@
         }
 
         // Help page tutorial videos (files in /assets/help-videos/). preload="none" + poster keeps page load light.
-        var SCHEDI_HELP_VIDEOS = [{"slug": "client-booking-demo", "file": "client-booking-demo.mp4?v=5", "poster": "client-booking-demo.jpg?v=5", "title": "How clients book", "desc": "Clients pick a service, a day and time, enter their info, choose how to pay, and send the request.", "dur": "0:30", "aud": "client"}, {"slug": "owner-01-create-your-page", "file": "owner-01-create-your-page.mp4?v=4", "poster": "owner-01-create-your-page.jpg?v=4", "title": "Create your booking page", "desc": "Sign up, get your free page, and compare Free, Starter, and Pro.", "dur": "0:24", "aud": "owner"}, {"slug": "owner-02-add-services", "file": "owner-02-add-services.mp4?v=6", "poster": "owner-02-add-services.jpg?v=6", "title": "Add your services", "desc": "Add each service with its length and an optional price.", "dur": "0:21", "aud": "owner"}, {"slug": "owner-03-set-hours", "file": "owner-03-set-hours.mp4?v=6", "poster": "owner-03-set-hours.jpg?v=6", "title": "Set your hours", "desc": "Pick the days you work and your open and close times.", "dur": "0:20", "aud": "owner"}, {"slug": "owner-04-payment-options", "file": "owner-04-payment-options.mp4?v=6", "poster": "owner-04-payment-options.jpg?v=6", "title": "Payment options", "desc": "Turn on Cash App, Zelle, Venmo, or PayPal (Starter and Pro) or keep pay at appointment.", "dur": "0:28", "aud": "owner"}, {"slug": "owner-05-share-booking-link", "file": "owner-05-share-booking-link.mp4?v=6", "poster": "owner-05-share-booking-link.jpg?v=6", "title": "Share your booking link", "desc": "Copy or Share your link from the top of your portal. Open Public Page, View Public Site, and Add to home screen are in More & settings.", "dur": "0:22", "aud": "owner"}, {"slug": "owner-06-accept-booking-request", "file": "owner-06-accept-booking-request.mp4?v=6", "poster": "owner-06-accept-booking-request.jpg?v=6", "title": "Accept a booking request", "desc": "On phones, each booking is a card; tap Accept and it shows as Accepted (Starter and Pro).", "dur": "0:20", "aud": "owner"}, {"slug": "owner-07-appointments-report", "file": "owner-07-appointments-report.mp4?v=6", "poster": "owner-07-appointments-report.jpg?v=6", "title": "Appointments report", "desc": "See counts, recorded prices, marked paid, and walk-ins; export CSV or print.", "dur": "0:21", "aud": "owner"}, {"slug": "owner-08-add-manual-appointment", "file": "owner-08-add-manual-appointment.mp4?v=6", "poster": "owner-08-add-manual-appointment.jpg?v=6", "title": "Add a walk-in or phone booking", "desc": "Log a walk-in or phone booking with the Walk-in toggle, saved-client suggest, open time slot, and payment status.", "dur": "0:28", "aud": "owner"}, {"slug": "owner-09-mark-paid", "file": "owner-09-mark-paid.mp4?v=6", "poster": "owner-09-mark-paid.jpg?v=6", "title": "Mark an appointment paid", "desc": "Tap Mark paid, pick how the client paid, and the booking turns green.", "dur": "0:22", "aud": "owner"}, {"slug": "owner-10-reschedule", "file": "owner-10-reschedule.mp4?v=6", "poster": "owner-10-reschedule.jpg?v=6", "title": "Reschedule an appointment", "desc": "Pick a new date and an open time slot, then tap Update Reservation.", "dur": "0:23", "aud": "owner"}, {"slug": "owner-11-cancel-appointment", "file": "owner-11-cancel-appointment.mp4?v=6", "poster": "owner-11-cancel-appointment.jpg?v=6", "title": "Cancel an appointment", "desc": "Tap Cancel and confirm; the booking stays on your roster as Cancelled.", "dur": "0:20", "aud": "owner"}, {"slug": "owner-12-special-hours", "file": "owner-12-special-hours.mp4?v=6", "poster": "owner-12-special-hours.jpg?v=6", "title": "Special hours", "desc": "Close or change your hours for one date without touching your weekly hours.", "dur": "0:21", "aud": "owner"}, {"slug": "owner-13-date-blocks", "file": "owner-13-date-blocks.mp4?v=6", "poster": "owner-13-date-blocks.jpg?v=6", "title": "Vacation and date blocks", "desc": "Block a range of dates so clients cannot book them.", "dur": "0:22", "aud": "owner"}, {"slug": "owner-14-email-confirmations", "file": "owner-14-email-confirmations.mp4?v=6", "poster": "owner-14-email-confirmations.jpg?v=6", "title": "Email confirmations and reminders", "desc": "Set your Reply-To email, an extra note, and same-day reminder emails.", "dur": "0:23", "aud": "owner"}, {"slug": "owner-15-recurring-visits-pro", "file": "owner-15-recurring-visits-pro.mp4?v=6", "poster": "owner-15-recurring-visits-pro.jpg?v=6", "title": "Recurring appointments (Pro)", "desc": "On Pro, let clients book weekly, biweekly, or monthly; off until you turn it on.", "dur": "0:21", "aud": "owner"}, {"slug": "owner-16-clients", "file": "owner-16-clients.mp4?v=6", "poster": "owner-16-clients.jpg?v=6", "title": "Clients list", "desc": "Search, add, or remove clients. Auto-added clients show From booking since...", "dur": "0:24", "aud": "owner"}, {"slug": "owner-17-import-clients-csv", "file": "owner-17-import-clients-csv.mp4?v=6", "poster": "owner-17-import-clients-csv.jpg?v=6", "title": "Import clients from CSV", "desc": "Upload a CSV, match columns, preview, and import. Schedi never emails imports.", "dur": "0:22", "aud": "owner"}, {"slug": "owner-18-compare-plans", "file": "owner-18-compare-plans.mp4?v=6", "poster": "owner-18-compare-plans.jpg?v=6", "title": "Compare Plans", "desc": "Open the Free / Starter / Pro chart from your Schedi subscription card (below More & settings), including Agency Management on Pro.", "dur": "0:18", "aud": "owner"}, {"slug": "owner-19-roster-week-month", "file": "owner-19-roster-week-month.mp4?v=6", "poster": "owner-19-roster-week-month.jpg?v=6", "title": "Week and month roster", "desc": "Switch to Week or Month, move with Previous, Next, or Today, tap a booking for details, and tap a busy day.", "dur": "0:22", "aud": "owner"}];
+        var SCHEDI_HELP_VIDEOS = [{"slug": "client-booking-demo", "file": "client-booking-demo.mp4?v=5", "poster": "client-booking-demo.jpg?v=5", "title": "How clients book", "desc": "Clients pick a service, a day and time, enter their info, choose how to pay, and send the request.", "dur": "0:30", "aud": "client"}, {"slug": "owner-01-create-your-page", "file": "owner-01-create-your-page.mp4?v=7", "poster": "owner-01-create-your-page.jpg?v=7", "title": "Create your booking page", "desc": "Sign up, get your free page, and compare Free, Starter, and Pro.", "dur": "0:24", "aud": "owner"}, {"slug": "owner-02-add-services", "file": "owner-02-add-services.mp4?v=7", "poster": "owner-02-add-services.jpg?v=7", "title": "Add your services", "desc": "Add each service with its length and an optional price.", "dur": "0:21", "aud": "owner"}, {"slug": "owner-03-set-hours", "file": "owner-03-set-hours.mp4?v=7", "poster": "owner-03-set-hours.jpg?v=7", "title": "Set your hours", "desc": "Pick the days you work and your open and close times.", "dur": "0:20", "aud": "owner"}, {"slug": "owner-04-payment-options", "file": "owner-04-payment-options.mp4?v=7", "poster": "owner-04-payment-options.jpg?v=7", "title": "Payment options", "desc": "Turn on Cash App, Zelle, Venmo, or PayPal (Starter and Pro) or keep pay at appointment.", "dur": "0:28", "aud": "owner"}, {"slug": "owner-05-share-booking-link", "file": "owner-05-share-booking-link.mp4?v=7", "poster": "owner-05-share-booking-link.jpg?v=7", "title": "Share your booking link", "desc": "Copy or Share your link from the top of your portal. Open Public Page and Add to home screen are in More & settings.", "dur": "0:20", "aud": "owner"}, {"slug": "owner-06-accept-booking-request", "file": "owner-06-accept-booking-request.mp4?v=7", "poster": "owner-06-accept-booking-request.jpg?v=7", "title": "Accept a booking request", "desc": "On phones, each booking is a card; tap Accept and it shows as Accepted (Starter and Pro).", "dur": "0:20", "aud": "owner"}, {"slug": "owner-07-appointments-report", "file": "owner-07-appointments-report.mp4?v=7", "poster": "owner-07-appointments-report.jpg?v=7", "title": "Appointments report", "desc": "See counts, recorded prices, marked paid, and walk-ins; export CSV or print.", "dur": "0:21", "aud": "owner"}, {"slug": "owner-08-add-manual-appointment", "file": "owner-08-add-manual-appointment.mp4?v=7", "poster": "owner-08-add-manual-appointment.jpg?v=7", "title": "Add a walk-in or phone booking", "desc": "Log a walk-in or phone booking with the Walk-in toggle, saved-client suggest, open time slot, and payment status.", "dur": "0:28", "aud": "owner"}, {"slug": "owner-09-mark-paid", "file": "owner-09-mark-paid.mp4?v=7", "poster": "owner-09-mark-paid.jpg?v=7", "title": "Mark an appointment paid", "desc": "Tap Mark paid, pick how the client paid, and the booking turns green.", "dur": "0:22", "aud": "owner"}, {"slug": "owner-10-reschedule", "file": "owner-10-reschedule.mp4?v=7", "poster": "owner-10-reschedule.jpg?v=7", "title": "Reschedule an appointment", "desc": "Pick a new date and an open time slot, then tap Update Reservation.", "dur": "0:23", "aud": "owner"}, {"slug": "owner-11-cancel-appointment", "file": "owner-11-cancel-appointment.mp4?v=7", "poster": "owner-11-cancel-appointment.jpg?v=7", "title": "Cancel an appointment", "desc": "Tap Cancel and confirm; the booking stays on your roster as Cancelled.", "dur": "0:20", "aud": "owner"}, {"slug": "owner-12-special-hours", "file": "owner-12-special-hours.mp4?v=7", "poster": "owner-12-special-hours.jpg?v=7", "title": "Special hours", "desc": "Close or change your hours for one date without touching your weekly hours.", "dur": "0:21", "aud": "owner"}, {"slug": "owner-13-date-blocks", "file": "owner-13-date-blocks.mp4?v=7", "poster": "owner-13-date-blocks.jpg?v=7", "title": "Vacation and date blocks", "desc": "Block a range of dates so clients cannot book them.", "dur": "0:22", "aud": "owner"}, {"slug": "owner-14-email-confirmations", "file": "owner-14-email-confirmations.mp4?v=7", "poster": "owner-14-email-confirmations.jpg?v=7", "title": "Email confirmations and reminders", "desc": "Set your Reply-To email, an extra note, and same-day reminder emails.", "dur": "0:23", "aud": "owner"}, {"slug": "owner-15-recurring-visits-pro", "file": "owner-15-recurring-visits-pro.mp4?v=7", "poster": "owner-15-recurring-visits-pro.jpg?v=7", "title": "Recurring appointments (Pro)", "desc": "On Pro, let clients book weekly, biweekly, or monthly; off until you turn it on.", "dur": "0:21", "aud": "owner"}, {"slug": "owner-16-clients", "file": "owner-16-clients.mp4?v=7", "poster": "owner-16-clients.jpg?v=7", "title": "Clients list", "desc": "Search, add, or remove clients. Auto-added clients show From booking since...", "dur": "0:24", "aud": "owner"}, {"slug": "owner-17-import-clients-csv", "file": "owner-17-import-clients-csv.mp4?v=7", "poster": "owner-17-import-clients-csv.jpg?v=7", "title": "Import clients from CSV", "desc": "Upload a CSV, match columns, preview, and import. Schedi never emails imports.", "dur": "0:22", "aud": "owner"}, {"slug": "owner-18-compare-plans", "file": "owner-18-compare-plans.mp4?v=7", "poster": "owner-18-compare-plans.jpg?v=7", "title": "Compare Plans", "desc": "Open the Free / Starter / Pro chart from your Schedi subscription card (below More & settings), including Agency Management on Pro.", "dur": "0:18", "aud": "owner"}, {"slug": "owner-19-roster-week-month", "file": "owner-19-roster-week-month.mp4?v=7", "poster": "owner-19-roster-week-month.jpg?v=7", "title": "Week and month roster", "desc": "Switch to Week or Month, move with Previous, Next, or Today, tap a booking for details, and tap a busy day.", "dur": "0:22", "aud": "owner"}];
         var SCHEDI_HELP_VIDEO_GROUPS = [["Get set up", ["owner-01-create-your-page", "owner-02-add-services", "owner-03-set-hours", "owner-04-payment-options", "owner-05-share-booking-link", "owner-18-compare-plans"]], ["Bookings and the roster", ["owner-06-accept-booking-request", "owner-08-add-manual-appointment", "owner-09-mark-paid", "owner-10-reschedule", "owner-11-cancel-appointment", "owner-07-appointments-report", "owner-19-roster-week-month"]], ["Clients", ["owner-16-clients", "owner-17-import-clients-csv"]], ["Hours and time off", ["owner-12-special-hours", "owner-13-date-blocks"]], ["Emails and Pro features", ["owner-14-email-confirmations", "owner-15-recurring-visits-pro"]], ["What your clients see", ["client-booking-demo"]]];
         function schediHelpVideoCard(v) {
             var base = '/assets/help-videos/';
@@ -4403,7 +4467,7 @@
                 });
                 var go = document.getElementById('signupContinueBtn');
                 if (go) {
-                    var nextUrl = chosen === 'free' ? 'https://schedi.app/?portal=login' : (data.url || data.paymentLink || 'https://schedi.app/?portal=login');
+                    var nextUrl = chosen === 'free' ? 'https://schedi.app/login' : (data.url || data.paymentLink || 'https://schedi.app/login');
                     go.textContent = chosen === 'free' ? 'Open the business portal' : 'Continue to payment';
                     go.onclick = function() { window.location.href = nextUrl; };
                 }
@@ -4976,11 +5040,14 @@
 
 
         window.switchPlatformMode = function(mode) {
+            // Live Preview was removed from the Business Portal; fall back to the normal view.
+            if (mode === 'preview') mode = isAgencyHqRoute() ? 'agency' : 'tenant';
             if (mode === 'agency' && !isAgencyHqRoute()) {
                 // Agency HQ UI only on the private path — never on public pages.
                 return switchPlatformMode('tenant');
             }
             platformState.currentMode = mode;
+            try { syncHqManagingBanner(); } catch (errBan) {}
             const agSec = document.getElementById('agencyHqSection');
             const teSec = document.getElementById('tenantPortalSection');
             const prSec = document.getElementById('previewSection');
@@ -5077,12 +5144,28 @@
                 populateTenantSelect();
                 return;
             }
-            platformState.activeTenantId = tenantId;
-            if (platformState.isTenantOwnerLoggedIn) {
-                renderTenantAdminPortal();
-            }
-            renderLivePreviewIframe();
-            showToast(`Active business context switched to: ${getTenant(tenantId).name}`, 'info');
+            if (!getTenant(tenantId) || getTenant(tenantId).id !== tenantId) return;
+            // Picking a business opens it in the Business Portal as the agency (banner offers the way back).
+            window.loginAsTenantOwner(tenantId);
+        }
+
+        window.hqBackToDirectory = function() {
+            switchPlatformMode('agency');
+            setTimeout(function () {
+                var grid = document.getElementById('agencyTenantGrid');
+                if (grid && grid.scrollIntoView) grid.scrollIntoView({ block: 'start' });
+            }, 60);
+        }
+
+        function syncHqManagingBanner() {
+            var banner = document.getElementById('hqManagingBanner');
+            if (!banner) return;
+            var on = !!(platformState.isAgencyMasterLoggedIn && platformState.isTenantOwnerLoggedIn && !platformState.ownerSelfSession);
+            banner.classList.toggle('hidden', !on);
+            banner.classList.toggle('flex', on);
+            var nm = document.getElementById('hqManagingName');
+            var t = on ? getTenant() : null;
+            if (nm) nm.textContent = t ? (t.name || t.id) : '';
         }
 
         function getTenant(id = platformState.activeTenantId) {
@@ -5260,91 +5343,201 @@
             const stActivePages = document.getElementById('statActivePages');
             const activePages = platformState.tenants.filter(function (t) { return t && t.subscriptionStatus === 'active'; }).length;
 
-            if (stSites) stSites.textContent = totalSites;
+            if (stSites) stSites.textContent = window.__schediCloudTenantsLoaded ? totalSites : '—';
             if (stMRR) stMRR.textContent = `$${totalMRR.toFixed(2)}`;
             if (stBookings) stBookings.textContent = totalBookings === null ? '—' : totalBookings;
             if (stActivePages) stActivePages.textContent = activePages;
 
             const grid = document.getElementById('agencyTenantGrid');
             if (!grid) return;
-
-            const filtered = platformState.tenants.filter(t => 
-                String(t.name || '').toLowerCase().includes(platformState.agencySearchQuery) ||
-                String(t.ownerName || '').toLowerCase().includes(platformState.agencySearchQuery) ||
-                String(t.ownerEmail || '').toLowerCase().includes(platformState.agencySearchQuery)
-            );
-
-            grid.innerHTML = filtered.map(t => {
-                var countsMap = platformState.appointmentCounts;
-                var apptCountLabel = (!countsMap || typeof countsMap !== 'object')
-                    ? '—'
-                    : (Number.isFinite(Number(countsMap[t.id])) ? String(Number(countsMap[t.id])) : '0');
-                return `
-                <div class="glass-card rounded-2xl p-5 space-y-4 border ${t.subscriptionStatus === 'active' ? 'border-slate-800' : 'border-amber-500/30 bg-amber-950/10'}">
-                    <div class="flex items-start justify-between">
-                        <div>
-                            <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${t.subscriptionStatus === 'active' ? 'bg-brand-500/10 text-brand-400 border border-brand-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'}">
-                                ${t.subscriptionStatus === 'active' ? 'ACTIVE' : 'PAUSED'}
-                            </span>
-                            <h3 class="text-base font-extrabold text-white mt-2">${esc(t.name)}</h3>
-                            <span class="text-xs font-mono text-slate-400">/${esc(t.slug)}</span>
-                            ${t.subscriptionStatus !== 'active' ? '<p class="text-[11px] text-amber-400/90 mt-1.5"><i class="fa-solid fa-circle-info mr-1"></i>Public booking off — data kept.</p>' : ''}
-                        </div>
-                        <div class="flex items-center gap-0.5">
-                            <button type="button" onclick="openEditTenantModal(${jsArg(t.id)})" class="text-slate-400 hover:text-white p-1" title="Edit Manager Profile & Subscription">
-                                <i class="fa-solid fa-pen-to-square text-sm"></i>
-                            </button>
-                            <button type="button" onclick="deleteAgencyTenant(${jsArg(t.id)})" class="text-slate-500 hover:text-rose-400 p-1" title="Delete business permanently">
-                                <i class="fa-solid fa-trash-can text-sm"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="p-3 rounded-xl bg-slate-900/90 border border-slate-800/80 space-y-1 text-xs">
-                        <div class="flex justify-between">
-                            <span class="text-slate-400">Manager:</span>
-                            <span class="font-bold text-white">${esc(t.ownerName)}</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-slate-400">Owner Email:</span>
-                            <span class="font-mono text-brand-400 font-semibold">${esc(t.ownerEmail)}</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-slate-400">Phone:</span>
-                            <span class="text-slate-300">${esc(t.ownerPhone)}</span>
-                        </div>
-                        <div class="flex justify-between pt-1 border-t border-slate-800/60">
-                            <span class="text-slate-400">Plan Rate:</span>
-                            <span class="font-bold text-emerald-400">$${Number(t.monthlyPrice) || 0}/mo</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-slate-400">Billing:</span>
-                            <span class="text-[11px] text-slate-200 font-semibold">${esc(schediBillingLabel(t))}</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-slate-400">Appointments:</span>
-                            <span class="font-bold text-white">${apptCountLabel}</span>
-                        </div>
-                    </div>
-                    <div class="pt-2 flex items-center justify-between gap-2 border-t border-slate-800">
-                        <button type="button" onclick="resendProvisionWelcome(${jsArg(t.id)})" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 text-slate-200 border border-slate-700" title="Email the owner a welcome with a new temporary password">
-                            Resend welcome
-                        </button>
-                        <button type="button" onclick="toggleSubscriptionPause(${jsArg(t.id)})" class="px-3 py-1.5 rounded-xl text-xs font-semibold ${t.subscriptionStatus === 'active' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30' : 'bg-brand-500/10 text-brand-400 border border-brand-500/30'}">
-                            ${t.subscriptionStatus === 'active' ? '<i class="fa-solid fa-pause mr-1"></i>Pause Business' : '<i class="fa-solid fa-play mr-1"></i>Resume Business'}
-                        </button>
-                        <button type="button" onclick="loginAsTenantOwner(${jsArg(t.id)})" class="px-3.5 py-1.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-slate-950 font-bold text-xs shadow-md glow-emerald flex items-center space-x-1">
-                            <span>Log In As Owner</span>
-                            <i class="fa-solid fa-arrow-right text-[10px]"></i>
-                        </button>
-                    </div>
-                </div>
-            `;
-            }).join('');
+            hqDirRender(grid);
         }
 
-        window.filterAgencyTenants = function(query) {
-            platformState.agencySearchQuery = query.toLowerCase().trim();
+        // ---- HQ client directory: search / sort / filters / tags / health ----
+        var HQ_DIR_KEY = 'schedi.hqDirectory.v1';
+        var HQ_TAG_COLORS = ['#10b981', '#6366f1', '#f59e0b', '#ec4899', '#0ea5e9', '#a855f7', '#ef4444', '#14b8a6'];
+        function hqDirPrefs() {
+            if (platformState.hqDir) return platformState.hqDir;
+            var p = { q: '', sort: 'name', plan: '', status: '', type: '', tag: '' };
+            try { var raw = JSON.parse(window.localStorage.getItem(HQ_DIR_KEY) || 'null'); if (raw && typeof raw === 'object') Object.keys(p).forEach(function (k) { if (typeof raw[k] === 'string') p[k] = raw[k]; }); } catch (e) {}
+            platformState.hqDir = p;
+            platformState.agencySearchQuery = p.q;
+            return p;
+        }
+        function hqDirSave() { try { window.localStorage.setItem(HQ_DIR_KEY, JSON.stringify(hqDirPrefs())); } catch (e) {} }
+        window.hqDirSet = function (k, v) { hqDirPrefs()[k] = String(v || ''); if (k === 'q') platformState.agencySearchQuery = String(v || '').toLowerCase().trim(); hqDirSave(); renderAgencyDashboard(); };
+        window.hqDirReset = function () { platformState.hqDir = { q: '', sort: 'name', plan: '', status: '', type: '', tag: '' }; platformState.agencySearchQuery = ''; var si = document.getElementById('agencySearchInput'); if (si) si.value = ''; hqDirSave(); renderAgencyDashboard(); };
+        function hqTagColor(tag) { var h = 0; String(tag).toLowerCase().split('').forEach(function (c) { h = (h * 31 + c.charCodeAt(0)) >>> 0; }); return HQ_TAG_COLORS[h % HQ_TAG_COLORS.length]; }
+        function hqTagsOf(t) { return Array.isArray(t && t.hqTags) ? t.hqTags.filter(function (x) { return typeof x === 'string' && x.trim(); }).map(function (x) { return x.trim().slice(0, 24); }).slice(0, 8) : []; }
+        function hqHasPayMethod(t) {
+            var pg = (t && t.paymentGateways) || {};
+            return !!(pg.later === true || pg.card === true || (pg.cashapp === true && t.cashAppTag) || (pg.zelle === true && (t.zelleHandle || t.zelleLink)) || (pg.venmo === true && (t.venmoHandle || t.venmoLink)) || (pg.paypal === true && (t.paypalHandle || t.paypalLink)));
+        }
+        function hqWarnings(t) {
+            var w = [];
+            if (!hqHasPayMethod(t)) w.push('No payment method');
+            if (!Array.isArray(t.services) || !t.services.length) w.push('No services');
+            return w;
+        }
+        function hqStatusOf(t) {
+            if (t.subscriptionStatus !== 'active') return 'paused';
+            return hqWarnings(t).length ? 'setup' : 'active';
+        }
+        function hqHealthOf(t) {
+            var h = platformState.tenantHealth && platformState.tenantHealth[t.id];
+            return h && typeof h === 'object' ? h : null;
+        }
+        var HQ_PLAN_RANK = { pro: 0, starter: 1, free: 2 };
+        function hqDirRender(grid) {
+            var p = hqDirPrefs();
+            var si = document.getElementById('agencySearchInput'); if (si && document.activeElement !== si && si.value !== p.q) si.value = p.q;
+            var all = platformState.tenants || [];
+            // Business type options (only if data exists), tag options from all tags.
+            var types = {}; var tags = {};
+            all.forEach(function (t) { if (t && t.industry) types[String(t.industry)] = 1; hqTagsOf(t).forEach(function (g) { tags[g.toLowerCase()] = g; }); });
+            var typeSel = document.getElementById('hqDirType');
+            if (typeSel) {
+                var tk = Object.keys(types).sort();
+                typeSel.classList.toggle('hidden', !tk.length);
+                typeSel.innerHTML = '<option value="">All types</option>' + tk.map(function (k) { return '<option value="' + esc(k) + '"' + (p.type === k ? ' selected' : '') + '>' + esc(k) + '</option>'; }).join('');
+            }
+            var tagSel = document.getElementById('hqDirTag');
+            if (tagSel) {
+                var gk = Object.keys(tags).sort();
+                tagSel.classList.toggle('hidden', !gk.length);
+                tagSel.innerHTML = '<option value="">All tags</option>' + gk.map(function (k) { return '<option value="' + esc(k) + '"' + (p.tag === k ? ' selected' : '') + '>' + esc(tags[k]) + '</option>'; }).join('');
+            }
+            ['sort', 'plan', 'status'].forEach(function (k) { var el = document.getElementById('hqDir' + k.charAt(0).toUpperCase() + k.slice(1)); if (el) el.value = p[k]; });
+            var q = String(p.q || '').toLowerCase().trim();
+            var rows = all.filter(function (t) {
+                if (!t) return false;
+                if (q && !(String(t.name || '').toLowerCase().indexOf(q) !== -1 || String(t.ownerName || '').toLowerCase().indexOf(q) !== -1 || String(t.ownerEmail || '').toLowerCase().indexOf(q) !== -1 || String(t.slug || t.id || '').toLowerCase().indexOf(q) !== -1)) return false;
+                if (p.plan && ensureTenantPlan(t) !== p.plan) return false;
+                if (p.status && hqStatusOf(t) !== p.status) return false;
+                if (p.type && String(t.industry || '') !== p.type) return false;
+                if (p.tag && !hqTagsOf(t).some(function (g) { return g.toLowerCase() === p.tag; })) return false;
+                return true;
+            });
+            var byName = function (a, b) { return String(a.name || '').localeCompare(String(b.name || ''), undefined, { sensitivity: 'base' }); };
+            rows.sort(function (a, b) {
+                if (p.sort === 'plan') return (HQ_PLAN_RANK[ensureTenantPlan(a)] - HQ_PLAN_RANK[ensureTenantPlan(b)]) || byName(a, b);
+                if (p.sort === 'newest') return String(b.createdAt || '').localeCompare(String(a.createdAt || '')) || byName(a, b);
+                if (p.sort === 'lastBooking') { var ha = hqHealthOf(a), hb = hqHealthOf(b); return String((hb && hb.lastBooking) || '').localeCompare(String((ha && ha.lastBooking) || '')) || byName(a, b); }
+                return byName(a, b);
+            });
+            var cnt = document.getElementById('hqDirCount');
+            if (cnt) cnt.textContent = rows.length + ' of ' + all.length + ' businesses';
+            if (!rows.length) { grid.innerHTML = '<div class="p-6 text-center text-xs text-slate-400 border border-dashed border-slate-700 rounded-xl">No businesses match these filters.</div>'; return; }
+            var counts = platformState.appointmentCounts;
+            function cell(v) { return v === null || v === undefined || v === '' ? '<span class="text-slate-500">—</span>' : esc(String(v)); }
+            function view(t) {
+                var plan = ensureTenantPlan(t);
+                var st = hqStatusOf(t);
+                var h = hqHealthOf(t);
+                var w = hqWarnings(t);
+                var stBadge = st === 'paused' ? '<span class="hq-badge bg-amber-500/10 text-amber-400 border border-amber-500/30">Paused</span>'
+                    : (st === 'setup' ? '<span class="hq-badge bg-rose-500/10 text-rose-300 border border-rose-500/30">Needs setup</span>' : '<span class="hq-badge bg-brand-500/10 text-brand-400 border border-brand-500/20">Active</span>');
+                var tagsHtml = hqTagsOf(t).map(function (g) { var c = hqTagColor(g); return '<span class="hq-tag" style="color:' + c + ';border-color:' + c + '66;background:' + c + '1a">' + esc(g) + '</span>'; }).join('');
+                return {
+                    plan: plan, st: st, stBadge: stBadge, tagsHtml: tagsHtml, w: w,
+                    month: h ? h.month : null, unpaid: h ? h.unpaid : null, last: h && h.lastBooking ? h.lastBooking : (h ? 'none' : null),
+                    total: counts && typeof counts === 'object' ? (Number(counts[t.id]) || 0) : null,
+                    actions: '<button type="button" onclick="loginAsTenantOwner(' + jsArg(t.id) + ')" class="px-3 py-1.5 rounded-lg bg-brand-500 hover:bg-brand-600 text-slate-950 font-bold text-xs">Manage</button>'
+                        + '<a href="' + esc(getTenantPublicBookingUrl(t)) + '" target="_blank" rel="noopener" class="p-1.5 text-slate-400 hover:text-white" title="Open booking page"><i class="fa-solid fa-arrow-up-right-from-square text-sm"></i></a>'
+                        + '<button type="button" onclick="hqEditTags(' + jsArg(t.id) + ')" class="p-1.5 text-slate-400 hover:text-white" title="Edit HQ tags"><i class="fa-solid fa-tags text-sm"></i></button>'
+                        + '<button type="button" onclick="openEditTenantModal(' + jsArg(t.id) + ')" class="p-1.5 text-slate-400 hover:text-white" title="Edit Manager Profile & Subscription"><i class="fa-solid fa-pen-to-square text-sm"></i></button>'
+                        + '<button type="button" onclick="resendProvisionWelcome(' + jsArg(t.id) + ')" class="p-1.5 text-slate-400 hover:text-white" title="Email the owner a welcome with a new temporary password"><i class="fa-solid fa-envelope text-sm"></i></button>'
+                        + '<button type="button" onclick="toggleSubscriptionPause(' + jsArg(t.id) + ')" class="p-1.5 ' + (t.subscriptionStatus === 'active' ? 'text-amber-400' : 'text-brand-400') + '" title="' + (t.subscriptionStatus === 'active' ? 'Pause business' : 'Resume business') + '"><i class="fa-solid ' + (t.subscriptionStatus === 'active' ? 'fa-pause' : 'fa-play') + ' text-sm"></i></button>'
+                        + '<button type="button" onclick="deleteAgencyTenant(' + jsArg(t.id) + ')" class="p-1.5 text-slate-500 hover:text-rose-400" title="Delete business permanently"><i class="fa-solid fa-trash-can text-sm"></i></button>'
+                };
+            }
+            var planLabel = function (pl) { return pl === 'pro' ? 'Pro' : (pl === 'starter' ? 'Starter' : 'Free'); };
+            var warnHtml = function (w) { return w.length ? w.map(function (x) { return '<span class="hq-warn"><i class="fa-solid fa-triangle-exclamation mr-1"></i>' + esc(x) + '</span>'; }).join('') : '<span class="text-[11px] text-slate-500">No issues</span>'; };
+            var desktop = '<div class="hidden md:block overflow-x-auto"><table class="hq-table w-full text-xs"><thead><tr>'
+                + '<th>Business</th><th>Owner</th><th>Plan</th><th>Status</th><th title="Bookings this month">This month</th><th>Unpaid</th><th>Last booking</th><th>Health</th><th class="text-right">Actions</th></tr></thead><tbody>'
+                + rows.map(function (t) {
+                    var v = view(t);
+                    return '<tr><td><div class="font-bold text-white">' + esc(t.name) + '</div><div class="font-mono text-[11px] text-slate-400">/' + esc(t.slug || t.id) + '</div>' + (v.tagsHtml ? '<div class="mt-1 flex flex-wrap gap-1">' + v.tagsHtml + '</div>' : '') + '</td>'
+                        + '<td><div class="text-slate-200">' + cell(t.ownerName) + '</div><div class="font-mono text-[11px] text-brand-400 break-all">' + cell(t.ownerEmail) + '</div></td>'
+                        + '<td><div class="font-semibold text-white">' + planLabel(v.plan) + '</div><div class="text-[11px] text-slate-400">' + esc(schediBillingLabel(t)) + '</div></td>'
+                        + '<td>' + v.stBadge + '</td><td class="font-bold text-white">' + cell(v.month) + '</td>'
+                        + '<td class="' + (v.unpaid ? 'font-bold text-amber-400' : 'text-white') + '">' + cell(v.unpaid) + '</td><td class="text-slate-300 whitespace-nowrap">' + cell(v.last) + '</td>'
+                        + '<td><div class="flex flex-col gap-1">' + warnHtml(v.w) + '</div></td>'
+                        + '<td><div class="flex items-center justify-end gap-0.5">' + v.actions + '</div></td></tr>';
+                }).join('') + '</tbody></table></div>';
+            var mobile = '<div class="md:hidden space-y-3">' + rows.map(function (t) {
+                var v = view(t);
+                return '<div class="glass-card rounded-2xl p-4 space-y-3 border border-slate-800">'
+                    + '<div class="flex items-start justify-between gap-2"><div class="min-w-0"><div class="font-extrabold text-white text-sm">' + esc(t.name) + '</div><div class="font-mono text-[11px] text-slate-400">/' + esc(t.slug || t.id) + '</div></div>' + v.stBadge + '</div>'
+                    + (v.tagsHtml ? '<div class="flex flex-wrap gap-1">' + v.tagsHtml + '</div>' : '')
+                    + '<div class="text-[11px] text-slate-300 break-all">' + cell(t.ownerName) + ' · <span class="font-mono text-brand-400">' + cell(t.ownerEmail) + '</span></div>'
+                    + '<div class="grid grid-cols-4 gap-2 text-center">'
+                    + '<div class="hq-stat"><div>' + planLabel(v.plan) + '</div><span>Plan</span></div>'
+                    + '<div class="hq-stat"><div>' + cell(v.month) + '</div><span>This month</span></div>'
+                    + '<div class="hq-stat"><div class="' + (v.unpaid ? 'text-amber-400' : '') + '">' + cell(v.unpaid) + '</div><span>Unpaid</span></div>'
+                    + '<div class="hq-stat"><div class="text-[11px]">' + cell(v.last) + '</div><span>Last booking</span></div></div>'
+                    + '<div class="flex flex-wrap gap-1">' + warnHtml(v.w) + '</div>'
+                    + '<div class="flex items-center justify-between gap-1 pt-2 border-t border-slate-800">' + v.actions + '</div></div>';
+            }).join('') + '</div>';
+            grid.innerHTML = desktop + mobile;
+        }
+
+        window.hqEditTags = function (tenantId) {
+            var t = getTenant(tenantId);
+            if (!t || t.id !== tenantId) return;
+            var cur = hqTagsOf(t).join(', ');
+            var next = window.prompt('HQ tags for ' + (t.name || t.id) + ' (comma separated, only visible in Agency HQ):', cur);
+            if (next === null) return;
+            var list = [];
+            String(next).split(',').forEach(function (x) { x = x.trim().slice(0, 24); if (x && !list.some(function (y) { return y.toLowerCase() === x.toLowerCase(); })) list.push(x); });
+            t.hqTags = list.slice(0, 8);
+            if (schediPrivateProfiles[t.id]) schediPrivateProfiles[t.id].hqTags = t.hqTags.slice();
             renderAgencyDashboard();
+            if (!schediHqTagsServer) { showToast('Tags updated on this screen. Saving tags needs the updated email worker.', 'info'); return; }
+            saveState({ profileOnly: true, tenantIds: [t.id], quietSyncErrors: true }).then(function (res) {
+                if (!res) showToast('Could not save tags. Try again.', 'error');
+                else showToast('Tags saved', 'success');
+            }).catch(function () { showToast('Could not save tags. Try again.', 'error'); });
+        };
+
+        // Collapsible HQ sections (state remembered per section; expanded by default).
+        var HQ_COLLAPSE_KEY = 'schedi.hqCollapsed.v1';
+        function hqCollapsedMap() { try { return JSON.parse(window.localStorage.getItem(HQ_COLLAPSE_KEY) || '{}') || {}; } catch (e) { return {}; } }
+        function hqApplyCollapse(card, collapsed) {
+            var body = card.querySelector('[data-hq-collapse-body]');
+            var head = card.querySelector('[data-hq-collapse-head]');
+            var btn = card.querySelector('.hq-collapse-btn');
+            if (body) body.classList.toggle('hidden', collapsed);
+            if (head) { head.classList.toggle('border-b', !collapsed); head.classList.toggle('pb-4', !collapsed); }
+            if (btn) { btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true'); btn.querySelector('i').style.transform = collapsed ? 'rotate(-90deg)' : ''; }
+        }
+        function initHqCollapsibles() {
+            var map = hqCollapsedMap();
+            document.querySelectorAll('[data-hq-collapse]').forEach(function (card) {
+                var key = card.getAttribute('data-hq-collapse');
+                var head = card.querySelector('[data-hq-collapse-head]');
+                if (!head || head.querySelector('.hq-collapse-btn')) return;
+                var btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'hq-collapse-btn';
+                btn.setAttribute('aria-label', 'Show or hide this section');
+                btn.innerHTML = '<i class="fa-solid fa-chevron-down" aria-hidden="true"></i>';
+                head.appendChild(btn);
+                head.style.cursor = 'pointer';
+                head.addEventListener('click', function (ev) {
+                    if (ev.target.closest('input,select,a,label') ) return;
+                    var m = hqCollapsedMap();
+                    m[key] = !m[key];
+                    try { window.localStorage.setItem(HQ_COLLAPSE_KEY, JSON.stringify(m)); } catch (e) {}
+                    hqApplyCollapse(card, !!m[key]);
+                });
+                hqApplyCollapse(card, !!map[key]);
+            });
+        }
+        try { if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initHqCollapsibles); else initHqCollapsibles(); } catch (errCol) {}
+
+        window.filterAgencyTenants = function(query) {
+            hqDirSet('q', String(query || ''));
         }
 
         window.openProvisionModal = function() {
@@ -5631,23 +5824,31 @@
                 }
             }
 
-            await saveState();
-
-            // If the document id migrated, remove the orphaned old document via the worker.
-            if (slugChanged && oldId !== tenant.id) {
-                try {
-                    var removedOld = await deleteTenantProfiles([oldId]);
-                    if (!removedOld.ok) {
-                        console.error('Cloud orphan cleanup failed after slug rename:', removedOld.error || 'profile_delete_failed');
-                        showToast('Saved locally, but cloud cleanup of the old slug doc failed.', 'error');
-                    }
-                } catch (err) {
-                    console.error('Cloud orphan cleanup failed after slug rename:', err);
-                    showToast('Saved locally, but cloud cleanup of the old slug doc failed.', 'error');
-                }
-            }
-
+            // Close right away; the cloud save finishes in the background and reports only if it fails.
+            var savedTenantId = tenant.id;
+            var savedName = tenant.name;
             closeEditTenantModal();
+            (async function () {
+                var res = null;
+                try { res = await saveState({ profileOnly: !slugChanged, tenantIds: [savedTenantId], quietSyncErrors: true }); } catch (errSave) { res = null; }
+                if (!res) {
+                    showToast('Could not save "' + savedName + '" to the cloud. Check your connection and save again.', 'error');
+                }
+                // If the document id migrated, remove the orphaned old document via the worker.
+                if (slugChanged && oldId !== savedTenantId) {
+                    try {
+                        var removedOld = await deleteTenantProfiles([oldId]);
+                        if (!removedOld.ok) {
+                            console.error('Cloud orphan cleanup failed after slug rename:', removedOld.error || 'profile_delete_failed');
+                            showToast('Saved, but cloud cleanup of the old slug doc failed.', 'error');
+                        }
+                    } catch (err) {
+                        console.error('Cloud orphan cleanup failed after slug rename:', err);
+                        showToast('Saved, but cloud cleanup of the old slug doc failed.', 'error');
+                    }
+                }
+            })();
+
             populateTenantSelect();
             renderAgencyDashboard();
             renderTenantAdminPortal();
@@ -6114,7 +6315,9 @@
             if (dashboard) dashboard.classList.remove('hidden');
 
             switchPlatformMode('tenant');
-            showToast(`Logged into Business Portal as owner of ${getTenant(tenantId).name}`, 'success');
+            syncHqManagingBanner();
+            try { window.scrollTo(0, 0); } catch (errTop) {}
+            showToast(`Managing ${getTenant(tenantId).name}`, 'success');
         }
 
         function getTenantPublicBookingSlug(tenant) {
@@ -8424,6 +8627,7 @@
             if (f === 'weekly') return 'Weekly';
             if (f === 'biweekly') return 'Biweekly';
             if (f === 'monthly') return 'Monthly';
+            if (f === 'custom') return 'Custom dates';
             return 'One-time';
         }
 
@@ -10226,6 +10430,7 @@
                 existing.clientName = clientName;
                 existing.clientPhone = clientPhone;
                 existing.clientEmail = clientEmail;
+                if (existing.serviceName !== choice.serviceName) delete existing.items;
                 existing.serviceName = choice.serviceName;
                 existing.durationMins = choice.durationMins;
                 if (choice.amount === null || choice.amount === undefined) delete existing.amount;
@@ -10713,6 +10918,10 @@
                 });
                 const data = await res.json().catch(function () { return {}; });
                 if (!res.ok || !data.session || !data.tenantId) {
+                    if (data && data.error === 'ambiguous_login') {
+                        showToast('This email signs in to more than one business with the same password. Use Forgot password to give each business its own password.', 'error');
+                        return;
+                    }
                     showToast('Invalid owner email or password.', 'error');
                     return;
                 }
@@ -10959,7 +11168,7 @@
         function renderResetInvalid(box) {
             box.innerHTML = resetCardShell('<h1 class="text-xl font-extrabold text-white">This link has expired</h1>'
                 + '<p class="text-xs text-slate-400">Reset links work once and only for 60 minutes. Ask for a new one from the Business Portal.</p></div>'
-                + '<a href="/?portal=login&forgot=1" class="block w-full text-center py-3 rounded-xl bg-brand-500 hover:bg-brand-600 text-slate-950 font-bold text-xs glow-emerald">Get a new reset link</a>'
+                + '<a href="/login?forgot=1" class="block w-full text-center py-3 rounded-xl bg-brand-500 hover:bg-brand-600 text-slate-950 font-bold text-xs glow-emerald">Get a new reset link</a>'
                 + '</div>');
         }
 
@@ -11004,7 +11213,7 @@
                     schediClearAuthSession();
                     box.innerHTML = resetCardShell('<h1 class="text-xl font-extrabold text-white">Password updated</h1>'
                         + '<p class="text-xs text-slate-400">Sign in to the Business Portal with your new password. We emailed you a note that it changed.</p></div>'
-                        + '<a href="/?portal=login" class="block w-full text-center py-3 rounded-xl bg-brand-500 hover:bg-brand-600 text-slate-950 font-bold text-xs glow-emerald">Sign in</a>'
+                        + '<a href="/login" class="block w-full text-center py-3 rounded-xl bg-brand-500 hover:bg-brand-600 text-slate-950 font-bold text-xs glow-emerald">Sign in</a>'
                         + '</div>');
                     return;
                 }
@@ -11170,6 +11379,10 @@
         html.schedi-light .text-white { color: #0f172a !important; }
         /* Light theme: darker green/amber text for WCAG AA (>=4.5:1) */
         html.schedi-light .schedi-compare-cards .bg-slate-900\/60 { background-color: #f8fafc !important; }
+        html.schedi-light #svcCartSummary { background-color: #f8fafc !important; border-color: #e2e8f0 !important; }
+        html.schedi-light #svcCartSummary .border-slate-800 { border-color: #e2e8f0 !important; }
+        html.schedi-light #svcCartSummary .text-slate-200 { color: #0f172a !important; }
+        html.schedi-light #svcCartSummary .text-slate-400 { color: #475569 !important; }
         html.schedi-light .text-brand-200, html.schedi-light .text-brand-300, html.schedi-light .text-brand-400, html.schedi-light .text-brand-500,
         html.schedi-light .text-emerald-200, html.schedi-light .text-emerald-300, html.schedi-light .text-emerald-400, html.schedi-light .text-emerald-500 { color: #047857 !important; }
         html.schedi-light .text-amber-200, html.schedi-light .text-amber-300, html.schedi-light .text-amber-400, html.schedi-light .text-amber-500,
@@ -11243,9 +11456,11 @@
         <div class="glass-card rounded-2xl p-6 space-y-5">
             <div>
                 <h2 class="text-xl font-extrabold text-white">1. Select a Service</h2>
-                <p class="text-xs text-slate-400 mt-0.5">Choose your appointment type.</p>
+                <p class="text-xs text-slate-400 mt-0.5">Choose your appointment type. Need more than one? Tap + Add, or use + for two of the same.</p>
             </div>
             <div id="serviceListContainer" class="grid grid-cols-1 md:grid-cols-3 gap-3"></div>
+            <p id="svcCartNote" class="hidden text-xs font-semibold text-amber-300" role="status"></p>
+            <div id="svcCartSummary" class="hidden p-3 rounded-xl bg-slate-900/80 border border-slate-800" aria-live="polite"></div>
         </div>
 
         <div class="glass-card rounded-2xl p-6 space-y-6">
@@ -11281,12 +11496,16 @@
             </div>
 
             <div class="pt-4 border-t border-slate-800 space-y-3">
-                <div class="flex items-center justify-between">
-                    <div>
+                <div class="flex items-end justify-between gap-3">
+                    <div class="min-w-0">
                         <label class="text-xs font-bold text-white uppercase tracking-wider">Available Dynamic Time Slots</label>
                         <p id="selectedDateDisplayLabel" class="text-[11px] text-emerald-400 font-semibold mt-0.5"></p>
                     </div>
-                    <span id="slotCountInfo" class="text-[10px] text-slate-400 font-mono bg-slate-900 px-2 py-1 rounded border border-slate-800"></span>
+                    <div class="text-right shrink-0">
+                        <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total time</div>
+                        <div id="slotTotalTime" class="text-xl sm:text-2xl font-black leading-tight text-emerald-500 whitespace-nowrap"></div>
+                        <span id="slotCountInfo" class="text-[10px] text-slate-400 font-semibold"></span>
+                    </div>
                 </div>
                 <div id="timeSlotsContainer" class="grid grid-cols-2 sm:grid-cols-4 gap-3"></div>
             </div>
@@ -11314,11 +11533,27 @@
                     <input type="radio" name="pubRecurrenceFreq" value="monthly" class="sr-only peer" onchange="updateRecurrencePreview()">
                     <span class="px-3 py-2 rounded-xl border border-slate-700 bg-slate-900 text-slate-300 peer-checked:bg-emerald-500/20 peer-checked:border-emerald-500/40 peer-checked:text-emerald-300 font-bold inline-block">Monthly</span>
                 </label>
+                <label class="cursor-pointer">
+                    <input type="radio" name="pubRecurrenceFreq" value="custom" class="sr-only peer" onchange="updateRecurrencePreview()">
+                    <span class="px-3 py-2 rounded-xl border border-slate-700 bg-slate-900 text-slate-300 peer-checked:bg-emerald-500/20 peer-checked:border-emerald-500/40 peer-checked:text-emerald-300 font-bold inline-block">Pick my own dates</span>
+                </label>
+            </div>
+            <div id="recurrenceCustomWrap" class="hidden space-y-3 text-xs">
+                <p class="text-slate-400">Tap the extra days you want. Your first visit is the day and time you picked above. You can change the time for each extra day.</p>
+                <div class="flex items-center justify-between bg-slate-900/90 p-2 rounded-xl border border-slate-800">
+                    <button type="button" onclick="customPrevMonth()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold" aria-label="Previous month"><i class="fa-solid fa-chevron-left"></i></button>
+                    <span id="customMonthTitle" class="text-sm font-extrabold text-white"></span>
+                    <button type="button" onclick="customNextMonth()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold" aria-label="Next month"><i class="fa-solid fa-chevron-right"></i></button>
+                </div>
+                <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-400 uppercase"><div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div></div>
+                <div id="customDatesGrid" class="grid grid-cols-7 gap-1"></div>
+                <p id="customDatesCountNote" class="text-slate-400"></p>
+                <ul id="customDatesList" class="space-y-2"></ul>
             </div>
             <div id="recurrenceCountWrap" class="hidden flex flex-wrap items-center gap-3 text-xs">
                 <label class="font-semibold text-slate-300" for="pubRecurrenceCount">End after</label>
-                <input type="number" id="pubRecurrenceCount" min="2" max="52" value="4" oninput="updateRecurrencePreview()" class="w-20 px-3 py-2 rounded-xl glass-input text-xs font-mono font-bold text-emerald-400">
-                <span class="text-slate-400">visits (max 52)</span>
+                <input type="number" id="pubRecurrenceCount" min="2" max="12" value="4" oninput="updateRecurrencePreview()" class="w-20 px-3 py-2 rounded-xl glass-input text-xs font-mono font-bold text-emerald-400">
+                <span class="text-slate-400">visits in total (up to 12)</span>
             </div>
             <div id="recurrencePreviewBox" class="hidden p-3 rounded-xl bg-slate-900/80 border border-slate-800 text-xs space-y-1">
                 <div class="font-bold text-slate-300 uppercase tracking-wider text-[10px]">Upcoming dates preview</div>
@@ -11425,6 +11660,7 @@
             <p id="confirmationNote" class="text-xs text-slate-400 hidden"></p>
             <p class="text-xs text-slate-400">Confirmation code: <strong id="resCode" class="text-white font-mono"></strong></p>
             <p class="text-xs text-brand-400 font-bold">Scheduled for: <span id="resDateDisplay" class="text-white"></span> at <span id="resTimeDisplay" class="text-white"></span></p>
+            <p id="resServiceLine" class="hidden text-xs text-slate-300 font-semibold"></p>
             <div id="resSeriesBox" class="hidden p-3 rounded-xl bg-sky-950/40 border border-sky-500/30 text-left text-xs space-y-1">
                 <div class="font-bold text-sky-300"><i class="fa-solid fa-arrows-rotate mr-1"></i><span id="resSeriesLabel">Recurring series</span></div>
                 <p id="resSeriesDates" class="text-slate-300 font-mono text-[11px] leading-relaxed"></p>
@@ -11864,14 +12100,15 @@
             var rec = booking && booking.recurrence;
             var isSeries = rec && rec.frequency && rec.frequency !== 'once' && ((rec.total || 0) > 1 || (rec.dates && rec.dates.length > 1));
             var seriesDatesLine = (rec && rec.dates && rec.dates.length)
-                ? rec.dates.map(function (d) { return String(d) + (booking.time ? (' @ ' + booking.time) : ''); }).join(', ')
+                ? rec.dates.map(function (d, di) { var tm = (rec.times && rec.times[di]) || booking.time; return String(d) + (tm ? (' @ ' + tm) : ''); }).join(', ')
                 : '';
             var recFreqLabelLocal = (function (f) {
                 f = String(f || 'once').toLowerCase();
                 if (f === 'weekly') return 'Weekly';
                 if (f === 'biweekly') return 'Biweekly';
                 if (f === 'monthly') return 'Monthly';
-                return 'One-time';
+                if (f === 'custom') return 'Custom dates';
+            return 'One-time';
             })(rec && rec.frequency);
 
             var clientTo = (booking && booking.clientEmail) ? String(booking.clientEmail).trim() : '';
@@ -12135,6 +12372,55 @@
         }
 
         var selectedSvc = tenantData.services[0] || null;
+        // Multi-service cart: [{ id, qty }]. One line with qty 1 is the classic single-service booking.
+        var svcCart = selectedSvc ? [{ id: selectedSvc.id, qty: 1 }] : [];
+        var MAX_SVC_QTY = 10;
+        var MAX_BLOCK_MINS = 480;
+        var MAX_SERIES_VISITS = 12;
+        var customDates = {};
+        var customViewYear = null;
+        var customViewMonth = null;
+        function multiServiceEnabled() { return tenantData.allowMultiServiceBooking !== false; }
+        function findSvcById(id) { return (tenantData.services || []).find(function (x) { return x && x.id === id; }) || null; }
+        function cartLines() {
+            return svcCart.map(function (l) { var sv = findSvcById(l.id); return sv ? { svc: sv, qty: l.qty } : null; }).filter(Boolean);
+        }
+        function cartQtyTotal() { return cartLines().reduce(function (n, l) { return n + l.qty; }, 0); }
+        function cartIsMulti() { return cartQtyTotal() > 1; }
+        function cartDurationMins() {
+            var lines = cartLines();
+            if (!lines.length) return 60;
+            var t = lines.reduce(function (n, l) { return n + parseDurationMins(l.svc) * l.qty; }, 0);
+            return Math.max(5, Math.min(MAX_BLOCK_MINS, Math.round(t)));
+        }
+        function cartPrice() {
+            var lines = cartLines();
+            if (!lines.length) return null;
+            var total = 0;
+            for (var i = 0; i < lines.length; i++) {
+                var p = servicePriceValuePublic(lines[i].svc);
+                if (p === null) return null;
+                total += p * lines[i].qty;
+            }
+            return roundMoneyPublic(total);
+        }
+        function cartServiceName() {
+            var lines = cartLines();
+            if (!lines.length) return 'Service';
+            return lines.map(function (l) { return l.svc.name + (l.qty > 1 ? (' ×' + l.qty) : ''); }).join(' + ').slice(0, 160);
+        }
+        function cartItems() {
+            return cartLines().map(function (l) {
+                return { serviceId: l.svc.id, name: String(l.svc.name || '').slice(0, 80), qty: l.qty, price: servicePriceValuePublic(l.svc), durationMins: parseDurationMins(l.svc) };
+            });
+        }
+        function syncSelectedSvc() { var lines = cartLines(); selectedSvc = lines.length ? lines[0].svc : null; }
+        function formatMinsHuman(m) {
+            m = Math.round(Number(m) || 0);
+            var h = Math.floor(m / 60), r = m % 60;
+            if (!h) return r + ' min';
+            return h + ' hr' + (r ? (' ' + r + ' min') : '');
+        }
         var selectedTime = null;
         var selectedPay = 'card';
 
@@ -12323,7 +12609,7 @@
             var loc = getPubLocation();
             var startMins = toMinutes(booking && booking.time);
             if (startMins == null) startMins = 10 * 60;
-            var dur = parseDurationMins((tenantData.services || []).find(function (s) { return s && booking && s.name === booking.serviceName; }) || { durationMins: 60 });
+            var dur = (booking && Number(booking.durationMins) > 0) ? Math.round(Number(booking.durationMins)) : parseDurationMins((tenantData.services || []).find(function (s) { return s && booking && s.name === booking.serviceName; }) || { durationMins: 60 });
             var endMins = startMins + dur;
             var dateStr = (booking && booking.date) || localISODate();
             var endDateStr = dateStr;
@@ -12530,7 +12816,7 @@
             var box = document.getElementById('cancelFeeNoticeBox');
             var textEl = document.getElementById('cancelFeeNoticeText');
             if (!box) return;
-            var sentence = cancellationFeeSentencePublic(servicePriceValuePublic(selectedSvc));
+            var sentence = cancellationFeeSentencePublic(cartPrice());
             if (!sentence) {
                 box.classList.add('hidden');
                 if (textEl) textEl.textContent = '';
@@ -12541,7 +12827,7 @@
         }
 
         function updatePayAmounts() {
-            var price = servicePriceValuePublic(selectedSvc);
+            var price = cartPrice();
             var quote = quoteDeposit(price);
             var amt = document.getElementById('checkoutAmountLabel');
             var due = document.getElementById('depositDueLabel');
@@ -12616,7 +12902,7 @@
             var el = document.getElementById('pubRecurrenceCount');
             var n = el ? parseInt(el.value, 10) : 4;
             if (isNaN(n) || n < 2) n = 2;
-            if (n > 52) n = 52;
+            if (n > MAX_SERIES_VISITS) n = MAX_SERIES_VISITS;
             return n;
         }
 
@@ -12638,7 +12924,7 @@
 
         function generateRecurringDates(startISO, frequency, count) {
             var freq = String(frequency || 'once').toLowerCase();
-            var n = Math.max(1, Math.min(52, parseInt(count, 10) || 1));
+            var n = Math.max(1, Math.min(MAX_SERIES_VISITS, parseInt(count, 10) || 1));
             if (freq === 'once' || n <= 1) return [startISO];
             var dates = [startISO];
             for (var i = 1; i < n; i++) {
@@ -12701,7 +12987,7 @@
             if (isNaN(dObj.getTime())) return 'Invalid date';
             var resolved = resolveHoursForDate(tenantData, dateStr);
             if (resolved.closed) return resolved.reason || 'Closed';
-            var durationMins = parseDurationMins(selectedSvc);
+            var durationMins = cartDurationMins();
             var start = toMinutes(timeLabel);
             if (start === null) return 'Invalid time';
             var end = start + durationMins;
@@ -12737,8 +13023,129 @@
             if (f === 'weekly') return 'Weekly';
             if (f === 'biweekly') return 'Biweekly';
             if (f === 'monthly') return 'Monthly';
+            if (f === 'custom') return 'Custom dates';
             return 'One-time';
         }
+
+        function openTimesForDate(dateStr) {
+            var resolved = resolveHoursForDate(tenantData, dateStr);
+            if (resolved.closed || isDateFullyBlocked(dateStr)) return [];
+            var dur = cartDurationMins();
+            var interval = getSlotIntervalMins(tenantData);
+            var isToday = dateStr === localISODate();
+            var now = new Date();
+            var nowMins = now.getHours() * 60 + now.getMinutes();
+            var out = [];
+            for (var ri = 0; ri < resolved.ranges.length; ri++) {
+                for (var t = resolved.ranges[ri].startMins; t + dur <= resolved.ranges[ri].endMins; t += interval) {
+                    if (isToday && t <= nowMins) continue;
+                    var label = fromMinutes(t);
+                    if (!slotConflictReason(dateStr, label)) out.push(label);
+                }
+            }
+            return out;
+        }
+
+        // Series entries [{ date, time }]. First entry is always the date and time picked above.
+        function buildSeriesEntries(freq) {
+            if (freq === 'custom') {
+                var extra = Object.keys(customDates).filter(function (d) { return d > selectedDateStr; }).sort();
+                return [{ date: selectedDateStr, time: selectedTime }].concat(extra.map(function (d) {
+                    return { date: d, time: customDates[d] || selectedTime };
+                }));
+            }
+            var count = freq === 'once' ? 1 : getSelectedRecurrenceCount();
+            return generateRecurringDates(selectedDateStr, freq, count).map(function (d) { return { date: d, time: selectedTime }; });
+        }
+
+        function prettyDatePub(iso) {
+            var p = String(iso || '').split('-');
+            var d = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
+            if (isNaN(d.getTime())) return iso;
+            return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+        }
+
+        function renderCustomDatesPicker() {
+            var grid = document.getElementById('customDatesGrid');
+            var title = document.getElementById('customMonthTitle');
+            if (!grid) return;
+            if (customViewYear === null) {
+                var sp = String(selectedDateStr || localISODate()).split('-');
+                customViewYear = parseInt(sp[0], 10);
+                customViewMonth = parseInt(sp[1], 10) - 1;
+            }
+            var names = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+            if (title) title.textContent = names[customViewMonth] + ' ' + customViewYear;
+            var first = new Date(customViewYear, customViewMonth, 1).getDay();
+            var days = new Date(customViewYear, customViewMonth + 1, 0).getDate();
+            var today = localISODate();
+            var picked = Object.keys(customDates).length;
+            var full = picked >= MAX_SERIES_VISITS - 1;
+            var html = '';
+            for (var i = 0; i < first; i++) html += '<div></div>';
+            for (var day = 1; day <= days; day++) {
+                var iso = customViewYear + '-' + String(customViewMonth + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+                var isFirst = iso === selectedDateStr;
+                var isPicked = !!customDates[iso];
+                var resolved = resolveHoursForDate(tenantData, iso);
+                var closed = resolved.closed || !!isDateFullyBlocked(iso);
+                var disabled = iso <= today && !isPicked || isFirst || (closed && !isPicked) || (full && !isPicked) || iso < selectedDateStr;
+                var cls = isFirst ? 'bg-sky-500/20 border-sky-500 text-sky-300'
+                    : isPicked ? 'bg-emerald-500 border-emerald-500 text-slate-950 font-black'
+                    : disabled ? 'bg-slate-950/40 border-slate-900 text-slate-600 opacity-60 cursor-not-allowed'
+                    : 'bg-slate-900 border-slate-800 text-slate-200 hover:border-emerald-500/60';
+                var sub = isFirst ? 'First' : isPicked ? 'Added' : closed ? 'Closed' : '';
+                html += '<button type="button" ' + (disabled ? 'disabled ' : '') + 'onclick="toggleCustomDate(' + JSON.stringify(iso).split('"').join("'") + ')" aria-pressed="' + (isPicked ? 'true' : 'false') + '" aria-label="' + escHtml(prettyDatePub(iso)) + (isPicked ? ', added' : '') + '" class="p-1.5 rounded-lg border text-center ' + cls + '">'
+                    + '<span class="block text-xs font-bold">' + day + '</span><span class="block text-[8px] uppercase leading-tight">' + sub + '</span></button>';
+            }
+            grid.innerHTML = html;
+            var note = document.getElementById('customDatesCountNote');
+            if (note) {
+                note.textContent = picked
+                    ? ((picked + 1) + ' visits in total' + (full ? ' (that is the most for one booking).' : '. You can add up to ' + (MAX_SERIES_VISITS - 1 - picked) + ' more.'))
+                    : 'No extra days yet. You can add up to ' + (MAX_SERIES_VISITS - 1) + '.';
+            }
+            var list = document.getElementById('customDatesList');
+            if (list) {
+                var keys = Object.keys(customDates).sort();
+                list.innerHTML = keys.map(function (d) {
+                    var times = openTimesForDate(d);
+                    var cur = customDates[d];
+                    var ok = times.indexOf(cur) !== -1;
+                    var opts = (ok ? [] : ['<option value="' + escHtml(cur) + '" selected>' + escHtml(cur) + ' (not available)</option>'])
+                        .concat(times.map(function (t) { return '<option value="' + escHtml(t) + '"' + (t === cur ? ' selected' : '') + '>' + escHtml(t) + '</option>'; }));
+                    return '<li class="flex flex-wrap items-center gap-2 p-2 rounded-xl border ' + (ok ? 'border-slate-800 bg-slate-900/80' : 'border-rose-500/40 bg-rose-950/20') + '">'
+                        + '<span class="font-bold text-white min-w-[7rem]">' + escHtml(prettyDatePub(d)) + '</span>'
+                        + (times.length ? ('<select onchange="setCustomDateTime(' + JSON.stringify(d).split('"').join("'") + ', this.value)" class="glass-input px-2 py-1 rounded-lg text-xs font-mono" aria-label="Time on ' + escHtml(prettyDatePub(d)) + '">' + opts.join('') + '</select>') : '')
+                        + (ok ? '' : '<span class="text-rose-300 font-semibold">' + (times.length ? 'That time is not open. Pick another time.' : 'No open times that day. Remove it or pick another day.') + '</span>')
+                        + '<button type="button" onclick="toggleCustomDate(' + JSON.stringify(d).split('"').join("'") + ')" class="ml-auto px-2 py-1 rounded-lg border border-slate-700 text-slate-300 hover:text-white" aria-label="Remove ' + escHtml(prettyDatePub(d)) + '">Remove</button>'
+                        + '</li>';
+                }).join('');
+            }
+        }
+
+        window.toggleCustomDate = function (iso) {
+            if (customDates[iso]) {
+                delete customDates[iso];
+            } else {
+                if (Object.keys(customDates).length >= MAX_SERIES_VISITS - 1) return;
+                var times = openTimesForDate(iso);
+                customDates[iso] = (selectedTime && times.indexOf(selectedTime) !== -1) ? selectedTime : (times[0] || selectedTime || '');
+            }
+            updateRecurrencePreview();
+        };
+        window.setCustomDateTime = function (iso, time) {
+            if (customDates[iso]) customDates[iso] = time;
+            updateRecurrencePreview();
+        };
+        window.customPrevMonth = function () {
+            customViewMonth--; if (customViewMonth < 0) { customViewMonth = 11; customViewYear--; }
+            renderCustomDatesPicker();
+        };
+        window.customNextMonth = function () {
+            customViewMonth++; if (customViewMonth > 11) { customViewMonth = 0; customViewYear++; }
+            renderCustomDatesPicker();
+        };
 
         window.updateRecurrencePreview = function() {
             var card = document.getElementById('recurrenceCard');
@@ -12751,24 +13158,27 @@
             var previewBox = document.getElementById('recurrencePreviewBox');
             var list = document.getElementById('recurrencePreviewList');
             var hint = document.getElementById('recurrenceConflictHint');
-            if (countWrap) countWrap.classList.toggle('hidden', freq === 'once');
-            if (freq === 'once') {
+            if (countWrap) countWrap.classList.toggle('hidden', freq === 'once' || freq === 'custom');
+            var customWrap = document.getElementById('recurrenceCustomWrap');
+            if (customWrap) customWrap.classList.toggle('hidden', freq !== 'custom');
+            if (freq === 'custom') renderCustomDatesPicker();
+            if (freq === 'once' || (freq === 'custom' && !Object.keys(customDates).length)) {
                 if (previewBox) previewBox.classList.add('hidden');
                 return;
             }
-            var count = getSelectedRecurrenceCount();
-            var dates = generateRecurringDates(selectedDateStr, freq, count);
+            var entries = buildSeriesEntries(freq);
             if (previewBox) previewBox.classList.remove('hidden');
             var conflicts = [];
             if (list) {
-                list.innerHTML = dates.map(function (d, idx) {
-                    var reason = selectedTime ? slotConflictReason(d, selectedTime) : null;
+                list.innerHTML = entries.map(function (en, idx) {
+                    var d = en.date;
+                    var reason = en.time ? slotConflictReason(d, en.time) : null;
                     // First date is the one they picked — treat as OK for preview unless already taken
                     if (idx === 0 && reason === 'Already booked') { /* keep */ }
                     else if (idx === 0 && reason) reason = null;
                     if (reason) conflicts.push(d + ' (' + reason + ')');
                     var extra = reason ? (' <span class="text-rose-400">— ' + escHtml(reason) + '</span>') : '';
-                    return '<li>' + escHtml(d) + (selectedTime ? (' @ ' + escHtml(selectedTime)) : '') + extra + '</li>';
+                    return '<li>' + escHtml(d) + (en.time ? (' @ ' + escHtml(en.time)) : '') + extra + '</li>';
                 }).join('');
             }
             if (hint) {
@@ -12845,36 +13255,123 @@
 
         function renderSvc() {
             const container = document.getElementById('serviceListContainer');
+            var multi = multiServiceEnabled();
             container.innerHTML = tenantData.services.map(function (s) {
-                var active = selectedSvc && selectedSvc.id === s.id;
-                return '<button type="button" onclick="selectSvc(' + Number(s.id) + ')" aria-pressed="' + (active ? 'true' : 'false') +
-                    '" class="w-full text-left p-4 rounded-xl border cursor-pointer transition-all ' +
-                    (active ? 'bg-emerald-500/10 border-emerald-500 text-white glow-emerald' : 'bg-slate-900 border-slate-800 text-slate-400') + '">' +
+                var line = svcCart.find(function (l) { return l.id === s.id; });
+                var active = !!line;
+                var info = (function () {
+                    var pl = formatServicePricePublic(s);
+                    var dur = escHtml(formatServiceDuration(s.duration));
+                    if (pl && dur) return pl + ' &bull; ' + dur;
+                    if (pl) return pl;
+                    if (dur) return dur;
+                    return '';
+                })();
+                var side = '';
+                if (multi && active) {
+                    var qty = line.qty;
+                    var onlyOne = svcCart.length === 1 && qty === 1;
+                    side = '<div class="flex items-center gap-1 shrink-0" role="group" aria-label="How many ' + escHtml(s.name) + '">'
+                        + '<button type="button" onclick="changeSvcQty(' + Number(s.id) + ',-1)" ' + (onlyOne ? 'disabled aria-disabled="true" ' : '') + 'class="w-8 h-8 rounded-lg border border-slate-700 bg-slate-900 text-white font-black ' + (onlyOne ? 'opacity-40 cursor-not-allowed' : 'hover:border-emerald-500') + '" aria-label="One less ' + escHtml(s.name) + '">−</button>'
+                        + '<span class="min-w-[1.75rem] text-center text-sm font-black text-white" aria-live="polite">' + qty + '</span>'
+                        + '<button type="button" onclick="changeSvcQty(' + Number(s.id) + ',1)" class="w-8 h-8 rounded-lg border border-slate-700 bg-slate-900 text-white font-black hover:border-emerald-500" aria-label="One more ' + escHtml(s.name) + '">+</button>'
+                        + '</div>';
+                } else if (multi) {
+                    side = '<button type="button" onclick="addSvc(' + Number(s.id) + ')" class="shrink-0 px-3 h-8 rounded-lg border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 text-[11px] font-bold hover:bg-emerald-500/20" aria-label="Add ' + escHtml(s.name) + ' to this booking">+ Add</button>';
+                }
+                return '<div class="flex items-center gap-2 p-3 rounded-xl border transition-all ' +
+                    (active ? 'bg-emerald-500/10 border-emerald-500 glow-emerald' : 'bg-slate-900 border-slate-800') + '">' +
+                    '<button type="button" onclick="selectSvc(' + Number(s.id) + ')" aria-pressed="' + (active ? 'true' : 'false') + '" class="flex-1 min-w-0 text-left p-1 cursor-pointer">' +
                     '<div class="font-bold text-xs text-white">' + escHtml(s.name) + '</div>' +
-                    '<div class="text-[11px] text-emerald-400 font-bold mt-1">' +
-                    (function () {
-                        var pl = formatServicePricePublic(s);
-                        var dur = escHtml(formatServiceDuration(s.duration));
-                        if (pl && dur) return pl + ' &bull; ' + dur;
-                        if (pl) return pl;
-                        if (dur) return dur;
-                        return '';
-                    })() + '</div>' +
-                    '</button>';
+                    '<div class="text-[11px] text-emerald-400 font-bold mt-1">' + info + '</div>' +
+                    '</button>' + side + '</div>';
             }).join('');
 
             var badge = document.getElementById('selectedSvcDurationBadge');
-            if (badge && selectedSvc) badge.textContent = formatServiceDuration(selectedSvc.duration);
-
+            if (badge && selectedSvc) badge.textContent = formatMinsHuman(cartDurationMins());
+            renderCartSummary();
             updatePayAmounts();
         }
 
-        window.selectSvc = function(id) {
-            selectedSvc = tenantData.services.find(function (s) { return s.id === id; });
+        function renderCartSummary() {
+            var box = document.getElementById('svcCartSummary');
+            if (!box) return;
+            var note = document.getElementById('svcCartNote');
+            if (note && !note.dataset.keep) note.classList.add('hidden');
+            if (note) delete note.dataset.keep;
+            if (!cartIsMulti()) { box.classList.add('hidden'); box.innerHTML = ''; return; }
+            var lines = cartLines();
+            var price = cartPrice();
+            var rows = lines.map(function (l) {
+                var p = servicePriceValuePublic(l.svc);
+                var lineMins = parseDurationMins(l.svc) * l.qty;
+                return '<li class="flex justify-between gap-3"><span class="text-slate-200">' + (l.qty > 1 ? (l.qty + ' × ') : '') + escHtml(l.svc.name) + '</span>'
+                    + '<span class="text-slate-400 whitespace-nowrap">' + escHtml(formatMinsHuman(lineMins)) + (p === null ? '' : (' · $' + roundMoneyPublic(p * l.qty).toFixed(2))) + '</span></li>';
+            }).join('');
+            box.innerHTML = '<div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Your booking</div>'
+                + '<ul class="space-y-1 text-xs">' + rows + '</ul>'
+                + '<div id="svcCartTotal" class="flex items-end justify-between gap-3 border-t border-slate-800 mt-2.5 pt-2.5">'
+                + '<div class="min-w-0"><div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total time</div>'
+                + '<div class="text-xl sm:text-2xl font-black leading-tight text-emerald-500 whitespace-nowrap">' + escHtml(formatMinsHuman(cartDurationMins())) + '</div></div>'
+                + (price === null ? '' : ('<div class="text-right"><div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total</div>'
+                + '<div class="text-xl sm:text-2xl font-black leading-tight text-emerald-500 whitespace-nowrap">$' + price.toFixed(2) + '</div></div>'))
+                + '</div>'
+                + '<p class="text-[11px] text-slate-400 mt-1.5">Everything is done back to back in one visit, so we look for a time with room for all of it.</p>';
+            box.classList.remove('hidden');
+        }
+
+        function cartNote(msg) {
+            var note = document.getElementById('svcCartNote');
+            if (!note) return;
+            note.textContent = msg;
+            note.dataset.keep = '1';
+            note.classList.remove('hidden');
+        }
+
+        function cartChanged() {
+            syncSelectedSvc();
             selectedTime = null;
             renderSvc();
             renderPay();
             generateDynamicTimeSlots();
+            updateRecurrencePreview();
+        }
+
+        function cartFits(nextCart) {
+            var keep = svcCart;
+            svcCart = nextCart;
+            var lines = cartLines();
+            var t = lines.reduce(function (n, l) { return n + parseDurationMins(l.svc) * l.qty; }, 0);
+            svcCart = keep;
+            return t <= MAX_BLOCK_MINS;
+        }
+
+        window.selectSvc = function(id) {
+            if (!findSvcById(id)) return;
+            var line = svcCart.find(function (l) { return l.id === id; });
+            // In a multi-service booking, tapping a chosen service keeps the rest of the booking.
+            if (line && svcCart.length > 1) return;
+            svcCart = [{ id: id, qty: line ? line.qty : 1 }];
+            cartChanged();
+        }
+
+        window.addSvc = function(id) {
+            if (!multiServiceEnabled() || !findSvcById(id)) return selectSvc(id);
+            if (svcCart.some(function (l) { return l.id === id; })) return changeSvcQty(id, 1);
+            var next = svcCart.concat([{ id: id, qty: 1 }]);
+            if (!cartFits(next)) { cartNote('That would be longer than ' + formatMinsHuman(MAX_BLOCK_MINS) + ' in one visit. Book the rest as a separate appointment.'); renderCartSummary(); return; }
+            svcCart = next;
+            cartChanged();
+        }
+
+        window.changeSvcQty = function(id, delta) {
+            var next = svcCart.map(function (l) { return { id: l.id, qty: l.id === id ? l.qty + delta : l.qty }; }).filter(function (l) { return l.qty > 0; });
+            if (!next.length) return;
+            var changed = next.find(function (l) { return l.id === id; });
+            if (changed && changed.qty > MAX_SVC_QTY) { cartNote('You can book up to ' + MAX_SVC_QTY + ' of the same service at once.'); renderCartSummary(); return; }
+            if (delta > 0 && !cartFits(next)) { cartNote('That would be longer than ' + formatMinsHuman(MAX_BLOCK_MINS) + ' in one visit. Book the rest as a separate appointment.'); renderCartSummary(); return; }
+            svcCart = next;
+            cartChanged();
         }
 
         window.prevMonth = function() {
@@ -12990,7 +13487,9 @@
                 });
             }
 
-            var durationMins = parseDurationMins(selectedSvc);
+            var durationMins = cartDurationMins();
+            var totalEl = document.getElementById('slotTotalTime');
+            if (totalEl) totalEl.textContent = formatMinsHuman(durationMins);
             var resolved = resolveHoursForDate(tenantData, selectedDateStr);
 
             if (resolved.closed) {
@@ -13017,7 +13516,7 @@
 
             var taken = (tenantData.publicSlots || [])
                 .filter(function (a) { return a && a.date === selectedDateStr && a.cancelled !== true && String(a.status || '').toLowerCase() !== 'cancelled' && String(a.status || '').toLowerCase() !== 'canceled'; })
-                .map(function (a) { return toMinutes(a.time); })
+                .map(function (a) { var st = toMinutes(a.time); return st === null ? null : { start: st, end: st + appointmentSpanMins(a) }; })
                 .filter(function (v) { return v !== null; });
 
             var now = new Date();
@@ -13042,8 +13541,8 @@
                         }
                     }
 
-                    var isTaken = taken.some(function (start) {
-                        return overlaps(t, slotEnd, start, start + durationMins);
+                    var isTaken = taken.some(function (tk) {
+                        return overlaps(t, slotEnd, tk.start, tk.end);
                     });
 
                     var isPast = isToday && t <= nowMins;
@@ -13063,11 +13562,11 @@
             }
 
             if (info) {
-                info.textContent = open.length + ' of ' + slots.length + ' open (' + durationMins + '-min)';
+                info.textContent = open.length + ' of ' + slots.length + ' times open';
             }
 
             if (!slots.length) {
-                container.innerHTML = '<div class="col-span-full p-4 text-center text-slate-400 bg-slate-900 border border-slate-800 rounded-xl text-xs font-bold">This service is longer than the opening hours for this day.</div>';
+                container.innerHTML = '<div class="col-span-full p-4 text-center text-slate-400 bg-slate-900 border border-slate-800 rounded-xl text-xs font-bold">This appointment is longer than the opening hours for this day.</div>';
                 return;
             }
 
@@ -13097,7 +13596,7 @@
         }
 
         function selectedServiceDepositQuote() {
-            return quoteDeposit(servicePriceValuePublic(selectedSvc));
+            return quoteDeposit(cartPrice());
         }
 
         // Payment code for manual payments (Cash App / Venmo / Zelle / PayPal / pay later). Easy to read:
@@ -13140,7 +13639,7 @@
             var manual = selectedPay === 'cashapp' || selectedPay === 'venmo' || selectedPay === 'zelle' || selectedPay === 'paypal';
             var quote = selectedServiceDepositQuote();
             if (!manual || quote.required) { box.classList.add('hidden'); return; }
-            var price = servicePriceValuePublic(selectedSvc);
+            var price = cartPrice();
             var amount = (price !== null && Number(price) > 0) ? ('$' + (Number.isInteger(Number(price)) ? String(Number(price)) : Number(price).toFixed(2))) : 'your payment';
             var handle = payCodeHandleFor(selectedPay);
             var biz = String(tenantData.name || 'the business');
@@ -13184,7 +13683,7 @@
             const container = document.getElementById('paymentMethodsGrid');
             const cardFieldsBox = document.getElementById('cardPaymentFieldsBox');
             var svcQuote = selectedServiceDepositQuote();
-            var svcPriced = servicePriceValuePublic(selectedSvc) !== null;
+            var svcPriced = cartPrice() !== null;
             if (bookingPlan() === 'free') {
                 selectedPay = 'later';
                 if (container) {
@@ -13243,7 +13742,7 @@
                 failPublicPay('Card checkout is on Pro only. This booking was not saved.');
                 method = 'later';
             }
-            if (method === 'card' && servicePriceValuePublic(selectedSvc) === null && !selectedServiceDepositQuote().required) {
+            if (method === 'card' && cartPrice() === null && !selectedServiceDepositQuote().required) {
                 failPublicPay('This service has no price set, so card checkout is unavailable.');
                 method = 'later';
             }
@@ -13278,6 +13777,11 @@
             if (onceRadio) onceRadio.checked = true;
             var countEl = document.getElementById('pubRecurrenceCount');
             if (countEl) countEl.value = '4';
+            customDates = {};
+            svcCart = tenantData.services[0] ? [{ id: tenantData.services[0].id, qty: 1 }] : [];
+            syncSelectedSvc();
+            renderSvc();
+            renderPay();
             updateRecurrencePreview();
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
@@ -13384,7 +13888,7 @@
                 return;
             }
 
-            if (!selectedSvc) {
+            if (!cartLines().length) {
                 fail('Please choose a service.');
                 return;
             }
@@ -13396,7 +13900,7 @@
 
             var recFreq = recurrenceEnabled() ? getSelectedRecurrenceFreq() : 'once';
             if (bookingPlan() === 'free' && recFreq !== 'once') {
-                fail('Free plan does not include recurring appointments. This booking was not saved.');
+                fail('Repeat visits aren’t available here. Please book one visit at a time. Nothing was saved.');
                 return;
             }
             if (bookingPlan() === 'free' && selectedPay !== 'later') {
@@ -13404,14 +13908,14 @@
                 return;
             }
             if (bookingPlan() !== 'pro' && recFreq !== 'once') {
-                fail('Repeating appointments are on Pro only. This booking was not saved.');
+                fail('Repeat visits aren’t available here. Please book one visit at a time. Nothing was saved.');
                 return;
             }
             if (bookingPlan() !== 'pro' && selectedPay === 'card') {
                 fail('Card checkout is on Pro only. This booking was not saved.');
                 return;
             }
-            var servicePrice = servicePriceValuePublic(selectedSvc);
+            var servicePrice = cartPrice();
             var depositQuote = quoteDeposit(servicePrice);
             if (selectedPay === 'card' && depositRequiredNow() && !depositQuote.required && !depositQuote.skippedNoPrice) {
                 fail('The deposit for this service is under $0.50, so card checkout cannot take it. Choose another way to pay.');
@@ -13421,15 +13925,18 @@
                 fail('This service has no price set, so card checkout is unavailable. Choose another payment option or pay at the appointment.');
                 return;
             }
-            var recCount = (recFreq === 'once') ? 1 : getSelectedRecurrenceCount();
-            var seriesDates = generateRecurringDates(selectedDateStr, recFreq, recCount);
+            if (recFreq === 'custom' && !Object.keys(customDates).length) recFreq = 'once';
+            var seriesEntries = buildSeriesEntries(recFreq);
+            var seriesDates = seriesEntries.map(function (en) { return en.date; });
             var conflictMsgs = [];
-            for (var ci = 0; ci < seriesDates.length; ci++) {
-                var reason = slotConflictReason(seriesDates[ci], selectedTime);
-                if (reason) conflictMsgs.push(seriesDates[ci] + ' — ' + reason);
+            for (var ci = 0; ci < seriesEntries.length; ci++) {
+                var reason = seriesEntries[ci].time ? slotConflictReason(seriesEntries[ci].date, seriesEntries[ci].time) : 'Pick a time';
+                if (reason) conflictMsgs.push(prettyDatePub(seriesEntries[ci].date) + ' — ' + reason);
             }
             if (conflictMsgs.length) {
-                fail('Cannot book this series. Conflicts: ' + conflictMsgs.join('; ') + '. Choose another time or reduce visits.');
+                fail(recFreq === 'custom'
+                    ? ('Some of your days need a different time: ' + conflictMsgs.join('; ') + '. Change the time or remove that day.')
+                    : ('Cannot book this series. Conflicts: ' + conflictMsgs.join('; ') + '. Choose another time or reduce visits.'));
                 updateRecurrencePreview();
                 generateDynamicTimeSlots();
                 return;
@@ -13485,7 +13992,8 @@
                     frequency: recFreq,
                     count: seriesDates.length,
                     total: seriesDates.length,
-                    dates: seriesDates.slice()
+                    dates: seriesDates.slice(),
+                    times: seriesEntries.map(function (en) { return en.time; })
                 };
 
                 function newStandaloneManageToken() {
@@ -13508,13 +14016,14 @@
                         clientName: name,
                         clientPhone: phone,
                         clientEmail: email,
-                        serviceName: selectedSvc ? selectedSvc.name : 'Service',
+                        serviceName: cartServiceName(),
+                        items: cartItems(),
                         date: d,
-                        time: selectedTime,
+                        time: (seriesEntries[idx] && seriesEntries[idx].time) || selectedTime,
                         paymentStatus: payStatus,
                         paymentMethod: selectedPay,
                         paymentOptionLabel: payOptLabel,
-                        durationMins: parseDurationMins(selectedSvc)
+                        durationMins: cartDurationMins()
                     };
                     if (bookingAmount !== null && bookingAmount !== undefined) b.amount = bookingAmount;
                     if (payByCard && depositQuote.required) {
@@ -13532,7 +14041,8 @@
                             count: recMetaBase.count,
                             index: idx + 1,
                             total: recMetaBase.total,
-                            dates: recMetaBase.dates.slice()
+                            dates: recMetaBase.dates.slice(),
+                            times: recMetaBase.times.slice()
                         };
                     } else {
                         b.recurrence = { frequency: 'once', count: 1, index: 1, total: 1, dates: [d] };
@@ -13614,6 +14124,16 @@
                 document.getElementById('resCode').textContent = '#' + refId;
                 document.getElementById('resDateDisplay').textContent = selectedDateStr;
                 document.getElementById('resTimeDisplay').textContent = selectedTime;
+                var resSvc = document.getElementById('resServiceLine');
+                if (resSvc) {
+                    if (cartIsMulti()) {
+                        var resPrice = cartPrice();
+                        resSvc.textContent = cartServiceName() + ' · ' + formatMinsHuman(cartDurationMins()) + (resPrice === null ? '' : (' · $' + resPrice.toFixed(2)));
+                        resSvc.classList.remove('hidden');
+                    } else {
+                        resSvc.classList.add('hidden');
+                    }
+                }
                 try { wireConfirmationCalendar(booking); } catch (calErr) { console.warn(calErr); }
                 var seriesBox = document.getElementById('resSeriesBox');
                 var seriesLabel = document.getElementById('resSeriesLabel');
@@ -13622,7 +14142,7 @@
                     if (bookings.length > 1) {
                         seriesBox.classList.remove('hidden');
                         if (seriesLabel) seriesLabel.textContent = recurrenceFreqLabel(recFreq) + ' series — ' + bookings.length + ' visits';
-                        seriesDatesEl.textContent = seriesDates.map(function (d) { return d + ' @ ' + selectedTime; }).join(' · ');
+                        seriesDatesEl.textContent = seriesEntries.map(function (en) { return en.date + ' @ ' + en.time; }).join(' · ');
                     } else {
                         seriesBox.classList.add('hidden');
                     }
@@ -13919,5 +14439,144 @@
             setTimeout(() => { toast.remove(); }, 3500);
         }
     </script>
+<script>
+/* Schedi Android app: owner push notifications. No-op in normal browsers. */
+(function () {
+    try {
+        var C = window.Capacitor;
+        if (!C || typeof C.isNativePlatform !== 'function' || !C.isNativePlatform()) return;
+        var P = C.Plugins && C.Plugins.PushNotifications;
+        if (!P) return;
+        var API = 'https://schedi.app/api/push-token';
+        var DONE_KEY = 'schedi.pushRegistered';
+        var fcmToken = '';
+        var busy = false;
+        var listenersOn = false;
+        function owner() {
+            try {
+                var session = localStorage.getItem('schedi.authSession') || '';
+                var meta = JSON.parse(localStorage.getItem('schedi.authMeta') || 'null') || {};
+                if (!session || meta.role !== 'owner' || !meta.tenantId) return null;
+                return { session: session, tenantId: String(meta.tenantId) };
+            } catch (e) { return null; }
+        }
+        function save() {
+            var o = owner();
+            if (!o || !fcmToken) return;
+            var mark = o.tenantId + '|' + fcmToken.slice(-24) + '|' + o.session.slice(-12);
+            try { if (localStorage.getItem(DONE_KEY) === mark) return; } catch (e) {}
+            fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'register', session: o.session, tenantId: o.tenantId, token: fcmToken }) })
+                .then(function (r) { return r.json(); })
+                .then(function (d) { if (d && d.ok) { try { localStorage.setItem(DONE_KEY, mark); } catch (e) {} } })
+                .catch(function () {});
+        }
+        function setup() {
+            if (busy || !owner()) return;
+            if (fcmToken) { save(); return; }
+            busy = true;
+            if (!listenersOn) {
+                listenersOn = true;
+                P.addListener('registration', function (t) { fcmToken = String((t && t.value) || ''); save(); });
+                P.addListener('registrationError', function () {});
+                P.addListener('pushNotificationActionPerformed', function (a) {
+                    var url = (a && a.notification && a.notification.data && a.notification.data.url) || 'https://schedi.app/login';
+                    if (/^https:\/\/schedi\.app\//.test(url) && location.href.indexOf('/login') === -1) location.href = url;
+                });
+            }
+            Promise.resolve(P.checkPermissions()).then(function (st) {
+                if (st && st.receive === 'prompt') return P.requestPermissions();
+                return st;
+            }).then(function (st) {
+                if (st && st.receive === 'granted' && !window.__schediPushReg) { window.__schediPushReg = 1; return P.register(); }
+            }).catch(function () {}).then(function () { busy = false; });
+        }
+        setup();
+        setInterval(setup, 5000);
+    } catch (e) {}
+})();
+</script>
+<script>
+(function () {
+    var last = 0, busy = false, lastAuto = 0;
+    function inOwnerPortal() {
+        var sec = document.getElementById('tenantPortalSection');
+        return !!(sec && !sec.classList.contains('hidden') && document.getElementById('tenantRosterTableBody') && typeof refreshPrivateBookings === 'function' && typeof schediAuthSession === 'function' && schediAuthSession());
+    }
+    function fmt() {
+        var el = document.getElementById('rosterUpdatedAt');
+        last = window.__schediRosterLoadedAt || last;
+        if (!el || !last) return;
+        var diff = Date.now() - last;
+        el.textContent = diff < 60000 ? 'Updated just now' : 'Updated ' + new Date(last).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    }
+    window.schediRosterStamp = fmt;
+    setInterval(fmt, 30000);
+    window.schediRefreshRoster = async function (src) {
+        if (busy || !inOwnerPortal()) return;
+        busy = true;
+        var icon = document.getElementById('rosterRefreshIcon'), btn = document.getElementById('rosterRefreshBtn');
+        if (icon) icon.className = 'fa-solid fa-spinner fa-spin';
+        if (btn) { btn.disabled = true; btn.setAttribute('aria-busy', 'true'); }
+        try { await refreshPrivateBookings(); } catch (e) {}
+        if (icon) icon.className = 'fa-solid fa-rotate-right';
+        if (btn) { btn.disabled = false; btn.removeAttribute('aria-busy'); }
+        busy = false; fmt();
+    };
+    function auto() {
+        if (Date.now() - lastAuto < 5000) return;
+        lastAuto = Date.now(); window.schediRefreshRoster('auto');
+    }
+    document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') auto(); });
+    window.addEventListener('focus', auto);
+    try {
+        var P = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.PushNotifications;
+        if (P && P.addListener) {
+            P.addListener('pushNotificationReceived', function () { window.schediRefreshRoster('push'); });
+            P.addListener('pushNotificationActionPerformed', function () { setTimeout(function () { window.schediRefreshRoster('push'); }, 400); });
+        }
+    } catch (e) {}
+    // Pull-to-refresh (touch, owner portal only)
+    var ind = null, startY = 0, startX = 0, pulling = false, dy = 0, TH = 70;
+    function indicator() {
+        if (!ind) { ind = document.createElement('div'); ind.id = 'schediPtr'; ind.setAttribute('aria-hidden', 'true'); ind.innerHTML = '<i class="fa-solid fa-rotate-right"></i>'; document.body.appendChild(ind); }
+        return ind;
+    }
+    function modalOpen() {
+        return !!Array.prototype.find.call(document.querySelectorAll('[id$="Modal"], [role="dialog"]'), function (m) {
+            return !m.classList.contains('hidden') && m.offsetParent !== null && getComputedStyle(m).position === 'fixed';
+        });
+    }
+    document.addEventListener('touchstart', function (e) {
+        pulling = false; dy = 0;
+        if (e.touches.length !== 1 || window.scrollY > 0 || busy || !inOwnerPortal() || modalOpen()) return;
+        var t = e.target;
+        while (t && t !== document.body) { if (t.scrollTop > 0) return; t = t.parentElement; }
+        startY = e.touches[0].clientY; startX = e.touches[0].clientX; pulling = true;
+    }, { passive: true });
+    document.addEventListener('touchmove', function (e) {
+        if (!pulling) return;
+        var y = e.touches[0].clientY - startY, x = e.touches[0].clientX - startX;
+        if (dy === 0 && Math.abs(x) > Math.abs(y)) { pulling = false; return; }
+        if (y <= 0 || window.scrollY > 0) { dy = 0; indicator().style.opacity = 0; return; }
+        dy = Math.min(y * 0.5, 110);
+        var el = indicator();
+        el.style.opacity = Math.min(1, dy / TH);
+        el.style.transform = 'translate(-50%,' + (dy - 40) + 'px) rotate(' + (dy * 4) + 'deg)';
+    }, { passive: true });
+    document.addEventListener('touchend', function () {
+        if (!pulling) return; pulling = false;
+        var el = indicator();
+        if (dy >= TH) {
+            el.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+            el.style.transform = 'translate(-50%, 16px)';
+            window.schediRefreshRoster('pull').then(function () {
+                el.style.opacity = 0; el.style.transform = 'translate(-50%,-48px)'; el.innerHTML = '<i class="fa-solid fa-rotate-right"></i>';
+            });
+        } else { el.style.opacity = 0; el.style.transform = 'translate(-50%,-48px)'; }
+        dy = 0;
+    }, { passive: true });
+})();
+</script>
 </body>
 </html>
