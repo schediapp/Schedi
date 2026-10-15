@@ -9,11 +9,12 @@ import {
 } from "../workers/schedi-email-worker/src/booking-notice.js";
 
 describe("minimum booking notice", () => {
-  it("defaults unknown values to 2 hours and keeps the allowed set", () => {
-    expect(normalizeMinNoticeHours(undefined)).toBe(2);
-    expect(normalizeMinNoticeHours(null)).toBe(2);
-    expect(normalizeMinNoticeHours(3)).toBe(2);
-    expect(normalizeMinNoticeHours("nope")).toBe(2);
+  it("treats a missing setting as none and keeps an explicit allowed value", () => {
+    expect(normalizeMinNoticeHours(undefined)).toBe(0);
+    expect(normalizeMinNoticeHours(null)).toBe(0);
+    expect(normalizeMinNoticeHours("")).toBe(0);
+    expect(normalizeMinNoticeHours(3)).toBe(0);
+    expect(normalizeMinNoticeHours("nope")).toBe(0);
     expect(normalizeMinNoticeHours("none")).toBe(0);
     expect(normalizeMinNoticeHours(0)).toBe(0);
     expect(normalizeMinNoticeHours("2")).toBe(2);
@@ -47,10 +48,13 @@ describe("minimum booking notice", () => {
     })).toBe(false);
   });
 
-  it("uses the business zone and the stored notice, defaulting to 2 hours", () => {
+  it("uses the business zone and the stored notice, and leaves unsaved businesses at none", () => {
     const now = new Date("2026-10-15T18:00:00.000Z"); // 2:00 PM EDT
-    expect(bookingNoticeError({ timezone: "America/New_York" }, { date: "2026-10-15", time: "03:00 PM" }, now)).toBe("too_soon");
-    expect(bookingNoticeError({ timezone: "America/New_York" }, { date: "2026-10-15", time: "04:00 PM" }, now)).toBe("");
+    expect(bookingNoticeError({ timezone: "America/New_York" }, { date: "2026-10-15", time: "03:00 PM" }, now)).toBe("");
+    expect(bookingNoticeError({ timezone: "America/New_York", minNoticeHours: null }, { date: "2026-10-15", time: "03:00 PM" }, now)).toBe("");
+    expect(bookingNoticeError({ timezone: "America/New_York", minNoticeHours: "" }, { date: "2026-10-15", time: "03:00 PM" }, now)).toBe("");
+    expect(bookingNoticeError({ timezone: "America/New_York", minNoticeHours: 2 }, { date: "2026-10-15", time: "03:00 PM" }, now)).toBe("too_soon");
+    expect(bookingNoticeError({ timezone: "America/New_York", minNoticeHours: 2 }, { date: "2026-10-15", time: "04:00 PM" }, now)).toBe("");
     expect(bookingNoticeError({ timezone: "America/New_York", minNoticeHours: 0 }, { date: "2026-10-15", time: "02:30 PM" }, now)).toBe("");
     expect(bookingNoticeError({ timeZone: "America/Los_Angeles", minNoticeHours: 24 }, { date: "2026-10-16", time: "10:00 AM" }, now)).toBe("too_soon");
     expect(bookingNoticeError({ timeZone: "America/Los_Angeles", minNoticeHours: 24 }, { date: "2026-10-16", time: "11:00 AM" }, now)).toBe("");

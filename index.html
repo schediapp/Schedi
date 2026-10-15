@@ -880,7 +880,7 @@
                                     <option value="24">24 hours</option>
                                     <option value="48">48 hours</option>
                                 </select>
-                                <p class="text-[10px] text-slate-500">Clients cannot request a start time inside this window. The default is 2 hours.</p>
+                                <p class="text-[10px] text-slate-500">Clients cannot request a start time inside this window. New businesses are saved at 2 hours. A business with no saved setting keeps none.</p>
                             </div>
                         </div>
                         <div class="pt-2 border-t border-slate-800/80 space-y-3 max-w-xl">
@@ -8012,7 +8012,7 @@
             var rawInterval = slotIntervalEl ? Number(slotIntervalEl.value) : 30;
             tenant.slotInterval = (rawInterval === 15 || rawInterval === 30 || rawInterval === 60) ? rawInterval : 30;
             var minNoticeEl = document.getElementById('tenantMinNotice');
-            tenant.minNoticeHours = getMinNoticeHours({ minNoticeHours: minNoticeEl ? minNoticeEl.value : 2 });
+            tenant.minNoticeHours = getMinNoticeHours({ minNoticeHours: minNoticeEl ? minNoticeEl.value : 0 });
             var addressEl = document.getElementById('tenantAddress');
             var address = cleanPublicAddress(addressEl ? addressEl.value : '');
             tenant.address = address;
@@ -8782,14 +8782,14 @@
         var MIN_NOTICE_CHOICES = [0, 1, 2, 4, 12, 24, 48];
         function getMinNoticeHours(tenant) {
             var raw = tenant && tenant.minNoticeHours;
-            if (raw == null || raw === '') return 2;
+            if (raw == null || raw === '') return 0;
             if (raw === 'none' || raw === 'None') return 0;
             var n = Number(raw);
             if (MIN_NOTICE_CHOICES.indexOf(n) !== -1) return n;
-            return 2;
+            return 0;
         }
         function ensureMinNoticeHours(tenant) {
-            if (!tenant || typeof tenant !== 'object') return 2;
+            if (!tenant || typeof tenant !== 'object') return 0;
             tenant.minNoticeHours = getMinNoticeHours(tenant);
             return tenant.minNoticeHours;
         }
@@ -12939,11 +12939,11 @@
         function bizTodayIso() { return zonedNow(getPubTimezone()).iso; }
         function getMinNoticeHoursPub(tenant) {
             var raw = tenant && tenant.minNoticeHours;
-            if (raw == null || raw === '') return 2;
+            if (raw == null || raw === '') return 0;
             if (raw === 'none' || raw === 'None') return 0;
             var n = Number(raw);
             if (n === 0 || n === 1 || n === 2 || n === 4 || n === 12 || n === 24 || n === 48) return n;
-            return 2;
+            return 0;
         }
         function slotInsideNotice(dateStr, startMins) {
             var hours = getMinNoticeHoursPub(tenantData);

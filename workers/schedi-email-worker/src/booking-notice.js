@@ -1,17 +1,19 @@
 /**
  * Minimum booking notice.
  * The public page hides start times inside this window. Create must reject them too.
- * Allowed values: 0 (none), 1, 2, 4, 12, 24, 48 hours. Missing or unknown values use 2.
+ * Allowed values: 0 (none), 1, 2, 4, 12, 24, 48 hours.
+ * A missing or unknown value is none, so existing businesses keep same-day slots.
+ * New businesses save 2 hours at signup.
  */
 
 export const MIN_NOTICE_HOURS = [0, 1, 2, 4, 12, 24, 48];
 
 export function normalizeMinNoticeHours(value) {
-  if (value == null || value === "") return 2;
+  if (value == null || value === "") return 0;
   if (value === "none" || value === "None") return 0;
   const n = Number(value);
   if (MIN_NOTICE_HOURS.indexOf(n) !== -1) return n;
-  return 2;
+  return 0;
 }
 
 export function parseClockMinutes(label) {
@@ -95,7 +97,7 @@ export function bookingStartsTooSoon({ date, time, timeZone, noticeHours, now })
   return startUtc.getTime() < moment.getTime() + hours * 60 * 60 * 1000;
 }
 
-/** '' or 'too_soon'. Uses the business zone and stored notice (default 2 hours). */
+/** '' or 'too_soon'. Uses the business zone and stored notice (none when unsaved). */
 export function bookingNoticeError(tenant, booking, now) {
   if (!booking) return "";
   const hours = normalizeMinNoticeHours(tenant && tenant.minNoticeHours);

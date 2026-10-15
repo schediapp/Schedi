@@ -71,7 +71,10 @@ describe("booking page audit copy", () => {
     for (const value of ["0", "1", "2", "4", "12", "24", "48"]) {
       expect(html).toContain('value="' + value + '"');
     }
-    expect(html).toContain("The default is 2 hours.");
+    expect(html).toContain("New businesses are saved at 2 hours.");
+    expect(html).toContain("A business with no saved setting keeps none.");
+    expect(html).toContain("if (raw == null || raw === '') return 0;");
+    expect(html).toContain("minNoticeHours: 2");
     expect(html).toContain("function slotInsideNotice");
     expect(html).toContain("function getMinNoticeHoursPub");
     expect(html).toContain("if (slotInsideNotice(selectedDateStr, t))");
