@@ -2,6 +2,7 @@ import type Stripe from "stripe";
 import type { Store } from "./db";
 import { SchediError } from "./errors";
 import { assertNoForbiddenKeys, integrationIdentifier } from "./statement";
+import { ownerCheckoutCustomText } from "./public-owner-billing";
 import { applySubscriptionState } from "./subscription-state";
 import type { Owner, Plan } from "./types";
 import { PLANS } from "./types";
@@ -89,6 +90,7 @@ export async function startOwnerSubscription(
     subscription_data: {
       metadata: { schedi_owner_id: owner.id, plan },
     },
+    custom_text: ownerCheckoutCustomText(),
     integration_identifier: integrationIdentifier("schedi_owner_sub"),
   };
   assertNoForbiddenKeys(params);
@@ -126,8 +128,20 @@ export async function changeSubscriptionPlan(
 export async function cancelOwnerSubscription(store: Store, stripe: Stripe, ownerId: string): Promise<void> {
   const business = store.getBusinessByOwner(ownerId);
   if (!business?.stripeSubscriptionId) throw new SchediError("There is no subscription to cancel.", 409);
-  const canceled = await stripe.subscriptions.cancel(business.stripeSubscriptionId);
-  applySubscriptionState(store, ownerId, canceled);
+  const updateParams: Stripe.SubscriptionUpdateParams = { cancel_at_period_end: true };
+  assertNoForbiddenKeys(updateParams);
+  const updated = await stripe.subscriptions.update(business.stripeSubscriptionId, updateParams);
+  applySubscriptionState(store, ownerId, updated);
+}
+
+export async function resumeOwnerSubscription(store: Store, stripe: Stripe, ownerId: string): Promise<void> {
+  const business = store.getBusinessByOwner(ownerId);
+  if (!business?.stripeSubscriptionId) throw new SchediError("There is no subscription to resume.", 409);
+  if (!business.cancelAtPeriodEnd) throw new SchediError("This subscription is not scheduled to cancel.", 409);
+  const updateParams: Stripe.SubscriptionUpdateParams = { cancel_at_period_end: false };
+  assertNoForbiddenKeys(updateParams);
+  const updated = await stripe.subscriptions.update(business.stripeSubscriptionId, updateParams);
+  applySubscriptionState(store, ownerId, updated);
 }
 
 export async function fulfillOwnerCheckout(
@@ -147,6 +161,8 @@ export async function fulfillOwnerCheckout(
     status: "active",
     plan,
     stripeSubscriptionId: subscriptionId,
+    cancelAtPeriodEnd: false,
+    currentPeriodEnd: null,
   });
 }
 

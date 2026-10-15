@@ -72,6 +72,8 @@ interface BusinessRow {
   plan: Plan;
   subscription_status: SubscriptionStatus;
   stripe_subscription_id: string | null;
+  cancel_at_period_end: number;
+  current_period_end: string | null;
   stripe_account_id: string | null;
   card_payments_status: string | null;
   payouts_status: string | null;
@@ -127,6 +129,8 @@ function mapBusiness(row: BusinessRow): Business {
     plan: row.plan,
     subscriptionStatus: row.subscription_status,
     stripeSubscriptionId: row.stripe_subscription_id,
+    cancelAtPeriodEnd: row.cancel_at_period_end === 1,
+    currentPeriodEnd: row.current_period_end,
     stripeAccountId: row.stripe_account_id,
     cardPaymentsStatus: row.card_payments_status,
     payoutsStatus: row.payouts_status,
@@ -188,6 +192,8 @@ export class Store {
         plan TEXT NOT NULL,
         subscription_status TEXT NOT NULL,
         stripe_subscription_id TEXT,
+        cancel_at_period_end INTEGER NOT NULL DEFAULT 0,
+        current_period_end TEXT,
         stripe_account_id TEXT,
         card_payments_status TEXT,
         payouts_status TEXT,
@@ -233,6 +239,7 @@ export class Store {
         processed_at TEXT NOT NULL
       );
     `);
+    ensureBusinessBillingColumns(this.db);
   }
 
   createOwner(input: { email: string; name: string; stripeCustomerId?: string | null }): Owner {
@@ -389,20 +396,33 @@ export class Store {
 
   setSubscription(
     ownerId: string,
-    patch: { status: SubscriptionStatus; plan?: Plan; stripeSubscriptionId?: string | null },
+    patch: {
+      status: SubscriptionStatus;
+      plan?: Plan;
+      stripeSubscriptionId?: string | null;
+      cancelAtPeriodEnd?: boolean;
+      currentPeriodEnd?: string | null;
+    },
   ): Business {
     const business = this.getBusinessByOwner(ownerId);
     if (!business) throw new SchediError("Business not found.", 404);
+    const cancelAtPeriodEnd =
+      patch.cancelAtPeriodEnd === undefined ? business.cancelAtPeriodEnd : patch.cancelAtPeriodEnd;
+    const currentPeriodEnd =
+      patch.currentPeriodEnd === undefined ? business.currentPeriodEnd : patch.currentPeriodEnd;
     this.db
       .prepare(
         `UPDATE businesses
-         SET subscription_status = ?, plan = ?, stripe_subscription_id = ?
+         SET subscription_status = ?, plan = ?, stripe_subscription_id = ?,
+             cancel_at_period_end = ?, current_period_end = ?
          WHERE id = ?`,
       )
       .run(
         patch.status,
         patch.plan ?? business.plan,
         patch.stripeSubscriptionId === undefined ? business.stripeSubscriptionId : patch.stripeSubscriptionId,
+        cancelAtPeriodEnd ? 1 : 0,
+        currentPeriodEnd,
         business.id,
       );
     return this.getBusiness(business.id);
@@ -528,6 +548,17 @@ export class Store {
 
   deleteSession(token: string): void {
     this.db.prepare("DELETE FROM sessions WHERE token = ?").run(token);
+  }
+}
+
+function ensureBusinessBillingColumns(db: DatabaseSync): void {
+  const rows = db.prepare("PRAGMA table_info(businesses)").all() as { name: string }[];
+  const names = new Set(rows.map((row) => row.name));
+  if (!names.has("cancel_at_period_end")) {
+    db.exec("ALTER TABLE businesses ADD COLUMN cancel_at_period_end INTEGER NOT NULL DEFAULT 0");
+  }
+  if (!names.has("current_period_end")) {
+    db.exec("ALTER TABLE businesses ADD COLUMN current_period_end TEXT");
   }
 }
 

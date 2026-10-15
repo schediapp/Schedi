@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { cancelOwnerSubscription, ensureOwnerCustomer, startOwnerSubscription } from "../src/lib/billing";
+import { cancelOwnerSubscription, ensureOwnerCustomer, resumeOwnerSubscription, startOwnerSubscription } from "../src/lib/billing";
 import { isPublicPageLive } from "../src/lib/readiness";
+import { OWNER_SUBSCRIPTION_POLICY_SHORT, planStaysActiveUntil } from "../src/lib/subscription-policy";
+import { STRIPE_CHECKOUT_SUBMIT_MESSAGE_MAX } from "../src/lib/public-owner-billing";
 import { PLANS } from "../src/lib/types";
-import { createFakeStripe, keysDeep, memoryStore, seedProBusiness } from "./helpers";
+import { createFakeStripe, FAKE_PERIOD_END_ISO, keysDeep, memoryStore, seedProBusiness } from "./helpers";
 
 describe("owner subscriptions on the platform account", () => {
   it("reuses one platform customer and does not pass customer_account", async () => {
@@ -29,12 +31,17 @@ describe("owner subscriptions on the platform account", () => {
       customer: string;
       line_items: Array<{ price: string }>;
       integration_identifier: string;
+      custom_text?: { submit?: { message?: string } };
     };
     const options = checkout?.args[1] as { stripeAccount?: string } | undefined;
     expect(params.mode).toBe("subscription");
     expect(params.customer).toBe("cus_existing");
     expect(params.line_items[0]?.price).toBe("price_schedi_pro_monthly");
     expect(params.integration_identifier).toMatch(/^schedi_owner_sub_[a-z]{8}$/);
+    expect(params).toMatchObject({
+      custom_text: { submit: { message: OWNER_SUBSCRIPTION_POLICY_SHORT } },
+    });
+    expect(OWNER_SUBSCRIPTION_POLICY_SHORT.length).toBeLessThanOrEqual(STRIPE_CHECKOUT_SUBMIT_MESSAGE_MAX);
     expect(options?.stripeAccount).toBeUndefined();
     expect(keysDeep(params).has("customer_account")).toBe(false);
     expect(keysDeep(params).has("application_fee_amount")).toBe(false);
@@ -85,7 +92,7 @@ describe("owner subscriptions on the platform account", () => {
     expect(store.getBusinessByOwner(owner.id)?.plan).toBe("pro");
   });
 
-  it("pauses the public page when the owner subscription is canceled", async () => {
+  it("schedules cancellation at period end and keeps the public page live", async () => {
     const store = memoryStore();
     const { owner, business } = seedProBusiness(store, { stripeSubscriptionId: "sub_pro" });
     const stripe = createFakeStripe();
@@ -93,7 +100,37 @@ describe("owner subscriptions on the platform account", () => {
     await cancelOwnerSubscription(store, stripe, owner.id);
 
     const saved = store.getBusiness(business.id);
-    expect(saved.subscriptionStatus).toBe("canceled");
-    expect(isPublicPageLive(saved.subscriptionStatus)).toBe(false);
+    expect(stripe.calls.some((call) => call.method === "subscriptions.cancel")).toBe(false);
+    const update = stripe.calls.find((call) => call.method === "subscriptions.update");
+    expect(update?.args[1]).toMatchObject({ cancel_at_period_end: true });
+    expect(saved.subscriptionStatus).toBe("active");
+    expect(saved.plan).toBe("pro");
+    expect(saved.cancelAtPeriodEnd).toBe(true);
+    expect(saved.currentPeriodEnd).toBe(FAKE_PERIOD_END_ISO);
+    expect(isPublicPageLive(saved.subscriptionStatus)).toBe(true);
+    expect(planStaysActiveUntil(saved.currentPeriodEnd!)).toBe("Your plan stays active until November 7, 2026");
+  });
+
+  it("resumes a subscription that was scheduled to cancel", async () => {
+    const store = memoryStore();
+    const { owner, business } = seedProBusiness(store, { stripeSubscriptionId: "sub_pro" });
+    const stripe = createFakeStripe();
+
+    await cancelOwnerSubscription(store, stripe, owner.id);
+    await resumeOwnerSubscription(store, stripe, owner.id);
+
+    const saved = store.getBusiness(business.id);
+    const updates = stripe.calls.filter((call) => call.method === "subscriptions.update");
+    expect(updates[1]?.args[1]).toMatchObject({ cancel_at_period_end: false });
+    expect(saved.subscriptionStatus).toBe("active");
+    expect(saved.cancelAtPeriodEnd).toBe(false);
+    expect(isPublicPageLive(saved.subscriptionStatus)).toBe(true);
+  });
+
+  it("does not resume a subscription that is not scheduled to cancel", async () => {
+    const store = memoryStore();
+    const { owner } = seedProBusiness(store, { stripeSubscriptionId: "sub_pro" });
+    const stripe = createFakeStripe();
+    await expect(resumeOwnerSubscription(store, stripe, owner.id)).rejects.toThrow(/not scheduled to cancel/);
   });
 });

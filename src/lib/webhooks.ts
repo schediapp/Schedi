@@ -89,16 +89,30 @@ function applyPlatformEvent(store: Store, event: Stripe.Event): void {
         status: "active",
         plan,
         stripeSubscriptionId: subscriptionId,
+        cancelAtPeriodEnd: false,
+        currentPeriodEnd: null,
       });
       return;
     }
-    case "customer.subscription.updated":
+    case "customer.subscription.updated": {
+      const subscription = event.data.object as Stripe.Subscription;
+      const ownerId = ownerIdForSubscription(store, subscription);
+      if (!ownerId) return;
+      // Scheduling cancel_at_period_end keeps status active. Access ends only when
+      // Stripe deletes the subscription at the end of the paid period.
+      if (subscription.status === "canceled") return;
+      applySubscriptionState(store, ownerId, subscription);
+      return;
+    }
     case "customer.subscription.deleted": {
       const subscription = event.data.object as Stripe.Subscription;
       const ownerId = ownerIdForSubscription(store, subscription);
       if (!ownerId) return;
-      const status = event.type === "customer.subscription.deleted" ? "canceled" : subscription.status;
-      applySubscriptionState(store, ownerId, { ...subscription, status });
+      applySubscriptionState(store, ownerId, {
+        ...subscription,
+        status: "canceled",
+        cancel_at_period_end: false,
+      });
       return;
     }
     case "invoice.payment_failed": {

@@ -1,6 +1,8 @@
 // Public marketing copy served as HTML by the schedi-web Worker.
 // Plan facts match the business portal: Free $0, Starter $29/mo, Pro $49/mo.
 
+import { OWNER_SUBSCRIPTION_POLICY_TERMS } from "../src/lib/subscription-policy";
+
 export const APEX_ORIGIN = "https://schedi.app";
 
 export type Faq = { question: string; answer: string };
@@ -84,7 +86,8 @@ export const MARKETING_PAGES: MarketingPage[] = [
       {
         question: "What does Schedi cost?",
         answer:
-          "Free is $0. Starter is $29 a month. Pro is $49 a month. Nothing is charged until checkout finishes. A business owner can ask for a refund of the first paid Schedi subscription charge within 15 days by emailing admin@schedi.app.",
+          "Free is $0. Starter is $29 a month. Pro is $49 a month. Nothing is charged until checkout finishes. " +
+          OWNER_SUBSCRIPTION_POLICY_TERMS.join(" "),
       },
       {
         question: "Can clients pay by card?",
@@ -163,12 +166,12 @@ export const MARKETING_PAGES: MarketingPage[] = [
       },
       {
         question: "Can I get a refund?",
-        answer:
-          "A business owner can get a refund of their first paid Schedi subscription charge if they ask within 15 days of that charge. Email admin@schedi.app with the business name and the charge date. This covers Schedi plan fees, not a client's appointment deposit.",
+        answer: OWNER_SUBSCRIPTION_POLICY_TERMS.join(" "),
       },
     ],
     bodyHtml: [
       p("Prices are monthly. Upgrade or switch from the business portal. Nothing is charged until checkout finishes."),
+      ...OWNER_SUBSCRIPTION_POLICY_TERMS.map((paragraph) => p(paragraph)),
       `<table>
         <caption>Plan comparison</caption>
         <thead>
@@ -190,7 +193,7 @@ export const MARKETING_PAGES: MarketingPage[] = [
       p(PLAN_FACTS),
       p("Owner subscriptions bill on the Schedi platform account. Client card payments are separate: they are direct charges on the connected account the business finishes in Stripe. Cash App, Zelle, Venmo, PayPal, and pay at the appointment do not create a Stripe charge."),
       p(reminders + " " + shareLink),
-      p("A failed or canceled owner subscription pauses the public booking page. A failed client card does not, by itself, pause the page."),
+      p("A failed payment, or a subscription that has ended, pauses the public booking page. Canceling keeps access until the paid period ends and does not pause the page. Complimentary plans are unaffected. A failed client card does not, by itself, pause the page."),
       `<p>Pages for specific businesses: <a href="/for/barbers">barbers</a>, <a href="/for/hair-salons">hair salons</a>, <a href="/for/nail-salons">nail salons</a>, <a href="/for/cleaning-services">cleaners</a>, <a href="/for/pet-groomers">pet groomers</a>, <a href="/for/personal-trainers">trainers</a>, <a href="/for/tattoo-artists">tattoo artists</a>, and <a href="/for/massage-therapists">massage therapists</a>.</p>`,
       signupCta,
     ].join("\n"),
@@ -226,6 +229,7 @@ export const MARKETING_PAGES: MarketingPage[] = [
       `<section><h2>Payments</h2><ol><li>Open Payment Options.</li><li>Free only allows Pay at Appointment.</li><li>Starter can use Cash App, Venmo, Zelle, PayPal, and Pay at Appointment. Card checkout is not offered.</li><li>Pro can also turn on Credit / Debit Card (Stripe).</li><li>On Pro, Appointment deposit can be a percent of the service price or a fixed amount. It stays off until you turn it on. Percent deposits skip services with no price; card checkout also needs a price. Free and Starter cannot collect a card deposit.</li><li>Cancellation fee stays off until you turn it on. Set the hours (default 24) and a percent or a fixed amount. Pro charges a card already used for that visit. Free and Starter only show the rule.</li><li>Click Save Payment Gateways.</li></ol></section>`,
       `<section><h2>Appointments</h2><ol><li>Open Appointments Roster.</li><li>Free bookings are confirmed as soon as the client reserves.</li><li>Starter and Pro bookings stay pending. Click Accept or Deny. Deny frees that time.</li><li>Mark paid, Reschedule, and Cancel are on the same row.</li><li>Add Manual Appointment records a visit you took in person.</li></ol></section>`,
       `<section><h2>Repeating visits</h2><ol><li>Open Email Confirmations.</li><li>On Pro, turn on Allow recurring appointments and click Save Email Settings.</li><li>Free and Starter do not show repeating visits on the booking page.</li></ol></section>`,
+      `<section><h2>Your Schedi plan</h2>${OWNER_SUBSCRIPTION_POLICY_TERMS.map((paragraph) => p(paragraph)).join("")}<p>Use Cancel subscription to stop renewal at the end of the paid period. Resume subscription if you change your mind before then. Card updates stay in Manage billing.</p></section>`,
       `<section><h2>Your public page</h2><p>The link at the top of the portal is the booking page. Copy link and Share use https://schedi.app/ and your slug. Put that link in a text or on a QR code you print. Clients who need booking steps can open <a href="/help/booking">booking help</a> from the business page.</p></section>`,
       `<p><a href="/">Back to Schedi</a> · <a href="/pricing">Pricing</a> · <a href="/signup">Sign up</a></p>`,
     ].join("\n"),
@@ -234,7 +238,7 @@ export const MARKETING_PAGES: MarketingPage[] = [
     path: "/terms",
     title: "Terms of Service | Schedi",
     description:
-      "Booking data, plan fees, and the 15-day refund on a first paid Schedi subscription. Not a substitute for a lawyer.",
+      "Owner plans are month-to-month with no contract. Cancel at period end. A first payment is refundable within 15 days.",
     h1: "Terms of Service",
     faqs: [],
     bodyHtml: [
@@ -242,8 +246,7 @@ export const MARKETING_PAGES: MarketingPage[] = [
       p("The business owner is the controller of that appointment data. Schedi is the processor. Stripe and Firebase/Google are sub-processors."),
       p("Appointments are kept until the business or Schedi deletes them."),
       p("Schedi is not HIPAA compliant and must not be used to collect protected health information. That includes businesses using the Medical / Healthcare preset."),
-      p("A business owner can get a refund of their first paid Schedi subscription charge if they ask within 15 days of that charge. After 15 days, that month is not refunded. Canceling still stops the next renewal. This covers Schedi plan fees (Starter $29, Pro $49), not a client's appointment deposit or a payment a business collects from its own customer."),
-      p("Owners request a refund by emailing admin@schedi.app with the business name and the charge date, within 15 days of the first paid Schedi subscription charge."),
+      ...OWNER_SUBSCRIPTION_POLICY_TERMS.map((paragraph) => p(paragraph)),
       p("This page describes how the product works today. It is not a substitute for a lawyer."),
       `<p><a href="/privacy">Privacy Policy</a></p>`,
       `<p><a href="/">Back to Schedi</a></p>`,
