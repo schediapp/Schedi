@@ -3,6 +3,11 @@
  * Full bookings (name, email, phone, manage token) live in Worker KV.
  * Firestore only gets slot docs with date, time, duration, status, and service name.
  * Slot writes use the Firebase Admin service account so browser rules can deny client writes.
+ *
+ * Portal saves (`sync`) merge by booking id. A booking the client did not send stays
+ * as stored, so a stale roster cannot delete or replace a booking it never loaded.
+ * Only action `delete` removes a booking, and only that id. A client that sends the
+ * rosterRevision from an older read gets 409 and must reload.
  */
 import { readSession } from './owner-auth.js';
 import { isUnpaidPast } from './unpaid-digest.js';
@@ -342,30 +347,81 @@ function mergeById(primary, extra) {
   return Array.from(map.values()).slice(0, MAX_BOOKINGS);
 }
 
+function rosterFromStored(data) {
+  if (Array.isArray(data)) return { appointments: data, revision: 0 };
+  const appointments = data && Array.isArray(data.appointments) ? data.appointments : [];
+  const revision = Number(data && data.revision);
+  return {
+    appointments,
+    revision: Number.isFinite(revision) && revision >= 0 ? Math.floor(revision) : 0,
+  };
+}
+
 async function readPrivateRecord(env, tenantId) {
-  if (!env.AUTH_KV) return [];
+  if (!env.AUTH_KV) return { appointments: [], revision: 0 };
   const raw = await env.AUTH_KV.get(PRIVATE_PREFIX + tenantId);
-  if (!raw) return [];
+  if (!raw) return { appointments: [], revision: 0 };
   try {
-    const data = JSON.parse(raw);
-    return Array.isArray(data) ? data : (Array.isArray(data.appointments) ? data.appointments : []);
+    return rosterFromStored(JSON.parse(raw));
   } catch (_) {
-    return [];
+    return { appointments: [], revision: 0 };
   }
 }
 
-export async function loadPrivateAppointments(env, tenantId) {
+export async function loadPrivateRoster(env, tenantId) {
   const id = clip(tenantId, 80);
-  if (!id) return [];
+  if (!id) return { appointments: [], revision: 0 };
   return readPrivateRecord(env, id);
 }
 
-export async function savePrivateAppointments(env, tenantId, appointments) {
+export async function loadPrivateAppointments(env, tenantId) {
+  const roster = await loadPrivateRoster(env, tenantId);
+  return roster.appointments;
+}
+
+export async function savePrivateAppointments(env, tenantId, appointments, prevRevision) {
   const id = clip(tenantId, 80);
   if (!id || !env.AUTH_KV) throw new Error('private_store_unavailable');
   const list = (Array.isArray(appointments) ? appointments : []).slice(0, MAX_BOOKINGS);
-  await env.AUTH_KV.put(PRIVATE_PREFIX + id, JSON.stringify({ appointments: list }));
+  let base = prevRevision;
+  if (base === undefined || base === null || !Number.isFinite(Number(base))) {
+    const cur = await loadPrivateRoster(env, id);
+    base = cur.revision;
+  }
+  const revision = Math.floor(Number(base) || 0) + 1;
+  await env.AUTH_KV.put(PRIVATE_PREFIX + id, JSON.stringify({ appointments: list, revision }));
+  list.rosterRevision = revision;
   return list;
+}
+
+/**
+ * Full-list save merge. Client rows update bookings the client already had (owner edits).
+ * Server bookings whose ids are absent stay byte-for-byte as stored. Client-only rows
+ * (a booking the owner just added) are appended. Unknown rows are kept even at the cap.
+ */
+export function mergeRosterSync(stored, incoming) {
+  const storedById = new Map();
+  for (const item of stored || []) {
+    if (!item || !item.id) continue;
+    const id = String(item.id);
+    if (!storedById.has(id)) storedById.set(id, item);
+  }
+  const seen = new Set();
+  const fromClient = [];
+  for (const item of incoming || []) {
+    if (!item || !item.id) continue;
+    const id = String(item.id);
+    if (seen.has(id)) continue;
+    seen.add(id);
+    fromClient.push(item);
+  }
+  const unknown = [];
+  for (const [id, item] of storedById) {
+    if (!seen.has(id)) unknown.push(item);
+  }
+  if (fromClient.length + unknown.length <= MAX_BOOKINGS) return fromClient.concat(unknown);
+  const room = Math.max(0, MAX_BOOKINGS - unknown.length);
+  return fromClient.slice(0, room).concat(unknown);
 }
 
 async function authHeader(idToken) {
@@ -561,21 +617,40 @@ function applyServerOnlyFields(booking, prev, options) {
 
 export async function persistTenantAppointments(env, idToken, tenantId, appointments, options) {
   const token = idToken || await firebaseAnonymousToken(env);
-  const previous = await loadPrivateAppointments(env, tenantId);
+  const roster = await loadPrivateRoster(env, tenantId);
+  const required = options && options.requireRevision;
+  if (required !== undefined && required !== null) {
+    const want = Math.floor(Number(required));
+    if (!Number.isFinite(want) || want !== roster.revision) {
+      const err = new Error('stale_roster');
+      err.code = 'stale_roster';
+      err.rosterRevision = roster.revision;
+      throw err;
+    }
+  }
+  const previous = roster.appointments;
   const prevById = new Map();
   for (const item of previous) {
     if (item && item.id) prevById.set(String(item.id), item);
   }
-  const clean = (appointments || []).map((item) => {
+  const drop = new Set(
+    (options && Array.isArray(options.removeIds) ? options.removeIds : [])
+      .map((id) => String(id || ''))
+      .filter(Boolean)
+  );
+  // Every full-list write keeps bookings that are not in this payload. Delete passes removeIds.
+  const merged = mergeRosterSync(previous, appointments).filter((item) => item && item.id && !drop.has(String(item.id)));
+  const clean = merged.map((item) => {
     const booking = sanitizeBooking(item, tenantId);
     if (!booking) return null;
     return applyServerOnlyFields(booking, prevById.get(String(booking.id)), options);
   }).filter(Boolean);
   // Existing codes win over newcomers: order by createdAt so a re-rolled duplicate is always the newer booking.
   ensurePayCodes(clean.slice().sort((a, b) => String(a.createdAt || '').localeCompare(String(b.createdAt || ''))));
-  await savePrivateAppointments(env, tenantId, clean);
+  const saved = await savePrivateAppointments(env, tenantId, clean, roster.revision);
   await syncPublicSlots(env, token, tenantId, clean);
   await addClientsForNewlyConfirmed(env, tenantId, clean, prevById);
+  clean.rosterRevision = saved.rosterRevision;
   return clean;
 }
 
@@ -602,17 +677,21 @@ export async function hydrateTenantBookings(env, idToken, tenant) {
   if (!tenant || !tenant.id) return tenant;
   const hadField = Object.prototype.hasOwnProperty.call(tenant, 'appointments');
   const legacy = hadField && Array.isArray(tenant.appointments) ? tenant.appointments : [];
-  let stored = await loadPrivateAppointments(env, tenant.id);
+  const roster = await loadPrivateRoster(env, tenant.id);
+  let stored = roster.appointments;
+  let revision = roster.revision;
   if (hadField) {
     const legacyClean = legacy.map((item) => sanitizeBooking(item, tenant.id)).filter(Boolean);
     const merged = mergeById(stored, legacyClean);
-    await savePrivateAppointments(env, tenant.id, merged);
+    const saved = await savePrivateAppointments(env, tenant.id, merged, revision);
+    revision = saved.rosterRevision;
     await syncPublicSlots(env, idToken, tenant.id, merged);
     await deleteFirestoreField(env, idToken, tenant.id, 'appointments');
     delete tenant.appointments;
     stored = merged;
   }
   tenant.appointments = stored || [];
+  tenant.rosterRevision = revision;
   return tenant;
 }
 
@@ -671,6 +750,13 @@ function randomBookingId() {
   const bytes = new Uint8Array(4);
   crypto.getRandomValues(bytes);
   return 'BK-' + Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+}
+
+function clientRosterRevision(value) {
+  if (value === undefined || value === null || value === '') return null;
+  const n = Number(value);
+  if (!Number.isFinite(n) || n < 0 || n > 1e15) return null;
+  return Math.floor(n);
 }
 
 async function sessionCanAccess(env, sessionToken, tenantId) {
@@ -829,6 +915,7 @@ export async function handlePrivateBookingHttp(request, env, origin, path, deps,
       tenants: visible.map((t) => ({
         id: t.id,
         appointments: (t.appointments || []).map(bookingForClient),
+        rosterRevision: Number.isFinite(Number(t.rosterRevision)) ? Math.floor(Number(t.rosterRevision)) : 0,
       })),
     }, 200, origin, isAllowedOrigin);
   }
@@ -873,11 +960,26 @@ export async function handlePrivateBookingHttp(request, env, origin, path, deps,
     const tenantId = clip(body.tenantId, 48);
     const session = await sessionCanAccess(env, body.session, tenantId);
     if (!session) return respond(json, { ok: false, error: 'forbidden' }, 403, origin, isAllowedOrigin);
-    const clean = (Array.isArray(body.appointments) ? body.appointments : []).map((item) => sanitizeBooking(item, tenantId)).filter(Boolean);
+    const incoming = (Array.isArray(body.appointments) ? body.appointments : []).map((item) => sanitizeBooking(item, tenantId)).filter(Boolean);
     const idToken = await firebaseAnonymousToken(env);
     let before = [];
     try { before = await loadPrivateAppointments(env, tenantId); } catch (_) { before = []; }
-    const saved = await persistTenantAppointments(env, idToken, tenantId, clean);
+    let saved;
+    try {
+      // Missing rosterRevision is a page from before this fix: still merge, never replace.
+      saved = await persistTenantAppointments(env, idToken, tenantId, incoming, {
+        requireRevision: clientRosterRevision(body.rosterRevision),
+      });
+    } catch (err) {
+      if (err && err.code === 'stale_roster') {
+        return respond(json, {
+          ok: false,
+          error: 'stale_roster',
+          rosterRevision: Number(err.rosterRevision) || 0,
+        }, 409, origin, isAllowedOrigin);
+      }
+      throw err;
+    }
     // Owner/agency cancelled from the portal: alert the owner once per booking (gated in owner-notify).
     try {
       const wasLive = new Set((before || []).filter((a) => a && a.id && !isCancelled(a)).map((a) => String(a.id)));
@@ -891,7 +993,11 @@ export async function handlePrivateBookingHttp(request, env, origin, path, deps,
     } catch (errN) {
       console.warn('owner-cancel sync diff failed', errN && errN.message ? errN.message : errN);
     }
-    return respond(json, { ok: true, count: clean.length }, 200, origin, isAllowedOrigin);
+    return respond(json, {
+      ok: true,
+      count: saved.length,
+      rosterRevision: Number(saved.rosterRevision) || 0,
+    }, 200, origin, isAllowedOrigin);
   }
 
   if (action === 'client') {
@@ -979,11 +1085,11 @@ export async function handlePrivateBookingHttp(request, env, origin, path, deps,
     }
     const idToken = await firebaseAnonymousToken(env);
     const existing = await loadPrivateAppointments(env, tenantId);
-    const next = (existing || []).filter((a) => !(a && String(a.id) === String(bookingId)));
-    if (next.length === (existing || []).length) {
+    if (!(existing || []).some((a) => a && String(a.id) === String(bookingId))) {
       return respond(json, { ok: false, error: 'not_found' }, 404, origin, isAllowedOrigin);
     }
-    await persistTenantAppointments(env, idToken, tenantId, next);
+    // Union this read with the read inside the write, then drop only this id.
+    const next = await persistTenantAppointments(env, idToken, tenantId, existing, { removeIds: [bookingId] });
     try { await deleteSlotDoc(env, tenantId, slotDocId(bookingId)); } catch (errSlot) {
       console.warn('delete slot cleanup', errSlot && errSlot.message ? errSlot.message : errSlot);
     }

@@ -2465,6 +2465,7 @@
                     if (!tenant) return;
                     tenant.appointments = Array.isArray(row.appointments) ? row.appointments : [];
                     tenant._privateBookingsLoaded = true;
+                    if (typeof row.rosterRevision === 'number' && isFinite(row.rosterRevision)) tenant._rosterRevision = row.rosterRevision;
                 });
                 window.__schediRosterLoadedAt = Date.now();
                 try { if (window.schediRosterStamp) window.schediRosterStamp(); } catch (errStamp) {}
@@ -2510,14 +2511,21 @@
             if (!tenant || tenant._privateBookingsLoaded !== true) return { ok: false, skipped: true, reason: 'not_loaded' };
             if (!session) return { ok: false, skipped: false, error: 'session_required' };
             try {
+                var payload = { action: 'sync', session: session, tenantId: tenant.id, appointments: tenant.appointments || [] };
+                if (typeof tenant._rosterRevision === 'number' && isFinite(tenant._rosterRevision)) payload.rosterRevision = tenant._rosterRevision;
                 var res = await fetch('https://schedi.app/api/bookings', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'sync', session: session, tenantId: tenant.id, appointments: tenant.appointments || [] })
+                    body: JSON.stringify(payload)
                 });
                 var data = {};
                 try { data = await res.json(); } catch (errJson) { data = {}; }
+                if (res.status === 409 && data.error === 'stale_roster') {
+                    try { await refreshPrivateBookings(); } catch (errReload) {}
+                    return { ok: false, skipped: false, error: 'stale_roster', status: 409 };
+                }
                 if (!res.ok || !data.ok) return { ok: false, skipped: false, error: data.error || ('http_' + res.status), status: res.status };
+                if (typeof data.rosterRevision === 'number' && isFinite(data.rosterRevision)) tenant._rosterRevision = data.rosterRevision;
                 return { ok: true };
             } catch (err) {
                 return { ok: false, skipped: false, error: 'network' };
@@ -2526,6 +2534,9 @@
 
         function schediSyncFailMessage(result, what) {
             var err = result && result.error;
+            if (err === 'stale_roster') {
+                return 'This page was out of date, so that change was not saved. Your roster was reloaded. Please try again.';
+            }
             if (err === 'session_required' || err === 'forbidden' || (result && (result.status === 401 || result.status === 403))) {
                 return 'Your sign-in has expired. Sign in again \u2014 ' + what + ' was not saved to your account.';
             }
