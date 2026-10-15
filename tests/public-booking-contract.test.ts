@@ -56,6 +56,33 @@ describe("public booking card choice", () => {
   });
 });
 
+describe("worker site shell", () => {
+  const shell = readFileSync(new URL("../site/index.html", import.meta.url), "utf8");
+
+  it("parses the public booking iframe script", () => {
+    const rendered = renderStandaloneBookingHtml(shell);
+    const scripts = inlineScriptBodies(rendered);
+    const booking = scripts.find((script) => script.body.includes("function durableCardPayLink"));
+    expect(booking?.type ?? "").toBe("");
+    const body = booking?.body ?? "";
+    expect(body).toContain("function newPayCode");
+    expect(body).toContain("pay=checkout");
+    expect(body).toContain("function assignTopStripe");
+    const escapedPayLink = "/^https:\\/\\/(www\\.)?schedi\\.app\\//.test(";
+    expect(body.split(escapedPayLink).length - 1).toBe(2);
+    expect(body).not.toContain("/^https://(www.)?schedi.app//");
+    expect(() => new Script(body, { filename: "public-booking-iframe.js" })).not.toThrow();
+
+    for (const script of scripts) {
+      if (script.type === "module") {
+        expect(scriptParsesAsModule(script.body)).toBe(true);
+      } else if (!script.type || script.type === "text/javascript") {
+        expect(() => new Script(script.body, { filename: "public-booking-iframe.js" })).not.toThrow();
+      }
+    }
+  });
+});
+
 /** Same escape pass the browser applies to the template returned by generateStandaloneHtmlForTenant. */
 function renderStandaloneBookingHtml(page: string): string {
   const fnAt = page.indexOf("function generateStandaloneHtmlForTenant");

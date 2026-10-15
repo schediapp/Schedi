@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en" class="dark">
 <head>
+<!-- schedi-deploy 7c4a91e0-no-store-html stale-first-paint-fix -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Schedi</title>
@@ -185,6 +186,8 @@
         .roster-month-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
         .roster-month-compact { display: none; }
         .roster-appt { word-break: break-word; }
+        .roster-nav-step { width: 6.5rem; flex: 0 0 6.5rem; text-align: center; white-space: nowrap; }
+        @media (max-width: 639px) { .roster-nav-step { width: 100%; padding-left: 4px; padding-right: 4px; } }
         @media (max-width: 639px) {
             #tenantTabBar {
                 flex-direction: column;
@@ -203,18 +206,23 @@
                 padding-bottom: 14px;
             }
             #rosterViewSwitch {
-                flex-direction: column;
+                flex-direction: row;
+                flex-wrap: nowrap;
                 align-items: stretch;
             }
             #rosterViewSwitch > button {
-                width: 100%;
-                min-height: 48px;
+                flex: 1 1 0;
+                min-width: 0;
+                min-height: 44px;
             }
             .roster-week-grid { grid-template-columns: 1fr; }
             .roster-month-full { display: none; }
             .roster-month-compact { display: block; }
-            #rosterCalendarNav { flex-wrap: wrap; }
-            #rosterCalendarNav > button { min-height: 44px; flex: 1 1 30%; }
+            /* Week/Month nav on phones: Previous | label | Next on one row, Today reset on its own row below. */
+            #rosterCalendarNav.flex { display: grid; grid-template-columns: 5.75rem minmax(0, 1fr) 5.75rem; align-items: center; gap: 8px; width: 100%; }
+            #rosterCalendarNav > button { min-height: 44px; }
+            #rosterCalendarNav > #rosterCalendarLabel { min-width: 0; font-size: 13px; line-height: 1.2; }
+            #rosterCalendarNav > button:last-child { grid-column: 1 / -1; }
             /* Roster list on phones: one card per appointment, actions wrap under the details. */
             #rosterListWrap { overflow-x: visible; }
             #rosterListWrap > table, #rosterListWrap > table > tbody { display: block; width: 100%; }
@@ -277,6 +285,29 @@
             input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
             select, textarea { font-size: 16px !important; }
         }
+        /* Signup page on phones: 16px fields (no iOS zoom) and no horizontal overflow from the Compare Plans table. */
+        @media (max-width: 639px) {
+            #signupSection { width: 100%; max-width: 100vw; min-width: 0; box-sizing: border-box; overflow-x: hidden; }
+            #signupSection > * { min-width: 0; max-width: 100%; }
+            #signupBusinessName, #signupOwnerName, #signupOwnerEmail, #signupPlan { font-size: 16px !important; max-width: 100%; }
+            #signupComparePlans { min-width: 0; max-width: 100%; box-sizing: border-box; }
+            #signupComparePlans .overflow-x-auto { max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        }
+        /* Compare Plans: table on desktop, stacked plan cards on phones (<640px). */
+        .schedi-compare-cards { display: none; }
+        @media (max-width: 639px) { .schedi-compare-table { display: none; } .schedi-compare-cards { display: block; } }
+    </style>
+    <style id="schedi-portal-phone-fit">
+        /* Business Portal: keep every card inside the screen on phones (no sideways scroll). */
+        #tenantPortalSection, #tenantDashboard, #tenantDashboard > *, #tenantDashboard .glass-card { min-width: 0; max-width: 100%; box-sizing: border-box; }
+        #tenantDashboard .glass-card > div, #tenantDashboard .glass-card .min-w-0 { min-width: 0; max-width: 100%; }
+        #tenantBannerName, #tenantBannerSlug, #tenantOwnerContact, #tenantBillingSummary { overflow-wrap: anywhere; word-break: break-word; max-width: 100%; }
+        #tenantBannerPublicUrl { display: block; min-width: 0; max-width: 100%; white-space: normal; overflow-wrap: anywhere; word-break: break-all; }
+        @media (max-width: 1023px) {
+            #tenantDashboard > .glass-card:first-child > div { width: 100%; align-self: stretch; }
+        }
+        #tenantDashboard .flex-wrap > * { max-width: 100%; }
+        #tenantPortalSection { overflow-x: clip; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col justify-between selection:bg-brand-500 selection:text-slate-950">
@@ -569,122 +600,37 @@
             </div>
 
             <div id="tenantDashboard" class="space-y-6 hidden">
-                <div class="glass-card rounded-2xl p-5 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 border-l-4 border-l-brand-500">
-                    <div class="min-w-0 flex-1 space-y-2">
-                        <div class="flex items-center space-x-2 flex-wrap gap-y-1">
+                <!-- ROSTER-FIRST: slim header card (name, slug, public link, Copy/Share, Sign out) -->
+                <div id="tenantHeaderCard" class="glass-card rounded-2xl p-4 space-y-2.5 border-l-4 border-l-brand-500 min-w-0">
+                    <div class="flex items-start justify-between gap-2 min-w-0">
+                        <div class="min-w-0 flex-1 space-y-0.5">
+                            <div class="flex items-center flex-wrap gap-x-2 gap-y-1">
                             <h2 id="tenantBannerName" class="text-xl font-extrabold text-white">Business Portal</h2>
                             <span id="tenantBannerSlug" class="text-xs font-mono bg-slate-900 px-2 py-0.5 rounded text-brand-400 border border-slate-800">/slug</span>
                         </div>
-                        <p id="tenantOwnerContact" class="text-xs text-slate-400">Logged in as Owner</p>
-                        <div class="flex flex-col sm:flex-row sm:items-center gap-2 pt-0.5">
-                            <div class="flex items-center gap-2 min-w-0 flex-1 px-3 py-2 rounded-xl bg-slate-900/80 border border-slate-800">
-                                <i class="fa-solid fa-link text-brand-400 text-xs shrink-0" aria-hidden="true"></i>
-                                <a id="tenantBannerPublicUrl" href="#" target="_blank" rel="noopener" class="text-[11px] font-mono text-slate-300 hover:text-brand-400 truncate transition-colors" title="">https://schedi.app/slug/</a>
-                            </div>
-                            <div class="flex items-center gap-1.5 shrink-0 flex-wrap">
-                                <button type="button" onclick="copyTenantPublicBookingLink()" class="px-3 py-2 rounded-xl bg-brand-500/15 hover:bg-brand-500/25 text-brand-400 border border-brand-500/30 font-bold text-xs flex items-center space-x-1.5 transition-all" title="Copy public booking link">
-                                    <i class="fa-solid fa-copy"></i>
-                                    <span>Copy link</span>
-                                </button>
-                                <button type="button" id="tenantShareNativeBtn" onclick="shareTenantPublicBookingLink()" class="hidden px-3 py-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 font-bold text-xs flex items-center space-x-1.5 transition-all" title="Share booking link">
-                                    <i class="fa-solid fa-share-nodes"></i>
-                                    <span>Share</span>
-                                </button>
-                                <button type="button" id="tenantAddHomeScreenBtn" onclick="addTenantPortalToHomeScreen()" class="hidden px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs flex items-center space-x-1.5 transition-all" title="Add a home screen link to the business portal login">
-                                    <i class="fa-solid fa-mobile-screen-button" aria-hidden="true"></i>
-                                    <span>Add to home screen</span>
-                                </button>
-                                <button type="button" onclick="openTenantPublicBookingLink()" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs flex items-center space-x-1.5 transition-all" title="Open public booking page">
-                                    <i class="fa-solid fa-arrow-up-right-from-square"></i>
-                                    <span>Open</span>
-                                </button>
-                            </div>
+                            <p id="tenantOwnerContact" class="text-xs text-slate-400">Logged in as Owner</p>
                         </div>
-                        <p id="tenantAddHomeScreenHelp" class="hidden text-[11px] text-slate-400 leading-relaxed">iPhone: Share, then Add to Home Screen. Android: browser menu, then Add to Home screen.</p>
-                    </div>
-
-                    <div class="flex flex-wrap items-center gap-2 shrink-0">
-                        <a href="https://schedi.app/help" class="px-3.5 py-2 rounded-xl bg-brand-500/15 hover:bg-brand-500/25 text-brand-300 font-bold text-xs border border-brand-500/40 flex items-center space-x-1.5">
-                            <i class="fa-solid fa-circle-question" aria-hidden="true"></i>
-                            <span>Help</span>
-                        </a>
-                        <button type="button" class="schedi-theme-btn" onclick="toggleSchediTheme()" title="Switch to light theme" aria-label="Switch to light theme"><i class="fa-solid fa-sun" aria-hidden="true"></i><span class="schedi-theme-btn-label">Light</span></button>
-                        <button type="button" onclick="switchPlatformMode('preview')" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-brand-400 font-bold text-xs flex items-center space-x-1.5 transition-all">
-                            <i class="fa-solid fa-eye"></i>
-                            <span>View Public Site</span>
-                        </button>
-                        <button type="button" id="tenantChangePassBtn" onclick="openTenantChangePassModal()" class="hidden px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white font-semibold text-xs transition-all border border-slate-800">
-                            <i class="fa-solid fa-key mr-1" aria-hidden="true"></i>
-                            <span>Change password</span>
-                        </button>
-                        <label id="tenantAutoLogoffWrap" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-[11px] text-slate-400" title="Sign out automatically after no activity in the Business Portal">
-                            <i class="fa-solid fa-clock" aria-hidden="true"></i>
-                            <span class="font-semibold whitespace-nowrap">Auto log-off</span>
-                            <select id="tenantAutoLogoffSelect" onchange="setTenantAutoLogoffMinutes(this.value)" class="bg-slate-950 text-slate-200 border border-slate-700 rounded-lg px-2 py-1 text-[11px] font-semibold focus:outline-none focus:border-brand-500/50">
-                                <option value="0">Off</option>
-                                <option value="15">15 min</option>
-                                <option value="30">30 min</option>
-                                <option value="60">1 hour</option>
-                            </select>
-                        </label>
                         <button type="button" id="tenantSignOutBtn" onclick="handleTenantLogout()" class="px-3.5 py-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 hover:text-rose-200 font-bold text-xs transition-all border border-rose-500/40 flex items-center space-x-1.5" title="Sign out of the Business Portal">
                             <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
                             <span>Sign out</span>
                         </button>
                     </div>
-                </div>
-
-                <div id="tenantBillingCard" class="glass-card rounded-2xl p-5 space-y-3 hidden">
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div>
-                            <h3 class="text-base font-extrabold text-white">Schedi subscription</h3>
-                            <p id="tenantBillingSummary" class="text-xs text-slate-400 mt-1">Monthly autopay for this business.</p>
-                            <p id="tenantBillingUntil" class="hidden text-xs font-semibold text-emerald-300 mt-1"></p>
-                            <p id="tenantBillingPolicy" class="text-[11px] text-slate-400 leading-relaxed mt-2">Cancel anytime. Cancellation takes effect at the end of the current paid billing period; you keep access until then and are not charged again. New subscribers may request a full refund of the first payment within 15 days. Renewal payments are not refunded or prorated, except at Schedi's discretion for billing errors or service outages. Complimentary plans are unaffected.</p>
-                        </div>
-                        <div class="flex flex-wrap items-center gap-2 self-start">
-                            <button type="button" onclick="openComparePlansModal()" class="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide bg-slate-800 hover:bg-slate-700 text-brand-400 border border-brand-500/30">
-                                <i class="fa-solid fa-table-columns mr-1" aria-hidden="true"></i>Compare Plans
-                            </button>
-                            <span id="tenantBillingBadge" class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">Billing</span>
+                    <div class="flex flex-col sm:flex-row sm:items-center gap-2 min-w-0">
+                        <div class="flex items-center gap-2 min-w-0 flex-1 px-3 py-2 rounded-xl bg-slate-900/80 border border-slate-800">
+                                <i class="fa-solid fa-link text-brand-400 text-xs shrink-0" aria-hidden="true"></i>
+                                <a id="tenantBannerPublicUrl" href="#" target="_blank" rel="noopener" class="text-[11px] font-mono text-slate-300 hover:text-brand-400 truncate transition-colors" title="">https://schedi.app/slug/</a>
+                            </div>
+                        <div class="flex items-center gap-1.5 shrink-0 flex-wrap">
+                            <button type="button" onclick="copyTenantPublicBookingLink()" class="px-3 py-2 rounded-xl bg-brand-500/15 hover:bg-brand-500/25 text-brand-400 border border-brand-500/30 font-bold text-xs flex items-center space-x-1.5 transition-all" title="Copy public booking link">
+                                    <i class="fa-solid fa-copy"></i>
+                                    <span>Copy link</span>
+                                </button>
+                            <button type="button" id="tenantShareNativeBtn" onclick="shareTenantPublicBookingLink()" class="hidden px-3 py-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 font-bold text-xs flex items-center space-x-1.5 transition-all" title="Share booking link">
+                                    <i class="fa-solid fa-share-nodes"></i>
+                                    <span>Share</span>
+                                </button>
                         </div>
                     </div>
-                    <div id="tenantBillingActions" class="flex flex-wrap gap-2"></div>
-                </div>
-
-                <div id="tenantTabBar" class="glass-card rounded-2xl p-2.5 flex flex-wrap items-center gap-2 text-xs">
-                    <a href="https://schedi.app/help" class="px-4 py-2 rounded-xl font-bold bg-brand-500/15 border border-brand-500/40 text-brand-300 hover:bg-brand-500/25">
-                        <i class="fa-solid fa-circle-question mr-1.5" aria-hidden="true"></i>Help
-                    </a>
-                    <button type="button" class="schedi-theme-btn" onclick="toggleSchediTheme()" title="Switch to light theme" aria-label="Switch to light theme"><i class="fa-solid fa-sun" aria-hidden="true"></i><span class="schedi-theme-btn-label">Light</span></button>
-                    <button type="button" id="tenantTabRoster" onclick="switchTenantTab('roster')" class="px-4 py-2 rounded-xl font-bold transition-all bg-brand-500/20 border border-brand-500/30 text-brand-400">
-                        <i class="fa-solid fa-list-check mr-1.5"></i>
-                        <span>Appointments Roster</span>
-                    </button>
-                    <button type="button" id="tenantTabServices" onclick="switchTenantTab('services')" class="px-4 py-2 rounded-xl font-bold transition-all bg-slate-900 border border-slate-800 text-slate-400 hover:text-white">
-                        <i class="fa-solid fa-briefcase mr-1.5"></i>
-                        <span>Manage Services</span>
-                    </button>
-                    <button type="button" id="tenantTabHours" onclick="switchTenantTab('hours')" class="px-4 py-2 rounded-xl font-bold transition-all bg-slate-900 border border-slate-800 text-slate-400 hover:text-white">
-                        <i class="fa-solid fa-clock mr-1.5"></i>
-                        <span>Hours & Blocked Times</span>
-                    </button>
-                    <button type="button" id="tenantTabPayments" onclick="switchTenantTab('payments')" class="px-4 py-2 rounded-xl font-bold transition-all bg-slate-900 border border-slate-800 text-slate-400 hover:text-white">
-                        <i class="fa-solid fa-credit-card mr-1.5"></i>
-                        <span>Payment Options</span>
-                    </button>
-                    <button type="button" id="tenantTabNotifications" onclick="switchTenantTab('notifications')" class="px-4 py-2 rounded-xl font-bold transition-all bg-slate-900 border border-slate-800 text-slate-400 hover:text-white">
-                        <i class="fa-solid fa-envelope mr-1.5"></i>
-                        <span>Email Confirmations</span>
-                    </button>
-                    <button type="button" id="tenantTabReport" onclick="switchTenantTab('report')" class="px-4 py-2 rounded-xl font-bold transition-all bg-slate-900 border border-slate-800 text-slate-400 hover:text-white">
-                        <i class="fa-solid fa-chart-column mr-1.5"></i>
-                        <span>Appointments Report</span>
-                    </button>
-                    <button type="button" id="tenantTabClients" onclick="switchTenantTab('clients')" class="px-4 py-2 rounded-xl font-bold transition-all bg-slate-900 border border-slate-800 text-slate-400 hover:text-white">
-                        <i class="fa-solid fa-address-book mr-1.5"></i>
-                        <span>Clients</span>
-                    </button>
                 </div>
 
                 <!-- TENANT TAB 1: APPOINTMENTS ROSTER -->
@@ -707,9 +653,9 @@
                             <button type="button" id="rosterViewMonth" onclick="setRosterCalendarView('month')" class="px-4 py-2 rounded-xl font-bold text-xs bg-slate-900 border border-slate-800 text-slate-400" aria-pressed="false">Month</button>
                         </div>
                         <div id="rosterCalendarNav" class="hidden items-center gap-2">
-                            <button type="button" onclick="shiftRosterCalendar(-1)" class="px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-white font-bold text-xs">Previous</button>
+                            <button type="button" onclick="shiftRosterCalendar(-1)" class="roster-nav-step px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-white font-bold text-xs" aria-label="Previous">&lsaquo; Previous</button>
                             <div id="rosterCalendarLabel" class="text-sm font-bold text-white text-center min-w-[8rem]"></div>
-                            <button type="button" onclick="shiftRosterCalendar(1)" class="px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-white font-bold text-xs">Next</button>
+                            <button type="button" onclick="shiftRosterCalendar(1)" class="roster-nav-step px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-white font-bold text-xs" aria-label="Next">Next &rsaquo;</button>
                             <button type="button" onclick="shiftRosterCalendar(0)" class="px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-brand-400 font-bold text-xs">Today</button>
                         </div>
                     </div>
@@ -733,6 +679,39 @@
                         </table>
                     </div>
                     <div id="rosterCalendarWrap" class="hidden"></div>
+                </div>
+
+                <div id="tenantTabBar" class="glass-card rounded-2xl p-2.5 flex flex-wrap items-center gap-2 text-xs">
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500 px-1.5">Portal sections</span>
+                    
+                    <button type="button" id="tenantTabRoster" onclick="switchTenantTab('roster'); rosterFirstScrollTo('roster')" class="px-4 py-2 rounded-xl font-bold transition-all bg-brand-500/20 border border-brand-500/30 text-brand-400">
+                        <i class="fa-solid fa-list-check mr-1.5"></i>
+                        <span>Appointments Roster</span>
+                    </button>
+                    <button type="button" id="tenantTabServices" onclick="switchTenantTab('services'); rosterFirstScrollTo('services')" class="px-4 py-2 rounded-xl font-bold transition-all bg-slate-900 border border-slate-800 text-slate-400 hover:text-white">
+                        <i class="fa-solid fa-briefcase mr-1.5"></i>
+                        <span>Manage Services</span>
+                    </button>
+                    <button type="button" id="tenantTabHours" onclick="switchTenantTab('hours'); rosterFirstScrollTo('hours')" class="px-4 py-2 rounded-xl font-bold transition-all bg-slate-900 border border-slate-800 text-slate-400 hover:text-white">
+                        <i class="fa-solid fa-clock mr-1.5"></i>
+                        <span>Hours & Blocked Times</span>
+                    </button>
+                    <button type="button" id="tenantTabPayments" onclick="switchTenantTab('payments'); rosterFirstScrollTo('payments')" class="px-4 py-2 rounded-xl font-bold transition-all bg-slate-900 border border-slate-800 text-slate-400 hover:text-white">
+                        <i class="fa-solid fa-credit-card mr-1.5"></i>
+                        <span>Payment Options</span>
+                    </button>
+                    <button type="button" id="tenantTabNotifications" onclick="switchTenantTab('notifications'); rosterFirstScrollTo('notifications')" class="px-4 py-2 rounded-xl font-bold transition-all bg-slate-900 border border-slate-800 text-slate-400 hover:text-white">
+                        <i class="fa-solid fa-envelope mr-1.5"></i>
+                        <span>Email Confirmations</span>
+                    </button>
+                    <button type="button" id="tenantTabReport" onclick="switchTenantTab('report'); rosterFirstScrollTo('report')" class="px-4 py-2 rounded-xl font-bold transition-all bg-slate-900 border border-slate-800 text-slate-400 hover:text-white">
+                        <i class="fa-solid fa-chart-column mr-1.5"></i>
+                        <span>Appointments Report</span>
+                    </button>
+                    <button type="button" id="tenantTabClients" onclick="switchTenantTab('clients'); rosterFirstScrollTo('clients')" class="px-4 py-2 rounded-xl font-bold transition-all bg-slate-900 border border-slate-800 text-slate-400 hover:text-white">
+                        <i class="fa-solid fa-address-book mr-1.5"></i>
+                        <span>Clients</span>
+                    </button>
                 </div>
 
                 <!-- TENANT TAB 2: SERVICES MANAGER -->
@@ -1115,6 +1094,65 @@
                     <div id="clientListBody" class="text-xs"></div>
                 </div>
 
+                <!-- ROSTER-FIRST: account & settings moved below the roster/tabs -->
+                <div id="tenantMoreCard" class="glass-card rounded-2xl p-5 space-y-3 min-w-0">
+                    <h3 class="text-sm font-extrabold text-white"><i class="fa-solid fa-sliders mr-1.5 text-brand-400" aria-hidden="true"></i>More &amp; settings</h3>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button type="button" onclick="openTenantPublicBookingLink()" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs flex items-center space-x-1.5 transition-all" title="Open Public Page">
+                                    <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                                    <span>Open Public Page</span>
+                                </button>
+                        <button type="button" onclick="switchPlatformMode('preview')" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-brand-400 font-bold text-xs flex items-center space-x-1.5 transition-all">
+                            <i class="fa-solid fa-eye"></i>
+                            <span>View Public Site</span>
+                        </button>
+                        <button type="button" id="tenantAddHomeScreenBtn" onclick="addTenantPortalToHomeScreen()" class="hidden px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs flex items-center space-x-1.5 transition-all" title="Add a home screen link to the business portal login">
+                                    <i class="fa-solid fa-mobile-screen-button" aria-hidden="true"></i>
+                                    <span>Add to home screen</span>
+                                </button>
+                        <a href="https://schedi.app/help" class="px-3.5 py-2 rounded-xl bg-brand-500/15 hover:bg-brand-500/25 text-brand-300 font-bold text-xs border border-brand-500/40 flex items-center space-x-1.5">
+                            <i class="fa-solid fa-circle-question" aria-hidden="true"></i>
+                            <span>Help</span>
+                        </a>
+                        <button type="button" class="schedi-theme-btn" onclick="toggleSchediTheme()" title="Switch to light theme" aria-label="Switch to light theme"><i class="fa-solid fa-sun" aria-hidden="true"></i><span class="schedi-theme-btn-label">Light</span></button>
+                        <button type="button" id="tenantChangePassBtn" onclick="openTenantChangePassModal()" class="hidden px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white font-semibold text-xs transition-all border border-slate-800">
+                            <i class="fa-solid fa-key mr-1" aria-hidden="true"></i>
+                            <span>Change password</span>
+                        </button>
+                        <label id="tenantAutoLogoffWrap" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-[11px] text-slate-400" title="Sign out automatically after no activity in the Business Portal">
+                            <i class="fa-solid fa-clock" aria-hidden="true"></i>
+                            <span class="font-semibold whitespace-nowrap">Auto log-off</span>
+                            <select id="tenantAutoLogoffSelect" onchange="setTenantAutoLogoffMinutes(this.value)" class="bg-slate-950 text-slate-200 border border-slate-700 rounded-lg px-2 py-1 text-[11px] font-semibold focus:outline-none focus:border-brand-500/50">
+                                <option value="0">Off</option>
+                                <option value="15">15 min</option>
+                                <option value="30">30 min</option>
+                                <option value="60">1 hour</option>
+                            </select>
+                        </label>
+                    </div>
+                    <p id="tenantAddHomeScreenHelp" class="hidden text-[11px] text-slate-400 leading-relaxed">iPhone: Share, then Add to Home Screen. Android: browser menu, then Add to Home screen.</p>
+                </div>
+
+                <div id="tenantBillingCard" class="glass-card rounded-2xl p-5 space-y-3 hidden">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div>
+                            <h3 class="text-base font-extrabold text-white">Schedi subscription</h3>
+                            <p id="tenantBillingSummary" class="text-xs text-slate-400 mt-1">Monthly autopay for this business.</p>
+                            <p id="tenantBillingUntil" class="hidden text-xs font-semibold text-emerald-300 mt-1"></p>
+                            <p id="tenantBillingPolicy" class="text-[11px] text-slate-400 leading-relaxed mt-2">Cancel anytime. Cancellation takes effect at the end of the current paid billing period; you keep access until then and are not charged again. New subscribers may request a full refund of the first payment within 15 days. Renewal payments are not refunded or prorated, except at Schedi's discretion for billing errors or service outages. Complimentary plans are unaffected.</p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2 self-start">
+                            <button type="button" onclick="openComparePlansModal()" class="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide bg-slate-800 hover:bg-slate-700 text-brand-400 border border-brand-500/30">
+                                <i class="fa-solid fa-table-columns mr-1" aria-hidden="true"></i>Compare Plans
+                            </button>
+                            <span id="tenantBillingBadge" class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">Billing</span>
+                        </div>
+                    </div>
+                    <div id="tenantBillingActions" class="flex flex-wrap gap-2"></div>
+                </div>
+
+
+
                 <div id="tenantSectionReport" class="glass-card rounded-2xl p-6 space-y-4 hidden">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div>
@@ -1195,6 +1233,18 @@
                 </label>
                 <button type="submit" id="signupSubmitBtn" class="w-full py-3 rounded-xl bg-brand-500 hover:bg-brand-600 text-slate-950 font-black">Continue</button>
             </form>
+            <div id="signupResumeBox" class="hidden space-y-3 p-4 rounded-xl bg-emerald-950/40 border border-brand-500/40 text-xs" role="region" aria-labelledby="signupResumeTitle">
+                <p id="signupResumeTitle" class="font-bold text-white text-sm">Finish setting up your page</p>
+                <p id="signupResumeLead" class="text-slate-300">Your page is saved. Checkout didn't finish, so nothing was charged. Pick up where you left off, or start free and upgrade whenever you like.</p>
+                <a id="signupResumeCheckoutBtn" href="#" class="block w-full text-center py-3 rounded-xl bg-brand-500 hover:bg-brand-600 text-slate-950 font-black">Finish checkout</a>
+                <div id="signupResumeCreds" class="hidden space-y-2">
+                    <p class="text-slate-400">To switch to Free, sign in with the email and temporary password from your welcome email.</p>
+                    <input type="email" id="signupResumeEmail" autocomplete="username" placeholder="Owner email" class="w-full px-3 py-2 rounded-xl glass-input">
+                    <input type="password" id="signupResumePassword" autocomplete="current-password" placeholder="Temporary password" class="w-full px-3 py-2 rounded-xl glass-input">
+                </div>
+                <button type="button" id="signupResumeFreeBtn" class="w-full py-3 rounded-xl bg-slate-900 border border-slate-700 hover:border-brand-500 text-white font-bold">Start on Free instead</button>
+                <p id="signupResumeMsg" class="hidden text-[11px]"></p>
+            </div>
             <div id="signupLoginReveal" class="hidden space-y-3 p-4 rounded-xl bg-slate-900 border border-brand-500/30 text-xs">
                 <p id="signupRevealTitle" class="font-bold text-white">Save this login</p>
                 <p class="text-slate-300">Booking page: <a id="signupRevealBooking" class="text-brand-400 font-semibold" href="https://schedi.app/"></a></p>
@@ -1697,6 +1747,7 @@
                 <h3 id="rosterPaidMethodTitle" class="text-lg font-bold text-white">How was it paid?</h3>
                 <p class="text-sm text-slate-300 mt-1">Choose how this appointment was paid. The client is emailed a payment receipt.</p>
             </div>
+            <p id="rosterPaidMethodCode" class="hidden text-xs text-slate-300 rounded-xl bg-slate-900 border border-slate-800 px-3 py-2"></p>
             <input type="hidden" id="rosterPaidMethodAppId" value="">
             <div class="grid grid-cols-2 gap-2" id="rosterPaidMethodOptions">
                 <button type="button" data-paid-method="cash" class="roster-paid-opt px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 font-bold text-sm border border-slate-700 transition-all">Cash</button>
@@ -2879,8 +2930,45 @@
             body += '</tbody>';
             return ''
                 + '<p class="text-[11px] text-slate-400 mb-3">' + note + '</p>'
-                + '<table class="w-full text-xs min-w-[520px]">' + head + body + '</table>'
+                + '<div class="schedi-compare-table"><table class="w-full text-xs min-w-[520px]">' + head + body + '</table></div>'
+                + buildSchediPlanCompareCardsHtml(rows)
                 + '<p class="text-[11px] text-slate-400 mt-3">' + SCHEDI_OWNER_POLICY_SHORT + '</p>';
+        }
+
+        // Mobile (<640px): stacked plan cards built from the same schediPlanCompareRows() data.
+        function buildSchediPlanCompareCardsHtml(rows) {
+            rows = rows || schediPlanCompareRows();
+            var plans = [
+                { key: 'free', name: 'Free', blurb: 'Try Schedi at no cost', price: 'text-brand-400', ring: 'border-slate-700' },
+                { key: 'starter', name: 'Starter', blurb: 'For growing solo businesses', price: 'text-brand-400', ring: 'border-brand-500/40' },
+                { key: 'pro', name: 'Pro', blurb: 'Everything, including Agency Management', price: 'text-indigo-400', ring: 'border-indigo-500/50' }
+            ];
+            var html = '<div class="schedi-compare-cards space-y-3">';
+            for (var p = 0; p < plans.length; p++) {
+                var pl = plans[p];
+                var price = '';
+                var items = '';
+                for (var i = 0; i < rows.length; i++) {
+                    var r = rows[i];
+                    var v = String(r[pl.key] == null ? '' : r[pl.key]);
+                    if (r.label === 'Monthly price') { price = v; continue; }
+                    if (v === 'No') {
+                        items += '<li class="flex items-start gap-2 text-slate-500"><i class="fa-solid fa-xmark mt-0.5 w-3 text-slate-600" aria-hidden="true"></i><span class="line-through decoration-slate-600">' + r.label + '</span><span class="sr-only"> (not included)</span></li>';
+                    } else {
+                        var detail = v === 'Yes' ? '' : ': <span class="' + schediPlanCellClass(v) + '">' + v + '</span>';
+                        items += '<li class="flex items-start gap-2 text-slate-200"><i class="fa-solid fa-check mt-0.5 w-3 text-emerald-400" aria-hidden="true"></i><span>' + r.label + detail + '</span></li>';
+                    }
+                }
+                html += '<div class="rounded-2xl border ' + pl.ring + ' bg-slate-900/60 p-4">'
+                    + '<div class="flex items-baseline justify-between gap-2">'
+                    + '<h4 class="text-base font-extrabold text-white">' + pl.name + '</h4>'
+                    + '<span class="text-lg font-extrabold ' + pl.price + '">' + price + '<span class="text-xs font-semibold text-slate-400">/mo</span></span>'
+                    + '</div>'
+                    + '<p class="text-[11px] text-slate-400 mb-3">' + pl.blurb + '</p>'
+                    + '<ul class="space-y-1.5 text-xs">' + items + '</ul>'
+                    + '</div>';
+            }
+            return html + '</div>';
         }
 
         function mountSignupComparePlans() {
@@ -3123,7 +3211,18 @@
             var bal = Number(app.balanceDue);
             if (!isFinite(bal)) bal = Math.max(0, roundMoney((Number(app.amount) || 0) - dep));
             var paid = app.depositPaid === true;
-            return '<div class="text-[10px] text-slate-300 mt-1">Deposit $' + dep.toFixed(2) + ' · ' + (paid ? 'Paid' : 'Unpaid') + ' · Balance $' + roundMoney(bal).toFixed(2) + '</div>';
+            var st = String(app.status || '').toLowerCase();
+            if (!paid && app.depositExpiredAt) {
+                return '<div class="text-[10px] text-rose-300 mt-1">Released: deposit not paid within 24 hours</div>';
+            }
+            var awaiting = !paid && app.walkIn !== true && app.cancelled !== true && (st === 'pending' || st === 'accepted');
+            var badge = awaiting
+                ? '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 mr-1 inline-block whitespace-nowrap">Awaiting deposit</span>'
+                : '';
+            var hint = '';
+            if (awaiting && st === 'pending') hint = ' · Accept to keep it; unpaid requests are released after 24h';
+            else if (awaiting) hint = ' · Client can pay any time before the appointment';
+            return '<div class="text-[10px] text-slate-300 mt-1">' + badge + 'Deposit $' + dep.toFixed(2) + ' · ' + (paid ? 'Paid' : 'Unpaid') + ' · Balance $' + roundMoney(bal).toFixed(2) + hint + '</div>';
         }
 
         function cancellationFeeRosterLine(app) {
@@ -3440,7 +3539,11 @@
                 try { saved = JSON.parse(window.sessionStorage.getItem('schediSignupLogin') || 'null'); } catch (e) { saved = null; }
                 if (saved && saved.email) showSignupLoginDetails(saved.email, saved.password || '');
                 if (billing === 'success') showToast('Checkout finished. Sign in at schedi.app with the email and temporary password on this page once Stripe confirms payment.', 'success');
-                else if (billing === 'cancel') showToast('Checkout canceled. No charge was made. Your temporary password is still on this page if you saved it.', 'info');
+                else if (billing === 'cancel') {
+                    showToast('Checkout didn\'t finish, so nothing was charged. You can pick up where you left off below.', 'info');
+                    var cancelSlug = q.get('slug') || (saved && saved.slug) || '';
+                    if (cancelSlug) showSignupResume(cancelSlug, saved && saved.plan, saved);
+                }
                 window.history.replaceState({}, '', '/signup');
                 return true;
             } catch (err) {
@@ -3450,6 +3553,91 @@
 
 
 
+        // Abandoned paid signup: offer "Finish checkout" or "Start on Free instead" on /signup.
+        // Entered from Stripe's cancel return (?billing=cancel&slug=) or the reminder email (?resume={slug}).
+        function showSignupResume(slug, plan, saved) {
+            var box = document.getElementById('signupResumeBox');
+            if (!box || !slug) return;
+            var safeSlug = String(slug).toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 41);
+            if (!safeSlug) return;
+            var form = document.getElementById('publicSignupForm');
+            var checkoutBtn = document.getElementById('signupResumeCheckoutBtn');
+            var freeBtn = document.getElementById('signupResumeFreeBtn');
+            var creds = document.getElementById('signupResumeCreds');
+            var msg = document.getElementById('signupResumeMsg');
+            function say(text, ok) {
+                if (!msg) return;
+                msg.textContent = text;
+                msg.className = 'text-[11px] ' + (ok ? 'text-emerald-300' : 'text-rose-300');
+            }
+            function paint(resumeUrl, planName) {
+                var label = planName === 'pro' ? 'Pro' : (planName === 'starter' ? 'Starter' : '');
+                if (checkoutBtn) {
+                    checkoutBtn.href = resumeUrl || ('https://schedi.app/billing/subscribe?tenantId=' + encodeURIComponent(safeSlug) + '&plan=' + (planName === 'pro' ? 'pro' : 'starter'));
+                    checkoutBtn.textContent = label ? ('Finish ' + label + ' checkout') : 'Finish checkout';
+                }
+                var hasCreds = !!(saved && saved.email && saved.password);
+                if (creds) creds.classList.toggle('hidden', hasCreds);
+                if (form) form.classList.add('hidden');
+                box.classList.remove('hidden');
+            }
+            if (freeBtn) {
+                freeBtn.onclick = async function () {
+                    var email = (saved && saved.email) || ((document.getElementById('signupResumeEmail') || {}).value || '').trim();
+                    var password = (saved && saved.password) || ((document.getElementById('signupResumePassword') || {}).value || '');
+                    if (!email || !password) { say('Add the email and temporary password from your welcome email.', false); return; }
+                    freeBtn.disabled = true;
+                    say('Switching your page to Free...', true);
+                    try {
+                        var res = await fetch('https://schedi.app/billing/signup-free', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ slug: safeSlug, email: email, password: password })
+                        });
+                        var out = {};
+                        try { out = await res.json(); } catch (e2) { out = {}; }
+                        if (!res.ok || !out.ok) { say(out.error || 'That didn\'t work. Please try again.', false); freeBtn.disabled = false; return; }
+                        if (checkoutBtn) checkoutBtn.classList.add('hidden');
+                        freeBtn.classList.add('hidden');
+                        if (creds) creds.classList.add('hidden');
+                        var title = document.getElementById('signupResumeTitle');
+                        var lead = document.getElementById('signupResumeLead');
+                        if (title) title.textContent = 'You\'re all set on Free';
+                        if (lead) lead.innerHTML = 'Your booking page is live at <a class="text-brand-400 font-semibold" href="https://schedi.app/' + safeSlug + '/">schedi.app/' + safeSlug + '</a>. Sign in to the Business Portal any time to add services and hours, or upgrade later.';
+                        say('', true);
+                    } catch (err) {
+                        say('Couldn\'t reach Schedi. Check your connection and try again.', false);
+                        freeBtn.disabled = false;
+                    }
+                };
+            }
+            paint('', plan);
+            fetch('https://schedi.app/billing/signup-status?slug=' + encodeURIComponent(safeSlug))
+                .then(function (r) { return r.json(); })
+                .then(function (st) {
+                    if (st && st.ok && st.awaitingCheckout === false) {
+                        box.classList.add('hidden');
+                        if (form) form.classList.remove('hidden');
+                        showToast('This page is already set up. Sign in at schedi.app to manage it.', 'success');
+                    } else if (st && st.ok) {
+                        paint(st.resumeUrl || '', st.plan || plan);
+                    }
+                }).catch(function () {});
+        }
+        function consumeSignupResumeParam() {
+            try {
+                var q = new URLSearchParams(window.location.search || '');
+                var slug = q.get('resume');
+                if (!slug) return false;
+                var saved = null;
+                try { saved = JSON.parse(window.sessionStorage.getItem('schediSignupLogin') || 'null'); } catch (e) { saved = null; }
+                if (saved && saved.slug !== String(slug).toLowerCase()) saved = null;
+                showSignupResume(slug, saved && saved.plan, saved);
+                return true;
+            } catch (err) {
+                return false;
+            }
+        }
         function isClientHelpRoute() {
             try {
                 var path = (window.location.pathname || '/').replace(/\/+/g, '/');
@@ -3474,7 +3662,7 @@
         }
 
         // Help page tutorial videos (files in /assets/help-videos/). preload="none" + poster keeps page load light.
-        var SCHEDI_HELP_VIDEOS = [{"slug": "client-booking-demo", "file": "client-booking-demo.mp4?v=4", "poster": "client-booking-demo.jpg?v=4", "title": "How clients book", "desc": "Clients pick a service, a day and time, enter their info, choose how to pay, and send the request.", "dur": "0:29", "aud": "client"}, {"slug": "owner-01-create-your-page", "file": "owner-01-create-your-page.mp4?v=4", "poster": "owner-01-create-your-page.jpg?v=4", "title": "Create your booking page", "desc": "Sign up, get your free page, and compare Free, Starter, and Pro.", "dur": "0:24", "aud": "owner"}, {"slug": "owner-02-add-services", "file": "owner-02-add-services.mp4?v=4", "poster": "owner-02-add-services.jpg?v=4", "title": "Add your services", "desc": "Add each service with its length and an optional price.", "dur": "0:21", "aud": "owner"}, {"slug": "owner-03-set-hours", "file": "owner-03-set-hours.mp4?v=4", "poster": "owner-03-set-hours.jpg?v=4", "title": "Set your hours", "desc": "Pick the days you work and your open and close times.", "dur": "0:20", "aud": "owner"}, {"slug": "owner-04-payment-options", "file": "owner-04-payment-options.mp4?v=4", "poster": "owner-04-payment-options.jpg?v=4", "title": "Payment options", "desc": "Turn on Cash App, Zelle, Venmo, or PayPal (Starter and Pro) or keep pay at appointment.", "dur": "0:28", "aud": "owner"}, {"slug": "owner-05-share-booking-link", "file": "owner-05-share-booking-link.mp4?v=4", "poster": "owner-05-share-booking-link.jpg?v=4", "title": "Share your booking link", "desc": "Copy your link for your bio and see what clients see with View Public Site.", "dur": "0:20", "aud": "owner"}, {"slug": "owner-06-accept-booking-request", "file": "owner-06-accept-booking-request.mp4?v=4", "poster": "owner-06-accept-booking-request.jpg?v=4", "title": "Accept a booking request", "desc": "On phones, each booking is a card; tap Accept and it shows as Accepted (Starter and Pro).", "dur": "0:20", "aud": "owner"}, {"slug": "owner-07-appointments-report", "file": "owner-07-appointments-report.mp4?v=4", "poster": "owner-07-appointments-report.jpg?v=4", "title": "Appointments report", "desc": "See counts, recorded prices, marked paid, and walk-ins; export CSV or print.", "dur": "0:21", "aud": "owner"}, {"slug": "owner-08-add-manual-appointment", "file": "owner-08-add-manual-appointment.mp4?v=4", "poster": "owner-08-add-manual-appointment.jpg?v=4", "title": "Add a walk-in or phone booking", "desc": "Log a walk-in or phone booking with the Walk-in toggle, saved-client suggest, open time slot, and payment status.", "dur": "0:28", "aud": "owner"}, {"slug": "owner-09-mark-paid", "file": "owner-09-mark-paid.mp4?v=4", "poster": "owner-09-mark-paid.jpg?v=4", "title": "Mark an appointment paid", "desc": "Tap Mark paid, pick how the client paid, and the booking turns green.", "dur": "0:22", "aud": "owner"}, {"slug": "owner-10-reschedule", "file": "owner-10-reschedule.mp4?v=4", "poster": "owner-10-reschedule.jpg?v=4", "title": "Reschedule an appointment", "desc": "Pick a new date and an open time slot, then tap Update Reservation.", "dur": "0:23", "aud": "owner"}, {"slug": "owner-11-cancel-appointment", "file": "owner-11-cancel-appointment.mp4?v=4", "poster": "owner-11-cancel-appointment.jpg?v=4", "title": "Cancel an appointment", "desc": "Tap Cancel and confirm; the booking stays on your roster as Cancelled.", "dur": "0:20", "aud": "owner"}, {"slug": "owner-12-special-hours", "file": "owner-12-special-hours.mp4?v=4", "poster": "owner-12-special-hours.jpg?v=4", "title": "Special hours", "desc": "Close or change your hours for one date without touching your weekly hours.", "dur": "0:21", "aud": "owner"}, {"slug": "owner-13-date-blocks", "file": "owner-13-date-blocks.mp4?v=4", "poster": "owner-13-date-blocks.jpg?v=4", "title": "Vacation and date blocks", "desc": "Block a range of dates so clients cannot book them.", "dur": "0:22", "aud": "owner"}, {"slug": "owner-14-email-confirmations", "file": "owner-14-email-confirmations.mp4?v=4", "poster": "owner-14-email-confirmations.jpg?v=4", "title": "Email confirmations and reminders", "desc": "Set your Reply-To email, an extra note, and same-day reminder emails.", "dur": "0:23", "aud": "owner"}, {"slug": "owner-15-recurring-visits-pro", "file": "owner-15-recurring-visits-pro.mp4?v=4", "poster": "owner-15-recurring-visits-pro.jpg?v=4", "title": "Recurring appointments (Pro)", "desc": "On Pro, let clients book weekly, biweekly, or monthly; off until you turn it on.", "dur": "0:21", "aud": "owner"}, {"slug": "owner-16-clients", "file": "owner-16-clients.mp4?v=4", "poster": "owner-16-clients.jpg?v=4", "title": "Clients list", "desc": "Search, add, or remove clients. Auto-added clients show From booking since...", "dur": "0:24", "aud": "owner"}, {"slug": "owner-17-import-clients-csv", "file": "owner-17-import-clients-csv.mp4?v=4", "poster": "owner-17-import-clients-csv.jpg?v=4", "title": "Import clients from CSV", "desc": "Upload a CSV, match columns, preview, and import. Schedi never emails imports.", "dur": "0:22", "aud": "owner"}, {"slug": "owner-18-compare-plans", "file": "owner-18-compare-plans.mp4?v=4", "poster": "owner-18-compare-plans.jpg?v=4", "title": "Compare Plans", "desc": "Open the Free / Starter / Pro chart from your plan card, including Agency Management on Pro.", "dur": "0:18", "aud": "owner"}, {"slug": "owner-19-roster-week-month", "file": "owner-19-roster-week-month.mp4?v=4", "poster": "owner-19-roster-week-month.jpg?v=4", "title": "Week and month roster", "desc": "Switch to Week or Month, tap a booking for details, and open a busy day.", "dur": "0:22", "aud": "owner"}];
+        var SCHEDI_HELP_VIDEOS = [{"slug": "client-booking-demo", "file": "client-booking-demo.mp4?v=5", "poster": "client-booking-demo.jpg?v=5", "title": "How clients book", "desc": "Clients pick a service, a day and time, enter their info, choose how to pay, and send the request.", "dur": "0:30", "aud": "client"}, {"slug": "owner-01-create-your-page", "file": "owner-01-create-your-page.mp4?v=4", "poster": "owner-01-create-your-page.jpg?v=4", "title": "Create your booking page", "desc": "Sign up, get your free page, and compare Free, Starter, and Pro.", "dur": "0:24", "aud": "owner"}, {"slug": "owner-02-add-services", "file": "owner-02-add-services.mp4?v=6", "poster": "owner-02-add-services.jpg?v=6", "title": "Add your services", "desc": "Add each service with its length and an optional price.", "dur": "0:21", "aud": "owner"}, {"slug": "owner-03-set-hours", "file": "owner-03-set-hours.mp4?v=6", "poster": "owner-03-set-hours.jpg?v=6", "title": "Set your hours", "desc": "Pick the days you work and your open and close times.", "dur": "0:20", "aud": "owner"}, {"slug": "owner-04-payment-options", "file": "owner-04-payment-options.mp4?v=6", "poster": "owner-04-payment-options.jpg?v=6", "title": "Payment options", "desc": "Turn on Cash App, Zelle, Venmo, or PayPal (Starter and Pro) or keep pay at appointment.", "dur": "0:28", "aud": "owner"}, {"slug": "owner-05-share-booking-link", "file": "owner-05-share-booking-link.mp4?v=6", "poster": "owner-05-share-booking-link.jpg?v=6", "title": "Share your booking link", "desc": "Copy or Share your link from the top of your portal. Open Public Page, View Public Site, and Add to home screen are in More & settings.", "dur": "0:22", "aud": "owner"}, {"slug": "owner-06-accept-booking-request", "file": "owner-06-accept-booking-request.mp4?v=6", "poster": "owner-06-accept-booking-request.jpg?v=6", "title": "Accept a booking request", "desc": "On phones, each booking is a card; tap Accept and it shows as Accepted (Starter and Pro).", "dur": "0:20", "aud": "owner"}, {"slug": "owner-07-appointments-report", "file": "owner-07-appointments-report.mp4?v=6", "poster": "owner-07-appointments-report.jpg?v=6", "title": "Appointments report", "desc": "See counts, recorded prices, marked paid, and walk-ins; export CSV or print.", "dur": "0:21", "aud": "owner"}, {"slug": "owner-08-add-manual-appointment", "file": "owner-08-add-manual-appointment.mp4?v=6", "poster": "owner-08-add-manual-appointment.jpg?v=6", "title": "Add a walk-in or phone booking", "desc": "Log a walk-in or phone booking with the Walk-in toggle, saved-client suggest, open time slot, and payment status.", "dur": "0:28", "aud": "owner"}, {"slug": "owner-09-mark-paid", "file": "owner-09-mark-paid.mp4?v=6", "poster": "owner-09-mark-paid.jpg?v=6", "title": "Mark an appointment paid", "desc": "Tap Mark paid, pick how the client paid, and the booking turns green.", "dur": "0:22", "aud": "owner"}, {"slug": "owner-10-reschedule", "file": "owner-10-reschedule.mp4?v=6", "poster": "owner-10-reschedule.jpg?v=6", "title": "Reschedule an appointment", "desc": "Pick a new date and an open time slot, then tap Update Reservation.", "dur": "0:23", "aud": "owner"}, {"slug": "owner-11-cancel-appointment", "file": "owner-11-cancel-appointment.mp4?v=6", "poster": "owner-11-cancel-appointment.jpg?v=6", "title": "Cancel an appointment", "desc": "Tap Cancel and confirm; the booking stays on your roster as Cancelled.", "dur": "0:20", "aud": "owner"}, {"slug": "owner-12-special-hours", "file": "owner-12-special-hours.mp4?v=6", "poster": "owner-12-special-hours.jpg?v=6", "title": "Special hours", "desc": "Close or change your hours for one date without touching your weekly hours.", "dur": "0:21", "aud": "owner"}, {"slug": "owner-13-date-blocks", "file": "owner-13-date-blocks.mp4?v=6", "poster": "owner-13-date-blocks.jpg?v=6", "title": "Vacation and date blocks", "desc": "Block a range of dates so clients cannot book them.", "dur": "0:22", "aud": "owner"}, {"slug": "owner-14-email-confirmations", "file": "owner-14-email-confirmations.mp4?v=6", "poster": "owner-14-email-confirmations.jpg?v=6", "title": "Email confirmations and reminders", "desc": "Set your Reply-To email, an extra note, and same-day reminder emails.", "dur": "0:23", "aud": "owner"}, {"slug": "owner-15-recurring-visits-pro", "file": "owner-15-recurring-visits-pro.mp4?v=6", "poster": "owner-15-recurring-visits-pro.jpg?v=6", "title": "Recurring appointments (Pro)", "desc": "On Pro, let clients book weekly, biweekly, or monthly; off until you turn it on.", "dur": "0:21", "aud": "owner"}, {"slug": "owner-16-clients", "file": "owner-16-clients.mp4?v=6", "poster": "owner-16-clients.jpg?v=6", "title": "Clients list", "desc": "Search, add, or remove clients. Auto-added clients show From booking since...", "dur": "0:24", "aud": "owner"}, {"slug": "owner-17-import-clients-csv", "file": "owner-17-import-clients-csv.mp4?v=6", "poster": "owner-17-import-clients-csv.jpg?v=6", "title": "Import clients from CSV", "desc": "Upload a CSV, match columns, preview, and import. Schedi never emails imports.", "dur": "0:22", "aud": "owner"}, {"slug": "owner-18-compare-plans", "file": "owner-18-compare-plans.mp4?v=6", "poster": "owner-18-compare-plans.jpg?v=6", "title": "Compare Plans", "desc": "Open the Free / Starter / Pro chart from your Schedi subscription card (below More & settings), including Agency Management on Pro.", "dur": "0:18", "aud": "owner"}, {"slug": "owner-19-roster-week-month", "file": "owner-19-roster-week-month.mp4?v=6", "poster": "owner-19-roster-week-month.jpg?v=6", "title": "Week and month roster", "desc": "Switch to Week or Month, move with Previous, Next, or Today, tap a booking for details, and tap a busy day.", "dur": "0:22", "aud": "owner"}];
         var SCHEDI_HELP_VIDEO_GROUPS = [["Get set up", ["owner-01-create-your-page", "owner-02-add-services", "owner-03-set-hours", "owner-04-payment-options", "owner-05-share-booking-link", "owner-18-compare-plans"]], ["Bookings and the roster", ["owner-06-accept-booking-request", "owner-08-add-manual-appointment", "owner-09-mark-paid", "owner-10-reschedule", "owner-11-cancel-appointment", "owner-07-appointments-report", "owner-19-roster-week-month"]], ["Clients", ["owner-16-clients", "owner-17-import-clients-csv"]], ["Hours and time off", ["owner-12-special-hours", "owner-13-date-blocks"]], ["Emails and Pro features", ["owner-14-email-confirmations", "owner-15-recurring-visits-pro"]], ["What your clients see", ["client-booking-demo"]]];
         function schediHelpVideoCard(v) {
             var base = '/assets/help-videos/';
@@ -3726,9 +3914,11 @@
         };
 
         // F0002: persist Business Portal auth like Firebase LOCAL persistence.
-        // Legacy used sessionStorage only (tab-scoped) and never restored in-memory login flags on reload.
+        // Fresh sign-in must write localStorage token+meta (same keys restore reads). Migrating
+        // legacy sessionStorage alone is not enough — reload restore needs meta.role/tenantId.
         var SCHEDI_AUTH_SESSION_KEY = 'schedi.authSession';
         var SCHEDI_AUTH_META_KEY = 'schedi.authMeta';
+        var schediAuthEpoch = 0;
 
         function schediAuthSession() {
             try {
@@ -3753,27 +3943,49 @@
             } catch (err) { return null; }
         }
 
+        function schediAuthPersistOk(token, meta) {
+            try {
+                if (String(window.localStorage.getItem(SCHEDI_AUTH_SESSION_KEY) || '') !== String(token || '')) return false;
+                if (!meta || typeof meta !== 'object') return !!String(token || '');
+                var got = schediAuthMeta();
+                if (!got) return false;
+                if (String(got.role || '') !== String(meta.role || '')) return false;
+                if (meta.tenantId != null && String(got.tenantId || '') !== String(meta.tenantId || '')) return false;
+                return true;
+            } catch (err) { return false; }
+        }
+
         function schediSetAuthSession(token, meta) {
+            schediAuthEpoch += 1;
             var value = String(token || '');
+            var prev = schediAuthMeta() || {};
             try {
                 if (value) window.localStorage.setItem(SCHEDI_AUTH_SESSION_KEY, value);
                 else window.localStorage.removeItem(SCHEDI_AUTH_SESSION_KEY);
             } catch (err) {}
             try { window.sessionStorage.removeItem(SCHEDI_AUTH_SESSION_KEY); } catch (err2) {}
             try {
-                if (value && meta && typeof meta === 'object') {
-                    window.localStorage.setItem(SCHEDI_AUTH_META_KEY, JSON.stringify({
-                        role: String(meta.role || ''),
-                        tenantId: String(meta.tenantId || ''),
-                        email: String(meta.email || '')
-                    }));
-                } else if (!value) {
+                if (value) {
+                    var nextMeta = {
+                        role: String((meta && meta.role) || prev.role || ''),
+                        tenantId: String((meta && meta.tenantId) || prev.tenantId || ''),
+                        email: String((meta && meta.email) || prev.email || '')
+                    };
+                    if (meta && typeof meta === 'object') {
+                        if (meta.role != null) nextMeta.role = String(meta.role || '');
+                        if (meta.tenantId != null) nextMeta.tenantId = String(meta.tenantId || '');
+                        if (meta.email != null) nextMeta.email = String(meta.email || '');
+                    }
+                    window.localStorage.setItem(SCHEDI_AUTH_META_KEY, JSON.stringify(nextMeta));
+                } else {
                     window.localStorage.removeItem(SCHEDI_AUTH_META_KEY);
                 }
             } catch (err3) {}
+            return schediAuthPersistOk(value, meta && typeof meta === 'object' ? meta : null);
         }
 
         function schediClearAuthSession() {
+            schediAuthEpoch += 1;
             try { window.localStorage.removeItem(SCHEDI_AUTH_SESSION_KEY); } catch (err) {}
             try { window.localStorage.removeItem(SCHEDI_AUTH_META_KEY); } catch (err2) {}
             try { window.sessionStorage.removeItem(SCHEDI_AUTH_SESSION_KEY); } catch (err3) {}
@@ -3816,17 +4028,21 @@
             var session = schediAuthSession();
             if (!session) return false;
             var meta = schediAuthMeta() || {};
+            var epoch = schediAuthEpoch;
             try {
                 var res = await fetch('https://schedi.app/api/profile', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ action: 'private', session: session })
                 });
+                // Stale response after a newer login/logout must not wipe the current session.
+                if (epoch !== schediAuthEpoch) return false;
+                if (schediAuthSession() && schediAuthSession() !== session) return false;
                 var data = {};
                 try { data = await res.json(); } catch (errJ) { data = {}; }
-                // Sign-out or a newer login may have landed while this request was in flight.
-                if (schediAuthSession() !== session) return false;
                 if (res.status === 401 || res.status === 403 || (data && data.error === 'session_required')) {
+                    if (epoch !== schediAuthEpoch) return false;
+                    if (schediAuthSession() && schediAuthSession() !== session) return false;
                     schediClearAuthSession();
                     if (platformState.isAgencyMasterLoggedIn) {
                         platformState.isAgencyMasterLoggedIn = false;
@@ -3846,26 +4062,39 @@
                     return false;
                 }
                 if (res.ok && data && data.ok && Array.isArray(data.tenants)) {
+                    if (epoch !== schediAuthEpoch) return false;
+                    if (schediAuthSession() && schediAuthSession() !== session) return false;
                     var next = {};
                     data.tenants.forEach(function (row) { if (row && row.id) next[row.id] = row; });
                     schediPrivateProfiles = next;
                     schediPrivateProfilesLoaded = true;
                     try { applyPrivateProfiles(platformState.tenants); } catch (errApply) {}
-                    // Backfill meta for legacy sessionStorage-only sessions.
+                    // Backfill meta for legacy sessionStorage-only sessions (token without meta).
                     if (!meta.role) {
                         if (typeof isAgencyHqRoute === 'function' && isAgencyHqRoute()) {
                             schediSetAuthSession(session, { role: 'agency', email: meta.email || '' });
                             platformState.isAgencyMasterLoggedIn = true;
-                        } else if (data.tenants.length === 1 && data.tenants[0] && data.tenants[0].id) {
-                            schediSetAuthSession(session, { role: 'owner', tenantId: data.tenants[0].id, email: meta.email || '' });
-                            var matched = (platformState.tenants || []).find(function (t) { return t && t.id === data.tenants[0].id; });
-                            platformState.activeTenantId = data.tenants[0].id;
-                            platformState.isTenantOwnerLoggedIn = true;
-                            platformState.ownerSelfSession = true;
-                            if (matched && typeof openTenantOwnerPortal === 'function') {
-                                try { openTenantOwnerPortal(matched); } catch (errOpen) {}
+                        } else {
+                            var backfillId = '';
+                            if (data.tenants.length === 1 && data.tenants[0] && data.tenants[0].id) {
+                                backfillId = data.tenants[0].id;
+                            } else if (platformState.activeTenantId) {
+                                var hit = data.tenants.find(function (row) { return row && row.id === platformState.activeTenantId; });
+                                if (hit) backfillId = hit.id;
+                            } else if (data.tenants[0] && data.tenants[0].id) {
+                                backfillId = data.tenants[0].id;
                             }
-                            try { switchPlatformMode('tenant'); } catch (errSw) {}
+                            if (backfillId) {
+                                schediSetAuthSession(session, { role: 'owner', tenantId: backfillId, email: meta.email || '' });
+                                var matched = (platformState.tenants || []).find(function (t) { return t && t.id === backfillId; });
+                                platformState.activeTenantId = backfillId;
+                                platformState.isTenantOwnerLoggedIn = true;
+                                platformState.ownerSelfSession = true;
+                                if (matched && typeof openTenantOwnerPortal === 'function') {
+                                    try { openTenantOwnerPortal(matched); } catch (errOpen) {}
+                                }
+                                try { switchPlatformMode('tenant'); } catch (errSw) {}
+                            }
                         }
                     } else if (meta.role === 'owner' && meta.tenantId) {
                         var ownerTenant = (platformState.tenants || []).find(function (t) { return t && t.id === meta.tenantId; });
@@ -3920,7 +4149,10 @@
         }
 
         function syncTenantAutoLogoffSelect() {
+            var wrap = document.getElementById('tenantAutoLogoffWrap');
             var sel = document.getElementById('tenantAutoLogoffSelect');
+            var show = !!(platformState.isTenantOwnerLoggedIn && platformState.ownerSelfSession);
+            if (wrap) wrap.classList.toggle('hidden', !show);
             if (!sel) return;
             var mins = getTenantAutoLogoffMinutes();
             sel.value = String(mins);
@@ -4117,7 +4349,7 @@
             syncAgencyChrome();
             syncPublicHomeFooter();
             mountSignupComparePlans();
-            consumeSignupReturn();
+            if (!consumeSignupReturn()) consumeSignupResumeParam();
         }
 
         window.handlePublicSignup = async function(e) {
@@ -4173,7 +4405,7 @@
                 });
                 var go = document.getElementById('signupContinueBtn');
                 if (go) {
-                    var nextUrl = chosen === 'free' ? 'https://schedi.app/' : (data.url || data.paymentLink || 'https://schedi.app/');
+                    var nextUrl = chosen === 'free' ? 'https://schedi.app/?portal=login' : (data.url || data.paymentLink || 'https://schedi.app/?portal=login');
                     go.textContent = chosen === 'free' ? 'Open the business portal' : 'Continue to payment';
                     go.onclick = function() { window.location.href = nextUrl; };
                 }
@@ -6695,6 +6927,15 @@
             if (em && !em.value && hit.email) em.value = hit.email;
         });
 
+
+        // ROSTER-FIRST: after picking a portal section, bring it into view (roster sits above the tab bar).
+        window.rosterFirstScrollTo = function(tab) {
+            try {
+                var id = tab === 'roster' ? 'tenantSectionRoster' : 'tenantTabBar';
+                var el = document.getElementById(id);
+                if (el && el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } catch (e) {}
+        };
         window.switchTenantTab = function(tab) {
             platformState.tenantTab = tab;
             ['roster', 'services', 'hours', 'payments', 'notifications', 'report', 'clients'].forEach(t => {
@@ -7091,7 +7332,8 @@
             var service = esc(app.serviceName || 'Appointment') + (isFinite(dur) && dur > 0 ? ('<span class="block text-xs text-slate-400">' + dur + ' min</span>') : '');
             var when = '<span class="font-bold text-brand-400">' + esc(app.date ? rosterPrettyDate(app.date) : 'Date not set') + '</span><span class="block">' + esc(app.time || 'Time not set') + '</span>' + rec;
             var payText = esc(rosterPaymentLabel(app) || 'Not set') + (hasPricedAmount(app.amount) ? (' · $' + (Number(app.amount) || 0)) : '') +
-                (app.paymentOptionLabel ? ('<span class="block text-xs text-slate-400">' + esc(app.paymentOptionLabel) + '</span>') : '');
+                (app.paymentOptionLabel ? ('<span class="block text-xs text-slate-400">' + esc(app.paymentOptionLabel) + '</span>') : '') +
+                (app.payCode ? ('<span class="block text-xs text-slate-400 mt-1">Payment code ' + payCodeChipHtml(app) + '</span>') : '');
             var back = fromIso
                 ? '<button type="button" onclick="openRosterDay(' + esc(jsArg(fromIso)) + ', true)" class="min-h-[44px] px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-sm"><i class="fa-solid fa-chevron-left mr-1.5"></i>Back to day</button>'
                 : '';
@@ -7144,7 +7386,7 @@
             var rosterRows = tenant.appointments.slice().sort(compareRosterAppointmentsNewestFirst);
             tbody.innerHTML = rosterRows.map(app => `
                 <tr class="roster-row hover:bg-slate-900/40 transition-all">
-                    <td class="roster-cell-ref p-3 font-mono font-bold text-white">#${esc(app.id)}</td>
+                    <td class="roster-cell-ref p-3 font-mono font-bold text-white">#${esc(app.id)}${app.payCode ? ('<br>' + payCodeChipHtml(app)) : ''}</td>
                     <td class="roster-cell-client p-3">
                         <div class="font-bold text-white">${esc(app.clientName)}${app.walkIn === true ? ' <span class="ml-1 align-middle inline-block px-1.5 py-0.5 rounded-md bg-slate-800 border border-slate-700 text-slate-300 text-[10px] font-semibold whitespace-nowrap"><i class="fa-solid fa-person-walking mr-1"></i>Walk-in</span>' : ''}</div>
                         <div class="text-[10px] text-slate-400">${esc(app.clientPhone)} • ${esc(app.clientEmail)}</div>
@@ -8622,7 +8864,27 @@
                         + '</div>';
                 }
             }
+            var code = bookingPayCodeForMethod(booking);
+            if (code) {
+                var codeSentence = 'Put ' + code + ' in the payment note so ' + (tenant.name || 'the business') + ' can match your payment.';
+                text = text ? (text + ' ' + codeSentence) : codeSentence;
+                html = html
+                    ? html.replace(/<\/div>$/, '<br><span style="display:inline-block;margin-top:6px;">Put <strong style="font-family:monospace;letter-spacing:1px;">' + esc(code) + '</strong> in the payment note so ' + esc(tenant.name || 'the business') + ' can match your payment.</span></div>')
+                    : ('<div style="padding:12px 14px;border-radius:10px;background-color:#064e3b;border:1px solid #059669;color:#d1fae5;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.45;">' + esc(codeSentence) + '</div>');
+            }
             return { text: text, html: html };
+        }
+
+        // Payment code (SCH-XXXX) only matters for manual app payments the owner has to match by hand.
+        function bookingPayCodeForMethod(booking) {
+            if (!booking || !booking.payCode) return '';
+            var m = String(booking.paymentMethod || '').toLowerCase();
+            if (m === 'cashapp' || m === 'cash-app' || m === 'cash app' || m === 'venmo' || m === 'zelle' || m === 'paypal') return String(booking.payCode);
+            return '';
+        }
+        function payCodeChipHtml(app) {
+            if (!app || !app.payCode) return '';
+            return '<span class="inline-block mt-1 px-1.5 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-[10px] font-mono font-bold tracking-wider whitespace-nowrap" title="Payment code clients put in their payment note">' + esc(app.payCode) + '</span>';
         }
 
         function buildConfirmationEmail(tenant, booking) {
@@ -8684,6 +8946,9 @@
             var rowBits = [];
             rowBits.push(['Service', esc(booking.serviceName || 'Appointment')]);
             if (price !== null) rowBits.push(['Price', esc(price)]);
+            if (bookingPayCodeForMethod(booking)) {
+                rowBits.push(['Payment code', '<span style="font-family:monospace;font-size:15px;font-weight:700;letter-spacing:2px;color:#34d399;">' + esc(booking.payCode) + '</span>']);
+            }
             if (payLabel) {
                 rowBits.push(['Payment', '<span style="display:inline-block;background-color:#064e3b;color:#34d399;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:600;">' + esc(payLabel) + '</span>']);
             }
@@ -10361,6 +10626,15 @@
             }
             _rosterPaidMethodSelected = inferPaidMethodFromBooking(app);
             document.getElementById('rosterPaidMethodAppId').value = app.id;
+            var codeEl = document.getElementById('rosterPaidMethodCode');
+            if (codeEl) {
+                if (app.payCode) {
+                    codeEl.innerHTML = 'Look for <strong class="font-mono text-emerald-300 tracking-wider">' + esc(app.payCode) + '</strong> in the payment note from ' + esc(app.clientName || 'the client') + (hasPricedAmount(app.amount) ? (' ($' + (Number(app.amount) || 0) + ')') : '') + '.';
+                    codeEl.classList.remove('hidden');
+                } else {
+                    codeEl.classList.add('hidden');
+                }
+            }
             paintRosterPaidMethodOptions();
             document.getElementById('rosterPaidMethodModal').classList.remove('hidden');
             document.getElementById('rosterPaidMethodModal').scrollTop = 0;
@@ -10504,6 +10778,13 @@
             populateTenantSelect();
             document.getElementById('tenantLoginBox').classList.add('hidden');
             document.getElementById('tenantDashboard').classList.remove('hidden');
+            var autoWrap = document.getElementById('tenantAutoLogoffWrap');
+            if (autoWrap) autoWrap.classList.remove('hidden');
+            var signOutBtn = document.getElementById('tenantSignOutBtn');
+            if (signOutBtn) {
+                var signOutLabel = signOutBtn.querySelector('span');
+                if (signOutLabel) signOutLabel.textContent = 'Sign out';
+            }
             updateLivePreviewControlsVisibility();
             renderTenantAdminPortal();
             try { syncTenantAutoLogoffSelect(); } catch (errSel) {}
@@ -10536,8 +10817,17 @@
                     showToast('Invalid owner email or password.', 'error');
                     return;
                 }
-                schediSetAuthSession(data.session, { role: 'owner', tenantId: data.tenantId, email: email });
+                var loginMeta = { role: 'owner', tenantId: data.tenantId, email: email };
+                var persisted = schediSetAuthSession(data.session, loginMeta);
+                if (!persisted) {
+                    persisted = schediSetAuthSession(data.session, loginMeta);
+                }
+                if (!persisted || !schediAuthPersistOk(data.session, loginMeta)) {
+                    showToast('Could not save your sign-in on this device. Check browser storage and try again.', 'error');
+                    return;
+                }
                 openTenantOwnerPortal(matched);
+                try { switchPlatformMode('tenant'); } catch (errMode) {}
                 showToast('Signed in to your business portal', 'success');
                 refreshPrivateProfiles();
                 refreshPrivateBookings();
@@ -10872,6 +11162,9 @@
             ensureAllowRecurringBookings(tenant);
             ensureBlockedArrays(tenant);
             const publicTenant = stripPrivateTenantFields(publicTenantForCloud(tenant));
+            // Private plan fields (complimentaryPro, billingExempt, monthlyPrice) are stripped above, so bake the
+            // effective plan in; otherwise the public checkout can fall back to pay-at-appointment only.
+            publicTenant.plan = normalizePlan(tenant);
             publicTenant.publicSlots = (Array.isArray(tenant.publicSlots) && tenant.publicSlots.length)
                 ? tenant.publicSlots.map(publicSlotFromAppointment).filter(Boolean)
                 : (tenant.appointments || []).map(publicSlotFromAppointment).filter(Boolean);
@@ -11144,7 +11437,8 @@
                     </div>
                     <div>
                         <label class="block text-xs text-slate-300 mb-1">Email Address *</label>
-                        <input type="email" id="pubClientEmail" required placeholder="jane@example.com" class="w-full px-3 py-2 rounded-xl glass-input text-xs">
+                        <input type="email" id="pubClientEmail" required autocomplete="email" inputmode="email" aria-describedby="pubClientEmailHint" placeholder="jane@example.com" class="w-full px-3 py-2 rounded-xl glass-input text-xs">
+                        <p id="pubClientEmailHint" class="text-[11px] text-slate-400 mt-1">We'll send your confirmation here, plus a link to change or cancel if plans shift.</p>
                     </div>
                 </div>
 
@@ -11165,6 +11459,14 @@
                 <div class="space-y-2">
                     <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider">Payment Method Preference</label>
                     <div id="paymentMethodsGrid" class="flex flex-wrap gap-2 text-xs"></div>
+                    <div id="payCodeBox" class="hidden p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/40 text-xs space-y-2" aria-live="polite">
+                        <p id="payCodeInstr" class="text-slate-200 leading-relaxed"></p>
+                        <div class="flex items-center gap-2" style="flex-wrap:wrap">
+                            <span class="text-slate-400" style="white-space:nowrap">Payment code</span>
+                            <span id="payCodeValue" style="white-space:nowrap;letter-spacing:0.12em" class="font-mono font-black text-emerald-300 text-sm tracking-widest whitespace-nowrap bg-slate-900 px-2.5 py-1 rounded-lg border border-slate-800"></span>
+                            <button type="button" id="payCodeCopyBtn" onclick="copyPayCode()" class="ml-auto min-h-[36px] px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold"><i class="fa-regular fa-copy mr-1"></i><span id="payCodeCopyLabel">Copy code</span></button>
+                        </div>
+                    </div>
                 </div>
 
                 <div id="cardPaymentFieldsBox" class="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-3 text-xs hidden">
@@ -11734,6 +12036,8 @@
                     (lengthLabel ? ('Length: ' + lengthLabel + nl) : '') +
                     (priceLabel !== null ? ('Price: ' + priceLabel + nl) : '') +
                     (payLabel ? ('Payment: ' + payLabel + nl) : '') +
+                    ((booking.payCode && ['cashapp', 'venmo', 'zelle', 'paypal'].indexOf(String(booking.paymentMethod || '').toLowerCase()) !== -1)
+                        ? ('Payment code: ' + booking.payCode + ' (put this in your payment note so ' + bizName + ' can match it)' + nl) : '') +
                     (address ? ('Where: ' + address + nl) : '') +
                     'Booking ref: #' + (booking.id || '') + nl +
                     (isSeries ? ('Recurrence: ' + recFreqLabelLocal + ' × ' + (rec.total || rec.dates.length) + nl + 'Upcoming dates: ' + seriesDatesLine + nl) : '') +
@@ -11749,9 +12053,12 @@
                     return '<tr><td style="padding:13px 0;' + border + 'font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#94a3b8;">' + safe(label) + '</td>'
                         + '<td style="padding:13px 0;' + border + 'font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#f1f5f9;font-weight:600;text-align:right;">' + valueHtml + '</td></tr>';
                 }
+                var payMethodLc = String(booking.paymentMethod || '').toLowerCase();
+                var showPayCode = !!booking.payCode && (payMethodLc === 'cashapp' || payMethodLc === 'venmo' || payMethodLc === 'zelle' || payMethodLc === 'paypal');
                 var rowBits = [];
                 rowBits.push(['Service', safe(booking.serviceName || 'Appointment')]);
                 if (priceLabel !== null) rowBits.push(['Price', safe(priceLabel)]);
+                if (showPayCode) rowBits.push(['Payment code', '<span style="font-family:monospace;font-size:15px;font-weight:700;letter-spacing:2px;color:#34d399;">' + safe(booking.payCode) + '</span><br><span style="font-size:11px;color:#94a3b8;font-weight:400;">Put this in your payment note</span>']);
                 if (payLabel) rowBits.push(['Payment', '<span style="display:inline-block;background-color:#064e3b;color:#34d399;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:600;">' + safe(payLabel) + '</span>']);
                 if (address) rowBits.push(['Where', safe(address)]);
                 rowBits.push(['Booking ref', safe('#' + (booking.id || ''))]);
@@ -12883,6 +13190,86 @@
             return quoteDeposit(servicePriceValuePublic(selectedSvc));
         }
 
+        // Payment code for manual payments (Cash App / Venmo / Zelle / PayPal / pay later). Easy to read:
+        // no 0/O/1/I/L. The server keeps it unique per business.
+        var PAY_CODE_ALPHABET = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
+        function newPayCode() {
+            var out = '';
+            var buf = null;
+            try { buf = new Uint32Array(4); window.crypto.getRandomValues(buf); } catch (e) { buf = null; }
+            for (var i = 0; i < 4; i++) {
+                var r = buf ? buf[i] : Math.floor(Math.random() * 4294967296);
+                out += PAY_CODE_ALPHABET.charAt(r % PAY_CODE_ALPHABET.length);
+            }
+            return 'SCH-' + out;
+        }
+        var pubPayCode = newPayCode();
+        function payCodeHandleFor(method) {
+            if (method === 'cashapp') {
+                var tag = String(tenantData.cashAppTag || '').replace(/[^A-Za-z0-9_]/g, '');
+                return tag ? ('$' + tag + ' on Cash App') : '';
+            }
+            if (method === 'venmo') {
+                var v = String(tenantData.venmoHandle || '').trim();
+                while (v.charAt(0) === '@') v = v.slice(1);
+                return v ? ('@' + v + ' on Venmo') : '';
+            }
+            if (method === 'zelle') {
+                var z = String(tenantData.zelleHandle || '').trim();
+                return z ? (z + ' with Zelle') : '';
+            }
+            if (method === 'paypal') {
+                var pp = String(tenantData.paypalHandle || '').trim();
+                return pp ? (pp + ' on PayPal') : '';
+            }
+            return '';
+        }
+        function paintPayCodeBox() {
+            var box = document.getElementById('payCodeBox');
+            if (!box) return;
+            var manual = selectedPay === 'cashapp' || selectedPay === 'venmo' || selectedPay === 'zelle' || selectedPay === 'paypal';
+            var quote = selectedServiceDepositQuote();
+            if (!manual || quote.required) { box.classList.add('hidden'); return; }
+            var price = servicePriceValuePublic(selectedSvc);
+            var amount = (price !== null && Number(price) > 0) ? ('$' + (Number.isInteger(Number(price)) ? String(Number(price)) : Number(price).toFixed(2))) : 'your payment';
+            var handle = payCodeHandleFor(selectedPay);
+            var biz = String(tenantData.name || 'the business');
+            var instr = document.getElementById('payCodeInstr');
+            if (instr) {
+                instr.innerHTML = 'Send <strong class="text-white">' + escPub(amount) + '</strong>' + (handle ? (' to <strong class="text-white">' + escPub(handle) + '</strong>') : '')
+                    + ' and put <strong class="text-emerald-300 font-mono">' + escPub(pubPayCode) + '</strong> in the note so ' + escPub(biz) + ' can match your payment.';
+            }
+            var val = document.getElementById('payCodeValue');
+            if (val) val.textContent = pubPayCode;
+            var lbl = document.getElementById('payCodeCopyLabel');
+            if (lbl) lbl.textContent = 'Copy code';
+            box.classList.remove('hidden');
+        }
+        function escPub(v) {
+            return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+        window.copyPayCode = function () {
+            var lbl = document.getElementById('payCodeCopyLabel');
+            function done() { if (lbl) lbl.textContent = 'Copied!'; }
+            function fallback() {
+                try {
+                    var ta = document.createElement('textarea');
+                    ta.value = pubPayCode;
+                    ta.setAttribute('readonly', '');
+                    ta.style.position = 'fixed';
+                    ta.style.opacity = '0';
+                    document.body.appendChild(ta);
+                    ta.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(ta);
+                    done();
+                } catch (e) { if (lbl) lbl.textContent = pubPayCode; }
+            }
+            try {
+                if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(pubPayCode).then(done, fallback);
+                else fallback();
+            } catch (e2) { fallback(); }
+        };
         function renderPay() {
             const container = document.getElementById('paymentMethodsGrid');
             const cardFieldsBox = document.getElementById('cardPaymentFieldsBox');
@@ -12924,6 +13311,13 @@
             if (!html) {
                 selectedPay = 'later';
                 html = '<button type="button" class="px-4 py-3 flex-1 min-w-[100px] rounded-xl border font-bold border-emerald-500 text-emerald-400 bg-emerald-500/10 glow-emerald"><i class="fa-solid fa-handshake block mb-1"></i>Pay at Appt</button>';
+            } else {
+                // The current choice must be one of the options shown (default was 'card' even when card is off).
+                var offered = ['card', 'cashapp', 'zelle', 'venmo', 'paypal', 'later'].filter(function (m) { return html.indexOf("selectPay('" + m + "')") !== -1; });
+                if (offered.indexOf(selectedPay) === -1 && offered.length) {
+                    selectedPay = offered[0];
+                    return renderPay();
+                }
             }
             if (container) container.innerHTML = html;
 
@@ -12931,6 +13325,7 @@
                 cardFieldsBox.classList.toggle('hidden', selectedPay !== 'card');
             }
             updatePayAmounts();
+            paintPayCodeBox();
         }
 
         window.selectPay = function(method) {
@@ -12957,6 +13352,7 @@
         }
 
         window.resetAndBookAnother = function() {
+            pubPayCode = newPayCode();
             document.getElementById('confirmationCard').classList.add('hidden');
             const forms = document.querySelectorAll('main > .glass-card');
             forms.forEach(f => {
@@ -13067,7 +13463,9 @@
             }
 
             if (!name || !email || !phone) {
-                fail('Please fill out all contact fields (full name, phone and email).');
+                fail(!email && name && phone
+                    ? 'Please add your email so we can send your confirmation.'
+                    : 'Please fill out all contact fields (full name, phone and email).');
                 return;
             }
 
@@ -13216,6 +13614,7 @@
                     }
                     if (bookingIsPendingReview) b.status = 'pending';
                     if (!b.createdAt) b.createdAt = new Date().toISOString();
+                    if (selectedPay !== 'card' && !depositQuote.required) b.payCode = idx === 0 ? pubPayCode : newPayCode();
                     if (seriesId) {
                         b.seriesId = seriesId;
                         b.recurrence = {

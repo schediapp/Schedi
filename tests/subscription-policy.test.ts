@@ -7,6 +7,8 @@ import {
   planStaysActiveUntil,
   subscriptionPeriodEndIso,
 } from "../src/lib/subscription-policy";
+import { MARKETING_PAGES } from "../worker/content";
+import { renderMarketingPage } from "../worker/render";
 
 const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const billing = readFileSync(new URL("../src/lib/billing.ts", import.meta.url), "utf8");
@@ -25,6 +27,51 @@ describe("owner subscription refund and cancellation policy", () => {
     expect(html).toContain("Your plan stays active until ");
     expect(html).not.toContain("After 15 days, that month is not refunded");
     expect(html).not.toContain("Canceling still stops the next renewal");
+    expect(html.match(/id="tenantBillingCard"/g)?.length).toBe(1);
+    expect(html.match(/id="tenantBillingUntil"/g)?.length).toBe(1);
+    expect(html.match(/id="tenantBillingPolicy"/g)?.length).toBe(1);
+    const compareStart = html.indexOf("function buildSchediPlanCompareTableHtml");
+    const compareEnd = html.indexOf("function buildSchediPlanCompareCardsHtml");
+    const compareFn = html.slice(compareStart, compareEnd);
+    expect(compareFn).toContain("buildSchediPlanCompareCardsHtml(rows)");
+    expect(compareFn).toContain("SCHEDI_OWNER_POLICY_SHORT");
+    expect(html.indexOf('id="tenantBannerPublicUrl"')).toBeLessThan(html.indexOf('id="tenantBillingCard"'));
+  });
+
+  it("states the same policy on the crawlable marketing pages", () => {
+    const retired = [
+      "After 15 days, that month is not refunded",
+      "Canceling still stops the next renewal",
+      "first paid Schedi subscription charge",
+      "15-day refund",
+    ];
+    const rendered = MARKETING_PAGES.map((page) => ({ path: page.path, html: renderMarketingPage(page) }));
+    for (const page of rendered) {
+      for (const phrase of retired) {
+        expect(page.html, page.path).not.toContain(phrase);
+      }
+    }
+    const required = [
+      "month-to-month, with no contract",
+      "end of the current paid billing period",
+      "keeps access until then and is not charged again",
+      "full refund of their first payment within 15 days",
+      "admin@schedi.app",
+      "Renewal payments are not refunded or prorated",
+      "billing errors or service outages",
+      "Complimentary plans are unaffected.",
+      "not a client's appointment deposit",
+    ];
+    for (const path of ["/", "/pricing", "/help", "/terms"]) {
+      const html = rendered.find((page) => page.path === path)?.html ?? "";
+      for (const phrase of required) {
+        const escaped = phrase.replaceAll("'", "&#39;");
+        expect(html.includes(phrase) || html.includes(escaped), `${path} missing: ${phrase}`).toBe(true);
+      }
+    }
+    const pricing = rendered.find((page) => page.path === "/pricing")?.html ?? "";
+    expect(pricing).toContain("Canceling keeps access until the paid period ends and does not pause the page.");
+    expect(pricing).not.toContain("failed or canceled owner subscription");
   });
 
   it("formats the active-until date the same way in the portal script", () => {

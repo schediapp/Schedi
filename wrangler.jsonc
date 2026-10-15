@@ -1,0 +1,35 @@
+{
+  // Public site worker for schedi.app. Marketing HTML is rendered in the script.
+  // Git's site/ is the SPA shell (index.html) only. Logos, help videos, favicon,
+  // manifests, and _headers stay in the deploy directory and are copied in beside
+  // that shell at deploy time. See README. /api/* and /billing/* stay on their
+  // more specific workers.
+  "name": "schedi-web",
+  "compatibility_date": "2026-10-13",
+  "main": "worker/index.ts",
+  "assets": {
+    "directory": "./site",
+    "binding": "ASSETS",
+    "not_found_handling": "none",
+    "html_handling": "none",
+    "run_worker_first": true
+  },
+  "vars": {
+    "FIREBASE_PROJECT_ID": "siteforge-97699"
+  },
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1
+    },
+    "traces": {
+      "enabled": true,
+      "head_sampling_rate": 0.01
+    }
+  },
+  "routes": [
+    { "pattern": "schedi.app/*", "zone_name": "schedi.app" },
+    { "pattern": "www.schedi.app/*", "zone_name": "schedi.app" }
+  ]
+}
