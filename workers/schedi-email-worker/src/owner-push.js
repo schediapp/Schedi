@@ -164,9 +164,18 @@ export function buildPushText(kind, booking) {
   return { title: pending ? 'New booking request' : 'New booking', body: detail };
 }
 
+/** Portal link for an alert. With a booking id the portal opens right at that booking (after sign-in if needed). */
+export function portalLink(bookingId) {
+  const id = safeId(bookingId);
+  return id ? PORTAL_URL + '?booking=' + encodeURIComponent(id) : PORTAL_URL;
+}
+
 /** FCM v1 message for one token. Web tokens get a webpush block the browser can show as-is. */
 export function buildFcmMessage(token, isWeb, msg, meta) {
-  const data = { kind: String(meta.kind), tenantId: String(meta.tenantId), bookingId: String(meta.bookingId || ''), url: PORTAL_URL };
+  const bookingId = safeId(meta.bookingId);
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(clip(meta.date, 10)) ? clip(meta.date, 10) : '';
+  const link = portalLink(bookingId);
+  const data = { kind: String(meta.kind), tenantId: String(meta.tenantId), bookingId, date, url: link };
   if (isWeb) {
     return {
       token,
@@ -174,7 +183,7 @@ export function buildFcmMessage(token, isWeb, msg, meta) {
       webpush: {
         headers: { Urgency: 'high', TTL: '86400' },
         notification: { title: msg.title, body: msg.body, icon: ICON_URL, tag: meta.tag, renotify: true },
-        fcm_options: { link: PORTAL_URL },
+        fcm_options: { link },
       },
     };
   }
@@ -220,7 +229,7 @@ async function sendPushToTokens(env, tenantId, doc, targets, msg, meta) {
       await savePushDoc(env, tenantId, nextPushDoc(fresh, { remove: dead }));
     } catch (_) {}
   }
-  console.log('owner-push', JSON.stringify({ tenantId, kind: meta.kind, sent, dead: dead.length, web: targets.filter((t) => doc.webTokens.includes(t)).length }));
+  console.log('owner-push', JSON.stringify({ tenantId, kind: meta.kind, bookingId: safeId(meta.bookingId), sent, dead: dead.length, web: targets.filter((t) => doc.webTokens.includes(t)).length }));
   return { sent, dead: dead.length };
 }
 
@@ -233,7 +242,7 @@ export async function sendOwnerPush(env, tenantId, booking, kind) {
     if (!doc.tokens.length) return { ok: true, skipped: true, reason: 'no_tokens' };
     const bookingId = clip(booking && booking.id, 40);
     const r = await sendPushToTokens(env, id, doc, doc.tokens, buildPushText(kind, booking), {
-      kind, bookingId, tag: 'booking-' + bookingId + '-' + kind,
+      kind, bookingId, date: clip(booking && booking.date, 10), tag: 'booking-' + bookingId + '-' + kind,
     });
     return { ok: r.sent > 0, sent: r.sent };
   } catch (err) {
