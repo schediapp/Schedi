@@ -722,11 +722,23 @@ function releasesSlot(booking) {
   return status === 'cancelled' || status === 'canceled' || status === 'denied';
 }
 
-function overlaps(aStart, aEnd, bStart, bEnd) {
-  return aStart < bEnd + 15 && bStart < aEnd + 15;
+export const APPOINTMENT_BUFFER_CHOICES = [0, 5, 10, 15, 30, 45, 60];
+
+export function appointmentBufferMins(tenant) {
+  const raw = tenant && tenant.appointmentBufferMins;
+  if (raw == null || raw === '') return 15;
+  const n = Number(raw);
+  if (APPOINTMENT_BUFFER_CHOICES.includes(n)) return n;
+  return 15;
 }
 
-function slotTaken(existing, booking, ignoreId) {
+function bufferedOverlap(aStart, aEnd, bStart, bEnd, gap) {
+  const g = gap == null || gap === '' ? 15 : Number(gap);
+  const buf = Number.isFinite(g) && g >= 0 ? g : 15;
+  return aStart < bEnd + buf && bStart < aEnd + buf;
+}
+
+function slotTaken(existing, booking, ignoreId, bufferMins) {
   const start = toMinutes(booking.time);
   if (start === null || !booking.date) return false;
   const dur = Number(booking.durationMins) > 0 ? Math.round(Number(booking.durationMins)) : 60;
@@ -738,7 +750,7 @@ function slotTaken(existing, booking, ignoreId) {
     const tStart = toMinutes(other.time);
     if (tStart === null) return false;
     const tDur = Number(other.durationMins) > 0 ? Math.round(Number(other.durationMins)) : 60;
-    return overlaps(start, end, tStart, tStart + tDur);
+    return bufferedOverlap(start, end, tStart, tStart + tDur, bufferMins == null ? 15 : bufferMins);
   });
 }
 
@@ -1049,7 +1061,7 @@ export async function handlePrivateBookingHttp(request, env, origin, path, deps,
         date: body.date ? clip(body.date, 10) : next.date,
         time: body.time ? clip(body.time, 15) : next.time,
       });
-      if (slotTaken(appts, proposed, next.id)) {
+      if (slotTaken(appts, proposed, next.id, appointmentBufferMins(tenant))) {
         return respond(json, { ok: false, error: 'slot_taken' }, 409, origin, isAllowedOrigin);
       }
       next.date = proposed.date;
@@ -1154,7 +1166,7 @@ export async function handlePrivateBookingHttp(request, env, origin, path, deps,
         return respond(json, { ok: false, error: 'duplicate_booking' }, 409, origin, isAllowedOrigin);
       }
       const withNew = existing.concat(created);
-      if (slotTaken(withNew, booking)) {
+      if (slotTaken(withNew, booking, '', appointmentBufferMins(tenant))) {
         return respond(json, { ok: false, error: 'slot_taken' }, 409, origin, isAllowedOrigin);
       }
       created.push(booking);

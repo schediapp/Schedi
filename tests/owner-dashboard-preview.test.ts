@@ -9,7 +9,7 @@ import { renderRobots, renderSitemap } from "../worker/render";
 
 const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const root = new URL("..", import.meta.url).pathname;
-const BOOKING_TEMPLATE_SHA = "ea64ee5447deb41250a67112608b13fcd787e6a8fcd840d947c7c4bb6d76cd76";
+const BOOKING_TEMPLATE_SHA = "ad23ad166c135a740db01c71cfa2066e3410bfa0d0f5e395fb11010b9d8f36c0";
 const SHELL_STYLE_SHA = "7c1f1bbb7af97aa8c1e95ab8de650f6493512361a409fd083bcbe3a2c04332d6";
 
 function bookingTemplate(source: string): string {
@@ -164,7 +164,7 @@ function runHead(pathname: string, search: string, hostname: string, stored: Rec
 }
 
 describe("owner dashboard preview", () => {
-  it("leaves the public booking page HTML and CSS unchanged", () => {
+  it("pins the public booking template and keeps dashboard CSS scoped", () => {
     const template = bookingTemplate(html);
     expect(createHash("sha256").update(template).digest("hex")).toBe(BOOKING_TEMPLATE_SHA);
     expect(template).toContain("<style>");
@@ -293,6 +293,103 @@ describe("owner dashboard preview", () => {
     expect(boot).toBeGreaterThan(ready);
     expect(boot).toBeLessThan(load);
   });
+
+  it("builds owner recurring dates the same way the public booking page does", () => {
+    const ownerSource = ["localISODate", "parseIsoDateLocal", "addIsoDays", "shiftIsoMonth", "buildOwnerRecurringDates", "buildOwnerSeriesDates"]
+      .map((name) => extractFunction(html, name))
+      .join("\n");
+    const owner = new Function(`${ownerSource}; var OWNER_SERIES_MAX = 12; return { buildOwnerRecurringDates, buildOwnerSeriesDates };`)() as {
+      buildOwnerRecurringDates: (start: string, frequency: string, count: number) => string[];
+      buildOwnerSeriesDates: (start: string, frequency: string, count: number, extra: string[]) => string[];
+    };
+    const template = bookingTemplate(html);
+    const pubSource = ["localISODate", "addDaysISO", "addMonthsISO", "generateRecurringDates"]
+      .map((name) => extractFunction(template, name))
+      .join("\n");
+    const generateRecurringDates = new Function(`${pubSource}; var MAX_SERIES_VISITS = 12; return generateRecurringDates;`)() as (
+      start: string,
+      frequency: string,
+      count: number,
+    ) => string[];
+    for (const freq of ["weekly", "biweekly", "monthly"]) {
+      expect(owner.buildOwnerRecurringDates("2026-10-15", freq, 4)).toEqual(generateRecurringDates("2026-10-15", freq, 4));
+    }
+    expect(owner.buildOwnerRecurringDates("2026-01-31", "monthly", 3)).toEqual(generateRecurringDates("2026-01-31", "monthly", 3));
+    expect(owner.buildOwnerRecurringDates("2026-10-15", "weekly", 40)).toEqual(generateRecurringDates("2026-10-15", "weekly", 40));
+    expect(owner.buildOwnerRecurringDates("2026-10-15", "weekly", 1)).toEqual(generateRecurringDates("2026-10-15", "weekly", 1));
+    expect(owner.buildOwnerSeriesDates("2026-10-15", "custom", 4, ["2026-10-20", "2026-10-10", "2026-11-02", "2026-10-20"])).toEqual([
+      "2026-10-15", "2026-10-20", "2026-11-02",
+    ]);
+    const addKind = html.slice(html.indexOf("window.schediDashAddKind = function"), html.indexOf("var OWNER_SERIES_MAX"));
+    const fromClient = html.slice(html.indexOf("window.openClientRecurring = function"), html.indexOf("window.toggleClientAddForm"));
+    expect(addKind).toContain("openOwnerRecurringModal()");
+    expect(fromClient).toContain("openOwnerRecurringModal({");
+    expect(fromClient).toContain("clientName:");
+    expect(html).toContain("New recurring appointment");
+  });
+
+  it("opens a recurring series form and declines through the styled confirm", () => {
+    const addStart = html.indexOf("window.schediDashAddKind = function");
+    const addEnd = html.indexOf("var OWNER_SERIES_MAX", addStart);
+    const addKind = html.slice(addStart, addEnd);
+    expect(addKind).toContain("openOwnerRecurringModal");
+    expect(addKind).not.toContain("tenantAllowRecurringCheck");
+    expect(addKind).not.toContain("window.confirm");
+    const deny = extractFunction(html, "denyAppointment");
+    expect(deny).toContain("openDenyConfirmModal");
+    expect(deny).not.toContain("window.confirm");
+    expect(html).toContain('id="ownerRecurringModal"');
+    expect(html).toContain('id="denyConfirmModal"');
+    expect(html).toContain('id="ownerRecurClient"');
+    expect(html).toContain('name="ownerRecurFreq" value="weekly"');
+    expect(html).toContain('name="ownerRecurFreq" value="biweekly"');
+    expect(html).toContain("> Biweekly</label>");
+    expect(html).toContain('name="ownerRecurFreq" value="monthly"');
+    expect(html).toContain('name="ownerRecurFreq" value="custom"');
+    expect(html).toContain(">End after</label>");
+    expect(html).not.toContain('name="ownerRecurEnd"');
+    expect(html).toContain("seriesId: seriesId");
+    expect(html).toContain("This demo does not save a recurring series.");
+    expect(html).toContain("data-booking-id");
+    const modal = html.slice(html.indexOf('id="denyConfirmModal"'), html.indexOf('id="ownerRecurringModal"'));
+    expect(modal).toContain('role="dialog"');
+    expect(modal).toContain("Decline");
+    expect(modal).not.toContain("window.confirm");
+  });
+
+  it("suggests a service icon from whole words and keeps an explicit class", () => {
+    const start = html.indexOf("var SERVICE_ICON_RULES");
+    const source = html.slice(start, html.indexOf("function serviceIconClass", start));
+    const suggest = new Function(`${source}; return suggestServiceIcon;`)() as (name: string, desc?: string) => string;
+    expect(suggest("Haircut", "")).toBe("fa-scissors");
+    expect(suggest("low fade", "")).toBe("fa-scissors");
+    expect(suggest("Beard trim", "")).toBe("fa-scissors");
+    expect(suggest("Barber", "")).toBe("fa-scissors");
+    expect(suggest("Manicure", "")).toBe("fa-hand");
+    expect(suggest("Deep tissue massage", "")).toBe("fa-spa");
+    expect(suggest("Strategy session", "coaching")).toBe("fa-briefcase");
+    expect(suggest("Headshot", "")).toBe("fa-camera");
+    expect(suggest("Move-out clean", "")).toBe("fa-broom");
+    expect(suggest("Personal training", "")).toBe("fa-dumbbell");
+    expect(suggest("Piano lesson", "")).toBe("fa-book");
+    expect(suggest("Auto detail", "")).toBe("fa-car");
+    expect(suggest("Dog groom", "")).toBe("fa-paw");
+    expect(suggest("Window washing", "")).toBe("fa-calendar");
+    expect(suggest("", "")).toBe("fa-calendar");
+    expect(suggest("Card payment", "")).toBe("fa-calendar");
+    expect(suggest("Classic color", "")).toBe("fa-calendar");
+    expect(suggest("Scar treatment", "")).toBe("fa-calendar");
+    expect(suggest("House cleaning", "")).toBe("fa-calendar");
+    expect(suggest("Consult about my car", "")).toBe("fa-briefcase");
+    expect(html).not.toContain("FontAwesome Icon Class");
+    expect(html).toContain('id="svcIconGrid"');
+    expect(html).toContain("Upload your own");
+    expect(html).toContain("Current icon");
+    const save = html.slice(html.indexOf("window.handleAddServiceSubmit = function"), html.indexOf("window.deleteService = function"));
+    expect(save).toContain("suggestServiceIcon");
+    expect(save).toContain("svc.icon = icon");
+    expect(html.indexOf("id=\"tenantServiceModal\"")).toBeLessThan(html.indexOf("return `<!DOCTYPE html>"));
+  });
 });
 
 const chrome = ["/usr/bin/google-chrome", "/usr/bin/google-chrome-stable", "/usr/bin/chromium", "/usr/bin/chromium-browser"].find((path) => existsSync(path));
@@ -355,6 +452,57 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
         return document.getElementById("schediStatReview")?.textContent || "";
       });
       expect(accept).toBe("1");
+      const decline = await page.evaluate(() => {
+        window.confirm = () => { throw new Error("browser confirm"); };
+        const button = [...document.querySelectorAll("#schediTodayRequests button")].find((node) => node.textContent === "Decline");
+        if (!button) return { open: false, title: "missing" };
+        (button as HTMLButtonElement).click();
+        const modal = document.getElementById("denyConfirmModal");
+        return {
+          open: !!modal && !modal.classList.contains("hidden"),
+          title: document.getElementById("denyConfirmTitle")?.textContent || "",
+          centered: modal ? getComputedStyle(modal).alignItems : "",
+        };
+      });
+      expect(decline.open).toBe(true);
+      expect(decline.title).toMatch(/Decline/);
+      const kept = await page.evaluate(() => {
+        (document.getElementById("denyConfirmKeep") as HTMLButtonElement).click();
+        return {
+          hidden: document.getElementById("denyConfirmModal")?.classList.contains("hidden") === true,
+          review: document.getElementById("schediStatReview")?.textContent || "",
+        };
+      });
+      expect(kept).toEqual({ hidden: true, review: "1" });
+      const declined = await page.evaluate(() => {
+        const button = [...document.querySelectorAll("#schediTodayRequests button")].find((node) => node.textContent === "Decline");
+        (button as HTMLButtonElement).click();
+        (document.getElementById("denyConfirmBtn") as HTMLButtonElement).click();
+        return document.getElementById("schediStatReview")?.textContent || "";
+      });
+      expect(declined).toBe("0");
+      const series = await page.evaluate(() => {
+        const before = (window as unknown as { getTenant: () => { appointments: unknown[] } }).getTenant().appointments.length;
+        (window as unknown as { schediDashAddKind: (kind: string) => void }).schediDashAddKind("recurring");
+        const modal = document.getElementById("ownerRecurringModal");
+        const client = document.getElementById("ownerRecurClient") as HTMLInputElement;
+        const date = document.getElementById("ownerRecurDate") as HTMLInputElement;
+        client.value = "Maya Chen";
+        date.value = "2027-03-02";
+        (window as unknown as { onOwnerRecurDateChange: () => void }).onOwnerRecurDateChange();
+        (document.getElementById("ownerRecurringForm") as HTMLFormElement).requestSubmit();
+        return {
+          open: !!modal && !modal.classList.contains("hidden"),
+          note: document.getElementById("ownerRecurNote")?.textContent || "",
+          visits: document.getElementById("ownerRecurPreview")?.textContent || "",
+          after: (window as unknown as { getTenant: () => { appointments: unknown[] } }).getTenant().appointments.length,
+          before,
+        };
+      });
+      expect(series.open).toBe(true);
+      expect(series.note).toContain("This demo does not save a recurring series");
+      expect(series.visits).toContain("Mar");
+      expect(series.after).toBe(series.before);
       const probe = await page.evaluate(async () => {
         const before = (window as unknown as { __schediDemoBlocked: { url: string; method: string }[] }).__schediDemoBlocked.length;
         await fetch("https://schedi.app/api/profile", { method: "POST", body: "{}" });
