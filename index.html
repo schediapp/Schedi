@@ -389,6 +389,492 @@
         html.schedi-light #platformModeNav, html.schedi-light #tenantSelectorContainer { background-color: #ffffff !important; }
         html.schedi-light #navModeTenant.bg-slate-800 { background-color: #e2e8f0 !important; }
             </style>
+<style id="schediNewDashStyle">
+/* schedi-newdash: owner portal preview only. Every selector includes schedi-newdash. */
+html.schedi-newdash-boot #tenantDashboard { visibility: hidden; }
+html.schedi-newdash-ready #tenantDashboard { visibility: visible; }
+body.schedi-newdash { background: #06080d; }
+html.schedi-light body.schedi-newdash { background: #f4f7fb; }
+body.schedi-newdash > header { display: none !important; }
+body.schedi-newdash #publicHomeFooter { display: none !important; }
+body.schedi-newdash main { max-width: none !important; width: 100% !important; margin: 0 !important; padding: 0 !important; }
+#tenantPortalSection.schedi-newdash [hidden] { display: none !important; }
+#tenantPortalSection.schedi-newdash {
+    animation: none;
+    transform: none;
+    --sd-bg: #06080d;
+    --sd-panel: #0f172a;
+    --sd-line: rgba(255, 255, 255, 0.08);
+    --sd-text: #f1f5f9;
+    --sd-muted: #94a3b8;
+    --sd-faint: #64748b;
+    --sd-brand: #10b981;
+    --sd-brand-2: #34d399;
+    --sd-ink: #022c22;
+    --sd-amber: #fbbf24;
+    --sd-rose: #fb7185;
+    --sd-shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
+    margin: 0;
+    min-height: 100vh;
+    padding: 76px 28px 48px 268px;
+    color: var(--sd-text);
+}
+html.schedi-light #tenantPortalSection.schedi-newdash {
+    --sd-bg: #f4f7fb;
+    --sd-panel: #ffffff;
+    --sd-line: #d7dee8;
+    --sd-text: #0f172a;
+    --sd-muted: #475569;
+    --sd-faint: #64748b;
+    --sd-brand: #059669;
+    --sd-brand-2: #047857;
+    --sd-ink: #ffffff;
+    --sd-amber: #b45309;
+    --sd-rose: #be123c;
+    --sd-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
+}
+#tenantPortalSection.schedi-newdash #tenantDashboard > * + * { margin-top: 0 !important; }
+#tenantPortalSection.schedi-newdash #schediDashSidebar {
+    position: fixed;
+    z-index: 30;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 244px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 18px 14px 16px;
+    background: var(--sd-panel);
+    border-right: 1px solid var(--sd-line);
+    overflow: auto;
+}
+#tenantPortalSection.schedi-newdash #schediDashTop {
+    position: fixed;
+    z-index: 35;
+    top: 0;
+    left: 244px;
+    right: 0;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 18px;
+    background: color-mix(in srgb, var(--sd-panel) 92%, transparent);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--sd-line);
+}
+#tenantPortalSection.schedi-newdash .sd-brand { display: inline-flex; align-items: center; gap: 8px; min-width: 0; text-decoration: none; color: var(--sd-text); }
+#tenantPortalSection.schedi-newdash .sd-brand-img { height: 28px; width: auto; display: block; }
+#tenantPortalSection.schedi-newdash .sd-brand-img[src=""],
+#tenantPortalSection.schedi-newdash .sd-wordmark { font-weight: 800; letter-spacing: -0.03em; font-size: 1.15rem; }
+#tenantPortalSection.schedi-newdash .sd-brand-mobile { display: none; }
+#tenantPortalSection.schedi-newdash .sd-top-spacer { flex: 1; }
+#tenantPortalSection.schedi-newdash .sd-biz { margin: 2px 8px 10px; font-size: 12px; font-weight: 700; color: var(--sd-muted); }
+#tenantPortalSection.schedi-newdash .sd-nav { display: flex; flex-direction: column; gap: 4px; }
+#tenantPortalSection.schedi-newdash .sd-nav-foot { margin-top: auto; padding-top: 12px; border-top: 1px solid var(--sd-line); }
+#tenantPortalSection.schedi-newdash .sd-nav button,
+#tenantPortalSection.schedi-newdash #schediDashMoreSheet .sd-sheet-card > button,
+#tenantPortalSection.schedi-newdash #schediDashAddMenu button {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    text-align: left;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--sd-muted);
+    border-radius: 12px;
+    padding: 10px 12px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+}
+#tenantPortalSection.schedi-newdash .sd-nav button i { width: 1.1rem; text-align: center; color: var(--sd-faint); }
+#tenantPortalSection.schedi-newdash .sd-nav button.is-on,
+#tenantPortalSection.schedi-newdash .sd-nav button[aria-current="page"] {
+    background: rgba(16, 185, 129, 0.14);
+    color: var(--sd-brand-2);
+    border-color: rgba(16, 185, 129, 0.28);
+}
+#tenantPortalSection.schedi-newdash .sd-nav button.is-on i { color: var(--sd-brand); }
+#tenantPortalSection.schedi-newdash .sd-nav button:hover { background: rgba(148, 163, 184, 0.08); color: var(--sd-text); }
+#tenantPortalSection.schedi-newdash .sd-text-btn,
+#tenantPortalSection.schedi-newdash .sd-user {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 999px;
+    border: 1px solid var(--sd-line);
+    background: var(--sd-panel);
+    color: var(--sd-text);
+    font-size: 13px;
+    font-weight: 700;
+    padding: 6px 12px;
+    cursor: pointer;
+}
+#tenantPortalSection.schedi-newdash .sd-user { padding-left: 6px; }
+#tenantPortalSection.schedi-newdash .sd-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(16, 185, 129, 0.18);
+    color: var(--sd-brand-2);
+    font-size: 11px;
+    font-weight: 800;
+}
+#tenantPortalSection.schedi-newdash .sd-demo-note {
+    margin: 0 0 14px;
+    padding: 8px 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    background: rgba(14, 165, 233, 0.1);
+    color: #7dd3fc;
+    font-size: 12px;
+    font-weight: 700;
+}
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-demo-note { color: #0369a1; background: #e0f2fe; border-color: #bae6fd; }
+#tenantPortalSection.schedi-newdash #schediTodayPanel { display: none; }
+#tenantPortalSection.schedi-newdash[data-dash="today"] #schediTodayPanel { display: block; }
+#tenantPortalSection.schedi-newdash .sd-today-head { display: flex; justify-content: space-between; gap: 16px; align-items: flex-end; margin-bottom: 18px; }
+#tenantPortalSection.schedi-newdash .sd-kicker { margin: 0; font-size: 13px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--sd-brand-2); }
+#tenantPortalSection.schedi-newdash #schediTodayHeading { margin: 2px 0 0; font-size: 1.7rem; font-weight: 800; letter-spacing: -0.03em; color: var(--sd-text); }
+#tenantPortalSection.schedi-newdash .sd-date,
+#tenantPortalSection.schedi-newdash .sd-linkline { margin: 4px 0 0; color: var(--sd-muted); font-size: 13px; }
+#tenantPortalSection.schedi-newdash .sd-linkline { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+#tenantPortalSection.schedi-newdash .sd-today-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+#tenantPortalSection.schedi-newdash .sd-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 12px;
+    padding: 10px 14px;
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+    border: 1px solid var(--sd-line);
+}
+#tenantPortalSection.schedi-newdash .sd-btn-ghost { background: var(--sd-panel); color: var(--sd-text); }
+#tenantPortalSection.schedi-newdash .sd-btn-brand { background: var(--sd-brand); color: var(--sd-ink); border-color: transparent; }
+#tenantPortalSection.schedi-newdash .sd-btn-ok { background: rgba(16, 185, 129, 0.16); color: var(--sd-brand-2); border-color: rgba(16, 185, 129, 0.35); }
+#tenantPortalSection.schedi-newdash .sd-btn-no { background: rgba(244, 63, 94, 0.1); color: var(--sd-rose); border-color: rgba(244, 63, 94, 0.35); }
+#tenantPortalSection.schedi-newdash .sd-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
+#tenantPortalSection.schedi-newdash .sd-stat,
+#tenantPortalSection.schedi-newdash .sd-card,
+#tenantPortalSection.schedi-newdash .sd-setup {
+    background: var(--sd-panel);
+    border: 1px solid var(--sd-line);
+    border-radius: 18px;
+    box-shadow: var(--sd-shadow);
+}
+#tenantPortalSection.schedi-newdash .sd-stat { padding: 14px 16px; }
+#tenantPortalSection.schedi-newdash .sd-stat p,
+#tenantPortalSection.schedi-newdash .sd-stat span { margin: 0; color: var(--sd-muted); font-size: 12px; font-weight: 700; }
+#tenantPortalSection.schedi-newdash .sd-stat strong { display: block; margin: 6px 0 2px; font-size: 1.7rem; letter-spacing: -0.03em; color: var(--sd-text); }
+#tenantPortalSection.schedi-newdash .sd-block { margin-top: 18px; }
+#tenantPortalSection.schedi-newdash .sd-block > h3,
+#tenantPortalSection.schedi-newdash .sd-setup h3 { margin: 0 0 10px; font-size: 15px; font-weight: 800; color: var(--sd-text); }
+#tenantPortalSection.schedi-newdash .sd-stack { display: flex; flex-direction: column; gap: 8px; }
+#tenantPortalSection.schedi-newdash .sd-card { padding: 12px 14px; }
+#tenantPortalSection.schedi-newdash .sd-request { display: flex; justify-content: space-between; gap: 12px; align-items: center; border-left: 3px solid var(--sd-amber); }
+#tenantPortalSection.schedi-newdash .sd-request h4,
+#tenantPortalSection.schedi-newdash .sd-row h4 { margin: 0; font-size: 14px; color: var(--sd-text); }
+#tenantPortalSection.schedi-newdash .sd-meta { margin: 3px 0 0; color: var(--sd-muted); font-size: 12px; }
+#tenantPortalSection.schedi-newdash .sd-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+#tenantPortalSection.schedi-newdash .sd-row { display: grid; grid-template-columns: 92px minmax(0, 1fr) auto auto; gap: 10px; align-items: center; }
+#tenantPortalSection.schedi-newdash .sd-time { font-weight: 800; color: var(--sd-brand-2); font-size: 13px; }
+#tenantPortalSection.schedi-newdash .sd-pill { display: inline-flex; align-items: center; border-radius: 999px; padding: 3px 8px; font-size: 11px; font-weight: 800; border: 1px solid transparent; white-space: nowrap; }
+#tenantPortalSection.schedi-newdash .sd-pill-ok { color: var(--sd-brand-2); background: rgba(16, 185, 129, 0.14); border-color: rgba(16, 185, 129, 0.3); }
+#tenantPortalSection.schedi-newdash .sd-pill-amber { color: var(--sd-amber); background: rgba(245, 158, 11, 0.12); border-color: rgba(245, 158, 11, 0.3); }
+#tenantPortalSection.schedi-newdash .sd-pill-rose { color: var(--sd-rose); background: rgba(244, 63, 94, 0.1); border-color: rgba(244, 63, 94, 0.28); }
+#tenantPortalSection.schedi-newdash .sd-more { position: relative; }
+#tenantPortalSection.schedi-newdash .sd-more > summary {
+    list-style: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+    border: 1px solid var(--sd-line);
+    background: var(--sd-bg);
+    color: var(--sd-text);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-weight: 800;
+}
+#tenantPortalSection.schedi-newdash .sd-more > summary::-webkit-details-marker { display: none; }
+#tenantPortalSection.schedi-newdash .sd-more-menu {
+    position: absolute;
+    z-index: 5;
+    right: 0;
+    top: 40px;
+    min-width: 180px;
+    padding: 6px;
+    border-radius: 14px;
+    border: 1px solid var(--sd-line);
+    background: var(--sd-panel);
+    box-shadow: var(--sd-shadow);
+}
+#tenantPortalSection.schedi-newdash .sd-more-menu button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border: 0;
+    color: var(--sd-text);
+    border-radius: 10px;
+    padding: 8px 10px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+}
+#tenantPortalSection.schedi-newdash .sd-more-menu button:hover { background: rgba(148, 163, 184, 0.1); }
+#tenantPortalSection.schedi-newdash .sd-empty { margin: 0; color: var(--sd-muted); font-size: 13px; padding: 8px 2px; }
+#tenantPortalSection.schedi-newdash .sd-setup { padding: 14px 16px 16px; }
+#tenantPortalSection.schedi-newdash .sd-progress { height: 6px; border-radius: 999px; background: rgba(148, 163, 184, 0.2); overflow: hidden; margin-bottom: 12px; }
+#tenantPortalSection.schedi-newdash .sd-progress > span { display: block; height: 100%; width: 0; background: var(--sd-brand); }
+#tenantPortalSection.schedi-newdash .sd-check {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border: 0;
+    color: var(--sd-text);
+    font-weight: 700;
+    font-size: 14px;
+    padding: 8px 2px;
+    cursor: pointer;
+}
+#tenantPortalSection.schedi-newdash .sd-check i { width: 1.1rem; color: var(--sd-faint); }
+#tenantPortalSection.schedi-newdash .sd-check.is-done { color: var(--sd-muted); }
+#tenantPortalSection.schedi-newdash .sd-check.is-done i { color: var(--sd-brand); }
+#tenantPortalSection.schedi-newdash #tenantSectionRoster,
+#tenantPortalSection.schedi-newdash #tenantSectionServices,
+#tenantPortalSection.schedi-newdash #tenantSectionHours,
+#tenantPortalSection.schedi-newdash #tenantSectionPayments,
+#tenantPortalSection.schedi-newdash #tenantSectionNotifications,
+#tenantPortalSection.schedi-newdash #tenantSectionReport,
+#tenantPortalSection.schedi-newdash #tenantSectionClients,
+#tenantPortalSection.schedi-newdash #tenantTabBar,
+#tenantPortalSection.schedi-newdash #tenantHeaderCard,
+#tenantPortalSection.schedi-newdash #tenantMoreCard,
+#tenantPortalSection.schedi-newdash #tenantBillingCard { display: none !important; }
+#tenantPortalSection.schedi-newdash[data-dash="appointments"] #tenantSectionRoster,
+#tenantPortalSection.schedi-newdash[data-dash="services"] #tenantSectionServices,
+#tenantPortalSection.schedi-newdash[data-dash="hours"] #tenantSectionHours,
+#tenantPortalSection.schedi-newdash[data-dash="profile"] #tenantSectionHours,
+#tenantPortalSection.schedi-newdash[data-dash="payments"] #tenantSectionPayments,
+#tenantPortalSection.schedi-newdash[data-dash="emails"] #tenantSectionNotifications,
+#tenantPortalSection.schedi-newdash[data-dash="reports"] #tenantSectionReport,
+#tenantPortalSection.schedi-newdash[data-dash="clients"] #tenantSectionClients,
+#tenantPortalSection.schedi-newdash[data-dash="account"] #tenantMoreCard,
+#tenantPortalSection.schedi-newdash[data-dash="billing"] #tenantBillingCard { display: block !important; }
+#tenantPortalSection.schedi-newdash[data-dash="hours"] #tenantProfileFields,
+#tenantPortalSection.schedi-newdash[data-dash="profile"] #tenantHoursShiftBlock,
+#tenantPortalSection.schedi-newdash[data-dash="profile"] #tenantHoursTimeOff { display: none !important; }
+#tenantPortalSection.schedi-newdash #tenantSectionRoster,
+#tenantPortalSection.schedi-newdash #tenantSectionServices,
+#tenantPortalSection.schedi-newdash #tenantSectionHours,
+#tenantPortalSection.schedi-newdash #tenantSectionPayments,
+#tenantPortalSection.schedi-newdash #tenantSectionNotifications,
+#tenantPortalSection.schedi-newdash #tenantSectionReport,
+#tenantPortalSection.schedi-newdash #tenantSectionClients,
+#tenantPortalSection.schedi-newdash #tenantMoreCard,
+#tenantPortalSection.schedi-newdash #tenantBillingCard {
+    background: var(--sd-panel);
+    border: 1px solid var(--sd-line);
+    border-radius: 20px;
+    box-shadow: var(--sd-shadow);
+}
+#tenantPortalSection.schedi-newdash #rosterListWrap { border: 1px solid var(--sd-line); border-radius: 16px; }
+#tenantPortalSection.schedi-newdash #schediDashTabbar { display: none; }
+#tenantPortalSection.schedi-newdash #schediDashAddMenu {
+    position: fixed;
+    z-index: 60;
+    min-width: 220px;
+    padding: 6px;
+    border-radius: 16px;
+    border: 1px solid var(--sd-line);
+    background: var(--sd-panel);
+    box-shadow: var(--sd-shadow);
+}
+#tenantPortalSection.schedi-newdash #schediDashAddMenu button i { width: 1.1rem; text-align: center; }
+#tenantPortalSection.schedi-newdash .sd-sheet {
+    position: fixed;
+    z-index: 70;
+    inset: 0;
+    background: rgba(2, 6, 23, 0.62);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 16px;
+}
+#tenantPortalSection.schedi-newdash .sd-sheet-card {
+    width: min(520px, 100%);
+    max-height: min(82vh, 760px);
+    overflow: auto;
+    background: var(--sd-panel);
+    color: var(--sd-text);
+    border: 1px solid var(--sd-line);
+    border-radius: 20px;
+    padding: 8px;
+    box-shadow: var(--sd-shadow);
+}
+#tenantPortalSection.schedi-newdash .sd-sheet-bar { display: flex; align-items: center; justify-content: space-between; padding: 8px 8px 4px; }
+#tenantPortalSection.schedi-newdash .sd-sheet-bar h3 { margin: 0; font-size: 16px; font-weight: 800; }
+#tenantPortalSection.schedi-newdash .sd-sheet-bar button,
+#tenantPortalSection.schedi-newdash .sd-sheet-card > button { color: var(--sd-text); }
+#tenantPortalSection.schedi-newdash .sd-sheet-rule { height: 1px; background: var(--sd-line); margin: 6px 8px; }
+#tenantPortalSection.schedi-newdash .sd-danger { color: var(--sd-rose) !important; }
+#tenantPortalSection.schedi-newdash .sd-help-lead { margin: 4px 10px 8px; color: var(--sd-muted); font-size: 13px; }
+#tenantPortalSection.schedi-newdash .sd-help-lead a { color: var(--sd-brand-2); font-weight: 800; }
+#tenantPortalSection.schedi-newdash .sd-help-card { width: min(880px, 100%); }
+@media (max-width: 859px) {
+    #tenantPortalSection.schedi-newdash { padding: 72px 14px 112px; }
+    #tenantPortalSection.schedi-newdash #schediDashSidebar { display: none !important; }
+    #tenantPortalSection.schedi-newdash #schediDashTop { left: 0; }
+    #tenantPortalSection.schedi-newdash .sd-brand-mobile { display: inline-flex; }
+    #tenantPortalSection.schedi-newdash .sd-user-name { display: none; }
+    #tenantPortalSection.schedi-newdash .sd-stats { grid-template-columns: 1fr 1fr; }
+    #tenantPortalSection.schedi-newdash .sd-today-head,
+    #tenantPortalSection.schedi-newdash .sd-request,
+    #tenantPortalSection.schedi-newdash .sd-row { display: flex; flex-wrap: wrap; }
+    #tenantPortalSection.schedi-newdash .sd-today-actions,
+    #tenantPortalSection.schedi-newdash .sd-today-actions .sd-btn { width: 100%; }
+    #tenantPortalSection.schedi-newdash .sd-today-actions .sd-btn { justify-content: center; }
+    #tenantPortalSection.schedi-newdash #schediDashTabbar {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        position: fixed;
+        z-index: 40;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        padding: 8px 6px calc(8px + env(safe-area-inset-bottom));
+        background: var(--sd-panel);
+        border-top: 1px solid var(--sd-line);
+    }
+    #tenantPortalSection.schedi-newdash #schediDashTabbar > button {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 3px;
+        background: transparent;
+        border: 0;
+        color: var(--sd-muted);
+        font-size: 10px;
+        font-weight: 800;
+        padding: 4px 0 2px;
+        cursor: pointer;
+    }
+    #tenantPortalSection.schedi-newdash #schediDashTabbar > button.is-on { color: var(--sd-brand-2); }
+    #tenantPortalSection.schedi-newdash #schediDashTabbar .sd-fab {
+        width: 52px;
+        height: 52px;
+        margin: -26px auto 0;
+        border-radius: 999px;
+        background: var(--sd-brand);
+        color: var(--sd-ink);
+        border: 3px solid var(--sd-bg);
+        font-size: 20px;
+        justify-content: center;
+    }
+}
+@media (min-width: 860px) {
+    #tenantPortalSection.schedi-newdash #schediDashTabbar { display: none !important; }
+}
+
+</style>
+<script>
+(function () {
+    var path = '';
+    var q;
+    try { path = String(location.pathname || '/').replace(/\/+/g, '/').replace(/\/$/, '').toLowerCase(); } catch (errPath) { path = ''; }
+    try { q = new URLSearchParams(location.search || ''); } catch (errQ) { q = new URLSearchParams(); }
+    var demo = path === '/portal-preview' || q.get('demo') === '1';
+    window.__SCHEDI_DEMO = demo;
+    var dash;
+    if (q.get('newdash') === '0') dash = false;
+    else if (q.get('newdash') === '1' || demo) dash = true;
+    else {
+        var stored = null;
+        try { stored = localStorage.getItem('schediNewDash'); } catch (errStore) { stored = null; }
+        if (stored === '0') dash = false;
+        else if (stored === '1') dash = true;
+        else {
+            var host = '';
+            try { host = String(location.hostname || ''); } catch (errHost) { host = ''; }
+            dash = host !== 'schedi.app' && host !== 'www.schedi.app';
+        }
+    }
+    window.__SCHEDI_NEWDASH = dash;
+    if (dash) document.documentElement.classList.add('schedi-newdash-boot');
+    if (!demo) return;
+    window.__schediDemoBlocked = [];
+    function demoHostBlocked(url) {
+        var u = String(url || '');
+        if (/fonts\.googleapis\.com|fonts\.gstatic\.com|cdn\.tailwindcss\.com|cdnjs\.cloudflare\.com/i.test(u)) return false;
+        return /schedi\.app|googleapis\.com|firebaseio\.com|firebasestorage|identitytoolkit|securetoken/i.test(u);
+    }
+    function note(url, method) {
+        try { window.__schediDemoBlocked.push({ url: String(url || ''), method: String(method || '') }); } catch (errNote) {}
+    }
+    var nativeFetch = window.fetch ? window.fetch.bind(window) : null;
+    window.fetch = function (input, init) {
+        var url = '';
+        var method = 'GET';
+        try {
+            if (input && typeof input === 'object' && typeof input.url === 'string') {
+                url = input.url;
+                method = input.method || method;
+            } else url = String(input == null ? '' : input);
+            if (init && init.method) method = init.method;
+        } catch (errRead) { url = String(input || ''); }
+        method = String(method || 'GET').toUpperCase();
+        var write = method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS';
+        if (write || demoHostBlocked(url)) {
+            note(url, method);
+            return Promise.resolve(new Response(JSON.stringify({ ok: false, error: 'demo_blocked', demo: true }), {
+                status: 403,
+                headers: { 'Content-Type': 'application/json' }
+            }));
+        }
+        if (!nativeFetch) return Promise.reject(new Error('demo_blocked'));
+        return nativeFetch(input, init);
+    };
+    try {
+        if (navigator.sendBeacon) {
+            navigator.sendBeacon = function (url) { note(url, 'BEACON'); return true; };
+        }
+    } catch (errBeacon) {}
+    function guardStore(store) {
+        if (!store || store.__schediDemoGuarded) return;
+        var setItem = store.setItem.bind(store);
+        var removeItem = store.removeItem.bind(store);
+        function sensitive(key) {
+            var k = String(key || '');
+            return k === 'siteforge.platformState.v2' || k.indexOf('schedi.auth') === 0 || k.indexOf('siteforge.') === 0;
+        }
+        store.setItem = function (key, value) {
+            if (sensitive(key)) { note('storage:' + key, 'SET'); return; }
+            return setItem(key, value);
+        };
+        store.removeItem = function (key) {
+            if (sensitive(key)) { note('storage:' + key, 'DEL'); return; }
+            return removeItem(key);
+        };
+        try { Object.defineProperty(store, '__schediDemoGuarded', { value: true }); } catch (errFlag) { store.__schediDemoGuarded = true; }
+    }
+    try { guardStore(window.localStorage); } catch (errLs) {}
+    try { guardStore(window.sessionStorage); } catch (errSs) {}
+})();
+
+</script>
 </head>
 <body class="min-h-screen flex flex-col justify-between selection:bg-brand-500 selection:text-slate-950">
 
@@ -457,6 +943,115 @@
             </div>
 
             <div id="tenantDashboard" class="space-y-6 hidden">
+                <div id="schediDashChrome" hidden>
+                    <aside id="schediDashSidebar" aria-label="Portal">
+                        <a href="/" class="sd-brand" aria-label="Schedi home">
+                            <img class="schedi-logo sd-brand-img" src="/assets/logo-dark.svg" alt="" height="32" onerror="this.hidden=true;var w=this.parentElement&amp;&amp;this.parentElement.querySelector('.sd-wordmark');if(w)w.hidden=false;">
+                            <span class="sd-wordmark" hidden>Schedi</span>
+                        </a>
+                        <p id="schediDashBizName" class="sd-biz">Business</p>
+                        <nav class="sd-nav" aria-label="Dashboard">
+                            <button type="button" data-dash-go="today"><i class="fa-solid fa-sun" aria-hidden="true"></i><span>Today</span></button>
+                            <button type="button" data-dash-go="appointments"><i class="fa-solid fa-calendar-days" aria-hidden="true"></i><span>Appointments</span></button>
+                            <button type="button" data-dash-go="services"><i class="fa-solid fa-briefcase" aria-hidden="true"></i><span>Services</span></button>
+                            <button type="button" data-dash-go="hours"><i class="fa-solid fa-clock" aria-hidden="true"></i><span>Hours</span></button>
+                            <button type="button" data-dash-go="payments"><i class="fa-solid fa-credit-card" aria-hidden="true"></i><span>Payments</span></button>
+                            <button type="button" data-dash-go="emails"><i class="fa-solid fa-envelope" aria-hidden="true"></i><span>Emails</span></button>
+                            <button type="button" data-dash-go="reports"><i class="fa-solid fa-chart-column" aria-hidden="true"></i><span>Reports</span></button>
+                            <button type="button" data-dash-go="clients"><i class="fa-solid fa-address-book" aria-hidden="true"></i><span>Clients</span></button>
+                        </nav>
+                        <div class="sd-nav sd-nav-foot">
+                            <button type="button" data-dash-go="profile"><i class="fa-solid fa-store" aria-hidden="true"></i><span>Business profile</span></button>
+                            <button type="button" data-dash-go="billing"><i class="fa-solid fa-receipt" aria-hidden="true"></i><span>Plan &amp; billing</span></button>
+                        </div>
+                    </aside>
+                    <header id="schediDashTop">
+                        <a href="/" class="sd-brand sd-brand-mobile" aria-label="Schedi home">
+                            <img class="schedi-logo sd-brand-img" src="/assets/logo-dark.svg" alt="" height="28" onerror="this.hidden=true;var w=this.parentElement&amp;&amp;this.parentElement.querySelector('.sd-wordmark');if(w)w.hidden=false;">
+                            <span class="sd-wordmark" hidden>Schedi</span>
+                        </a>
+                        <div class="sd-top-spacer"></div>
+                        <button type="button" class="sd-text-btn" onclick="schediDashHelp(true)"><i class="fa-solid fa-circle-question" aria-hidden="true"></i><span>Help</span></button>
+                        <button type="button" class="sd-text-btn schedi-theme-btn" onclick="toggleSchediTheme()" title="Switch to light theme" aria-label="Switch to light theme"><i class="fa-solid fa-sun" aria-hidden="true"></i><span class="schedi-theme-btn-label">Light</span></button>
+                        <button type="button" class="sd-user" data-dash-go="account" id="schediDashUserBtn">
+                            <span id="schediDashUserInitials" class="sd-avatar" aria-hidden="true">S</span>
+                            <span id="schediDashUserName" class="sd-user-name">Owner</span>
+                        </button>
+                    </header>
+                    <p id="schediDemoNote" class="sd-demo-note" hidden>Demo · sample business · nothing is saved or sent</p>
+                    <section id="schediTodayPanel" aria-labelledby="schediTodayHeading">
+                        <div class="sd-today-head">
+                            <div class="sd-today-titles">
+                                <p class="sd-kicker">Your day</p>
+                                <h2 id="schediTodayHeading">Today</h2>
+                                <p id="schediTodayDate" class="sd-date"></p>
+                                <p id="schediTodayLink" class="sd-linkline"></p>
+                            </div>
+                            <div class="sd-today-actions">
+                                <button type="button" class="sd-btn sd-btn-ghost" onclick="copyTenantPublicBookingLink()"><i class="fa-solid fa-link" aria-hidden="true"></i><span>Copy booking link</span></button>
+                                <button type="button" class="sd-btn sd-btn-brand" data-dash-add-open="1" onclick="schediDashToggleAdd(event)"><i class="fa-solid fa-plus" aria-hidden="true"></i><span>Add appointment</span></button>
+                            </div>
+                        </div>
+                        <div class="sd-stats" aria-live="polite">
+                            <article class="sd-stat"><p>Today</p><strong id="schediStatToday">0</strong><span>appointments</span></article>
+                            <article class="sd-stat"><p>To review</p><strong id="schediStatReview">0</strong><span>new requests</span></article>
+                            <article class="sd-stat"><p>This week</p><strong id="schediStatWeek">$0</strong><span>booked revenue</span></article>
+                            <article class="sd-stat"><p>Unpaid</p><strong id="schediStatUnpaid">0</strong><span>needs follow-up</span></article>
+                        </div>
+                        <div class="sd-block">
+                            <h3>New requests</h3>
+                            <div id="schediTodayRequests" class="sd-stack"></div>
+                        </div>
+                        <div class="sd-block">
+                            <h3>Today's schedule</h3>
+                            <div id="schediTodaySchedule" class="sd-stack"></div>
+                        </div>
+                        <div class="sd-block sd-setup">
+                            <div class="sd-setup-head">
+                                <h3 id="schediSetupTitle">Finish setting up 0 of 5</h3>
+                                <div class="sd-progress" aria-hidden="true"><span id="schediSetupBar"></span></div>
+                            </div>
+                            <div id="schediSetupList" class="sd-stack"></div>
+                        </div>
+                    </section>
+                    <nav id="schediDashTabbar" aria-label="Portal">
+                        <button type="button" data-dash-go="today"><i class="fa-solid fa-sun" aria-hidden="true"></i><span>Today</span></button>
+                        <button type="button" data-dash-go="appointments"><i class="fa-solid fa-calendar-days" aria-hidden="true"></i><span>Calendar</span></button>
+                        <button type="button" class="sd-fab" data-dash-add-open="1" onclick="schediDashToggleAdd(event)" aria-label="Add appointment"><i class="fa-solid fa-plus" aria-hidden="true"></i></button>
+                        <button type="button" data-dash-go="clients"><i class="fa-solid fa-address-book" aria-hidden="true"></i><span>Clients</span></button>
+                        <button type="button" id="schediDashMoreBtn" onclick="schediDashToggleMore()"><i class="fa-solid fa-ellipsis" aria-hidden="true"></i><span>More</span></button>
+                    </nav>
+                    <div id="schediDashAddMenu" class="sd-popover" hidden role="menu" aria-label="Add appointment">
+                        <button type="button" role="menuitem" data-dash-add="appointment"><i class="fa-solid fa-calendar-plus" aria-hidden="true"></i><span>Appointment</span></button>
+                        <button type="button" role="menuitem" data-dash-add="walkin"><i class="fa-solid fa-person-walking" aria-hidden="true"></i><span>Walk-in</span></button>
+                        <button type="button" role="menuitem" data-dash-add="recurring"><i class="fa-solid fa-arrows-rotate" aria-hidden="true"></i><span>Recurring series</span></button>
+                    </div>
+                    <div id="schediDashMoreSheet" class="sd-sheet" hidden>
+                        <div class="sd-sheet-card" role="dialog" aria-label="More">
+                            <div class="sd-sheet-bar"><h3>More</h3><button type="button" onclick="schediDashToggleMore(false)" aria-label="Close">Close</button></div>
+                            <button type="button" data-dash-go="services"><i class="fa-solid fa-briefcase" aria-hidden="true"></i><span>Services</span></button>
+                            <button type="button" data-dash-go="hours"><i class="fa-solid fa-clock" aria-hidden="true"></i><span>Hours</span></button>
+                            <button type="button" data-dash-go="payments"><i class="fa-solid fa-credit-card" aria-hidden="true"></i><span>Payments</span></button>
+                            <button type="button" data-dash-go="emails"><i class="fa-solid fa-envelope" aria-hidden="true"></i><span>Emails</span></button>
+                            <button type="button" data-dash-go="reports"><i class="fa-solid fa-chart-column" aria-hidden="true"></i><span>Reports</span></button>
+                            <button type="button" data-dash-go="profile"><i class="fa-solid fa-store" aria-hidden="true"></i><span>Business profile</span></button>
+                            <div class="sd-sheet-rule"></div>
+                            <button type="button" data-dash-go="account"><i class="fa-solid fa-key" aria-hidden="true"></i><span>Account &amp; password</span></button>
+                            <button type="button" data-dash-go="billing"><i class="fa-solid fa-receipt" aria-hidden="true"></i><span>Plan &amp; billing</span></button>
+                            <button type="button" onclick="schediDashHelp(true)"><i class="fa-solid fa-circle-question" aria-hidden="true"></i><span>Help</span></button>
+                            <button type="button" class="sd-danger" onclick="handleTenantLogout()"><i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i><span>Sign out</span></button>
+                        </div>
+                    </div>
+                    <div id="schediDashHelp" class="sd-sheet" hidden>
+                        <div class="sd-sheet-card sd-help-card" role="dialog" aria-labelledby="schediDashHelpTitle">
+                            <div class="sd-sheet-bar"><h3 id="schediDashHelpTitle">Help</h3><button type="button" onclick="schediDashHelp(false)" aria-label="Close help">Close</button></div>
+                            <p class="sd-help-lead">Short videos for the business portal. The written steps live on the help page.</p>
+                            <p class="sd-help-lead"><a href="https://schedi.app/help">Open the help page</a></p>
+                            <div id="schediDashHelpBody"></div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- ROSTER-FIRST: slim header card (name, slug, public link, Copy/Share, Sign out) -->
                 <div id="tenantHeaderCard" class="glass-card rounded-2xl p-4 space-y-2.5 border-l-4 border-l-brand-500 min-w-0">
                     <div class="flex items-start justify-between gap-2 min-w-0">
@@ -607,6 +1202,7 @@
                     </div>
 
                     <form onsubmit="handleUpdateShiftsSubmit(event)" class="space-y-4 border-b border-slate-800 pb-6">
+                        <div id="tenantHoursShiftBlock">
                         <div id="perDayShiftsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
                             <!-- Injected via JS -->
                         </div>
@@ -638,7 +1234,8 @@
                                 <p class="text-[10px] text-slate-500">Clients cannot request a start time inside this window. New businesses are saved at 2 hours. A business with no saved setting keeps none.</p>
                             </div>
                         </div>
-                        <div class="pt-2 border-t border-slate-800/80 space-y-3 max-w-xl">
+                        </div>
+                        <div id="tenantProfileFields" class="pt-2 border-t border-slate-800/80 space-y-3 max-w-xl">
                             <div>
                                 <h4 class="text-sm font-bold text-white">Booking page</h4>
                                 <p class="text-[11px] text-slate-500">Shown at the top of your public page. Logo and cover are optional.</p>
@@ -658,13 +1255,14 @@
                                 <p class="text-[10px] text-slate-500 mt-1">Use an https link to an image. Leave blank to hide.</p>
                             </div>
                         </div>
-                        <div class="flex justify-end">
+                        <div id="tenantHoursSaveRow" class="flex justify-end">
                             <button type="submit" class="px-5 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-slate-950 font-bold text-xs shadow-md glow-emerald">
                                 Save Operating Hours
                             </button>
                         </div>
                     </form>
 
+                    <div id="tenantHoursTimeOff">
                     <div class="space-y-4 border-t border-slate-800 pt-6">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <div>
@@ -712,6 +1310,7 @@
                         <div id="tenantDateBlocksList" class="space-y-2">
                             <!-- Injected via JS -->
                         </div>
+                    </div>
                     </div>
                 </div>
 
@@ -1674,9 +2273,10 @@
     </script>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        if (!window.__SCHEDI_DEMO) {
+        const { initializeApp } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js");
+        const { getAuth, signInAnonymously, signInWithCustomToken } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js");
+        const { getFirestore, doc, getDoc, onSnapshot, collection } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
 
         // Safely parse injected configs to prevent [object Object] syntax crashes
         let firebaseConfig = {};
@@ -1733,6 +2333,7 @@
             } catch (error) {
                 console.warn("Failed to initialize Firebase App:", error);
             }
+        }
         }
     </script>
 
@@ -2219,6 +2820,13 @@
         }
 
         async function saveState() {
+            if (window.__SCHEDI_DEMO) {
+                var demoSaved = { appointments: {}, profile: { ok: true, skipped: true, demo: true } };
+                (platformState.tenants || []).forEach(function (t) {
+                    if (t && t.id) demoSaved.appointments[t.id] = { ok: true, demo: true };
+                });
+                return demoSaved;
+            }
             (platformState.tenants || []).forEach(stripTenantSecrets);
             try {
                 window.localStorage.setItem(STORAGE_KEY, JSON.stringify({
@@ -2471,6 +3079,10 @@
         window.addEventListener('db_ready', attachCloudDbSync);
 
         window.addEventListener('DOMContentLoaded', function () {
+            if (window.__SCHEDI_DEMO) {
+                try { bootSchediDemoPortal(); } catch (errDemo) { console.error(errDemo); }
+                return;
+            }
             loadState();
             if (!window.db && ensureAppointmentManageTokens(platformState.tenants)) saveState();
             if (platformState.agencyStripe) {
@@ -3176,7 +3788,7 @@
         function isReservedBusinessSlug(slug) {
             var first = String(slug || '').toLowerCase();
             if (!first) return true;
-            if (first === 'index.html' || first === 'agency' || first === 'admin' || first === 'hq' || first === 'signup' || first === 'terms' || first === 'privacy' || first === 'help' || first === 'auth' || first === 'reset' || first === 'billing' || first === 'api' || first === 'www' || first === 'schedi' || first === 'index' || first === 'login') return true;
+            if (first === 'index.html' || first === 'agency' || first === 'admin' || first === 'hq' || first === 'signup' || first === 'terms' || first === 'privacy' || first === 'help' || first === 'auth' || first === 'reset' || first === 'billing' || first === 'api' || first === 'www' || first === 'schedi' || first === 'index' || first === 'login' || first === 'portal-preview') return true;
                         return false;
         }
 
@@ -3951,6 +4563,7 @@
         }
 
         function startTenantOwnerIdleWatch() {
+            if (window.__SCHEDI_DEMO) return;
             syncTenantAutoLogoffSelect();
             if (!(platformState.isTenantOwnerLoggedIn && platformState.ownerSelfSession)) {
                 stopTenantOwnerIdleWatch();
@@ -5433,6 +6046,7 @@
             renderTenantBilling(tenant);
             pullBillingStatus(tenant);
             switchTenantTab(platformState.tenantTab);
+            try { schediMountNewDash(); } catch (errDash) {}
         }
 
         // ---- Clients list + CSV import (owner portal). Data lives only in the worker store (/api/clients). ----
@@ -5483,6 +6097,7 @@
         }
 
         async function clientsApi(payload) {
+            if (window.__SCHEDI_DEMO) return schediDemoClientsApi(payload);
             var session = typeof schediAuthSession === 'function' ? schediAuthSession() : '';
             if (!session) return { ok: false, error: 'session_required', status: 401 };
             try {
@@ -5984,6 +6599,466 @@
                 if (el && el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
             } catch (e) {}
         };
+        function schediNewDashOn() {
+            return window.__SCHEDI_NEWDASH === true;
+        }
+
+        function bookingPaymentState(bookingOrStatus) {
+            var raw = '';
+            if (bookingOrStatus && typeof bookingOrStatus === 'object') raw = bookingOrStatus.paymentStatus;
+            else raw = bookingOrStatus;
+            var up = String(raw || '').toUpperCase();
+            if (/\bUNPAID\b/.test(up) || /\bNOT\s+PAID\b/.test(up)) return 'unpaid';
+            if (up.indexOf('PENDING') !== -1 || up.indexOf('AWAITING') !== -1) return 'unpaid';
+            if (up.indexOf('PAID') !== -1) return 'paid';
+            return 'unpaid';
+        }
+        window.bookingPaymentState = bookingPaymentState;
+
+        function schediDashPage() {
+            var section = document.getElementById('tenantPortalSection');
+            return (section && section.getAttribute('data-dash')) || 'today';
+        }
+
+        function schediDashSetPage(page) {
+            var section = document.getElementById('tenantPortalSection');
+            if (section) section.setAttribute('data-dash', page || 'today');
+            var current = page || 'today';
+            document.querySelectorAll('#schediDashChrome [data-dash-go]').forEach(function (btn) {
+                var on = btn.getAttribute('data-dash-go') === current;
+                btn.classList.toggle('is-on', on);
+                if (on) btn.setAttribute('aria-current', 'page');
+                else btn.removeAttribute('aria-current');
+            });
+            var moreBtn = document.getElementById('schediDashMoreBtn');
+            if (moreBtn) {
+                var primary = current === 'today' || current === 'appointments' || current === 'clients';
+                moreBtn.classList.toggle('is-on', !primary);
+            }
+        }
+
+        function schediDashClosePopovers() {
+            var add = document.getElementById('schediDashAddMenu');
+            var more = document.getElementById('schediDashMoreSheet');
+            if (add) add.hidden = true;
+            if (more) more.hidden = true;
+        }
+
+        function schediSetupSteps(tenant) {
+            var services = !!(tenant && Array.isArray(tenant.services) && tenant.services.some(function (s) { return s && String(s.name || '').trim(); }));
+            var hours = false;
+            var oh = tenant && tenant.operatingHours;
+            if (oh && typeof oh === 'object') {
+                hours = Object.keys(oh).some(function (day) { return oh[day] && oh[day].open; });
+            }
+            var pay = false;
+            var gates = tenant && tenant.paymentGateways;
+            if (gates && typeof gates === 'object') {
+                pay = ['card', 'cashapp', 'zelle', 'venmo', 'paypal', 'later'].some(function (key) { return !!gates[key]; });
+            }
+            var logo = !!(tenant && String(tenant.logoUrl || tenant.logo || '').trim());
+            var interval = Number(tenant && tenant.slotInterval);
+            var calendar = hours && (interval === 15 || interval === 30 || interval === 60);
+            return [
+                { label: 'Add a service', done: services, page: 'services' },
+                { label: 'Set your hours', done: hours, page: 'hours' },
+                { label: 'Choose how clients pay', done: pay, page: 'payments' },
+                { label: 'Add your logo', done: logo, page: 'profile' },
+                { label: 'Booking calendar', done: calendar, page: 'appointments' }
+            ];
+        }
+
+        function schediDashInitials(name) {
+            var parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+            if (!parts.length) return 'S';
+            var letters = parts[0].charAt(0) + (parts.length > 1 ? parts[parts.length - 1].charAt(0) : '');
+            return letters.toUpperCase();
+        }
+
+        function renderSchediToday(tenant) {
+            if (!schediNewDashOn() || !tenant) return;
+            var today = '';
+            try { today = rosterTodayIso(tenant); } catch (errToday) { today = localISODate(new Date()); }
+            var heading = document.getElementById('schediTodayHeading');
+            var dateEl = document.getElementById('schediTodayDate');
+            if (heading) heading.textContent = 'Today';
+            if (dateEl) {
+                var pretty = '';
+                try {
+                    var dt = parseIsoDateLocal(today);
+                    pretty = dt ? dt.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' }) : today;
+                } catch (errPretty) { pretty = today; }
+                dateEl.textContent = pretty;
+            }
+            var linkEl = document.getElementById('schediTodayLink');
+            if (linkEl) {
+                var url = '';
+                try { url = getTenantPublicBookingUrl(tenant) || ''; } catch (errUrl) { url = ''; }
+                linkEl.textContent = url;
+            }
+            var apps = (tenant.appointments || []).filter(function (app) { return app && !appointmentIsCancelled(app) && String(app.status || '').toLowerCase() !== 'denied'; });
+            var todayApps = apps.filter(function (app) { return app.date === today; }).sort(function (a, b) { return rosterApptSortKey(a) - rosterApptSortKey(b); });
+            var pending = apps.filter(function (app) { return String(app.status || '').toLowerCase() === 'pending'; });
+            var weekStart = '';
+            try { weekStart = rosterWeekStart(today); } catch (errWeek) { weekStart = ''; }
+            var weekEnd = weekStart ? addIsoDays(weekStart, 6) : '';
+            var weekMoney = 0;
+            apps.forEach(function (app) {
+                if (!weekStart || String(app.date || '') < weekStart || String(app.date || '') > weekEnd) return;
+                if (hasPricedAmount(app.amount)) weekMoney += Number(app.amount) || 0;
+            });
+            var unpaid = apps.filter(function (app) {
+                if (String(app.status || '').toLowerCase() === 'pending') return false;
+                return bookingPaymentState(app) === 'unpaid';
+            });
+            var statToday = document.getElementById('schediStatToday');
+            var statReview = document.getElementById('schediStatReview');
+            var statWeek = document.getElementById('schediStatWeek');
+            var statUnpaid = document.getElementById('schediStatUnpaid');
+            if (statToday) statToday.textContent = String(todayApps.length);
+            if (statReview) statReview.textContent = String(pending.length);
+            if (statWeek) statWeek.textContent = formatBookingAmountLabel(weekMoney) || '$0';
+            if (statUnpaid) statUnpaid.textContent = String(unpaid.length);
+            var requests = document.getElementById('schediTodayRequests');
+            if (requests) {
+                requests.innerHTML = pending.length ? pending.map(function (app) {
+                    var when = (app.date === today ? '' : (rosterPrettyDate(app.date) + ' · ')) + (app.time || '');
+                    return '<article class="sd-card sd-request">' +
+                        '<div><h4>' + esc(app.clientName || 'Client') + '</h4>' +
+                        '<p class="sd-meta">' + esc(when) + ' · ' + esc(app.serviceName || 'Appointment') + '</p></div>' +
+                        '<div class="sd-actions">' +
+                        '<button type="button" class="sd-btn sd-btn-no" onclick="denyAppointment(' + esc(jsArg(app.id)) + ')">Decline</button>' +
+                        '<button type="button" class="sd-btn sd-btn-ok" onclick="acceptAppointment(' + esc(jsArg(app.id)) + ')">Accept</button>' +
+                        '</div></article>';
+                }).join('') : '<p class="sd-empty">No new requests.</p>';
+            }
+            var schedule = document.getElementById('schediTodaySchedule');
+            if (schedule) {
+                schedule.innerHTML = todayApps.length ? todayApps.map(function (app) {
+                    var id = esc(jsArg(app.id));
+                    var pendingRow = String(app.status || '').toLowerCase() === 'pending';
+                    var pill = bookingPaymentState(app) === 'paid' ? 'sd-pill sd-pill-ok' : (pendingRow ? 'sd-pill sd-pill-amber' : 'sd-pill sd-pill-rose');
+                    var label = rosterPaymentLabel(app) || 'Unpaid';
+                    if (pendingRow) label = 'New request';
+                    return '<article class="sd-card sd-row">' +
+                        '<div class="sd-time">' + esc(app.time || '') + '</div>' +
+                        '<div><h4>' + esc(app.clientName || 'Client') + (app.walkIn ? ' · Walk-in' : '') + '</h4>' +
+                        '<p class="sd-meta">' + esc(app.serviceName || 'Appointment') + '</p></div>' +
+                        '<span class="' + pill + '">' + esc(label) + '</span>' +
+                        '<details class="sd-more"><summary aria-label="Actions for ' + esc(app.clientName || 'appointment') + '">…</summary>' +
+                        '<div class="sd-more-menu" role="menu">' +
+                        '<button type="button" role="menuitem" onclick="markAppointmentPaid(' + id + ')">Mark paid</button>' +
+                        '<button type="button" role="menuitem" onclick="openTenantRescheduleModal(' + id + ')">Reschedule</button>' +
+                        '<button type="button" role="menuitem" onclick="deleteAppointment(' + id + ')">Cancel</button>' +
+                        '<button type="button" role="menuitem" onclick="openEditAppointment(' + id + ')">Edit</button>' +
+                        '<button type="button" role="menuitem" onclick="openRosterDeleteModal(' + id + ')">Delete</button>' +
+                        '</div></details></article>';
+                }).join('') : '<p class="sd-empty">Nothing on the book today.</p>';
+            }
+            var steps = schediSetupSteps(tenant);
+            var done = steps.filter(function (step) { return step.done; }).length;
+            var title = document.getElementById('schediSetupTitle');
+            var bar = document.getElementById('schediSetupBar');
+            var list = document.getElementById('schediSetupList');
+            if (title) title.textContent = 'Finish setting up ' + done + ' of 5';
+            if (bar) bar.style.width = Math.round((done / 5) * 100) + '%';
+            if (list) {
+                list.innerHTML = steps.map(function (step) {
+                    return '<button type="button" class="sd-check' + (step.done ? ' is-done' : '') + '" data-dash-go="' + step.page + '">' +
+                        '<i class="fa-solid ' + (step.done ? 'fa-circle-check' : 'fa-circle') + '" aria-hidden="true"></i>' +
+                        '<span>' + esc(step.label) + '</span></button>';
+                }).join('');
+            }
+        }
+        window.renderSchediToday = renderSchediToday;
+
+        function schediDashPaint() {
+            var tenant = (typeof getTenant === 'function') ? getTenant() : null;
+            var note = document.getElementById('schediDemoNote');
+            if (note) note.hidden = !window.__SCHEDI_DEMO;
+            if (!tenant) return;
+            var biz = document.getElementById('schediDashBizName');
+            if (biz) biz.textContent = tenant.name || 'Business';
+            var who = tenant.ownerName || tenant.ownerEmail || 'Owner';
+            var nameEl = document.getElementById('schediDashUserName');
+            var initials = document.getElementById('schediDashUserInitials');
+            if (nameEl) nameEl.textContent = who;
+            if (initials) initials.textContent = schediDashInitials(who);
+            var userBtn = document.getElementById('schediDashUserBtn');
+            if (userBtn) userBtn.setAttribute('aria-label', who + ', account');
+            schediDashSetPage(schediDashPage());
+            try { renderSchediToday(tenant); } catch (errPaint) {}
+        }
+
+        function schediMountNewDash() {
+            if (!schediNewDashOn()) {
+                document.documentElement.classList.remove('schedi-newdash-boot');
+                return;
+            }
+            document.body.classList.add('schedi-newdash');
+            var section = document.getElementById('tenantPortalSection');
+            if (section) {
+                section.classList.add('schedi-newdash');
+                if (!section.getAttribute('data-dash')) section.setAttribute('data-dash', 'today');
+            }
+            var chrome = document.getElementById('schediDashChrome');
+            if (chrome) chrome.hidden = false;
+            document.documentElement.classList.add('schedi-newdash-ready');
+            window.__schediDashReady = true;
+            schediDashPaint();
+        }
+
+        var SCHEDI_DASH_TABS = {
+            appointments: 'roster',
+            services: 'services',
+            hours: 'hours',
+            profile: 'hours',
+            payments: 'payments',
+            emails: 'notifications',
+            reports: 'report',
+            clients: 'clients'
+        };
+
+        window.schediDashGo = function (page) {
+            page = String(page || 'today');
+            schediDashClosePopovers();
+            var help = document.getElementById('schediDashHelp');
+            if (help) help.hidden = true;
+            schediDashSetPage(page);
+            window.__schediDashLock = true;
+            try {
+                var tab = SCHEDI_DASH_TABS[page];
+                if (tab && typeof window.switchTenantTab === 'function') window.switchTenantTab(tab);
+                if (page === 'billing') {
+                    var tenant = getTenant();
+                    if (tenant && typeof renderTenantBilling === 'function') renderTenantBilling(tenant);
+                }
+                if (page === 'today' || page === 'account') {
+                    try { renderSchediToday(getTenant()); } catch (errToday) {}
+                }
+            } finally {
+                window.__schediDashLock = false;
+            }
+            try { window.scrollTo(0, 0); } catch (errScroll) {}
+        };
+
+        window.schediDashToggleAdd = function (event) {
+            var menu = document.getElementById('schediDashAddMenu');
+            if (!menu) return;
+            if (!menu.hidden) { menu.hidden = true; return; }
+            menu.hidden = false;
+            var btn = event && event.currentTarget;
+            var rect = btn && btn.getBoundingClientRect ? btn.getBoundingClientRect() : null;
+            if (window.innerWidth < 860) {
+                menu.style.left = '50%';
+                menu.style.right = 'auto';
+                menu.style.top = 'auto';
+                menu.style.bottom = '96px';
+                menu.style.transform = 'translateX(-50%)';
+            } else if (rect) {
+                menu.style.transform = 'none';
+                menu.style.bottom = 'auto';
+                menu.style.top = Math.round(rect.bottom + 8) + 'px';
+                menu.style.left = Math.max(12, Math.round(rect.right - 220)) + 'px';
+            }
+        };
+
+        window.schediDashAddKind = function (kind) {
+            schediDashClosePopovers();
+            if (kind === 'walkin') {
+                if (typeof openManualBookingModal === 'function') openManualBookingModal();
+                if (typeof setManualWalkIn === 'function') setManualWalkIn(true, true);
+                return;
+            }
+            if (kind === 'recurring') {
+                window.schediDashGo('emails');
+                setTimeout(function () {
+                    var box = document.getElementById('tenantAllowRecurringCheck');
+                    if (box && box.focus) box.focus();
+                    if (box && box.scrollIntoView) box.scrollIntoView({ block: 'center' });
+                }, 40);
+                if (typeof showToast === 'function') showToast('Recurring visits are turned on here. Clients book the series from your page.', 'info');
+                return;
+            }
+            if (typeof openManualBookingModal === 'function') openManualBookingModal();
+        };
+
+        window.schediDashToggleMore = function (force) {
+            var sheet = document.getElementById('schediDashMoreSheet');
+            if (!sheet) return;
+            var open = force === true || (force !== false && sheet.hidden);
+            sheet.hidden = !open;
+        };
+
+        window.schediDashHelp = function (force) {
+            var panel = document.getElementById('schediDashHelp');
+            if (!panel) return;
+            var open = force === true || (force !== false && panel.hidden);
+            if (!open) { panel.hidden = true; return; }
+            schediDashClosePopovers();
+            var body = document.getElementById('schediDashHelpBody');
+            if (body && !body.getAttribute('data-ready') && typeof schediHelpVideosHtml === 'function') {
+                body.innerHTML = schediHelpVideosHtml('owner');
+                body.setAttribute('data-ready', '1');
+            }
+            panel.hidden = false;
+        };
+
+        document.addEventListener('click', function (event) {
+            if (!document.body.classList.contains('schedi-newdash')) return;
+            var node = event.target && event.target.closest ? event.target : null;
+            if (!node && event.target && event.target.parentElement) node = event.target.parentElement;
+            if (!node || !node.closest) return;
+            var go = node.closest('[data-dash-go]');
+            if (go && go.closest('#schediDashChrome')) {
+                window.schediDashGo(go.getAttribute('data-dash-go'));
+            }
+            var addKind = node.closest('[data-dash-add]');
+            if (addKind) window.schediDashAddKind(addKind.getAttribute('data-dash-add'));
+            var menu = document.getElementById('schediDashAddMenu');
+            if (menu && !menu.hidden && !node.closest('#schediDashAddMenu') && !node.closest('[data-dash-add-open]')) menu.hidden = true;
+        });
+
+        function schediDemoTodayIso() {
+            try {
+                var formatted = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+                if (/^\d{4}-\d{2}-\d{2}$/.test(formatted)) return formatted;
+            } catch (errIso) {}
+            return localISODate(new Date());
+        }
+
+        function schediDemoAddDays(iso, days) {
+            var parts = String(iso || '').split('-');
+            var dt = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+            dt.setDate(dt.getDate() + days);
+            return localISODate(dt);
+        }
+
+        function schediDemoClientRows() {
+            return [
+                { id: 'CL-MAYA', name: 'Maya Chen', email: 'maya@example.com', phone: '(555) 201-0142', notes: 'Likes a low fade', source: 'booking', firstBookingDate: schediDemoTodayIso() },
+                { id: 'CL-LUIS', name: 'Luis Ortega', email: 'luis@example.com', phone: '(555) 201-2288', notes: '', source: 'manual' },
+                { id: 'CL-JORDAN', name: 'Jordan Lee', email: '', phone: '(555) 201-7730', notes: 'Walk-in regular', source: 'manual' },
+                { id: 'CL-ELENA', name: 'Elena Vasquez', email: 'elena@example.com', phone: '(555) 201-4419', notes: 'Color series', source: 'booking', firstBookingDate: schediDemoAddDays(schediDemoTodayIso(), -7) }
+            ];
+        }
+
+        function schediDemoClientsApi(payload) {
+            payload = payload || {};
+            var id = payload.tenantId || 'harbor-demo';
+            if (!window.__schediDemoClientRows) window.__schediDemoClientRows = {};
+            if (!window.__schediDemoClientRows[id]) window.__schediDemoClientRows[id] = schediDemoClientRows();
+            var list = window.__schediDemoClientRows[id];
+            if (payload.action === 'list') return Promise.resolve({ ok: true, clients: list.slice() });
+            if (payload.action === 'add' && payload.client) {
+                var added = Object.assign({ id: uid('CL'), source: 'manual' }, payload.client);
+                list.push(added);
+                return Promise.resolve({ ok: true, client: added });
+            }
+            if (payload.action === 'delete') {
+                window.__schediDemoClientRows[id] = list.filter(function (row) { return row && row.id !== payload.clientId; });
+                return Promise.resolve({ ok: true });
+            }
+            if (payload.action === 'import') {
+                var imported = (payload.rows || []).map(function (row) { return Object.assign({ id: uid('CL'), source: 'import' }, row); });
+                window.__schediDemoClientRows[id] = list.concat(imported);
+                return Promise.resolve({ ok: true, added: imported.length, clients: imported, skipped: [], errors: [] });
+            }
+            return Promise.resolve({ ok: false, error: 'demo_blocked' });
+        }
+
+        function schediBuildDemoTenant() {
+            var today = schediDemoTodayIso();
+            var day = function (offset) { return schediDemoAddDays(today, offset); };
+            var tomorrow = day(1);
+            return {
+                id: 'harbor-demo',
+                name: 'Harbor Studio',
+                slug: 'harbor-demo',
+                industry: 'Salon',
+                ownerName: 'Avery Cole',
+                ownerPhone: '(555) 010-1944',
+                ownerEmail: 'demo@harbor.studio',
+                plan: 'pro',
+                monthlyPrice: 49,
+                subscriptionStatus: 'active',
+                timezone: 'America/New_York',
+                address: '18 Harbor Lane, Brooklyn, NY',
+                logoUrl: '',
+                coverUrl: '',
+                cashAppTag: '$HarborStudio',
+                zelleHandle: 'demo@harbor.studio',
+                zelleLink: '',
+                venmoHandle: 'harborstudio',
+                venmoLink: '',
+                paypalHandle: '',
+                paypalLink: '',
+                slotInterval: 30,
+                minNoticeHours: 2,
+                allowRecurringBookings: true,
+                paymentGateways: { card: false, cashapp: true, zelle: true, venmo: true, paypal: false, later: true },
+                deposit: { enabled: true, type: 'fixed', percent: 0, amount: 25 },
+                cancellationFee: { enabled: true, hours: 24, type: 'fixed', percent: 0, amount: 15 },
+                notifications: { emailConfirmations: true, replyTo: 'demo@harbor.studio', extraNote: 'Street parking is on Harbor Lane.', remindersEnabled: true, reminderHour: 8 },
+                operatingHours: {
+                    Mon: { open: true, start: '09:00 AM', end: '06:00 PM' },
+                    Tue: { open: true, start: '09:00 AM', end: '06:00 PM' },
+                    Wed: { open: true, start: '09:00 AM', end: '06:00 PM' },
+                    Thu: { open: true, start: '09:00 AM', end: '06:00 PM' },
+                    Fri: { open: true, start: '09:00 AM', end: '06:00 PM' },
+                    Sat: { open: true, start: '10:00 AM', end: '04:00 PM' },
+                    Sun: { open: false, start: '10:00 AM', end: '02:00 PM' }
+                },
+                specialHours: (function () {
+                    var map = {};
+                    map[tomorrow] = { closed: false, ranges: [{ start: '11:00 AM', end: '03:00 PM' }] };
+                    return map;
+                })(),
+                blockedRules: [{ id: 'rule-lunch', title: 'Lunch', time: '12:00 PM', duration: '1 hour', frequency: 'Daily' }],
+                blockedTimes: [{ id: 'block-vacation', startDate: day(20), endDate: day(22), allDay: true, note: 'Out of studio' }],
+                services: [
+                    { id: 1, name: 'Cut & style', duration: '45 mins', durationMins: 45, price: 65, desc: 'Cut, style, and finish.', icon: 'fa-scissors' },
+                    { id: 2, name: 'Beard trim', duration: '20 mins', durationMins: 20, price: 28, desc: 'Shape and tidy.', icon: 'fa-user' },
+                    { id: 3, name: 'Gloss', duration: '75 mins', durationMins: 75, price: 80, desc: 'Shine treatment.', icon: 'fa-droplet' },
+                    { id: 4, name: 'Consultation', duration: '30 mins', durationMins: 30, price: null, desc: 'Talk through a plan. No price set.', icon: 'fa-comments' },
+                    { id: 5, name: 'Color', duration: '90 mins', durationMins: 90, price: 120, desc: 'Full color appointment.', icon: 'fa-palette' }
+                ],
+                _privateBookingsLoaded: true,
+                _rosterRevision: 1,
+                appointments: [
+                    { id: 'HB-1001', clientName: 'Maya Chen', clientPhone: '(555) 201-0142', clientEmail: 'maya@example.com', serviceName: 'Cut & style', date: today, time: '09:00 AM', status: 'accepted', paymentStatus: 'PAID VIA CARD', paidMethod: 'card', amount: 65, durationMins: 45 },
+                    { id: 'HB-1002', clientName: 'Luis Ortega', clientPhone: '(555) 201-2288', clientEmail: 'luis@example.com', serviceName: 'Beard trim', date: today, time: '11:30 AM', status: 'pending', paymentStatus: 'PENDING CASH APP', paymentMethod: 'cashapp', amount: 28, durationMins: 20 },
+                    { id: 'HB-1003', clientName: 'Jordan Lee', clientPhone: '(555) 201-7730', clientEmail: '', serviceName: 'Gloss', date: today, time: '01:30 PM', status: 'accepted', paymentStatus: 'PAY AT APPOINTMENT', amount: 80, durationMins: 75, walkIn: true },
+                    { id: 'HB-1004', clientName: 'Priya Shah', clientPhone: '(555) 201-9094', clientEmail: 'priya@example.com', serviceName: 'Consultation', date: today, time: '04:00 PM', status: 'pending', paymentStatus: 'PENDING ZELLE', paymentMethod: 'zelle', durationMins: 30 },
+                    { id: 'HB-1005', clientName: 'Avery Kim', clientPhone: '(555) 201-6621', clientEmail: 'avery@example.com', serviceName: 'Cut & style', date: day(-1), time: '02:00 PM', status: 'accepted', paymentStatus: 'PENDING VENMO', paymentMethod: 'venmo', amount: 55, durationMins: 45 },
+                    { id: 'HB-1006', clientName: 'Noah Brooks', clientPhone: '(555) 201-1180', clientEmail: 'noah@example.com', serviceName: 'Cut & style', date: tomorrow, time: '10:00 AM', status: 'accepted', paymentStatus: 'PAID', paidMethod: 'cash', amount: 65, durationMins: 45 },
+                    { id: 'HB-1007', clientName: 'Elena Vasquez', clientPhone: '(555) 201-4419', clientEmail: 'elena@example.com', serviceName: 'Color', date: day(2), time: '01:00 PM', status: 'accepted', paymentStatus: 'PAY AT APPOINTMENT', amount: 120, durationMins: 90, seriesId: 'series-harbor-elena', recurrence: { frequency: 'weekly', count: 4, index: 2, total: 4, dates: [day(-5), day(2), day(9), day(16)] } },
+                    { id: 'HB-1008', clientName: 'Sam Okonkwo', clientPhone: '(555) 201-3304', clientEmail: 'sam@example.com', serviceName: 'Cut & style', date: day(-4), time: '11:00 AM', status: 'accepted', paymentStatus: 'PAID IN CASH', paidMethod: 'cash', amount: 65, durationMins: 45 }
+                ]
+            };
+        }
+
+        function bootSchediDemoPortal() {
+            var tenant = schediBuildDemoTenant();
+            platformState.tenants = [tenant];
+            platformState.activeTenantId = tenant.id;
+            platformState.isTenantOwnerLoggedIn = true;
+            platformState.ownerSelfSession = true;
+            platformState.isAgencyMasterLoggedIn = false;
+            platformState.currentMode = 'tenant';
+            window.__schediDemoClientRows = {};
+            window.__schediDemoClientRows[tenant.id] = schediDemoClientRows();
+            ownerClientCache[tenant.id] = { loaded: true, loading: null, clients: window.__schediDemoClientRows[tenant.id].slice(), error: '' };
+            try { document.title = 'Harbor Studio · Schedi demo'; } catch (errTitle) {}
+            try { applySchediTheme(localStorage.getItem('schedi.theme') === 'light' ? 'light' : 'dark'); } catch (errTheme) { try { applySchediTheme('dark'); } catch (errTheme2) {} }
+            var section = document.getElementById('tenantPortalSection');
+            if (section) section.classList.remove('hidden');
+            if (typeof openTenantOwnerPortal === 'function') openTenantOwnerPortal(tenant);
+            else if (typeof switchPlatformMode === 'function') switchPlatformMode('tenant');
+            try { schediMountNewDash(); } catch (errMount) {}
+            try { schediDashGo('today'); } catch (errGo) {}
+        }
+
         window.switchTenantTab = function(tab) {
             platformState.tenantTab = tab;
             ['roster', 'services', 'hours', 'payments', 'notifications', 'report', 'clients'].forEach(t => {
@@ -6428,6 +7503,7 @@
             if (!tenant || !tenant.appointments || tenant.appointments.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-500">No client appointments logged yet.</td></tr>`;
                 renderRosterCalendar(tenant);
+                try { if (window.renderSchediToday) window.renderSchediToday(tenant); } catch (errToday) {}
                 return;
             }
 
@@ -6455,6 +7531,7 @@
                 </tr>
             `).join('');
             renderRosterCalendar(tenant);
+            try { if (window.renderSchediToday) window.renderSchediToday(tenant); } catch (errToday) {}
         }
 
         window.openTenantRescheduleModal = function(appId) {
@@ -8378,6 +9455,7 @@
         }
 
         async function dispatchTenantMail(tenant, booking, content, type, options) {
+            if (window.__SCHEDI_DEMO) return { ok: true, demo: true, queued: true, delivered: false };
             options = options || {};
             var to = options.to;
             if (!to) return { ok: false, reason: 'no-email' };
@@ -9961,6 +11039,10 @@
         }
 
         window.handleTenantLogout = function(opts) {
+            if (window.__SCHEDI_DEMO) {
+                if (typeof showToast === 'function') showToast('Demo mode does not sign out a real account.', 'info');
+                return;
+            }
             opts = opts || {};
             try { stopTenantOwnerIdleWatch(); } catch (errIdle) {}
             platformState.isTenantOwnerLoggedIn = false;
@@ -10058,6 +11140,7 @@
 
         window.submitTenantChangePass = async function(e) {
             if (e && e.preventDefault) e.preventDefault();
+            if (window.__SCHEDI_DEMO) { setChangePassMsg('Demo mode does not change a password.', 'error'); return; }
             var cur = document.getElementById('changePassCurrent').value;
             var next = document.getElementById('changePassNew').value;
             var next2 = document.getElementById('changePassNew2').value;
@@ -13727,6 +14810,7 @@
 /* Schedi Android app: owner push notifications. No-op in normal browsers. */
 (function () {
     try {
+        if (window.__SCHEDI_DEMO) return;
         var C = window.Capacitor;
         if (!C || typeof C.isNativePlatform !== 'function' || !C.isNativePlatform()) return;
         var P = C.Plugins && C.Plugins.PushNotifications;
@@ -13796,6 +14880,7 @@
    Desktop and Android browsers, and iPhone/iPad when Schedi is on the Home Screen.
    The Android app has its own push code above, so this stays off inside the app. */
 (function () {
+    if (window.__SCHEDI_DEMO) return;
     var C = window.Capacitor;
     if (C && typeof C.isNativePlatform === 'function' && C.isNativePlatform()) return;
     var SDK = 'https://www.gstatic.com/firebasejs/11.6.1/';
