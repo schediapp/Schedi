@@ -1,6 +1,8 @@
 /**
  * POST /api/logo-upload
- * Owner session required. Stores one square logo per business.
+ * Owner session required. Stores one square logo per business, or one
+ * square image per service when serviceId is set
+ * (logos/{tenantId}/services/{serviceId}.{ext}).
  *
  * Needs both of these before a real upload succeeds:
  *   LOGO_BUCKET       R2 binding (bucket name schedi-logos)
@@ -67,6 +69,13 @@ function safeTenantId(value) {
   return id;
 }
 
+function safeServiceId(value) {
+  if (value == null || String(value).trim() === '') return '';
+  const id = String(value).trim();
+  if (!/^[A-Za-z0-9_-]{1,40}$/.test(id)) return null;
+  return id;
+}
+
 export async function handleLogoUpload(request, env, origin, deps) {
   const respond = deps.json;
   const allowed = deps.isAllowedOrigin;
@@ -91,20 +100,27 @@ export async function handleLogoUpload(request, env, origin, deps) {
     payload = new TextEncoder().encode(cleaned.svg);
     contentType = 'image/svg+xml; charset=utf-8';
   }
+  const serviceId = safeServiceId(body && body.serviceId);
+  if (serviceId === null) return respond({ ok: false, error: 'bad_service' }, 400, origin);
   const bucket = env && env.LOGO_BUCKET;
   const base = String(env && env.LOGO_PUBLIC_BASE || '').replace(/\/+$/, '');
   if (!bucket || typeof bucket.put !== 'function' || !/^https:\/\/[^\s]+$/i.test(base)) {
     return respond({ ok: false, error: 'logo_storage_unconfigured' }, 503, origin);
   }
   const ext = EXT[kind];
-  const key = 'logos/' + tenantId + '.' + ext;
+  const key = serviceId
+    ? 'logos/' + tenantId + '/services/' + serviceId + '.' + ext
+    : 'logos/' + tenantId + '.' + ext;
   await bucket.put(key, payload, {
     httpMetadata: { contentType: contentType, cacheControl: 'public, max-age=86400' },
   });
   if (typeof bucket.delete === 'function') {
+    const stem = serviceId
+      ? 'logos/' + tenantId + '/services/' + serviceId + '.'
+      : 'logos/' + tenantId + '.';
     for (const other of Object.values(EXT)) {
       if (other === ext) continue;
-      try { await bucket.delete('logos/' + tenantId + '.' + other); } catch (_) {}
+      try { await bucket.delete(stem + other); } catch (_) {}
     }
   }
   return respond({ ok: true, url: base + '/' + key }, 200, origin);

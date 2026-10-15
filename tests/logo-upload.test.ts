@@ -85,6 +85,41 @@ describe("logo upload", () => {
     expect(puts).toEqual([{ key: "logos/harbor-demo.png", type: "image/png" }]);
   });
 
+  it("stores a service image beside the business logo", async () => {
+    const puts: string[] = [];
+    const deleted: string[] = [];
+    const env = {
+      LOGO_PUBLIC_BASE: "https://logos.example.test",
+      LOGO_BUCKET: {
+        async put(key: string) { puts.push(key); },
+        async delete(key: string) { deleted.push(key); },
+      },
+    };
+    const req = new Request("https://schedi.app/api/logo-upload", {
+      method: "POST",
+      headers: { Origin: "https://schedi.app" },
+      body: JSON.stringify({ session: "tok", data: TINY_PNG, serviceId: "svc-3" }),
+    });
+    const res = await handleLogoUpload(req, env, "https://schedi.app", deps(owner));
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, url: "https://logos.example.test/logos/harbor-demo/services/svc-3.png" });
+    expect(puts).toEqual(["logos/harbor-demo/services/svc-3.png"]);
+    expect(deleted).not.toContain("logos/harbor-demo.png");
+    expect(deleted).toEqual([
+      "logos/harbor-demo/services/svc-3.jpg",
+      "logos/harbor-demo/services/svc-3.webp",
+      "logos/harbor-demo/services/svc-3.svg",
+    ]);
+    const bad = new Request("https://schedi.app/api/logo-upload", {
+      method: "POST",
+      headers: { Origin: "https://schedi.app" },
+      body: JSON.stringify({ session: "tok", data: TINY_PNG, serviceId: "../logo" }),
+    });
+    const rejected = await handleLogoUpload(bad, env, "https://schedi.app", deps(owner));
+    expect(rejected.status).toBe(400);
+    expect(puts).toEqual(["logos/harbor-demo/services/svc-3.png"]);
+  });
+
   it("crops to a square no wider than 512 and the demo does not upload", () => {
     const crop = new Function(`${extractFunction(html, "logoCropSource")}; return logoCropSource;`)() as (
       w: number, h: number, stage: number, zoom: number, x: number, y: number,

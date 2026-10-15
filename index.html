@@ -878,6 +878,79 @@ body.schedi-newdash #svcIconGrid [role="option"][aria-selected="true"] { border-
 html.schedi-light body.schedi-newdash #svcIconGrid [role="option"][aria-selected="true"] { border-color: #047857; box-shadow: inset 0 0 0 1px #047857; color: #064e3b; }
 body.schedi-newdash #tenantServiceModal .svc-icon-auto { position: absolute; top: 4px; right: 4px; font-size: 9px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: #6ee7b7; }
 html.schedi-light body.schedi-newdash #tenantServiceModal .svc-icon-auto { color: #047857; }
+#tenantPortalSection.schedi-newdash .sd-svc-line { display: inline-flex; align-items: center; gap: 6px; min-width: 0; max-width: 100%; }
+#tenantPortalSection.schedi-newdash .sd-svc-mark,
+body.schedi-newdash .sd-svc-mark {
+    display: inline-flex;
+    width: 18px;
+    height: 18px;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    color: #34d399;
+    vertical-align: -3px;
+}
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-svc-mark,
+html.schedi-light body.schedi-newdash .sd-svc-mark { color: #047857; }
+#tenantPortalSection.schedi-newdash .sd-svc-mark svg,
+#tenantPortalSection.schedi-newdash .sd-svc-mark img,
+body.schedi-newdash .sd-svc-mark svg,
+body.schedi-newdash .sd-svc-mark img { width: 16px; height: 16px; display: block; object-fit: cover; border-radius: 4px; }
+body.schedi-newdash #tenantServicesGrid svg,
+body.schedi-newdash #svcIconGrid svg { width: 22px; height: 22px; display: block; }
+body.schedi-newdash #tenantServicesGrid .sd-svc-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+body.schedi-newdash #svcIconUploadDrop {
+    position: relative;
+    border: 1.5px dashed rgba(148, 163, 184, 0.75);
+    border-radius: 16px;
+    padding: 12px;
+    text-align: center;
+    background: rgba(15, 23, 42, 0.35);
+}
+body.schedi-newdash #svcIconUploadDrop.is-over { border-color: #34d399; background: rgba(16, 185, 129, 0.14); }
+html.schedi-light body.schedi-newdash #svcIconUploadDrop { background: #f8fafc; border-color: #94a3b8; }
+body.schedi-newdash #svcIconUpload {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+}
+body.schedi-newdash #svcIconChoose,
+body.schedi-newdash #svcIconUploadClear { min-height: 44px; }
+body.schedi-newdash #svcIconUploadPreview {
+    width: 64px;
+    height: 64px;
+    object-fit: cover;
+    border-radius: 12px;
+    border: 1px solid rgba(148, 163, 184, 0.45);
+}
+body.schedi-newdash #svcIconUploadNote.is-warn { color: #fb7185; font-weight: 700; }
+html.schedi-light body.schedi-newdash #svcIconUploadNote.is-warn { color: #be123c; }
+body.schedi-newdash #logoCropPanel.is-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 70;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin: 0;
+    padding: 20px 16px;
+    background: rgba(2, 6, 23, 0.86);
+    overflow: auto;
+}
+html.schedi-light body.schedi-newdash #logoCropPanel.is-overlay { background: rgba(248, 250, 252, 0.96); }
+body.schedi-newdash #logoCropPanel.is-overlay,
+body.schedi-newdash #logoCropPanel.is-overlay label,
+body.schedi-newdash #logoCropPanel.is-overlay p { color: #f8fafc !important; }
+html.schedi-light body.schedi-newdash #logoCropPanel.is-overlay,
+html.schedi-light body.schedi-newdash #logoCropPanel.is-overlay label,
+html.schedi-light body.schedi-newdash #logoCropPanel.is-overlay p { color: #0f172a !important; }
 body.schedi-newdash #logoUploadDrop {
     position: relative;
     border: 1.5px dashed rgba(148, 163, 184, 0.75);
@@ -974,6 +1047,9 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
     #tenantPortalSection.schedi-newdash .sd-client-edit textarea { min-height: 88px; }
     #tenantPortalSection.schedi-newdash .sd-client-actions { width: 100%; }
     #tenantPortalSection.schedi-newdash .sd-client-actions button { flex: 1 1 8rem; }
+    body.schedi-newdash #tenantServiceModal button,
+    body.schedi-newdash #tenantServiceModal input,
+    body.schedi-newdash #logoCropPanel.is-overlay button { min-height: 44px; }
 }
 
 </style>
@@ -2299,16 +2375,22 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
                     <label class="block font-semibold text-slate-300 mb-1" for="svcIconSearch">Icon</label>
                     <input type="hidden" id="svcIcon" value="">
                     <input type="hidden" id="svcIconExplicit" value="0">
-                    <input type="hidden" id="svcIconImage" value="">
+                    <input type="hidden" id="svcImageUrl" value="">
+                    <input type="hidden" id="svcIsNew" value="1">
                     <input type="search" id="svcIconSearch" placeholder="Search icons" autocomplete="off" oninput="renderServiceIconPicker()" aria-controls="svcIconGrid" class="w-full px-3 py-2 rounded-xl glass-input mb-2">
                     <div id="svcIconGrid" role="listbox" aria-label="Service icons" onkeydown="onServiceIconKey(event)" class="grid grid-cols-4 sm:grid-cols-5 gap-2 max-h-56 overflow-y-auto p-1"></div>
                     <p id="svcIconEmpty" class="hidden text-[11px] text-slate-500 mt-1">No icons match that search.</p>
-                    <div class="mt-3 pt-3 border-t border-slate-800 space-y-1">
-                        <label class="block font-semibold text-slate-400" for="svcIconUpload">Upload your own <span class="font-normal text-slate-500">optional</span></label>
-                        <input type="file" id="svcIconUpload" accept="image/png,image/jpeg,image/webp,image/gif" onchange="onServiceIconUpload(event)" class="block w-full text-[11px] text-slate-400">
-                        <p class="text-[10px] text-slate-500">Shown in your dashboard. Your booking page keeps using the icon picked above.</p>
-                        <img id="svcIconUploadPreview" alt="" class="hidden mt-1 w-10 h-10 rounded-lg object-cover border border-slate-700">
-                        <button type="button" id="svcIconUploadClear" onclick="clearServiceIconUpload()" class="hidden text-[11px] font-bold text-slate-400 underline">Remove upload</button>
+                    <div class="mt-3 pt-3 border-t border-slate-800 space-y-2">
+                        <p class="font-semibold text-slate-400">Upload your own <span class="font-normal text-slate-500">optional</span></p>
+                        <div id="svcIconUploadDrop">
+                            <p class="text-[11px] text-slate-400">Drag an image here, or choose a file. PNG, JPG, WebP, or SVG. Up to 2 MB.</p>
+                            <button type="button" id="svcIconChoose" class="mt-2 px-3 py-2 rounded-xl bg-slate-800 text-white font-bold text-xs border border-slate-700">Choose file</button>
+                            <input type="file" id="svcIconUpload" accept="image/png,image/jpeg,image/webp,image/svg+xml,.svg" aria-label="Choose a service image">
+                        </div>
+                        <p class="text-[10px] text-slate-500">Square crop, same limits as your logo. Shown in your dashboard.</p>
+                        <img id="svcIconUploadPreview" alt="" class="hidden">
+                        <p id="svcIconUploadNote" class="text-[11px] text-slate-400" role="status"></p>
+                        <button type="button" id="svcIconUploadClear" onclick="clearServiceIconUpload()" class="hidden text-[11px] font-bold text-slate-400 underline">Remove image</button>
                     </div>
                 </div>
                 <div>
@@ -2431,7 +2513,7 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
                 </div>
 
                 <div>
-                    <label class="block font-semibold text-slate-300 mb-1">Service *</label>
+                    <label class="block font-semibold text-slate-300 mb-1">Service * <span id="manServiceMark" class="sd-svc-mark" aria-hidden="true"></span></label>
                     <select id="manServiceSelect" onchange="onManualServiceChange()" class="w-full px-3 py-2 rounded-xl glass-input">
                     </select>
                 </div>
@@ -2539,7 +2621,7 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
                     </div>
                 </div>
                 <div>
-                    <label class="block font-semibold text-slate-300 mb-1" for="ownerRecurService">Service</label>
+                    <label class="block font-semibold text-slate-300 mb-1" for="ownerRecurService">Service <span id="ownerRecurServiceMark" class="sd-svc-mark" aria-hidden="true"></span></label>
                     <select id="ownerRecurService" onchange="onOwnerRecurServiceChange()" class="w-full px-3 py-2 rounded-xl glass-input"></select>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -6654,7 +6736,7 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
             if (!apps.length) return '<p class="text-[11px] text-slate-500">No visits yet.</p>';
             return '<div><p class="text-[11px] font-bold text-slate-300">Visit history</p>' + apps.map(function (app) {
                 var when = esc((app.date || '') + (app.time ? (' · ' + app.time) : ''));
-                return '<div class="sd-visit"><p><span class="block text-[11px] font-bold text-white">' + esc(app.serviceName || 'Appointment') + '</span>' +
+                return '<div class="sd-visit"><p><span class="sd-svc-line text-[11px] font-bold text-white">' + serviceMarkHtml(tenant, app.serviceName) + '<span>' + esc(app.serviceName || 'Appointment') + '</span></span>' +
                     '<span class="block text-[10px] text-slate-400">' + when + '</span></p>' +
                     appointmentPayMarkup(app, false) + '</div>';
             }).join('') + '</div>';
@@ -7375,7 +7457,7 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
                     var when = (app.date === today ? '' : (rosterPrettyDate(app.date) + ' · ')) + (app.time || '');
                     return '<article class="sd-card sd-request">' +
                         '<div><h4>' + esc(app.clientName || 'Client') + '</h4>' +
-                        '<p class="sd-meta">' + esc(when) + ' · ' + esc(app.serviceName || 'Appointment') + '</p></div>' +
+                        '<p class="sd-meta"><span class="sd-svc-line">' + serviceMarkHtml(tenant, app.serviceName) + '<span>' + esc(when) + ' · ' + esc(app.serviceName || 'Appointment') + '</span></span></p></div>' +
                         '<div class="sd-actions">' +
                         '<button type="button" class="sd-btn sd-btn-no" onclick="denyAppointment(' + esc(jsArg(app.id)) + ')">Decline</button>' +
                         '<button type="button" class="sd-btn sd-btn-ok" onclick="acceptAppointment(' + esc(jsArg(app.id)) + ')">Accept</button>' +
@@ -7393,7 +7475,7 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
                     return '<article class="sd-card sd-row">' +
                         '<div class="sd-time">' + esc(app.time || '') + '</div>' +
                         '<div><h4>' + esc(app.clientName || 'Client') + (app.walkIn ? ' · Walk-in' : '') + '</h4>' +
-                        '<p class="sd-meta">' + esc(app.serviceName || 'Appointment') + '</p></div>' +
+                        '<p class="sd-meta"><span class="sd-svc-line">' + serviceMarkHtml(tenant, app.serviceName) + '<span>' + esc(app.serviceName || 'Appointment') + '</span></span></p></div>' +
                         (pendingRow ? '<span class="sd-pill sd-pill-amber">New request</span>' : '') +
                         appointmentPayMarkup(app, false) +
                         '<details class="sd-more"><summary aria-label="Actions for ' + esc(app.clientName || 'appointment') + '">…</summary>' +
@@ -7666,6 +7748,7 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
         window.onOwnerRecurServiceChange = function () {
             var tenant = getTenant();
             var svc = ownerRecurServiceRecord(tenant);
+            paintServiceSelectMark('ownerRecurServiceMark', svc);
             var durEl = document.getElementById('ownerRecurDuration');
             if (durEl) durEl.value = String(svc ? parseDurationMins(svc.duration, 60) : 60);
             if (tenant && typeof populateOwnerTimeSelect === 'function') {
@@ -8222,7 +8305,7 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
             return '<button type="button" onclick="event.stopPropagation(); openRosterApptModal(' + esc(jsArg(app && app.id)) + ')" aria-label="' + label + '" class="roster-appt block w-full text-left min-h-[44px] rounded-lg border px-2 py-1.5 cursor-pointer hover:border-brand-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 ' + box + '">' +
                 '<span class="block font-bold text-[11px] ' + strike + '">' + time + '</span>' +
                 '<span class="block text-[11px] ' + strike + '">' + name + '</span>' +
-                '<span class="block text-[10px] text-slate-400 ' + (closed ? 'line-through' : '') + '">' + service + '</span>' +
+                '<span class="sd-svc-line block text-[10px] text-slate-400 ' + (closed ? 'line-through' : '') + '">' + serviceMarkHtml(getTenant(), app && app.serviceName) + '<span>' + service + '</span></span>' +
                 (badge ? '<span class="sd-pill ' + (paid ? 'sd-pill-ok' : '') + ' block text-[10px] font-bold mt-1 ' + (paid ? '' : (closed ? 'text-rose-300' : 'text-amber-300')) + '">' + badge + '</span>' : '') +
                 appointmentPayMarkup(app, !!iconOnly) +
                 '</button>';
@@ -8452,7 +8535,7 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
                 ? ('<span class="block text-xs text-sky-400">' + esc(recurrenceLabel((app.recurrence && app.recurrence.frequency) || 'weekly')) + (app.recurrence && app.recurrence.index && app.recurrence.total ? (' ' + app.recurrence.index + '/' + app.recurrence.total) : '') + '</span>')
                 : '';
             var dur = Number(app.durationMins);
-            var service = esc(app.serviceName || 'Appointment') + (isFinite(dur) && dur > 0 ? ('<span class="block text-xs text-slate-400">' + dur + ' min</span>') : '');
+            var service = '<span class="sd-svc-line">' + serviceMarkHtml(tenant, app.serviceName) + '<span>' + esc(app.serviceName || 'Appointment') + '</span></span>' + (isFinite(dur) && dur > 0 ? ('<span class="block text-xs text-slate-400">' + dur + ' min</span>') : '');
             var when = '<span class="font-bold text-brand-400">' + esc(app.date ? rosterPrettyDate(app.date) : 'Date not set') + '</span><span class="block">' + esc(app.time || 'Time not set') + '</span>' + rec;
             var payText = esc(rosterPaymentLabel(app) || 'Not set') + (hasPricedAmount(app.amount) ? (' · $' + (Number(app.amount) || 0)) : '') +
                 (app.paymentOptionLabel ? ('<span class="block text-xs text-slate-400">' + esc(app.paymentOptionLabel) + '</span>') : '') +
@@ -8490,7 +8573,7 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
                 return '<button type="button" onclick="openRosterApptModal(' + esc(jsArg(a.id)) + ', ' + esc(jsArg(iso)) + ')" class="w-full text-left min-h-[44px] rounded-xl border px-3 py-2.5 flex items-center justify-between gap-3 ' +
                     (closed ? 'border-rose-500/40 bg-rose-500/10' : (st === 'pending' ? 'border-amber-500/40 bg-amber-500/10' : 'border-slate-700 bg-slate-950/40 hover:border-brand-400')) + '">' +
                     '<span class="min-w-0"><span class="block text-sm font-bold ' + (closed ? 'line-through text-rose-300' : 'text-white') + '">' + esc(a.time || 'Time not set') + ' · ' + esc(a.clientName || 'Client') + '</span>' +
-                    '<span class="block text-xs text-slate-400 truncate">' + esc(a.serviceName || 'Appointment') + '</span>' +
+                    '<span class="sd-svc-line block text-xs text-slate-400 truncate">' + serviceMarkHtml(tenant, a.serviceName) + '<span>' + esc(a.serviceName || 'Appointment') + '</span></span>' +
                     (badge ? ('<span class="sd-pill ' + (paid ? 'sd-pill-ok' : '') + ' block text-xs font-bold ' + (paid ? '' : (closed ? 'text-rose-300' : 'text-amber-300')) + '">' + badge + '</span>') : '') +
                     appointmentPayMarkup(a, false) + '</span>' +
                     '<i class="fa-solid fa-chevron-right text-slate-400 shrink-0"></i></button>';
@@ -8524,7 +8607,7 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
                         <div class="font-bold text-white">${esc(app.clientName)}${app.walkIn === true ? ' <span class="ml-1 align-middle inline-block px-1.5 py-0.5 rounded-md bg-slate-800 border border-slate-700 text-slate-300 text-[10px] font-semibold whitespace-nowrap"><i class="fa-solid fa-person-walking mr-1"></i>Walk-in</span>' : ''}</div>
                         <div class="text-[10px] text-slate-400">${esc(app.clientPhone)} • ${esc(app.clientEmail)}</div>
                     </td>
-                    <td class="roster-cell-service p-3 font-semibold text-slate-300">${esc(app.serviceName)}</td>
+                    <td class="roster-cell-service p-3 font-semibold text-slate-300"><span class="sd-svc-line">${serviceMarkHtml(tenant, app.serviceName)}<span>${esc(app.serviceName)}</span></span></td>
                     <td class="roster-cell-when p-3">
                         <span class="text-brand-400 font-bold">${esc(app.date)}</span>
                         <div class="text-[10px] text-slate-400">${esc(app.time)}${(app.seriesId || (app.recurrence && app.recurrence.frequency && app.recurrence.frequency !== 'once')) ? (' · <span class="text-sky-400">' + esc(recurrenceLabel((app.recurrence && app.recurrence.frequency) || 'weekly')) + (app.recurrence && app.recurrence.index && app.recurrence.total ? (' ' + app.recurrence.index + '/' + app.recurrence.total) : '') + '</span>') : ''}</div>
@@ -8609,7 +8692,7 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
                             </div>
                             <span class="text-xs font-bold text-white">${esc(formatServicePriceLabel(s) || 'No price')}</span>
                         </div>
-                        <h4 class="text-xs font-bold text-white">${esc(s.name)}${s.icon || s.iconImage ? '' : ' <span class="ml-1 text-[10px] uppercase tracking-wide text-brand-400">Auto</span>'}</h4>
+                        <h4 class="text-xs font-bold text-white">${esc(s.name)}${s.icon || serviceImageSrc(s) ? '' : ' <span class="ml-1 text-[10px] uppercase tracking-wide text-brand-400">Auto</span>'}</h4>
                         <p class="text-[11px] text-slate-400 mt-1 line-clamp-2">${esc(s.desc)}</p>
                     </div>
                     <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px]">
@@ -8786,6 +8869,10 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
         var logoCropState = null;
         var logoObjectUrl = '';
         var logoUploadBound = false;
+        var logoUploadTarget = { kind: 'logo' };
+        var logoCropHome = null;
+        var serviceIconPreviews = {};
+        var serviceIconUploadBound = false;
 
         function logoFileKind(file) {
             var type = String(file && file.type || '').toLowerCase();
@@ -8802,8 +8889,11 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
         }
 
         function logoFileProblem(file) {
-            if (!file) return 'Choose a PNG, JPG, WebP, or SVG logo.';
-            if (file.size > LOGO_MAX_BYTES) return 'That file is over 2 MB. Use a smaller logo, or paste a link.';
+            var noun = logoUploadIsService() ? 'image' : 'logo';
+            if (!file) return 'Choose a PNG, JPG, WebP, or SVG ' + noun + '.';
+            if (file.size > LOGO_MAX_BYTES) return noun === 'logo'
+                ? 'That file is over 2 MB. Use a smaller logo, or paste a link.'
+                : 'That file is over 2 MB. Use a smaller image.';
             if (!logoFileKind(file)) return 'Use a PNG, JPG, WebP, or SVG file.';
             return '';
         }
@@ -8874,6 +8964,25 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
             refreshLogoPreview();
         };
 
+        function logoUploadIsService() {
+            return !!(logoUploadTarget && logoUploadTarget.kind === 'service' && logoUploadTarget.serviceId);
+        }
+
+        function parkLogoCropPanel(overlay) {
+            var panel = document.getElementById('logoCropPanel');
+            if (!panel) return;
+            if (!logoCropHome) logoCropHome = { parent: panel.parentNode, next: panel.nextSibling };
+            if (overlay) {
+                if (panel.parentNode !== document.body) document.body.appendChild(panel);
+                panel.classList.add('is-overlay');
+            } else {
+                panel.classList.remove('is-overlay');
+                if (logoCropHome.parent && panel.parentNode !== logoCropHome.parent) {
+                    logoCropHome.parent.insertBefore(panel, logoCropHome.next);
+                }
+            }
+        }
+
         function showLogoCrop(image) {
             var panel = document.getElementById('logoCropPanel');
             var zoom = document.getElementById('logoCropZoom');
@@ -8883,6 +8992,7 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
             var scale = LOGO_STAGE / Math.min(w, h);
             var fit = logoCropSource(w, h, LOGO_STAGE, 1, (LOGO_STAGE - w * scale) / 2, (LOGO_STAGE - h * scale) / 2);
             logoCropState = { image: image, zoom: 1, ox: fit ? fit.ox : 0, oy: fit ? fit.oy : 0, drag: null };
+            parkLogoCropPanel(logoUploadIsService());
             if (panel) panel.classList.remove('hidden');
             drawLogoCrop();
         }
@@ -8904,6 +9014,7 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
             logoCropState = null;
             var panel = document.getElementById('logoCropPanel');
             if (panel) panel.classList.add('hidden');
+            parkLogoCropPanel(false);
         }
 
         function blobToBase64(blob) {
@@ -8919,57 +9030,142 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
             });
         }
 
+        function setServiceUploadNote(message, warn) {
+            var note = document.getElementById('svcIconUploadNote');
+            if (!note) return;
+            note.textContent = message || '';
+            note.classList.toggle('is-warn', !!warn);
+        }
+
+        function serviceImageMessage(error) {
+            if (error === 'too_large') return 'That file is over 2 MB. Use a smaller image.';
+            if (error === 'bad_type') return 'Use a PNG, JPG, WebP, or SVG file.';
+            if (error === 'svg_rejected') return 'That SVG cannot be used. Export a PNG instead.';
+            if (error === 'session_required') return 'Sign in again, then upload the image.';
+            if (error === 'logo_storage_unconfigured') return 'Image upload is not turned on yet. The icon above still shows.';
+            if (error === 'demo') return 'This demo shows the image here only. Nothing is uploaded.';
+            return 'Could not upload that image. The icon above still shows.';
+        }
+
+        function revokeServicePreview(serviceId) {
+            var key = String(serviceId || '');
+            var url = serviceIconPreviews[key] || '';
+            if (url.indexOf('blob:') === 0) {
+                try { URL.revokeObjectURL(url); } catch (errRevokeSvc) {}
+            }
+            delete serviceIconPreviews[key];
+        }
+
+        function rememberServicePreview(serviceId, url) {
+            var key = String(serviceId || '');
+            if (!key) return;
+            if (serviceIconPreviews[key] && serviceIconPreviews[key] !== url) revokeServicePreview(key);
+            if (url) serviceIconPreviews[key] = url;
+            else delete serviceIconPreviews[key];
+            syncServiceIconUploadPreview();
+        }
+
         async function storeLogoBlob(blob, contentType) {
-            revokeLogoObjectUrl();
-            logoObjectUrl = URL.createObjectURL(blob);
-            refreshLogoPreview();
-            hideLogoCrop();
+            var serviceTarget = logoUploadIsService() ? logoUploadTarget : null;
             if (window.__SCHEDI_DEMO) {
+                var demoUrl = URL.createObjectURL(blob);
+                hideLogoCrop();
+                if (serviceTarget) {
+                    rememberServicePreview(serviceTarget.serviceId, demoUrl);
+                    setServiceUploadNote(serviceImageMessage('demo'), false);
+                    logoUploadTarget = { kind: 'logo' };
+                    return;
+                }
+                revokeLogoObjectUrl();
+                logoObjectUrl = demoUrl;
+                refreshLogoPreview();
                 setLogoNote(logoUploadMessage('demo'), false);
                 return;
             }
-            setLogoNote('Uploading logo…', false);
+            hideLogoCrop();
+            if (serviceTarget) {
+                setServiceUploadNote('Uploading image…', false);
+            } else {
+                revokeLogoObjectUrl();
+                logoObjectUrl = URL.createObjectURL(blob);
+                refreshLogoPreview();
+                setLogoNote('Uploading logo…', false);
+            }
             var tenant = getTenant();
             var session = '';
             try { session = localStorage.getItem('schedi.authSession') || ''; } catch (errSession) { session = ''; }
             var data = '';
             try { data = await blobToBase64(blob); } catch (errRead) { data = ''; }
             if (!tenant || !data) {
-                setLogoNote(logoUploadMessage(''), true);
+                if (serviceTarget) setServiceUploadNote(serviceImageMessage(''), true);
+                else setLogoNote(logoUploadMessage(''), true);
+                logoUploadTarget = { kind: 'logo' };
                 return;
             }
+            var payload = { session: session, data: data, contentType: contentType };
+            if (serviceTarget) payload.serviceId = String(serviceTarget.serviceId);
             try {
                 var res = await fetch('https://schedi.app/api/logo-upload', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ session: session, data: data, contentType: contentType })
+                    body: JSON.stringify(payload)
                 });
                 var body = {};
                 try { body = await res.json(); } catch (errJson) { body = {}; }
                 if (!res.ok || !body.ok || !safeHttpsUrl(body.url)) {
-                    revokeLogoObjectUrl();
-                    refreshLogoPreview();
-                    setLogoNote(logoUploadMessage(body.error || ''), true);
+                    if (serviceTarget) {
+                        setServiceUploadNote(serviceImageMessage(body.error || ''), true);
+                    } else {
+                        revokeLogoObjectUrl();
+                        refreshLogoPreview();
+                        setLogoNote(logoUploadMessage(body.error || ''), true);
+                    }
+                    logoUploadTarget = { kind: 'logo' };
                     return;
                 }
-                var input = document.getElementById('tenantLogoUrl');
-                if (input) input.value = body.url;
-                tenant.logoUrl = body.url;
-                revokeLogoObjectUrl();
-                refreshLogoPreview();
-                setLogoNote('Logo saved.', false);
-                try { await saveState(); } catch (errSave) {}
+                if (serviceTarget) {
+                    var hidden = document.getElementById('svcImageUrl');
+                    if (hidden) hidden.value = body.url;
+                    revokeServicePreview(serviceTarget.serviceId);
+                    var existing = (tenant.services || []).find(function (s) { return s && String(s.id) === String(serviceTarget.serviceId); });
+                    if (existing) {
+                        existing.imageUrl = body.url;
+                        delete existing.iconImage;
+                        try { await saveState(); } catch (errSaveSvc) {}
+                    }
+                    syncServiceIconUploadPreview();
+                    setServiceUploadNote('Image saved.', false);
+                    var fresh = getTenant();
+                    if (fresh) renderTenantServices(fresh);
+                } else {
+                    var input = document.getElementById('tenantLogoUrl');
+                    if (input) input.value = body.url;
+                    tenant.logoUrl = body.url;
+                    revokeLogoObjectUrl();
+                    refreshLogoPreview();
+                    setLogoNote('Logo saved.', false);
+                    try { await saveState(); } catch (errSave) {}
+                }
             } catch (errNet) {
-                revokeLogoObjectUrl();
-                refreshLogoPreview();
-                setLogoNote(logoUploadMessage(''), true);
+                if (serviceTarget) setServiceUploadNote(serviceImageMessage(''), true);
+                else {
+                    revokeLogoObjectUrl();
+                    refreshLogoPreview();
+                    setLogoNote(logoUploadMessage(''), true);
+                }
             }
+            logoUploadTarget = { kind: 'logo' };
+        }
+
+        function setActiveUploadNote(message, warn) {
+            if (logoUploadIsService()) setServiceUploadNote(message, warn);
+            else setLogoNote(message, warn);
         }
 
         function acceptLogoFile(file) {
             var problem = logoFileProblem(file);
             if (problem) {
-                setLogoNote(problem, true);
+                setActiveUploadNote(problem, true);
                 return;
             }
             var kind = logoFileKind(file);
@@ -8982,12 +9178,12 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
             var image = new Image();
             image.onload = function () {
                 try { URL.revokeObjectURL(url); } catch (errImg) {}
-                setLogoNote('', false);
+                setActiveUploadNote('', false);
                 showLogoCrop(image);
             };
             image.onerror = function () {
                 try { URL.revokeObjectURL(url); } catch (errImg) {}
-                setLogoNote('That picture could not be opened. Try another file, or paste a link.', true);
+                setActiveUploadNote('That picture could not be opened. Try another file, or paste a link.', true);
             };
             image.src = url;
         }
@@ -9046,7 +9242,10 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
             var useBtn = document.getElementById('logoCropUse');
             var cancelBtn = document.getElementById('logoCropCancel');
             var clearBtn = document.getElementById('logoUploadClear');
-            if (cancelBtn) cancelBtn.addEventListener('click', function () { hideLogoCrop(); });
+            if (cancelBtn) cancelBtn.addEventListener('click', function () {
+                hideLogoCrop();
+                logoUploadTarget = { kind: 'logo' };
+            });
             if (clearBtn) clearBtn.addEventListener('click', function () {
                 revokeLogoObjectUrl();
                 hideLogoCrop();
@@ -9073,16 +9272,51 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
                 var mime = st.image.src && /jpe?g/i.test(st.kind || '') ? 'image/jpeg' : 'image/png';
                 out.toBlob(function (blob) {
                     if (!blob) {
-                        setLogoNote('Could not prepare that crop. Try another file, or paste a link.', true);
+                        setActiveUploadNote('Could not prepare that crop. Try another file, or paste a link.', true);
                         return;
                     }
                     if (blob.size > LOGO_MAX_BYTES) {
-                        setLogoNote(logoUploadMessage('too_large'), true);
+                        setActiveUploadNote(logoUploadIsService() ? serviceImageMessage('too_large') : logoUploadMessage('too_large'), true);
                         return;
                     }
                     storeLogoBlob(blob, blob.type || mime);
                 }, mime, 0.92);
             });
+        }
+
+        function bindServiceIconUpload() {
+            bindLogoUpload();
+            if (serviceIconUploadBound) return;
+            var drop = document.getElementById('svcIconUploadDrop');
+            var input = document.getElementById('svcIconUpload');
+            var choose = document.getElementById('svcIconChoose');
+            if (!drop || !input || !choose) return;
+            serviceIconUploadBound = true;
+            choose.addEventListener('click', function () { input.click(); });
+            input.addEventListener('change', function () {
+                var file = input.files && input.files[0];
+                input.value = '';
+                if (file) beginServiceIconUpload(file);
+            });
+            ['dragenter', 'dragover'].forEach(function (name) {
+                drop.addEventListener(name, function (event) {
+                    event.preventDefault();
+                    drop.classList.add('is-over');
+                });
+            });
+            drop.addEventListener('dragleave', function () { drop.classList.remove('is-over'); });
+            drop.addEventListener('drop', function (event) {
+                event.preventDefault();
+                drop.classList.remove('is-over');
+                var file = event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files[0];
+                if (file) beginServiceIconUpload(file);
+            });
+        }
+
+        function beginServiceIconUpload(file) {
+            var id = ensureServiceUploadId();
+            logoUploadTarget = { kind: 'service', serviceId: id };
+            acceptLogoFile(file);
         }
 
         window.handleUpdateShiftsSubmit = function(e) {
@@ -11474,7 +11708,10 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
             { id: 'fa-gem', name: 'Gem', keywords: 'generic gem' },
             { id: 'fa-cubes', name: 'Cubes', keywords: 'generic cubes' },
             { id: 'fa-clock', name: 'Clock', keywords: 'generic time clock' },
-            { id: 'fa-comments', name: 'Chat', keywords: 'generic chat talk' }
+            { id: 'fa-comments', name: 'Chat', keywords: 'generic chat talk' },
+            { id: 'fa-user', name: 'Beard', keywords: 'beard user face' },
+            { id: 'fa-droplet', name: 'Gloss', keywords: 'droplet gloss shine treatment' },
+            { id: 'fa-palette', name: 'Color', keywords: 'palette dye tint' }
         ];
 
         function serviceIconWords(text) {
@@ -11500,10 +11737,90 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
             return String(suggestServiceIcon(svc && svc.name, svc && svc.desc) || 'fa-calendar').replace(/[^a-z0-9-]/gi, '');
         }
 
+        function serviceSvg(inner) {
+            return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + inner + '</svg>';
+        }
+
+        var SERVICE_ICON_SVG = {
+            'fa-scissors': serviceSvg('<circle cx="6" cy="6" r="2.2"/><circle cx="6" cy="18" r="2.2"/><path d="M8.2 7.6 20 18M8.2 16.4 20 6"/>'),
+            'fa-hand': serviceSvg('<path d="M8 11V6.5a1.5 1.5 0 0 1 3 0V11"/><path d="M11 10.5V5.5a1.5 1.5 0 0 1 3 0V11"/><path d="M14 11V7.5a1.5 1.5 0 0 1 3 0V13c0 4-2 7-6 7h-1c-3 0-5-2-5-5v-2.5a1.5 1.5 0 0 1 3 0"/>'),
+            'fa-spa': serviceSvg('<path d="M12 21c4-3 6-6.5 6-10a6 6 0 0 0-12 0c0 3.5 2 7 6 10z"/><path d="M12 21V11"/>'),
+            'fa-wand-magic-sparkles': serviceSvg('<path d="M4 20 16 8"/><path d="m15 5 1-2 1 2 2 1-2 1-1 2-1-2-2-1z"/><path d="m5 9 1 2 1-2 2-1-2-1-1-2-1 2-2 1z"/>'),
+            'fa-briefcase': serviceSvg('<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18"/>'),
+            'fa-camera': serviceSvg('<path d="M4 8h3l2-2h6l2 2h3v11H4z"/><circle cx="12" cy="13" r="3.2"/>'),
+            'fa-broom': serviceSvg('<path d="M14 4 5 13"/><path d="m5 19 4-4 8 1-3 3z"/><path d="M9 15l1 4"/>'),
+            'fa-dumbbell': serviceSvg('<path d="M6 9v6M18 9v6M3 10v4M21 10v4M6 12h12"/>'),
+            'fa-person': serviceSvg('<circle cx="12" cy="5" r="2"/><path d="M12 8v6l-3 5M12 14l3 5M8 11h8"/>'),
+            'fa-book': serviceSvg('<path d="M5 5.5A2.5 2.5 0 0 1 7.5 3H20v16H7.5A2.5 2.5 0 0 0 5 21.5z"/><path d="M5 5.5A2.5 2.5 0 0 1 7.5 8H20"/>'),
+            'fa-car': serviceSvg('<path d="M4 15h16l-1.5-5H6z"/><path d="M5 15v3h2v-1h10v1h2v-3"/><circle cx="7.5" cy="16" r="1"/><circle cx="16.5" cy="16" r="1"/>'),
+            'fa-paw': serviceSvg('<circle cx="7" cy="8" r="1.6"/><circle cx="12" cy="6" r="1.6"/><circle cx="17" cy="8" r="1.6"/><circle cx="5.5" cy="13" r="1.4"/><path d="M9 14c0-2 6-2 6 1 0 3-1.5 5-3 5s-3-2-3-6z"/>'),
+            'fa-heart-pulse': serviceSvg('<path d="M12 20s-7-4.4-7-9a4 4 0 0 1 7-2 4 4 0 0 1 7 2c0 4.6-7 9-7 9z"/><path d="M8 12h2l1-2 2 4 1-2h2"/>'),
+            'fa-pen-nib': serviceSvg('<path d="M15 4 20 9 9 20H4v-5z"/><path d="m13 6 5 5"/><circle cx="6" cy="18" r="1"/>'),
+            'fa-music': serviceSvg('<path d="M9 18V6l10-2v12"/><circle cx="6" cy="18" r="2.2"/><circle cx="16" cy="16" r="2.2"/>'),
+            'fa-house': serviceSvg('<path d="M4 11 12 4l8 7"/><path d="M6 10.5V20h12v-9.5"/>'),
+            'fa-utensils': serviceSvg('<path d="M6 3v8a2 2 0 0 0 4 0V3M8 11v10M16 3v18M16 3c2 2 2 5 0 7"/>'),
+            'fa-screwdriver-wrench': serviceSvg('<path d="M14 6a3 3 0 0 0 4 4l-7 7-3-3z"/><path d="m5 15 4 4"/><path d="M4 20l3-1 1-3"/>'),
+            'fa-calendar': serviceSvg('<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/>'),
+            'fa-calendar-check': serviceSvg('<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16M9 15l2 2 4-4"/>'),
+            'fa-star': serviceSvg('<path d="m12 3 2.2 5.2L20 9l-4 3.6L17.2 19 12 16.2 6.8 19 8 12.6 4 9l5.8-.8z"/>'),
+            'fa-gem': serviceSvg('<path d="M4 9 8 4h8l4 5-8 11z"/><path d="M4 9h16M8 4l4 5 4-5"/>'),
+            'fa-cubes': serviceSvg('<path d="M12 3 5 7l7 4 7-4z"/><path d="M5 7v6l7 4 7-4V7"/><path d="M12 11v6"/>'),
+            'fa-clock': serviceSvg('<circle cx="12" cy="12" r="8"/><path d="M12 8v5l3 2"/>'),
+            'fa-comments': serviceSvg('<path d="M5 16.5A7.5 7.5 0 1 1 8 18L5 19z"/>'),
+            'fa-droplet': serviceSvg('<path d="M12 3s6 6.2 6 10a6 6 0 0 1-12 0c0-3.8 6-10 6-10z"/>'),
+            'fa-palette': serviceSvg('<path d="M12 4a8 8 0 1 0 0 16h1.2a2 2 0 0 0 0-4H13a2 2 0 0 1-2-2 6 6 0 0 1 1-10z"/><circle cx="8" cy="10" r="0.8" fill="currentColor"/><circle cx="10" cy="7.5" r="0.8" fill="currentColor"/><circle cx="14" cy="7.5" r="0.8" fill="currentColor"/>'),
+            'fa-user': serviceSvg('<circle cx="12" cy="8" r="3"/><path d="M6 19c1.2-3 3.2-4.5 6-4.5S16.8 16 18 19"/>')
+        };
+
+        function serviceSvgMarkup(iconId) {
+            if (SERVICE_ICON_SVG[iconId]) return SERVICE_ICON_SVG[iconId];
+            return serviceSvg('<circle cx="12" cy="12" r="8"/><path d="M12 8v5l3 2"/>');
+        }
+
+        function serviceImageSrc(svc) {
+            var key = svc && svc.id != null ? String(svc.id) : '';
+            if (key && serviceIconPreviews[key]) return serviceIconPreviews[key];
+            var url = String(svc && svc.imageUrl || '').trim();
+            if (/^https:\/\//i.test(url)) return url;
+            var legacy = String(svc && svc.iconImage || '');
+            if (legacy.indexOf('data:image/') === 0) return legacy;
+            return '';
+        }
+
         function serviceIconMarkup(svc) {
-            var image = String(svc && svc.iconImage || '');
-            if (image.indexOf('data:image/') === 0) return '<img src="' + esc(image) + '" alt="" class="w-full h-full object-cover">';
-            return '<i class="fa-solid ' + esc(serviceIconClass(svc)) + ' text-base" aria-hidden="true"></i>';
+            var image = serviceImageSrc(svc);
+            if (image) return '<img src="' + esc(image) + '" alt="" class="sd-svc-img">';
+            return serviceSvgMarkup(serviceIconClass(svc));
+        }
+
+        function serviceMarkHtml(tenant, serviceName) {
+            var parts = String(serviceName || '').split(/\s+\+\s+/);
+            var first = parts[0] || '';
+            var svc = (tenant && tenant.services || []).find(function (s) { return s && s.name === first; });
+            if (!svc) return '';
+            return '<span class="sd-svc-mark" aria-hidden="true">' + serviceIconMarkup(svc) + '</span>';
+        }
+
+        function paintServiceSelectMark(elId, svc) {
+            var el = document.getElementById(elId);
+            if (!el) return;
+            el.innerHTML = svc ? serviceIconMarkup(svc) : '';
+        }
+
+        function ensureServiceUploadId() {
+            var field = document.getElementById('svcEditId');
+            var current = field ? String(field.value || '').trim() : '';
+            if (current) return current;
+            var tenant = getTenant();
+            var next = 1;
+            (tenant && tenant.services || []).forEach(function (s) {
+                var n = Number(s && s.id);
+                if (n >= next) next = n + 1;
+            });
+            if (field) field.value = String(next);
+            var flag = document.getElementById('svcIsNew');
+            if (flag) flag.value = '1';
+            return String(next);
         }
 
         function serviceIconChoices(selected) {
@@ -11515,17 +11832,24 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
             return choices;
         }
 
+        function currentServiceImageSrc() {
+            var id = String((document.getElementById('svcEditId') || {}).value || '');
+            if (id && serviceIconPreviews[id]) return serviceIconPreviews[id];
+            var url = String((document.getElementById('svcImageUrl') || {}).value || '').trim();
+            if (/^https:\/\//i.test(url)) return url;
+            return '';
+        }
+
         function syncServiceIconUploadPreview() {
-            var raw = String((document.getElementById('svcIconImage') || {}).value || '');
+            var src = currentServiceImageSrc();
             var img = document.getElementById('svcIconUploadPreview');
             var clearBtn = document.getElementById('svcIconUploadClear');
-            var show = raw.indexOf('data:image/') === 0;
             if (img) {
-                img.classList.toggle('hidden', !show);
-                if (show) img.src = raw;
+                img.classList.toggle('hidden', !src);
+                if (src) img.src = src;
                 else img.removeAttribute('src');
             }
-            if (clearBtn) clearBtn.classList.toggle('hidden', !show);
+            if (clearBtn) clearBtn.classList.toggle('hidden', !src);
         }
 
         window.renderServiceIconPicker = function () {
@@ -11553,7 +11877,7 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
                 return '<button type="button" role="option" aria-selected="' + (on ? 'true' : 'false') + '" data-icon="' + esc(row.id) + '" onclick="selectServiceIcon(' + jsArg(row.id) + ')" class="relative flex flex-col items-center justify-center gap-1 rounded-xl border px-1 py-2 text-[10px] font-bold '
                     + (on ? 'border-brand-400 bg-brand-500/20 text-white' : 'border-slate-700 bg-slate-900 text-slate-300') + '">'
                     + (auto ? '<span class="svc-icon-auto">Auto</span>' : '')
-                    + '<i class="fa-solid ' + esc(row.id) + ' text-base" aria-hidden="true"></i>'
+                    + serviceSvgMarkup(row.id)
                     + '<span class="truncate w-full text-center">' + esc(row.name) + '</span>'
                     + '</button>';
             }).join('');
@@ -11599,35 +11923,25 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
             renderServiceIconPicker();
         };
 
-        window.onServiceIconUpload = function (event) {
-            var file = event && event.target && event.target.files && event.target.files[0];
-            if (!file) return;
-            if (!/^image\/(png|jpeg|webp|gif)$/.test(file.type || '')) {
-                showToast('Use a PNG, JPG, WEBP, or GIF.', 'error');
-                event.target.value = '';
-                return;
-            }
-            if (file.size > 120000) {
-                showToast('That image is too large. Use one under 120 KB.', 'error');
-                event.target.value = '';
-                return;
-            }
-            var reader = new FileReader();
-            reader.onload = function () {
-                var url = String(reader.result || '');
-                var hidden = document.getElementById('svcIconImage');
-                if (hidden && url.indexOf('data:image/') === 0) hidden.value = url;
-                syncServiceIconUploadPreview();
-            };
-            reader.readAsDataURL(file);
-        };
-
         window.clearServiceIconUpload = function () {
-            var hidden = document.getElementById('svcIconImage');
+            var id = String((document.getElementById('svcEditId') || {}).value || '');
+            var hidden = document.getElementById('svcImageUrl');
             var file = document.getElementById('svcIconUpload');
             if (hidden) hidden.value = '';
             if (file) file.value = '';
+            if (id) revokeServicePreview(id);
+            var tenant = getTenant();
+            var existing = tenant && (tenant.services || []).find(function (s) { return s && String(s.id) === id; });
+            if (existing) {
+                delete existing.imageUrl;
+                delete existing.iconImage;
+                if (!window.__SCHEDI_DEMO) {
+                    try { saveState(); } catch (errClear) {}
+                }
+            }
+            setServiceUploadNote('', false);
             syncServiceIconUploadPreview();
+            if (tenant) renderTenantServices(tenant);
         };
 
         window.openAddServiceModal = function() {
@@ -11639,16 +11953,19 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
             }
 
             document.getElementById('svcEditId').value = '';
+            document.getElementById('svcIsNew').value = '1';
             document.getElementById('svcName').value = '';
             document.getElementById('svcDuration').value = '';
             document.getElementById('svcPrice').value = '';
             document.getElementById('svcIcon').value = '';
             document.getElementById('svcIconExplicit').value = '0';
-            document.getElementById('svcIconImage').value = '';
+            document.getElementById('svcImageUrl').value = '';
             document.getElementById('svcIconSearch').value = '';
             var addUpload = document.getElementById('svcIconUpload');
             if (addUpload) addUpload.value = '';
             document.getElementById('svcDesc').value = '';
+            setServiceUploadNote('', false);
+            bindServiceIconUpload();
             refreshServiceIconSuggestion();
             syncServiceIconUploadPreview();
             document.getElementById('tenantServiceModalTitle').textContent = 'Add Offered Service';
@@ -11664,16 +11981,21 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
             if (!svc) return;
 
             document.getElementById('svcEditId').value = svc.id;
+            var newFlag = document.getElementById('svcIsNew');
+            if (newFlag) newFlag.value = '0';
             document.getElementById('svcName').value = svc.name;
             document.getElementById('svcDuration').value = svc.duration || '';
             document.getElementById('svcPrice').value = hasPricedAmount(svc.price) ? svc.price : '';
             document.getElementById('svcIcon').value = svc.icon || '';
             document.getElementById('svcIconExplicit').value = svc.icon ? '1' : '0';
-            document.getElementById('svcIconImage').value = (svc.iconImage && String(svc.iconImage).indexOf('data:image/') === 0) ? svc.iconImage : '';
+            var savedImage = String(svc.imageUrl || '');
+            document.getElementById('svcImageUrl').value = /^https:\/\//i.test(savedImage) ? savedImage : '';
             document.getElementById('svcIconSearch').value = '';
             var editUpload = document.getElementById('svcIconUpload');
             if (editUpload) editUpload.value = '';
             document.getElementById('svcDesc').value = svc.desc || '';
+            setServiceUploadNote('', false);
+            bindServiceIconUpload();
             if (!svc.icon) refreshServiceIconSuggestion();
             else renderServiceIconPicker();
             syncServiceIconUploadPreview();
@@ -11683,6 +12005,13 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
         }
 
         window.closeAddServiceModal = function() {
+            var isNew = String((document.getElementById('svcIsNew') || {}).value || '') === '1';
+            var pending = String((document.getElementById('svcEditId') || {}).value || '');
+            if (isNew && pending && !(getTenant() && (getTenant().services || []).some(function (s) { return s && String(s.id) === pending; }))) {
+                revokeServicePreview(pending);
+            }
+            hideLogoCrop();
+            logoUploadTarget = { kind: 'logo' };
             document.getElementById('tenantServiceModal').classList.add('hidden');
         }
 
@@ -11707,7 +12036,7 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
             const desc = document.getElementById('svcDesc').value.trim();
             const explicitIcon = document.getElementById('svcIconExplicit').value === '1';
             const icon = (explicitIcon ? document.getElementById('svcIcon').value.trim() : '') || suggestServiceIcon(name, desc);
-            const iconImage = String(document.getElementById('svcIconImage').value || '');
+            const imageUrl = String((document.getElementById('svcImageUrl') || {}).value || '').trim();
 
             function applyDuration(svc) {
                 svc.duration = duration;
@@ -11728,29 +12057,40 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
                 }
             }
 
-            if (editId) {
-                const svc = tenant.services.find(s => s.id === parseInt(editId, 10));
-                if (svc) {
-                    svc.name = name;
-                    applyDuration(svc);
-                    applyPrice(svc);
-                    svc.icon = icon;
-                    if (iconImage.indexOf('data:image/') === 0) svc.iconImage = iconImage;
-                    else delete svc.iconImage;
-                    svc.desc = desc;
-                }
+            function applyImage(svc) {
+                if (/^https:\/\//i.test(imageUrl)) svc.imageUrl = imageUrl;
+                else delete svc.imageUrl;
+                delete svc.iconImage;
+            }
+
+            const existing = editId ? tenant.services.find(function (s) { return s && (s.id === parseInt(editId, 10) || String(s.id) === String(editId)); }) : null;
+            if (existing) {
+                const svc = existing;
+                svc.name = name;
+                applyDuration(svc);
+                applyPrice(svc);
+                svc.icon = icon;
+                applyImage(svc);
+                svc.desc = desc;
             } else {
                 if (normalizePlan(tenant) === 'free' && (tenant.services || []).length >= 1) {
                     showToast('Free plan allows 1 service. Extra services are not saved.', 'error');
                     return;
                 }
-                const newId = tenant.services.length > 0 ? Math.max(...tenant.services.map(s => s.id)) + 1 : 1;
+                const newId = editId ? (parseInt(editId, 10) || editId) : (tenant.services.length > 0 ? Math.max(...tenant.services.map(s => Number(s.id) || 0)) + 1 : 1);
                 const svc = { id: newId, name, duration: '', icon, desc };
-                if (iconImage.indexOf('data:image/') === 0) svc.iconImage = iconImage;
+                applyImage(svc);
                 applyDuration(svc);
                 applyPrice(svc);
                 tenant.services.push(svc);
+                var pendingKey = String(editId || '');
+                if (pendingKey && pendingKey !== String(newId) && serviceIconPreviews[pendingKey]) {
+                    serviceIconPreviews[String(newId)] = serviceIconPreviews[pendingKey];
+                    delete serviceIconPreviews[pendingKey];
+                }
             }
+            var savedFlag = document.getElementById('svcIsNew');
+            if (savedFlag) savedFlag.value = '0';
 
             saveState();
             closeAddServiceModal();
@@ -11771,6 +12111,7 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
             const doomed = tenant.services.find(s => s.id === svcId);
             if (!window.confirm(`Delete the service "${doomed ? doomed.name : svcId}"? This cannot be undone.`)) return;
 
+            revokeServicePreview(svcId);
             tenant.services = tenant.services.filter(s => s.id !== svcId);
             saveState();
             renderTenantServices(tenant);
@@ -11790,6 +12131,8 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
             var known = (tenant.services || []).some(function (s) { return s.name === currentName; });
             if (currentName && !known) select.value = '__custom__';
             else if (currentName && known) select.value = currentName;
+            var picked = (tenant.services || []).find(function (s) { return s && s.name === select.value; });
+            paintServiceSelectMark('manServiceMark', picked || null);
         }
 
         function ensureManualTimeOption(time) {
@@ -11816,12 +12159,14 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
             if (box) box.classList.toggle('hidden', !custom);
             if (!tenant || !sel) return;
             setTimeout(function () { var tt = getTenant(); if (tt) populateOwnerTimeSelect('manTime', tt, '', true); }, 0);
+            var picked = custom ? null : (tenant.services || []).find(function (s) { return s.name === sel.value; });
+            paintServiceSelectMark('manServiceMark', picked);
             if (custom) {
                 var dur = document.getElementById('manDurationMins');
                 if (dur && !dur.value) dur.value = '60';
                 return;
             }
-            var svc = (tenant.services || []).find(function (s) { return s.name === sel.value; });
+            var svc = picked;
             if (!svc) return;
             document.getElementById('manDurationMins').value = String(parseDurationMins(svc.duration, 60));
             document.getElementById('manPrice').value = hasPricedAmount(svc.price) ? String(svc.price) : '';
@@ -13040,9 +13385,13 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
             publicTenant.plan = normalizePlan(tenant);
             if (Array.isArray(publicTenant.services)) {
                 publicTenant.services = publicTenant.services.map(function (svc) {
-                    if (!svc || !svc.iconImage) return svc;
+                    if (!svc) return svc;
+                    var image = String(svc.imageUrl || '');
+                    var dropImage = image && !/^https:\/\//i.test(image);
+                    if (!svc.iconImage && !dropImage) return svc;
                     var copy = Object.assign({}, svc);
                     delete copy.iconImage;
+                    if (dropImage) delete copy.imageUrl;
                     return copy;
                 });
             }
