@@ -590,6 +590,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-demo-note { color: #03
 #tenantPortalSection.schedi-newdash .sd-pill-ok { color: var(--sd-brand-2); background: rgba(16, 185, 129, 0.14); border-color: rgba(16, 185, 129, 0.3); }
 #tenantPortalSection.schedi-newdash .sd-pill-amber { color: var(--sd-amber); background: rgba(245, 158, 11, 0.12); border-color: rgba(245, 158, 11, 0.3); }
 #tenantPortalSection.schedi-newdash .sd-pill-rose { color: var(--sd-rose); background: rgba(244, 63, 94, 0.1); border-color: rgba(244, 63, 94, 0.28); }
+#tenantPortalSection.schedi-newdash .sd-visit { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; padding: 8px 0; border-top: 1px solid var(--sd-line); }
+#tenantPortalSection.schedi-newdash .sd-visit p { margin: 0; min-width: 0; }
 #tenantPortalSection.schedi-newdash .sd-more { position: relative; }
 #tenantPortalSection.schedi-newdash .sd-more > summary {
     list-style: none;
@@ -3823,6 +3825,7 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
                 : (up.indexOf('PAYPAL') !== -1 ? 'PayPal'
                 : (up.indexOf('CARD') !== -1 ? 'Card'
                 : (up.indexOf('CASH') !== -1 ? 'Cash' : '')))));
+            if (/\bUNPAID\b/.test(up) || /\bNOT\s+PAID\b/.test(up)) return 'Unpaid';
             if (up.indexOf('PAID') !== -1) {
                 if (app.paidMethod) return 'Paid · ' + paidMethodLabel(app.paidMethod);
                 return via ? ('Paid · ' + via) : 'Paid';
@@ -3837,7 +3840,7 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
 
         function rosterAcceptedBadge(app) {
             // Display only: label accepted / auto-confirmed bookings until they are marked paid.
-            if (!app || String(app.paymentStatus || '').includes('PAID')) return '';
+            if (!app || bookingPaymentState(app) === 'paid') return '';
             var label = String(app.status || '').toLowerCase() === 'accepted' ? 'Accepted' : 'Confirmed';
             return '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-sky-500/20 text-sky-300 border border-sky-500/30 mr-1 mb-1 inline-block whitespace-nowrap">' + label + '</span>';
         }
@@ -6494,6 +6497,7 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
                         + '<p class="text-[11px] text-slate-400">Client details</p>'
                         + (contact ? ('<div class="text-[11px] text-slate-300 flex flex-wrap gap-x-4 gap-y-0.5">' + contact + '</div>') : '')
                         + (x.notes ? ('<p class="text-[11px] text-slate-400 break-words">' + esc(x.notes) + '</p>') : '')
+                        + clientVisitHistoryHtml(x)
                         + '<button type="button" onclick="openClientRecurring(' + jsArg(x.id) + ')" class="px-3 py-2 rounded-xl bg-brand-500 hover:bg-brand-600 text-slate-950 font-bold text-[11px]">New recurring appointment</button>'
                         + '</div>')
                     : '';
@@ -6507,6 +6511,33 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
                     + '</div>';
             }).join('') + '</div>' + (shown.length > cap ? ('<p class="text-[11px] text-slate-500 pt-2">Showing the first ' + cap + '. Search to find others.</p>') : '');
         };
+
+        function clientMatchesAppointment(client, app) {
+            if (!client || !app) return false;
+            var email = String(client.email || '').trim().toLowerCase();
+            var appEmail = String(app.clientEmail || '').trim().toLowerCase();
+            if (email && appEmail) return email === appEmail;
+            var phone = clientPhoneKey(client.phone);
+            var appPhone = clientPhoneKey(app.clientPhone);
+            if (phone && appPhone && phone.length >= 7 && phone === appPhone) return true;
+            var name = String(client.name || '').trim().toLowerCase();
+            return !!name && name === String(app.clientName || '').trim().toLowerCase();
+        }
+
+        function clientVisitHistoryHtml(client) {
+            var tenant = getTenant();
+            var apps = ((tenant && tenant.appointments) || []).filter(function (app) {
+                return clientMatchesAppointment(client, app);
+            }).sort(function (a, b) { return rosterApptSortKey(b) - rosterApptSortKey(a); });
+            if (!apps.length) return '<p class="text-[11px] text-slate-500">No visits yet.</p>';
+            return '<div><p class="text-[11px] font-bold text-slate-300">Visit history</p>' + apps.map(function (app) {
+                var paid = bookingPaymentState(app) === 'paid';
+                var when = esc((app.date || '') + (app.time ? (' · ' + app.time) : ''));
+                return '<div class="sd-visit"><p><span class="block text-[11px] font-bold text-white">' + esc(app.serviceName || 'Appointment') + '</span>' +
+                    '<span class="block text-[10px] text-slate-400">' + when + '</span></p>' +
+                    '<span class="sd-pill ' + (paid ? 'sd-pill-ok' : 'sd-pill-rose') + '">' + esc(rosterPaymentLabel(app) || (paid ? 'Paid' : 'Unpaid')) + '</span></div>';
+            }).join('') + '</div>';
+        }
 
         var ownerClientDetailId = '';
 
@@ -6910,8 +6941,8 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
             else raw = bookingOrStatus;
             var up = String(raw || '').toUpperCase();
             if (/\bUNPAID\b/.test(up) || /\bNOT\s+PAID\b/.test(up)) return 'unpaid';
-            if (up.indexOf('PENDING') !== -1 || up.indexOf('AWAITING') !== -1) return 'unpaid';
             if (up.indexOf('PAID') !== -1) return 'paid';
+            if (up.indexOf('PENDING') !== -1 || up.indexOf('AWAITING') !== -1) return 'unpaid';
             return 'unpaid';
         }
         window.bookingPaymentState = bookingPaymentState;
@@ -7038,9 +7069,12 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
                 schedule.innerHTML = todayApps.length ? todayApps.map(function (app) {
                     var id = esc(jsArg(app.id));
                     var pendingRow = String(app.status || '').toLowerCase() === 'pending';
-                    var pill = bookingPaymentState(app) === 'paid' ? 'sd-pill sd-pill-ok' : (pendingRow ? 'sd-pill sd-pill-amber' : 'sd-pill sd-pill-rose');
-                    var label = rosterPaymentLabel(app) || 'Unpaid';
-                    if (pendingRow) label = 'New request';
+                    var paidNow = bookingPaymentState(app) === 'paid';
+                    var pill = paidNow ? 'sd-pill sd-pill-ok' : (pendingRow ? 'sd-pill sd-pill-amber' : 'sd-pill sd-pill-rose');
+                    var label = paidNow ? (rosterPaymentLabel(app) || 'Paid') : (pendingRow ? 'New request' : (rosterPaymentLabel(app) || 'Unpaid'));
+                    var payAction = rosterPayMenuLabel(app) === 'Mark unpaid'
+                        ? '<button type="button" role="menuitem" onclick="markAppointmentUnpaid(' + id + ')">Mark unpaid</button>'
+                        : '<button type="button" role="menuitem" onclick="markAppointmentPaid(' + id + ')">Mark paid</button>';
                     return '<article class="sd-card sd-row">' +
                         '<div class="sd-time">' + esc(app.time || '') + '</div>' +
                         '<div><h4>' + esc(app.clientName || 'Client') + (app.walkIn ? ' · Walk-in' : '') + '</h4>' +
@@ -7048,7 +7082,7 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
                         '<span class="' + pill + '">' + esc(label) + '</span>' +
                         '<details class="sd-more"><summary aria-label="Actions for ' + esc(app.clientName || 'appointment') + '">…</summary>' +
                         '<div class="sd-more-menu" role="menu">' +
-                        '<button type="button" role="menuitem" onclick="markAppointmentPaid(' + id + ')">Mark paid</button>' +
+                        payAction +
                         '<button type="button" role="menuitem" onclick="openTenantRescheduleModal(' + id + ')">Reschedule</button>' +
                         '<button type="button" role="menuitem" onclick="deleteAppointment(' + id + ')">Cancel</button>' +
                         '<button type="button" role="menuitem" onclick="openEditAppointment(' + id + ')">Edit</button>' +
@@ -7835,14 +7869,15 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
             var time = esc((app && app.time) || 'Time not set');
             var name = esc((app && app.clientName) || 'Client');
             var service = esc((app && app.serviceName) || 'Appointment');
-            var badge = cancelled ? 'Cancelled' : (denied ? 'Denied' : (pending ? 'Pending' : ''));
+            var paid = !closed && bookingPaymentState(app) === 'paid';
+            var badge = paid ? 'Paid' : (cancelled ? 'Cancelled' : (denied ? 'Denied' : (pending ? 'Pending' : '')));
             var strike = closed ? 'line-through text-rose-300' : 'text-white';
             var label = esc('Open appointment: ' + ((app && app.time) || '') + ' ' + ((app && app.clientName) || 'Client'));
             return '<button type="button" onclick="event.stopPropagation(); openRosterApptModal(' + esc(jsArg(app && app.id)) + ')" aria-label="' + label + '" class="roster-appt block w-full text-left min-h-[44px] rounded-lg border px-2 py-1.5 cursor-pointer hover:border-brand-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 ' + box + '">' +
                 '<span class="block font-bold text-[11px] ' + strike + '">' + time + '</span>' +
                 '<span class="block text-[11px] ' + strike + '">' + name + '</span>' +
                 '<span class="block text-[10px] text-slate-400 ' + (closed ? 'line-through' : '') + '">' + service + '</span>' +
-                (badge ? '<span class="block text-[10px] font-bold ' + (closed ? 'text-rose-300' : 'text-amber-300') + '">' + badge + '</span>' : '') +
+                (badge ? '<span class="sd-pill ' + (paid ? 'sd-pill-ok' : '') + ' block text-[10px] font-bold mt-1 ' + (paid ? '' : (closed ? 'text-rose-300' : 'text-amber-300')) + '">' + badge + '</span>' : '') +
                 '</button>';
         }
 
@@ -7850,10 +7885,12 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
             var cancelled = appointmentIsCancelled(app);
             var denied = String((app && app.status) || '').toLowerCase() === 'denied';
             var closed = cancelled || denied;
+            var paid = !closed && bookingPaymentState(app) === 'paid';
             var label = esc((app && app.time) || '') + ' ' + esc((app && app.clientName) || 'Client');
             if (cancelled) label += ' · Cancelled';
             else if (denied) label += ' · Denied';
-            return '<div class="truncate text-[10px] ' + (closed ? 'line-through text-rose-300' : 'text-slate-300') + '">' + label + '</div>';
+            else if (paid) label += ' · Paid';
+            return '<div class="truncate text-[10px] ' + (closed ? 'line-through text-rose-300' : (paid ? 'text-emerald-400' : 'text-slate-300')) + '">' + label + '</div>';
         }
 
         function syncRosterCalendarChrome(tenant) {
@@ -7991,7 +8028,7 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
             } else if (st === 'pending') {
                 h = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">Pending</span>';
             } else {
-                var paid = String(app.paymentStatus || '').includes('PAID');
+                var paid = bookingPaymentState(app) === 'paid';
                 h = rosterAcceptedBadge(app) + '<span class="px-2 py-0.5 rounded text-[10px] font-bold inline-block whitespace-nowrap ' +
                     (paid ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-400 border border-amber-500/30') + '">' +
                     esc(rosterPaymentLabel(app)) + (hasPricedAmount(app.amount) ? (' ($' + (Number(app.amount) || 0) + ')') : '') + '</span>';
@@ -8018,7 +8055,9 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
                     out.push(btn('acceptAppointment', 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30', 'Accept'));
                     out.push(btn('denyAppointment', 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30', 'Deny'));
                 }
-                if (!String(app.paymentStatus || '').includes('PAID')) {
+                if (bookingPaymentState(app) === 'paid') {
+                    out.push(btn('markAppointmentUnpaid', 'bg-slate-800 hover:bg-slate-700 text-slate-200', 'Mark unpaid'));
+                } else {
                     out.push(btn('markAppointmentPaid', 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30', '<i class="fa-solid fa-circle-check mr-1"></i>Mark paid'));
                 }
                 out.push(btn('openEditAppointment', 'bg-slate-800 hover:bg-slate-700 text-slate-200', 'Edit'));
@@ -8029,7 +8068,7 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
             return out.join('\n');
         }
 
-        var ROSTER_SHEET_ACTIONS = ['acceptAppointment', 'denyAppointment', 'markAppointmentPaid', 'openEditAppointment', 'openTenantRescheduleModal', 'deleteAppointment', 'openRosterDeleteModal'];
+        var ROSTER_SHEET_ACTIONS = ['acceptAppointment', 'denyAppointment', 'markAppointmentPaid', 'markAppointmentUnpaid', 'openEditAppointment', 'openTenantRescheduleModal', 'deleteAppointment', 'openRosterDeleteModal'];
 
         // Pop-up action: close the details first, then run the same function the list button runs.
         window.rosterApptDo = function (fn, appId) {
@@ -8103,12 +8142,13 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
                 var cancelled = appointmentIsCancelled(a);
                 var st = String(a.status || '').toLowerCase();
                 var closed = cancelled || st === 'denied';
-                var badge = cancelled ? 'Cancelled' : (st === 'denied' ? 'Denied' : (st === 'pending' ? 'Pending' : ''));
+                var paid = !closed && bookingPaymentState(a) === 'paid';
+                var badge = paid ? 'Paid' : (cancelled ? 'Cancelled' : (st === 'denied' ? 'Denied' : (st === 'pending' ? 'Pending' : '')));
                 return '<button type="button" onclick="openRosterApptModal(' + esc(jsArg(a.id)) + ', ' + esc(jsArg(iso)) + ')" class="w-full text-left min-h-[44px] rounded-xl border px-3 py-2.5 flex items-center justify-between gap-3 ' +
                     (closed ? 'border-rose-500/40 bg-rose-500/10' : (st === 'pending' ? 'border-amber-500/40 bg-amber-500/10' : 'border-slate-700 bg-slate-950/40 hover:border-brand-400')) + '">' +
                     '<span class="min-w-0"><span class="block text-sm font-bold ' + (closed ? 'line-through text-rose-300' : 'text-white') + '">' + esc(a.time || 'Time not set') + ' · ' + esc(a.clientName || 'Client') + '</span>' +
                     '<span class="block text-xs text-slate-400 truncate">' + esc(a.serviceName || 'Appointment') + '</span>' +
-                    (badge ? ('<span class="block text-xs font-bold ' + (closed ? 'text-rose-300' : 'text-amber-300') + '">' + badge + '</span>') : '') + '</span>' +
+                    (badge ? ('<span class="sd-pill ' + (paid ? 'sd-pill-ok' : '') + ' block text-xs font-bold ' + (paid ? '' : (closed ? 'text-rose-300' : 'text-amber-300')) + '">' + badge + '</span>') : '') + '</span>' +
                     '<i class="fa-solid fa-chevron-right text-slate-400 shrink-0"></i></button>';
             }).join('');
             showRosterApptModal(apps.length + ' appointments', rosterPrettyDate(iso), '<div class="space-y-2">' + list + '</div>');
@@ -10247,7 +10287,7 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
         }
 
         function bookingLooksPaid(booking) {
-            return String((booking && booking.paymentStatus) || '').toUpperCase().indexOf('PAID') !== -1;
+            return bookingPaymentState(booking) === 'paid';
         }
 
         function buildOwnerBookingAlertEmail(tenant, booking) {
@@ -11741,7 +11781,7 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
                 if (!cancelled && !denied) {
                     active += 1;
                     bookedValue += Number(app.amount) || 0;
-                    if (String(app.paymentStatus || '').toUpperCase().indexOf('PAID') !== -1) paidValue += Number(app.amount) || 0;
+                    if (bookingPaymentState(app) === 'paid') paidValue += Number(app.amount) || 0;
                     var key = appointmentClientKey(app);
                     if (key) {
                         if (!byClient[key]) byClient[key] = { name: app.clientName || 'Unnamed', visits: 0 };
@@ -12048,23 +12088,111 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
             if (idEl) idEl.value = '';
         };
 
-        window.confirmRosterMarkPaid = function() {
+        function rosterPaymentSnapshot(app) {
+            return {
+                paymentStatus: app.paymentStatus,
+                paidMethod: app.paidMethod,
+                paymentMethod: app.paymentMethod,
+                paymentOptionLabel: app.paymentOptionLabel
+            };
+        }
+
+        function rosterPaymentRestore(app, snap) {
+            if (!app || !snap) return;
+            app.paymentStatus = snap.paymentStatus;
+            if (snap.paidMethod) app.paidMethod = snap.paidMethod;
+            else delete app.paidMethod;
+            app.paymentMethod = snap.paymentMethod;
+            app.paymentOptionLabel = snap.paymentOptionLabel;
+        }
+
+        function rosterPayMenuLabel(app) {
+            return bookingPaymentState(app) === 'paid' ? 'Mark unpaid' : 'Mark paid';
+        }
+
+        function rosterUnpaidPatch(app) {
+            var status = 'PAY AT APPOINTMENT';
+            var method = app && app.paymentMethod;
+            var label = app && app.paymentOptionLabel;
+            if (app && app.paymentStatusBeforePaid && bookingPaymentState(app.paymentStatusBeforePaid) !== 'paid') {
+                status = app.paymentStatusBeforePaid;
+                method = app.paymentMethodBeforePaid || '';
+                label = app.paymentOptionBeforePaid || '';
+            }
+            return { paymentStatus: status, paymentMethod: method || '', paymentOptionLabel: label || '', clearPaidMethod: true };
+        }
+
+        function paintRosterPayment(tenant) {
+            if (!tenant) return;
+            try { renderTenantRoster(tenant); } catch (errRoster) {}
+            try { renderClientList(); } catch (errClients) {}
+            try { renderTenantReport(tenant); } catch (errReport) {}
+        }
+
+        async function commitRosterPayment(app, next) {
+            var tenant = getTenant();
+            if (!tenant || !app) return { ok: false };
+            var snap = rosterPaymentSnapshot(app);
+            if (next.paymentStatus !== undefined) app.paymentStatus = next.paymentStatus;
+            if (next.clearPaidMethod) delete app.paidMethod;
+            else if (next.paidMethod) app.paidMethod = next.paidMethod;
+            if (next.paymentMethod !== undefined) app.paymentMethod = next.paymentMethod;
+            if (next.paymentOptionLabel !== undefined) app.paymentOptionLabel = next.paymentOptionLabel;
+            var saved = null;
+            try { saved = await saveState({ quietSyncErrors: true }); } catch (errSave) { saved = null; }
+            var current = getTenant() || tenant;
+            var row = saved && saved.appointments ? saved.appointments[current.id || tenant.id] : null;
+            if (!row || row.ok !== true) {
+                var live = ((current.appointments) || []).find(function (a) { return a && a.id === app.id; });
+                if (live === app) rosterPaymentRestore(app, snap);
+                paintRosterPayment(getTenant() || current);
+                showToast(schediSyncFailMessage(row || { error: 'network' }, 'this payment'), 'error');
+                return { ok: false };
+            }
+            paintRosterPayment(current);
+            return { ok: true, tenant: current, app: app };
+        }
+
+        window.confirmRosterMarkPaid = async function() {
             var tenant = getTenant();
             if (!tenant) return;
             var appId = String((document.getElementById('rosterPaidMethodAppId') || {}).value || '').trim();
             var app = (tenant.appointments || []).find(function (a) { return a && a.id === appId; });
             if (!app) return;
+            if (bookingPaymentState(app) === 'paid') {
+                closeRosterPaidMethodModal();
+                showToast('Appointment #' + appId + ' is already marked paid.', 'info');
+                return;
+            }
             var method = String(_rosterPaidMethodSelected || 'cash').toLowerCase();
-            app.paidMethod = method;
-            app.paymentStatus = 'PAID';
-            app.paymentMethod = method === 'cashapp' ? 'cashapp' : method;
-            app.paymentOptionLabel = paidMethodLabel(method);
+            app.paymentStatusBeforePaid = app.paymentStatus || 'PAY AT APPOINTMENT';
+            app.paymentMethodBeforePaid = app.paymentMethod || '';
+            app.paymentOptionBeforePaid = app.paymentOptionLabel || '';
             closeRosterPaidMethodModal();
-            saveState();
-            renderTenantRoster(tenant);
+            var result = await commitRosterPayment(app, {
+                paymentStatus: 'PAID',
+                paidMethod: method,
+                paymentMethod: method === 'cashapp' ? 'cashapp' : method,
+                paymentOptionLabel: paidMethodLabel(method)
+            });
+            if (!result.ok) return;
             showToast('Marked #' + appId + ' as Paid · ' + paidMethodLabel(method), 'success');
-            try { sendClientPaymentReceivedEmail(tenant, app); } catch (errC) { console.warn(errC); }
-            try { sendOwnerPaymentReceivedEmail(tenant, app); } catch (errO) { console.warn(errO); }
+            try { sendClientPaymentReceivedEmail(result.tenant, result.app); } catch (errC) { console.warn(errC); }
+            try { sendOwnerPaymentReceivedEmail(result.tenant, result.app); } catch (errO) { console.warn(errO); }
+        };
+
+        window.markAppointmentUnpaid = async function(appId) {
+            var tenant = getTenant();
+            if (!tenant) return;
+            var app = (tenant.appointments || []).find(function (a) { return a && a.id === appId; });
+            if (!app || bookingPaymentState(app) !== 'paid') return;
+            var patch = rosterUnpaidPatch(app);
+            var result = await commitRosterPayment(app, patch);
+            if (!result.ok) return;
+            delete app.paymentStatusBeforePaid;
+            delete app.paymentMethodBeforePaid;
+            delete app.paymentOptionBeforePaid;
+            showToast('Marked #' + appId + ' as unpaid.', 'success');
         };
 
         window.markAppointmentPaid = function(appId) {

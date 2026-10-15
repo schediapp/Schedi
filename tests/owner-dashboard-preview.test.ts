@@ -189,8 +189,36 @@ describe("owner dashboard preview", () => {
     expect(fn("PAID")).toBe("paid");
     expect(fn("PAID VIA CARD")).toBe("paid");
     expect(fn("PAID IN CASH")).toBe("paid");
+    expect(fn("PENDING PAID")).toBe("paid");
+    expect(fn("PAID PENDING")).toBe("paid");
+    expect(fn("AWAITING DEPOSIT PAID")).toBe("paid");
     expect(fn({ paymentStatus: "PENDING VENMO" })).toBe("unpaid");
     expect(fn("")).toBe("unpaid");
+    const menu = new Function(`${extractFunction(html, "bookingPaymentState")}\n${extractFunction(html, "rosterPayMenuLabel")}; return rosterPayMenuLabel;`)() as (
+      value: { paymentStatus?: string },
+    ) => string;
+    expect(menu({ paymentStatus: "PAY AT APPOINTMENT" })).toBe("Mark paid");
+    expect(menu({ paymentStatus: "PAID" })).toBe("Mark unpaid");
+    expect(menu({ paymentStatus: "PENDING PAID" })).toBe("Mark unpaid");
+    const unpaid = new Function(`${extractFunction(html, "bookingPaymentState")}\n${extractFunction(html, "rosterUnpaidPatch")}; return rosterUnpaidPatch;`)() as (
+      value: { paymentStatus?: string; paymentStatusBeforePaid?: string; paymentMethodBeforePaid?: string },
+    ) => { paymentStatus: string; clearPaidMethod: boolean; paymentMethod: string };
+    expect(unpaid({
+      paymentStatus: "PAID",
+      paymentStatusBeforePaid: "PENDING VENMO",
+      paymentMethodBeforePaid: "venmo",
+    })).toMatchObject({ paymentStatus: "PENDING VENMO", paymentMethod: "venmo", clearPaidMethod: true });
+    const commit = extractFunction(html, "commitRosterPayment");
+    expect(commit).toContain("quietSyncErrors");
+    expect(commit).toContain("rosterPaymentRestore");
+    expect(commit.indexOf("row.ok")).toBeLessThan(commit.indexOf("return { ok: true"));
+    const marked = html.slice(html.indexOf("confirmRosterMarkPaid"), html.indexOf("window.markAppointmentUnpaid"));
+    expect(marked.indexOf("await commitRosterPayment")).toBeLessThan(marked.indexOf("Marked #"));
+    expect(marked).toContain("sendClientPaymentReceivedEmail");
+    expect(marked).toContain("sendOwnerPaymentReceivedEmail");
+    expect(html).toContain("Visit history");
+    expect(html).toContain("markAppointmentUnpaid");
+    expect(extractFunction(html, "rosterStatusCellHtml")).toContain("bookingPaymentState");
   });
 
   it("serves the preview shell and keeps production opt-in", async () => {
@@ -481,6 +509,60 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
         return document.getElementById("schediStatReview")?.textContent || "";
       });
       expect(declined).toBe("0");
+      const paidFlip = await page.evaluate(async () => {
+        const w = window as unknown as {
+          markAppointmentPaid: (id: string) => void;
+          confirmRosterMarkPaid: () => Promise<void>;
+          getTenant: () => { appointments: { id: string; paymentStatus?: string; paidMethod?: string }[] };
+          schediDashGo: (page: string) => void;
+          setRosterCalendarView: (view: string) => void;
+          openClientDetail: (id: string) => void;
+        };
+        const unpaidBefore = document.getElementById("schediStatUnpaid")?.textContent || "";
+        w.markAppointmentPaid("HB-1003");
+        await w.confirmRosterMarkPaid();
+        const row = [...document.querySelectorAll("#schediTodaySchedule article")].find((node) => node.textContent?.includes("Jordan"));
+        const pill = row?.querySelector(".sd-pill");
+        w.schediDashGo("appointments");
+        const list = document.querySelector('[data-booking-id="HB-1003"] .roster-cell-pay')?.textContent || "";
+        w.setRosterCalendarView("week");
+        const weekJordan = [...document.querySelectorAll("#rosterCalendarWrap .roster-appt")].find((node) => node.textContent?.includes("Jordan"));
+        w.setRosterCalendarView("month");
+        const monthJordan = [...document.querySelectorAll("#rosterCalendarWrap .roster-month-day")].find((node) => node.textContent?.includes("Jordan"));
+        w.schediDashGo("clients");
+        for (let i = 0; i < 20 && !document.getElementById("clientListBody")?.textContent?.includes("Jordan"); i++) {
+          await new Promise((resolve) => setTimeout(resolve, 25));
+        }
+        w.openClientDetail("CL-JORDAN");
+        const saved = w.getTenant().appointments.find((item) => item.id === "HB-1003");
+        return {
+          unpaidBefore,
+          unpaid: document.getElementById("schediStatUnpaid")?.textContent || "",
+          pill: pill?.textContent || "",
+          pillClass: pill?.className || "",
+          menu: row?.querySelector(".sd-more-menu")?.textContent || "",
+          list,
+          week: weekJordan?.textContent || "",
+          month: monthJordan?.textContent || "",
+          history: document.getElementById("clientListBody")?.textContent || "",
+          status: saved?.paymentStatus || "",
+          method: saved?.paidMethod || "",
+        };
+      });
+      expect(Number(paidFlip.unpaid)).toBe(Number(paidFlip.unpaidBefore) - 1);
+      expect(paidFlip.pill).toContain("Paid");
+      expect(paidFlip.pillClass).toContain("sd-pill-ok");
+      expect(paidFlip.menu).toContain("Mark unpaid");
+      expect(paidFlip.menu).not.toContain("Mark paid");
+      expect(paidFlip.list).toContain("Paid");
+      expect(paidFlip.week).toContain("Jordan");
+      expect(paidFlip.week).toContain("Paid");
+      expect(paidFlip.month).toContain("Jordan");
+      expect(paidFlip.month).toContain("Paid");
+      expect(paidFlip.history).toContain("Visit history");
+      expect(paidFlip.history).toContain("Paid");
+      expect(paidFlip.status).toBe("PAID");
+      expect(paidFlip.method).toBe("cash");
       const series = await page.evaluate(() => {
         const before = (window as unknown as { getTenant: () => { appointments: unknown[] } }).getTenant().appointments.length;
         (window as unknown as { schediDashAddKind: (kind: string) => void }).schediDashAddKind("recurring");
