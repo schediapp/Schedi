@@ -39,7 +39,7 @@ import { notifyOwnerOfNewBooking, notifyOwnerOfCancellation, ownerNotifyEnabledF
 import { handleBookingIcs } from './booking-ics.js';
 import { handleBookingMailPost } from './booking-mail.js';
 import { rateLimitOk } from './rate-limit.js';
-import { handleOwnerBillingSchedule, ownerBillingScheduleAction } from './owner-billing-schedule.js';
+import { handleOwnerBillingSchedule, ownerBillingScheduleAction, subscriptionScheduleFromStripe } from './owner-billing-schedule.js';
 import {
   splitTenant,
   mergePrivateInto,
@@ -1224,6 +1224,27 @@ async function markSubscriptionPaused(env, tenantId, subscriptionId) {
   return { ok: true, tenantId: id };
 }
 
+async function saveSubscriptionSchedule(env, tenantId, sub) {
+  const id = safeTenantId(tenantId);
+  if (!id) return { ok: false, ignored: true, reason: 'no_tenant' };
+  const idToken = await firebaseAnonymousToken(env);
+  const tenant = await getTenantById(env, idToken, id);
+  if (!tenant) return { ok: false, ignored: true, reason: 'tenant_not_found' };
+  if (tenant.complimentaryPro === true || tenant.billingExempt === true) {
+    return { ok: true, ignored: true, reason: 'complimentary' };
+  }
+  const current = String(tenant.stripeSubscriptionId || '').trim();
+  const subId = String((sub && sub.id) || '');
+  if (!current || current !== subId) return { ok: true, ignored: true, reason: 'not_current_subscription' };
+  const schedule = subscriptionScheduleFromStripe(sub);
+  const same =
+    (tenant.cancelAtPeriodEnd === true) === schedule.cancelAtPeriodEnd &&
+    String(tenant.currentPeriodEnd || '') === schedule.currentPeriodEnd;
+  if (same) return { ok: true, tenantId: id, unchanged: true };
+  await patchTenantFields(env, idToken, id, schedule);
+  return { ok: true, tenantId: id, cancelAtPeriodEnd: schedule.cancelAtPeriodEnd };
+}
+
 function planFromMetadata(meta) {
   const plan = meta && meta.plan ? String(meta.plan).toLowerCase() : '';
   if (plan === 'free' || plan === 'starter' || plan === 'pro') return plan;
@@ -2073,6 +2094,17 @@ async function handleStripeWebhook(request, env) {
               plan,
             })
           : await markSubscriptionPaused(env, tenantId, subId);
+      return json({ ok: true, result }, result.ok || result.ignored ? 200 : 500, '');
+    }
+    if (type === 'customer.subscription.updated') {
+      // Keeps "Active until" in the portal in sync when an owner cancels or resumes in Stripe's billing portal.
+      const meta = obj.metadata || {};
+      const tenantId = await resolveBillingTenantId(env, {
+        tenantId: meta.tenantId,
+        customerId: typeof obj.customer === 'string' ? obj.customer : '',
+        subscriptionId: obj.id,
+      });
+      const result = await saveSubscriptionSchedule(env, tenantId, obj);
       return json({ ok: true, result }, result.ok || result.ignored ? 200 : 500, '');
     }
     if (type === 'customer.subscription.deleted') {

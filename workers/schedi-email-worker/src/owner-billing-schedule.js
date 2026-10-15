@@ -46,6 +46,23 @@ export function subscriptionPeriodEndIso(sub) {
   return unixToIso(sub.current_period_end) || unixToIso(item && item.current_period_end) || unixToIso(sub.cancel_at);
 }
 
+/**
+ * Cancel schedule carried by a Stripe subscription object (customer.subscription.updated).
+ * The Stripe billing portal may set cancel_at_period_end=true, or (newer API versions) only cancel_at.
+ * @returns {{ cancelAtPeriodEnd: boolean, currentPeriodEnd: string }}
+ */
+export function subscriptionScheduleFromStripe(sub, nowMs = Date.now()) {
+  if (!sub || typeof sub !== 'object') return { cancelAtPeriodEnd: false, currentPeriodEnd: '' };
+  const status = String(sub.status || '');
+  if (status === 'canceled' || status === 'incomplete_expired') return { cancelAtPeriodEnd: false, currentPeriodEnd: '' };
+  const cancelAt = Number(sub.cancel_at);
+  const futureCancelAt = Number.isFinite(cancelAt) && cancelAt > 0 && cancelAt * 1000 > nowMs;
+  const scheduled = sub.cancel_at_period_end === true || futureCancelAt;
+  if (!scheduled) return { cancelAtPeriodEnd: false, currentPeriodEnd: '' };
+  const iso = futureCancelAt ? unixToIso(cancelAt) : subscriptionPeriodEndIso(sub);
+  return { cancelAtPeriodEnd: true, currentPeriodEnd: iso || '' };
+}
+
 function result(status, body) {
   return { status, body };
 }

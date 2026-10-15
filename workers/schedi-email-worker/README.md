@@ -260,3 +260,9 @@ and the Stripe subscription's customer must match the stored `stripeCustomerId`.
 `cancel_at_period_end=true`; resume clears it only when a cancel is scheduled. Access ends when Stripe sends
 `customer.subscription.deleted`. `cancelAtPeriodEnd` / `currentPeriodEnd` are kept on the private tenant doc
 and returned by `/billing/status` for a signed-in owner.
+
+`customer.subscription.updated` (cancel or resume done in the Stripe billing portal) saves the same two fields
+for the business's current subscription, so the portal shows "Active until" either way. A schedule set with
+`cancel_at` only (newer Stripe API versions) counts as a scheduled cancel too. The Stripe webhook endpoint for
+`https://schedi.app/billing/webhook` must be subscribed to `customer.subscription.updated` (in addition to
+`checkout.session.completed`, `invoice.paid`, `invoice.payment_failed`, `customer.subscription.deleted`).
