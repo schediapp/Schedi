@@ -218,7 +218,27 @@ describe("owner dashboard preview", () => {
     expect(marked).toContain("sendOwnerPaymentReceivedEmail");
     expect(html).toContain("Visit history");
     expect(html).toContain("markAppointmentUnpaid");
-    expect(extractFunction(html, "rosterStatusCellHtml")).toContain("bookingPaymentState");
+    expect(extractFunction(html, "rosterStatusCellHtml")).toContain("appointmentPayMarkup");
+    expect(extractFunction(html, "appointmentPayKind")).toContain("bookingPaymentState");
+    const kind = new Function(`${extractFunction(html, "bookingPaymentState")}\n${extractFunction(html, "inferPaidMethodFromBooking")}\n${extractFunction(html, "appointmentPayKind")}; return appointmentPayKind;`)() as (
+      value: Record<string, unknown>,
+    ) => string;
+    expect(kind({ paymentStatus: "PAID VIA CARD", paidMethod: "card", stripePaymentMethodId: "pm_1" })).toBe("card");
+    expect(kind({ paymentStatus: "PAID", stripeChargeId: "ch_1" })).toBe("card");
+    expect(kind({ paymentStatus: "PAID", paidMethod: "cashapp" })).toBe("cashapp");
+    expect(kind({ paymentStatus: "PAID", paidMethod: "zelle" })).toBe("zelle");
+    expect(kind({ paymentStatus: "PAID", paidMethod: "venmo" })).toBe("venmo");
+    expect(kind({ paymentStatus: "PAID", paidMethod: "paypal" })).toBe("paypal");
+    expect(kind({ paymentStatus: "PAID IN CASH", paidMethod: "cash" })).toBe("cash");
+    expect(kind({ paymentStatus: "PAY AT APPOINTMENT" })).toBe("unpaid");
+    expect(kind({ paymentStatus: "PENDING CASH APP", paymentMethod: "cashapp" })).toBe("unpaid");
+    expect(kind({ paymentStatus: "PENDING PAID", paidMethod: "venmo" })).toBe("venmo");
+    expect(html).toContain('id="rosterPayFilter"');
+    expect(html).toContain("Card (Stripe)");
+    expect(html).toContain("In person / Cash");
+    for (const method of ["card", "cashapp", "zelle", "venmo", "paypal", "cash"]) {
+      expect(html).toContain(`paidMethod: '${method}'`);
+    }
   });
 
   it("serves the preview shell and keeps production opt-in", async () => {
@@ -516,14 +536,20 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
           getTenant: () => { appointments: { id: string; paymentStatus?: string; paidMethod?: string }[] };
           schediDashGo: (page: string) => void;
           setRosterCalendarView: (view: string) => void;
+          setRosterPayFilter: (kind: string) => void;
           openClientDetail: (id: string) => void;
         };
         const unpaidBefore = document.getElementById("schediStatUnpaid")?.textContent || "";
         w.markAppointmentPaid("HB-1003");
         await w.confirmRosterMarkPaid();
         const row = [...document.querySelectorAll("#schediTodaySchedule article")].find((node) => node.textContent?.includes("Jordan"));
-        const pill = row?.querySelector(".sd-pill");
+        const pill = row?.querySelector(".sd-pay");
+        const maya = [...document.querySelectorAll("#schediTodaySchedule article")].find((node) => node.textContent?.includes("Maya"));
         w.schediDashGo("appointments");
+        const chips = [...document.querySelectorAll("#rosterPayFilter .sd-chip")].map((node) => node.textContent || "");
+        w.setRosterPayFilter("cashapp");
+        const cashRows = [...document.querySelectorAll("#tenantRosterTableBody tr")].map((node) => node.textContent || "");
+        w.setRosterPayFilter("all");
         const list = document.querySelector('[data-booking-id="HB-1003"] .roster-cell-pay')?.textContent || "";
         w.setRosterCalendarView("week");
         const weekJordan = [...document.querySelectorAll("#rosterCalendarWrap .roster-appt")].find((node) => node.textContent?.includes("Jordan"));
@@ -540,6 +566,9 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
           unpaid: document.getElementById("schediStatUnpaid")?.textContent || "",
           pill: pill?.textContent || "",
           pillClass: pill?.className || "",
+          maya: maya?.querySelector(".sd-pay")?.textContent || "",
+          chips,
+          cashRows,
           menu: row?.querySelector(".sd-more-menu")?.textContent || "",
           list,
           week: weekJordan?.textContent || "",
@@ -550,17 +579,24 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
         };
       });
       expect(Number(paidFlip.unpaid)).toBe(Number(paidFlip.unpaidBefore) - 1);
-      expect(paidFlip.pill).toContain("Paid");
-      expect(paidFlip.pillClass).toContain("sd-pill-ok");
+      expect(paidFlip.pill).toContain("In person / Cash");
+      expect(paidFlip.pillClass).toContain("sd-pay-cash");
+      expect(paidFlip.maya).toContain("Card (Stripe)");
+      expect(paidFlip.chips.join(" ")).toMatch(/Card/);
+      expect(paidFlip.chips.join(" ")).toMatch(/Cash App/);
+      expect(paidFlip.chips.join(" ")).toMatch(/PayPal/);
+      expect(paidFlip.chips.join(" ")).toMatch(/Unpaid/);
+      expect(paidFlip.cashRows.length).toBeGreaterThan(0);
+      expect(paidFlip.cashRows.every((row) => row.includes("Cash App"))).toBe(true);
       expect(paidFlip.menu).toContain("Mark unpaid");
       expect(paidFlip.menu).not.toContain("Mark paid");
-      expect(paidFlip.list).toContain("Paid");
+      expect(paidFlip.list).toContain("In person / Cash");
       expect(paidFlip.week).toContain("Jordan");
-      expect(paidFlip.week).toContain("Paid");
+      expect(paidFlip.week).toContain("In person / Cash");
       expect(paidFlip.month).toContain("Jordan");
-      expect(paidFlip.month).toContain("Paid");
+      expect(paidFlip.month).toContain("In person / Cash");
       expect(paidFlip.history).toContain("Visit history");
-      expect(paidFlip.history).toContain("Paid");
+      expect(paidFlip.history).toContain("In person / Cash");
       expect(paidFlip.status).toBe("PAID");
       expect(paidFlip.method).toBe("cash");
       const series = await page.evaluate(() => {
