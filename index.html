@@ -221,6 +221,28 @@
         #schediPtr { position: fixed; top: env(safe-area-inset-top, 0px); left: 50%; z-index: 9999; transform: translate(-50%, -48px); width: 40px; height: 40px; border-radius: 9999px; display: flex; align-items: center; justify-content: center; background: #0f172a; border: 1px solid #1e293b; color: #34d399; box-shadow: 0 4px 14px rgba(0,0,0,.35); opacity: 0; pointer-events: none; transition: opacity .15s; }
         html.schedi-light #schediPtr { background: #ffffff; border-color: #e2e8f0; color: #047857; }
         html.schedi-light #rosterRefreshBtn { background: #ffffff; border-color: #e2e8f0; color: #334155; }
+        /* Booking alerts (web push) card */
+        .wp-switch { position: relative; flex: 0 0 auto; width: 44px; height: 26px; border-radius: 9999px; background: #334155; border: 1px solid #475569; cursor: pointer; transition: background-color .15s ease, border-color .15s ease; }
+        .wp-switch span { position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; border-radius: 9999px; background: #f8fafc; box-shadow: 0 1px 2px rgba(0,0,0,.35); transition: transform .15s ease; }
+        .wp-switch[aria-checked="true"] { background: #10b981; border-color: #10b981; }
+        .wp-switch[aria-checked="true"] span { transform: translateX(18px); }
+        .wp-switch:disabled { opacity: .45; cursor: not-allowed; }
+        .wp-switch[aria-busy="true"] { opacity: .7; cursor: progress; }
+        .wp-switch:focus-visible { outline: 2px solid #10b981; outline-offset: 2px; }
+        html.schedi-light .wp-switch { background: #cbd5e1; border-color: #94a3b8; }
+        html.schedi-light .wp-switch[aria-checked="true"] { background: #059669; border-color: #059669; }
+        html.schedi-light .wp-switch span { background: #ffffff; }
+        .wp-pill { display: inline-block; font-size: 10px; line-height: 1.4; font-weight: 700; padding: 1px 8px; border-radius: 9999px; border: 1px solid; white-space: nowrap; }
+        .wp-on { color: #34d399; background: rgba(16,185,129,.12); border-color: rgba(16,185,129,.4); }
+        .wp-off { color: #94a3b8; background: rgba(148,163,184,.1); border-color: rgba(148,163,184,.3); }
+        .wp-blocked { color: #fda4af; background: rgba(244,63,94,.12); border-color: rgba(244,63,94,.4); }
+        html.schedi-light .wp-on { color: #047857; background: #ecfdf5; border-color: #a7f3d0; }
+        html.schedi-light .wp-off { color: #475569; background: #f1f5f9; border-color: #cbd5e1; }
+        html.schedi-light .wp-blocked { color: #be123c; background: #fff1f2; border-color: #fecdd3; }
+        html.schedi-light #rosterAlertsBtn { background: #ffffff; border-color: #e2e8f0; color: #334155; }
+        #rosterAlertsBtn { min-width: 2.5rem; }
+        #rosterAlertsBtn.wp-btn-on i { color: #34d399; }
+        html.schedi-light #rosterAlertsBtn.wp-btn-on i { color: #047857; }
         .roster-nav-step { width: 6.5rem; flex: 0 0 6.5rem; text-align: center; white-space: nowrap; }
         @media (max-width: 639px) { .roster-nav-step { width: 100%; padding-left: 4px; padding-right: 4px; } }
         @media (max-width: 639px) {
@@ -720,12 +742,15 @@
                             <h3 class="text-lg font-bold text-white">Client Appointments Roster</h3>
                             <p class="text-xs text-slate-400">Manage client bookings, reschedule, cancel, or manually register walk-in appointments. List is the default. Week and Month show the same appointments.</p>
                         </div>
-                        <div class="flex flex-wrap items-center gap-2">
+                        <div class="flex flex-wrap lg:flex-nowrap lg:flex-shrink-0 items-center gap-2">
                         <button type="button" id="rosterRefreshBtn" onclick="schediRefreshRoster('button')" class="px-4 py-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white font-bold text-xs flex items-center space-x-1.5" aria-label="Refresh appointments">
                             <i id="rosterRefreshIcon" class="fa-solid fa-rotate-right"></i>
                             <span>Refresh</span>
                         </button>
                         <span id="rosterUpdatedAt" class="text-[11px] text-slate-500" aria-live="polite"></span>
+                        <button type="button" id="rosterAlertsBtn" onclick="schediOpenBookingAlerts()" style="display:none" class="px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white font-bold text-xs items-center justify-center" aria-label="Booking alerts are off" title="Booking alerts are off">
+                            <i id="rosterAlertsIcon" class="fa-solid fa-bell-slash" aria-hidden="true"></i>
+                        </button>
                         <button type="button" onclick="openManualBookingModal()" class="px-4 py-2 rounded-xl bg-brand-500 hover:bg-brand-600 text-slate-950 font-bold text-xs shadow-md glow-emerald flex items-center space-x-1.5">
                             <i class="fa-solid fa-calendar-plus"></i>
                             <span>Add Manual Appointment</span>
@@ -1061,6 +1086,28 @@
 
                 <!-- TENANT TAB 5: EMAIL CONFIRMATIONS -->
                 <div id="tenantSectionNotifications" class="glass-card rounded-2xl p-6 space-y-6 hidden">
+                    <div id="webPushCard" class="hidden p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-3 max-w-xl" style="max-width:36rem" aria-labelledby="webPushTitle">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex items-start space-x-3 min-w-0">
+                                <i id="webPushIcon" class="fa-solid fa-bell text-brand-400 text-lg mt-0.5" aria-hidden="true"></i>
+                                <div class="min-w-0">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <h3 id="webPushTitle" class="font-bold text-white text-sm">Booking alerts</h3>
+                                        <span id="webPushStatus" class="wp-pill wp-off" aria-live="polite">Off</span>
+                                    </div>
+                                    <p class="text-[11px] text-slate-400 mt-0.5">Get a pop-up on this device when a booking comes in.</p>
+                                </div>
+                            </div>
+                            <button type="button" id="webPushSwitch" role="switch" aria-checked="false" aria-labelledby="webPushTitle" class="wp-switch" onclick="schediWebPushToggle()"><span></span></button>
+                        </div>
+                        <p id="webPushHint" class="text-[11px] text-slate-500"></p>
+                        <div id="webPushActions" class="hidden">
+                            <button type="button" id="webPushTestBtn" onclick="schediWebPushTest()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold border border-slate-700 text-xs">
+                                <i class="fa-solid fa-paper-plane mr-1.5" aria-hidden="true"></i><span id="webPushTestLabel">Send test alert</span>
+                            </button>
+                        </div>
+                    </div>
+
                     <div>
                         <h3 class="text-lg font-bold text-white">Email Booking Confirmations</h3>
                         <p class="text-xs text-slate-400">Choose which emails Schedi sends your clients about their bookings, whether they book online or you add the booking yourself.</p>
@@ -14609,6 +14656,260 @@
         setup();
         setInterval(setup, 5000);
     } catch (e) {}
+})();
+</script>
+<script>
+/* Schedi owner booking alerts in the browser (web push via Firebase Cloud Messaging).
+   Desktop and Android browsers, and iPhone/iPad when Schedi is on the Home Screen.
+   The Android app has its own push code above, so this stays off inside the app. */
+(function () {
+    var C = window.Capacitor;
+    if (C && typeof C.isNativePlatform === 'function' && C.isNativePlatform()) return;
+    var SDK = 'https://www.gstatic.com/firebasejs/11.6.1/';
+    var SW_URL = '/firebase-messaging-sw.js';
+    var SW_SCOPE = '/firebase-cloud-messaging-push-scope';
+    var STORE = 'schedi.webPush';
+    var ICON = '/assets/homescreen-icon.png';
+    var PORTAL = 'https://schedi.app/login';
+    var busy = false, fb = null, fgBound = false, refreshed = false, lastKey = '';
+
+    function api() { return String(window.SCHEDI_PUSH_API_BASE || 'https://schedi.app').replace(/\/+$/, ''); }
+    // Public key from Firebase console > Project settings > Cloud Messaging > Web Push certificates.
+    // Empty uses Firebase's built-in key, which works with the same FCM project.
+    function vapidKey() { return String(window.SCHEDI_WEB_PUSH_VAPID_KEY || ''); }
+    function owner() {
+        try {
+            var session = localStorage.getItem('schedi.authSession') || '';
+            var meta = JSON.parse(localStorage.getItem('schedi.authMeta') || 'null') || {};
+            if (!session || meta.role !== 'owner' || !meta.tenantId) return null;
+            return { session: session, tenantId: String(meta.tenantId) };
+        } catch (e) { return null; }
+    }
+    function saved() { try { return JSON.parse(localStorage.getItem(STORE) || 'null'); } catch (e) { return null; } }
+    function setSaved(v) { try { if (v) localStorage.setItem(STORE, JSON.stringify(v)); else localStorage.removeItem(STORE); } catch (e) {} }
+    function isIOS() {
+        var ua = navigator.userAgent || '';
+        return /iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    }
+    function isAndroid() { return /Android/i.test(navigator.userAgent || ''); }
+    function standalone() {
+        return navigator.standalone === true || !!(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+    }
+    function supported() {
+        return !!(window.isSecureContext && 'Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window);
+    }
+    function state() {
+        var o = owner();
+        if (!o) return 'hidden';
+        if (isIOS() && !standalone()) return 'ios-install';
+        if (!supported()) return 'unsupported';
+        if (Notification.permission === 'denied') return 'blocked';
+        var s = saved();
+        if (Notification.permission === 'granted' && s && s.token && s.tenantId === o.tenantId) return 'on';
+        return 'off';
+    }
+    function hint(st) {
+        if (st === 'on') return 'Alerts are on in this browser. Turn them on in each browser or device you use.';
+        if (st === 'ios-install') return 'Add Schedi to your Home Screen first. In Safari, tap Share, then Add to Home Screen. Open Schedi from that icon and turn alerts on there.';
+        if (st === 'blocked') {
+            if (isIOS()) return 'Alerts are blocked for Schedi. Open Settings > Notifications > Schedi, allow notifications, then come back here.';
+            if (isAndroid()) return 'Your browser is blocking alerts for this site. Tap the icon next to the web address, open Permissions, allow Notifications, then reload.';
+            return 'Your browser is blocking alerts for this site. Click the icon to the left of the web address, allow Notifications, then reload this page.';
+        }
+        if (st === 'unsupported') {
+            if (isIOS()) return 'Alerts need iOS 16.4 or later. Update your iPhone, then open Schedi from your Home Screen.';
+            return 'This browser can\u2019t show booking alerts. Try Chrome, Edge, Firefox, or Safari.';
+        }
+        return 'Works while your browser is open, even when the Schedi tab is closed. Turn it on in each browser or device you use.';
+    }
+    function el(id) { return document.getElementById(id); }
+    function render() {
+        var st = state();
+        var key = st + '|' + busy;
+        var card = el('webPushCard'), btn = el('rosterAlertsBtn');
+        if (!card) return;
+        if (key === lastKey) return;
+        lastKey = key;
+        card.classList.toggle('hidden', st === 'hidden');
+        if (btn) {
+            btn.style.display = st === 'hidden' ? 'none' : 'inline-flex';
+            btn.classList.toggle('wp-btn-on', st === 'on');
+            el('rosterAlertsIcon').className = 'fa-solid ' + (st === 'on' ? 'fa-bell' : 'fa-bell-slash');
+            var lbl = st === 'on' ? 'Booking alerts are on' : 'Booking alerts are off';
+            btn.setAttribute('aria-label', lbl);
+            btn.setAttribute('title', lbl);
+        }
+        if (st === 'hidden') return;
+        var pill = el('webPushStatus');
+        pill.textContent = st === 'on' ? 'On' : st === 'blocked' ? 'Blocked by browser' : 'Off';
+        pill.className = 'wp-pill ' + (st === 'on' ? 'wp-on' : st === 'blocked' ? 'wp-blocked' : 'wp-off');
+        el('webPushIcon').className = 'fa-solid ' + (st === 'on' ? 'fa-bell' : 'fa-bell-slash') + ' text-brand-400 text-lg mt-0.5';
+        var sw = el('webPushSwitch');
+        sw.setAttribute('aria-checked', st === 'on' ? 'true' : 'false');
+        sw.disabled = st === 'ios-install' || st === 'unsupported';
+        if (busy) sw.setAttribute('aria-busy', 'true'); else sw.removeAttribute('aria-busy');
+        el('webPushHint').textContent = hint(st);
+        el('webPushActions').classList.toggle('hidden', st !== 'on');
+    }
+    window.schediWebPushRender = function () { lastKey = ''; render(); };
+
+    function post(path, body) {
+        return fetch(api() + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+            .then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { d = d || {}; d.status = r.status; return d; }); });
+    }
+    function loadFb() {
+        if (fb) return fb;
+        fb = Promise.all([import(SDK + 'firebase-app.js'), import(SDK + 'firebase-messaging.js')]).then(function (m) {
+            var A = m[0], M = m[1];
+            return Promise.resolve(M.isSupported()).then(function (ok) {
+                if (!ok) throw new Error('unsupported');
+                var app = A.getApps().length ? A.getApp() : A.initializeApp(window.__firebase_config);
+                var messaging = M.getMessaging(app);
+                bindForeground(M, messaging);
+                return { M: M, messaging: messaging };
+            });
+        });
+        fb.catch(function () { fb = null; });
+        return fb;
+    }
+    function swReg() {
+        return navigator.serviceWorker.register(SW_URL, { scope: SW_SCOPE }).then(function (reg) {
+            if (reg.active) return reg;
+            return new Promise(function (res) {
+                var w = reg.installing || reg.waiting;
+                if (!w) return res(reg);
+                var t = setTimeout(function () { res(reg); }, 10000);
+                w.addEventListener('statechange', function () { if (w.state === 'activated') { clearTimeout(t); res(reg); } });
+            });
+        });
+    }
+    function fcmToken() {
+        return Promise.all([loadFb(), swReg()]).then(function (r) {
+            var opts = { serviceWorkerRegistration: r[1] };
+            if (vapidKey()) opts.vapidKey = vapidKey();
+            return r[0].M.getToken(r[0].messaging, opts);
+        });
+    }
+    function bindForeground(M, messaging) {
+        if (fgBound) return;
+        fgBound = true;
+        // While a Schedi tab is showing, the browser hands the alert to the page instead of popping it up.
+        M.onMessage(messaging, function (p) {
+            var n = (p && p.notification) || {};
+            var title = n.title || 'Schedi', body = n.body || '';
+            if (typeof window.schediRefreshRoster === 'function') window.schediRefreshRoster('push');
+            if (document.hasFocus()) { showToast(body ? title + ': ' + body : title, 'success'); return; }
+            navigator.serviceWorker.getRegistration(SW_SCOPE).then(function (reg) {
+                if (reg) reg.showNotification(title, { body: body, icon: ICON, tag: 'schedi-' + Date.now(), data: { url: PORTAL } });
+            }).catch(function () {});
+        });
+    }
+
+    function enable() {
+        var o = owner();
+        if (!o || busy) return;
+        var st = state();
+        if (st === 'ios-install' || st === 'unsupported') { window.schediWebPushRender(); return; }
+        busy = true; render();
+        // Ask right away, inside the click. Safari only shows the prompt during the user's tap.
+        var ask = Notification.permission === 'granted' ? Promise.resolve('granted') : Promise.resolve(Notification.requestPermission());
+        ask.then(function (perm) {
+            if (perm !== 'granted') throw new Error(perm === 'denied' ? 'blocked' : 'dismissed');
+            return fcmToken();
+        }).then(function (token) {
+            if (!token) throw new Error('no_token');
+            return post('/api/push-token', { action: 'register', platform: 'web', session: o.session, tenantId: o.tenantId, token: token }).then(function (d) {
+                if (!d.ok) throw new Error(d.status === 401 ? 'session' : 'save');
+                var prev = saved();
+                if (prev && prev.token && prev.token !== token && prev.tenantId) {
+                    post('/api/push-token', { action: 'unregister', platform: 'web', session: o.session, tenantId: prev.tenantId, token: prev.token }).catch(function () {});
+                }
+                setSaved({ tenantId: o.tenantId, token: token, checked: Date.now() });
+                refreshed = true;
+                showToast('Booking alerts are on for this device.', 'success');
+            });
+        }).catch(function (e) {
+            var m = e && e.message;
+            if (m === 'blocked') showToast('Your browser blocked alerts. See the tip under Booking alerts.', 'error');
+            else if (m === 'dismissed') showToast('Alerts are still off. Turn them on whenever you\u2019re ready.', 'info');
+            else if (m === 'session') showToast('Please sign in again, then turn on alerts.', 'error');
+            else if (m === 'unsupported') showToast('This browser can\u2019t show booking alerts.', 'error');
+            else showToast('We couldn\u2019t turn on alerts in this browser. Please try again.', 'error');
+        }).then(function () { busy = false; render(); });
+    }
+    function disable() {
+        if (busy) return;
+        var o = owner(), s = saved();
+        busy = true; render();
+        var p = Promise.resolve();
+        if (o && s && s.token && s.tenantId === o.tenantId) {
+            p = post('/api/push-token', { action: 'unregister', platform: 'web', session: o.session, tenantId: s.tenantId, token: s.token }).catch(function () {});
+        }
+        p.then(function () {
+            return loadFb().then(function (f) { return swReg().then(function () { return f.M.deleteToken(f.messaging); }); }).catch(function () {});
+        }).then(function () {
+            setSaved(null);
+            busy = false; render();
+            showToast('Booking alerts are off for this device.', 'info');
+        });
+    }
+    window.schediWebPushToggle = function () {
+        if (state() === 'on') disable(); else enable();
+    };
+    window.schediWebPushTest = function () {
+        var o = owner(), s = saved(), btn = el('webPushTestBtn'), label = el('webPushTestLabel');
+        if (!o || !s || !s.token || !btn || btn.disabled) return;
+        btn.disabled = true; label.textContent = 'Sending\u2026';
+        post('/api/push-test', { session: o.session, tenantId: o.tenantId, token: s.token }).then(function (d) {
+            if (d.ok) showToast('Test alert sent. It should pop up in a few seconds.', 'success');
+            else if (d.status === 429) showToast('A test alert was just sent. Try again in a minute.', 'info');
+            else if (d.error === 'not_registered' || d.error === 'token_expired') { setSaved(null); showToast('Alerts turned off on this device. Turn them on again to keep getting them.', 'info'); }
+            else if (d.status === 401) showToast('Please sign in again, then send a test.', 'error');
+            else showToast('We couldn\u2019t send a test alert right now. Please try again soon.', 'error');
+        }).catch(function () {
+            showToast('We couldn\u2019t send a test alert right now. Please try again soon.', 'error');
+        }).then(function () {
+            setTimeout(function () { btn.disabled = false; label.textContent = 'Send test alert'; }, 4000);
+            render();
+        });
+    };
+    window.schediOpenBookingAlerts = function () {
+        if (typeof window.switchTenantTab === 'function') window.switchTenantTab('notifications');
+        if (typeof window.rosterFirstScrollTo === 'function') { try { window.rosterFirstScrollTo('notifications'); } catch (e) {} }
+        setTimeout(function () {
+            var card = el('webPushCard');
+            if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            var sw = el('webPushSwitch');
+            if (sw && !sw.disabled) { try { sw.focus({ preventScroll: true }); } catch (e) {} }
+        }, 80);
+    };
+
+    // Once per page load (at most every 12 hours): keep the server's copy of this device's token current.
+    function keepFresh() {
+        if (refreshed || busy || state() !== 'on') return;
+        refreshed = true;
+        var o = owner(), s = saved();
+        if (s.checked && Date.now() - s.checked < 12 * 3600 * 1000) { loadFb().catch(function () {}); return; }
+        fcmToken().then(function (t) {
+            if (!t) return;
+            return post('/api/push-token', { action: 'register', platform: 'web', session: o.session, tenantId: o.tenantId, token: t }).then(function (d) {
+                if (!d.ok) return;
+                if (t !== s.token) post('/api/push-token', { action: 'unregister', platform: 'web', session: o.session, tenantId: o.tenantId, token: s.token }).catch(function () {});
+                setSaved({ tenantId: o.tenantId, token: t, checked: Date.now() });
+            });
+        }).catch(function () {});
+    }
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.addEventListener('message', function (e) {
+            if (e.data && e.data.type === 'schedi-alert-opened' && typeof window.schediRefreshRoster === 'function') window.schediRefreshRoster('push');
+        });
+    }
+    function tick() { render(); keepFresh(); }
+    document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') { lastKey = ''; tick(); } });
+    window.addEventListener('focus', function () { lastKey = ''; tick(); });
+    window.addEventListener('storage', function (e) { if (!e.key || /^schedi\./.test(e.key)) { lastKey = ''; render(); } });
+    setInterval(tick, 2000);
+    tick();
 })();
 </script>
 <script>
