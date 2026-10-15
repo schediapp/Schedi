@@ -341,6 +341,145 @@ describe("stale roster save", () => {
     expect(after.appointments.find((b: { id: string }) => b.id === OLD_ID)?.status).toBe("accepted");
   });
 
+  it("delete then save with the returned rosterRevision does not 409", async () => {
+    const env = envWith();
+    await seedOwnerAndOldBooking(env);
+    const kept = booking("BK-KEEP0001", { time: "2:00 PM", clientName: "Still Here" });
+    const seeded = await call(env, {
+      action: "sync",
+      session: "owner-token",
+      tenantId: TENANT,
+      rosterRevision: (await roster(env)).revision,
+      appointments: [booking(OLD_ID), kept],
+    });
+    expect(seeded.status).toBe(200);
+    const loaded = seeded.data.rosterRevision as number;
+
+    const deleted = await call(env, {
+      action: "delete",
+      session: "owner-token",
+      tenantId: TENANT,
+      bookingId: OLD_ID,
+    });
+    expect(deleted.status).toBe(200);
+    expect(deleted.data.ok).toBe(true);
+    expect(deleted.data.deleted).toBe(OLD_ID);
+    expect(deleted.data.rosterRevision).toBe(loaded + 1);
+
+    const stale = await call(env, {
+      action: "sync",
+      session: "owner-token",
+      tenantId: TENANT,
+      rosterRevision: loaded,
+      appointments: [kept],
+    });
+    expect(stale.status).toBe(409);
+    expect(stale.data.error).toBe("stale_roster");
+
+    const follow = await call(env, {
+      action: "sync",
+      session: "owner-token",
+      tenantId: TENANT,
+      rosterRevision: deleted.data.rosterRevision,
+      appointments: [kept],
+    });
+    expect(follow.status).toBe(200);
+    expect(follow.data.ok).toBe(true);
+    expect(follow.data.error).toBeUndefined();
+    expect(follow.data.rosterRevision).toBe((deleted.data.rosterRevision as number) + 1);
+
+    const after = await roster(env);
+    expect(after.appointments.find((b: { id: string }) => b.id === OLD_ID)).toBeUndefined();
+    expect(after.appointments.find((b: { id: string }) => b.id === "BK-KEEP0001")?.clientName).toBe("Still Here");
+  });
+
+  it("save then save with each returned rosterRevision does not 409", async () => {
+    const env = envWith();
+    await seedOwnerAndOldBooking(env);
+    const loaded = (await roster(env)).revision as number;
+
+    const first = await call(env, {
+      action: "sync",
+      session: "owner-token",
+      tenantId: TENANT,
+      rosterRevision: loaded,
+      appointments: [{ ...booking(OLD_ID), clientName: "First Edit" }],
+    });
+    expect(first.status).toBe(200);
+    expect(first.data.ok).toBe(true);
+    expect(first.data.rosterRevision).toBe(loaded + 1);
+
+    const second = await call(env, {
+      action: "sync",
+      session: "owner-token",
+      tenantId: TENANT,
+      rosterRevision: first.data.rosterRevision,
+      appointments: [{ ...booking(OLD_ID), clientName: "First Edit", status: "accepted" }],
+    });
+    expect(second.status).toBe(200);
+    expect(second.data.ok).toBe(true);
+    expect(second.data.error).toBeUndefined();
+    expect(second.data.rosterRevision).toBe((first.data.rosterRevision as number) + 1);
+
+    const after = await roster(env);
+    expect(after.revision).toBe(second.data.rosterRevision);
+    expect(after.appointments.find((b: { id: string }) => b.id === OLD_ID)?.clientName).toBe("First Edit");
+    expect(after.appointments.find((b: { id: string }) => b.id === OLD_ID)?.status).toBe("accepted");
+  });
+
+  it("create and client writes return a revision the next save can send", async () => {
+    const env = envWith();
+    await seedOwnerAndOldBooking(env);
+    const before = (await roster(env)).revision as number;
+    const token = (await roster(env)).appointments[0].manageToken as string;
+
+    const created = await call(env, {
+      action: "create",
+      tenantId: TENANT,
+      bookings: [{
+        clientName: "Walk Up",
+        clientEmail: "walk.up@example.com",
+        clientPhone: "555-0140",
+        serviceName: "Color",
+        date: "2026-10-22",
+        time: "11:30 AM",
+        status: "pending",
+        durationMins: 60,
+        paymentMethod: "later",
+      }],
+    }, "203.0.113.41");
+    expect(created.status).toBe(200);
+    expect(created.data.rosterRevision).toBe(before + 1);
+    const fresh = created.data.bookings[0];
+
+    const cancelled = await call(env, {
+      action: "client",
+      slug: TENANT,
+      token,
+      cancel: true,
+    }, "203.0.113.42");
+    expect(cancelled.status).toBe(200);
+    expect(cancelled.data.ok).toBe(true);
+    expect(cancelled.data.rosterRevision).toBe((created.data.rosterRevision as number) + 1);
+
+    const follow = await call(env, {
+      action: "sync",
+      session: "owner-token",
+      tenantId: TENANT,
+      rosterRevision: cancelled.data.rosterRevision,
+      appointments: [
+        { ...booking(OLD_ID), status: "cancelled", cancelled: true, manageToken: token },
+        fresh,
+      ],
+    });
+    expect(follow.status).toBe(200);
+    expect(follow.data.ok).toBe(true);
+    expect(follow.data.error).toBeUndefined();
+    const after = await roster(env);
+    expect(after.appointments.find((b: { id: string }) => b.id === fresh.id)?.clientEmail).toBe("walk.up@example.com");
+    expect(after.appointments.find((b: { id: string }) => b.id === OLD_ID)?.status).toBe("cancelled");
+  });
+
   it("returns the roster revision the portal sends on the next save", async () => {
     const env = envWith();
     putSession(env, "owner-token", "owner");
