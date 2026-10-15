@@ -282,17 +282,20 @@ export async function handleBookingMailPost(request, env, origin, deps) {
     return json({ ok: false, error: 'rate_limited' }, 429, origin);
   }
 
-  // Maintenance: manual reminder run. Server-held secret (never in page code) or an agency session.
+  // Maintenance: manual reminder run. An owner session is never enough.
+  // A server-held Bearer (never in page code) or an agency session may run it.
   if (data.action === 'run_reminders') {
+    const presented = String(data.session || '').trim();
+    if (presented) {
+      const s = await readSession(env, presented);
+      if (!s) return json({ ok: false, error: 'session_required' }, 401, origin);
+      if (s.role !== 'agency') return json({ ok: false, error: 'forbidden' }, 403, origin);
+    }
     const secret = String(env.WEBHOOK_SECRET || '').trim();
     const h = request.headers.get('Authorization') || '';
     const m = /^Bearer\s+(.+)$/i.exec(h.trim());
     const bearerOk = !!(secret && secret.length >= 32 && m && timingSafeEqual(m[1].trim(), secret));
-    let agencyOk = false;
-    if (!bearerOk && data.session) {
-      const s = await readSession(env, String(data.session));
-      agencyOk = !!(s && s.role === 'agency');
-    }
+    const agencyOk = !!presented;
     if (!bearerOk && !agencyOk) return json({ ok: false, error: 'unauthorized' }, 401, origin);
     try {
       const result = await deps.runSameDayReminders(env, { force: data.force !== false, dryRun: !!data.dryRun });
