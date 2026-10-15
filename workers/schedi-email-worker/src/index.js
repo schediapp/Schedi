@@ -34,6 +34,7 @@ import { handleProfileRequest } from './profile-store.js';
 import { handlePushTokenHttp, handlePushTestHttp } from './owner-push.js';
 import { applyCancellationFee, cancellationFeeSentence } from './cancellation-fee.js';
 import { handleOpsSnapshotHttp, runOpsSnapshotCron } from './ops-snapshot.js';
+import { handleDefaultPasswordAudit } from './default-password-audit.js';
 import { handleResendEventsHttp } from './email-events.js';
 import { notifyOwnerOfNewBooking, notifyOwnerOfCancellation, ownerNotifyEnabledForTenant } from './owner-notify.js';
 import { handleBookingIcs } from './booking-ics.js';
@@ -2919,6 +2920,9 @@ export default {
     const path = url.pathname.replace(/\/+$/, '') || '/';
     if (path === '/api/ops-snapshot') {
       return handleOpsSnapshotHttp(request, env, { stripeRequest, adminAuthHeaders });
+    }
+    if (path === '/api/ops-default-passwords') {
+      return handleDefaultPasswordAudit(request, env);
     }
     if (path === '/api/resend-events') {
       return handleResendEventsHttp(request, env);
