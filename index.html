@@ -14657,6 +14657,7 @@
             var id = String(d.bookingId || '');
             var onPortal = /^\/(login|portal)(\/|$)/.test(location.pathname || '');
             if (/^[A-Za-z0-9_-]{1,80}$/.test(id)) {
+                if (onPortal && typeof window.schediAlertTap === 'function' && window.schediAlertTap(id, d.date)) return;
                 if (onPortal && typeof window.schediOpenBooking === 'function') { window.schediOpenBooking(id, d.date); return; }
                 location.href = 'https://schedi.app/login?booking=' + encodeURIComponent(id);
                 return;
@@ -14940,6 +14941,8 @@
     function keepFresh() {
         if (refreshed || busy || state() !== 'on') return;
         refreshed = true;
+        // Pick up a new alert service worker (how a tapped alert opens the portal) on every page load.
+        try { navigator.serviceWorker.getRegistration(SW_SCOPE).then(function (reg) { if (reg && reg.update) return reg.update(); }).catch(function () {}); } catch (errUp) {}
         var o = owner(), s = saved();
         if (s.checked && Date.now() - s.checked < 12 * 3600 * 1000) { loadFb().catch(function () {}); return; }
         fcmToken().then(function (t) {
@@ -14952,11 +14955,17 @@
         }).catch(function () {});
     }
     if ('serviceWorker' in navigator) {
+        // 'schedi-alert-open' (current service worker) waits for this page's reply on the port; with no reply
+        // (an older page, or a frozen tab) it opens a fresh tab instead. 'schedi-alert-opened' is the older worker.
         navigator.serviceWorker.addEventListener('message', function (e) {
-            if (!e.data || e.data.type !== 'schedi-alert-opened') return;
-            if (e.data.bookingId && typeof window.schediOpenBooking === 'function' && window.schediOpenBooking(e.data.bookingId, e.data.date)) return;
+            var d = e.data;
+            if (!d || (d.type !== 'schedi-alert-opened' && d.type !== 'schedi-alert-open')) return;
+            try { if (e.ports && e.ports[0]) e.ports[0].postMessage({ ok: true }); } catch (errAck) {}
+            if (d.bookingId && typeof window.schediAlertTap === 'function' && window.schediAlertTap(d.bookingId, d.date)) return;
+            if (d.bookingId && typeof window.schediOpenBooking === 'function' && window.schediOpenBooking(d.bookingId, d.date)) return;
             if (typeof window.schediRefreshRoster === 'function') window.schediRefreshRoster('push');
         });
+        try { if (typeof navigator.serviceWorker.startMessages === 'function') navigator.serviceWorker.startMessages(); } catch (errSm) {}
     }
     function tick() { render(); keepFresh(); }
     document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') { lastKey = ''; tick(); } });
@@ -15058,7 +15067,10 @@
     var MAX_AGE = 30 * 60 * 1000;
     var ID_RE = /^[A-Za-z0-9_-]{1,80}$/;
     var HIT_MS = 4500;
-    var timer = null, running = false, loadTries = 0, hit = null;
+    // A booking alert can arrive before every copy of the booking list has the new booking (it can take up to
+    // a minute to show everywhere). Keep looking this long after the tap before saying it is gone.
+    var FIND_MS = 75 * 1000, RETRY_MS = 2500;
+    var timer = null, running = false, loadTries = 0, hit = null, nextTry = 0, waitNoted = false;
 
     function onPortalPath() { return /^\/(login|portal)(\/|$)/.test(location.pathname || ''); }
     function cleanDate(d) { d = String(d || ''); return /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : ''; }
@@ -15126,6 +15138,7 @@
         var p = pending();
         if (!p) { stop(); return; }
         if (!portalReady()) return;
+        if (Date.now() < nextTry) return;
         running = true;
         try {
             var tenant = getTenant();
@@ -15141,8 +15154,18 @@
                 }
             }
             loadTries = 0;
-            clearPending(); stop();
             var app = findAppt(tenant, p.id);
+            if (!app && Date.now() - (Number(p.at) || 0) < FIND_MS) {
+                // Brand-new booking not in the list yet: show the roster now, keep checking.
+                if (!waitNoted) {
+                    waitNoted = true;
+                    if (typeof switchTenantTab === 'function') switchTenantTab('roster');
+                    toast('Loading your new booking\u2026', 'info');
+                }
+                nextTry = Date.now() + RETRY_MS;
+                return;
+            }
+            clearPending(); stop(); nextTry = 0; waitNoted = false;
             if (typeof switchTenantTab === 'function') switchTenantTab('roster');
             if (!app) {
                 clearUrl();
@@ -15319,15 +15342,49 @@
     window.schediOpenBooking = function (id, date) {
         id = String(id || '');
         if (!ID_RE.test(id)) return false;
-        loadTries = 0;
+        loadTries = 0; nextTry = 0; waitNoted = false;
         setPending(id, date);
         start();
+        return true;
+    };
+
+    // A tapped alert reuses a portal page that may have been open since before the last Schedi update, so it
+    // would run older code. If the page on the server changed since this one loaded, reload at the booking
+    // (fresh code, same pop-up); otherwise open it right here.
+    var loadTag = null;
+    function pageTag() {
+        return fetch('/login', { method: 'HEAD', cache: 'no-store', credentials: 'same-origin' })
+            .then(function (r) { return r.ok ? String(r.headers.get('etag') || '').replace(/^W\//, '') : ''; })
+            .catch(function () { return ''; });
+    }
+    function pageIsStale() {
+        if (!loadTag) return Promise.resolve(false);
+        return Promise.all([loadTag, pageTag()]).then(function (t) { return !!(t[0] && t[1] && t[0] !== t[1]); });
+    }
+    window.schediAlertTap = function (id, date) {
+        id = String(id || '');
+        if (!ID_RE.test(id)) return false;
+        setPending(id, date);   // survives the reload below
+        var done = false;
+        function go(stale) {
+            if (done) return;
+            done = true;
+            if (stale) {
+                var d = cleanDate(date);
+                location.replace('/login?booking=' + encodeURIComponent(id) + (d ? '&date=' + d : ''));
+                return;
+            }
+            window.schediOpenBooking(id, date);
+        }
+        setTimeout(function () { go(false); }, 2500);
+        pageIsStale().then(go, function () { go(false); });
         return true;
     };
 
     if (onPortalPath()) {
         var u = fromUrl();
         if (u) setPending(u.id, u.date);
+        loadTag = pageTag();
     }
     if (pending()) start();
 })();

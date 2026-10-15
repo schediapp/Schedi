@@ -22,24 +22,44 @@ function alertData(notification) {
   return { url: url, bookingId: bookingId, date: date };
 }
 
+// Ask an open portal tab to open the booking. Resolves true only if the page answers on the port, which pages
+// from before the Accept / Deny pop-up never do (they only highlight the row), and frozen tabs can't.
+// Kept well under a second: some browsers only let a notification click open a window for about 1 s.
+var ACK_MS = 600;
+function askTab(w, a) {
+  return new Promise(function (resolve) {
+    var done = false, ch = null;
+    function finish(ok) { if (!done) { done = true; resolve(ok); } }
+    try { ch = new MessageChannel(); } catch (e) { ch = null; }
+    if (!ch) return finish(false);
+    ch.port1.onmessage = function (ev) { finish(!!(ev.data && ev.data.ok)); };
+    setTimeout(function () { finish(false); }, ACK_MS);
+    try { w.postMessage({ type: 'schedi-alert-open', v: 2, bookingId: a.bookingId, date: a.date }, [ch.port2]); } catch (e) { finish(false); }
+  });
+}
+
 // Added before the Firebase SDK so this handler runs first and the SDK's default one does not.
 self.addEventListener('notificationclick', function (event) {
   event.notification.close();
   event.stopImmediatePropagation();
   var a = alertData(event.notification);
+  function openFresh() { return self.clients.openWindow ? self.clients.openWindow(a.url) : undefined; }
   event.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (wins) {
     for (var i = 0; i < wins.length; i++) {
       var w = wins[i];
       try {
         var u = new URL(w.url);
-        // Reuse an open Schedi portal tab instead of opening another one; it jumps to the booking itself.
+        // Reuse an open Schedi portal tab instead of opening another one; it opens the booking itself.
         if (u.origin === 'https://schedi.app' && /^\/(login|portal)(\/|$)/.test(u.pathname) && 'focus' in w) {
-          w.postMessage({ type: 'schedi-alert-opened', bookingId: a.bookingId, date: a.date });
-          return w.focus();
+          if (!a.bookingId) {
+            w.postMessage({ type: 'schedi-alert-opened', bookingId: '', date: '' });
+            return w.focus();
+          }
+          return askTab(w, a).then(function (ok) { return ok ? w.focus() : openFresh(); });
         }
       } catch (e) {}
     }
-    return self.clients.openWindow ? self.clients.openWindow(a.url) : undefined;
+    return openFresh();
   }));
 });
 
