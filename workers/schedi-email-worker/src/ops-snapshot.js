@@ -1,7 +1,9 @@
 /**
  * Read-only daily ops snapshot for internal Schedi agents (Avery support watch, Sales).
  *
- * GET|POST /api/ops-snapshot          Authorization: Bearer <OPS_SNAPSHOT_TOKEN>
+ * GET|POST /api/ops-snapshot
+ *   Requires an agency session (X-Schedi-Session, schedi_hq cookie, or JSON session)
+ *   AND Authorization: Bearer <OPS_SNAPSHOT_TOKEN>
  *   ?history=N   return the last N stored daily snapshots from KV (max 60) instead of a live one
  *
  * STRICTLY READ-ONLY toward Firestore and Stripe: only GET requests. Sends no email.
@@ -12,6 +14,7 @@
 
 import { listPrivateTenants, mergePrivateInto } from './tenant-private.js';
 import { buildEmailEngagement } from './email-events.js';
+import { requireAgency } from './agency-session.js';
 
 const OWNER_PRICES = {
   price_1UMH8jGh1H5O3dkraHpGvCEN: { plan: 'starter', amount: 29 },
@@ -574,6 +577,12 @@ export async function buildOpsSnapshot(env, deps) {
 
 export async function handleOpsSnapshotHttp(request, env, deps) {
   if (request.method !== 'GET' && request.method !== 'POST') return opsJson({ ok: false, error: 'method_not_allowed' }, 405);
+  let body = {};
+  if (request.method === 'POST') {
+    try { body = await request.clone().json(); } catch (_) { body = {}; }
+  }
+  const gate = await requireAgency(env, request, body);
+  if (!gate.ok) return opsJson({ ok: false, error: gate.error }, gate.status);
   const expected = String(env.OPS_SNAPSHOT_TOKEN || '').trim();
   const auth = String(request.headers.get('Authorization') || '');
   const given = auth.startsWith('Bearer ') ? auth.slice(7).trim() : '';

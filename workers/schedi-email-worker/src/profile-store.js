@@ -3,6 +3,7 @@
  * The worker writes with the Firebase Admin service account, which bypasses rules.
  */
 import { readSession, deleteOwnerSecret } from './owner-auth.js';
+import { requireAgency } from './agency-session.js';
 import { adminAuthHeaders } from './firebase-admin.js';
 import {
   splitTenant,
@@ -188,8 +189,10 @@ function timingSafeEqualStr(a, b) {
   return diff === 0;
 }
 
-/** Maintenance: one-time move of private fields off public docs. Inert unless MIGRATION_TOKEN secret is set. */
+/** Maintenance: one-time move of private fields off public docs. Agency session plus MIGRATION_TOKEN. */
 async function handleMigratePrivate(request, env, origin, json, body) {
+  const gate = await requireAgency(env, request, body);
+  if (!gate.ok) return json({ ok: false, error: gate.error }, gate.status, origin);
   const expected = String(env.MIGRATION_TOKEN || '').trim();
   const auth = String(request.headers.get('Authorization') || '');
   const given = auth.startsWith('Bearer ') ? auth.slice(7).trim() : '';

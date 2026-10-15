@@ -189,7 +189,47 @@ async function liveTenantIds(ids, deps) {
   return ids.filter((id, i) => checks[i] !== false);
 }
 
+const AGENCY_COOKIE = 'schedi_hq';
+
+function agencySessionCookie(token, clear) {
+  const value = clear ? '' : encodeURIComponent(String(token || ''));
+  const maxAge = clear ? '0' : String(12 * 60 * 60);
+  return AGENCY_COOKIE + '=' + value + '; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=' + maxAge;
+}
+
+function withSetCookie(response, cookie) {
+  const headers = new Headers(response.headers);
+  headers.append('Set-Cookie', cookie);
+  return new Response(response.body, { status: response.status, headers });
+}
+
+function cookieToken(request) {
+  const cookie = String((request && request.headers && request.headers.get('Cookie')) || '');
+  const parts = cookie.split(';');
+  for (let i = 0; i < parts.length; i += 1) {
+    const part = parts[i];
+    const idx = part.indexOf('=');
+    if (idx < 0) continue;
+    if (part.slice(0, idx).trim() !== AGENCY_COOKIE) continue;
+    const raw = part.slice(idx + 1).trim();
+    try { return decodeURIComponent(raw).slice(0, 256); } catch (e) { return raw.slice(0, 256); }
+  }
+  return '';
+}
+
 export async function handleAuthRequest(request, env, origin, path, json, deps) {
+  if (path === '/auth/logout') {
+    if (request.method !== 'POST') {
+      return json({ ok: false, error: 'method_not_allowed' }, 405, origin);
+    }
+    let body = {};
+    try { body = await request.json(); } catch (e) { body = {}; }
+    const token = String((body && body.session) || cookieToken(request) || '').trim().slice(0, 256);
+    if (token && env && env.AUTH_KV) {
+      try { await env.AUTH_KV.delete('session:' + token); } catch (e) {}
+    }
+    return withSetCookie(json({ ok: true }, 200, origin), agencySessionCookie('', true));
+  }
   if (!authReady(env)) {
     return json({ ok: false, error: 'auth_not_configured' }, 500, origin);
   }
@@ -207,7 +247,10 @@ export async function handleAuthRequest(request, env, origin, path, json, deps) 
       return json({ ok: false, error: 'invalid_login' }, 401, origin);
     }
     const session = await createSession(env, { role: 'agency', email: email });
-    return json({ ok: true, role: 'agency', email: email, session: session.token, expiresAt: session.expiresAt }, 200, origin);
+    return withSetCookie(
+      json({ ok: true, role: 'agency', email: email, session: session.token, expiresAt: session.expiresAt }, 200, origin),
+      agencySessionCookie(session.token, false)
+    );
   }
 
   if (path === '/auth/tenant') {

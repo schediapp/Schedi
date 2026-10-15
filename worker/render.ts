@@ -35,6 +35,8 @@ export function renderRobots(): string {
     "Allow: /",
     "Disallow: /portal",
     "Disallow: /admin",
+    "Disallow: /hq",
+    "Disallow: /agency",
     "Disallow: /billing",
     "Disallow: /api",
     "",

@@ -17,6 +17,12 @@
   "vars": {
     "FIREBASE_PROJECT_ID": "siteforge-97699"
   },
+  "kv_namespaces": [
+    {
+      "binding": "AUTH_KV",
+      "id": "d53378ec0cfb4d089d73add2ff01c62d"
+    }
+  ],
   "observability": {
     "enabled": true,
     "logs": {

@@ -54,6 +54,13 @@ describe("booking calendar contrast", () => {
     expect(html).toContain('class="cal-day cal-day-');
     expect(html).not.toContain("bg-slate-900/90 border-slate-800 text-slate-200 hover:border-emerald-500/50");
   });
+
+  it("keeps the month title light on the dark calendar bar", () => {
+    expect(html).toContain("html.schedi-light #monthTitleLabel { color: #f8fafc !important; }");
+    // The bar is slate-900 (#0f172a) at 90% over a white card, about #272e3f.
+    expect(contrast("#f8fafc", "#0f172a")).toBeGreaterThanOrEqual(4.5);
+    expect(contrast("#f8fafc", "#272e3f")).toBeGreaterThanOrEqual(4.5);
+  });
 });
 
 describe("booking page audit copy", () => {
@@ -111,7 +118,9 @@ describe("booking page audit copy", () => {
     expect(html).toContain('id="tenantAddress"');
     expect(html).toContain('id="tenantLogoUrl"');
     expect(html).toContain('id="tenantCoverUrl"');
-    expect(html).toContain('id="editTenantAddress"');
+    const hq = readFileSync(new URL("../site/hq.html", import.meta.url), "utf8");
+    expect(hq).toContain('id="editTenantAddress"');
+    expect(html).not.toContain('id="editTenantAddress"');
     expect(html).toContain("function paintBizHeader");
     expect(html).toContain("onclick=\"selectPay('card')\"");
     expect(html).toContain("window.toggleSchediTheme");

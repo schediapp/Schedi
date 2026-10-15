@@ -4,6 +4,14 @@
 
 import { marketingPage, publicPaths } from "./content";
 import {
+  agencySessionToken,
+  hasAgencySession,
+  HQ_PATHS,
+  hqLoginDocument,
+  stripPublicShell,
+  type AgencyKv,
+} from "./public-shell";
+import {
   HERO_PATH,
   HERO_SVG,
   renderMarketingBoot,
@@ -22,6 +30,8 @@ export interface AssetFetcher {
 export interface SchediEnv {
   ASSETS?: AssetFetcher;
   FIREBASE_PROJECT_ID?: string;
+  /** Same AUTH_KV namespace as schedi-email-worker. Required to serve /hq. */
+  AUTH_KV?: AgencyKv;
 }
 
 export interface SchediContext {
@@ -407,6 +417,26 @@ async function fetchShell(request: Request, env: SchediEnv): Promise<Response | 
   return env.ASSETS.fetch(new Request(indexUrl.toString(), { method: "GET" }));
 }
 
+async function fetchHqShell(request: Request, env: SchediEnv): Promise<Response | null> {
+  if (!env.ASSETS) return null;
+  const hqUrl = new URL(request.url);
+  hqUrl.pathname = "/hq.html";
+  hqUrl.search = "";
+  return env.ASSETS.fetch(new Request(hqUrl.toString(), { method: "GET" }));
+}
+
+function isHqSpaPath(pathname: string): boolean {
+  const parts = stripTrailing(collapse(pathname)).split("/").filter(Boolean);
+  if (parts.length !== 1) return false;
+  let first = parts[0] || "";
+  try {
+    first = decodeURIComponent(first);
+  } catch {
+    return false;
+  }
+  return HQ_PATHS.has(first.toLowerCase());
+}
+
 export async function handleRequest(request: Request, env: SchediEnv, ctx: SchediContext): Promise<Response> {
   const url = new URL(request.url);
   const method = request.method.toUpperCase();
@@ -509,6 +539,7 @@ export async function handleRequest(request: Request, env: SchediEnv, ctx: Sched
 
   const spa = classifySpa(stripped);
   if (spa.kind === "spa") {
+    if (isHqSpaPath(stripped)) return serveHq(request, env, method);
     return serveSpa(request, env, ctx, method, spa.slug, spa.indexable);
   }
 
@@ -577,7 +608,7 @@ async function serveSpa(
     tenant = await lookupTenant(slug, env, ctx);
     indexableTenant = !!(tenant && tenant.seoPublic);
   }
-  let body = method === "HEAD" ? null : await shell.text();
+  let body = method === "HEAD" ? null : stripPublicShell(await shell.text());
   if (body != null && tenant && slug) {
     body = injectBookingMeta(body, {
       name: tenant.name,
@@ -593,6 +624,36 @@ async function serveSpa(
   headers.delete("Content-Length");
   if (!indexableTenant) headers.set("X-Robots-Tag", "noindex, follow");
   if (method === "HEAD") return new Response(null, { status: 200, headers });
+  return new Response(body, { status: 200, headers });
+}
+
+async function serveHq(request: Request, env: SchediEnv, method: string): Promise<Response> {
+  const token = agencySessionToken(request);
+  const allowed = await hasAgencySession(env.AUTH_KV, token);
+  if (!allowed) {
+    return textResponse(
+      hqLoginDocument(),
+      200,
+      "text/html; charset=utf-8",
+      { "Cache-Control": "no-store", "X-Robots-Tag": "noindex, nofollow" },
+      method,
+    );
+  }
+  const shell = await fetchHqShell(request, env);
+  if (!shell || !shell.ok || !(shell.headers.get("content-type") || "").includes("text/html")) {
+    if (shell) await discard(shell);
+    return textResponse("App shell unavailable\n", 503, "text/plain; charset=utf-8", { "Cache-Control": "no-store" }, method);
+  }
+  const headers = new Headers(shell.headers);
+  applySecurityHeaders(headers, true);
+  headers.set("Cache-Control", "no-store");
+  headers.set("X-Robots-Tag", "noindex, nofollow");
+  headers.delete("Content-Length");
+  if (method === "HEAD") {
+    await discard(shell);
+    return new Response(null, { status: 200, headers });
+  }
+  const body = await shell.text();
   return new Response(body, { status: 200, headers });
 }
 

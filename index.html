@@ -107,25 +107,6 @@
         /* Light theme: darker green/amber text for WCAG AA (>=4.5:1) */
         html.schedi-light .schedi-compare-cards .bg-slate-900\/60 { background-color: #f8fafc !important; }
         html.schedi-light .text-brand-200, html.schedi-light .text-brand-300, html.schedi-light .text-brand-400, html.schedi-light .text-brand-500 { color: #047857 !important; }
-        .hq-table th { text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: #94a3b8; font-weight: 700; padding: 8px 10px; border-bottom: 1px solid #1e293b; white-space: nowrap; }
-        .hq-table td { padding: 10px; border-bottom: 1px solid rgba(30,41,59,.7); vertical-align: top; }
-        .hq-table tbody tr:hover { background: rgba(15,23,42,.6); }
-        .hq-badge { display: inline-block; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; padding: 2px 8px; border-radius: 6px; white-space: nowrap; }
-        .hq-tag { display: inline-block; font-size: 10px; font-weight: 700; padding: 1px 8px; border-radius: 999px; border: 1px solid; }
-        .hq-warn { display: inline-block; font-size: 10px; font-weight: 700; color: #fca5a5; background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.3); padding: 1px 7px; border-radius: 6px; white-space: nowrap; }
-        .hq-stat { background: rgba(15,23,42,.8); border: 1px solid #1e293b; border-radius: 10px; padding: 6px 2px; }
-        .hq-stat div { font-weight: 800; color: #fff; font-size: 13px; }
-        .hq-stat span { display: block; font-size: 9px; color: #94a3b8; text-transform: uppercase; letter-spacing: .05em; }
-        .hq-collapse-btn { margin-left: auto; width: 32px; height: 32px; border-radius: 10px; color: #94a3b8; border: 1px solid #334155; background: rgba(15,23,42,.6); flex-shrink: 0; }
-        .hq-collapse-btn i { transition: transform .15s; }
-        html.schedi-light .hq-table th { color: #475569; border-color: #e2e8f0; }
-        html.schedi-light .hq-table td { border-color: #e2e8f0; }
-        html.schedi-light .hq-table tbody tr:hover { background: #f8fafc; }
-        html.schedi-light .hq-stat { background: #f8fafc; border-color: #e2e8f0; }
-        html.schedi-light .hq-stat div { color: #0f172a; }
-        html.schedi-light .hq-stat span { color: #475569; }
-        html.schedi-light .hq-warn { color: #b91c1c; }
-        html.schedi-light .hq-collapse-btn { background: #fff; border-color: #cbd5e1; color: #475569; }
         html.schedi-light .text-emerald-200, html.schedi-light .text-emerald-300, html.schedi-light .text-emerald-400, html.schedi-light .text-emerald-500 { color: #047857 !important; }
         html.schedi-light .text-amber-200, html.schedi-light .text-amber-300, html.schedi-light .text-amber-400, html.schedi-light .text-amber-500,
         html.schedi-light .text-amber-200\/80, html.schedi-light .text-amber-400\/90 { color: #b45309 !important; }
@@ -406,8 +387,8 @@
         #schediThemeBtn { min-width: 4.75rem; }
         html.schedi-light #activeTenantSelect { color: #047857; background-color: transparent; }
         html.schedi-light #platformModeNav, html.schedi-light #tenantSelectorContainer { background-color: #ffffff !important; }
-        html.schedi-light #navModeAgency.bg-slate-800, html.schedi-light #navModeTenant.bg-slate-800 { background-color: #e2e8f0 !important; }
-    </style>
+        html.schedi-light #navModeTenant.bg-slate-800 { background-color: #e2e8f0 !important; }
+            </style>
 </head>
 <body class="min-h-screen flex flex-col justify-between selection:bg-brand-500 selection:text-slate-950">
 
@@ -424,259 +405,20 @@
                 
                 <a id="signupLoginBtn" href="/login" class="schedi-signup-login" aria-label="Log in to your Business Portal"><i class="fa-solid fa-right-to-bracket" aria-hidden="true"></i><span>Log in</span></a>
                 <div id="platformModeNav" class="flex items-center bg-slate-900/90 p-1 rounded-xl border border-slate-800">
-                    <button type="button" id="navModeAgency" onclick="switchPlatformMode('agency')" class="hidden px-3.5 py-1.5 rounded-lg font-medium transition-all text-slate-400 hover:text-white items-center space-x-1.5">
-                        <i class="fa-solid fa-chart-pie"></i>
-                        <span>Agency HQ</span>
-                    </button>
                     <button type="button" id="navModeTenant" aria-current="page" onclick="switchPlatformMode('tenant')" class="px-3.5 py-1.5 rounded-lg font-bold transition-all text-brand-400 bg-slate-800 shadow-sm flex items-center space-x-1.5">
                         <i class="fa-solid fa-store"></i>
                         <span>Business Portal</span>
                     </button>
                 </div>
 
-                <div id="tenantSelectorContainer" class="hidden items-center space-x-1 bg-slate-900/90 px-2 py-1 rounded-xl border border-slate-800" title="Agency-only: switch active business context">
-                    <span class="text-[10px] text-slate-500 uppercase font-semibold">Active:</span>
-                    <select id="activeTenantSelect" onchange="handleTenantSelectChange(this.value)" class="bg-transparent text-xs font-bold text-brand-400 focus:outline-none cursor-pointer py-0.5">
-                        <!-- Options injected dynamically — agency master only -->
-                    </select>
-                </div>
-
                 <button type="button" id="schediThemeBtn" class="schedi-theme-btn" onclick="toggleSchediTheme()" title="Switch to light theme" aria-label="Switch to light theme"><i class="fa-solid fa-sun" aria-hidden="true"></i><span class="schedi-theme-btn-label">Light</span></button>
 
-                <button type="button" id="masterAuthBtn" onclick="toggleMasterAgencyAuth()" class="hidden px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold items-center space-x-1.5 transition-all border border-slate-700">
-                    <i id="masterAuthIcon" class="fa-solid fa-lock text-rose-400"></i>
-                    <span id="masterAuthLabel">Agency Login</span>
-                </button>
             </div>
 
         </div>
     </header>
 
     <main class="max-w-7xl w-full mx-auto px-4 py-6 flex-grow">
-
-        <!-- AGENCY HQ SECTION -->
-        <div id="agencyHqSection" class="space-y-6 fade-in hidden">
-            
-            <!-- MASTER AGENCY AUTH GATEWAY -->
-            <div id="agencyMasterLoginBox" class="max-w-md mx-auto glass-card rounded-2xl p-6 sm:p-8 space-y-6 my-10">
-                <div class="text-center space-y-2">
-                    <div class="w-14 h-14 rounded-2xl bg-brand-500/20 text-brand-400 border border-brand-500/30 flex items-center justify-center text-2xl mx-auto glow-emerald">
-                        <i class="fa-solid fa-shield-halved"></i>
-                    </div>
-                    <h2 class="text-xl font-extrabold text-white">Agency HQ Master Login</h2>
-                    <p class="text-xs text-slate-400">Enter master administrator credentials to access platform revenue, tenant provisioning, and global settings.</p>
-                </div>
-
-                <form onsubmit="handleAgencyMasterLogin(event)" class="space-y-4 text-xs">
-                    <div>
-                        <label class="block font-semibold text-slate-300 mb-1">Master Email</label>
-                        <input type="email" id="agencyMasterEmail" name="masterEmail" required autocomplete="username" placeholder="owner@yourbusiness.com" class="w-full px-3.5 py-2.5 rounded-xl glass-input">
-                    </div>
-                    <div>
-                        <label class="block font-semibold text-slate-300 mb-1">Master Password</label>
-                        <input type="password" id="agencyMasterPassword" name="masterPassword" required autocomplete="current-password" placeholder="Master password" class="w-full px-3.5 py-2.5 rounded-xl glass-input">
-                    </div>
-
-                    <button type="submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-slate-950 font-black shadow-lg glow-emerald transition-all">
-                        Authenticate Master Agency HQ
-                    </button>
-                </form>
-
-                <div class="pt-2 border-t border-slate-800">
-                </div>
-            </div>
-
-            <!-- AGENCY HQ DASHBOARD -->
-            <div id="agencyMasterDashboard" class="space-y-6 hidden">
-                
-                <!-- Metrics Grid -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div class="glass-card rounded-2xl p-5 border-l-4 border-l-brand-500 flex items-center justify-between">
-                        <div>
-                            <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Managed Business Sites</span>
-                            <div id="statTotalSites" class="text-2xl font-black text-white mt-1">0</div>
-                            <span class="text-[10px] text-brand-400 font-semibold">Active & Deployed</span>
-                        </div>
-                        <div class="w-12 h-12 rounded-xl bg-brand-500/10 text-brand-400 flex items-center justify-center text-xl">
-                            <i class="fa-solid fa-store"></i>
-                        </div>
-                    </div>
-
-                    <div class="glass-card rounded-2xl p-5 border-l-4 border-l-accent-400 flex items-center justify-between">
-                        <div>
-                            <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Agency MRR</span>
-                            <div id="statAgencyMRR" class="text-2xl font-black text-white mt-1">$0.00</div>
-                            <span class="text-[10px] text-accent-400 font-semibold">Monthly Subscription Volume</span>
-                        </div>
-                        <div class="w-12 h-12 rounded-xl bg-accent-400/10 text-accent-400 flex items-center justify-center text-xl">
-                            <i class="fa-solid fa-sack-dollar"></i>
-                        </div>
-                    </div>
-
-                    <div class="glass-card rounded-2xl p-5 border-l-4 border-l-indigo-500 flex items-center justify-between">
-                        <div>
-                            <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Total System Bookings</span>
-                            <div id="statTotalBookings" class="text-2xl font-black text-white mt-1">0</div>
-                            <span class="text-[10px] text-indigo-400 font-semibold">Cross-Tenant Volume</span>
-                        </div>
-                        <div class="w-12 h-12 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center text-xl">
-                            <i class="fa-solid fa-calendar-check"></i>
-                        </div>
-                    </div>
-
-                    <div class="glass-card rounded-2xl p-5 border-l-4 border-l-amber-400 flex items-center justify-between">
-                        <div>
-                            <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Active Booking Pages</span>
-                            <div id="statActivePages" class="text-2xl font-black text-white mt-1">0</div>
-                            <span class="text-[10px] text-amber-400 font-semibold">Live on schedi.app/{slug}/</span>
-                        </div>
-                        <div class="w-12 h-12 rounded-xl bg-amber-400/10 text-amber-400 flex items-center justify-center text-xl">
-                            <i class="fa-solid fa-link"></i>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- HQ Gateways -->
-                <div class="glass-card rounded-2xl p-6 space-y-5" data-hq-collapse="gateways">
-                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4" data-hq-collapse-head>
-                        <div class="flex items-center space-x-3">
-                            <div class="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center text-xl border border-indigo-500/20">
-                                <i class="fa-solid fa-plug text-lg"></i>
-                            </div>
-                            <div>
-                                <h2 class="text-lg font-extrabold text-white">Agency Payment Gateways & Revenue Settlement</h2>
-                                <p class="text-xs text-slate-400 mt-0.5">Owner subscriptions bill through Stripe on the server. Starter is $29/mo and Pro is $49/mo. Free businesses are not charged.</p>
-                            </div>
-                        </div>
-
-                        <div class="flex items-center space-x-2">
-                            <span id="agencyStripeStatusBadge" class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center space-x-1.5">
-                                <i class="fa-solid fa-circle text-[8px] animate-pulse"></i>
-                                <span>Live Stripe · server-side</span>
-                            </span>
-                        </div>
-                    </div>
-
-                    <form onsubmit="handleSaveAgencyGateways(event)" class="space-y-4 text-xs" data-hq-collapse-body>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div class="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-3">
-                                <div class="flex items-center justify-between border-b border-slate-800 pb-2">
-                                    <div class="flex items-center space-x-2">
-                                        <i class="fa-brands fa-stripe text-indigo-400 text-2xl"></i>
-                                        <span class="font-bold text-white text-xs">Stripe Subscriptions</span>
-                                    </div>
-                                    <span class="text-[11px] text-emerald-400 font-semibold">Server-side</span>
-                                </div>
-                                <p class="text-[11px] text-slate-300 leading-relaxed">Monthly autopay is connected on the server. Owners subscribe from their business portal: <strong class="text-white">Starter $29/mo</strong> or <strong class="text-white">Pro $49/mo</strong>. Free ($0) businesses are not charged. API keys are not entered here.</p>
-                                <p class="text-[11px] text-slate-500">A failed payment pauses the public booking page. Cancellation takes effect at the end of the current paid billing period; the owner keeps access until then and is not charged again. Agency can still pause or resume a business manually. Complimentary plans are unaffected.</p>
-                            </div>
-
-                            <div class="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-3">
-                                <div class="flex items-center justify-between border-b border-slate-800 pb-2">
-                                    <div class="flex items-center space-x-2">
-                                        <i class="fa-brands fa-paypal text-sky-400 text-lg"></i>
-                                        <span class="font-bold text-white text-xs">PayPal / Webhook Auto-Draft</span>
-                                    </div>
-                                    <label class="flex items-center space-x-1 cursor-pointer">
-                                        <input type="checkbox" id="agencyAutoDraftEnabled" checked class="w-4 h-4 accent-brand-500 rounded">
-                                        <span class="text-[11px] text-slate-300 font-semibold">Auto-Debit On 1st</span>
-                                    </label>
-                                </div>
-
-                                <div>
-                                    <label class="block text-[11px] font-semibold text-slate-400 mb-1">PayPal Client ID</label>
-                                    <input type="text" id="agencyPaypalId" value="client_id_siteforge_paypal_881" class="w-full px-3 py-2 rounded-lg glass-input font-mono text-xs">
-                                </div>
-                                <div>
-                                    <label class="block text-[11px] font-semibold text-slate-400 mb-1">Revenue Settlement Webhook Endpoint</label>
-                                    <input type="text" id="agencyWebhookUrl" value="https://api.siteforge.com/v1/billing/stripe-webhook" class="w-full px-3 py-2 rounded-lg glass-input font-mono text-xs">
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="flex justify-end">
-                            <button type="submit" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md flex items-center space-x-2 transition-all">
-                                <i class="fa-solid fa-floppy-disk"></i>
-                                <span>Save Agency Payment Gateways</span>
-                            </button>
-                        </div>
-                    </form>
-                </div>
-
-                <!-- Booking email delivery -->
-                <div class="glass-card rounded-2xl p-6 space-y-4" data-hq-collapse="email">
-                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4" data-hq-collapse-head>
-                        <div class="flex items-center space-x-3">
-                            <div class="w-10 h-10 rounded-xl bg-brand-500/10 text-brand-400 flex items-center justify-center text-xl border border-brand-500/20">
-                                <i class="fa-solid fa-envelope"></i>
-                            </div>
-                            <div>
-                                <h2 class="text-lg font-extrabold text-white">Booking Email Delivery</h2>
-                                <p class="text-xs text-slate-400 mt-0.5">Booking confirmations send through Schedi email (Cloudflare Worker → Resend). Reply-To stays the business contact.</p>
-                            </div>
-                        </div>
-                        <span id="agencyEmailDeliveryBadge" class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">Connected</span>
-                    </div>
-                    <form onsubmit="handleSaveEmailSender(event)" class="space-y-3 text-xs max-w-3xl" data-hq-collapse-body>
-                        <div>
-                            <label class="block text-[11px] font-semibold text-slate-400 mb-1">Booking email webhook URL</label>
-                            <input type="url" id="agencyEmailWebhook" value="https://schedi.app/api/send-booking-email" placeholder="https://schedi.app/api/send-booking-email" class="w-full px-3 py-2 rounded-lg glass-input font-mono text-[11px]">
-                        </div>
-                        <div>
-                            <label class="block text-[11px] font-semibold text-slate-400 mb-1">From display name</label>
-                            <input type="text" id="agencyEmailFromName" placeholder="Schedi Bookings" class="w-full px-3 py-2 rounded-lg glass-input">
-                        </div>
-                        <div class="flex flex-wrap gap-2 items-center">
-                            <button type="submit" class="px-5 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-slate-950 font-bold text-xs shadow-md">Save Email Sender</button>
-                            <button type="button" onclick="testEmailSenderWebhook()" class="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs border border-slate-700">Send test email to me</button>
-                        </div>
-                        <p class="text-[11px] text-slate-500">Until this URL is set, bookings still queue messages in Firestore under <span class="font-mono text-slate-400">mail</span>, but nothing is delivered to inboxes.</p>
-                    </form>
-                </div>
-
-                <!-- Client Sites Roster -->
-                <div class="glass-card rounded-2xl p-6 space-y-5">
-                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
-                        <div>
-                            <h2 class="text-xl font-extrabold text-white">Client Business Directory</h2>
-                            <p class="text-xs text-slate-400 mt-0.5">Provision new sites, update owner profile details, adjust subscription plans, or log into tenant portals.</p>
-                        </div>
-
-                        <div class="flex flex-wrap items-center gap-2">
-                            <input type="search" id="agencySearchInput" oninput="filterAgencyTenants(this.value)" placeholder="Search name, owner email, or slug" aria-label="Search businesses" class="px-3.5 py-2 rounded-xl glass-input text-xs w-full sm:w-64">
-                            <button type="button" onclick="openProvisionModal()" class="px-4 py-2 rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-slate-950 font-bold text-xs shadow-md glow-emerald flex items-center space-x-2 transition-all">
-                                <i class="fa-solid fa-plus"></i>
-                                <span>Provision New Site</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div id="hqDirControls" class="flex flex-wrap items-center gap-2 text-xs">
-                        <label class="sr-only" for="hqDirSort">Sort</label>
-                        <select id="hqDirSort" onchange="hqDirSet('sort', this.value)" class="w-auto max-w-[11rem] px-2.5 py-1.5 rounded-lg glass-input text-xs">
-                            <option value="name">Sort: Name</option>
-                            <option value="newest">Sort: Newest</option>
-                            <option value="plan">Sort: Plan</option>
-                            <option value="lastBooking">Sort: Last booking</option>
-                        </select>
-                        <select id="hqDirPlan" onchange="hqDirSet('plan', this.value)" aria-label="Plan filter" class="w-auto max-w-[11rem] px-2.5 py-1.5 rounded-lg glass-input text-xs">
-                            <option value="">All plans</option><option value="free">Free</option><option value="starter">Starter</option><option value="pro">Pro</option>
-                        </select>
-                        <select id="hqDirStatus" onchange="hqDirSet('status', this.value)" aria-label="Status filter" class="w-auto max-w-[11rem] px-2.5 py-1.5 rounded-lg glass-input text-xs">
-                            <option value="">All statuses</option><option value="active">Active</option><option value="paused">Paused</option><option value="setup">Needs setup</option>
-                        </select>
-                        <select id="hqDirType" onchange="hqDirSet('type', this.value)" aria-label="Business type filter" class="w-auto max-w-[11rem] px-2.5 py-1.5 rounded-lg glass-input text-xs"></select>
-                        <select id="hqDirTag" onchange="hqDirSet('tag', this.value)" aria-label="Tag filter" class="w-auto max-w-[11rem] px-2.5 py-1.5 rounded-lg glass-input text-xs"></select>
-                        <button type="button" onclick="hqDirReset()" class="px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-white">Clear</button>
-                        <span id="hqDirCount" class="ml-auto text-[11px] text-slate-400"></span>
-                    </div>
-                    <div id="agencyTenantGrid">
-                        <!-- Directory injected via JS -->
-                    </div>
-                </div>
-
-            </div>
-        </div>
 
         <!-- BUSINESS OWNER PORTAL SECTION -->
         <div id="tenantPortalSection" class="space-y-6 hidden fade-in">
@@ -715,10 +457,6 @@
             </div>
 
             <div id="tenantDashboard" class="space-y-6 hidden">
-                <div id="hqManagingBanner" class="hidden flex items-center justify-between gap-3 px-4 py-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/30 text-xs">
-                    <span class="text-indigo-200 min-w-0 truncate"><i class="fa-solid fa-user-shield mr-1.5"></i>Managing: <strong id="hqManagingName" class="text-white"></strong></span>
-                    <button type="button" onclick="hqBackToDirectory()" class="shrink-0 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold border border-slate-700"><i class="fa-solid fa-arrow-left mr-1"></i>Back to HQ</button>
-                </div>
                 <!-- ROSTER-FIRST: slim header card (name, slug, public link, Copy/Share, Sign out) -->
                 <div id="tenantHeaderCard" class="glass-card rounded-2xl p-4 space-y-2.5 border-l-4 border-l-brand-500 min-w-0">
                     <div class="flex items-start justify-between gap-2 min-w-0">
@@ -1440,170 +1178,6 @@
 
 
     <!-- MODALS -->
-    <!-- PROVISION NEW TENANT -->
-    <div id="provisionModal" role="dialog" aria-modal="true" tabindex="-1" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-start sm:items-center justify-center p-3 sm:p-4 overflow-y-auto overscroll-contain hidden">
-        <div class="max-w-lg w-full glass-card rounded-2xl p-5 sm:p-6 space-y-4 fade-in my-4 min-w-0">
-            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-                <h3 class="text-lg font-bold text-white">Provision New Client Business Site</h3>
-                <button type="button" onclick="closeProvisionModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <form onsubmit="handleProvisionSubmit(event)" class="space-y-3 text-xs">
-                <div>
-                    <label class="block font-semibold text-slate-300 mb-1">Business Name *</label>
-                    <input type="text" id="provName" required placeholder="Vance Executive Dental" class="w-full px-3 py-2 rounded-xl glass-input">
-                </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block font-semibold text-slate-300 mb-1">URL Slug *</label>
-                        <input type="text" id="provSlug" required placeholder="vance-dental" class="w-full px-3 py-2 rounded-xl glass-input font-mono">
-                    </div>
-                    <div>
-                        <label class="block font-semibold text-slate-300 mb-1">Industry Preset</label>
-                        <select id="provIndustry" onchange="schediIndustryHipaaNote()" class="w-full px-3 py-2 rounded-xl glass-input">
-                            <option value="Consulting">Consulting / Executive</option>
-                            <option value="Barbershop">Barbershop & Beauty</option>
-                            <option value="Medical">Medical / Healthcare</option>
-                            <option value="Auto">Auto Detailing & Care</option>
-                            <option value="Fitness">Fitness & Personal Training</option>
-                        </select>
-                        <p id="provHipaaNote" class="hidden mt-2 text-[11px] text-amber-300">Schedi is not HIPAA compliant. Do not use it to collect protected health information.</p>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block font-semibold text-slate-300 mb-1">Owner / Manager Name *</label>
-                        <input type="text" id="provOwnerName" required placeholder="Dr. Arthur Vance" class="w-full px-3 py-2 rounded-xl glass-input">
-                    </div>
-                    <div>
-                        <label class="block font-semibold text-slate-300 mb-1">Owner Contact Phone *</label>
-                        <input type="tel" id="provOwnerPhone" required placeholder="(555) 345-6789" class="w-full px-3 py-2 rounded-xl glass-input">
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block font-semibold text-slate-300 mb-1">Owner Login Email *</label>
-                        <input type="email" id="provOwnerEmail" required placeholder="vance@vancedental.com" class="w-full px-3 py-2 rounded-xl glass-input">
-                    </div>
-                    <div>
-                        <label class="block font-semibold text-slate-300 mb-1">Initial Owner Password *</label>
-                        <input type="text" id="provOwnerPass" required value="vance123" class="w-full px-3 py-2 rounded-xl glass-input font-mono">
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block font-semibold text-slate-300 mb-1">Monthly Subscription Fee ($) *</label>
-                        <input type="number" id="provPrice" required value="199" class="w-full px-3 py-2 rounded-xl glass-input font-bold text-brand-400">
-                    </div>
-                    <div>
-                        <label class="block font-semibold text-slate-300 mb-1">Business Cash App Tag</label>
-                        <input type="text" id="provCashApp" placeholder="$VanceDental" class="w-full px-3 py-2 rounded-xl glass-input font-mono">
-                    </div>
-                </div>
-
-                <div class="pt-2 flex justify-end space-x-2">
-                    <button type="button" onclick="closeProvisionModal()" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300">Cancel</button>
-                    <button type="submit" class="px-5 py-2 rounded-xl bg-brand-500 hover:bg-brand-600 text-slate-950 font-bold glow-emerald">Deploy Client Site</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- UPDATE TENANT PROFILE -->
-    <div id="editTenantModal" role="dialog" aria-modal="true" tabindex="-1" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-start sm:items-center justify-center p-3 sm:p-4 overflow-y-auto overscroll-contain hidden">
-        <div class="max-w-lg w-full glass-card rounded-2xl p-5 sm:p-6 space-y-4 fade-in my-4 min-w-0">
-            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-                <h3 class="text-lg font-bold text-white">Edit Business Owner Profile & Subscription</h3>
-                <button type="button" onclick="closeEditTenantModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <form onsubmit="handleEditTenantSubmit(event)" class="space-y-3 text-xs">
-                <input type="hidden" id="editTenantId">
-                <div>
-                    <label class="block font-semibold text-slate-300 mb-1">Business Name *</label>
-                    <input type="text" id="editTenantName" required class="w-full px-3 py-2 rounded-xl glass-input">
-                </div>
-                <div>
-                    <label class="block font-semibold text-slate-300 mb-1">URL Slug *</label>
-                    <input type="text" id="editTenantSlug" required placeholder="vance-dental" class="w-full px-3 py-2 rounded-xl glass-input font-mono">
-                    <p class="text-[10px] text-slate-500 mt-1">Changing the slug updates the public booking URL. The old <span class="font-mono">/old-slug/</span> path will stop working (no redirect).</p>
-                </div>
-                
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block font-semibold text-slate-300 mb-1">Manager / Owner Name *</label>
-                        <input type="text" id="editOwnerName" required class="w-full px-3 py-2 rounded-xl glass-input">
-                    </div>
-                    <div>
-                        <label class="block font-semibold text-slate-300 mb-1">Owner Contact Phone *</label>
-                        <input type="tel" id="editOwnerPhone" required class="w-full px-3 py-2 rounded-xl glass-input">
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block font-semibold text-slate-300 mb-1">Owner Login Email *</label>
-                        <input type="email" id="editOwnerEmail" required class="w-full px-3 py-2 rounded-xl glass-input">
-                    </div>
-                    <div>
-                        <label class="block font-semibold text-slate-300 mb-1">Owner Password *</label>
-                        <input type="text" id="editOwnerPassword" autocomplete="new-password" placeholder="Leave blank to keep the current password" class="w-full px-3 py-2 rounded-xl glass-input font-mono">
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block font-semibold text-slate-300 mb-1">Monthly Pricing ($USD) *</label>
-                        <input type="number" id="editMonthlyPrice" required class="w-full px-3 py-2 rounded-xl glass-input font-bold text-brand-400">
-                    </div>
-                    <div>
-                        <div class="flex items-center justify-between gap-2 mb-1">
-                            <label class="block font-semibold text-slate-300" for="editTenantPlan">Plan tier *</label>
-                            <button type="button" onclick="openComparePlansModal()" class="shrink-0 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide bg-slate-800 hover:bg-slate-700 text-brand-400 border border-brand-500/30">
-                                <i class="fa-solid fa-table-columns mr-1" aria-hidden="true"></i>Compare Plans
-                            </button>
-                        </div>
-                        <select id="editTenantPlan" onchange="syncEditMonthlyFeeFromPlan()" class="w-full px-3 py-2 rounded-xl glass-input">
-                            <option value="free">Free — $0/mo</option>
-                            <option value="starter">Starter — $29/mo</option>
-                            <option value="pro">Pro — $49/mo</option>
-                        </select>
-                    </div>
-                </div>
-                <label class="flex items-start gap-2 p-3 rounded-xl bg-slate-900/90 border border-slate-800 cursor-pointer">
-                    <input type="checkbox" id="editComplimentaryPro" onchange="onComplimentaryProToggle()" class="mt-0.5 w-4 h-4 accent-brand-500 rounded">
-                    <span>
-                        <span class="block font-semibold text-slate-200">Complimentary Pro</span>
-                        <span class="block text-[10px] text-slate-500 mt-0.5">Billing exempt. Unlocks Pro, shows $0, stays active, and never starts Stripe Checkout.</span>
-                    </span>
-                </label>
-                <div>
-                    <label class="block font-semibold text-slate-300 mb-1">Business address</label>
-                    <input type="text" id="editTenantAddress" maxlength="200" placeholder="123 Main Street, City" class="w-full px-3 py-2 rounded-xl glass-input">
-                    <p class="text-[10px] text-slate-500 mt-1">Shown on the booking page and linked to a map. Optional.</p>
-                </div>
-                <div>
-                    <label class="block font-semibold text-slate-300 mb-1">Logo URL <span class="text-slate-500">(optional)</span></label>
-                    <input type="url" id="editTenantLogoUrl" inputmode="url" placeholder="https://…" class="w-full px-3 py-2 rounded-xl glass-input font-mono">
-                </div>
-                <div>
-                    <label class="block font-semibold text-slate-300 mb-1">Cover photo URL <span class="text-slate-500">(optional)</span></label>
-                    <input type="url" id="editTenantCoverUrl" inputmode="url" placeholder="https://…" class="w-full px-3 py-2 rounded-xl glass-input font-mono">
-                </div>
-                <div>
-                    <label class="block font-semibold text-slate-300 mb-1">Business Cash App Tag</label>
-                    <input type="text" id="editCashAppTag" class="w-full px-3 py-2 rounded-xl glass-input font-mono">
-                </div>
-
-                <div class="pt-2 flex justify-end space-x-2">
-                    <button type="button" onclick="closeEditTenantModal()" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300">Cancel</button>
-                    <button type="submit" class="px-5 py-2 rounded-xl bg-brand-500 hover:bg-brand-600 text-slate-950 font-bold glow-emerald">Save Profile Updates</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
     <!-- UPDATE SUBSCRIPTION PAYMENT METHOD
          Card collection removed. Owners subscribe in the business portal via Stripe Checkout. -->
     <div id="subPaymentModal" role="dialog" aria-modal="true" tabindex="-1" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-start sm:items-center justify-center p-3 sm:p-4 overflow-y-auto overscroll-contain hidden">
@@ -2201,7 +1775,7 @@
         });
 
         const platformState = {
-            currentMode: 'agency', 
+            currentMode: 'tenant', 
             isAgencyMasterLoggedIn: false,
             isTenantOwnerLoggedIn: false,
             activeTenantId: 'aura-exec',
@@ -2876,7 +2450,7 @@
                     if (isAgencyHqRoute()) {
                         renderAgencyDashboard();
                     } else {
-                        var agSnap = document.getElementById('agencyHqSection');
+                        var agSnap = hqSectionEl();
                         if (agSnap) agSnap.classList.add('hidden');
                     }
                     if (platformState.currentMode === 'tenant' || platformState.currentMode === 'preview' || platformState.isTenantOwnerLoggedIn) {
@@ -3235,44 +2809,6 @@
             return !!(tenant && (tenant.complimentaryPro === true || tenant.billingExempt === true));
         }
 
-        window.syncEditMonthlyFeeFromPlan = function() {
-            var planEl = document.getElementById('editTenantPlan');
-            var feeEl = document.getElementById('editMonthlyPrice');
-            var comp = document.getElementById('editComplimentaryPro');
-            if (!planEl || !feeEl) return;
-            if (comp && comp.checked) {
-                planEl.value = 'pro';
-                feeEl.value = '0';
-                return;
-            }
-            var fee = monthlyFeeForPlan(planEl.value);
-            if (fee === null) return;
-            feeEl.value = String(fee);
-        };
-
-        window.onComplimentaryProToggle = function() {
-            var comp = document.getElementById('editComplimentaryPro');
-            var planEl = document.getElementById('editTenantPlan');
-            var feeEl = document.getElementById('editMonthlyPrice');
-            if (!planEl || !feeEl) return;
-            if (comp && comp.checked) {
-                planEl.value = 'pro';
-                feeEl.value = '0';
-                return;
-            }
-            var idEl = document.getElementById('editTenantId');
-            var tenant = idEl && typeof getTenant === 'function' ? getTenant(idEl.value) : null;
-            if (tenant && tenant.stripeSubscriptionId) {
-                var paid = String(tenant.plan || '').toLowerCase();
-                if (paid !== 'starter' && paid !== 'pro') paid = 'pro';
-                planEl.value = paid;
-                feeEl.value = String(monthlyFeeForPlan(paid));
-                return;
-            }
-            planEl.value = 'free';
-            feeEl.value = '0';
-        };
-
         function roundMoney(n) {
             var x = Number(n);
             if (!isFinite(x)) return 0;
@@ -3618,17 +3154,20 @@
         }
 
 
-        var SCHEDI_AGENCY_HQ_SEGMENT = 'hq-9h7p52';
-
+        var SCHEDI_AGENCY_HQ_SEGMENT = 'hq';
+        
         function agencyHqPath() {
-            return '/' + SCHEDI_AGENCY_HQ_SEGMENT;
+            return '/hq';
         }
 
         function isAgencyHqRoute() {
             try {
                 var path = (window.location.pathname || '/').replace(/\/+/g, '/');
                 var parts = path.split('/').filter(Boolean);
-                return parts.length >= 1 && String(parts[0]).toLowerCase() === SCHEDI_AGENCY_HQ_SEGMENT;
+                if (!parts.length) return false;
+                var first = String(parts[0]).toLowerCase();
+                if (parts.length === 1 && (first === 'hq' || first === 'agency')) return true;
+                                return false;
             } catch (err) {
                 return false;
             }
@@ -3637,36 +3176,8 @@
         function isReservedBusinessSlug(slug) {
             var first = String(slug || '').toLowerCase();
             if (!first) return true;
-            if (first === SCHEDI_AGENCY_HQ_SEGMENT) return true;
             if (first === 'index.html' || first === 'agency' || first === 'admin' || first === 'hq' || first === 'signup' || first === 'terms' || first === 'privacy' || first === 'help' || first === 'auth' || first === 'reset' || first === 'billing' || first === 'api' || first === 'www' || first === 'schedi' || first === 'index' || first === 'login') return true;
-            return false;
-        }
-
-        function syncAgencyChrome() {
-            var onHq = isAgencyHqRoute();
-            var btnAg = document.getElementById('navModeAgency');
-            var masterBtn = document.getElementById('masterAuthBtn');
-            var agSec = document.getElementById('agencyHqSection');
-            if (btnAg) {
-                if (onHq) {
-                    btnAg.classList.remove('hidden');
-                    btnAg.classList.add('flex');
-                } else {
-                    btnAg.classList.add('hidden');
-                    btnAg.classList.remove('flex');
-                }
-            }
-            if (masterBtn) {
-                if (onHq) {
-                    masterBtn.classList.remove('hidden');
-                    masterBtn.classList.add('flex');
-                } else {
-                    masterBtn.classList.add('hidden');
-                    masterBtn.classList.remove('flex');
-                }
-            }
-            if (!onHq && agSec) agSec.classList.add('hidden');
-            if (!onHq) updateTenantSelectorVisibility();
+                        return false;
         }
 
         function getPublicSlugFromPath() {
@@ -3950,7 +3461,7 @@
 
         function showClientHelpPage() {
             platformState.currentMode = 'client-help';
-            var ag = document.getElementById('agencyHqSection');
+            var ag = hqSectionEl();
             var te = document.getElementById('tenantPortalSection');
             var pr = document.getElementById('previewSection');
             var su = document.getElementById('signupSection');
@@ -4023,7 +3534,7 @@
 
         function showHelpPage() {
             platformState.currentMode = 'help';
-            var ag = document.getElementById('agencyHqSection');
+            var ag = hqSectionEl();
             var te = document.getElementById('tenantPortalSection');
             var pr = document.getElementById('previewSection');
             var su = document.getElementById('signupSection');
@@ -4102,7 +3613,7 @@
                 var parts = (window.location.pathname || '/').split('/').filter(Boolean);
                 which = parts.length && String(parts[0]).toLowerCase() === 'privacy' ? 'privacy' : 'terms';
             } catch (err) {}
-            var ag = document.getElementById('agencyHqSection');
+            var ag = hqSectionEl();
             var te = document.getElementById('tenantPortalSection');
             var pr = document.getElementById('previewSection');
             var su = document.getElementById('signupSection');
@@ -4468,48 +3979,6 @@
             schediOwnerIdleListening = false;
         }
 
-        async function schediSendProvisionEmails(info) {
-            var session = schediAuthSession();
-            if (!session) return { ok: false, ownerSent: false, confirmSent: false, error: 'Sign in again before sending the welcome email.' };
-            try {
-                var res = await fetch('https://schedi.app/auth/provision-mail', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        session: session,
-                        businessName: info.businessName,
-                        slug: info.slug,
-                        ownerName: info.ownerName || '',
-                        ownerEmail: info.ownerEmail,
-                        password: info.password || '',
-                        rotate: info.rotate === true
-                    })
-                });
-                var data = {};
-                try { data = await res.json(); } catch (err) { data = {}; }
-                return {
-                    ok: !!(data.ownerSent && data.confirmSent),
-                    ownerSent: !!data.ownerSent,
-                    confirmSent: !!data.confirmSent,
-                    error: data.error || ''
-                };
-            } catch (err) {
-                return { ok: false, ownerSent: false, confirmSent: false, error: 'email_failed' };
-            }
-        }
-
-        function schediProvisionMailToast(name, mailed) {
-            if (mailed && mailed.ownerSent && mailed.confirmSent) {
-                showToast('Provisioned "' + name + '". Welcome email sent, and a confirmation is on the way to you.', 'success');
-                return;
-            }
-            if (mailed && mailed.ownerSent && !mailed.confirmSent) {
-                showToast('"' + name + '" is created and the owner welcome was sent, but your confirmation email did not send. Use Resend welcome to try again.', 'error');
-                return;
-            }
-            showToast('"' + name + '" was created, but the onboarding email did not send. Use Resend welcome on the business card.', 'error');
-        }
-
         async function schediStoreOwnerPassword(tenantId, ownerEmail, newPassword) {
             var session = schediAuthSession();
             if (!session) return { ok: false, error: 'Sign in again before setting a password.' };
@@ -4567,7 +4036,7 @@
 
         function showSignupPage() {
             platformState.currentMode = 'signup';
-            var ag = document.getElementById('agencyHqSection');
+            var ag = hqSectionEl();
             var te = document.getElementById('tenantPortalSection');
             var pr = document.getElementById('previewSection');
             var su = document.getElementById('signupSection');
@@ -5221,11 +4690,11 @@
             }
             platformState.currentMode = mode;
             try { syncHqManagingBanner(); } catch (errBan) {}
-            const agSec = document.getElementById('agencyHqSection');
+            const agSec = hqSectionEl();
             const teSec = document.getElementById('tenantPortalSection');
             const prSec = document.getElementById('previewSection');
 
-            const btnAg = document.getElementById('navModeAgency');
+            const btnAg = hqNavButton();
             const btnTe = document.getElementById('navModeTenant');
             const btnPr = document.getElementById('navModePreview');
 
@@ -5322,105 +4791,8 @@
             window.loginAsTenantOwner(tenantId);
         }
 
-        window.hqBackToDirectory = function() {
-            switchPlatformMode('agency');
-            setTimeout(function () {
-                var grid = document.getElementById('agencyTenantGrid');
-                if (grid && grid.scrollIntoView) grid.scrollIntoView({ block: 'start' });
-            }, 60);
-        }
-
-        function syncHqManagingBanner() {
-            var banner = document.getElementById('hqManagingBanner');
-            if (!banner) return;
-            var on = !!(platformState.isAgencyMasterLoggedIn && platformState.isTenantOwnerLoggedIn && !platformState.ownerSelfSession);
-            banner.classList.toggle('hidden', !on);
-            banner.classList.toggle('flex', on);
-            var nm = document.getElementById('hqManagingName');
-            var t = on ? getTenant() : null;
-            if (nm) nm.textContent = t ? (t.name || t.id) : '';
-        }
-
         function getTenant(id = platformState.activeTenantId) {
             return platformState.tenants.find(t => t.id === id) || platformState.tenants[0];
-        }
-
-        window.handleAgencyMasterLogin = async function(e) {
-            e.preventDefault();
-            const email = document.getElementById('agencyMasterEmail').value.trim().toLowerCase();
-            const pass = document.getElementById('agencyMasterPassword').value;
-            if (!email || !pass) {
-                showToast('Invalid Master Credentials', 'error');
-                return;
-            }
-            try {
-                const res = await fetch('https://schedi.app/auth/agency', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: email, password: pass })
-                });
-                const data = await res.json().catch(function () { return {}; });
-                if (!res.ok || !data.session) {
-                    showToast('Invalid Master Credentials', 'error');
-                    return;
-                }
-                schediSetAuthSession(data.session, { role: 'agency', email: email });
-                platformState.isAgencyMasterLoggedIn = true;
-                updateMasterAuthUI();
-                try {
-                    if (!isAgencyHqRoute()) window.history.replaceState({}, '', agencyHqPath());
-                } catch (errPath) {}
-                switchPlatformMode('agency');
-                showToast('Master Agency HQ Authenticated', 'success');
-                refreshPrivateProfiles();
-                refreshPrivateBookings();
-                refreshAppointmentCounts();
-            } catch (err) {
-                showToast('Could not reach the login service.', 'error');
-            }
-        }
-
-        window.toggleMasterAgencyAuth = function() {
-            if (platformState.isAgencyMasterLoggedIn) {
-                platformState.isAgencyMasterLoggedIn = false;
-                platformState.appointmentCounts = null;
-                clearPrivateAppointments();
-                clearPrivateProfiles();
-                schediClearAuthSession();
-                updateMasterAuthUI();
-                try {
-                    if (!isAgencyHqRoute()) window.history.replaceState({}, '', agencyHqPath());
-                } catch (errPath) {}
-                switchPlatformMode('agency');
-                showToast('Logged out of Agency HQ Master', 'info');
-            } else if (isAgencyHqRoute()) {
-                switchPlatformMode('agency');
-            }
-        }
-
-        function updateMasterAuthUI() {
-            const btn = document.getElementById('masterAuthBtn');
-            const icon = document.getElementById('masterAuthIcon');
-            const label = document.getElementById('masterAuthLabel');
-            const onHq = isAgencyHqRoute();
-
-            if (platformState.isAgencyMasterLoggedIn) {
-                if (icon) icon.className = 'fa-solid fa-unlock text-brand-400';
-                if (label) label.textContent = 'Agency Master';
-                if (btn) btn.className = onHq
-                    ? 'px-3 py-1.5 rounded-xl bg-brand-500/10 border border-brand-500/30 text-brand-400 font-semibold flex items-center space-x-1.5'
-                    : 'hidden px-3 py-1.5 rounded-xl bg-brand-500/10 border border-brand-500/30 text-brand-400 font-semibold items-center space-x-1.5';
-            } else {
-                if (icon) icon.className = 'fa-solid fa-lock text-rose-400';
-                if (label) label.textContent = 'Agency Login';
-                if (btn) btn.className = onHq
-                    ? 'px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold flex items-center space-x-1.5 border border-slate-700'
-                    : 'hidden px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold items-center space-x-1.5 border border-slate-700';
-            }
-            populateTenantSelect();
-            updateExportControlsVisibility();
-            updateLivePreviewControlsVisibility();
-            syncAgencyChrome();
         }
 
         function canAccessLivePreview() {
@@ -5455,23 +4827,8 @@
                 clearLivePreviewIframe();
                 if (prSec) prSec.classList.add('hidden');
                 if (platformState.currentMode === 'preview') {
-                    if (isAgencyHqRoute()) {
-                        platformState.currentMode = 'agency';
-                        const agSec = document.getElementById('agencyHqSection');
-                        const teSec = document.getElementById('tenantPortalSection');
-                        if (teSec) teSec.classList.add('hidden');
-                        if (agSec) agSec.classList.remove('hidden');
-                        const btnAg = document.getElementById('navModeAgency');
-                        const btnTe = document.getElementById('navModeTenant');
-                        const btnPr = document.getElementById('navModePreview');
-                        if (btnTe) btnTe.className = 'px-3.5 py-1.5 rounded-lg font-medium transition-all text-slate-400 hover:text-white flex items-center space-x-1.5';
-                        if (btnPr) btnPr.className = 'hidden px-3.5 py-1.5 rounded-lg font-medium transition-all text-slate-400 hover:text-white items-center space-x-1.5';
-                        if (btnAg) btnAg.className = 'px-3.5 py-1.5 rounded-lg font-bold transition-all text-brand-400 bg-slate-800 shadow-sm flex items-center space-x-1.5';
-                        renderAgencyDashboard();
-                        syncAgencyChrome();
-                    } else {
-                        switchPlatformMode('tenant');
-                    }
+                    if (isAgencyHqRoute()) restoreAgencyChromeAfterPreview();
+                    else switchPlatformMode('tenant');
                 }
             }
         }
@@ -5483,631 +4840,6 @@
         function assertAgencyExportPrivilege(actionLabel) {
             // Export disabled. Safe denial for any leftover callers.
             return false;
-        }
-
-        function renderAgencyDashboard() {
-            const loginBox = document.getElementById('agencyMasterLoginBox');
-            const dashboard = document.getElementById('agencyMasterDashboard');
-
-            if (!platformState.isAgencyMasterLoggedIn) {
-                if (loginBox) loginBox.classList.remove('hidden');
-                if (dashboard) dashboard.classList.add('hidden');
-                syncPublicHomeFooter();
-                return;
-            }
-
-            if (loginBox) loginBox.classList.add('hidden');
-            if (dashboard) dashboard.classList.remove('hidden');
-            syncPublicHomeFooter();
-
-            const totalSites = platformState.tenants.length;
-            const totalMRR = platformState.tenants
-                .filter(t => t.subscriptionStatus === 'active')
-                .reduce((acc, t) => acc + (t.monthlyPrice || 0), 0);
-            const countsMap = platformState.appointmentCounts;
-            const countsReady = countsMap && typeof countsMap === 'object';
-            const totalBookings = countsReady
-                ? Object.keys(countsMap).reduce((acc, id) => acc + (Number(countsMap[id]) || 0), 0)
-                : null;
-
-            const stSites = document.getElementById('statTotalSites');
-            const stMRR = document.getElementById('statAgencyMRR');
-            const stBookings = document.getElementById('statTotalBookings');
-            const stActivePages = document.getElementById('statActivePages');
-            const activePages = platformState.tenants.filter(function (t) { return t && t.subscriptionStatus === 'active'; }).length;
-
-            if (stSites) stSites.textContent = window.__schediCloudTenantsLoaded ? totalSites : '—';
-            if (stMRR) stMRR.textContent = `$${totalMRR.toFixed(2)}`;
-            if (stBookings) stBookings.textContent = totalBookings === null ? '—' : totalBookings;
-            if (stActivePages) stActivePages.textContent = activePages;
-
-            const grid = document.getElementById('agencyTenantGrid');
-            if (!grid) return;
-            hqDirRender(grid);
-        }
-
-        // ---- HQ client directory: search / sort / filters / tags / health ----
-        var HQ_DIR_KEY = 'schedi.hqDirectory.v1';
-        var HQ_TAG_COLORS = ['#10b981', '#6366f1', '#f59e0b', '#ec4899', '#0ea5e9', '#a855f7', '#ef4444', '#14b8a6'];
-        function hqDirPrefs() {
-            if (platformState.hqDir) return platformState.hqDir;
-            var p = { q: '', sort: 'name', plan: '', status: '', type: '', tag: '' };
-            try { var raw = JSON.parse(window.localStorage.getItem(HQ_DIR_KEY) || 'null'); if (raw && typeof raw === 'object') Object.keys(p).forEach(function (k) { if (typeof raw[k] === 'string') p[k] = raw[k]; }); } catch (e) {}
-            platformState.hqDir = p;
-            platformState.agencySearchQuery = p.q;
-            return p;
-        }
-        function hqDirSave() { try { window.localStorage.setItem(HQ_DIR_KEY, JSON.stringify(hqDirPrefs())); } catch (e) {} }
-        window.hqDirSet = function (k, v) { hqDirPrefs()[k] = String(v || ''); if (k === 'q') platformState.agencySearchQuery = String(v || '').toLowerCase().trim(); hqDirSave(); renderAgencyDashboard(); };
-        window.hqDirReset = function () { platformState.hqDir = { q: '', sort: 'name', plan: '', status: '', type: '', tag: '' }; platformState.agencySearchQuery = ''; var si = document.getElementById('agencySearchInput'); if (si) si.value = ''; hqDirSave(); renderAgencyDashboard(); };
-        function hqTagColor(tag) { var h = 0; String(tag).toLowerCase().split('').forEach(function (c) { h = (h * 31 + c.charCodeAt(0)) >>> 0; }); return HQ_TAG_COLORS[h % HQ_TAG_COLORS.length]; }
-        function hqTagsOf(t) { return Array.isArray(t && t.hqTags) ? t.hqTags.filter(function (x) { return typeof x === 'string' && x.trim(); }).map(function (x) { return x.trim().slice(0, 24); }).slice(0, 8) : []; }
-        function hqHasPayMethod(t) {
-            var pg = (t && t.paymentGateways) || {};
-            return !!(pg.later === true || pg.card === true || (pg.cashapp === true && t.cashAppTag) || (pg.zelle === true && (t.zelleHandle || t.zelleLink)) || (pg.venmo === true && (t.venmoHandle || t.venmoLink)) || (pg.paypal === true && (t.paypalHandle || t.paypalLink)));
-        }
-        function hqWarnings(t) {
-            var w = [];
-            if (!hqHasPayMethod(t)) w.push('No payment method');
-            if (!Array.isArray(t.services) || !t.services.length) w.push('No services');
-            return w;
-        }
-        function hqStatusOf(t) {
-            if (t.subscriptionStatus !== 'active') return 'paused';
-            return hqWarnings(t).length ? 'setup' : 'active';
-        }
-        function hqHealthOf(t) {
-            var h = platformState.tenantHealth && platformState.tenantHealth[t.id];
-            return h && typeof h === 'object' ? h : null;
-        }
-        var HQ_PLAN_RANK = { pro: 0, starter: 1, free: 2 };
-        function hqDirRender(grid) {
-            var p = hqDirPrefs();
-            var si = document.getElementById('agencySearchInput'); if (si && document.activeElement !== si && si.value !== p.q) si.value = p.q;
-            var all = platformState.tenants || [];
-            // Business type options (only if data exists), tag options from all tags.
-            var types = {}; var tags = {};
-            all.forEach(function (t) { if (t && t.industry) types[String(t.industry)] = 1; hqTagsOf(t).forEach(function (g) { tags[g.toLowerCase()] = g; }); });
-            var typeSel = document.getElementById('hqDirType');
-            if (typeSel) {
-                var tk = Object.keys(types).sort();
-                typeSel.classList.toggle('hidden', !tk.length);
-                typeSel.innerHTML = '<option value="">All types</option>' + tk.map(function (k) { return '<option value="' + esc(k) + '"' + (p.type === k ? ' selected' : '') + '>' + esc(k) + '</option>'; }).join('');
-            }
-            var tagSel = document.getElementById('hqDirTag');
-            if (tagSel) {
-                var gk = Object.keys(tags).sort();
-                tagSel.classList.toggle('hidden', !gk.length);
-                tagSel.innerHTML = '<option value="">All tags</option>' + gk.map(function (k) { return '<option value="' + esc(k) + '"' + (p.tag === k ? ' selected' : '') + '>' + esc(tags[k]) + '</option>'; }).join('');
-            }
-            ['sort', 'plan', 'status'].forEach(function (k) { var el = document.getElementById('hqDir' + k.charAt(0).toUpperCase() + k.slice(1)); if (el) el.value = p[k]; });
-            var q = String(p.q || '').toLowerCase().trim();
-            var rows = all.filter(function (t) {
-                if (!t) return false;
-                if (q && !(String(t.name || '').toLowerCase().indexOf(q) !== -1 || String(t.ownerName || '').toLowerCase().indexOf(q) !== -1 || String(t.ownerEmail || '').toLowerCase().indexOf(q) !== -1 || String(t.slug || t.id || '').toLowerCase().indexOf(q) !== -1)) return false;
-                if (p.plan && ensureTenantPlan(t) !== p.plan) return false;
-                if (p.status && hqStatusOf(t) !== p.status) return false;
-                if (p.type && String(t.industry || '') !== p.type) return false;
-                if (p.tag && !hqTagsOf(t).some(function (g) { return g.toLowerCase() === p.tag; })) return false;
-                return true;
-            });
-            var byName = function (a, b) { return String(a.name || '').localeCompare(String(b.name || ''), undefined, { sensitivity: 'base' }); };
-            rows.sort(function (a, b) {
-                if (p.sort === 'plan') return (HQ_PLAN_RANK[ensureTenantPlan(a)] - HQ_PLAN_RANK[ensureTenantPlan(b)]) || byName(a, b);
-                if (p.sort === 'newest') return String(b.createdAt || '').localeCompare(String(a.createdAt || '')) || byName(a, b);
-                if (p.sort === 'lastBooking') { var ha = hqHealthOf(a), hb = hqHealthOf(b); return String((hb && hb.lastBooking) || '').localeCompare(String((ha && ha.lastBooking) || '')) || byName(a, b); }
-                return byName(a, b);
-            });
-            var cnt = document.getElementById('hqDirCount');
-            if (cnt) cnt.textContent = rows.length + ' of ' + all.length + ' businesses';
-            if (!rows.length) { grid.innerHTML = '<div class="p-6 text-center text-xs text-slate-400 border border-dashed border-slate-700 rounded-xl">No businesses match these filters.</div>'; return; }
-            var counts = platformState.appointmentCounts;
-            function cell(v) { return v === null || v === undefined || v === '' ? '<span class="text-slate-500">—</span>' : esc(String(v)); }
-            function view(t) {
-                var plan = ensureTenantPlan(t);
-                var st = hqStatusOf(t);
-                var h = hqHealthOf(t);
-                var w = hqWarnings(t);
-                var stBadge = st === 'paused' ? '<span class="hq-badge bg-amber-500/10 text-amber-400 border border-amber-500/30">Paused</span>'
-                    : (st === 'setup' ? '<span class="hq-badge bg-rose-500/10 text-rose-300 border border-rose-500/30">Needs setup</span>' : '<span class="hq-badge bg-brand-500/10 text-brand-400 border border-brand-500/20">Active</span>');
-                var tagsHtml = hqTagsOf(t).map(function (g) { var c = hqTagColor(g); return '<span class="hq-tag" style="color:' + c + ';border-color:' + c + '66;background:' + c + '1a">' + esc(g) + '</span>'; }).join('');
-                return {
-                    plan: plan, st: st, stBadge: stBadge, tagsHtml: tagsHtml, w: w,
-                    month: h ? h.month : null, unpaid: h ? h.unpaid : null, last: h && h.lastBooking ? h.lastBooking : (h ? 'none' : null),
-                    total: counts && typeof counts === 'object' ? (Number(counts[t.id]) || 0) : null,
-                    actions: '<button type="button" onclick="loginAsTenantOwner(' + jsArg(t.id) + ')" class="px-3 py-1.5 rounded-lg bg-brand-500 hover:bg-brand-600 text-slate-950 font-bold text-xs">Manage</button>'
-                        + '<a href="' + esc(getTenantPublicBookingUrl(t)) + '" target="_blank" rel="noopener" class="p-1.5 text-slate-400 hover:text-white" title="Open booking page"><i class="fa-solid fa-arrow-up-right-from-square text-sm"></i></a>'
-                        + '<button type="button" onclick="hqEditTags(' + jsArg(t.id) + ')" class="p-1.5 text-slate-400 hover:text-white" title="Edit HQ tags"><i class="fa-solid fa-tags text-sm"></i></button>'
-                        + '<button type="button" onclick="openEditTenantModal(' + jsArg(t.id) + ')" class="p-1.5 text-slate-400 hover:text-white" title="Edit Manager Profile & Subscription"><i class="fa-solid fa-pen-to-square text-sm"></i></button>'
-                        + '<button type="button" onclick="resendProvisionWelcome(' + jsArg(t.id) + ')" class="p-1.5 text-slate-400 hover:text-white" title="Email the owner a welcome with a new temporary password"><i class="fa-solid fa-envelope text-sm"></i></button>'
-                        + '<button type="button" onclick="toggleSubscriptionPause(' + jsArg(t.id) + ')" class="p-1.5 ' + (t.subscriptionStatus === 'active' ? 'text-amber-400' : 'text-brand-400') + '" title="' + (t.subscriptionStatus === 'active' ? 'Pause business' : 'Resume business') + '"><i class="fa-solid ' + (t.subscriptionStatus === 'active' ? 'fa-pause' : 'fa-play') + ' text-sm"></i></button>'
-                        + '<button type="button" onclick="deleteAgencyTenant(' + jsArg(t.id) + ')" class="p-1.5 text-slate-500 hover:text-rose-400" title="Delete business permanently"><i class="fa-solid fa-trash-can text-sm"></i></button>'
-                };
-            }
-            var planLabel = function (pl) { return pl === 'pro' ? 'Pro' : (pl === 'starter' ? 'Starter' : 'Free'); };
-            var warnHtml = function (w) { return w.length ? w.map(function (x) { return '<span class="hq-warn"><i class="fa-solid fa-triangle-exclamation mr-1"></i>' + esc(x) + '</span>'; }).join('') : '<span class="text-[11px] text-slate-500">No issues</span>'; };
-            var desktop = '<div class="hidden md:block overflow-x-auto"><table class="hq-table w-full text-xs"><thead><tr>'
-                + '<th>Business</th><th>Owner</th><th>Plan</th><th>Status</th><th title="Bookings this month">This month</th><th>Unpaid</th><th>Last booking</th><th>Health</th><th class="text-right">Actions</th></tr></thead><tbody>'
-                + rows.map(function (t) {
-                    var v = view(t);
-                    return '<tr><td><div class="font-bold text-white">' + esc(t.name) + '</div><div class="font-mono text-[11px] text-slate-400">/' + esc(t.slug || t.id) + '</div>' + (v.tagsHtml ? '<div class="mt-1 flex flex-wrap gap-1">' + v.tagsHtml + '</div>' : '') + '</td>'
-                        + '<td><div class="text-slate-200">' + cell(t.ownerName) + '</div><div class="font-mono text-[11px] text-brand-400 break-all">' + cell(t.ownerEmail) + '</div></td>'
-                        + '<td><div class="font-semibold text-white">' + planLabel(v.plan) + '</div><div class="text-[11px] text-slate-400">' + esc(schediBillingLabel(t)) + '</div></td>'
-                        + '<td>' + v.stBadge + '</td><td class="font-bold text-white">' + cell(v.month) + '</td>'
-                        + '<td class="' + (v.unpaid ? 'font-bold text-amber-400' : 'text-white') + '">' + cell(v.unpaid) + '</td><td class="text-slate-300 whitespace-nowrap">' + cell(v.last) + '</td>'
-                        + '<td><div class="flex flex-col gap-1">' + warnHtml(v.w) + '</div></td>'
-                        + '<td><div class="flex items-center justify-end gap-0.5">' + v.actions + '</div></td></tr>';
-                }).join('') + '</tbody></table></div>';
-            var mobile = '<div class="md:hidden space-y-3">' + rows.map(function (t) {
-                var v = view(t);
-                return '<div class="glass-card rounded-2xl p-4 space-y-3 border border-slate-800">'
-                    + '<div class="flex items-start justify-between gap-2"><div class="min-w-0"><div class="font-extrabold text-white text-sm">' + esc(t.name) + '</div><div class="font-mono text-[11px] text-slate-400">/' + esc(t.slug || t.id) + '</div></div>' + v.stBadge + '</div>'
-                    + (v.tagsHtml ? '<div class="flex flex-wrap gap-1">' + v.tagsHtml + '</div>' : '')
-                    + '<div class="text-[11px] text-slate-300 break-all">' + cell(t.ownerName) + ' · <span class="font-mono text-brand-400">' + cell(t.ownerEmail) + '</span></div>'
-                    + '<div class="grid grid-cols-4 gap-2 text-center">'
-                    + '<div class="hq-stat"><div>' + planLabel(v.plan) + '</div><span>Plan</span></div>'
-                    + '<div class="hq-stat"><div>' + cell(v.month) + '</div><span>This month</span></div>'
-                    + '<div class="hq-stat"><div class="' + (v.unpaid ? 'text-amber-400' : '') + '">' + cell(v.unpaid) + '</div><span>Unpaid</span></div>'
-                    + '<div class="hq-stat"><div class="text-[11px]">' + cell(v.last) + '</div><span>Last booking</span></div></div>'
-                    + '<div class="flex flex-wrap gap-1">' + warnHtml(v.w) + '</div>'
-                    + '<div class="flex items-center justify-between gap-1 pt-2 border-t border-slate-800">' + v.actions + '</div></div>';
-            }).join('') + '</div>';
-            grid.innerHTML = desktop + mobile;
-        }
-
-        window.hqEditTags = function (tenantId) {
-            var t = getTenant(tenantId);
-            if (!t || t.id !== tenantId) return;
-            var cur = hqTagsOf(t).join(', ');
-            var next = window.prompt('HQ tags for ' + (t.name || t.id) + ' (comma separated, only visible in Agency HQ):', cur);
-            if (next === null) return;
-            var list = [];
-            String(next).split(',').forEach(function (x) { x = x.trim().slice(0, 24); if (x && !list.some(function (y) { return y.toLowerCase() === x.toLowerCase(); })) list.push(x); });
-            t.hqTags = list.slice(0, 8);
-            if (schediPrivateProfiles[t.id]) schediPrivateProfiles[t.id].hqTags = t.hqTags.slice();
-            renderAgencyDashboard();
-            if (!schediHqTagsServer) { showToast('Tags updated on this screen. Saving tags needs the updated email worker.', 'info'); return; }
-            saveState({ profileOnly: true, tenantIds: [t.id], quietSyncErrors: true }).then(function (res) {
-                if (!res) showToast('Could not save tags. Try again.', 'error');
-                else showToast('Tags saved', 'success');
-            }).catch(function () { showToast('Could not save tags. Try again.', 'error'); });
-        };
-
-        // Collapsible HQ sections (state remembered per section; expanded by default).
-        var HQ_COLLAPSE_KEY = 'schedi.hqCollapsed.v1';
-        function hqCollapsedMap() { try { return JSON.parse(window.localStorage.getItem(HQ_COLLAPSE_KEY) || '{}') || {}; } catch (e) { return {}; } }
-        function hqApplyCollapse(card, collapsed) {
-            var body = card.querySelector('[data-hq-collapse-body]');
-            var head = card.querySelector('[data-hq-collapse-head]');
-            var btn = card.querySelector('.hq-collapse-btn');
-            if (body) body.classList.toggle('hidden', collapsed);
-            if (head) { head.classList.toggle('border-b', !collapsed); head.classList.toggle('pb-4', !collapsed); }
-            if (btn) { btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true'); btn.querySelector('i').style.transform = collapsed ? 'rotate(-90deg)' : ''; }
-        }
-        function initHqCollapsibles() {
-            var map = hqCollapsedMap();
-            document.querySelectorAll('[data-hq-collapse]').forEach(function (card) {
-                var key = card.getAttribute('data-hq-collapse');
-                var head = card.querySelector('[data-hq-collapse-head]');
-                if (!head || head.querySelector('.hq-collapse-btn')) return;
-                var btn = document.createElement('button');
-                btn.type = 'button';
-                btn.className = 'hq-collapse-btn';
-                btn.setAttribute('aria-label', 'Show or hide this section');
-                btn.innerHTML = '<i class="fa-solid fa-chevron-down" aria-hidden="true"></i>';
-                head.appendChild(btn);
-                head.style.cursor = 'pointer';
-                head.addEventListener('click', function (ev) {
-                    if (ev.target.closest('input,select,a,label') ) return;
-                    var m = hqCollapsedMap();
-                    m[key] = !m[key];
-                    try { window.localStorage.setItem(HQ_COLLAPSE_KEY, JSON.stringify(m)); } catch (e) {}
-                    hqApplyCollapse(card, !!m[key]);
-                });
-                hqApplyCollapse(card, !!map[key]);
-            });
-        }
-        try { if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initHqCollapsibles); else initHqCollapsibles(); } catch (errCol) {}
-
-        window.filterAgencyTenants = function(query) {
-            hqDirSet('q', String(query || ''));
-        }
-
-        window.openProvisionModal = function() {
-            document.getElementById('provisionModal').classList.remove('hidden');
-            document.getElementById('provisionModal').scrollTop = 0;
-        }
-        window.closeProvisionModal = function() {
-            document.getElementById('provisionModal').classList.add('hidden');
-        }
-
-        window.handleProvisionSubmit = async function(e) {
-            e.preventDefault();
-            const name = document.getElementById('provName').value.trim();
-            const slug = document.getElementById('provSlug').value.trim().toLowerCase();
-            const industry = document.getElementById('provIndustry').value;
-            const ownerName = document.getElementById('provOwnerName').value.trim();
-            const ownerPhone = document.getElementById('provOwnerPhone').value.trim();
-            const ownerEmail = document.getElementById('provOwnerEmail').value.trim();
-            const ownerPassword = document.getElementById('provOwnerPass').value.trim();
-            const monthlyPrice = parseFloat(document.getElementById('provPrice').value) || 149;
-            const cashAppTag = document.getElementById('provCashApp').value.trim() || `$${slug.replace(/[^a-zA-Z0-9]/g, '')}`;
-
-            if (!/^[a-z0-9][a-z0-9-]{1,40}$/.test(slug)) {
-                showToast('Slug must be 2-41 characters: lowercase letters, numbers and hyphens only.', 'error');
-                return;
-            }
-            if (isReservedBusinessSlug(slug)) {
-                showToast('That URL slug is reserved. Choose another.', 'error');
-                return;
-            }
-            if (platformState.tenants.some(t => t.slug === slug || t.id === slug)) {
-                showToast(`The slug "${slug}" is already in use by another business.`, 'error');
-                return;
-            }
-            if (platformState.tenants.some(t => String(t.ownerEmail || '').toLowerCase() === ownerEmail.toLowerCase())) {
-                showToast('That owner email is already registered to another business.', 'error');
-                return;
-            }
-            if (ownerPassword.length < 8) {
-                showToast('Owner password must be at least 8 characters.', 'error');
-                return;
-            }
-            const passwordStored = await schediStoreOwnerPassword(slug, ownerEmail, ownerPassword);
-            if (!passwordStored.ok) {
-                showToast(passwordStored.error || 'Could not store the owner password.', 'error');
-                return;
-            }
-
-            const newTenant = {
-                id: slug,
-                name,
-                slug,
-                industry,
-                ownerName,
-                ownerPhone,
-                ownerEmail,
-                monthlyPrice,
-                subscriptionStatus: 'active',
-                paymentForm: 'Credit Card (Auto-Debit)',
-                cashAppTag,
-                zelleHandle: '',
-                zelleLink: '',
-                venmoHandle: '',
-                venmoLink: '',
-                paypalHandle: '',
-                paypalLink: '',
-                services: [
-                    { id: 1, name: 'Standard Consultation', duration: '45 mins', durationMins: 45, price: 60, desc: 'Core service appointment.', icon: 'fa-calendar-check' }
-                ],
-                operatingHours: {
-                    'Mon': { open: true, start: '09:00 AM', end: '05:00 PM' },
-                    'Tue': { open: true, start: '09:00 AM', end: '05:00 PM' },
-                    'Wed': { open: true, start: '09:00 AM', end: '05:00 PM' },
-                    'Thu': { open: true, start: '09:00 AM', end: '05:00 PM' },
-                    'Fri': { open: true, start: '09:00 AM', end: '05:00 PM' },
-                    'Sat': { open: false, start: '10:00 AM', end: '03:00 PM' },
-                    'Sun': { open: false, start: '10:00 AM', end: '03:00 PM' }
-                },
-                specialHours: {},
-                slotInterval: 30,
-                minNoticeHours: 2,
-                blockedRules: [],
-                blockedTimes: [],
-                timeSlots: [
-                    { time: '09:00 AM', blocked: false },
-                    { time: '10:30 AM', blocked: false },
-                    { time: '01:00 PM', blocked: false },
-                    { time: '03:30 PM', blocked: false }
-                ],
-                paymentGateways: { card: true, cashapp: true, zelle: false, venmo: false, paypal: false, later: true },
-                notifications: { emailConfirmations: true, replyTo: '', extraNote: '' },
-                allowRecurringBookings: true,
-                appointments: []
-            };
-
-            newTenant.plan = normalizePlan(newTenant);
-            platformState.tenants.push(newTenant);
-            platformState.activeTenantId = newTenant.id;
-            saveState();
-            populateTenantSelect();
-            closeProvisionModal();
-            renderAgencyDashboard();
-            var mailed = await schediSendProvisionEmails({
-                businessName: name,
-                slug: slug,
-                ownerName: ownerName,
-                ownerEmail: ownerEmail,
-                password: ownerPassword
-            });
-            schediProvisionMailToast(name, mailed);
-        }
-
-        window.resendProvisionWelcome = async function(tenantId) {
-            var tenant = getTenant(tenantId);
-            if (!tenant) return;
-            var slug = String(tenant.slug || tenant.id || '').trim();
-            var ownerEmail = String(tenant.ownerEmail || '').trim();
-            if (!slug || !ownerEmail) {
-                showToast('This business is missing a slug or owner email, so the welcome was not sent.', 'error');
-                return;
-            }
-            if (!window.confirm('Email ' + ownerEmail + ' a new welcome for ' + tenant.name + '? This sets a new temporary password. The password is only in that email, not in your confirmation.')) return;
-            var mailed = await schediSendProvisionEmails({
-                businessName: tenant.name,
-                slug: slug,
-                ownerName: tenant.ownerName || '',
-                ownerEmail: ownerEmail,
-                rotate: true
-            });
-            if (mailed.ownerSent && mailed.confirmSent) {
-                showToast('Welcome resent to ' + ownerEmail + '. A confirmation is on the way to you. The new password is only in the owner email.', 'success');
-                return;
-            }
-            if (mailed.ownerSent && !mailed.confirmSent) {
-                showToast('The owner welcome was sent, but your confirmation email did not send. Use Resend welcome to try again.', 'error');
-                return;
-            }
-            showToast('The onboarding email did not send. Try Resend welcome again.', 'error');
-        }
-
-        window.openEditTenantModal = function(tenantId) {
-            if (!platformState.isAgencyMasterLoggedIn) {
-                // Plan + billing fields are agency-only; owners upgrade through Stripe checkout.
-                showToast('Plan changes go through Billing in your portal.', 'info');
-                return;
-            }
-            const tenant = getTenant(tenantId);
-            if (!tenant) return;
-            if (!hasPrivateProfile(tenant)) {
-                // Owner contact + billing come from the worker; don't open (and risk saving) blank fields.
-                showToast('Loading owner details…', 'info');
-                refreshPrivateProfiles().then(function (loaded) {
-                    if (loaded && hasPrivateProfile(getTenant(tenantId))) window.openEditTenantModal(tenantId);
-                    else showToast('Could not load owner details. Sign in again and retry.', 'error');
-                });
-                return;
-            }
-
-            document.getElementById('editTenantId').value = tenant.id;
-            document.getElementById('editTenantName').value = tenant.name;
-            document.getElementById('editTenantSlug').value = tenant.slug || tenant.id;
-            document.getElementById('editOwnerName').value = tenant.ownerName || '';
-            document.getElementById('editOwnerPhone').value = tenant.ownerPhone || '';
-            document.getElementById('editOwnerEmail').value = tenant.ownerEmail || '';
-            document.getElementById('editOwnerPassword').value = '';
-            var planSel = document.getElementById('editTenantPlan');
-            if (planSel) planSel.value = ensureTenantPlan(tenant);
-            var compEl = document.getElementById('editComplimentaryPro');
-            if (compEl) compEl.checked = isComplimentaryPro(tenant);
-            syncEditMonthlyFeeFromPlan();
-            if (!document.getElementById('editMonthlyPrice').value) {
-                document.getElementById('editMonthlyPrice').value = (tenant.monthlyPrice == null ? '' : tenant.monthlyPrice);
-            }
-            document.getElementById('editCashAppTag').value = tenant.cashAppTag;
-            var editAddress = document.getElementById('editTenantAddress');
-            if (editAddress) editAddress.value = getTenantLocation(tenant);
-            var editLogo = document.getElementById('editTenantLogoUrl');
-            if (editLogo) editLogo.value = tenant.logoUrl || tenant.logo || '';
-            var editCover = document.getElementById('editTenantCoverUrl');
-            if (editCover) editCover.value = tenant.coverUrl || tenant.coverPhoto || tenant.coverPhotoUrl || '';
-
-            document.getElementById('editTenantModal').classList.remove('hidden');
-            document.getElementById('editTenantModal').scrollTop = 0;
-        }
-
-        window.closeEditTenantModal = function() {
-            document.getElementById('editTenantModal').classList.add('hidden');
-        }
-
-        window.handleEditTenantSubmit = async function(e) {
-            e.preventDefault();
-            const tenantId = document.getElementById('editTenantId').value;
-            const tenant = getTenant(tenantId);
-            if (!tenant) return;
-            var editLogoRaw = String((document.getElementById('editTenantLogoUrl') || {}).value || '').trim();
-            var editCoverRaw = String((document.getElementById('editTenantCoverUrl') || {}).value || '').trim();
-            if ((editLogoRaw && !safeHttpsUrl(editLogoRaw)) || (editCoverRaw && !safeHttpsUrl(editCoverRaw))) {
-                showToast('Logo and cover photo need an https link, or leave them blank.', 'error');
-                return;
-            }
-
-            const oldSlug = tenant.slug || tenant.id;
-            const oldId = tenant.id;
-            const newSlug = document.getElementById('editTenantSlug').value.trim().toLowerCase();
-
-            if (!/^[a-z0-9][a-z0-9-]{1,40}$/.test(newSlug)) {
-                showToast('Slug must be 2-41 characters: lowercase letters, numbers and hyphens only.', 'error');
-                return;
-            }
-            if (isReservedBusinessSlug(newSlug)) {
-                showToast('That URL slug is reserved. Choose another.', 'error');
-                return;
-            }
-            const slugTaken = platformState.tenants.some(function (t) {
-                if (t.id === tenantId) return false;
-                var sid = (t.slug || '').toLowerCase();
-                var tid = (t.id || '').toLowerCase();
-                return sid === newSlug || tid === newSlug;
-            });
-            if (slugTaken) {
-                showToast(`The slug "${newSlug}" is already in use by another business.`, 'error');
-                return;
-            }
-
-            tenant.name = document.getElementById('editTenantName').value.trim();
-            tenant.ownerName = document.getElementById('editOwnerName').value.trim();
-            tenant.ownerPhone = document.getElementById('editOwnerPhone').value.trim();
-            const nextOwnerEmail = document.getElementById('editOwnerEmail').value.trim();
-            const nextOwnerPassword = document.getElementById('editOwnerPassword').value.trim();
-            if (nextOwnerPassword) {
-                if (nextOwnerPassword.length < 8) {
-                    showToast('Owner password must be at least 8 characters.', 'error');
-                    return;
-                }
-                const passwordStored = await schediStoreOwnerPassword(tenant.id, nextOwnerEmail, nextOwnerPassword);
-                if (!passwordStored.ok) {
-                    showToast(passwordStored.error || 'Could not store the owner password.', 'error');
-                    return;
-                }
-            } else if (nextOwnerEmail.toLowerCase() !== String(tenant.ownerEmail || '').toLowerCase()) {
-                const rebound = await schediRebindOwnerEmail(tenant.id, nextOwnerEmail);
-                if (!rebound.ok) {
-                    showToast(rebound.error || 'Set a new password when changing the owner email.', 'error');
-                    return;
-                }
-            }
-            delete tenant.ownerPassword;
-            tenant.ownerEmail = nextOwnerEmail;
-            var planPick = document.getElementById('editTenantPlan');
-            var pickedPlan = planPick ? String(planPick.value || '').toLowerCase() : '';
-            if (pickedPlan !== 'free' && pickedPlan !== 'starter' && pickedPlan !== 'pro') {
-                showToast('Choose a plan tier: free, starter, or pro.', 'error');
-                return;
-            }
-            var compOn = !!(document.getElementById('editComplimentaryPro') && document.getElementById('editComplimentaryPro').checked);
-            if (compOn) {
-                tenant.complimentaryPro = true;
-                tenant.billingExempt = true;
-                tenant.plan = 'pro';
-                tenant.monthlyPrice = 0;
-                tenant.subscriptionStatus = 'active';
-                if (planPick) planPick.value = 'pro';
-                pickedPlan = 'pro';
-            } else {
-                tenant.complimentaryPro = false;
-                tenant.billingExempt = false;
-                if (!tenant.stripeSubscriptionId && pickedPlan !== 'free' && pickedPlan !== 'starter' && pickedPlan !== 'pro') pickedPlan = 'free';
-                tenant.plan = pickedPlan;
-                tenant.monthlyPrice = monthlyFeeForPlan(pickedPlan);
-            }
-            var mappedFee = tenant.monthlyPrice;
-            var feeEl = document.getElementById('editMonthlyPrice');
-            if (feeEl) feeEl.value = String(mappedFee);
-            tenant.cashAppTag = document.getElementById('editCashAppTag').value.trim();
-            var editAddressEl = document.getElementById('editTenantAddress');
-            var editAddressValue = cleanPublicAddress(editAddressEl ? editAddressEl.value : (tenant.address || ''));
-            tenant.address = editAddressValue;
-            if (!editAddressValue) {
-                tenant.location = '';
-                tenant.businessAddress = '';
-                tenant.businessLocation = '';
-            }
-            tenant.logoUrl = safeHttpsUrl(editLogoRaw);
-            tenant.coverUrl = safeHttpsUrl(editCoverRaw);
-
-            const slugChanged = newSlug !== String(oldSlug).toLowerCase();
-            const idWillChange = slugChanged && (tenant.id === oldSlug || String(tenant.id).toLowerCase() === String(oldSlug).toLowerCase());
-            if (idWillChange) {
-                const renamed = await schediRenameOwnerSecret(tenant.id, newSlug);
-                if (!renamed.ok) {
-                    showToast(renamed.error || 'Could not move the owner login to the new URL.', 'error');
-                    return;
-                }
-            }
-            if (slugChanged) {
-                tenant.slug = newSlug;
-                // Common provision case: id === slug. Migrate id so Firestore/local keys stay aligned.
-                if (tenant.id === oldSlug || String(tenant.id).toLowerCase() === String(oldSlug).toLowerCase()) {
-                    tenant.id = newSlug;
-                    if (platformState.activeTenantId === oldId) {
-                        platformState.activeTenantId = newSlug;
-                    }
-                    if (platformState.publicSlug && String(platformState.publicSlug).toLowerCase() === String(oldSlug).toLowerCase()) {
-                        platformState.publicSlug = newSlug;
-                    }
-                    document.getElementById('editTenantId').value = newSlug;
-                }
-            }
-
-            // Close right away; the cloud save finishes in the background and reports only if it fails.
-            var savedTenantId = tenant.id;
-            var savedName = tenant.name;
-            closeEditTenantModal();
-            (async function () {
-                var res = null;
-                try { res = await saveState({ profileOnly: !slugChanged, tenantIds: [savedTenantId], quietSyncErrors: true }); } catch (errSave) { res = null; }
-                if (!res) {
-                    showToast('Could not save "' + savedName + '" to the cloud. Check your connection and save again.', 'error');
-                }
-                // If the document id migrated, remove the orphaned old document via the worker.
-                if (slugChanged && oldId !== savedTenantId) {
-                    try {
-                        var removedOld = await deleteTenantProfiles([oldId]);
-                        if (!removedOld.ok) {
-                            console.error('Cloud orphan cleanup failed after slug rename:', removedOld.error || 'profile_delete_failed');
-                            showToast('Saved, but cloud cleanup of the old slug doc failed.', 'error');
-                        }
-                    } catch (err) {
-                        console.error('Cloud orphan cleanup failed after slug rename:', err);
-                        showToast('Saved, but cloud cleanup of the old slug doc failed.', 'error');
-                    }
-                }
-            })();
-
-            populateTenantSelect();
-            renderAgencyDashboard();
-            renderTenantAdminPortal();
-            renderLivePreviewIframe();
-            if (slugChanged) {
-                showToast(`Updated "${tenant.name}". Public URL is now /${tenant.slug}/`, 'success');
-            } else {
-                showToast(`Updated profile details for "${tenant.name}"`, 'success');
-            }
-        }
-
-        window.toggleSubscriptionPause = function(tenantId) {
-            const tenant = getTenant(tenantId);
-            if (!tenant) return;
-
-            const name = tenant.name || tenantId;
-            const slug = tenant.slug || tenant.id;
-            const currentlyActive = tenant.subscriptionStatus === 'active';
-
-            if (currentlyActive) {
-                if (!window.confirm(`Pause "${name}"? Public booking at /${slug}/ will be unavailable. All data is kept so you can resume later.`)) return;
-                tenant.subscriptionStatus = 'paused';
-                saveState();
-                renderAgencyDashboard();
-                showToast(`Paused "${name}" (data kept)`, 'info');
-            } else {
-                tenant.subscriptionStatus = 'active';
-                saveState();
-                renderAgencyDashboard();
-                showToast(`Resumed "${name}"`, 'success');
-            }
-        }
-
-        window.deleteAgencyTenant = async function(tenantId) {
-            const tenant = getTenant(tenantId);
-            if (!tenant || tenant.id !== tenantId) return;
-
-            const name = tenant.name || tenantId;
-            const slug = tenant.slug || tenant.id;
-            if (!window.confirm(`Delete "${name}" permanently? This removes the owner portal and public booking page /${slug}/. This cannot be undone.`)) return;
-
-            platformState.tenants = platformState.tenants.filter(t => t.id !== tenantId);
-
-            if (platformState.activeTenantId === tenantId) {
-                platformState.activeTenantId = platformState.tenants.length ? platformState.tenants[0].id : null;
-            }
-
-            await saveState();
-
-            try {
-                var removedTenant = await deleteTenantProfiles([tenantId]);
-                if (!removedTenant.ok) {
-                    console.error('Cloud delete failed:', removedTenant.error || 'profile_delete_failed');
-                    showToast('Business removed locally, but cloud delete failed.', 'error');
-                }
-            } catch (err) {
-                console.error('Cloud delete failed:', err);
-                showToast('Business removed locally, but cloud delete failed.', 'error');
-            }
-
-            populateTenantSelect();
-            renderAgencyDashboard();
-            showToast(`Deleted business: "${name}"`, 'success');
         }
 
         function schediBillingLabel(t) {
@@ -6527,94 +5259,6 @@
             platformState.emailSender.fromName = platformState.emailSender.fromName || 'Schedi Bookings';
             try { if (url) localStorage.setItem('siteforge.emailWebhook', url); } catch (_) {}
             return platformState.emailSender;
-        }
-
-        function refreshEmailSenderUI() {
-            var sender = ensureEmailSender();
-            var urlEl = document.getElementById('agencyEmailWebhook');
-            var nameEl = document.getElementById('agencyEmailFromName');
-            var badge = document.getElementById('agencyEmailDeliveryBadge');
-            var url = sender.webhookUrl || '';
-            if (urlEl) urlEl.value = url;
-            if (nameEl) nameEl.value = sender.fromName || 'Schedi Bookings';
-            if (badge) {
-                if (url) {
-                    badge.textContent = 'Connected';
-                    badge.className = 'px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 border border-emerald-500/30 text-emerald-400';
-                } else {
-                    badge.textContent = 'Not connected';
-                    badge.className = 'px-3 py-1 rounded-full text-xs font-bold bg-slate-800 border border-slate-700 text-slate-400';
-                }
-            }
-        }
-
-        window.handleSaveEmailSender = function(e) {
-            e.preventDefault();
-            var url = document.getElementById('agencyEmailWebhook').value.trim();
-            var fromName = document.getElementById('agencyEmailFromName').value.trim() || 'Schedi Bookings';
-            platformState.emailSender = platformState.emailSender || {};
-            platformState.emailSender.webhookUrl = url || SITEFORGE_DEFAULT_EMAIL_WEBHOOK;
-            platformState.emailSender.fromName = fromName;
-            try { localStorage.setItem('siteforge.emailWebhook', platformState.emailSender.webhookUrl); } catch (_) {}
-            saveState();
-            refreshEmailSenderUI();
-            showToast('Email sender saved — confirmations will send through Schedi email.', 'success');
-        }
-
-        window.testEmailSenderWebhook = async function() {
-            var url = (ensureEmailSender().webhookUrl || '').trim();
-            if (!url) {
-                showToast('Paste and save the booking email webhook URL first.', 'error');
-                return;
-            }
-            var to = 'your sign-in email';
-            try {
-                var res = await fetch(SITEFORGE_DEFAULT_EMAIL_WEBHOOK, {
-                    method: 'POST',
-                    mode: 'cors',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        type: 'sender_test',
-                        session: schediAuthSession()
-                    })
-                });
-                if (res.ok) showToast('Test email sent to ' + to + ' — check inbox.', 'success');
-                else showToast('Sender responded with HTTP ' + res.status, 'error');
-            } catch (err) {
-                console.error(err);
-                showToast('Could not reach email sender. Sign in again and retry.', 'error');
-            }
-        }
-
-
-        window.handleSaveAgencyGateways = function(e) {
-            e.preventDefault();
-            if (platformState.agencyStripe) {
-                delete platformState.agencyStripe.secretKey;
-                delete platformState.agencyStripe.publishableKey;
-            }
-            showToast('Stripe billing is connected on the server. Keys are not saved in the browser.', 'info');
-        }
-
-        window.loginAsTenantOwner = function(tenantId) {
-            platformState.activeTenantId = tenantId;
-            platformState.isTenantOwnerLoggedIn = true;
-            platformState.ownerSelfSession = false;
-            syncOwnerChangePassBtn();
-            populateTenantSelect();
-            updateLivePreviewControlsVisibility();
-            
-            const loginBox = document.getElementById('tenantLoginBox');
-            const dashboard = document.getElementById('tenantDashboard');
-            if (loginBox) loginBox.classList.add('hidden');
-            if (dashboard) dashboard.classList.remove('hidden');
-
-            switchPlatformMode('tenant');
-            syncHqManagingBanner();
-            try { window.scrollTo(0, 0); } catch (errTop) {}
-            showToast(`Managing ${getTenant(tenantId).name}`, 'success');
         }
 
         function getTenantPublicBookingSlug(tenant) {
@@ -11482,10 +10126,12 @@
                     window.history.replaceState({}, '', '/reset');
                 }
             } catch (errQ) {}
-            ['agencyHqSection', 'tenantPortalSection', 'previewSection', 'signupSection', 'legalSection'].forEach(function (id) {
+            ['tenantPortalSection', 'previewSection', 'signupSection', 'legalSection'].forEach(function (id) {
                 var el = document.getElementById(id);
                 if (el) el.classList.add('hidden');
             });
+            var hqReset = hqSectionEl();
+            if (hqReset) hqReset.classList.add('hidden');
             var main = document.querySelector('main');
             if (main) main.classList.add('hidden');
             var box = document.getElementById('resetSection');
@@ -11812,6 +10458,8 @@
         html.schedi-light .cal-day-disabled .cal-day-label { color: #334155; }
         html.schedi-light .cal-day-today { box-shadow: inset 0 0 0 2px #0f172a; }
         html.schedi-light .cal-day-selected.cal-day-today { box-shadow: 0 0 0 2px #065f46, inset 0 0 0 2px #ffffff; }
+        /* Month title sits on the dark slate-900 bar. Light mode otherwise remaps .text-white to near-black. */
+        html.schedi-light #monthTitleLabel { color: #f8fafc !important; }
         /* /booking-day-contrast */
         .biz-header { border-radius: 1rem; overflow: hidden; border: 1px solid rgba(255,255,255,0.08); background: rgba(17, 24, 39, 0.8); }
         html.schedi-light .biz-header { background: #ffffff; border-color: #d7dee8; }
@@ -15823,6 +14471,25 @@
     }
     if (pending()) start();
 })();
+</script>
+<script>
+function hqSectionEl(){return null;}
+function hqNavButton(){return null;}
+function hqMasterButton(){return null;}
+function syncAgencyChrome(){}
+function syncHqManagingBanner(){}
+function updateMasterAuthUI(){}
+function renderAgencyDashboard(){}
+function refreshEmailSenderUI(){}
+function restoreAgencyChromeAfterPreview(){}
+window.loginAsTenantOwner=function(){};
+window.handleAgencyMasterLogin=function(e){if(e&&e.preventDefault)e.preventDefault();};
+window.toggleMasterAgencyAuth=function(){};
+window.syncEditMonthlyFeeFromPlan=function(){};
+window.onComplimentaryProToggle=function(){};
+window.handleSaveAgencyGateways=function(e){if(e&&e.preventDefault)e.preventDefault();};
+window.handleSaveEmailSender=function(e){if(e&&e.preventDefault)e.preventDefault();};
+window.testEmailSenderWebhook=function(){};
 </script>
 </body>
 </html>
