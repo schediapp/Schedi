@@ -960,7 +960,7 @@ body.schedi-newdash.sd-client-panel-open { overflow: hidden; }
 #tenantPortalSection.schedi-newdash .sd-qr-image,
 #tenantPortalSection.schedi-newdash .sd-qr-preview {
     display: block;
-    width: min(280px, 100%);
+    width: min(100%, 380px);
     height: auto;
     margin: 12px auto;
     padding: 12px;
@@ -8272,7 +8272,7 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
             return false;
         }
 
-// Client-side QR for a booking link. Byte mode, error correction M, versions 1–10.
+// Client-side QR for a booking link. Byte mode, error correction M or H, versions 1–10.
 // No package: the portal inlines this file. Dark modules are 1 in row-major order.
 
 var QR_EXP = new Uint8Array(512);
@@ -8342,6 +8342,20 @@ function qrRs(data, ecLen) {
 var QR_CODEWORDS = [0, 26, 44, 70, 100, 134, 172, 196, 242, 292, 346];
 var QR_EC_BLOCKS_M = [0, 1, 1, 1, 2, 2, 4, 4, 4, 5, 5];
 var QR_EC_WORDS_M = [0, 10, 16, 26, 36, 48, 64, 72, 88, 110, 130];
+var QR_EC_BLOCKS_H = [0, 1, 1, 2, 4, 4, 4, 5, 6, 8, 8];
+var QR_EC_WORDS_H = [0, 17, 28, 44, 64, 88, 112, 130, 156, 192, 224];
+
+function qrEcc(level) {
+  return level === 'H' ? 'H' : 'M';
+}
+
+function qrEcBlocks(version, level) {
+  return qrEcc(level) === 'H' ? QR_EC_BLOCKS_H[version] : QR_EC_BLOCKS_M[version];
+}
+
+function qrEcWords(version, level) {
+  return qrEcc(level) === 'H' ? QR_EC_WORDS_H[version] : QR_EC_WORDS_M[version];
+}
 
 function qrBitLen(n) {
   var bits = 0;
@@ -8352,8 +8366,8 @@ function qrBitLen(n) {
   return bits;
 }
 
-function qrFormatBits(mask) {
-  var data = mask;
+function qrFormatBits(mask, level) {
+  var data = (qrEcc(level) === 'H' ? 2 : 0) * 8 + (mask & 7);
   var d = data << 10;
   var g = 0x537;
   var gBits = 11;
@@ -8377,13 +8391,13 @@ function qrBytes(text) {
   return out;
 }
 
-function qrVersionFor(len) {
+function qrVersionFor(len, level) {
   var version;
   var dataWords;
   var countBits;
   var usable;
   for (version = 1; version <= 10; version++) {
-    dataWords = QR_CODEWORDS[version] - QR_EC_WORDS_M[version];
+    dataWords = QR_CODEWORDS[version] - qrEcWords(version, level);
     countBits = version < 10 ? 8 : 16;
     usable = dataWords * 8 - 4 - countBits;
     if (Math.floor(usable / 8) >= len) return version;
@@ -8396,9 +8410,9 @@ function qrPush(bits, value, length) {
   for (i = length - 1; i >= 0; i--) bits.push((value >>> i) & 1);
 }
 
-function qrDataCodewords(bytes, version) {
+function qrDataCodewords(bytes, version, level) {
   var bits = [];
-  var dataWords = QR_CODEWORDS[version] - QR_EC_WORDS_M[version];
+  var dataWords = QR_CODEWORDS[version] - qrEcWords(version, level);
   var countBits = version < 10 ? 8 : 16;
   var i;
   var byte = 0;
@@ -8427,11 +8441,11 @@ function qrDataCodewords(bytes, version) {
   return out;
 }
 
-function qrInterleave(codewords, version) {
+function qrInterleave(codewords, version, level) {
   var total = QR_CODEWORDS[version];
-  var ecTotal = QR_EC_WORDS_M[version];
+  var ecTotal = qrEcWords(version, level);
   var dataTotal = total - ecTotal;
-  var blocks = QR_EC_BLOCKS_M[version];
+  var blocks = qrEcBlocks(version, level);
   var group2 = total % blocks;
   var group1 = blocks - group2;
   var data1 = Math.floor(dataTotal / blocks);
@@ -8557,9 +8571,10 @@ function qrPenalty(dark, size) {
   return points + k * 10;
 }
 
-function schediQrModules(text) {
+function schediQrModules(text, level) {
+  var ecc = qrEcc(level);
   var bytes = qrBytes(text);
-  var version = qrVersionFor(bytes.length);
+  var version = qrVersionFor(bytes.length, ecc);
   var size;
   var dark;
   var reserved;
@@ -8584,7 +8599,7 @@ function schediQrModules(text) {
     dark[rr * size + cc] = value ? 1 : 0;
     if (lock) reserved[rr * size + cc] = 1;
   }
-  if (!version || bytes.length > 213) return null;
+  if (!version || (ecc === 'M' && bytes.length > 213)) return null;
   size = version * 4 + 17;
   dark = new Uint8Array(size * size);
   reserved = new Uint8Array(size * size);
@@ -8609,7 +8624,7 @@ function schediQrModules(text) {
     }
   }
   function paintFormat(mask) {
-    var format = qrFormatBits(mask);
+    var format = qrFormatBits(mask, ecc);
     var n;
     var on;
     for (n = 0; n < 15; n++) {
@@ -8634,8 +8649,8 @@ function schediQrModules(text) {
       set(col, row, mod, 1);
     }
   }
-  codewords = qrDataCodewords(bytes, version);
-  data = qrInterleave(codewords, version);
+  codewords = qrDataCodewords(bytes, version, ecc);
+  data = qrInterleave(codewords, version, ecc);
   row = size - 1;
   c = -1;
   i = 0;
@@ -8690,9 +8705,113 @@ function schediQrModules(text) {
     }
   }
   paintFormat(best);
-  return { size: size, dark: dark, version: version, mask: best };
+  return { size: size, dark: dark, version: version, mask: best, level: ecc };
 }
 
+function qrHexByte(pair) {
+  var h = '0123456789abcdef';
+  var a = h.indexOf(String(pair || '').charAt(0).toLowerCase());
+  var b = h.indexOf(String(pair || '').charAt(1).toLowerCase());
+  if (a < 0 || b < 0) return -1;
+  return a * 16 + b;
+}
+
+function qrRgb(color) {
+  var raw = String(color || '');
+  var r = 0;
+  var g = 0;
+  var b = 0;
+  if (raw.charAt(0) !== '#') return [0, 0, 0];
+  if (raw.length === 4) {
+    r = qrHexByte(raw.charAt(1) + raw.charAt(1));
+    g = qrHexByte(raw.charAt(2) + raw.charAt(2));
+    b = qrHexByte(raw.charAt(3) + raw.charAt(3));
+  } else if (raw.length === 7) {
+    r = qrHexByte(raw.slice(1, 3));
+    g = qrHexByte(raw.slice(3, 5));
+    b = qrHexByte(raw.slice(5, 7));
+  } else return [0, 0, 0];
+  if (r < 0 || g < 0 || b < 0) return [0, 0, 0];
+  return [r, g, b];
+}
+
+function qrInsideRound(px, py, left, top, side, radius) {
+  var dx = px - left;
+  var dy = py - top;
+  var inset;
+  var ox;
+  var oy;
+  if (dx < 0 || dy < 0 || dx > side || dy > side) return false;
+  inset = side / 2 - radius;
+  ox = Math.abs(dx - side / 2) - inset;
+  oy = Math.abs(dy - side / 2) - inset;
+  if (ox <= 0 || oy <= 0) return true;
+  return ox * ox + oy * oy <= radius * radius;
+}
+
+function schediQrCardPixels(text, color) {
+  var qr = schediQrModules(text, 'H');
+  var quiet = 2;
+  var scale = 1;
+  var count;
+  var Q;
+  var data;
+  var rgb;
+  var x;
+  var y;
+  var col;
+  var row;
+  var on;
+  var half;
+  var side;
+  var radius;
+  var left;
+  var innerSide;
+  var innerRadius;
+  var innerLeft;
+  var p;
+  if (!qr) return null;
+  count = qr.size + quiet * 2;
+  while (count * scale + 160 < 1000) scale += 1;
+  Q = count * scale;
+  data = new Uint8ClampedArray(Q * Q * 4);
+  rgb = qrRgb(color || '#000000');
+  for (y = 0; y < Q; y++) {
+    row = Math.floor(y / scale) - quiet;
+    for (x = 0; x < Q; x++) {
+      col = Math.floor(x / scale) - quiet;
+      on = col >= 0 && row >= 0 && col < qr.size && row < qr.size && qr.dark[row * qr.size + col] === 1;
+      p = (y * Q + x) * 4;
+      data[p] = on ? rgb[0] : 255;
+      data[p + 1] = on ? rgb[1] : 255;
+      data[p + 2] = on ? rgb[2] : 255;
+      data[p + 3] = 255;
+    }
+  }
+  half = 0.115 * Q;
+  side = half * 2;
+  radius = 0.3 * half;
+  left = (Q - side) / 2;
+  innerSide = side - 16;
+  innerRadius = radius > 8 ? radius - 8 : 0;
+  innerLeft = left + 8;
+  for (y = 0; y < Q; y++) {
+    for (x = 0; x < Q; x++) {
+      if (!qrInsideRound(x + 0.5, y + 0.5, left, left, side, radius)) continue;
+      p = (y * Q + x) * 4;
+      if (innerSide > 0 && qrInsideRound(x + 0.5, y + 0.5, innerLeft, innerLeft, innerSide, innerRadius)) {
+        data[p] = 255;
+        data[p + 1] = 255;
+        data[p + 2] = 255;
+      } else {
+        data[p] = rgb[0];
+        data[p + 1] = rgb[1];
+        data[p + 2] = rgb[2];
+      }
+    }
+  }
+  return { width: Q, height: Q, data: data, scale: scale, quiet: quiet, version: qr.version, mask: qr.mask };
+}
 
         window.copyTenantPublicBookingLink = function() {
             const tenant = getTenant();
@@ -8729,27 +8848,204 @@ function schediQrModules(text) {
             schediQrBlobUrl = '';
         }
 
-        function schediQrDraw(canvas, text) {
-            var qr = schediQrModules(text);
-            var quiet = 4;
-            var scale = 8;
-            var n;
-            var ctx;
-            var r;
+        function schediQrHex(value) {
+            var raw = String(value || '').trim();
+            var i;
             var c;
-            if (!qr || !canvas) return false;
-            n = qr.size + quiet * 2;
-            canvas.width = n * scale;
-            canvas.height = n * scale;
-            ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = '#0f172a';
-            for (r = 0; r < qr.size; r++) {
-                for (c = 0; c < qr.size; c++) {
-                    if (qr.dark[r * qr.size + c]) ctx.fillRect((c + quiet) * scale, (r + quiet) * scale, scale, scale);
+            if (raw.length !== 4 && raw.length !== 7) return '';
+            if (raw.charAt(0) !== '#') return '';
+            for (i = 1; i < raw.length; i++) {
+                c = raw.charAt(i).toLowerCase();
+                if ((c < '0' || c > '9') && (c < 'a' || c > 'f')) return '';
+            }
+            return raw;
+        }
+
+        function schediQrModuleColor(tenant) {
+            var raw = schediQrHex(tenant && (tenant.brandColor || tenant.color || tenant.accentColor));
+            return raw || '#000000';
+        }
+
+        function schediQrSubtitle(tenant) {
+            return String((tenant && (tenant.tagline || tenant.businessType || tenant.industry)) || '').trim().toUpperCase();
+        }
+
+        function schediQrLogoUrl(tenant) {
+            var raw = String((tenant && (tenant.logoUrl || tenant.logo)) || '').trim();
+            if (!raw || raw.length > 500) return '';
+            if (raw.indexOf('https://') === 0 || raw.indexOf('data:image/') === 0) return raw;
+            return '';
+        }
+
+        function schediQrFonts() {
+            var fonts = document.fonts;
+            if (!fonts || !fonts.load) return Promise.resolve();
+            return fonts.load('800 96px Inter').then(function () {
+                return fonts.load('600 38px Inter');
+            }).then(function () {
+                return fonts.load('500 30px Inter');
+            }).then(function () {
+                return fonts.ready;
+            }).catch(function () { return null; });
+        }
+
+        function schediQrLoadImage(url) {
+            return new Promise(function (resolve) {
+                var img;
+                if (!url) { resolve(null); return; }
+                img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onload = function () { resolve(img.naturalWidth ? img : null); };
+                img.onerror = function () { resolve(null); };
+                img.src = url;
+            });
+        }
+
+        function schediQrFitFont(text, weight, start, limit) {
+            var ctx = document.createElement('canvas').getContext('2d');
+            var size = start;
+            ctx.font = weight + ' ' + size + 'px Inter, sans-serif';
+            while (size > 18 && ctx.measureText(text || ' ').width > limit) {
+                size -= 2;
+                ctx.font = weight + ' ' + size + 'px Inter, sans-serif';
+            }
+            return size;
+        }
+
+        function schediQrRound(ctx, x, y, w, h, radius) {
+            var r = Math.max(0, radius);
+            ctx.beginPath();
+            if (ctx.roundRect) {
+                ctx.roundRect(x, y, w, h, r);
+                return;
+            }
+            ctx.moveTo(x + r, y);
+            ctx.arcTo(x + w, y, x + w, y + h, r);
+            ctx.arcTo(x + w, y + h, x, y + h, r);
+            ctx.arcTo(x, y + h, x, y, r);
+            ctx.arcTo(x, y, x + w, y, r);
+            ctx.closePath();
+        }
+
+        function schediQrDrawIcon(ctx, cx, cy, size, color) {
+            var left = cx - size / 2;
+            var top = cy - size / 2;
+            ctx.save();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = Math.max(4, size * 0.08);
+            ctx.lineJoin = 'round';
+            ctx.lineCap = 'round';
+            schediQrRound(ctx, left + size * 0.12, top + size * 0.22, size * 0.76, size * 0.66, size * 0.08);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(left + size * 0.32, top + size * 0.12);
+            ctx.lineTo(left + size * 0.32, top + size * 0.34);
+            ctx.moveTo(left + size * 0.68, top + size * 0.12);
+            ctx.lineTo(left + size * 0.68, top + size * 0.34);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function schediQrDrawCard(canvas, opts) {
+            var pixels = schediQrCardPixels(opts.url, opts.color);
+            var name = String(opts.name || '').trim();
+            var subtitle = String(opts.subtitle || '').trim();
+            var color = opts.color || '#000000';
+            var logo = opts.logo;
+            var initials = String(opts.initials || '').trim();
+            var Q;
+            var W;
+            var topH = 0;
+            var nameSize = 96;
+            var subSize = 38;
+            var logoBox = null;
+            var fit;
+            var H;
+            var ctx;
+            var qrX = 80;
+            var qrY;
+            var cx;
+            var cy;
+            var r;
+            var inner;
+            var fontPx;
+            if (!pixels || !canvas) return false;
+            Q = pixels.width;
+            W = Q + 160;
+            if (logo && logo.naturalWidth && logo.naturalHeight) {
+                fit = Math.min((W * 0.62) / logo.naturalWidth, 340 / logo.naturalHeight);
+                if (!isFinite(fit) || fit <= 0) fit = 1;
+                logoBox = { w: logo.naturalWidth * fit, h: logo.naturalHeight * fit };
+                topH = logoBox.h;
+            } else {
+                if (name) {
+                    nameSize = schediQrFitFont(name, '800', 96, W - 200);
+                    topH = nameSize;
+                }
+                if (subtitle) {
+                    subSize = schediQrFitFont(subtitle, '600', 38, W - 200);
+                    topH += (name ? 16 : 0) + subSize;
                 }
             }
+            H = Math.round(60 + topH + 50 + Q + 260);
+            canvas.width = W;
+            canvas.height = H;
+            ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, W, H);
+            qrY = Math.round(60 + topH + 50);
+            ctx.putImageData(new ImageData(pixels.data, pixels.width, pixels.height), qrX, qrY);
+            cx = qrX + Q / 2;
+            cy = qrY + Q / 2;
+            r = 0.115 * Q;
+            inner = 1.6 * r;
+            ctx.save();
+            schediQrRound(ctx, cx - inner / 2, cy - inner / 2, inner, inner, inner * 0.18);
+            ctx.clip();
+            if (logoBox) {
+                fit = Math.min(inner / logo.naturalWidth, inner / logo.naturalHeight);
+                ctx.drawImage(logo, cx - (logo.naturalWidth * fit) / 2, cy - (logo.naturalHeight * fit) / 2, logo.naturalWidth * fit, logo.naturalHeight * fit);
+            } else if (initials) {
+                fontPx = Math.floor(inner * 0.46);
+                ctx.fillStyle = color;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.font = '800 ' + fontPx + 'px Inter, sans-serif';
+                while (fontPx > 16 && ctx.measureText(initials).width > inner * 0.86) {
+                    fontPx -= 2;
+                    ctx.font = '800 ' + fontPx + 'px Inter, sans-serif';
+                }
+                ctx.fillText(initials, cx, cy + fontPx * 0.04);
+            } else {
+                schediQrDrawIcon(ctx, cx, cy, inner * 0.72, color);
+            }
+            ctx.restore();
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            if (logoBox) {
+                ctx.drawImage(logo, (W - logoBox.w) / 2, 60, logoBox.w, logoBox.h);
+            } else if (name || subtitle) {
+                if (name) {
+                    ctx.fillStyle = color;
+                    ctx.font = '800 ' + nameSize + 'px Inter, sans-serif';
+                    ctx.fillText(name, W / 2, 60);
+                }
+                if (subtitle) {
+                    ctx.fillStyle = '#444444';
+                    ctx.font = '600 ' + subSize + 'px Inter, sans-serif';
+                    ctx.fillText(subtitle, W / 2, 60 + (name ? nameSize + 16 : 0));
+                }
+            }
+            ctx.fillStyle = color;
+            ctx.font = '800 96px Inter, sans-serif';
+            ctx.fillText('Schedi Me', W / 2, qrY + Q + 40);
+            ctx.fillStyle = '#444444';
+            ctx.font = '500 30px Inter, sans-serif';
+            ctx.fillText(opts.caption || '', W / 2, qrY + Q + 170);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 6;
+            schediQrRound(ctx, 23, 23, W - 46, H - 46, 37);
+            ctx.stroke();
             return true;
         }
 
@@ -8861,26 +9157,46 @@ function schediQrModules(text) {
 
         window.schediQrGenerate = function () {
             var tenant = typeof getTenant === 'function' ? getTenant() : null;
-            var url = tenant ? getTenantPublicBookingUrl(tenant) : '';
+            var slug = tenant ? getTenantPublicBookingSlug(tenant) : '';
+            var url = slug ? ('https://schedi.app/' + slug + '/') : '';
             var canvas = document.createElement('canvas');
+            var name = String((tenant && tenant.name) || '').trim();
             if (!url) {
                 showToast('No public booking URL available yet.', 'error');
                 return;
             }
-            if (!schediQrDraw(canvas, url)) {
-                showToast('That booking link is too long to draw here. Upload a QR image instead.', 'error');
-                return;
-            }
-            canvas.toBlob(function (blob) {
-                if (!blob) {
-                    showToast('Could not draw that QR code.', 'error');
+            Promise.all([schediQrFonts(), schediQrLoadImage(schediQrLogoUrl(tenant))]).then(function (ready) {
+                var ok = schediQrDrawCard(canvas, {
+                    url: url,
+                    name: name,
+                    subtitle: schediQrSubtitle(tenant),
+                    color: schediQrModuleColor(tenant),
+                    logo: ready[1],
+                    initials: name ? schediDashInitials(name) : '',
+                    caption: 'schedi.app/' + slug
+                });
+                if (!ok) {
+                    showToast('That booking link is too long to draw here. Upload a QR image instead.', 'error');
                     return;
                 }
-                schediQrRevoke();
-                schediQrBlobUrl = URL.createObjectURL(blob);
-                schediQrPending = { blob: blob, type: 'image/png' };
-                schediQrShowFilled(schediQrBlobUrl, false);
-            }, 'image/png');
+                canvas.toBlob(function (blob) {
+                    if (!blob) {
+                        showToast('Could not draw that QR code.', 'error');
+                        return;
+                    }
+                    if (blob.size > 2 * 1024 * 1024) {
+                        showToast('That file is over 2 MB. Use a smaller QR image.', 'error');
+                        return;
+                    }
+                    schediQrRevoke();
+                    schediQrBlobUrl = URL.createObjectURL(blob);
+                    schediQrPending = { blob: blob, type: 'image/png' };
+                    schediQrShowFilled(schediQrBlobUrl, false);
+                    if (window.__SCHEDI_DEMO) showToast('Not saved in this demo. The preview stays on this screen only.', 'info');
+                }, 'image/png');
+            }).catch(function () {
+                showToast('Could not draw that QR code.', 'error');
+            });
         };
 
         window.schediQrSave = async function () {
@@ -8966,7 +9282,7 @@ function schediQrModules(text) {
                 return;
             }
             safe = src.replace(/"/g, '');
-            page.document.write('<!DOCTYPE html><title>Booking QR code</title><style>body{margin:0;display:flex;min-height:100vh;align-items:center;justify-content:center;background:#fff}img{width:320px;height:auto}</style><img alt="Booking QR code" src="' + safe + '">');
+            page.document.write('<!DOCTYPE html><title>Booking QR code</title><style>body{margin:0;display:flex;min-height:100vh;align-items:center;justify-content:center;background:#fff}img{width:480px;max-width:100%;height:auto}</style><img alt="Booking QR code" src="' + safe + '">');
             page.document.close();
             pic = page.document.querySelector('img');
             if (pic) pic.onload = function () { page.focus(); page.print(); };

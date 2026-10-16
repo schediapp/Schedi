@@ -1,4 +1,4 @@
-// Client-side QR for a booking link. Byte mode, error correction M, versions 1–10.
+// Client-side QR for a booking link. Byte mode, error correction M or H, versions 1–10.
 // No package: the portal inlines this file. Dark modules are 1 in row-major order.
 
 var QR_EXP = new Uint8Array(512);
@@ -68,6 +68,20 @@ function qrRs(data, ecLen) {
 var QR_CODEWORDS = [0, 26, 44, 70, 100, 134, 172, 196, 242, 292, 346];
 var QR_EC_BLOCKS_M = [0, 1, 1, 1, 2, 2, 4, 4, 4, 5, 5];
 var QR_EC_WORDS_M = [0, 10, 16, 26, 36, 48, 64, 72, 88, 110, 130];
+var QR_EC_BLOCKS_H = [0, 1, 1, 2, 4, 4, 4, 5, 6, 8, 8];
+var QR_EC_WORDS_H = [0, 17, 28, 44, 64, 88, 112, 130, 156, 192, 224];
+
+function qrEcc(level) {
+  return level === 'H' ? 'H' : 'M';
+}
+
+function qrEcBlocks(version, level) {
+  return qrEcc(level) === 'H' ? QR_EC_BLOCKS_H[version] : QR_EC_BLOCKS_M[version];
+}
+
+function qrEcWords(version, level) {
+  return qrEcc(level) === 'H' ? QR_EC_WORDS_H[version] : QR_EC_WORDS_M[version];
+}
 
 function qrBitLen(n) {
   var bits = 0;
@@ -78,8 +92,8 @@ function qrBitLen(n) {
   return bits;
 }
 
-function qrFormatBits(mask) {
-  var data = mask;
+function qrFormatBits(mask, level) {
+  var data = (qrEcc(level) === 'H' ? 2 : 0) * 8 + (mask & 7);
   var d = data << 10;
   var g = 0x537;
   var gBits = 11;
@@ -103,13 +117,13 @@ function qrBytes(text) {
   return out;
 }
 
-function qrVersionFor(len) {
+function qrVersionFor(len, level) {
   var version;
   var dataWords;
   var countBits;
   var usable;
   for (version = 1; version <= 10; version++) {
-    dataWords = QR_CODEWORDS[version] - QR_EC_WORDS_M[version];
+    dataWords = QR_CODEWORDS[version] - qrEcWords(version, level);
     countBits = version < 10 ? 8 : 16;
     usable = dataWords * 8 - 4 - countBits;
     if (Math.floor(usable / 8) >= len) return version;
@@ -122,9 +136,9 @@ function qrPush(bits, value, length) {
   for (i = length - 1; i >= 0; i--) bits.push((value >>> i) & 1);
 }
 
-function qrDataCodewords(bytes, version) {
+function qrDataCodewords(bytes, version, level) {
   var bits = [];
-  var dataWords = QR_CODEWORDS[version] - QR_EC_WORDS_M[version];
+  var dataWords = QR_CODEWORDS[version] - qrEcWords(version, level);
   var countBits = version < 10 ? 8 : 16;
   var i;
   var byte = 0;
@@ -153,11 +167,11 @@ function qrDataCodewords(bytes, version) {
   return out;
 }
 
-function qrInterleave(codewords, version) {
+function qrInterleave(codewords, version, level) {
   var total = QR_CODEWORDS[version];
-  var ecTotal = QR_EC_WORDS_M[version];
+  var ecTotal = qrEcWords(version, level);
   var dataTotal = total - ecTotal;
-  var blocks = QR_EC_BLOCKS_M[version];
+  var blocks = qrEcBlocks(version, level);
   var group2 = total % blocks;
   var group1 = blocks - group2;
   var data1 = Math.floor(dataTotal / blocks);
@@ -283,9 +297,10 @@ function qrPenalty(dark, size) {
   return points + k * 10;
 }
 
-function schediQrModules(text) {
+function schediQrModules(text, level) {
+  var ecc = qrEcc(level);
   var bytes = qrBytes(text);
-  var version = qrVersionFor(bytes.length);
+  var version = qrVersionFor(bytes.length, ecc);
   var size;
   var dark;
   var reserved;
@@ -310,7 +325,7 @@ function schediQrModules(text) {
     dark[rr * size + cc] = value ? 1 : 0;
     if (lock) reserved[rr * size + cc] = 1;
   }
-  if (!version || bytes.length > 213) return null;
+  if (!version || (ecc === 'M' && bytes.length > 213)) return null;
   size = version * 4 + 17;
   dark = new Uint8Array(size * size);
   reserved = new Uint8Array(size * size);
@@ -335,7 +350,7 @@ function schediQrModules(text) {
     }
   }
   function paintFormat(mask) {
-    var format = qrFormatBits(mask);
+    var format = qrFormatBits(mask, ecc);
     var n;
     var on;
     for (n = 0; n < 15; n++) {
@@ -360,8 +375,8 @@ function schediQrModules(text) {
       set(col, row, mod, 1);
     }
   }
-  codewords = qrDataCodewords(bytes, version);
-  data = qrInterleave(codewords, version);
+  codewords = qrDataCodewords(bytes, version, ecc);
+  data = qrInterleave(codewords, version, ecc);
   row = size - 1;
   c = -1;
   i = 0;
@@ -416,7 +431,112 @@ function schediQrModules(text) {
     }
   }
   paintFormat(best);
-  return { size: size, dark: dark, version: version, mask: best };
+  return { size: size, dark: dark, version: version, mask: best, level: ecc };
 }
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { schediQrModules: schediQrModules };
+function qrHexByte(pair) {
+  var h = '0123456789abcdef';
+  var a = h.indexOf(String(pair || '').charAt(0).toLowerCase());
+  var b = h.indexOf(String(pair || '').charAt(1).toLowerCase());
+  if (a < 0 || b < 0) return -1;
+  return a * 16 + b;
+}
+
+function qrRgb(color) {
+  var raw = String(color || '');
+  var r = 0;
+  var g = 0;
+  var b = 0;
+  if (raw.charAt(0) !== '#') return [0, 0, 0];
+  if (raw.length === 4) {
+    r = qrHexByte(raw.charAt(1) + raw.charAt(1));
+    g = qrHexByte(raw.charAt(2) + raw.charAt(2));
+    b = qrHexByte(raw.charAt(3) + raw.charAt(3));
+  } else if (raw.length === 7) {
+    r = qrHexByte(raw.slice(1, 3));
+    g = qrHexByte(raw.slice(3, 5));
+    b = qrHexByte(raw.slice(5, 7));
+  } else return [0, 0, 0];
+  if (r < 0 || g < 0 || b < 0) return [0, 0, 0];
+  return [r, g, b];
+}
+
+function qrInsideRound(px, py, left, top, side, radius) {
+  var dx = px - left;
+  var dy = py - top;
+  var inset;
+  var ox;
+  var oy;
+  if (dx < 0 || dy < 0 || dx > side || dy > side) return false;
+  inset = side / 2 - radius;
+  ox = Math.abs(dx - side / 2) - inset;
+  oy = Math.abs(dy - side / 2) - inset;
+  if (ox <= 0 || oy <= 0) return true;
+  return ox * ox + oy * oy <= radius * radius;
+}
+
+function schediQrCardPixels(text, color) {
+  var qr = schediQrModules(text, 'H');
+  var quiet = 2;
+  var scale = 1;
+  var count;
+  var Q;
+  var data;
+  var rgb;
+  var x;
+  var y;
+  var col;
+  var row;
+  var on;
+  var half;
+  var side;
+  var radius;
+  var left;
+  var innerSide;
+  var innerRadius;
+  var innerLeft;
+  var p;
+  if (!qr) return null;
+  count = qr.size + quiet * 2;
+  while (count * scale + 160 < 1000) scale += 1;
+  Q = count * scale;
+  data = new Uint8ClampedArray(Q * Q * 4);
+  rgb = qrRgb(color || '#000000');
+  for (y = 0; y < Q; y++) {
+    row = Math.floor(y / scale) - quiet;
+    for (x = 0; x < Q; x++) {
+      col = Math.floor(x / scale) - quiet;
+      on = col >= 0 && row >= 0 && col < qr.size && row < qr.size && qr.dark[row * qr.size + col] === 1;
+      p = (y * Q + x) * 4;
+      data[p] = on ? rgb[0] : 255;
+      data[p + 1] = on ? rgb[1] : 255;
+      data[p + 2] = on ? rgb[2] : 255;
+      data[p + 3] = 255;
+    }
+  }
+  half = 0.115 * Q;
+  side = half * 2;
+  radius = 0.3 * half;
+  left = (Q - side) / 2;
+  innerSide = side - 16;
+  innerRadius = radius > 8 ? radius - 8 : 0;
+  innerLeft = left + 8;
+  for (y = 0; y < Q; y++) {
+    for (x = 0; x < Q; x++) {
+      if (!qrInsideRound(x + 0.5, y + 0.5, left, left, side, radius)) continue;
+      p = (y * Q + x) * 4;
+      if (innerSide > 0 && qrInsideRound(x + 0.5, y + 0.5, innerLeft, innerLeft, innerSide, innerRadius)) {
+        data[p] = 255;
+        data[p + 1] = 255;
+        data[p + 2] = 255;
+      } else {
+        data[p] = rgb[0];
+        data[p + 1] = rgb[1];
+        data[p + 2] = rgb[2];
+      }
+    }
+  }
+  return { width: Q, height: Q, data: data, scale: scale, quiet: quiet, version: qr.version, mask: qr.mask };
+}
+
+if (typeof module !== 'undefined' && module.exports) module.exports = { schediQrModules: schediQrModules, schediQrCardPixels: schediQrCardPixels };
