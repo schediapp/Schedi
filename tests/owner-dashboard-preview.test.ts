@@ -9,7 +9,7 @@ import { renderRobots, renderSitemap } from "../worker/render";
 
 const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const root = new URL("..", import.meta.url).pathname;
-const BOOKING_TEMPLATE_SHA = "e07eb14f8d9174a9ceb5788fce33e426c30df12e0ef9361f3cc9640313bba586";
+const BOOKING_TEMPLATE_SHA = "4a9d977367ad21a56ddd5b455892539ecba5e513346b95da068992caa5153659";
 const SHELL_STYLE_SHA = "7c1f1bbb7af97aa8c1e95ab8de650f6493512361a409fd083bcbe3a2c04332d6";
 
 function bookingTemplate(source: string): string {
@@ -497,6 +497,24 @@ describe("owner dashboard preview", () => {
     expect(phone).toContain("#tenantPortalSection.schedi-newdash .sd-btn.sd-add-desktop { display: none; }");
     expect(phone).toContain("#tenantPortalSection.schedi-newdash .sd-btn.sd-add-phone { display: flex; width: 100%; justify-content: center; margin: 0; }");
     expect(css.slice(0, css.indexOf("@media (max-width: 859px)"))).not.toContain(".sd-add-desktop { display: none");
+  });
+
+  it("puts client actions beside the details and uses the business mark on every avatar", () => {
+    const row = html.slice(html.indexOf("sd-client-copy"), html.indexOf("function clientTagsHtml"));
+    expect(row.indexOf("sd-client-copy")).toBeLessThan(row.indexOf("sd-client-contact"));
+    expect(row.indexOf("sd-client-contact")).toBeLessThan(row.indexOf("sd-client-actions"));
+    const css = dashCss(html);
+    const phone = css.slice(css.indexOf("@media (max-width: 859px)"));
+    expect(phone).toContain("#tenantPortalSection.schedi-newdash .sd-client-actions button { flex: 0 0 auto; }");
+    expect(phone).not.toContain(".sd-client-actions { width: 100%; }");
+    expect(css).toContain("@media (min-width: 860px)");
+    expect(css).toContain("#tenantPortalSection.schedi-newdash #schediDashTop .sd-theme { display: none; }");
+    expect(html).toContain('id="schediDashUserLogoPhone"');
+    const paint = extractFunction(html, "schediDashPaint");
+    expect(paint).toContain("schediDashInitials(bizName)");
+    expect(paint).not.toContain("schediDashInitials(who)");
+    expect(paint).toContain("schediDashUserLogoPhone");
+    expect(paint).toContain("schediDashApplyLogo(phoneLogo, phoneInitials)");
   });
 });
 

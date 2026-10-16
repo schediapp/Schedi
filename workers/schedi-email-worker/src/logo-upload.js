@@ -100,7 +100,12 @@ export async function handleLogoUpload(request, env, origin, deps) {
     payload = new TextEncoder().encode(cleaned.svg);
     contentType = 'image/svg+xml; charset=utf-8';
   }
-  const serviceId = safeServiceId(body && body.serviceId);
+  const purpose = body && body.purpose === 'qr' ? 'qr' : '';
+  if (body && body.purpose && purpose !== 'qr') return respond({ ok: false, error: 'bad_type' }, 400, origin);
+  if (purpose === 'qr' && kind !== 'image/png' && kind !== 'image/jpeg' && kind !== 'image/svg+xml') {
+    return respond({ ok: false, error: 'bad_type' }, 400, origin);
+  }
+  const serviceId = purpose === 'qr' ? '' : safeServiceId(body && body.serviceId);
   if (serviceId === null) return respond({ ok: false, error: 'bad_service' }, 400, origin);
   const bucket = env && env.LOGO_BUCKET;
   const base = String(env && env.LOGO_PUBLIC_BASE || '').replace(/\/+$/, '');
@@ -108,14 +113,18 @@ export async function handleLogoUpload(request, env, origin, deps) {
     return respond({ ok: false, error: 'logo_storage_unconfigured' }, 503, origin);
   }
   const ext = EXT[kind];
-  const key = serviceId
+  const key = purpose === 'qr'
+    ? 'logos/' + tenantId + '/qr.' + ext
+    : serviceId
     ? 'logos/' + tenantId + '/services/' + serviceId + '.' + ext
     : 'logos/' + tenantId + '.' + ext;
   await bucket.put(key, payload, {
     httpMetadata: { contentType: contentType, cacheControl: 'public, max-age=86400' },
   });
   if (typeof bucket.delete === 'function') {
-    const stem = serviceId
+    const stem = purpose === 'qr'
+      ? 'logos/' + tenantId + '/qr.'
+      : serviceId
       ? 'logos/' + tenantId + '/services/' + serviceId + '.'
       : 'logos/' + tenantId + '.';
     for (const other of Object.values(EXT)) {

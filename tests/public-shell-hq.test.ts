@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { runInNewContext } from "node:vm";
 import { describe, expect, it } from "vitest";
 import { handleRequest, type SchediEnv } from "../worker/handler";
 import { HQ_PUBLIC_MARKERS, shellHasHqMarkers } from "../worker/public-shell";
@@ -64,8 +65,12 @@ describe("public booking HTML", () => {
     const hqCss = hqHtml.slice(hqHtml.indexOf("SCHEDI_HQ_START"), hqHtml.indexOf("SCHEDI_HQ_END"));
     expect(hqCss).toMatch(/\[data-hq-collapse-head\]\s*\{[^}]*flex-direction:\s*row/);
     expect(hqCss).toMatch(/\.hq-collapse-btn\s*\{[^}]*min-height:\s*44px/);
-    expect(hqHtml.match(/data-hq-collapse-head>/g) || []).toHaveLength(2);
+    expect(hqHtml.match(/data-hq-collapse-head>/g) || []).toHaveLength(3);
+    expect(hqHtml).toContain('data-hq-collapse="directory"');
     expect(hqHtml).not.toContain("flex-col md:flex-row md:items-center justify-between gap-4\" data-hq-collapse-head");
+    expect(hqHtml.indexOf('id="agencyBilling"')).toBeLessThan(hqHtml.indexOf('id="agencyDirectory"'));
+    expect(hqHtml).toContain("function hqPrepareNewDirectory()");
+    expect(hqHtml).toContain("html.schedi-newhq #agencyDirectory { order: 2; }");
     expect(hqHtml).toContain('id="hqGlanceCard"');
     expect(hqHtml).toContain(">At a glance<");
     expect(hqHtml).toContain('id="hqGlanceSummary"');
@@ -75,6 +80,10 @@ describe("public booking HTML", () => {
     expect(hqHtml).toContain('id="statAgencyMRR"');
     expect(hqHtml).toContain('id="statTotalBookings"');
     expect(hqHtml).toContain('id="statActivePages"');
+    expect(hqHtml).toContain("function hqInitScrollSpy()");
+    expect(hqHtml).toContain("new IntersectionObserver");
+    expect(hqHtml).toContain("#agencyDirectory [data-hq-collapse-tools]");
+    expect(hqHtml).toContain("#agencyDirectory #agencySearchInput");
     expect(hqCss).toContain(".hq-glance-body[hidden]");
     expect(hqCss).toContain(".hq-glance-summary[hidden]");
     expect(hqCss).toMatch(/@media \(min-width:\s*860px\)/);
@@ -146,6 +155,170 @@ describe("HQ route", () => {
       ctx(),
     );
     assertNoHq(await response.text(), "no kv");
+  });
+
+  it("serves the HQ shell for demo preview without a session and still asks for sign-in otherwise", async () => {
+    const demo = await handleRequest(new Request("https://schedi-dashboard-preview.axl199.workers.dev/hq?demo=1&newhq=1"), env(hqHtml), ctx());
+    expect(demo.status).toBe(200);
+    const html = await demo.text();
+    expect(html).toContain('id="agencyHqSection"');
+    expect(html).toContain("window.__SCHEDI_HQ_DEMO");
+    expect(html).toContain("schedi-newhq");
+    expect(html).not.toContain("schediNewHq");
+    expect(html).toContain("Agency HQ Master Login");
+    const plain = await handleRequest(new Request("https://schedi.app/hq?demo=0"), env(hqHtml), ctx());
+    assertNoHq(await plain.text(), "demo off");
+    const production = await handleRequest(new Request("https://schedi.app/hq?demo=1"), env(hqHtml), ctx());
+    assertNoHq(await production.text(), "production demo");
+  });
+
+  it("blocks live calls in HQ demo and keeps the new frame off unless the query asks for it", async () => {
+    const boot = hqHtml.slice(hqHtml.indexOf("<script>"), hqHtml.indexOf("</script>") + 9);
+    expect(boot).not.toContain("localStorage");
+    const calls: string[] = [];
+    const classes: string[] = [];
+    const context = {
+      window: {} as Record<string, unknown>,
+      location: { search: "?newhq=1&demo=1", hostname: "schedi-dashboard-preview.axl199.workers.dev" },
+      URLSearchParams,
+      document: { documentElement: { classList: { add(name: string) { classes.push(name); } } } },
+      navigator: { sendBeacon(url: string) { calls.push("BEACON " + url); return true; } },
+      Response,
+      Promise,
+      fetch: async (input: unknown) => {
+        calls.push("FETCH " + String(input));
+        return new Response("upstream");
+      },
+    };
+    context.window = context as unknown as Record<string, unknown>;
+    runInNewContext(boot.replace(/^<script>/, "").replace(/<\/script>$/, ""), context, { filename: "hq-demo-boot.js" });
+    const guarded = context.window.fetch as (input: string, init?: { method?: string }) => Promise<Response>;
+    const blocked = await guarded("https://schedi.app/api/ops-snapshot", { method: "POST" });
+    expect(blocked.status).toBe(403);
+    expect(calls).toEqual([]);
+    expect((context.window.__schediHqDemoBlocked as { url: string }[])[0].url).toContain("/api/ops-snapshot");
+    expect(classes).toEqual(["schedi-newhq", "schedi-hq-demo"]);
+    const beacon = context.navigator.sendBeacon as (url: string) => boolean;
+    expect(beacon("https://schedi.app/api/profile")).toBe(true);
+    expect(calls).toEqual([]);
+
+    const off: string[] = [];
+    const quiet = {
+      window: {} as Record<string, unknown>,
+      location: { search: "?demo=1", hostname: "127.0.0.1" },
+      URLSearchParams,
+      document: { documentElement: { classList: { add(name: string) { off.push(name); } } } },
+      navigator: {},
+      Response,
+      Promise,
+    };
+    quiet.window = quiet as unknown as Record<string, unknown>;
+    runInNewContext(boot.replace(/^<script>/, "").replace(/<\/script>$/, ""), quiet, { filename: "hq-demo-off.js" });
+    expect(off).toEqual(["schedi-hq-demo"]);
+    expect(quiet.window.__SCHEDI_HQ_DEMO).toBe(true);
+
+    const live: string[] = [];
+    const production = {
+      window: {} as Record<string, unknown>,
+      location: { search: "?newhq=1&demo=1", hostname: "schedi.app" },
+      URLSearchParams,
+      document: { documentElement: { classList: { add(name: string) { live.push(name); } } } },
+      navigator: {},
+      Response,
+      Promise,
+      fetch: async () => new Response("upstream"),
+    };
+    production.window = production as unknown as Record<string, unknown>;
+    runInNewContext(boot.replace(/^<script>/, "").replace(/<\/script>$/, ""), production, { filename: "hq-demo-live.js" });
+    expect(live).toEqual(["schedi-newhq"]);
+    expect(production.window.__SCHEDI_HQ_DEMO).toBeUndefined();
+    expect(production.window.fetch).toBe(production.fetch);
+  });
+
+  it("opens the new owner dashboard from Manage only behind the HQ preview flags", () => {
+    function extractFunction(source: string, name: string) {
+      const start = source.indexOf("function " + name);
+      const brace = source.indexOf("{", start);
+      let depth = 0;
+      for (let i = brace; i < source.length; i++) {
+        if (source[i] === "{") depth += 1;
+        else if (source[i] === "}") {
+          depth -= 1;
+          if (depth === 0) return source.slice(start, i + 1);
+        }
+      }
+      throw new Error("missing " + name);
+    }
+    const fn = extractFunction(hqHtml, "hqManagedPortalUrl");
+    function portalUrl(input: { demo?: boolean; framed?: boolean; search?: string; tenant: { id?: string; slug?: string } | null }) {
+      return runInNewContext(`${fn}\nhqManagedPortalUrl(tenant);`, {
+        window: { __SCHEDI_HQ_DEMO: input.demo === true, location: { search: input.search || "" } },
+        document: { documentElement: { classList: { contains: (name: string) => input.framed === true && name === "schedi-newhq" } } },
+        URLSearchParams,
+        tenant: input.tenant,
+      }) as string;
+    }
+    const harbor = { id: "harbor-demo", slug: "harbor-demo" };
+    expect(portalUrl({ tenant: harbor, search: "?booking=HB-1" })).toBe("");
+    expect(portalUrl({
+      demo: true,
+      framed: true,
+      search: "?newhq=1&demo=1&booking=HB-1006&date=2026-10-16&biz=somewhere&from=hq",
+      tenant: harbor,
+    })).toBe("/portal-preview?booking=HB-1006&date=2026-10-16&biz=harbor-demo&from=hq&tenant=harbor-demo&demo=1");
+    expect(portalUrl({ demo: true, search: "?demo=1", tenant: { id: "northwind-demo", slug: "northwind-clinic" } }))
+      .toBe("/portal-preview?biz=northwind-clinic&tenant=northwind-demo&demo=1");
+    expect(portalUrl({
+      framed: true,
+      search: "?newhq=1&demo=1&booking=BK-9&appt=BK-9&ref=mail",
+      tenant: { id: "lumen-demo", slug: "lumen-studio" },
+    })).toBe("/?booking=BK-9&appt=BK-9&ref=mail&biz=lumen-studio&tenant=lumen-demo&newdash=1");
+    const ownerStart = hqHtml.indexOf("window.loginAsTenantOwner = function");
+    const owner = hqHtml.slice(ownerStart, hqHtml.indexOf("// SCHEDI_HQ_END", ownerStart));
+    expect(owner.indexOf("hqManagedPortalUrl")).toBeGreaterThan(-1);
+    expect(owner.indexOf("hqManagedPortalUrl")).toBeLessThan(owner.indexOf("switchPlatformMode('tenant')"));
+    expect(owner).toContain("if (managedTenant) managedUrl = hqManagedPortalUrl(managedTenant)");
+    expect(owner).toContain("window.location.assign(managedUrl)");
+    expect(owner).toContain("ownerSelfSession = false");
+    expect(hqHtml).toContain("window.loginAsTenantOwner(tenantId);");
+    expect(hqHtml.match(/onclick="loginAsTenantOwner\(/g)).toHaveLength(2);
+    expect(hqHtml.match(/>Manage<\/button>/g)).toHaveLength(2);
+  });
+
+  it("uses Harbor's portal sample, and the other HQ demo profiles when Manage asks for them", () => {
+    function extractFunction(source: string, name: string) {
+      const start = source.indexOf("function " + name);
+      const brace = source.indexOf("{", start);
+      let depth = 0;
+      for (let i = brace; i < source.length; i++) {
+        if (source[i] === "{") depth += 1;
+        else if (source[i] === "}") {
+          depth -= 1;
+          if (depth === 0) return source.slice(start, i + 1);
+        }
+      }
+      throw new Error("missing " + name);
+    }
+    const fn = `${extractFunction(publicHtml, "schediApplyDemoBiz")}\nschediApplyDemoBiz(tenant);`;
+    function apply(search: string) {
+      const tenant = { id: "harbor-demo", name: "Harbor Studio", slug: "harbor-demo", appointments: [{ id: "HB-1001" }], services: [{ id: 1 }] };
+      return runInNewContext(fn, {
+        window: { location: { search } },
+        URLSearchParams,
+        tenant,
+      }) as { name: string; slug: string; appointments: unknown[]; services: unknown[] };
+    }
+    expect(apply("").name).toBe("Harbor Studio");
+    expect(apply("?biz=harbor-demo").appointments).toHaveLength(1);
+    const north = apply("?biz=northwind-clinic&tenant=northwind-demo");
+    expect(north).toMatchObject({ name: "Northwind Clinic", slug: "northwind-clinic", appointments: [], services: [] });
+    const lumen = apply("?tenant=lumen-demo");
+    expect(lumen.name).toBe("Lumen Studio");
+    expect(lumen.services).toHaveLength(1);
+    expect(apply("?biz=someone-else").name).toBe("Harbor Studio");
+    const boot = publicHtml.slice(publicHtml.indexOf("function bootSchediDemoPortal"), publicHtml.indexOf("function bootSchediDemoPortal") + 900);
+    expect(boot).toContain("schediApplyDemoBiz(schediBuildDemoTenant())");
+    expect(boot).toContain("tenant.id === 'harbor-demo' ? schediDemoClientRows() : []");
   });
 
   it("does not serve the HQ document as a static HTML file", async () => {

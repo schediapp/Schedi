@@ -545,7 +545,14 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-demo-note { color: #03
 #tenantPortalSection.schedi-newdash .sd-date,
 #tenantPortalSection.schedi-newdash .sd-linkline { margin: 4px 0 0; color: var(--sd-muted); font-size: 13px; }
 #tenantPortalSection.schedi-newdash .sd-linkline { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
-#tenantPortalSection.schedi-newdash .sd-today-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+#tenantPortalSection.schedi-newdash .sd-today-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: stretch; }
+#tenantPortalSection.schedi-newdash .sd-today-actions .sd-share {
+    flex: 1 1 148px;
+    min-width: min(100%, 148px);
+    min-height: 44px;
+    justify-content: center;
+    white-space: nowrap;
+}
 #tenantPortalSection.schedi-newdash .sd-btn {
     display: inline-flex;
     align-items: center;
@@ -620,7 +627,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-square { color: #3
 #tenantPortalSection.schedi-newdash .sd-client-list { display: flex; flex-direction: column; }
 #tenantPortalSection.schedi-newdash .sd-client { display: block; padding: 12px 0; border-top: 1px solid var(--sd-line); }
 #tenantPortalSection.schedi-newdash .sd-client:first-child { border-top: 0; }
-#tenantPortalSection.schedi-newdash .sd-client-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+#tenantPortalSection.schedi-newdash .sd-client-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 8px; }
+#tenantPortalSection.schedi-newdash .sd-client-copy { flex: 1 1 16rem; min-width: 0; }
 #tenantPortalSection.schedi-newdash .sd-client-main { min-width: 0; }
 #tenantPortalSection.schedi-newdash .sd-client-name { font-weight: 800; font-size: 14px; color: var(--sd-text); background: transparent; border: 0; padding: 0; text-align: left; cursor: pointer; }
 #tenantPortalSection.schedi-newdash .sd-client-contact,
@@ -628,7 +636,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-square { color: #3
 #tenantPortalSection.schedi-newdash .sd-client-notes { margin-top: 4px; overflow-wrap: anywhere; }
 #tenantPortalSection.schedi-newdash .sd-client-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
 #tenantPortalSection.schedi-newdash .sd-tag { display: inline-flex; align-items: center; border-radius: 999px; padding: 2px 8px; font-size: 11px; font-weight: 800; color: var(--sd-brand-2); background: rgba(16, 185, 129, 0.14); border: 1px solid rgba(16, 185, 129, 0.35); }
-#tenantPortalSection.schedi-newdash .sd-client-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+#tenantPortalSection.schedi-newdash .sd-client-actions { display: flex; flex: 0 0 auto; flex-wrap: wrap; align-items: center; gap: 6px; }
 #tenantPortalSection.schedi-newdash .sd-client-actions button,
 #tenantPortalSection.schedi-newdash .sd-client-actions-form button { min-height: 36px; border-radius: 12px; padding: 6px 12px; font-weight: 800; font-size: 12px; cursor: pointer; }
 #tenantPortalSection.schedi-newdash .sd-client-edit-btn,
@@ -936,6 +944,37 @@ body.schedi-newdash.sd-client-panel-open { overflow: hidden; }
 #tenantPortalSection.schedi-newdash .sd-help-lead { margin: 4px 10px 8px; color: var(--sd-muted); font-size: 13px; }
 #tenantPortalSection.schedi-newdash .sd-help-lead a { color: var(--sd-brand-2); font-weight: 800; }
 #tenantPortalSection.schedi-newdash .sd-help-card { width: min(880px, 100%); }
+#tenantPortalSection.schedi-newdash .sd-qr-card {
+    width: min(440px, 100%);
+    max-height: min(92vh, 760px);
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+}
+#tenantPortalSection.schedi-newdash .sd-qr-lead,
+#tenantPortalSection.schedi-newdash .sd-qr-caption {
+    margin: 8px 10px;
+    color: var(--sd-muted);
+    font-size: 13px;
+    line-height: 1.45;
+}
+#tenantPortalSection.schedi-newdash .sd-qr-image,
+#tenantPortalSection.schedi-newdash .sd-qr-preview {
+    display: block;
+    width: min(100%, 380px);
+    height: auto;
+    margin: 12px auto;
+    padding: 12px;
+    background: #ffffff;
+    border-radius: 16px;
+    box-sizing: border-box;
+}
+#tenantPortalSection.schedi-newdash .sd-qr-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 8px 10px 4px;
+}
+#tenantPortalSection.schedi-newdash .sd-qr-actions .sd-btn { flex: 1 1 140px; min-height: 44px; justify-content: center; }
 @media (max-width: 859px) {
     #tenantPortalSection.schedi-newdash { padding: 72px 14px 112px; }
     #tenantPortalSection.schedi-newdash #schediDashSidebar { display: none !important; }
@@ -946,9 +985,8 @@ body.schedi-newdash.sd-client-panel-open { overflow: hidden; }
     #tenantPortalSection.schedi-newdash .sd-today-head,
     #tenantPortalSection.schedi-newdash .sd-request { display: flex; flex-wrap: wrap; }
     #tenantPortalSection.schedi-newdash .sd-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; }
-    #tenantPortalSection.schedi-newdash .sd-today-actions,
-    #tenantPortalSection.schedi-newdash .sd-today-actions .sd-btn { width: 100%; }
-    #tenantPortalSection.schedi-newdash .sd-today-actions .sd-btn { justify-content: center; }
+    #tenantPortalSection.schedi-newdash .sd-today-actions { width: 100%; }
+    #tenantPortalSection.schedi-newdash .sd-today-actions .sd-btn.sd-share { width: auto; }
     #tenantPortalSection.schedi-newdash .sd-btn.sd-add-desktop { display: none; }
     #tenantPortalSection.schedi-newdash .sd-btn.sd-add-phone { display: flex; width: 100%; justify-content: center; margin: 0; }
     #tenantPortalSection.schedi-newdash #schediDashTabbar {
@@ -1606,6 +1644,9 @@ body.schedi-newdash .sd-theme {
 }
 #tenantPortalSection.schedi-newdash #schediDashSidebar .sd-theme { margin: 0 0 8px; align-self: flex-start; }
 #tenantPortalSection.schedi-newdash #schediDashMoreSheet .sd-theme { margin: 8px; }
+@media (min-width: 860px) {
+    #tenantPortalSection.schedi-newdash #schediDashTop .sd-theme { display: none; }
+}
 #tenantPortalSection.schedi-newdash .sd-user-phone { display: none; }
 #tenantPortalSection.schedi-newdash .sd-side-foot {
     margin-top: auto;
@@ -2220,8 +2261,9 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
     #tenantPortalSection.schedi-newdash .sd-client-edit input,
     #tenantPortalSection.schedi-newdash .sd-client-edit textarea { min-height: 44px; }
     #tenantPortalSection.schedi-newdash .sd-client-edit textarea { min-height: 88px; }
-    #tenantPortalSection.schedi-newdash .sd-client-actions { width: 100%; }
-    #tenantPortalSection.schedi-newdash .sd-client-actions button { flex: 1 1 8rem; }
+    #tenantPortalSection.schedi-newdash .sd-client-copy { flex-basis: 100%; }
+    #tenantPortalSection.schedi-newdash .sd-client-actions { width: auto; }
+    #tenantPortalSection.schedi-newdash .sd-client-actions button { flex: 0 0 auto; }
     #tenantPortalSection.schedi-newdash .sd-client-name { min-height: 44px; }
     #tenantPortalSection.schedi-newdash .sd-client-panel { top: 0; left: 0; }
     #tenantPortalSection.schedi-newdash .sd-client-panel-backdrop { display: none; }
@@ -2678,6 +2720,36 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
     }
 
 </style>
+<style id="schediNewBookManage">
+body.schedi-newbook { background: #06080d; color: #e7edf5; }
+html.schedi-light body.schedi-newbook { background: #f4f7fb; color: #0f172a; }
+body.schedi-newbook .schedi-manage-card {
+    background: #121826;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    border-radius: 20px;
+    box-shadow: none;
+    backdrop-filter: none;
+    color: #e7edf5;
+}
+html.schedi-light body.schedi-newbook .schedi-manage-card {
+    background: #ffffff;
+    border-color: #d7dee8;
+    color: #0f172a;
+}
+body.schedi-newbook .schedi-manage-card h2 { letter-spacing: -0.03em; font-weight: 800; }
+body.schedi-newbook .schedi-manage-card .schedi-kicker {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #34d399;
+}
+html.schedi-light body.schedi-newbook .schedi-manage-card .schedi-kicker { color: #047857; }
+body.schedi-newbook .schedi-manage-card input,
+body.schedi-newbook .schedi-manage-card button { min-height: 44px; }
+body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; border-radius: 12px; }
+</style>
 <script>
 (function () {
     var path = '';
@@ -2880,6 +2952,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                         </div>
                         <button type="button" class="sd-user sd-user-phone" id="schediDashUserBtnPhone" onclick="schediDashToggleAccount(event)" aria-haspopup="menu" aria-expanded="false" aria-controls="schediDashAccountMenu">
                             <span id="schediDashUserInitialsPhone" class="sd-avatar" aria-hidden="true">S</span>
+                            <img id="schediDashUserLogoPhone" class="sd-avatar-img" alt="" hidden>
                         </button>
                     </header>
                     <p id="schediDemoNote" class="sd-demo-note" hidden>Demo · sample business · nothing is saved or sent</p>
@@ -2892,7 +2965,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                                 <p id="schediTodayLink" class="sd-linkline"></p>
                             </div>
                             <div class="sd-today-actions">
-                                <button type="button" class="sd-btn sd-btn-ghost" onclick="copyTenantPublicBookingLink()"><i class="fa-solid fa-link" aria-hidden="true"></i><span>Copy booking link</span></button>
+                                <button type="button" class="sd-btn sd-btn-ghost sd-share" onclick="copyTenantPublicBookingLink()"><i class="fa-solid fa-link" aria-hidden="true"></i><span>Copy booking link</span></button>
+                                <button type="button" class="sd-btn sd-btn-ghost sd-share" id="schediQrOpenBtn" onclick="schediQrOpen()"><i class="fa-solid fa-qrcode" aria-hidden="true"></i><span>Show QR code</span></button>
                                 <button type="button" class="sd-btn sd-btn-brand sd-add-desktop" data-dash-add-open="1" onclick="schediDashToggleAdd(event)"><i class="fa-solid fa-plus" aria-hidden="true"></i><span>Add appointment</span></button>
                             </div>
                         </div>
@@ -2954,6 +3028,33 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                                 <button type="button" class="sd-theme-opt sd-theme-light" data-theme-toggle="1" onclick="toggleSchediTheme()" title="Switch to light theme" aria-label="Switch to light theme"><i class="fa-solid fa-sun" aria-hidden="true"></i><span>Light</span></button>
                             </div>
                             <button type="button" class="sd-danger" onclick="handleTenantLogout()"><i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i><span>Sign out</span></button>
+                        </div>
+                    </div>
+                    <div id="schediQrModal" class="sd-sheet" hidden onclick="if (event.target === this) schediQrClose()">
+                        <div class="sd-sheet-card sd-qr-card" role="dialog" aria-modal="true" aria-labelledby="schediQrTitle">
+                            <div class="sd-sheet-bar">
+                                <h3 id="schediQrTitle">Booking QR code</h3>
+                                <button type="button" id="schediQrClose" onclick="schediQrClose()" aria-label="Close">Close</button>
+                            </div>
+                            <div id="schediQrSaved" hidden>
+                                <img id="schediQrImage" class="sd-qr-image" alt="QR code for the booking page">
+                                <p id="schediQrCaption" class="sd-qr-caption"></p>
+                                <div class="sd-qr-actions">
+                                    <button type="button" id="schediQrDownload" class="sd-btn sd-btn-ghost" onclick="schediQrDownload()"><i class="fa-solid fa-download" aria-hidden="true"></i><span>Download</span></button>
+                                    <button type="button" id="schediQrPrint" class="sd-btn sd-btn-ghost" onclick="schediQrPrint()"><i class="fa-solid fa-print" aria-hidden="true"></i><span>Print</span></button>
+                                    <button type="button" id="schediQrChange" class="sd-btn sd-btn-ghost" onclick="schediQrReplace()"><i class="fa-solid fa-arrows-rotate" aria-hidden="true"></i><span>Change QR code</span></button>
+                                    <button type="button" id="schediQrSave" class="sd-btn sd-btn-brand" hidden onclick="schediQrSave()"><i class="fa-solid fa-check" aria-hidden="true"></i><span>Save QR code</span></button>
+                                </div>
+                            </div>
+                            <div id="schediQrEmpty">
+                                <p id="schediQrLead" class="sd-qr-lead">No QR code yet. Upload a PNG, JPG, or SVG up to 2 MB, or generate one from your booking link.</p>
+                                <img id="schediQrPreview" class="sd-qr-preview" alt="Preview of the QR code" hidden>
+                                <div class="sd-qr-actions">
+                                    <button type="button" id="schediQrUpload" class="sd-btn sd-btn-brand" onclick="schediQrPick()"><i class="fa-solid fa-upload" aria-hidden="true"></i><span>Upload QR code</span></button>
+                                    <button type="button" id="schediQrGenerate" class="sd-btn sd-btn-ghost" onclick="schediQrGenerate()">Generate one from my booking link</button>
+                                </div>
+                                <input id="schediQrFile" type="file" accept="image/png,image/jpeg,image/svg+xml,.png,.jpg,.jpeg,.svg" hidden onchange="schediQrFileChosen(this)">
+                            </div>
                         </div>
                     </div>
                     <div id="schediDashHelp" class="sd-sheet" hidden>
@@ -3445,12 +3546,25 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                             </div>
                         </div>
 
+                        <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-2">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-3">
+                                    <i class="fa-solid fa-square text-slate-300 text-lg"></i>
+                                    <div>
+                                        <div class="font-bold text-white">Square</div>
+                                        <div id="tenantPaySquareNote" class="text-[11px] text-slate-400">Off. Square stays hidden on the booking page until Schedi turns it on. No Square charge is taken here.</div>
+                                    </div>
+                                </div>
+                                <input type="checkbox" id="tenantPaySquareCheck" class="w-4 h-4 accent-brand-500 rounded cursor-pointer" disabled>
+                            </div>
+                        </div>
+
                         <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center justify-between">
                             <div class="flex items-center space-x-3">
                                 <i class="fa-solid fa-handshake text-amber-400 text-lg"></i>
                                 <div>
                                     <div class="font-bold text-white">Pay at Appointment</div>
-                                    <div class="text-[11px] text-slate-400">Allow in-person payment on arrival</div>
+                                    <div class="text-[11px] text-slate-400">Allow in-person payment on arrival. The public page still says Pay at Appt.</div>
                                 </div>
                             </div>
                             <input type="checkbox" id="tenantPayLaterCheck" class="w-4 h-4 accent-brand-500 rounded cursor-pointer">
@@ -3473,6 +3587,15 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                             <div>
                                 <label id="tenantDepositValueLabel" class="block text-[11px] text-slate-400 mb-1" for="tenantDepositValue">Percent</label>
                                 <input type="number" id="tenantDepositValue" min="0" max="100" step="1" value="0" class="w-full px-3 py-2 rounded-lg glass-input font-mono">
+                            </div>
+                            <div id="tenantDepositMethods" class="space-y-2 pt-2 border-t border-slate-800">
+                                <div class="text-[11px] font-bold text-slate-300">Accept this deposit on</div>
+                                <p class="text-[11px] text-slate-500">Checked methods collect the deposit. Unchecked methods stay available without one. If you have not saved this yet, it starts as the methods you already turned on. Pay at Appt does not take a deposit.</p>
+                                <label class="flex items-center gap-2 text-[11px] text-slate-300"><input type="checkbox" id="tenantDepositMethodCard" class="w-4 h-4 accent-brand-500"> Card</label>
+                                <label class="flex items-center gap-2 text-[11px] text-slate-300"><input type="checkbox" id="tenantDepositMethodCashapp" class="w-4 h-4 accent-brand-500"> Cash App</label>
+                                <label class="flex items-center gap-2 text-[11px] text-slate-300"><input type="checkbox" id="tenantDepositMethodZelle" class="w-4 h-4 accent-brand-500"> Zelle</label>
+                                <label class="flex items-center gap-2 text-[11px] text-slate-300"><input type="checkbox" id="tenantDepositMethodVenmo" class="w-4 h-4 accent-brand-500"> Venmo</label>
+                                <label class="flex items-center gap-2 text-[11px] text-slate-300"><input type="checkbox" id="tenantDepositMethodPaypal" class="w-4 h-4 accent-brand-500"> PayPal</label>
                             </div>
                         </div>
 
@@ -5349,6 +5472,15 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
         window.addEventListener('DOMContentLoaded', function () {
             if (window.__SCHEDI_DEMO) {
                 try { bootSchediDemoPortal(); } catch (errDemo) { console.error(errDemo); }
+                try {
+                    var demoManage = getManageRouteFromPath();
+                    if (demoManage && demoManage.token) {
+                        var demoTenant = findTenantBySlug(demoManage.slug);
+                        var demoAppt = demoTenant && (demoTenant.appointments || []).find(function (a) { return a && a.id === 'HB-1006'; });
+                        if (demoAppt && !demoAppt.manageToken) demoAppt.manageToken = demoManage.token;
+                    }
+                    if (getPublicSlugFromPath() || demoManage) bootPublicOrAgency({ allowNotFound: true });
+                } catch (errDemoPublic) { console.error(errDemoPublic); }
                 return;
             }
             loadState();
@@ -5721,14 +5853,30 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
             return '$' + (Number.isInteger(p) ? String(p) : p.toFixed(2));
         }
 
+        var DEPOSIT_METHOD_KEYS = ['card', 'cashapp', 'zelle', 'venmo', 'paypal'];
+
+        function depositMethodMapFor(tenant) {
+            var stored = tenant && tenant.deposit && tenant.deposit.methods;
+            var explicit = !!(stored && typeof stored === 'object' && !Array.isArray(stored));
+            var pg = (tenant && tenant.paymentGateways) || {};
+            var out = {};
+            DEPOSIT_METHOD_KEYS.forEach(function (key) {
+                var on = pg[key] === true;
+                if (explicit && typeof stored[key] === 'boolean') out[key] = stored[key] === true && on;
+                else out[key] = on;
+            });
+            return out;
+        }
+
         function readDepositSettings(tenant) {
             var d = tenant && tenant.deposit;
-            if (!d || typeof d !== 'object') return { enabled: false, type: 'percent', percent: 0, amount: 0 };
+            if (!d || typeof d !== 'object') d = {};
             return {
                 enabled: !!d.enabled,
                 type: d.type === 'fixed' ? 'fixed' : 'percent',
                 percent: Math.min(100, Math.max(0, Number(d.percent) || 0)),
-                amount: Math.max(0, roundMoney(d.amount))
+                amount: Math.max(0, roundMoney(d.amount)),
+                methods: depositMethodMapFor(tenant)
             };
         }
 
@@ -7173,7 +7321,13 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
         }
 
         function managePageFrame(inner) {
-            return '<div class="max-w-lg mx-auto my-10 glass-card rounded-2xl p-6 sm:p-8 space-y-4 border border-slate-800 bg-slate-950/80">' + inner + '</div>';
+            var book = schediNewBookOn();
+            document.body.classList.toggle('schedi-newbook', book);
+            var card = book ? ' schedi-manage-card' : '';
+            var framed = book
+                ? inner.replace('text-[10px] uppercase tracking-widest text-slate-500 font-semibold', 'schedi-kicker')
+                : inner;
+            return '<div class="max-w-lg mx-auto my-10 glass-card rounded-2xl p-6 sm:p-8 space-y-4 border border-slate-800 bg-slate-950/80' + card + '">' + framed + '</div>';
         }
 
         function renderManageUnavailable(main) {
@@ -8247,6 +8401,547 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
             return false;
         }
 
+// Client-side QR for a booking link. Byte mode, error correction M or H, versions 1–10.
+// No package: the portal inlines this file. Dark modules are 1 in row-major order.
+
+var QR_EXP = new Uint8Array(512);
+var QR_LOG = new Uint8Array(256);
+(function () {
+  var x = 1;
+  var i;
+  for (i = 0; i < 255; i++) {
+    QR_EXP[i] = x;
+    QR_LOG[x] = i;
+    x <<= 1;
+    if (x & 256) x ^= 0x11d;
+  }
+  for (i = 255; i < 512; i++) QR_EXP[i] = QR_EXP[i - 255];
+})();
+
+function qrMul(a, b) {
+  if (!a || !b) return 0;
+  return QR_EXP[QR_LOG[a] + QR_LOG[b]];
+}
+
+function qrPolyMul(p1, p2) {
+  var coeff = new Uint8Array(p1.length + p2.length - 1);
+  var i;
+  var j;
+  for (i = 0; i < p1.length; i++) {
+    for (j = 0; j < p2.length; j++) coeff[i + j] ^= qrMul(p1[i], p2[j]);
+  }
+  return coeff;
+}
+
+function qrPolyMod(divident, divisor) {
+  var result = new Uint8Array(divident);
+  var offset;
+  var i;
+  var coeff;
+  while (result.length - divisor.length >= 0) {
+    coeff = result[0];
+    for (i = 0; i < divisor.length; i++) result[i] ^= qrMul(divisor[i], coeff);
+    offset = 0;
+    while (offset < result.length && result[offset] === 0) offset++;
+    result = result.slice(offset);
+  }
+  return result;
+}
+
+function qrRs(data, ecLen) {
+  var poly = new Uint8Array([1]);
+  var i;
+  var padded;
+  var remainder;
+  var start;
+  var out;
+  for (i = 0; i < ecLen; i++) poly = qrPolyMul(poly, new Uint8Array([1, QR_EXP[i]]));
+  padded = new Uint8Array(data.length + ecLen);
+  padded.set(data);
+  remainder = qrPolyMod(padded, poly);
+  start = ecLen - remainder.length;
+  if (start > 0) {
+    out = new Uint8Array(ecLen);
+    out.set(remainder, start);
+    return out;
+  }
+  return remainder;
+}
+
+var QR_CODEWORDS = [0, 26, 44, 70, 100, 134, 172, 196, 242, 292, 346];
+var QR_EC_BLOCKS_M = [0, 1, 1, 1, 2, 2, 4, 4, 4, 5, 5];
+var QR_EC_WORDS_M = [0, 10, 16, 26, 36, 48, 64, 72, 88, 110, 130];
+var QR_EC_BLOCKS_H = [0, 1, 1, 2, 4, 4, 4, 5, 6, 8, 8];
+var QR_EC_WORDS_H = [0, 17, 28, 44, 64, 88, 112, 130, 156, 192, 224];
+
+function qrEcc(level) {
+  return level === 'H' ? 'H' : 'M';
+}
+
+function qrEcBlocks(version, level) {
+  return qrEcc(level) === 'H' ? QR_EC_BLOCKS_H[version] : QR_EC_BLOCKS_M[version];
+}
+
+function qrEcWords(version, level) {
+  return qrEcc(level) === 'H' ? QR_EC_WORDS_H[version] : QR_EC_WORDS_M[version];
+}
+
+function qrBitLen(n) {
+  var bits = 0;
+  while (n) {
+    bits++;
+    n >>>= 1;
+  }
+  return bits;
+}
+
+function qrFormatBits(mask, level) {
+  var data = (qrEcc(level) === 'H' ? 2 : 0) * 8 + (mask & 7);
+  var d = data << 10;
+  var g = 0x537;
+  var gBits = 11;
+  while (qrBitLen(d) - gBits >= 0) d ^= g << (qrBitLen(d) - gBits);
+  return ((data << 10) | d) ^ 0x5412;
+}
+
+function qrVersionBits(version) {
+  var d = version << 12;
+  var g = 0x1f25;
+  while (qrBitLen(d) - 13 >= 0) d ^= g << (qrBitLen(d) - 13);
+  return (version << 12) | d;
+}
+
+function qrBytes(text) {
+  var raw = String(text || '');
+  if (typeof TextEncoder !== 'undefined') return new TextEncoder().encode(raw);
+  var out = [];
+  var i;
+  for (i = 0; i < raw.length; i++) out.push(raw.charCodeAt(i) & 255);
+  return out;
+}
+
+function qrVersionFor(len, level) {
+  var version;
+  var dataWords;
+  var countBits;
+  var usable;
+  for (version = 1; version <= 10; version++) {
+    dataWords = QR_CODEWORDS[version] - qrEcWords(version, level);
+    countBits = version < 10 ? 8 : 16;
+    usable = dataWords * 8 - 4 - countBits;
+    if (Math.floor(usable / 8) >= len) return version;
+  }
+  return 0;
+}
+
+function qrPush(bits, value, length) {
+  var i;
+  for (i = length - 1; i >= 0; i--) bits.push((value >>> i) & 1);
+}
+
+function qrDataCodewords(bytes, version, level) {
+  var bits = [];
+  var dataWords = QR_CODEWORDS[version] - qrEcWords(version, level);
+  var countBits = version < 10 ? 8 : 16;
+  var i;
+  var byte = 0;
+  var bit = 0;
+  var out;
+  qrPush(bits, 0x4, 4);
+  qrPush(bits, bytes.length, countBits);
+  for (i = 0; i < bytes.length; i++) qrPush(bits, bytes[i], 8);
+  for (i = 0; i < 4 && bits.length < dataWords * 8; i++) bits.push(0);
+  while (bits.length % 8) bits.push(0);
+  out = [];
+  for (i = 0; i < bits.length; i++) {
+    byte = (byte << 1) | bits[i];
+    bit++;
+    if (bit === 8) {
+      out.push(byte);
+      byte = 0;
+      bit = 0;
+    }
+  }
+  i = 0;
+  while (out.length < dataWords) {
+    out.push(i % 2 ? 0x11 : 0xec);
+    i++;
+  }
+  return out;
+}
+
+function qrInterleave(codewords, version, level) {
+  var total = QR_CODEWORDS[version];
+  var ecTotal = qrEcWords(version, level);
+  var dataTotal = total - ecTotal;
+  var blocks = qrEcBlocks(version, level);
+  var group2 = total % blocks;
+  var group1 = blocks - group2;
+  var data1 = Math.floor(dataTotal / blocks);
+  var data2 = data1 + 1;
+  var ecLen = Math.floor(total / blocks) - data1;
+  var dc = [];
+  var ec = [];
+  var offset = 0;
+  var b;
+  var size;
+  var max = 0;
+  var out = new Uint8Array(total);
+  var index = 0;
+  var i;
+  var r;
+  for (b = 0; b < blocks; b++) {
+    size = b < group1 ? data1 : data2;
+    dc.push(Uint8Array.from(codewords.slice(offset, offset + size)));
+    ec.push(qrRs(dc[b], ecLen));
+    offset += size;
+    if (size > max) max = size;
+  }
+  for (i = 0; i < max; i++) {
+    for (r = 0; r < blocks; r++) {
+      if (i < dc[r].length) out[index++] = dc[r][i];
+    }
+  }
+  for (i = 0; i < ecLen; i++) {
+    for (r = 0; r < blocks; r++) out[index++] = ec[r][i];
+  }
+  return out;
+}
+
+function qrAlignPos(version) {
+  if (version === 1) return [];
+  var size = version * 4 + 17;
+  var count = Math.floor(version / 7) + 2;
+  var step = size === 145 ? 26 : Math.ceil((size - 13) / (2 * count - 2)) * 2;
+  var pos = [size - 7];
+  var i;
+  var j;
+  var coords = [];
+  for (i = 1; i < count - 1; i++) pos[i] = pos[i - 1] - step;
+  pos.push(6);
+  pos.reverse();
+  for (i = 0; i < pos.length; i++) {
+    for (j = 0; j < pos.length; j++) {
+      if ((i === 0 && j === 0) || (i === 0 && j === pos.length - 1) || (i === pos.length - 1 && j === 0)) continue;
+      coords.push([pos[i], pos[j]]);
+    }
+  }
+  return coords;
+}
+
+function qrMaskAt(pattern, row, col) {
+  if (pattern === 0) return (row + col) % 2 === 0;
+  if (pattern === 1) return row % 2 === 0;
+  if (pattern === 2) return col % 3 === 0;
+  if (pattern === 3) return (row + col) % 3 === 0;
+  if (pattern === 4) return (Math.floor(row / 2) + Math.floor(col / 3)) % 2 === 0;
+  if (pattern === 5) return (row * col) % 2 + (row * col) % 3 === 0;
+  if (pattern === 6) return ((row * col) % 2 + (row * col) % 3) % 2 === 0;
+  return ((row * col) % 3 + (row + col) % 2) % 2 === 0;
+}
+
+function qrPenalty(dark, size) {
+  var points = 0;
+  var row;
+  var col;
+  var sameRow;
+  var sameCol;
+  var lastRow;
+  var lastCol;
+  var module;
+  var last;
+  var bitsRow;
+  var bitsCol;
+  var darkCount = 0;
+  var i;
+  var k;
+  for (row = 0; row < size; row++) {
+    sameRow = 0;
+    sameCol = 0;
+    lastRow = -1;
+    lastCol = -1;
+    for (col = 0; col < size; col++) {
+      module = dark[row * size + col];
+      if (module === lastCol) sameCol++;
+      else {
+        if (sameCol >= 5) points += 3 + (sameCol - 5);
+        lastCol = module;
+        sameCol = 1;
+      }
+      module = dark[col * size + row];
+      if (module === lastRow) sameRow++;
+      else {
+        if (sameRow >= 5) points += 3 + (sameRow - 5);
+        lastRow = module;
+        sameRow = 1;
+      }
+    }
+    if (sameCol >= 5) points += 3 + (sameCol - 5);
+    if (sameRow >= 5) points += 3 + (sameRow - 5);
+  }
+  for (row = 0; row < size - 1; row++) {
+    for (col = 0; col < size - 1; col++) {
+      last = dark[row * size + col] + dark[row * size + col + 1] + dark[(row + 1) * size + col] + dark[(row + 1) * size + col + 1];
+      if (last === 0 || last === 4) points += 3;
+    }
+  }
+  for (row = 0; row < size; row++) {
+    bitsCol = 0;
+    bitsRow = 0;
+    for (col = 0; col < size; col++) {
+      bitsCol = ((bitsCol << 1) & 0x7ff) | dark[row * size + col];
+      if (col >= 10 && (bitsCol === 0x5d0 || bitsCol === 0x05d)) points += 40;
+      bitsRow = ((bitsRow << 1) & 0x7ff) | dark[col * size + row];
+      if (col >= 10 && (bitsRow === 0x5d0 || bitsRow === 0x05d)) points += 40;
+    }
+  }
+  for (i = 0; i < dark.length; i++) darkCount += dark[i];
+  k = Math.abs(Math.ceil((darkCount * 100 / dark.length) / 5) - 10);
+  return points + k * 10;
+}
+
+function schediQrModules(text, level) {
+  var ecc = qrEcc(level);
+  var bytes = qrBytes(text);
+  var version = qrVersionFor(bytes.length, ecc);
+  var size;
+  var dark;
+  var reserved;
+  var codewords;
+  var data;
+  var align;
+  var i;
+  var r;
+  var c;
+  var row;
+  var col;
+  var bits;
+  var mod;
+  var pattern;
+  var best;
+  var bestScore;
+  var score;
+  var snapshot;
+  var masked;
+  function set(rr, cc, value, lock) {
+    if (rr < 0 || cc < 0 || rr >= size || cc >= size) return;
+    dark[rr * size + cc] = value ? 1 : 0;
+    if (lock) reserved[rr * size + cc] = 1;
+  }
+  if (!version || (ecc === 'M' && bytes.length > 213)) return null;
+  size = version * 4 + 17;
+  dark = new Uint8Array(size * size);
+  reserved = new Uint8Array(size * size);
+  [[0, 0], [0, size - 7], [size - 7, 0]].forEach(function (origin) {
+    for (r = -1; r <= 7; r++) {
+      for (c = -1; c <= 7; c++) {
+        if ((r >= 0 && r <= 6 && (c === 0 || c === 6)) || (c >= 0 && c <= 6 && (r === 0 || r === 6)) || (r >= 2 && r <= 4 && c >= 2 && c <= 4)) set(origin[0] + r, origin[1] + c, 1, 1);
+        else set(origin[0] + r, origin[1] + c, 0, 1);
+      }
+    }
+  });
+  for (r = 8; r < size - 8; r++) {
+    set(r, 6, r % 2 === 0, 1);
+    set(6, r, r % 2 === 0, 1);
+  }
+  align = qrAlignPos(version);
+  for (i = 0; i < align.length; i++) {
+    for (r = -2; r <= 2; r++) {
+      for (c = -2; c <= 2; c++) {
+        set(align[i][0] + r, align[i][1] + c, r === -2 || r === 2 || c === -2 || c === 2 || (r === 0 && c === 0), 1);
+      }
+    }
+  }
+  function paintFormat(mask) {
+    var format = qrFormatBits(mask, ecc);
+    var n;
+    var on;
+    for (n = 0; n < 15; n++) {
+      on = ((format >> n) & 1) === 1;
+      if (n < 6) set(n, 8, on, 1);
+      else if (n < 8) set(n + 1, 8, on, 1);
+      else set(size - 15 + n, 8, on, 1);
+      if (n < 8) set(8, size - n - 1, on, 1);
+      else if (n < 9) set(8, 15 - n, on, 1);
+      else set(8, 15 - n - 1, on, 1);
+    }
+    set(size - 8, 8, 1, 1);
+  }
+  paintFormat(0);
+  if (version >= 7) {
+    bits = qrVersionBits(version);
+    for (i = 0; i < 18; i++) {
+      row = Math.floor(i / 3);
+      col = i % 3 + size - 11;
+      mod = ((bits >> i) & 1) === 1;
+      set(row, col, mod, 1);
+      set(col, row, mod, 1);
+    }
+  }
+  codewords = qrDataCodewords(bytes, version, ecc);
+  data = qrInterleave(codewords, version, ecc);
+  row = size - 1;
+  c = -1;
+  i = 0;
+  bits = 7;
+  for (col = size - 1; col > 0; col -= 2) {
+    if (col === 6) col--;
+    while (true) {
+      for (r = 0; r < 2; r++) {
+        if (!reserved[row * size + (col - r)]) {
+          mod = 0;
+          if (i < data.length) mod = (data[i] >>> bits) & 1;
+          dark[row * size + (col - r)] = mod;
+          bits--;
+          if (bits < 0) {
+            i++;
+            bits = 7;
+          }
+        }
+      }
+      row += c;
+      if (row < 0 || row >= size) {
+        row -= c;
+        c = -c;
+        break;
+      }
+    }
+  }
+  snapshot = dark.slice();
+  best = 0;
+  bestScore = Infinity;
+  for (pattern = 0; pattern < 8; pattern++) {
+    masked = snapshot.slice();
+    for (r = 0; r < size; r++) {
+      for (c = 0; c < size; c++) {
+        if (reserved[r * size + c]) continue;
+        if (qrMaskAt(pattern, r, c)) masked[r * size + c] ^= 1;
+      }
+    }
+    paintFormat(pattern);
+    for (i = 0; i < reserved.length; i++) if (reserved[i]) masked[i] = dark[i];
+    score = qrPenalty(masked, size);
+    if (score < bestScore) {
+      bestScore = score;
+      best = pattern;
+    }
+  }
+  dark = snapshot.slice();
+  for (r = 0; r < size; r++) {
+    for (c = 0; c < size; c++) {
+      if (reserved[r * size + c]) continue;
+      if (qrMaskAt(best, r, c)) dark[r * size + c] ^= 1;
+    }
+  }
+  paintFormat(best);
+  return { size: size, dark: dark, version: version, mask: best, level: ecc };
+}
+
+function qrHexByte(pair) {
+  var h = '0123456789abcdef';
+  var a = h.indexOf(String(pair || '').charAt(0).toLowerCase());
+  var b = h.indexOf(String(pair || '').charAt(1).toLowerCase());
+  if (a < 0 || b < 0) return -1;
+  return a * 16 + b;
+}
+
+function qrRgb(color) {
+  var raw = String(color || '');
+  var r = 0;
+  var g = 0;
+  var b = 0;
+  if (raw.charAt(0) !== '#') return [0, 0, 0];
+  if (raw.length === 4) {
+    r = qrHexByte(raw.charAt(1) + raw.charAt(1));
+    g = qrHexByte(raw.charAt(2) + raw.charAt(2));
+    b = qrHexByte(raw.charAt(3) + raw.charAt(3));
+  } else if (raw.length === 7) {
+    r = qrHexByte(raw.slice(1, 3));
+    g = qrHexByte(raw.slice(3, 5));
+    b = qrHexByte(raw.slice(5, 7));
+  } else return [0, 0, 0];
+  if (r < 0 || g < 0 || b < 0) return [0, 0, 0];
+  return [r, g, b];
+}
+
+function qrInsideRound(px, py, left, top, side, radius) {
+  var dx = px - left;
+  var dy = py - top;
+  var inset;
+  var ox;
+  var oy;
+  if (dx < 0 || dy < 0 || dx > side || dy > side) return false;
+  inset = side / 2 - radius;
+  ox = Math.abs(dx - side / 2) - inset;
+  oy = Math.abs(dy - side / 2) - inset;
+  if (ox <= 0 || oy <= 0) return true;
+  return ox * ox + oy * oy <= radius * radius;
+}
+
+function schediQrCardPixels(text, color) {
+  var qr = schediQrModules(text, 'H');
+  var quiet = 2;
+  var scale = 1;
+  var count;
+  var Q;
+  var data;
+  var rgb;
+  var x;
+  var y;
+  var col;
+  var row;
+  var on;
+  var half;
+  var side;
+  var radius;
+  var left;
+  var innerSide;
+  var innerRadius;
+  var innerLeft;
+  var p;
+  if (!qr) return null;
+  count = qr.size + quiet * 2;
+  while (count * scale + 160 < 1000) scale += 1;
+  Q = count * scale;
+  data = new Uint8ClampedArray(Q * Q * 4);
+  rgb = qrRgb(color || '#000000');
+  for (y = 0; y < Q; y++) {
+    row = Math.floor(y / scale) - quiet;
+    for (x = 0; x < Q; x++) {
+      col = Math.floor(x / scale) - quiet;
+      on = col >= 0 && row >= 0 && col < qr.size && row < qr.size && qr.dark[row * qr.size + col] === 1;
+      p = (y * Q + x) * 4;
+      data[p] = on ? rgb[0] : 255;
+      data[p + 1] = on ? rgb[1] : 255;
+      data[p + 2] = on ? rgb[2] : 255;
+      data[p + 3] = 255;
+    }
+  }
+  half = 0.115 * Q;
+  side = half * 2;
+  radius = 0.3 * half;
+  left = (Q - side) / 2;
+  innerSide = side - 16;
+  innerRadius = radius > 8 ? radius - 8 : 0;
+  innerLeft = left + 8;
+  for (y = 0; y < Q; y++) {
+    for (x = 0; x < Q; x++) {
+      if (!qrInsideRound(x + 0.5, y + 0.5, left, left, side, radius)) continue;
+      p = (y * Q + x) * 4;
+      if (innerSide > 0 && qrInsideRound(x + 0.5, y + 0.5, innerLeft, innerLeft, innerSide, innerRadius)) {
+        data[p] = 255;
+        data[p + 1] = 255;
+        data[p + 2] = 255;
+      } else {
+        data[p] = rgb[0];
+        data[p + 1] = rgb[1];
+        data[p + 2] = rgb[2];
+      }
+    }
+  }
+  return { width: Q, height: Q, data: data, scale: scale, quiet: quiet, version: qr.version, mask: qr.mask };
+}
+
         window.copyTenantPublicBookingLink = function() {
             const tenant = getTenant();
             if (!tenant) return;
@@ -8261,6 +8956,474 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                 warnIfTenantPublicPaused(tenant);
             });
         };
+
+        var schediQrBlobUrl = '';
+        var schediQrPending = null;
+        var schediQrReplacing = false;
+
+        function schediQrStoredUrl(tenant) {
+            var raw = '';
+            try { raw = String((tenant && (tenant.qrUrl || tenant.qrImage || tenant.bookingQrUrl)) || '').trim(); } catch (errQr) { raw = ''; }
+            if (!raw || raw.length > 500) return '';
+            if (raw.indexOf('https://') !== 0) return '';
+            if (/\s/.test(raw) || raw.indexOf('<') !== -1 || raw.indexOf('"') !== -1 || raw.indexOf("'") !== -1) return '';
+            return raw;
+        }
+
+        function schediQrRevoke() {
+            if (schediQrBlobUrl.indexOf('blob:') === 0) {
+                try { URL.revokeObjectURL(schediQrBlobUrl); } catch (errRevoke) {}
+            }
+            schediQrBlobUrl = '';
+        }
+
+        function schediQrHex(value) {
+            var raw = String(value || '').trim();
+            var i;
+            var c;
+            if (raw.length !== 4 && raw.length !== 7) return '';
+            if (raw.charAt(0) !== '#') return '';
+            for (i = 1; i < raw.length; i++) {
+                c = raw.charAt(i).toLowerCase();
+                if ((c < '0' || c > '9') && (c < 'a' || c > 'f')) return '';
+            }
+            return raw;
+        }
+
+        function schediQrModuleColor(tenant) {
+            var raw = schediQrHex(tenant && (tenant.brandColor || tenant.color || tenant.accentColor));
+            return raw || '#000000';
+        }
+
+        function schediQrSubtitle(tenant) {
+            return String((tenant && (tenant.tagline || tenant.businessType || tenant.industry)) || '').trim().toUpperCase();
+        }
+
+        function schediQrLogoUrl(tenant) {
+            var raw = String((tenant && (tenant.logoUrl || tenant.logo)) || '').trim();
+            if (!raw || raw.length > 500) return '';
+            if (raw.indexOf('https://') === 0 || raw.indexOf('data:image/') === 0) return raw;
+            return '';
+        }
+
+        function schediQrFonts() {
+            var fonts = document.fonts;
+            if (!fonts || !fonts.load) return Promise.resolve();
+            return fonts.load('800 96px Inter').then(function () {
+                return fonts.load('600 38px Inter');
+            }).then(function () {
+                return fonts.load('500 30px Inter');
+            }).then(function () {
+                return fonts.ready;
+            }).catch(function () { return null; });
+        }
+
+        function schediQrLoadImage(url) {
+            return new Promise(function (resolve) {
+                var img;
+                if (!url) { resolve(null); return; }
+                img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onload = function () { resolve(img.naturalWidth ? img : null); };
+                img.onerror = function () { resolve(null); };
+                img.src = url;
+            });
+        }
+
+        function schediQrFitFont(text, weight, start, limit) {
+            var ctx = document.createElement('canvas').getContext('2d');
+            var size = start;
+            ctx.font = weight + ' ' + size + 'px Inter, sans-serif';
+            while (size > 18 && ctx.measureText(text || ' ').width > limit) {
+                size -= 2;
+                ctx.font = weight + ' ' + size + 'px Inter, sans-serif';
+            }
+            return size;
+        }
+
+        function schediQrRound(ctx, x, y, w, h, radius) {
+            var r = Math.max(0, radius);
+            ctx.beginPath();
+            if (ctx.roundRect) {
+                ctx.roundRect(x, y, w, h, r);
+                return;
+            }
+            ctx.moveTo(x + r, y);
+            ctx.arcTo(x + w, y, x + w, y + h, r);
+            ctx.arcTo(x + w, y + h, x, y + h, r);
+            ctx.arcTo(x, y + h, x, y, r);
+            ctx.arcTo(x, y, x + w, y, r);
+            ctx.closePath();
+        }
+
+        function schediQrDrawIcon(ctx, cx, cy, size, color) {
+            var left = cx - size / 2;
+            var top = cy - size / 2;
+            ctx.save();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = Math.max(4, size * 0.08);
+            ctx.lineJoin = 'round';
+            ctx.lineCap = 'round';
+            schediQrRound(ctx, left + size * 0.12, top + size * 0.22, size * 0.76, size * 0.66, size * 0.08);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(left + size * 0.32, top + size * 0.12);
+            ctx.lineTo(left + size * 0.32, top + size * 0.34);
+            ctx.moveTo(left + size * 0.68, top + size * 0.12);
+            ctx.lineTo(left + size * 0.68, top + size * 0.34);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function schediQrDrawCard(canvas, opts) {
+            var pixels = schediQrCardPixels(opts.url, opts.color);
+            var name = String(opts.name || '').trim();
+            var subtitle = String(opts.subtitle || '').trim();
+            var color = opts.color || '#000000';
+            var logo = opts.logo;
+            var initials = String(opts.initials || '').trim();
+            var Q;
+            var W;
+            var topH = 0;
+            var nameSize = 96;
+            var subSize = 38;
+            var logoBox = null;
+            var fit;
+            var H;
+            var ctx;
+            var qrX = 80;
+            var qrY;
+            var cx;
+            var cy;
+            var r;
+            var inner;
+            var fontPx;
+            if (!pixels || !canvas) return false;
+            Q = pixels.width;
+            W = Q + 160;
+            if (logo && logo.naturalWidth && logo.naturalHeight) {
+                fit = Math.min((W * 0.62) / logo.naturalWidth, 340 / logo.naturalHeight);
+                if (!isFinite(fit) || fit <= 0) fit = 1;
+                logoBox = { w: logo.naturalWidth * fit, h: logo.naturalHeight * fit };
+                topH = logoBox.h;
+            } else {
+                if (name) {
+                    nameSize = schediQrFitFont(name, '800', 96, W - 200);
+                    topH = nameSize;
+                }
+                if (subtitle) {
+                    subSize = schediQrFitFont(subtitle, '600', 38, W - 200);
+                    topH += (name ? 16 : 0) + subSize;
+                }
+            }
+            H = Math.round(60 + topH + 50 + Q + 260);
+            canvas.width = W;
+            canvas.height = H;
+            ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, W, H);
+            qrY = Math.round(60 + topH + 50);
+            ctx.putImageData(new ImageData(pixels.data, pixels.width, pixels.height), qrX, qrY);
+            cx = qrX + Q / 2;
+            cy = qrY + Q / 2;
+            r = 0.115 * Q;
+            inner = 1.6 * r;
+            ctx.save();
+            schediQrRound(ctx, cx - inner / 2, cy - inner / 2, inner, inner, inner * 0.18);
+            ctx.clip();
+            if (logoBox) {
+                fit = Math.min(inner / logo.naturalWidth, inner / logo.naturalHeight);
+                ctx.drawImage(logo, cx - (logo.naturalWidth * fit) / 2, cy - (logo.naturalHeight * fit) / 2, logo.naturalWidth * fit, logo.naturalHeight * fit);
+            } else if (initials) {
+                fontPx = Math.floor(inner * 0.46);
+                ctx.fillStyle = color;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.font = '800 ' + fontPx + 'px Inter, sans-serif';
+                while (fontPx > 16 && ctx.measureText(initials).width > inner * 0.86) {
+                    fontPx -= 2;
+                    ctx.font = '800 ' + fontPx + 'px Inter, sans-serif';
+                }
+                ctx.fillText(initials, cx, cy + fontPx * 0.04);
+            } else {
+                schediQrDrawIcon(ctx, cx, cy, inner * 0.72, color);
+            }
+            ctx.restore();
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            if (logoBox) {
+                ctx.drawImage(logo, (W - logoBox.w) / 2, 60, logoBox.w, logoBox.h);
+            } else if (name || subtitle) {
+                if (name) {
+                    ctx.fillStyle = color;
+                    ctx.font = '800 ' + nameSize + 'px Inter, sans-serif';
+                    ctx.fillText(name, W / 2, 60);
+                }
+                if (subtitle) {
+                    ctx.fillStyle = '#444444';
+                    ctx.font = '600 ' + subSize + 'px Inter, sans-serif';
+                    ctx.fillText(subtitle, W / 2, 60 + (name ? nameSize + 16 : 0));
+                }
+            }
+            ctx.fillStyle = color;
+            ctx.font = '800 96px Inter, sans-serif';
+            ctx.fillText('Schedi Me', W / 2, qrY + Q + 40);
+            ctx.fillStyle = '#444444';
+            ctx.font = '500 30px Inter, sans-serif';
+            ctx.fillText(opts.caption || '', W / 2, qrY + Q + 170);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 6;
+            schediQrRound(ctx, 23, 23, W - 46, H - 46, 37);
+            ctx.stroke();
+            return true;
+        }
+
+        function schediQrShowFilled(url, saved) {
+            var savedBox = document.getElementById('schediQrSaved');
+            var emptyBox = document.getElementById('schediQrEmpty');
+            var img = document.getElementById('schediQrImage');
+            var caption = document.getElementById('schediQrCaption');
+            var saveBtn = document.getElementById('schediQrSave');
+            var preview = document.getElementById('schediQrPreview');
+            if (savedBox) savedBox.hidden = false;
+            if (emptyBox) emptyBox.hidden = true;
+            if (preview) preview.hidden = true;
+            if (img) img.src = url;
+            if (caption) caption.textContent = saved ? 'This is the QR code saved for your booking page.' : (schediQrReplacing ? 'Preview only. Confirm to replace the saved QR code.' : 'Preview only. Save it to keep this QR code.');
+            if (saveBtn) {
+                saveBtn.hidden = !!saved;
+                var saveLabel = saveBtn.querySelector('span');
+                if (saveLabel) saveLabel.textContent = schediQrReplacing ? 'Confirm replacement' : 'Save QR code';
+            }
+            var changeBtn = document.getElementById('schediQrChange');
+            if (changeBtn) changeBtn.hidden = !saved;
+        }
+        window.schediQrShowFilled = schediQrShowFilled;
+
+        function schediQrShowEmpty() {
+            var savedBox = document.getElementById('schediQrSaved');
+            var emptyBox = document.getElementById('schediQrEmpty');
+            var saveBtn = document.getElementById('schediQrSave');
+            var preview = document.getElementById('schediQrPreview');
+            if (savedBox) savedBox.hidden = true;
+            if (emptyBox) emptyBox.hidden = false;
+            if (saveBtn) saveBtn.hidden = true;
+            if (preview) preview.hidden = true;
+        }
+
+        window.schediQrOpen = function () {
+            var modal = document.getElementById('schediQrModal');
+            var tenant = typeof getTenant === 'function' ? getTenant() : null;
+            var stored = '';
+            if (!modal || !tenant) return;
+            var lead = document.getElementById('schediQrLead');
+            schediQrPending = null;
+            schediQrRevoke();
+            if (lead) lead.textContent = 'No QR code yet. Upload a PNG, JPG, or SVG up to 2 MB, or generate one from your booking link.';
+            stored = schediQrStoredUrl(tenant);
+            schediQrReplacing = !!stored;
+            if (stored) schediQrShowFilled(stored, true);
+            else schediQrShowEmpty();
+            modal.hidden = false;
+            var closeBtn = document.getElementById('schediQrClose');
+            if (closeBtn) closeBtn.focus();
+        };
+
+        window.schediQrClose = function () {
+            var modal = document.getElementById('schediQrModal');
+            if (modal) modal.hidden = true;
+        };
+
+        window.schediQrReplace = function () {
+            var emptyBox = document.getElementById('schediQrEmpty');
+            var lead = document.getElementById('schediQrLead');
+            schediQrReplacing = true;
+            if (emptyBox) emptyBox.hidden = false;
+            if (lead) lead.textContent = 'Upload a replacement PNG, JPG, or SVG up to 2 MB, or generate a new one from your booking link. You will preview it before it replaces the saved code.';
+            var upload = document.getElementById('schediQrUpload');
+            if (upload && upload.scrollIntoView) upload.scrollIntoView({ block: 'nearest' });
+        };
+
+        window.schediQrPick = function () {
+            var input = document.getElementById('schediQrFile');
+            if (input) input.click();
+        };
+
+        function schediQrFileKind(file) {
+            var type = String(file && file.type || '').toLowerCase();
+            var name = String(file && file.name || '').toLowerCase();
+            if (type === 'image/png' || (!type && name.slice(-4) === '.png')) return 'image/png';
+            if (type === 'image/jpeg' || type === 'image/jpg' || (!type && (name.slice(-4) === '.jpg' || name.slice(-5) === '.jpeg'))) return 'image/jpeg';
+            if (type === 'image/svg+xml' || (!type && name.slice(-4) === '.svg')) return 'image/svg+xml';
+            return '';
+        }
+
+        window.schediQrFileChosen = function (input) {
+            var file = input && input.files && input.files[0];
+            var kind = '';
+            var preview = document.getElementById('schediQrPreview');
+            if (input) input.value = '';
+            if (!file) return;
+            kind = schediQrFileKind(file);
+            if (!kind) {
+                showToast('Use a PNG, JPG, or SVG file.', 'error');
+                return;
+            }
+            if (file.size > 2 * 1024 * 1024) {
+                showToast('That file is over 2 MB. Use a smaller QR image.', 'error');
+                return;
+            }
+            schediQrRevoke();
+            schediQrBlobUrl = URL.createObjectURL(file);
+            schediQrPending = { blob: file, type: kind };
+            if (preview) {
+                preview.src = schediQrBlobUrl;
+                preview.hidden = false;
+            }
+            schediQrShowFilled(schediQrBlobUrl, false);
+            if (preview) preview.hidden = true;
+        };
+
+        window.schediQrGenerate = function () {
+            var tenant = typeof getTenant === 'function' ? getTenant() : null;
+            var slug = tenant ? getTenantPublicBookingSlug(tenant) : '';
+            var url = slug ? ('https://schedi.app/' + slug + '/') : '';
+            var canvas = document.createElement('canvas');
+            var name = String((tenant && tenant.name) || '').trim();
+            if (!url) {
+                showToast('No public booking URL available yet.', 'error');
+                return;
+            }
+            Promise.all([schediQrFonts(), schediQrLoadImage(schediQrLogoUrl(tenant))]).then(function (ready) {
+                var ok = schediQrDrawCard(canvas, {
+                    url: url,
+                    name: name,
+                    subtitle: schediQrSubtitle(tenant),
+                    color: schediQrModuleColor(tenant),
+                    logo: ready[1],
+                    initials: name ? schediDashInitials(name) : '',
+                    caption: 'schedi.app/' + slug
+                });
+                if (!ok) {
+                    showToast('That booking link is too long to draw here. Upload a QR image instead.', 'error');
+                    return;
+                }
+                canvas.toBlob(function (blob) {
+                    if (!blob) {
+                        showToast('Could not draw that QR code.', 'error');
+                        return;
+                    }
+                    if (blob.size > 2 * 1024 * 1024) {
+                        showToast('That file is over 2 MB. Use a smaller QR image.', 'error');
+                        return;
+                    }
+                    schediQrRevoke();
+                    schediQrBlobUrl = URL.createObjectURL(blob);
+                    schediQrPending = { blob: blob, type: 'image/png' };
+                    schediQrShowFilled(schediQrBlobUrl, false);
+                    if (window.__SCHEDI_DEMO) showToast('Not saved in this demo. The preview stays on this screen only.', 'info');
+                }, 'image/png');
+            }).catch(function () {
+                showToast('Could not draw that QR code.', 'error');
+            });
+        };
+
+        window.schediQrSave = async function () {
+            var tenant;
+            var session = '';
+            var data = '';
+            var res;
+            var body;
+            var url = '';
+            if (!schediQrPending) return;
+            if (window.__SCHEDI_DEMO) {
+                showToast('Not saved in this demo. The preview stays on this screen only.', 'info');
+                return;
+            }
+            tenant = typeof getTenant === 'function' ? getTenant() : null;
+            try { session = localStorage.getItem('schedi.authSession') || ''; } catch (errSession) { session = ''; }
+            try { data = await blobToBase64(schediQrPending.blob); } catch (errRead) { data = ''; }
+            if (!tenant || !data) {
+                showToast('Could not read that QR code. Try another file.', 'error');
+                return;
+            }
+            try {
+                res = await fetch('https://schedi.app/api/logo-upload', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ session: session, data: data, contentType: schediQrPending.type, purpose: 'qr' })
+                });
+                body = {};
+                try { body = await res.json(); } catch (errJson) { body = {}; }
+                if (body.error === 'logo_storage_unconfigured' || res.status === 503) {
+                    showToast('QR upload is not turned on yet. The preview stays on this screen only.', 'info');
+                    return;
+                }
+                url = safeHttpsUrl(body.url);
+                if (!res.ok || !body.ok || !url) {
+                    showToast('Could not save that QR code. The preview stays on this screen only.', 'error');
+                    return;
+                }
+                tenant.qrUrl = url;
+                try { await saveState({ profileOnly: true, tenantIds: [tenant.id], quietSyncErrors: true }); } catch (errSave) {}
+                schediQrPending = null;
+                schediQrShowFilled(url, true);
+                showToast('QR code saved.', 'success');
+            } catch (errNet) {
+                showToast('Could not save that QR code. The preview stays on this screen only.', 'error');
+            }
+        };
+
+        window.schediQrDownload = async function () {
+            var img = document.getElementById('schediQrImage');
+            var src = img && img.src ? img.src : '';
+            var res;
+            var blob;
+            var href;
+            var link;
+            if (!src) return;
+            try {
+                res = await fetch(src);
+                blob = await res.blob();
+                href = URL.createObjectURL(blob);
+                link = document.createElement('a');
+                link.href = href;
+                link.download = 'booking-qr.png';
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                setTimeout(function () { try { URL.revokeObjectURL(href); } catch (errDrop) {} }, 1500);
+            } catch (errDl) {
+                window.open(src, '_blank', 'noopener');
+            }
+        };
+
+        window.schediQrPrint = function () {
+            var img = document.getElementById('schediQrImage');
+            var src = img && img.src ? img.src : '';
+            var page;
+            var safe;
+            var pic;
+            if (!src) return;
+            page = window.open('', '_blank', 'noopener,noreferrer');
+            if (!page) {
+                showToast('Allow pop-ups to print the QR code.', 'error');
+                return;
+            }
+            safe = src.replace(/"/g, '');
+            page.document.write('<!DOCTYPE html><title>Booking QR code</title><style>body{margin:0;display:flex;min-height:100vh;align-items:center;justify-content:center;background:#fff}img{width:480px;max-width:100%;height:auto}</style><img alt="Booking QR code" src="' + safe + '">');
+            page.document.close();
+            pic = page.document.querySelector('img');
+            if (pic) pic.onload = function () { page.focus(); page.print(); };
+            else { page.focus(); page.print(); }
+        };
+
+        document.addEventListener('keydown', function (event) {
+            var modal;
+            if (!event || event.key !== 'Escape') return;
+            modal = document.getElementById('schediQrModal');
+            if (modal && !modal.hidden) schediQrClose();
+        });
 
         window.openTenantPublicBookingLink = function() {
             const tenant = getTenant();
@@ -8570,12 +9733,12 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                     + (x.notes ? ('<div class="sd-client-notes text-[11px] text-slate-500 mt-1 break-words">' + esc(x.notes) + '</div>') : '')
                     + tags);
                 return '<div class="sd-client py-3">'
-                    + '<div class="sd-client-head"><div class="sd-client-main min-w-0 text-sm break-words"><button type="button" class="sd-client-name font-bold text-white text-left" data-client-id="' + esc(x.id) + '" onclick="openClientDetail(' + jsArg(x.id) + ')" aria-expanded="' + (open ? 'true' : 'false') + '" aria-controls="sdClientPanel">' + esc(x.name) + '</button>' + clientSourceTag(x) + '</div>'
-                    + '<div class="sd-client-actions">'
+                    + '<div class="sd-client-head"><div class="sd-client-copy"><div class="sd-client-main min-w-0 text-sm break-words"><button type="button" class="sd-client-name font-bold text-white text-left" data-client-id="' + esc(x.id) + '" onclick="openClientDetail(' + jsArg(x.id) + ')" aria-expanded="' + (open ? 'true' : 'false') + '" aria-controls="sdClientPanel">' + esc(x.name) + '</button>' + clientSourceTag(x) + '</div>'
+                    + summary
+                    + '</div><div class="sd-client-actions">'
                     + (editing ? '' : ('<button type="button" class="sd-client-edit-btn px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold text-[11px] border border-slate-700" onclick="startOwnerClientEdit(' + jsArg(x.id) + ')" aria-label="Edit ' + esc(x.name) + '">Edit</button>'))
                     + '<button type="button" class="sd-client-remove px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-bold text-[11px] border border-rose-500/30" onclick="deleteOwnerClient(' + jsArg(x.id) + ')">Remove</button>'
                     + '</div></div>'
-                    + summary
                     + editor
                     + '</div>';
             }).join('') + '</div>' + (shown.length > cap ? ('<p class="text-[11px] text-slate-500 pt-2">Showing the first ' + cap + '. Search to find others.</p>') : '');
@@ -9423,6 +10586,15 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
             return window.__SCHEDI_NEWDASH === true;
         }
 
+        function schediNewBookOn() {
+            try {
+                var flag = new URLSearchParams(window.location.search || '').get('newbook');
+                return flag === '1' || flag === 'true' || flag === 'on';
+            } catch (errBook) {
+                return false;
+            }
+        }
+
         function bookingPaymentState(bookingOrStatus) {
             var raw = '';
             if (bookingOrStatus && typeof bookingOrStatus === 'object') raw = bookingOrStatus.paymentStatus;
@@ -9849,7 +11021,6 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
             if (!tenant) return;
             var biz = document.getElementById('schediDashBizName');
             if (biz) biz.textContent = tenant.name || 'Business';
-            var who = tenant.ownerName || tenant.ownerEmail || 'Owner';
             var bizName = tenant.name || 'Business';
             var planWord = 'Free';
             try {
@@ -9860,27 +11031,32 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
             var phoneInitials = document.getElementById('schediDashUserInitialsPhone');
             var planEl = document.getElementById('schediDashUserPlan');
             var logoEl = document.getElementById('schediDashUserLogo');
+            var phoneLogo = document.getElementById('schediDashUserLogoPhone');
             var logo = String(tenant.logoUrl || tenant.logo || '').trim();
+            var mark = schediDashInitials(bizName);
             if (nameEl) nameEl.textContent = bizName;
             if (planEl) planEl.textContent = planWord;
-            if (initials) initials.textContent = schediDashInitials(bizName);
-            if (phoneInitials) phoneInitials.textContent = schediDashInitials(who);
-            if (logoEl) {
+            if (initials) initials.textContent = mark;
+            if (phoneInitials) phoneInitials.textContent = mark;
+            function schediDashApplyLogo(img, letters) {
+                if (!img) return;
                 if (logo) {
-                    logoEl.hidden = false;
-                    logoEl.src = logo;
-                    logoEl.alt = '';
-                    if (initials) initials.hidden = true;
+                    img.hidden = false;
+                    img.src = logo;
+                    img.alt = '';
+                    if (letters) letters.hidden = true;
                 } else {
-                    logoEl.hidden = true;
-                    logoEl.removeAttribute('src');
-                    if (initials) initials.hidden = false;
+                    img.hidden = true;
+                    img.removeAttribute('src');
+                    if (letters) letters.hidden = false;
                 }
             }
+            schediDashApplyLogo(logoEl, initials);
+            schediDashApplyLogo(phoneLogo, phoneInitials);
             var userBtn = document.getElementById('schediDashUserBtn');
             if (userBtn) userBtn.setAttribute('aria-label', bizName + ', ' + planWord + ', account');
             var phoneBtn = document.getElementById('schediDashUserBtnPhone');
-            if (phoneBtn) phoneBtn.setAttribute('aria-label', who + ', account');
+            if (phoneBtn) phoneBtn.setAttribute('aria-label', bizName + ', account');
             schediDashSetPage(schediDashPage());
             try { renderSchediToday(tenant); } catch (errPaint) {}
         }
@@ -10635,8 +11811,40 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
             };
         }
 
+        function schediApplyDemoBiz(tenant) {
+            var asked = '';
+            try {
+                var q = new URLSearchParams(window.location.search || '');
+                asked = String(q.get('biz') || q.get('slug') || q.get('tenant') || '').trim().toLowerCase();
+            } catch (errAsk) { asked = ''; }
+            if (!asked || asked === 'harbor-demo' || asked === 'harbor') return tenant;
+            var profiles = {
+                'northwind-demo': { id: 'northwind-demo', name: 'Northwind Clinic', slug: 'northwind-clinic', industry: 'Medical', ownerName: 'Riley North', ownerEmail: 'demo@northwind.clinic', ownerPhone: '(555) 010-2200', plan: 'starter', monthlyPrice: 29, subscriptionStatus: 'paused' },
+                'northwind-clinic': { id: 'northwind-demo', name: 'Northwind Clinic', slug: 'northwind-clinic', industry: 'Medical', ownerName: 'Riley North', ownerEmail: 'demo@northwind.clinic', ownerPhone: '(555) 010-2200', plan: 'starter', monthlyPrice: 29, subscriptionStatus: 'paused' },
+                'lumen-demo': { id: 'lumen-demo', name: 'Lumen Studio', slug: 'lumen-studio', industry: 'Consulting', ownerName: 'Jules Lumen', ownerEmail: 'demo@lumen.studio', ownerPhone: '(555) 010-3300', plan: 'pro', monthlyPrice: 0, subscriptionStatus: 'active' },
+                'lumen-studio': { id: 'lumen-demo', name: 'Lumen Studio', slug: 'lumen-studio', industry: 'Consulting', ownerName: 'Jules Lumen', ownerEmail: 'demo@lumen.studio', ownerPhone: '(555) 010-3300', plan: 'pro', monthlyPrice: 0, subscriptionStatus: 'active' }
+            };
+            var hit = profiles[asked];
+            if (!hit) return tenant;
+            Object.keys(hit).forEach(function (key) { tenant[key] = hit[key]; });
+            tenant.appointments = [];
+            tenant.specialHours = {};
+            tenant.blockedRules = [];
+            tenant.blockedTimes = [];
+            if (hit.id === 'lumen-demo') {
+                tenant.complimentaryPro = true;
+                tenant.billingExempt = true;
+                tenant.services = [{ id: 1, name: 'Consult', duration: '30 mins', durationMins: 30, price: 0, desc: 'A consult.', icon: 'fa-comments' }];
+                tenant.paymentGateways = { card: false, cashapp: false, zelle: false, venmo: false, paypal: false, later: true };
+            } else {
+                tenant.services = [];
+                tenant.paymentGateways = { card: false, cashapp: false, zelle: false, venmo: false, paypal: false, later: false };
+            }
+            return tenant;
+        }
+
         function bootSchediDemoPortal() {
-            var tenant = schediBuildDemoTenant();
+            var tenant = schediApplyDemoBiz(schediBuildDemoTenant());
             platformState.tenants = [tenant];
             platformState.activeTenantId = tenant.id;
             platformState.isTenantOwnerLoggedIn = true;
@@ -10644,9 +11852,9 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
             platformState.isAgencyMasterLoggedIn = false;
             platformState.currentMode = 'tenant';
             window.__schediDemoClientRows = {};
-            window.__schediDemoClientRows[tenant.id] = schediDemoClientRows();
+            window.__schediDemoClientRows[tenant.id] = tenant.id === 'harbor-demo' ? schediDemoClientRows() : [];
             ownerClientCache[tenant.id] = { loaded: true, loading: null, clients: window.__schediDemoClientRows[tenant.id].slice(), error: '' };
-            try { document.title = 'Harbor Studio · Schedi demo'; } catch (errTitle) {}
+            try { document.title = tenant.name + ' · Schedi demo'; } catch (errTitle) {}
             try { applySchediTheme(localStorage.getItem('schedi.theme') === 'light' ? 'light' : 'dark'); } catch (errTheme) { try { applySchediTheme('dark'); } catch (errTheme2) {} }
             var section = document.getElementById('tenantPortalSection');
             if (section) section.classList.remove('hidden');
@@ -14248,6 +15456,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
         }
 
 
+        var SCHEDI_SQUARE_PUBLIC_ENABLED = false;
+
         function ensurePaymentGateways(tenant) {
             if (!tenant) return tenant;
             if (!tenant.paymentGateways || typeof tenant.paymentGateways !== 'object') {
@@ -14259,6 +15469,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
             if (typeof pg.zelle !== 'boolean') pg.zelle = false;
             if (typeof pg.venmo !== 'boolean') pg.venmo = false;
             if (typeof pg.paypal !== 'boolean') pg.paypal = false;
+            if (typeof pg.square !== 'boolean') pg.square = false;
+            if (!SCHEDI_SQUARE_PUBLIC_ENABLED) pg.square = false;
             if (typeof pg.later !== 'boolean') pg.later = true;
             if (typeof tenant.cashAppTag !== 'string') tenant.cashAppTag = '';
             if (typeof tenant.zelleHandle !== 'string') tenant.zelleHandle = '';
@@ -14340,6 +15552,31 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
             if (venmoCheck) venmoCheck.checked = !!tenant.paymentGateways.venmo;
             if (paypalCheck) paypalCheck.checked = !!tenant.paymentGateways.paypal;
             if (laterCheck) laterCheck.checked = !!tenant.paymentGateways.later;
+            var squareCheck = document.getElementById('tenantPaySquareCheck');
+            var squareNote = document.getElementById('tenantPaySquareNote');
+            if (squareCheck) {
+                squareCheck.checked = SCHEDI_SQUARE_PUBLIC_ENABLED && !!tenant.paymentGateways.square;
+                squareCheck.disabled = !SCHEDI_SQUARE_PUBLIC_ENABLED || normalizePlan(tenant) === 'free';
+            }
+            if (squareNote) {
+                squareNote.textContent = SCHEDI_SQUARE_PUBLIC_ENABLED
+                    ? 'Clients can choose Square only when this is on. No Square charge is taken here.'
+                    : 'Off. Square stays hidden on the booking page until Schedi turns it on. No Square charge is taken here.';
+            }
+            var depMethods = dep.methods || depositMethodMapFor(tenant);
+            var depMethodIds = {
+                card: 'tenantDepositMethodCard',
+                cashapp: 'tenantDepositMethodCashapp',
+                zelle: 'tenantDepositMethodZelle',
+                venmo: 'tenantDepositMethodVenmo',
+                paypal: 'tenantDepositMethodPaypal'
+            };
+            Object.keys(depMethodIds).forEach(function (key) {
+                var box = document.getElementById(depMethodIds[key]);
+                if (!box) return;
+                box.checked = !!depMethods[key];
+                box.disabled = !proPlan || !tenant.paymentGateways[key];
+            });
             if (tagInput) tagInput.value = tenant.cashAppTag || '';
             if (zelleHandleInput) zelleHandleInput.value = tenant.zelleHandle || '';
             if (zelleLinkInput) zelleLinkInput.value = tenant.zelleLink || '';
@@ -14831,43 +16068,49 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
         function confirmEmailPaymentInstructions(tenant, booking) {
             if (!tenant || !booking) return { text: '', html: '' };
             var method = String(booking.paymentMethod || '').toLowerCase();
-            var amountStr = confirmEmailPriceLabel(booking.amount);
-            var amountBit = amountStr && amountStr !== 'Free' ? (' for ' + amountStr) : '';
+            var depositDue = Number(booking.depositAmount) > 0 && booking.depositPaid !== true;
+            var amountStr = depositDue
+                ? ('$' + Number(booking.depositAmount).toFixed(2))
+                : confirmEmailPriceLabel(booking.amount);
+            var amountBit = '';
+            if (depositDue && amountStr) amountBit = ' for the deposit of ' + amountStr;
+            else if (amountStr && amountStr !== 'Free') amountBit = ' for ' + amountStr;
+            var unpaidBit = depositDue ? ' This deposit stays unpaid until you mark it paid.' : '';
             var text = '';
             var html = '';
             if (method === 'cashapp' || method === 'cash-app' || method === 'cash app') {
                 var tag = String(tenant.cashAppTag || tenant.cashappTag || '').trim();
                 if (tag) {
                     if (tag.charAt(0) !== '$') tag = '$' + tag.replace(/^\$/, '');
-                    text = 'Please send your payment to Cash App ' + tag + amountBit + '.';
-                    html = '<div style="padding:12px 14px;border-radius:10px;background-color:#064e3b;border:1px solid #059669;color:#d1fae5;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.45;">Please send your payment to Cash App <strong style="font-family:monospace;">' + esc(tag) + '</strong>' + esc(amountBit) + '.</div>';
+                    text = 'Please send your payment to Cash App ' + tag + amountBit + '.' + unpaidBit;
+                    html = '<div style="padding:12px 14px;border-radius:10px;background-color:#064e3b;border:1px solid #059669;color:#d1fae5;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.45;">Please send your payment to Cash App <strong style="font-family:monospace;">' + esc(tag) + '</strong>' + esc(amountBit) + '.' + esc(unpaidBit) + '</div>';
                 }
             } else if (method === 'venmo') {
                 var vh = String(tenant.venmoHandle || '').trim();
                 var vl = String(tenant.venmoLink || '').trim();
                 if (vh || vl) {
-                    text = 'Please send your payment via Venmo' + (vh ? (' to ' + vh) : '') + amountBit + '.' + (vl ? ('\n' + vl) : '');
+                    text = 'Please send your payment via Venmo' + (vh ? (' to ' + vh) : '') + amountBit + '.' + unpaidBit + (vl ? ('\n' + vl) : '');
                     html = '<div style="padding:12px 14px;border-radius:10px;background-color:#0c4a6e;border:1px solid #0ea5e9;color:#e0f2fe;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.45;">Please send your payment via Venmo'
                         + (vh ? (' to <strong style="font-family:monospace;">' + esc(vh) + '</strong>') : '')
-                        + esc(amountBit) + '.'
+                        + esc(amountBit) + '.' + esc(unpaidBit)
                         + (vl ? ('<br><a href="' + String(vl).replace(/&/g,'&amp;').replace(/"/g,'&quot;') + '" style="color:#7dd3fc;font-weight:700;">' + esc(vl) + '</a>') : '')
                         + '</div>';
                 }
             } else if (method === 'zelle') {
                 var zh = String(tenant.zelleHandle || '').trim();
                 if (zh) {
-                    text = 'Send via Zelle to ' + zh + amountBit + '. Open your bank app and use Zelle.';
-                    html = '<div style="padding:12px 14px;border-radius:10px;background-color:#2e1065;border:1px solid #8b5cf6;color:#ede9fe;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.45;">Send via Zelle to <strong style="font-family:monospace;">' + esc(zh) + '</strong>' + esc(amountBit) + '. Open your bank app and use Zelle.</div>';
+                    text = 'Send via Zelle to ' + zh + amountBit + '. Open your bank app and use Zelle.' + unpaidBit;
+                    html = '<div style="padding:12px 14px;border-radius:10px;background-color:#2e1065;border:1px solid #8b5cf6;color:#ede9fe;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.45;">Send via Zelle to <strong style="font-family:monospace;">' + esc(zh) + '</strong>' + esc(amountBit) + '. Open your bank app and use Zelle.' + esc(unpaidBit) + '</div>';
                 }
             } else if (method === 'paypal') {
                 var ph = String(tenant.paypalHandle || '').trim();
                 var pl = String(tenant.paypalLink || '').trim();
                 var target = pl || ph;
                 if (target) {
-                    text = 'Please send your payment via PayPal' + (ph ? (' to ' + ph) : '') + amountBit + '.' + (pl ? ('\n' + pl) : '');
+                    text = 'Please send your payment via PayPal' + (ph ? (' to ' + ph) : '') + amountBit + '.' + unpaidBit + (pl ? ('\n' + pl) : '');
                     html = '<div style="padding:12px 14px;border-radius:10px;background-color:#1e3a8a;border:1px solid #3b82f6;color:#dbeafe;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.45;">Please send your payment via PayPal'
                         + (ph ? (' to <strong style="font-family:monospace;">' + esc(ph) + '</strong>') : '')
-                        + esc(amountBit) + '.'
+                        + esc(amountBit) + '.' + esc(unpaidBit)
                         + (pl ? ('<br><a href="' + String(pl).replace(/&/g,'&amp;').replace(/"/g,'&quot;') + '" style="color:#93c5fd;font-weight:700;">' + esc(pl) + '</a>') : '')
                         + '</div>';
                 }
@@ -15207,6 +16450,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                 'Payment option: ' + payOpt + '\n' +
                 'Payment status: ' + (booking.paymentStatus || '') + '\n' +
                 (amountStr ? ('Amount: ' + amountStr + '\n') : '') +
+                (booking.payCode ? ('Payment code: ' + booking.payCode + '\n') : '') +
+                (Number(booking.depositAmount) > 0 ? ('Deposit: $' + Number(booking.depositAmount).toFixed(2) + ' (' + (booking.depositPaid === true ? 'paid' : 'unpaid until you mark it paid') + ')\nRemaining balance: $' + (Number(booking.balanceDue) || 0).toFixed(2) + '\n') : '') +
                 (cardPayUrl ? ('Card payment link: ' + cardPayUrl + '\n') : '') +
                 '\n— Schedi';
             var html = '<div style="font-family:Inter,Arial,sans-serif;line-height:1.5;color:#0f172a">' +
@@ -16030,6 +17275,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
             tenant.paymentGateways.zelle = wantZelle;
             tenant.paymentGateways.venmo = wantVenmo;
             tenant.paymentGateways.paypal = wantPaypal;
+            tenant.paymentGateways.square = SCHEDI_SQUARE_PUBLIC_ENABLED && !!(document.getElementById('tenantPaySquareCheck') && document.getElementById('tenantPaySquareCheck').checked);
             tenant.paymentGateways.later = wantLater;
             tenant.cashAppTag = document.getElementById('tenantCashAppTagInput').value.trim();
             tenant.zelleHandle = document.getElementById('tenantZelleHandleInput').value.trim();
@@ -16058,6 +17304,18 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
             }
             depSettings.enabled = wantDeposit;
             depSettings.type = depType;
+            var depMethodIds = {
+                card: 'tenantDepositMethodCard',
+                cashapp: 'tenantDepositMethodCashapp',
+                zelle: 'tenantDepositMethodZelle',
+                venmo: 'tenantDepositMethodVenmo',
+                paypal: 'tenantDepositMethodPaypal'
+            };
+            depSettings.methods = {};
+            Object.keys(depMethodIds).forEach(function (key) {
+                var box = document.getElementById(depMethodIds[key]);
+                depSettings.methods[key] = !!(box && box.checked && tenant.paymentGateways[key]);
+            });
             if (depType === 'fixed') {
                 depSettings.amount = roundMoney(depRaw);
                 depSettings.percent = 0;
@@ -18909,6 +20167,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
             
             const configStr = JSON.stringify(rawConfig);
             const appIdStr = (typeof window !== 'undefined' && window.__app_id) ? window.__app_id : (typeof __app_id !== 'undefined' ? __app_id : 'siteforge-97699');
+            var schediNewBook = false;
+            try { schediNewBook = schediNewBookOn(); } catch (newBookErr) { schediNewBook = false; }
 
             // srcdoc iframes are about:srcdoc. The shell at /{slug} already has the beacon.
             // Only the document.write fallback, which replaces that shell, should include it.
@@ -18924,7 +20184,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
             }
 
             return `<!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en" class="dark${schediNewBook ? ' schedi-newbook' : ''}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -19068,6 +20328,61 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
             .biz-logo { width: 64px; height: 64px; }
             .biz-title { font-size: 1.5rem; }
             .biz-header-body { align-items: center; padding: 16px 20px; }
+        }
+        html.schedi-newbook body { background: #06080d; color: #e7edf5; }
+        html.schedi-light.schedi-newbook body { background: #f4f7fb; color: #0f172a; }
+        html.schedi-newbook .glass-card {
+            background: #121826;
+            backdrop-filter: none;
+            border: 1px solid rgba(148, 163, 184, 0.16);
+            border-radius: 16px;
+            box-shadow: none;
+        }
+        html.schedi-light.schedi-newbook .glass-card { background: #ffffff; border-color: #d7dee8; color: #0f172a; }
+        html.schedi-newbook .glass-input { background: #0c1018; border: 1px solid rgba(148, 163, 184, 0.28); border-radius: 12px; color: #e7edf5; }
+        html.schedi-light.schedi-newbook .glass-input { background: #ffffff; color: #0f172a; border-color: #cbd5e1; }
+        html.schedi-newbook main { padding-bottom: 28px; }
+        html.schedi-newbook h2, html.schedi-newbook .biz-title { letter-spacing: -0.03em; }
+        html.schedi-newbook #pubSubmitBtn,
+        html.schedi-newbook .bg-gradient-to-r {
+            background: #10b981 !important;
+            background-image: none !important;
+            color: #042f2e !important;
+            box-shadow: none !important;
+            border-radius: 12px !important;
+            min-height: 44px;
+        }
+        html.schedi-light.schedi-newbook #pubSubmitBtn { background: #059669 !important; color: #ffffff !important; }
+        html.schedi-newbook .svc-icon, html.schedi-newbook .svc-icon-img {
+            width: 36px; height: 36px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center;
+            background: rgba(16, 185, 129, 0.14); color: #34d399; flex: 0 0 auto; object-fit: cover;
+        }
+        html.schedi-light.schedi-newbook .svc-icon { background: #ecfdf5; color: #047857; }
+        html.schedi-newbook .cal-day { border-radius: 12px; min-height: 3.4rem; }
+        html.schedi-newbook .cal-day-away .cal-day-label { letter-spacing: 0; text-transform: none; font-size: 0.58rem; line-height: 1.15; }
+        @media (max-width: 639px) {
+            .cal-day { container-type: inline-size; padding-left: 1px; padding-right: 1px; }
+            .cal-day-label,
+            html.schedi-newbook .cal-day-away .cal-day-label {
+                font-size: 20cqw;
+                letter-spacing: 0;
+                text-transform: none;
+                line-height: 1.05;
+                white-space: normal;
+                overflow-wrap: normal;
+                word-break: keep-all;
+                display: -webkit-box;
+                -webkit-box-orient: vertical;
+                -webkit-line-clamp: 2;
+                max-height: 2.15em;
+            }
+        }
+        html.schedi-newbook #paymentMethodsGrid > button { border-radius: 12px; min-height: 44px; }
+        html.schedi-newbook #timeSlotsContainer button { border-radius: 12px; min-height: 44px; }
+        @media (max-width: 640px) {
+            html.schedi-newbook header { padding-left: 12px; padding-right: 12px; }
+            html.schedi-newbook main { padding-left: 12px; padding-right: 12px; }
+            html.schedi-newbook .svc-qty { width: 44px; height: 44px; }
         }
     </style>
 </head>
@@ -19492,6 +20807,50 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
 
     <script>
         var tenantData = ${jsonTenant};
+        var SCHEDI_NEWBOOK = ${schediNewBook ? 'true' : 'false'};
+        var SCHEDI_DEMO = ${(typeof window !== 'undefined' && window.__SCHEDI_DEMO) ? 'true' : 'false'};
+        var SCHEDI_SQUARE_PUBLIC_ENABLED = false;
+        try {
+            var newBookFlag = new URLSearchParams(location.search || '').get('newbook');
+            if (newBookFlag === '1' || newBookFlag === 'true' || newBookFlag === 'on') SCHEDI_NEWBOOK = true;
+            if (newBookFlag === '0' || newBookFlag === 'false' || newBookFlag === 'off') SCHEDI_NEWBOOK = false;
+            var demoFlag = new URLSearchParams(location.search || '').get('demo');
+            if (demoFlag === '1' || demoFlag === 'true' || demoFlag === 'on') SCHEDI_DEMO = true;
+        } catch (newBookErr) {}
+        if (SCHEDI_NEWBOOK) document.documentElement.classList.add('schedi-newbook');
+        var PUBLIC_DEPOSIT_METHODS = ['card', 'cashapp', 'zelle', 'venmo', 'paypal'];
+        function publicDepositMethodMap() {
+            var stored = tenantData && tenantData.deposit && tenantData.deposit.methods;
+            var explicit = !!(stored && typeof stored === 'object' && !Array.isArray(stored));
+            var pg = (tenantData && tenantData.paymentGateways) || {};
+            var out = {};
+            PUBLIC_DEPOSIT_METHODS.forEach(function (key) {
+                var on = pg[key] === true;
+                if (explicit && typeof stored[key] === 'boolean') out[key] = stored[key] === true && on;
+                else out[key] = on;
+            });
+            return out;
+        }
+        function publicMethodAcceptsDeposit(method) {
+            if (!SCHEDI_NEWBOOK) return false;
+            var key = String(method || '').toLowerCase();
+            if (key === 'cash-app' || key === 'cash app') key = 'cashapp';
+            if (PUBLIC_DEPOSIT_METHODS.indexOf(key) === -1) return false;
+            return publicDepositMethodMap()[key] === true;
+        }
+        function publicSquareOffered() {
+            var pg = (tenantData && tenantData.paymentGateways) || {};
+            return SCHEDI_NEWBOOK && SCHEDI_SQUARE_PUBLIC_ENABLED === true && pg.square === true;
+        }
+        function publicSvcIcon(svc) {
+            if (!SCHEDI_NEWBOOK || !svc) return '';
+            var image = String(svc.imageUrl || '');
+            if (/^https:\\/\\//i.test(image)) return '<img src="' + escHtml(image) + '" alt="" class="svc-icon-img">';
+            var icon = String(svc.icon || '').toLowerCase().replace(/[^a-z0-9-]/g, '');
+            if (!icon) return '';
+            if (icon.indexOf('fa-') !== 0) icon = 'fa-' + icon;
+            return '<span class="svc-icon" aria-hidden="true"><i class="fa-solid ' + icon + '"></i></span>';
+        }
         window.addEventListener('db_ready', function () {
             if (!(window.db && window.collection && window.onSnapshot && tenantData && tenantData.id && window.appId)) return;
             var col = window.collection(window.db, 'artifacts', window.appId, 'public', 'data', 'tenants', tenantData.id, 'slots');
@@ -19833,6 +21192,21 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                     ? (bizName + ' will confirm your time. You will get an email when it is accepted.')
                     : ('See you soon at ' + bizName);
 
+                function standaloneDepositInstruction(booking) {
+                    if (!booking || !(Number(booking.depositAmount) > 0) || booking.depositPaid === true) return '';
+                    var method = String(booking.paymentMethod || '').toLowerCase();
+                    var amt = String.fromCharCode(36) + Number(booking.depositAmount).toFixed(2);
+                    var handle = '';
+                    if (method === 'cashapp') {
+                        var tag = String(tenantData.cashAppTag || '').replace(/[^A-Za-z0-9_]/g, '');
+                        handle = tag ? ('Cash App $' + tag) : '';
+                    } else if (method === 'zelle') handle = String(tenantData.zelleHandle || '').trim();
+                    else if (method === 'venmo') handle = String(tenantData.venmoHandle || '').trim();
+                    else if (method === 'paypal') handle = String(tenantData.paypalHandle || '').trim();
+                    if (method !== 'cashapp' && method !== 'zelle' && method !== 'venmo' && method !== 'paypal' && method !== 'card') return '';
+                    return 'Send the deposit of ' + amt + (handle ? (' to ' + handle) : '') + '. It stays unpaid until the business marks it paid.';
+                }
+                var depositInstr = standaloneDepositInstruction(booking);
                 var text = headline + nl + sub + nl + nl +
                     'Service: ' + (booking.serviceName || 'Appointment') + nl +
                     'Date: ' + friendlyDate + nl +
@@ -19846,6 +21220,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                     'Booking ref: #' + (booking.id || '') + nl +
                     (isSeries ? ('Recurrence: ' + recFreqLabelLocal + ' × ' + (rec.total || rec.dates.length) + nl + 'Upcoming dates: ' + seriesDatesLine + nl) : '') +
                     (Number(booking.depositAmount) > 0 ? ('Deposit: ' + String.fromCharCode(36) + Number(booking.depositAmount).toFixed(2) + nl + 'Deposit paid: ' + (booking.depositPaid === true ? 'yes' : 'no') + nl + 'Remaining balance: ' + String.fromCharCode(36) + (Number(booking.balanceDue) || 0).toFixed(2) + nl) : '') +
+                    (depositInstr ? (depositInstr + nl) : '') +
                     (cardPayUrl ? ('Pay by card:' + nl + cardPayUrl + nl) : '') +
                     (feeSentence ? (feeSentence + nl) : '') +
                     (extra ? (nl + 'Note: ' + extra + nl) : '') +
@@ -19927,6 +21302,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                         + '<p style="margin:10px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#64748b;">Or copy this link: ' + safe(cardPayUrl) + '</p>'
                         + '</td></tr>';
                 }
+                if (depositInstr) notesHtml += '<tr><td style="padding:8px 28px 0;"><div style="padding:12px 14px;border-radius:10px;background-color:#111c33;border:1px solid #334155;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#e2e8f0;">' + safe(depositInstr) + '</div></td></tr>';
                 if (feeSentence) notesHtml += '<tr><td style="padding:8px 28px 0;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#94a3b8;">' + safe(feeSentence) + '</td></tr>';
                 if (extra) notesHtml += '<tr><td style="padding:10px 28px 0;"><div style="padding:12px 14px;border-radius:10px;background-color:#111c33;border:1px solid #334155;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#cbd5e1;">' + safe(extra) + '</div></td></tr>';
                 var footerLeft = isPending ? 'We will email you when this request is accepted.' : 'Questions? Reply to this email.';
@@ -19980,6 +21356,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                     'Payment option: ' + payOpt + nl +
                     'Payment status: ' + (booking.paymentStatus || '') + nl +
                     (amountStr ? ('Amount: ' + amountStr + nl) : '') +
+                    (booking.payCode ? ('Payment code: ' + booking.payCode + nl) : '') +
+                    (depositInstr ? (depositInstr + nl) : '') +
                     (cardPayUrl ? ('Card payment link: ' + cardPayUrl + nl) : '') +
                     nl + '— Schedi';
                 var oHtml = '<div style="font-family:Arial,sans-serif;line-height:1.5">' +
@@ -20663,6 +22041,29 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
             var bal = document.getElementById('depositBalanceLabel');
             var box = document.getElementById('depositNoticeBox');
             var noPriceNote = document.getElementById('noPricePayNote');
+            var manualPay = selectedPay === 'cashapp' || selectedPay === 'zelle' || selectedPay === 'venmo' || selectedPay === 'paypal';
+            var depositHere = manualPay && quote.required && publicMethodAcceptsDeposit(selectedPay);
+            if (box && !box.dataset.defaultCopy) {
+                var copy0 = box.querySelector('p');
+                var head0 = box.querySelector('.font-bold');
+                if (copy0) box.dataset.defaultCopy = copy0.innerHTML;
+                if (head0) box.dataset.defaultHead = head0.textContent;
+            }
+            if (box) {
+                var head = box.querySelector('.font-bold');
+                var copy = box.querySelector('p');
+                if (depositHere && copy) {
+                    if (head) head.textContent = 'Deposit due now';
+                    copy.innerHTML = 'Send <strong id="depositDueLabel" class="text-emerald-400"></strong> now using the handle below. The rest (<strong id="depositBalanceLabel" class="text-white"></strong>) is due at the appointment. This stays unpaid until the business marks it paid.';
+                    due = document.getElementById('depositDueLabel');
+                    bal = document.getElementById('depositBalanceLabel');
+                } else if (copy && box.dataset.defaultCopy) {
+                    if (head) head.textContent = box.dataset.defaultHead || 'Card deposit, if you choose card';
+                    copy.innerHTML = box.dataset.defaultCopy;
+                    due = document.getElementById('depositDueLabel');
+                    bal = document.getElementById('depositBalanceLabel');
+                }
+            }
             if (quote.required) {
                 if (amt) amt.textContent = '$' + quote.deposit.toFixed(2);
                 if (due) due.textContent = '$' + quote.deposit.toFixed(2);
@@ -21120,7 +22521,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                     var qty = line.qty;
                     var onlyOne = svcCart.length === 1 && qty === 1;
                     side = '<div class="flex items-center gap-1 shrink-0" role="group" aria-label="How many ' + escHtml(s.name) + '">'
-                        + '<button type="button" onclick="changeSvcQty(' + Number(s.id) + ',-1)" ' + (onlyOne ? 'disabled aria-disabled="true" ' : '') + 'class="w-8 h-8 rounded-lg border border-slate-700 bg-slate-900 text-white font-black ' + (onlyOne ? 'opacity-40 cursor-not-allowed' : 'hover:border-emerald-500') + '" aria-label="One less ' + escHtml(s.name) + '">−</button>'
+                        + '<button type="button" onclick="changeSvcQty(' + Number(s.id) + ',-1)" ' + (onlyOne ? 'disabled aria-disabled="true" ' : '') + 'class="svc-qty w-8 h-8 rounded-lg border border-slate-700 bg-slate-900 text-white font-black ' + (onlyOne ? 'opacity-40 cursor-not-allowed' : 'hover:border-emerald-500') + '" aria-label="One less ' + escHtml(s.name) + '">−</button>'
                         + '<span class="min-w-[1.75rem] text-center text-sm font-black text-white" aria-live="polite">' + qty + '</span>'
                         + '<button type="button" onclick="changeSvcQty(' + Number(s.id) + ',1)" class="w-8 h-8 rounded-lg border border-slate-700 bg-slate-900 text-white font-black hover:border-emerald-500" aria-label="One more ' + escHtml(s.name) + '">+</button>'
                         + '</div>';
@@ -21129,6 +22530,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                 }
                 return '<div class="flex items-center gap-2 p-3 rounded-xl border transition-all ' +
                     (active ? 'bg-emerald-500/10 border-emerald-500 glow-emerald' : 'bg-slate-900 border-slate-800') + '">' +
+                    publicSvcIcon(s) +
                     '<button type="button" onclick="selectSvc(' + Number(s.id) + ')" aria-pressed="' + (active ? 'true' : 'false') + '" class="flex-1 min-w-0 text-left p-1 cursor-pointer">' +
                     '<div class="font-bold text-xs text-white">' + escHtml(s.name) + '</div>' +
                     '<div class="text-[11px] text-emerald-400 font-bold mt-1">' + info + '</div>' +
@@ -21293,14 +22695,19 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                 else if (isSpecialOpen) state = 'special';
 
                 let label = 'Open';
-                if (isAway) label = 'Away';
+                var awayText = String(awayLabel || 'Away');
+                var awayShort = awayText.length > 18 ? (awayText.slice(0, 17) + '\\u2026') : awayText;
+                var phoneCal = false;
+                try { phoneCal = window.matchMedia('(max-width: 639px)').matches; } catch (errPhoneCal) {}
+                if (isAway) label = (SCHEDI_NEWBOOK && !phoneCal) ? awayShort : 'Away';
                 else if (!isOpen || isPast) label = isPast && isOpen ? 'Past' : 'Closed';
                 else if (isSelected && isToday) label = 'Today';
                 else if (isSelected) label = 'Selected';
                 else if (isSpecialOpen) label = 'Special';
                 else if (isToday) label = 'Today';
 
-                html += \`<button type="button" onclick="selectDate('\${isoStr}')" \${isPast ? 'disabled' : ''} class="cal-day cal-day-\${state}\${isToday ? ' cal-day-today' : ''}" aria-pressed="\${isSelected ? 'true' : 'false'}"\${isToday ? ' aria-current="date"' : ''} aria-label="\${label} \${monthNames[viewMonth]} \${day}">
+                var awayAria = (SCHEDI_NEWBOOK && isAway) ? awayText : label;
+                html += \`<button type="button" onclick="selectDate('\${isoStr}')" \${isPast ? 'disabled' : ''} class="cal-day cal-day-\${state}\${isToday ? ' cal-day-today' : ''}" aria-pressed="\${isSelected ? 'true' : 'false'}"\${isToday ? ' aria-current="date"' : ''} aria-label="\${awayAria} \${monthNames[viewMonth]} \${day}">
                     <span class="cal-day-num">\${day}</span>
                     <span class="cal-day-label">\${label}</span>
                 </button>\`;
@@ -21308,6 +22715,18 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
 
             container.innerHTML = html;
         }
+
+        try {
+            var phoneCalMq = window.matchMedia('(max-width: 639px)');
+            var phoneCalWas = phoneCalMq.matches;
+            var onPhoneCal = function () {
+                if (phoneCalMq.matches === phoneCalWas) return;
+                phoneCalWas = phoneCalMq.matches;
+                renderMonthCalendar();
+            };
+            if (phoneCalMq.addEventListener) phoneCalMq.addEventListener('change', onPhoneCal);
+            else if (phoneCalMq.addListener) phoneCalMq.addListener(onPhoneCal);
+        } catch (errPhoneCalWatch) {}
 
         window.selectDate = function(dateStr) {
             selectedDateStr = dateStr;
@@ -21491,15 +22910,19 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
             if (!box) return;
             var manual = selectedPay === 'cashapp' || selectedPay === 'venmo' || selectedPay === 'zelle' || selectedPay === 'paypal';
             var quote = selectedServiceDepositQuote();
-            if (!manual || quote.required) { box.classList.add('hidden'); return; }
+            var depositHere = manual && quote.required && publicMethodAcceptsDeposit(selectedPay);
+            if (!manual || (quote.required && !depositHere)) { box.classList.add('hidden'); return; }
             var price = cartPrice();
-            var amount = (price !== null && Number(price) > 0) ? ('$' + (Number.isInteger(Number(price)) ? String(Number(price)) : Number(price).toFixed(2))) : 'your payment';
+            var amount = depositHere
+                ? ('the deposit of $' + quote.deposit.toFixed(2))
+                : ((price !== null && Number(price) > 0) ? ('$' + (Number.isInteger(Number(price)) ? String(Number(price)) : Number(price).toFixed(2))) : 'your payment');
             var handle = payCodeHandleFor(selectedPay);
             var biz = String(tenantData.name || 'the business');
+            var rest = depositHere && quote.balance != null ? (' The rest ($' + quote.balance.toFixed(2) + ') is due at the appointment. This deposit stays unpaid until ' + biz + ' marks it paid.') : '';
             var instr = document.getElementById('payCodeInstr');
             if (instr) {
                 instr.innerHTML = 'Send <strong class="text-white">' + escPub(amount) + '</strong>' + (handle ? (' to <strong class="text-white">' + escPub(handle) + '</strong>') : '')
-                    + ' and put <strong class="text-emerald-300 font-mono">' + escPub(pubPayCode) + '</strong> in the note so ' + escPub(biz) + ' can match your payment.';
+                    + ' and put <strong class="text-emerald-300 font-mono">' + escPub(pubPayCode) + '</strong> in the note so ' + escPub(biz) + ' can match your payment.' + escPub(rest);
             }
             var val = document.getElementById('payCodeValue');
             if (val) val.textContent = pubPayCode;
@@ -21567,6 +22990,9 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
             if (pg.paypal) {
                 html += \`<button type="button" onclick="selectPay('paypal')" class="px-4 py-3 flex-1 min-w-[100px] rounded-xl border font-bold \${selectedPay === 'paypal' ? 'border-blue-500 text-blue-300 bg-blue-500/10' : 'border-slate-800 text-slate-400 bg-slate-900'}"><i class="fa-brands fa-paypal block mb-1"></i>PayPal</button>\`;
             }
+            if (publicSquareOffered()) {
+                html += \`<button type="button" onclick="selectPay('square')" class="px-4 py-3 flex-1 min-w-[100px] rounded-xl border font-bold \${selectedPay === 'square' ? 'border-slate-300 text-slate-100 bg-slate-700/40' : 'border-slate-800 text-slate-400 bg-slate-900'}"><i class="fa-solid fa-square block mb-1"></i>Square</button>\`;
+            }
             if (pg.later) {
                 html += \`<button type="button" onclick="selectPay('later')" class="px-4 py-3 flex-1 min-w-[100px] rounded-xl border font-bold \${selectedPay === 'later' ? 'border-emerald-500 text-emerald-400 bg-emerald-500/10 glow-emerald' : 'border-slate-800 text-slate-400 bg-slate-900'}"><i class="fa-solid fa-handshake block mb-1"></i>Pay at Appt</button>\`;
             }
@@ -21575,7 +23001,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                 html = '<button type="button" class="px-4 py-3 flex-1 min-w-[100px] rounded-xl border font-bold border-emerald-500 text-emerald-400 bg-emerald-500/10 glow-emerald"><i class="fa-solid fa-handshake block mb-1"></i>Pay at Appt</button>';
             } else {
                 // The current choice must be one of the options shown (default was 'card' even when card is off).
-                var offered = ['card', 'cashapp', 'zelle', 'venmo', 'paypal', 'later'].filter(function (m) { return html.indexOf("selectPay('" + m + "')") !== -1; });
+                var offered = ['card', 'cashapp', 'zelle', 'venmo', 'paypal', 'square', 'later'].filter(function (m) { return html.indexOf("selectPay('" + m + "')") !== -1; });
                 if (offered.indexOf(selectedPay) === -1 && offered.length) {
                     selectedPay = offered[0];
                     return renderPay();
@@ -21601,6 +23027,10 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
             }
             if (bookingPlan() === 'free' && method !== 'later') {
                 failPublicPay('Free plan only allows pay at the appointment. This booking was not saved.');
+                method = 'later';
+            }
+            if (method === 'square' && !publicSquareOffered()) {
+                failPublicPay('Square is not available on this page. This booking was not saved.');
                 method = 'later';
             }
             selectedPay = method;
@@ -21823,6 +23253,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                         if (selectedPay === 'zelle') return 'PENDING ZELLE';
                         if (selectedPay === 'venmo') return 'PENDING VENMO';
                         if (selectedPay === 'paypal') return 'PENDING PAYPAL';
+                        if (selectedPay === 'square') return 'PENDING SQUARE';
                         return 'PAY AT APPOINTMENT';
                     })();
                 const payOptLabel = (function () {
@@ -21833,6 +23264,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                         if (selectedPay === 'venmo') return 'Venmo';
                         if (selectedPay === 'paypal') return 'PayPal';
                         if (selectedPay === 'later') return 'Pay at Appointment';
+                        if (selectedPay === 'square') return 'Square';
                         return paymentOptionLabel(selectedPay);
                     })();
 
@@ -21879,14 +23311,15 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                         durationMins: cartDurationMins()
                     };
                     if (bookingAmount !== null && bookingAmount !== undefined) b.amount = bookingAmount;
-                    if (payByCard && depositQuote.required) {
+                    var manualDeposit = !payByCard && publicMethodAcceptsDeposit(selectedPay) && depositQuote.required;
+                    if ((payByCard && depositQuote.required) || manualDeposit) {
                         b.depositAmount = depositQuote.deposit;
                         b.depositPaid = false;
                         b.balanceDue = depositQuote.balance;
                     }
                     if (bookingIsPendingReview) b.status = 'pending';
                     if (!b.createdAt) b.createdAt = new Date().toISOString();
-                    if (selectedPay !== 'card' && !depositQuote.required) b.payCode = idx === 0 ? pubPayCode : newPayCode();
+                    if (selectedPay !== 'card' && (!depositQuote.required || manualDeposit)) b.payCode = idx === 0 ? pubPayCode : newPayCode();
                     if (seriesId) {
                         b.seriesId = seriesId;
                         b.recurrence = {
@@ -21946,6 +23379,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                             }
                             return copy;
                         });
+                        if (SCHEDI_DEMO) return Promise.resolve({ ok: true, data: { ok: true, demo: true } });
                         return fetch('https://schedi.app/api/bookings', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
@@ -21980,7 +23414,9 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                         var created = !!(out && out.ok && out.data && out.data.ok);
                         var emailQueued = false;
                         if (created) {
-                            try { queueStandaloneConfirmationEmail(booking); emailQueued = true; } catch (err) { console.warn('Confirmation email skipped:', err); }
+                            if (!SCHEDI_DEMO) {
+                                try { queueStandaloneConfirmationEmail(booking); emailQueued = true; } catch (err) { console.warn('Confirmation email skipped:', err); }
+                            }
                         }
                         if (window.parent === window) return;
                         // A too_soon reject was not saved; do not hand the portal a booking the server refused.
@@ -22121,6 +23557,21 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                     return 'https://venmo.com/u/' + encodeURIComponent(user);
                 }
 
+                function shownManualAmount() {
+                    return (publicMethodAcceptsDeposit(selectedPay) && depositQuote.required) ? depositQuote.deposit : bookingAmount;
+                }
+                function paintManualDepositNote(box) {
+                    if (!box) return;
+                    var note = box.querySelector('.manual-deposit-note');
+                    if (!note) {
+                        note = document.createElement('p');
+                        note.className = 'manual-deposit-note hidden text-amber-200';
+                        box.appendChild(note);
+                    }
+                    var on = publicMethodAcceptsDeposit(selectedPay) && depositQuote.required;
+                    note.textContent = on ? 'This amount is the deposit. It stays unpaid until the business marks it paid. The rest is due at the appointment.' : '';
+                    note.classList.toggle('hidden', !on);
+                }
                 function setAmountWrap(wrapId, amountId, amount) {
                     var wrap = document.getElementById(wrapId);
                     var el = document.getElementById(amountId);
@@ -22200,7 +23651,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                         cashAppBox.classList.remove('hidden');
                         document.getElementById('resCashTag').textContent = cleanTag || 'not configured';
                         document.getElementById('cashTagBadge').textContent = cleanTag || '—';
-                        setAmountWrap('resCashAmountWrap', 'resCashAmount', bookingAmount);
+                        setAmountWrap('resCashAmountWrap', 'resCashAmount', shownManualAmount());
+                        paintManualDepositNote(cashAppBox);
                         var cashBtn = document.getElementById('resCashBtn');
                         if (cleanTag) {
                             cashBtn.href = 'https://cash.app/' + encodeURIComponent(cleanTag);
@@ -22217,7 +23669,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                         zelleBox.classList.remove('hidden');
                         document.getElementById('resZelleHandle').textContent = zHandle || 'not configured';
                         document.getElementById('zelleHandleBadge').textContent = zHandle || '—';
-                        setAmountWrap('resZelleAmountWrap', 'resZelleAmount', bookingAmount);
+                        setAmountWrap('resZelleAmountWrap', 'resZelleAmount', shownManualAmount());
+                        paintManualDepositNote(zelleBox);
                         var zCopy = document.getElementById('resZelleCopyBtn');
                         if (zCopy) {
                             zCopy.onclick = function () { copyTextToClipboard(zHandle); zCopy.textContent = 'Copied!'; setTimeout(function(){ zCopy.innerHTML = '<i class="fa-solid fa-copy mr-1"></i> Copy Zelle Handle'; }, 1500); };
@@ -22242,7 +23695,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                         venmoBox.classList.remove('hidden');
                         document.getElementById('resVenmoHandle').textContent = vDisplay;
                         document.getElementById('venmoHandleBadge').textContent = vUser ? ('@' + vUser) : '—';
-                        setAmountWrap('resVenmoAmountWrap', 'resVenmoAmount', bookingAmount);
+                        setAmountWrap('resVenmoAmountWrap', 'resVenmoAmount', shownManualAmount());
+                        paintManualDepositNote(venmoBox);
                         var vBtn = document.getElementById('resVenmoBtn');
                         if (vBtn) {
                             if (vUrl) {
@@ -22263,7 +23717,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                         paypalBox.classList.remove('hidden');
                         document.getElementById('resPaypalHandle').textContent = pHandle || 'not configured';
                         document.getElementById('paypalHandleBadge').textContent = pHandle || '—';
-                        setAmountWrap('resPaypalAmountWrap', 'resPaypalAmount', bookingAmount);
+                        setAmountWrap('resPaypalAmountWrap', 'resPaypalAmount', shownManualAmount());
+                        paintManualDepositNote(paypalBox);
                         var pBtn = document.getElementById('resPaypalBtn');
                         var pCopy = document.getElementById('resPaypalCopyBtn');
                         if (pUrl) {
