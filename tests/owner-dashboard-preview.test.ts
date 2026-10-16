@@ -246,9 +246,16 @@ describe("owner dashboard preview", () => {
     expect(html).toContain('class="sd-pay-choice');
     expect(html).toContain("does not refund");
     expect(html).toContain('id="unpaidStripeModal"');
-    expect(html).toContain("data-theme-set=\"light\"");
-    expect(html).toContain("data-theme-set=\"dark\"");
+    expect(html).toContain('data-theme-toggle="1"');
+    expect(html.split('data-theme-toggle="1"').length - 1).toBe(4);
+    expect(html).not.toContain('data-theme-set="light"');
     expect(html).toContain("window.setSchediTheme");
+    expect(html).toContain("toggleSchediTheme");
+    expect(html).toContain('id="schediDashAccountMenu"');
+    expect(html).toContain('id="rosterSearchInput"');
+    expect(html).toContain("function rosterSearchAppointments");
+    expect(html).toContain("sd-row-side");
+    expect(html).toContain("placeSchediMoreMenu");
     expect(html).toContain('class="sd-book-rules"');
     expect(html).toContain('class="sd-outages"');
     expect(html).toContain("sd-hours-hint-gap");
@@ -528,14 +535,39 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
         const review = document.getElementById("schediStatReview");
         return today?.textContent === "4" && review?.textContent === "2" && document.body.textContent?.includes("Maya Chen");
       }, { timeout: 20000 });
-      const stats = await page.evaluate(() => ({
-        week: document.getElementById("schediStatWeek")?.textContent,
-        unpaid: document.getElementById("schediStatUnpaid")?.textContent,
-        setup: document.getElementById("schediSetupTitle")?.textContent,
-        dash: document.body.classList.contains("schedi-newdash"),
-        demo: document.getElementById("schediDemoNote")?.hidden === false,
-      }));
-      expect(stats).toEqual({ week: "$478", unpaid: "7", setup: "Finish setting up 5 of 6", dash: true, demo: true });
+      const stats = await page.evaluate(() => {
+        const tenant = (window as unknown as { getTenant: () => { appointments: { id: string; date?: string; status?: string; amount?: number }[] } }).getTenant();
+        const today = tenant.appointments.find((app) => app.id === "HB-1001")?.date || "";
+        const parts = today.split("-").map((part) => Number(part));
+        const cursor = new Date(parts[0], parts[1] - 1, parts[2]);
+        cursor.setDate(cursor.getDate() - cursor.getDay());
+        const iso = (date: Date) => date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, "0") + "-" + String(date.getDate()).padStart(2, "0");
+        const start = iso(cursor);
+        cursor.setDate(cursor.getDate() + 6);
+        const end = iso(cursor);
+        let money = 0;
+        tenant.appointments.forEach((app) => {
+          const status = String(app.status || "").toLowerCase();
+          if (status === "cancelled" || status === "canceled" || status === "denied") return;
+          if (!app.date || app.date < start || app.date > end) return;
+          if (app.amount == null || app.amount === ("" as unknown as number)) return;
+          const amount = Number(app.amount);
+          if (Number.isFinite(amount)) money += amount;
+        });
+        return {
+          week: document.getElementById("schediStatWeek")?.textContent,
+          weekExpected: "$" + money,
+          unpaid: document.getElementById("schediStatUnpaid")?.textContent,
+          setup: document.getElementById("schediSetupTitle")?.textContent,
+          dash: document.body.classList.contains("schedi-newdash"),
+          demo: document.getElementById("schediDemoNote")?.hidden === false,
+        };
+      });
+      expect(stats.dash).toBe(true);
+      expect(stats.demo).toBe(true);
+      expect(stats.setup).toBe("Finish setting up 5 of 6");
+      expect(stats.unpaid).toBe("7");
+      expect(stats.week).toBe(stats.weekExpected);
       const accept = await page.evaluate(() => {
         const button = [...document.querySelectorAll("button")].find((node) => node.textContent === "Accept");
         if (!button) return "missing";

@@ -586,6 +586,13 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-demo-note { color: #03
 #tenantPortalSection.schedi-newdash .sd-meta { margin: 3px 0 0; color: var(--sd-muted); font-size: 12px; }
 #tenantPortalSection.schedi-newdash .sd-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 #tenantPortalSection.schedi-newdash .sd-row { display: grid; grid-template-columns: 92px minmax(0, 1fr) auto auto; gap: 10px; align-items: center; }
+#tenantPortalSection.schedi-newdash .sd-row-main { min-width: 0; }
+#tenantPortalSection.schedi-newdash .sd-row-main h4 { display: flex; align-items: center; gap: 6px; min-width: 0; min-height: 26px; }
+#tenantPortalSection.schedi-newdash .sd-row-main h4 .sd-pill { flex: none; }
+#tenantPortalSection.schedi-newdash .sd-row-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#tenantPortalSection.schedi-newdash .sd-row-main .sd-meta { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#tenantPortalSection.schedi-newdash .sd-row-side { display: flex; align-items: center; justify-content: flex-end; min-width: 0; }
+#tenantPortalSection.schedi-newdash .sd-more { justify-self: end; }
 #tenantPortalSection.schedi-newdash .sd-time { font-weight: 800; color: var(--sd-brand-2); font-size: 13px; }
 #tenantPortalSection.schedi-newdash .sd-pill { display: inline-flex; align-items: center; border-radius: 999px; padding: 3px 8px; font-size: 11px; font-weight: 800; border: 1px solid transparent; white-space: nowrap; }
 #tenantPortalSection.schedi-newdash .sd-pill-ok { color: var(--sd-brand-2); background: rgba(16, 185, 129, 0.14); border-color: rgba(16, 185, 129, 0.3); }
@@ -799,11 +806,14 @@ body.schedi-newdash.sd-client-panel-open { overflow: hidden; }
 }
 #tenantPortalSection.schedi-newdash .sd-more > summary::-webkit-details-marker { display: none; }
 #tenantPortalSection.schedi-newdash .sd-more-menu {
-    position: absolute;
-    z-index: 5;
-    right: 0;
-    top: 40px;
+    position: fixed;
+    z-index: 60;
+    left: 0;
+    top: 0;
+    visibility: hidden;
     min-width: 180px;
+    max-height: min(320px, calc(100vh - 96px));
+    overflow: auto;
     padding: 6px;
     border-radius: 14px;
     border: 1px solid var(--sd-line);
@@ -934,8 +944,8 @@ body.schedi-newdash.sd-client-panel-open { overflow: hidden; }
     #tenantPortalSection.schedi-newdash .sd-user-name { display: none; }
     #tenantPortalSection.schedi-newdash .sd-stats { grid-template-columns: 1fr 1fr; }
     #tenantPortalSection.schedi-newdash .sd-today-head,
-    #tenantPortalSection.schedi-newdash .sd-request,
-    #tenantPortalSection.schedi-newdash .sd-row { display: flex; flex-wrap: wrap; }
+    #tenantPortalSection.schedi-newdash .sd-request { display: flex; flex-wrap: wrap; }
+    #tenantPortalSection.schedi-newdash .sd-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; }
     #tenantPortalSection.schedi-newdash .sd-today-actions,
     #tenantPortalSection.schedi-newdash .sd-today-actions .sd-btn { width: 100%; }
     #tenantPortalSection.schedi-newdash .sd-today-actions .sd-btn { justify-content: center; }
@@ -1044,7 +1054,10 @@ html.schedi-light body.schedi-newdash .sd-svc-mark { color: #047857; }
 body.schedi-newdash .sd-svc-mark svg,
 body.schedi-newdash .sd-svc-mark img { width: 16px; height: 16px; display: block; object-fit: cover; border-radius: 4px; }
 body.schedi-newdash #tenantServicesGrid svg,
-body.schedi-newdash #svcIconGrid svg { width: 22px; height: 22px; display: block; }
+body.schedi-newdash #svcIconGrid svg,
+body.schedi-newdash #svcIconGrid .fa-solid { width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; font-size: 18px; }
+#tenantPortalSection.schedi-newdash .sd-svc-mark .fa-solid,
+body.schedi-newdash .sd-svc-mark .fa-solid { font-size: 14px; line-height: 1; }
 body.schedi-newdash #tenantServicesGrid .sd-svc-img { width: 100%; height: 100%; object-fit: cover; display: block; }
 body.schedi-newdash #svcIconUploadDrop {
     position: relative;
@@ -1553,14 +1566,128 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-busy-error { color: #b
 body.schedi-newdash .sd-theme {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    padding: 3px;
-    border-radius: 999px;
-    border: 1px solid var(--sd-line);
-    background: transparent;
 }
-#tenantPortalSection.schedi-newdash #schediDashSidebar .sd-theme { margin: 10px 4px 0; align-self: flex-start; }
+#tenantPortalSection.schedi-newdash #schediDashSidebar .sd-theme { margin: 0 0 8px; align-self: flex-start; }
 #tenantPortalSection.schedi-newdash #schediDashMoreSheet .sd-theme { margin: 8px; }
+#tenantPortalSection.schedi-newdash .sd-user-phone { display: none; }
+#tenantPortalSection.schedi-newdash .sd-side-foot {
+    margin-top: auto;
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    padding-top: 10px;
+    background: var(--sd-panel);
+}
+#tenantPortalSection.schedi-newdash .sd-account-btn {
+    width: 100%;
+    justify-content: flex-start;
+    border-radius: 14px;
+    padding: 8px;
+    text-align: left;
+}
+#tenantPortalSection.schedi-newdash .sd-account-copy { display: flex; flex-direction: column; min-width: 0; line-height: 1.2; }
+#tenantPortalSection.schedi-newdash .sd-account-btn .sd-user-name { font-size: 13px; }
+#tenantPortalSection.schedi-newdash .sd-user-plan { color: var(--sd-muted); font-size: 11px; font-weight: 700; }
+#tenantPortalSection.schedi-newdash .sd-avatar-img { width: 32px; height: 32px; border-radius: 999px; object-fit: cover; display: block; }
+#tenantPortalSection.schedi-newdash #schediDashAccountMenu {
+    position: fixed;
+    z-index: 60;
+    min-width: 220px;
+    padding: 6px;
+    border-radius: 16px;
+    border: 1px solid var(--sd-line);
+    background: var(--sd-panel);
+    box-shadow: var(--sd-shadow);
+}
+#tenantPortalSection.schedi-newdash #schediDashAccountMenu button {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    text-align: left;
+    border: 0;
+    background: transparent;
+    color: var(--sd-text);
+    border-radius: 12px;
+    padding: 10px 12px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+}
+#tenantPortalSection.schedi-newdash #schediDashAccountMenu button:hover { background: rgba(148, 163, 184, 0.1); }
+#tenantPortalSection.schedi-newdash .sd-roster-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; }
+#tenantPortalSection.schedi-newdash .sd-roster-search { position: relative; display: flex; align-items: center; gap: 6px; min-width: 0; }
+#tenantPortalSection.schedi-newdash .sd-roster-search-toggle { display: none; }
+#tenantPortalSection.schedi-newdash .sd-roster-search-field {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: min(280px, 46vw);
+    min-height: 40px;
+    padding: 0 8px 0 12px;
+    border-radius: 12px;
+    border: 1px solid var(--sd-line);
+    background: var(--sd-panel);
+    color: var(--sd-muted);
+}
+#tenantPortalSection.schedi-newdash .sd-roster-search-field input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    background: transparent;
+    color: var(--sd-text);
+    font-size: 13px;
+    font-weight: 700;
+    padding: 8px 0;
+}
+#tenantPortalSection.schedi-newdash .sd-roster-search-field input:focus { outline: none; }
+#tenantPortalSection.schedi-newdash .sd-roster-search-field:focus-within { box-shadow: 0 0 0 2px #10b981; }
+#tenantPortalSection.schedi-newdash .sd-roster-search-clear {
+    width: 28px;
+    height: 28px;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--sd-text);
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+}
+#tenantPortalSection.schedi-newdash .sd-roster-results {
+    position: absolute;
+    z-index: 50;
+    top: calc(100% + 6px);
+    left: 0;
+    width: min(420px, calc(100vw - 32px));
+    max-height: min(420px, 60vh);
+    overflow: auto;
+    padding: 6px;
+    border-radius: 16px;
+    border: 1px solid var(--sd-line);
+    background: var(--sd-panel);
+    box-shadow: var(--sd-shadow);
+}
+#tenantPortalSection.schedi-newdash .sd-roster-date { margin: 8px 8px 4px; color: var(--sd-muted); font-size: 11px; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; }
+#tenantPortalSection.schedi-newdash .sd-roster-hit {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+    text-align: left;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    color: var(--sd-text);
+    padding: 8px;
+    cursor: pointer;
+}
+#tenantPortalSection.schedi-newdash .sd-roster-hit:hover { background: rgba(148, 163, 184, 0.1); }
+#tenantPortalSection.schedi-newdash .sd-roster-hit-main { min-width: 0; display: flex; flex-direction: column; }
+#tenantPortalSection.schedi-newdash .sd-roster-hit-main strong { font-size: 13px; }
+#tenantPortalSection.schedi-newdash .sd-roster-hit-main span { color: var(--sd-muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#tenantPortalSection.schedi-newdash .sd-roster-empty { margin: 0; padding: 12px; color: var(--sd-muted); font-size: 13px; font-weight: 700; }
+#tenantPortalSection.schedi-newdash .sd-nav-foot { margin-top: 12px; }
 #tenantPortalSection.schedi-newdash .sd-theme-opt,
 body.schedi-newdash .sd-theme-opt {
     display: inline-flex;
@@ -2005,9 +2132,27 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
         padding-left: max(12px, env(safe-area-inset-left));
         padding-right: max(12px, env(safe-area-inset-right));
     }
-    #tenantPortalSection.schedi-newdash #schediDashTop .sd-theme-opt span,
-    #tenantPortalSection.schedi-newdash #schediDashTop .schedi-theme-btn-label { display: none; }
-    #tenantPortalSection.schedi-newdash #schediDashTop .sd-theme-opt { min-width: 44px; min-height: 44px; padding: 0 10px; }
+    #tenantPortalSection.schedi-newdash .sd-theme-opt span,
+    #tenantPortalSection.schedi-newdash #schediDashTop .schedi-theme-btn-label { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); border: 0; }
+    #tenantPortalSection.schedi-newdash .sd-theme-opt { min-width: 44px; min-height: 44px; padding: 0 10px; }
+    #tenantPortalSection.schedi-newdash .sd-user-phone { display: inline-flex; }
+    #tenantPortalSection.schedi-newdash .sd-roster-search-toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        border: 1px solid var(--sd-line);
+        background: var(--sd-panel);
+        color: var(--sd-text);
+        cursor: pointer;
+    }
+    #tenantPortalSection.schedi-newdash .sd-roster-search:not(.is-open) .sd-roster-search-field,
+    #tenantPortalSection.schedi-newdash .sd-roster-search:not(.is-open) .sd-roster-results { display: none; }
+    #tenantPortalSection.schedi-newdash .sd-roster-search.is-open { flex: 1 1 100%; }
+    #tenantPortalSection.schedi-newdash .sd-roster-search.is-open .sd-roster-search-field { display: flex; width: 100%; min-width: 0; }
+    #tenantPortalSection.schedi-newdash .sd-roster-results { width: min(420px, calc(100vw - 28px)); }
     #tenantPortalSection.schedi-newdash #schediDashTop .sd-text-btn,
     #tenantPortalSection.schedi-newdash #schediDashTop .sd-user { min-height: 44px; }
     #tenantPortalSection.schedi-newdash .sd-btn,
@@ -2500,9 +2645,20 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                             <button type="button" data-dash-go="profile"><i class="fa-solid fa-store" aria-hidden="true"></i><span>Business profile</span></button>
                             <button type="button" data-dash-go="billing"><i class="fa-solid fa-receipt" aria-hidden="true"></i><span>Plan &amp; billing</span></button>
                         </div>
-                        <div class="sd-theme" role="group" aria-label="Color theme">
-                            <button type="button" class="sd-theme-opt sd-theme-light" data-theme-set="light" onclick="setSchediTheme('light')" aria-pressed="false"><i class="fa-solid fa-sun" aria-hidden="true"></i><span>Light</span></button>
-                            <button type="button" class="sd-theme-opt sd-theme-dark" data-theme-set="dark" onclick="setSchediTheme('dark')" aria-pressed="true"><i class="fa-solid fa-moon" aria-hidden="true"></i><span>Dark</span></button>
+                        <div class="sd-side-foot">
+                            <div class="sd-theme">
+                                <button type="button" class="sd-theme-opt sd-theme-light" data-theme-toggle="1" onclick="toggleSchediTheme()" title="Switch to light theme" aria-label="Switch to light theme"><i class="fa-solid fa-sun" aria-hidden="true"></i><span>Light</span></button>
+                            </div>
+                            <div class="sd-account" id="schediDashAccount">
+                                <button type="button" class="sd-user sd-account-btn" id="schediDashUserBtn" onclick="schediDashToggleAccount(event)" aria-haspopup="menu" aria-expanded="false" aria-controls="schediDashAccountMenu">
+                                    <span id="schediDashUserInitials" class="sd-avatar" aria-hidden="true">S</span>
+                                    <img id="schediDashUserLogo" class="sd-avatar-img" alt="" hidden>
+                                    <span class="sd-account-copy">
+                                        <span id="schediDashUserName" class="sd-user-name">Business</span>
+                                        <span id="schediDashUserPlan" class="sd-user-plan">Plan</span>
+                                    </span>
+                                </button>
+                            </div>
                         </div>
                     </aside>
                     <header id="schediDashTop">
@@ -2512,13 +2668,11 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                         </a>
                         <div class="sd-top-spacer"></div>
                         <button type="button" class="sd-text-btn" onclick="schediDashHelp(true)"><i class="fa-solid fa-circle-question" aria-hidden="true"></i><span>Help</span></button>
-                        <div class="sd-theme" role="group" aria-label="Color theme">
-                            <button type="button" class="sd-theme-opt sd-theme-light" data-theme-set="light" onclick="setSchediTheme('light')" aria-pressed="false"><i class="fa-solid fa-sun" aria-hidden="true"></i><span>Light</span></button>
-                            <button type="button" class="sd-theme-opt sd-theme-dark" data-theme-set="dark" onclick="setSchediTheme('dark')" aria-pressed="true"><i class="fa-solid fa-moon" aria-hidden="true"></i><span>Dark</span></button>
+                        <div class="sd-theme">
+                            <button type="button" class="sd-theme-opt sd-theme-light" data-theme-toggle="1" onclick="toggleSchediTheme()" title="Switch to light theme" aria-label="Switch to light theme"><i class="fa-solid fa-sun" aria-hidden="true"></i><span>Light</span></button>
                         </div>
-                        <button type="button" class="sd-user" data-dash-go="account" id="schediDashUserBtn">
-                            <span id="schediDashUserInitials" class="sd-avatar" aria-hidden="true">S</span>
-                            <span id="schediDashUserName" class="sd-user-name">Owner</span>
+                        <button type="button" class="sd-user sd-user-phone" id="schediDashUserBtnPhone" onclick="schediDashToggleAccount(event)" aria-haspopup="menu" aria-expanded="false" aria-controls="schediDashAccountMenu">
+                            <span id="schediDashUserInitialsPhone" class="sd-avatar" aria-hidden="true">S</span>
                         </button>
                     </header>
                     <p id="schediDemoNote" class="sd-demo-note" hidden>Demo · sample business · nothing is saved or sent</p>
@@ -2565,6 +2719,12 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                         <button type="button" data-dash-go="clients"><i class="fa-solid fa-address-book" aria-hidden="true"></i><span>Clients</span></button>
                         <button type="button" id="schediDashMoreBtn" onclick="schediDashToggleMore()"><i class="fa-solid fa-ellipsis" aria-hidden="true"></i><span>More</span></button>
                     </nav>
+                    <div id="schediDashAccountMenu" class="sd-popover" hidden role="menu" aria-label="Account">
+                        <button type="button" role="menuitem" data-dash-go="profile"><i class="fa-solid fa-store" aria-hidden="true"></i><span>Business profile</span></button>
+                        <button type="button" role="menuitem" data-dash-go="account"><i class="fa-solid fa-key" aria-hidden="true"></i><span>Account &amp; password</span></button>
+                        <button type="button" role="menuitem" data-dash-go="billing"><i class="fa-solid fa-receipt" aria-hidden="true"></i><span>Plan &amp; billing</span></button>
+                        <button type="button" role="menuitem" class="sd-danger" onclick="schediDashClosePopovers(); handleTenantLogout()"><i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i><span>Sign out</span></button>
+                    </div>
                     <div id="schediDashAddMenu" class="sd-popover" hidden role="menu" aria-label="Add appointment">
                         <button type="button" role="menuitem" data-dash-add="appointment"><i class="fa-solid fa-calendar-plus" aria-hidden="true"></i><span>Appointment</span></button>
                         <button type="button" role="menuitem" data-dash-add="walkin"><i class="fa-solid fa-person-walking" aria-hidden="true"></i><span>Walk-in</span></button>
@@ -2583,9 +2743,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                             <button type="button" data-dash-go="account"><i class="fa-solid fa-key" aria-hidden="true"></i><span>Account &amp; password</span></button>
                             <button type="button" data-dash-go="billing"><i class="fa-solid fa-receipt" aria-hidden="true"></i><span>Plan &amp; billing</span></button>
                             <button type="button" onclick="schediDashHelp(true)"><i class="fa-solid fa-circle-question" aria-hidden="true"></i><span>Help</span></button>
-                            <div class="sd-theme" role="group" aria-label="Color theme">
-                                <button type="button" class="sd-theme-opt sd-theme-light" data-theme-set="light" onclick="setSchediTheme('light')" aria-pressed="false"><i class="fa-solid fa-sun" aria-hidden="true"></i><span>Light</span></button>
-                                <button type="button" class="sd-theme-opt sd-theme-dark" data-theme-set="dark" onclick="setSchediTheme('dark')" aria-pressed="true"><i class="fa-solid fa-moon" aria-hidden="true"></i><span>Dark</span></button>
+                            <div class="sd-theme">
+                                <button type="button" class="sd-theme-opt sd-theme-light" data-theme-toggle="1" onclick="toggleSchediTheme()" title="Switch to light theme" aria-label="Switch to light theme"><i class="fa-solid fa-sun" aria-hidden="true"></i><span>Light</span></button>
                             </div>
                             <button type="button" class="sd-danger" onclick="handleTenantLogout()"><i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i><span>Sign out</span></button>
                         </div>
@@ -2668,10 +2827,21 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                     </div>
 
                     <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <div class="sd-roster-tools">
                         <div id="rosterViewSwitch" class="flex flex-wrap gap-2" role="group" aria-label="Appointment view">
                             <button type="button" id="rosterViewList" onclick="setRosterCalendarView('list')" class="px-4 py-2 rounded-xl font-bold text-xs bg-brand-500/20 border border-brand-500/30 text-brand-400" aria-pressed="true">List</button>
                             <button type="button" id="rosterViewWeek" onclick="setRosterCalendarView('week')" class="px-4 py-2 rounded-xl font-bold text-xs bg-slate-900 border border-slate-800 text-slate-400" aria-pressed="false">Week</button>
                             <button type="button" id="rosterViewMonth" onclick="setRosterCalendarView('month')" class="px-4 py-2 rounded-xl font-bold text-xs bg-slate-900 border border-slate-800 text-slate-400" aria-pressed="false">Month</button>
+                        </div>
+                        <div id="rosterSearch" class="sd-roster-search">
+                            <button type="button" id="rosterSearchToggle" class="sd-roster-search-toggle" onclick="rosterSearchToggle()" aria-expanded="false" aria-controls="rosterSearchField" aria-label="Search appointments"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i></button>
+                            <div id="rosterSearchField" class="sd-roster-search-field">
+                                <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                                <input id="rosterSearchInput" type="search" placeholder="Name, phone, date, HB-1003" autocomplete="off" aria-label="Search appointments" aria-controls="rosterSearchResults" oninput="rosterSearchSchedule()">
+                                <button type="button" id="rosterSearchClear" class="sd-roster-search-clear" hidden aria-label="Clear search" onclick="rosterSearchClear()">&times;</button>
+                            </div>
+                            <div id="rosterSearchResults" class="sd-roster-results" hidden role="listbox" aria-label="Search results"></div>
+                        </div>
                         </div>
                         <div id="rosterCalendarNav" class="hidden items-center gap-2">
                             <button type="button" onclick="shiftRosterCalendar(-1)" class="roster-nav-step px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-white font-bold text-xs" aria-label="Previous">&lsaquo; Previous</button>
@@ -3287,9 +3457,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                             <i class="fa-solid fa-circle-question" aria-hidden="true"></i>
                             <span>Help</span>
                         </a>
-                        <div class="sd-theme" role="group" aria-label="Color theme">
-                            <button type="button" class="sd-theme-opt sd-theme-light" data-theme-set="light" onclick="setSchediTheme('light')" aria-pressed="false"><i class="fa-solid fa-sun" aria-hidden="true"></i><span>Light</span></button>
-                            <button type="button" class="sd-theme-opt sd-theme-dark" data-theme-set="dark" onclick="setSchediTheme('dark')" aria-pressed="true"><i class="fa-solid fa-moon" aria-hidden="true"></i><span>Dark</span></button>
+                        <div class="sd-theme">
+                            <button type="button" class="sd-theme-opt sd-theme-light" data-theme-toggle="1" onclick="toggleSchediTheme()" title="Switch to light theme" aria-label="Switch to light theme"><i class="fa-solid fa-sun" aria-hidden="true"></i><span>Light</span></button>
                         </div>
                         <button type="button" id="tenantChangePassBtn" onclick="openTenantChangePassModal()" class="hidden px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white font-semibold text-xs transition-all border border-slate-800">
                             <i class="fa-solid fa-key mr-1" aria-hidden="true"></i>
@@ -6105,6 +6274,21 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                 btn.setAttribute('aria-label', tip);
             });
             var themeName = light ? 'light' : 'dark';
+            document.querySelectorAll('[data-theme-toggle]').forEach(function (btn) {
+                var word = light ? 'Dark' : 'Light';
+                var tip = light ? 'Switch to dark theme' : 'Switch to light theme';
+                btn.classList.toggle('sd-theme-light', !light);
+                btn.classList.toggle('sd-theme-dark', light);
+                var label = btn.querySelector('span');
+                var icon = btn.querySelector('i');
+                if (label) label.textContent = word;
+                if (icon) {
+                    icon.className = light ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
+                    icon.setAttribute('aria-hidden', 'true');
+                }
+                btn.title = tip;
+                btn.setAttribute('aria-label', tip);
+            });
             document.querySelectorAll('[data-theme-set]').forEach(function (btn) {
                 btn.setAttribute('aria-pressed', btn.getAttribute('data-theme-set') === themeName ? 'true' : 'false');
             });
@@ -9158,8 +9342,14 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
         function schediDashClosePopovers() {
             var add = document.getElementById('schediDashAddMenu');
             var more = document.getElementById('schediDashMoreSheet');
+            var account = document.getElementById('schediDashAccountMenu');
             if (add) add.hidden = true;
             if (more) more.hidden = true;
+            if (account) account.hidden = true;
+            document.querySelectorAll('#schediDashUserBtn, #schediDashUserBtnPhone').forEach(function (btn) {
+                btn.setAttribute('aria-expanded', 'false');
+            });
+            document.querySelectorAll('details.sd-more[open]').forEach(function (el) { el.open = false; });
         }
 
         function calendarSyncProviders() {
@@ -9344,10 +9534,12 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                         : '<button type="button" role="menuitem" onclick="markAppointmentNoShow(' + id + ')">Mark no-show</button>';
                     return '<article class="sd-card sd-row">' +
                         '<div class="sd-time">' + esc(app.time || '') + '</div>' +
-                        '<div><h4>' + esc(app.clientName || 'Client') + (app.walkIn ? ' · Walk-in' : '') + (appointmentIsNoShow(app) ? (' ' + noShowPillHtml()) : '') + '</h4>' +
-                        '<p class="sd-meta"><span class="sd-svc-line">' + serviceMarkHtml(tenant, app.serviceName) + '<span>' + esc(app.serviceName || 'Appointment') + '</span></span></p></div>' +
+                        '<div class="sd-row-main"><h4><span class="sd-row-title">' + esc(app.clientName || 'Client') + (app.walkIn ? ' · Walk-in' : '') + '</span>' +
+                        (appointmentIsNoShow(app) ? noShowPillHtml() : '') +
                         (pendingRow ? '<span class="sd-pill sd-pill-amber">New request</span>' : '') +
-                        appointmentPayMarkup(app, false) +
+                        '</h4>' +
+                        '<p class="sd-meta"><span class="sd-svc-line">' + serviceMarkHtml(tenant, app.serviceName) + '<span>' + esc(app.serviceName || 'Appointment') + '</span></span></p></div>' +
+                        '<div class="sd-row-side">' + appointmentPayMarkup(app, false) + '</div>' +
                         '<details class="sd-more"><summary aria-label="Actions for ' + esc(app.clientName || 'appointment') + '">…</summary>' +
                         '<div class="sd-more-menu" role="menu">' +
                         payAction +
@@ -9376,6 +9568,54 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
         }
         window.renderSchediToday = renderSchediToday;
 
+        window.placeSchediMoreMenu = function (details) {
+            if (!details || !details.classList || !details.classList.contains('sd-more')) return;
+            var menu = details.querySelector('.sd-more-menu');
+            if (!menu) return;
+            if (!details.open) {
+                menu.style.visibility = 'hidden';
+                return;
+            }
+            document.querySelectorAll('details.sd-more[open]').forEach(function (el) {
+                if (el !== details) el.open = false;
+            });
+            var summary = details.querySelector('summary');
+            if (!summary) return;
+            menu.style.visibility = 'hidden';
+            menu.style.position = 'fixed';
+            menu.style.right = 'auto';
+            menu.style.bottom = 'auto';
+            menu.style.maxHeight = '';
+            menu.style.zIndex = '60';
+            var rect = summary.getBoundingClientRect();
+            var width = Math.max(menu.offsetWidth || 0, 180);
+            var sidebar = window.innerWidth >= 860 ? 244 : 0;
+            var topLimit = 72;
+            var bottomGap = window.innerWidth >= 860 ? 12 : 96;
+            var leftLimit = sidebar + 8;
+            var rightLimit = window.innerWidth - 8;
+            var bottomLimit = window.innerHeight - bottomGap;
+            var left = rect.right - width;
+            if (left < leftLimit) left = rect.left;
+            if (left + width > rightLimit) left = Math.max(leftLimit, rightLimit - width);
+            var natural = menu.scrollHeight || menu.offsetHeight || 220;
+            var spaceBelow = bottomLimit - (rect.bottom + 6);
+            var spaceAbove = rect.top - 6 - topLimit;
+            var openUp = spaceBelow < natural && spaceAbove > spaceBelow;
+            var room = Math.max(96, openUp ? spaceAbove : spaceBelow);
+            menu.style.maxHeight = Math.min(320, Math.floor(room)) + 'px';
+            var height = menu.offsetHeight || Math.min(natural, room);
+            var top = openUp ? rect.top - height - 6 : rect.bottom + 6;
+            var buttonVisible = rect.bottom > topLimit && rect.top < bottomLimit;
+            if (buttonVisible) {
+                if (top < topLimit) top = topLimit;
+                if (top + height > bottomLimit) top = Math.max(topLimit, bottomLimit - height);
+            }
+            menu.style.left = Math.round(left) + 'px';
+            menu.style.top = Math.round(top) + 'px';
+            menu.style.visibility = 'visible';
+        };
+
         function schediDashPaint() {
             var tenant = (typeof getTenant === 'function') ? getTenant() : null;
             var note = document.getElementById('schediDemoNote');
@@ -9384,12 +9624,37 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
             var biz = document.getElementById('schediDashBizName');
             if (biz) biz.textContent = tenant.name || 'Business';
             var who = tenant.ownerName || tenant.ownerEmail || 'Owner';
+            var bizName = tenant.name || 'Business';
+            var planWord = 'Free';
+            try {
+                planWord = { free: 'Free', starter: 'Starter', pro: 'Pro' }[normalizePlan(tenant)] || 'Free';
+            } catch (errPlan) { planWord = 'Free'; }
             var nameEl = document.getElementById('schediDashUserName');
             var initials = document.getElementById('schediDashUserInitials');
-            if (nameEl) nameEl.textContent = who;
-            if (initials) initials.textContent = schediDashInitials(who);
+            var phoneInitials = document.getElementById('schediDashUserInitialsPhone');
+            var planEl = document.getElementById('schediDashUserPlan');
+            var logoEl = document.getElementById('schediDashUserLogo');
+            var logo = String(tenant.logoUrl || tenant.logo || '').trim();
+            if (nameEl) nameEl.textContent = bizName;
+            if (planEl) planEl.textContent = planWord;
+            if (initials) initials.textContent = schediDashInitials(bizName);
+            if (phoneInitials) phoneInitials.textContent = schediDashInitials(who);
+            if (logoEl) {
+                if (logo) {
+                    logoEl.hidden = false;
+                    logoEl.src = logo;
+                    logoEl.alt = '';
+                    if (initials) initials.hidden = true;
+                } else {
+                    logoEl.hidden = true;
+                    logoEl.removeAttribute('src');
+                    if (initials) initials.hidden = false;
+                }
+            }
             var userBtn = document.getElementById('schediDashUserBtn');
-            if (userBtn) userBtn.setAttribute('aria-label', who + ', account');
+            if (userBtn) userBtn.setAttribute('aria-label', bizName + ', ' + planWord + ', account');
+            var phoneBtn = document.getElementById('schediDashUserBtnPhone');
+            if (phoneBtn) phoneBtn.setAttribute('aria-label', who + ', account');
             schediDashSetPage(schediDashPage());
             try { renderSchediToday(tenant); } catch (errPaint) {}
         }
@@ -9444,6 +9709,39 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                 window.__schediDashLock = false;
             }
             try { window.scrollTo(0, 0); } catch (errScroll) {}
+        };
+
+        window.schediDashToggleAccount = function (event) {
+            var menu = document.getElementById('schediDashAccountMenu');
+            if (!menu) return;
+            if (!menu.hidden) {
+                menu.hidden = true;
+                document.querySelectorAll('#schediDashUserBtn, #schediDashUserBtnPhone').forEach(function (btn) {
+                    btn.setAttribute('aria-expanded', 'false');
+                });
+                return;
+            }
+            var add = document.getElementById('schediDashAddMenu');
+            if (add) add.hidden = true;
+            menu.hidden = false;
+            var btn = event && event.currentTarget;
+            document.querySelectorAll('#schediDashUserBtn, #schediDashUserBtnPhone').forEach(function (node) {
+                node.setAttribute('aria-expanded', node === btn ? 'true' : 'false');
+            });
+            var rect = btn && btn.getBoundingClientRect ? btn.getBoundingClientRect() : null;
+            var width = Math.max(menu.offsetWidth || 0, 220);
+            if (!rect) return;
+            var openUp = window.innerWidth >= 860 || btn.id === 'schediDashUserBtn';
+            var left = Math.max(8, Math.min(rect.left, window.innerWidth - width - 8));
+            menu.style.left = Math.round(left) + 'px';
+            menu.style.right = 'auto';
+            if (openUp) {
+                menu.style.top = 'auto';
+                menu.style.bottom = Math.round(window.innerHeight - rect.top + 8) + 'px';
+            } else {
+                menu.style.bottom = 'auto';
+                menu.style.top = Math.round(rect.bottom + 8) + 'px';
+            }
         };
 
         window.schediDashToggleAdd = function (event) {
@@ -9828,6 +10126,25 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
 
         document.addEventListener('click', function (event) {
             if (!document.body.classList.contains('schedi-newdash')) return;
+            var summaryHost = event.target;
+            if (summaryHost && summaryHost.nodeType === 3) summaryHost = summaryHost.parentElement;
+            var summaryNode = summaryHost && summaryHost.closest ? summaryHost.closest('details.sd-more > summary') : null;
+            if (!summaryNode) return;
+            event.preventDefault();
+            var details = summaryNode.parentElement;
+            if (!details) return;
+            details.open = !details.open;
+            if (typeof window.placeSchediMoreMenu === 'function') window.placeSchediMoreMenu(details);
+        }, true);
+
+        document.addEventListener('toggle', function (event) {
+            var details = event.target;
+            if (!details || !details.classList || !details.classList.contains('sd-more')) return;
+            if (typeof window.placeSchediMoreMenu === 'function') window.placeSchediMoreMenu(details);
+        }, true);
+
+        document.addEventListener('click', function (event) {
+            if (!document.body.classList.contains('schedi-newdash')) return;
             var node = event.target && event.target.closest ? event.target : null;
             if (!node && event.target && event.target.parentElement) node = event.target.parentElement;
             if (!node || !node.closest) return;
@@ -9839,7 +10156,72 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
             if (addKind) window.schediDashAddKind(addKind.getAttribute('data-dash-add'));
             var menu = document.getElementById('schediDashAddMenu');
             if (menu && !menu.hidden && !node.closest('#schediDashAddMenu') && !node.closest('[data-dash-add-open]')) menu.hidden = true;
+            var account = document.getElementById('schediDashAccountMenu');
+            if (account && !account.hidden && !node.closest('#schediDashAccountMenu') && !node.closest('#schediDashUserBtn') && !node.closest('#schediDashUserBtnPhone')) {
+                account.hidden = true;
+                document.querySelectorAll('#schediDashUserBtn, #schediDashUserBtnPhone').forEach(function (btn) {
+                    btn.setAttribute('aria-expanded', 'false');
+                });
+            }
+            document.querySelectorAll('details.sd-more[open]').forEach(function (el) {
+                if (!el.contains(node)) el.open = false;
+            });
+            var results = document.getElementById('rosterSearchResults');
+            var hit = node.closest('[data-search-id]');
+            if (hit) {
+                window.openRosterSearchResult(hit.getAttribute('data-search-id'));
+                return;
+            }
+            if (results && !results.hidden && !node.closest('#rosterSearch')) results.hidden = true;
         });
+
+        document.addEventListener('keydown', function (event) {
+            if (!document.body.classList.contains('schedi-newdash')) return;
+            if (event.key === 'Escape') {
+                schediDashClosePopovers();
+                var results = document.getElementById('rosterSearchResults');
+                if (results) results.hidden = true;
+                return;
+            }
+            if (event.key !== '/' || event.metaKey || event.ctrlKey || event.altKey || window.innerWidth < 860) return;
+            var tag = event.target && event.target.tagName;
+            if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (event.target && event.target.isContentEditable)) return;
+            var blocking = false;
+            document.querySelectorAll('.fixed.inset-0, [role="dialog"]').forEach(function (node) {
+                if (blocking || !node || node.closest('[hidden]') || node.classList.contains('hidden')) return;
+                var shown = window.getComputedStyle(node).display !== 'none';
+                if (shown && (node.classList.contains('fixed') || node.getAttribute('role') === 'dialog')) blocking = true;
+            });
+            if (blocking) return;
+            var input = document.getElementById('rosterSearchInput');
+            if (!input) return;
+            event.preventDefault();
+            input.focus();
+            if (window.innerWidth < 860) return;
+            var root = document.getElementById('rosterSearch');
+            if (root) root.classList.add('is-open');
+        });
+
+        window.addEventListener('resize', function () {
+            if (!document.body.classList.contains('schedi-newdash')) return;
+            document.querySelectorAll('details.sd-more[open]').forEach(function (el) {
+                if (typeof window.placeSchediMoreMenu === 'function') window.placeSchediMoreMenu(el);
+            });
+        });
+
+        window.addEventListener('scroll', function (event) {
+            if (!document.body.classList.contains('schedi-newdash')) return;
+            var target = event.target;
+            if (target && target.closest && (target.closest('.sd-more-menu') || target.closest('#schediDashAccountMenu') || target.closest('.sd-roster-results'))) return;
+            document.querySelectorAll('details.sd-more[open]').forEach(function (el) { el.open = false; });
+            var account = document.getElementById('schediDashAccountMenu');
+            if (account && !account.hidden) {
+                account.hidden = true;
+                document.querySelectorAll('#schediDashUserBtn, #schediDashUserBtnPhone').forEach(function (btn) {
+                    btn.setAttribute('aria-expanded', 'false');
+                });
+            }
+        }, true);
 
         function schediDemoTodayIso() {
             try {
@@ -10486,6 +10868,228 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
             showRosterApptModal(apps.length + ' appointments', rosterPrettyDate(iso), '<div class="space-y-2">' + list + '</div>');
         };
 
+        var rosterSearchTimer = 0;
+
+        function rosterSearchAppointments(apps, query) {
+            var q = String(query || '').trim().toLowerCase();
+            if (!q) return [];
+            var qFlat = q.replace(/[^a-z0-9]/g, '');
+            var qDigits = q.replace(/\D/g, '');
+            var months = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
+            var monthsShort = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+            var weekdays = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+            var weekShort = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+            function payKind(app) {
+                if (typeof appointmentPayKind === 'function') return appointmentPayKind(app);
+                return 'unpaid';
+            }
+            var payAliases = {
+                card: ['card', 'stripe', 'credit', 'debit'],
+                cashapp: ['cash app', 'cashapp'],
+                zelle: ['zelle'],
+                venmo: ['venmo'],
+                paypal: ['paypal', 'pay pal'],
+                square: ['square'],
+                cash: ['in person', 'in person / cash', 'cash'],
+                unpaid: ['unpaid', 'not paid']
+            };
+            function payAtAppointment(app) {
+                var blob = [app && app.paymentStatus, app && app.paymentMethod, app && app.paymentOptionLabel, app && app.paidMethod].join(' ').toLowerCase();
+                if (String((app && app.paymentMethod) || '').toLowerCase().trim() === 'later') return true;
+                return blob.indexOf('pay at appointment') !== -1 || blob.indexOf('pay at appt') !== -1;
+            }
+            function mentionedPayKinds(app) {
+                var blob = [app && app.paymentStatus, app && app.paymentMethod, app && app.paidMethod, app && app.paymentOptionLabel].join(' ').toLowerCase();
+                var kinds = [];
+                if (/\bcash\s*app\b|\bcashapp\b/.test(blob)) kinds.push('cashapp');
+                if (/\bzelle\b/.test(blob)) kinds.push('zelle');
+                if (/\bvenmo\b/.test(blob)) kinds.push('venmo');
+                if (/\bpaypal\b|\bpay pal\b/.test(blob)) kinds.push('paypal');
+                if (/\bsquare\b/.test(blob)) kinds.push('square');
+                if (/\b(card|stripe|credit|debit)\b/.test(blob)) kinds.push('card');
+                if (/\bin person\b/.test(blob) || (/\bcash\b/.test(blob) && !/\bcash\s*app\b|\bcashapp\b/.test(blob))) kinds.push('cash');
+                return kinds;
+            }
+            function payMatch(kind, text) {
+                var labels = {
+                    card: 'card (stripe)',
+                    cashapp: 'cash app',
+                    zelle: 'zelle',
+                    venmo: 'venmo',
+                    paypal: 'paypal',
+                    square: 'square',
+                    cash: 'in person / cash',
+                    unpaid: 'unpaid'
+                };
+                var label = labels[kind] || 'unpaid';
+                if (label.indexOf(text) !== -1) return true;
+                var list = payAliases[kind] || [];
+                for (var i = 0; i < list.length; i++) {
+                    if (text === list[i]) return true;
+                }
+                return false;
+            }
+            function dateMatch(iso, text) {
+                if (!/^\d{4}-\d{2}-\d{2}$/.test(String(iso || ''))) return false;
+                if (iso === text) return true;
+                if (text.length >= 4 && String(iso).indexOf(text) !== -1) return true;
+                var y = Number(iso.slice(0, 4));
+                var m = Number(iso.slice(5, 7));
+                var d = Number(iso.slice(8, 10));
+                var dt = new Date(y, m - 1, d);
+                if (dt.getFullYear() !== y || dt.getMonth() !== m - 1 || dt.getDate() !== d) return false;
+                var wd = dt.getDay();
+                if (text === weekdays[wd] || text === weekShort[wd]) return true;
+                var md = monthsShort[m - 1] + ' ' + d;
+                var mdLong = months[m - 1] + ' ' + d;
+                if (text === md || text === mdLong || text === md + ' ' + y || text === mdLong + ' ' + y || text === mdLong + ', ' + y || text === md + ', ' + y) return true;
+                var slash = m + '/' + d;
+                var slashPad = (m < 10 ? '0' : '') + m + '/' + (d < 10 ? '0' : '') + d;
+                if (text === slash || text === slashPad || text === slash + '/' + y || text === slashPad + '/' + y) return true;
+                var dashed = m + '-' + d;
+                if (text === dashed || text === dashed + '-' + y) return true;
+                return false;
+            }
+            function idMatch(id) {
+                var raw = String(id || '').toLowerCase();
+                if (!raw) return false;
+                if (raw.indexOf(q) !== -1) return true;
+                var flat = raw.replace(/[^a-z0-9]/g, '');
+                if (qFlat && flat.indexOf(qFlat) !== -1) return true;
+                var suffix = raw.replace(/^[a-z]+-?/, '');
+                if (suffix && (suffix === q || suffix.replace(/[^a-z0-9]/g, '') === qFlat)) return true;
+                return false;
+            }
+            function timeKey(value) {
+                var match = String(value || '').match(/(\d{1,2}):(\d{2})\s*(am|pm)?/i);
+                if (!match) return 0;
+                var hour = Number(match[1]) % 12;
+                if (String(match[3] || '').toLowerCase() === 'pm') hour += 12;
+                return hour * 60 + Number(match[2]);
+            }
+            var hits = [];
+            var list = apps || [];
+            for (var n = 0; n < list.length; n++) {
+                var app = list[n];
+                if (!app) continue;
+                var name = String(app.clientName || '').toLowerCase();
+                var email = String(app.clientEmail || '').toLowerCase();
+                var phoneDigits = String(app.clientPhone || '').replace(/\D/g, '');
+                var service = String(app.serviceName || '').toLowerCase();
+                var kind = payKind(app);
+                var payNamed = payMatch(kind, q);
+                if (!payNamed) {
+                    mentionedPayKinds(app).forEach(function (key) {
+                        (payAliases[key] || []).forEach(function (alias) {
+                            if (q === alias) payNamed = true;
+                        });
+                    });
+                }
+                if (!payNamed && (q === 'pay at appt' || q === 'pay at appointment') && payAtAppointment(app)) payNamed = true;
+                var ok = idMatch(app.id) ||
+                    (name && name.indexOf(q) !== -1) ||
+                    (email && email.indexOf(q) !== -1) ||
+                    (qDigits.length >= 3 && phoneDigits.indexOf(qDigits) !== -1) ||
+                    (service && service.indexOf(q) !== -1) ||
+                    dateMatch(String(app.date || ''), q) ||
+                    payNamed;
+                if (ok) hits.push(app);
+            }
+            hits.sort(function (a, b) {
+                var da = String(a.date || '');
+                var db = String(b.date || '');
+                if (da !== db) return da < db ? -1 : 1;
+                return timeKey(a.time) - timeKey(b.time);
+            });
+            return hits;
+        }
+
+        function renderRosterSearchResults(apps) {
+            var box = document.getElementById('rosterSearchResults');
+            var input = document.getElementById('rosterSearchInput');
+            var clearBtn = document.getElementById('rosterSearchClear');
+            if (!box || !input) return;
+            var q = String(input.value || '').trim();
+            if (clearBtn) clearBtn.hidden = !q;
+            if (!q) {
+                box.hidden = true;
+                box.innerHTML = '';
+                return;
+            }
+            var hits = rosterSearchAppointments(apps, q);
+            if (!hits.length) {
+                box.hidden = false;
+                box.innerHTML = '<p class="sd-roster-empty">No appointments match "' + esc(q) + '".</p>';
+                return;
+            }
+            var limit = 80;
+            var shown = hits.slice(0, limit);
+            var html = '';
+            var last = '';
+            shown.forEach(function (app) {
+                var date = String(app.date || '');
+                if (date !== last) {
+                    last = date;
+                    html += '<p class="sd-roster-date">' + esc(date && typeof rosterPrettyDate === 'function' ? rosterPrettyDate(date) : (date || 'Date not set')) + '</p>';
+                }
+                html += '<button type="button" class="sd-roster-hit" role="option" data-search-id="' + esc(app.id) + '">' +
+                    '<span class="sd-roster-hit-main"><strong>' + esc(app.clientName || 'Client') + '</strong>' +
+                    '<span>' + esc(app.time || '') + ' · ' + esc(app.serviceName || 'Appointment') + ' · ' + esc(app.id || '') + '</span></span>' +
+                    appointmentPayMarkup(app, false) + '</button>';
+            });
+            if (hits.length > limit) html += '<p class="sd-roster-empty">Showing ' + limit + ' of ' + hits.length + '.</p>';
+            box.innerHTML = html;
+            box.hidden = false;
+        }
+
+        window.rosterSearchSchedule = function () {
+            clearTimeout(rosterSearchTimer);
+            rosterSearchTimer = setTimeout(function () {
+                var tenant = (typeof getTenant === 'function') ? getTenant() : null;
+                renderRosterSearchResults(tenant && tenant.appointments);
+            }, 160);
+        };
+
+        window.rosterSearchClear = function () {
+            var input = document.getElementById('rosterSearchInput');
+            if (input) input.value = '';
+            var tenant = (typeof getTenant === 'function') ? getTenant() : null;
+            renderRosterSearchResults(tenant && tenant.appointments);
+            if (input) input.focus();
+        };
+
+        window.rosterSearchToggle = function () {
+            var root = document.getElementById('rosterSearch');
+            var btn = document.getElementById('rosterSearchToggle');
+            if (!root) return;
+            var open = root.classList.toggle('is-open');
+            if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+            if (open) {
+                var input = document.getElementById('rosterSearchInput');
+                if (input) input.focus();
+            } else {
+                var results = document.getElementById('rosterSearchResults');
+                if (results) results.hidden = true;
+            }
+        };
+
+        window.openRosterSearchResult = function (id) {
+            var tenant = (typeof getTenant === 'function') ? getTenant() : null;
+            var app = null;
+            (tenant && tenant.appointments || []).forEach(function (row) {
+                if (row && String(row.id) === String(id)) app = row;
+            });
+            var box = document.getElementById('rosterSearchResults');
+            if (box) box.hidden = true;
+            if (app && app.date) {
+                rosterCalendarCursor = app.date;
+                if (rosterCalendarView === 'week' || rosterCalendarView === 'month') {
+                    try { renderRosterCalendar(tenant); } catch (errCal) {}
+                }
+            }
+            if (typeof openRosterApptModal === 'function') openRosterApptModal(id);
+        };
+
         function renderTenantRoster(tenant) {
             const tbody = document.getElementById('tenantRosterTableBody');
             if (!tbody) return;
@@ -10495,6 +11099,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                 tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-500">No client appointments logged yet.</td></tr>`;
                 renderRosterCalendar(tenant);
                 try { if (window.renderSchediToday) window.renderSchediToday(tenant); } catch (errToday) {}
+                try { renderRosterSearchResults(tenant && tenant.appointments); } catch (errSearch) {}
                 return;
             }
 
@@ -10503,6 +11108,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                 tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-slate-500">No appointments use this payment method.</td></tr>';
                 renderRosterCalendar(tenant);
                 try { if (window.renderSchediToday) window.renderSchediToday(tenant); } catch (errToday) {}
+                try { renderRosterSearchResults(tenant && tenant.appointments); } catch (errSearch) {}
                 return;
             }
             tbody.innerHTML = rosterRows.map(app => `
@@ -10529,6 +11135,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
             `).join('');
             renderRosterCalendar(tenant);
             try { if (window.renderSchediToday) window.renderSchediToday(tenant); } catch (errToday) {}
+            try { renderRosterSearchResults(tenant && tenant.appointments); } catch (errSearch) {}
         }
 
         window.openTenantRescheduleModal = function(appId) {
@@ -15127,7 +15734,24 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
             { words: ['training', 'fitness', 'workout'], icon: 'fa-dumbbell' },
             { words: ['tutor', 'lesson', 'class'], icon: 'fa-book' },
             { words: ['car', 'auto', 'detail'], icon: 'fa-car' },
-            { words: ['pet', 'groom', 'dog'], icon: 'fa-paw' }
+            { words: ['pet', 'groom', 'dog'], icon: 'fa-paw' },
+            { words: ['spray', 'shampoo'], icon: 'fa-spray-can' },
+            { words: ['chair'], icon: 'fa-chair' },
+            { words: ['polish', 'sparkle'], icon: 'fa-paintbrush' },
+            { words: ['lipstick', 'brow', 'lash'], icon: 'fa-face-smile' },
+            { words: ['candle', 'lotus', 'stones'], icon: 'fa-spa' },
+            { words: ['running', 'cardio'], icon: 'fa-person-running' },
+            { words: ['bike', 'bicycle', 'cycling'], icon: 'fa-bicycle' },
+            { words: ['tooth', 'dental', 'dentist'], icon: 'fa-tooth' },
+            { words: ['clinic', 'doctor'], icon: 'fa-stethoscope' },
+            { words: ['pill', 'medicine'], icon: 'fa-pills' },
+            { words: ['cat', 'kitten'], icon: 'fa-cat' },
+            { words: ['video', 'film'], icon: 'fa-video' },
+            { words: ['cake', 'wedding'], icon: 'fa-cake-candles' },
+            { words: ['music'], icon: 'fa-music' },
+            { words: ['wrench', 'oil', 'tire'], icon: 'fa-wrench' },
+            { words: ['graduation', 'chalkboard'], icon: 'fa-graduation-cap' },
+            { words: ['chart', 'lightbulb'], icon: 'fa-chart-simple' }
         ];
 
         var SERVICE_ICON_CATEGORIES = [
@@ -15174,7 +15798,79 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
             { id: 'fa-gem', name: 'Gem', category: 'other', keywords: 'generic gem' },
             { id: 'fa-cubes', name: 'Cubes', category: 'other', keywords: 'generic cubes' },
             { id: 'fa-clock', name: 'Clock', category: 'other', keywords: 'generic time clock' },
-            { id: 'fa-comments', name: 'Chat', category: 'other', keywords: 'generic chat talk' }
+            { id: 'fa-comments', name: 'Chat', category: 'other', keywords: 'generic chat talk' },
+            { id: 'fa-spray-can', name: 'Spray', category: 'hair', keywords: 'spray bottle mist hairspray' },
+            { id: 'fa-chair', name: 'Chair', category: 'hair', keywords: 'chair station barber' },
+            { id: 'fa-pump-soap', name: 'Shampoo', category: 'hair', keywords: 'shampoo wash pump soap' },
+            { id: 'fa-bottle-droplet', name: 'Bottle', category: 'hair', keywords: 'bottle product serum' },
+            { id: 'fa-glasses', name: 'Glasses', category: 'hair', keywords: 'glasses mirror style' },
+            { id: 'fa-wind', name: 'Dryer', category: 'hair', keywords: 'dryer blowout wind' },
+            { id: 'fa-hand-sparkles', name: 'Sparkle', category: 'nails', keywords: 'sparkle glitter nail art' },
+            { id: 'fa-paintbrush', name: 'Polish', category: 'nails', keywords: 'polish brush manicure' },
+            { id: 'fa-ring', name: 'Ring', category: 'nails', keywords: 'ring jewelry nail' },
+            { id: 'fa-hand-dots', name: 'Art', category: 'nails', keywords: 'nail art dots design' },
+            { id: 'fa-hands-bubbles', name: 'Soak', category: 'nails', keywords: 'soak bubbles manicure spa' },
+            { id: 'fa-hand-holding-droplet', name: 'Cuticle', category: 'nails', keywords: 'cuticle oil droplet hand' },
+            { id: 'fa-face-smile', name: 'Face', category: 'beauty', keywords: 'face smile skin makeup' },
+            { id: 'fa-eye', name: 'Eye', category: 'beauty', keywords: 'eye brow lash makeup' },
+            { id: 'fa-leaf', name: 'Leaf', category: 'beauty', keywords: 'leaf natural skin botanical' },
+            { id: 'fa-mask', name: 'Mask', category: 'beauty', keywords: 'mask facial skin' },
+            { id: 'fa-heart', name: 'Glow', category: 'beauty', keywords: 'glow heart beauty' },
+            { id: 'fa-pen', name: 'Liner', category: 'beauty', keywords: 'liner lip pencil brush makeup' },
+            { id: 'fa-hot-tub', name: 'Soak', category: 'wellness', keywords: 'hot tub stones bath soak' },
+            { id: 'fa-hands', name: 'Hands', category: 'wellness', keywords: 'hands massage touch' },
+            { id: 'fa-hands-praying', name: 'Stillness', category: 'wellness', keywords: 'hands pray meditation lotus' },
+            { id: 'fa-fire', name: 'Candle', category: 'wellness', keywords: 'candle flame fire' },
+            { id: 'fa-seedling', name: 'Lotus', category: 'wellness', keywords: 'lotus plant seedling calm' },
+            { id: 'fa-moon', name: 'Rest', category: 'wellness', keywords: 'moon rest sleep relax' },
+            { id: 'fa-person-running', name: 'Running', category: 'fitness', keywords: 'running run cardio jog' },
+            { id: 'fa-bicycle', name: 'Bike', category: 'fitness', keywords: 'bike bicycle cycling' },
+            { id: 'fa-person-biking', name: 'Cycling', category: 'fitness', keywords: 'cycling rider bike' },
+            { id: 'fa-shoe-prints', name: 'Steps', category: 'fitness', keywords: 'steps shoes walk' },
+            { id: 'fa-stopwatch', name: 'Timer', category: 'fitness', keywords: 'timer stopwatch interval' },
+            { id: 'fa-medal', name: 'Medal', category: 'fitness', keywords: 'medal training goal' },
+            { id: 'fa-stethoscope', name: 'Clinic', category: 'health', keywords: 'stethoscope clinic doctor medical' },
+            { id: 'fa-tooth', name: 'Tooth', category: 'health', keywords: 'tooth dental dentist' },
+            { id: 'fa-house-medical', name: 'Office', category: 'health', keywords: 'clinic office medical house' },
+            { id: 'fa-pills', name: 'Pill', category: 'health', keywords: 'pill medicine pharmacy' },
+            { id: 'fa-user-doctor', name: 'Doctor', category: 'health', keywords: 'doctor provider clinician' },
+            { id: 'fa-kit-medical', name: 'Kit', category: 'health', keywords: 'kit first aid medical' },
+            { id: 'fa-dog', name: 'Dog', category: 'pets', keywords: 'dog puppy' },
+            { id: 'fa-cat', name: 'Cat', category: 'pets', keywords: 'cat kitten' },
+            { id: 'fa-bone', name: 'Bone', category: 'pets', keywords: 'bone treat' },
+            { id: 'fa-fish', name: 'Fish', category: 'pets', keywords: 'fish aquarium' },
+            { id: 'fa-shield-dog', name: 'Guard', category: 'pets', keywords: 'guard dog protect' },
+            { id: 'fa-dove', name: 'Bird', category: 'pets', keywords: 'bird dove pet' },
+            { id: 'fa-video', name: 'Video', category: 'photo', keywords: 'video film camera' },
+            { id: 'fa-cake-candles', name: 'Cake', category: 'photo', keywords: 'cake wedding event' },
+            { id: 'fa-champagne-glasses', name: 'Toast', category: 'photo', keywords: 'glass champagne event toast' },
+            { id: 'fa-microphone', name: 'Mic', category: 'photo', keywords: 'microphone music event' },
+            { id: 'fa-gifts', name: 'Gift', category: 'photo', keywords: 'gift event party' },
+            { id: 'fa-clapperboard', name: 'Film', category: 'photo', keywords: 'film clapper video' },
+            { id: 'fa-soap', name: 'Soap', category: 'home', keywords: 'soap clean wash' },
+            { id: 'fa-bucket', name: 'Bucket', category: 'home', keywords: 'bucket mop clean' },
+            { id: 'fa-jug-detergent', name: 'Detergent', category: 'home', keywords: 'detergent spray cleaner' },
+            { id: 'fa-faucet', name: 'Faucet', category: 'home', keywords: 'faucet sink water' },
+            { id: 'fa-hammer', name: 'Hammer', category: 'home', keywords: 'hammer tools repair' },
+            { id: 'fa-sink', name: 'Sink', category: 'home', keywords: 'sink kitchen bath' },
+            { id: 'fa-wrench', name: 'Wrench', category: 'auto', keywords: 'wrench repair tool' },
+            { id: 'fa-oil-can', name: 'Oil', category: 'auto', keywords: 'oil can service' },
+            { id: 'fa-dharmachakra', name: 'Wheel', category: 'auto', keywords: 'wheel tire' },
+            { id: 'fa-gas-pump', name: 'Fuel', category: 'auto', keywords: 'fuel gas pump' },
+            { id: 'fa-car-side', name: 'Side', category: 'auto', keywords: 'car side vehicle' },
+            { id: 'fa-key', name: 'Key', category: 'auto', keywords: 'key ignition' },
+            { id: 'fa-graduation-cap', name: 'Grad', category: 'lessons', keywords: 'graduation cap school' },
+            { id: 'fa-guitar', name: 'Music', category: 'lessons', keywords: 'guitar music lesson note' },
+            { id: 'fa-chalkboard', name: 'Board', category: 'lessons', keywords: 'chalkboard class' },
+            { id: 'fa-chalkboard-user', name: 'Class', category: 'lessons', keywords: 'teacher class coaching' },
+            { id: 'fa-pencil', name: 'Pencil', category: 'lessons', keywords: 'pencil homework write' },
+            { id: 'fa-apple-whole', name: 'Apple', category: 'lessons', keywords: 'apple school teacher' },
+            { id: 'fa-chart-simple', name: 'Chart', category: 'other', keywords: 'chart report consulting' },
+            { id: 'fa-lightbulb', name: 'Idea', category: 'other', keywords: 'lightbulb idea consulting' },
+            { id: 'fa-handshake', name: 'Deal', category: 'other', keywords: 'handshake meeting consulting' },
+            { id: 'fa-phone', name: 'Phone', category: 'other', keywords: 'phone call consulting' },
+            { id: 'fa-building', name: 'Office', category: 'other', keywords: 'building office work' },
+            { id: 'fa-clipboard', name: 'Notes', category: 'other', keywords: 'clipboard notes agenda' }
         ];
 
         function serviceIconCategoryFor(iconId) {
@@ -15254,6 +15950,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
 
         function serviceSvgMarkup(iconId) {
             if (SERVICE_ICON_SVG[iconId]) return SERVICE_ICON_SVG[iconId];
+            var safe = String(iconId || 'fa-calendar').replace(/[^a-z0-9-]/gi, '');
+            if (safe.indexOf('fa-') === 0) return '<i class="fa-solid ' + safe + '" aria-hidden="true"></i>';
             return serviceSvg('<circle cx="12" cy="12" r="8"/><path d="M12 8v5l3 2"/>');
         }
 

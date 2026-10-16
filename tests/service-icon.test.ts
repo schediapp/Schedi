@@ -87,6 +87,31 @@ describe("owner service images", () => {
     expect(html).toContain("Photography & Events");
     expect(html).toContain("function setServiceIconCategory");
     expect(html).toContain("serviceIconCategoryFor");
+    const choices = html.slice(html.indexOf("var SERVICE_ICON_CHOICES = ["), html.indexOf("function serviceIconCategoryFor"));
+    const counts: Record<string, number> = {};
+    for (const match of choices.matchAll(/category: '([^']+)'/g)) {
+      counts[match[1]] = (counts[match[1]] || 0) + 1;
+    }
+    expect(counts).toMatchObject({
+      hair: 10,
+      nails: 7,
+      beauty: 8,
+      wellness: 8,
+      fitness: 7,
+      health: 7,
+      pets: 7,
+      photo: 9,
+      home: 9,
+      auto: 7,
+      lessons: 7,
+      other: 13,
+    });
+    const ids = [...choices.matchAll(/id: '(fa-[^']+)'/g)].map((match) => match[1]);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(extractFunction(html, "serviceSvgMarkup")).toContain("fa-solid");
+    expect(html).toContain("icon: 'fa-scissors'");
+    expect(html).toContain("icon: 'fa-user'");
+    expect(html).toContain("icon: 'fa-palette'");
     expect(html).toContain("Upload your own");
     expect(html).toContain("Current icon");
     expect(html).toContain("<svg viewBox=\"0 0 24 24\"");
