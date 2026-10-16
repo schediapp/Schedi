@@ -48,6 +48,20 @@ zone_name = "schedi.app"
 pattern = "schedi.app/api/logo-upload"
 zone_name = "schedi.app"
 
+[[routes]]
+pattern = "schedi.app/api/page-visits"
+zone_name = "schedi.app"
+
+# Booking-page visits. Writes go to Workers Analytics Engine. Reads use the
+# Analytics SQL binding (Wrangler 4.145 or newer). No new secret. Deploy this
+# worker to create both bindings; this repo does not deploy them.
+[[analytics_engine_datasets]]
+binding = "PAGE_VISITS"
+dataset = "schedi_page_visits"
+
+[analytics]
+binding = "ANALYTICS_SQL"
+
 # Logo files. Create the bucket before uncommenting the binding, or the next deploy fails:
 #   npx wrangler r2 bucket create schedi-logos
 # Then attach a public hostname (r2.dev or logos.schedi.app). Add LOGO_PUBLIC_BASE to the
@@ -127,3 +141,11 @@ name = "RL_CLIENTS"
 type = "ratelimit"
 namespace_id = "41006"
 simple = { limit = 60, period = 60 }
+
+# RL_PAGE_VISITS: public booking-page beacon. Keyed by business id, never by IP.
+# The local window is tighter (120/min per business). 600 is the platform cap per key.
+[[unsafe.bindings]]
+name = "RL_PAGE_VISITS"
+type = "ratelimit"
+namespace_id = "41007"
+simple = { limit = 600, period = 60 }

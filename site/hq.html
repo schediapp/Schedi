@@ -593,8 +593,10 @@
         html.schedi-newhq .hq-table div.hq-comp { display: inline-flex; width: auto; max-width: none; white-space: nowrap; }
         html.schedi-newhq .hq-col-status,
         html.schedi-newhq .hq-col-extra,
+        html.schedi-newhq .hq-col-visits,
         html.schedi-newhq .hq-col-last,
         html.schedi-newhq .hq-col-health { width: 1%; white-space: nowrap; }
+        html.schedi-newhq .hq-col-visits { font-variant-numeric: tabular-nums; }
         html.schedi-newhq .hq-col-actions { width: 1%; white-space: nowrap; }
         html.schedi-newhq .hq-table th.hq-col-actions,
         html.schedi-newhq .hq-table td.hq-col-actions { text-align: right; }
@@ -847,6 +849,17 @@
                         </div>
                         <div class="w-12 h-12 rounded-xl bg-amber-400/10 text-amber-400 flex items-center justify-center text-xl">
                             <i class="fa-solid fa-link"></i>
+                        </div>
+                    </div>
+
+                    <div class="glass-card rounded-2xl p-5 border-l-4 border-l-brand-500 flex items-center justify-between">
+                        <div>
+                            <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider"><span class="hq-label-full">Page visits · 30 days</span><span class="hq-label-short">Visits · 30d</span></span>
+                            <div id="statPageVisits" class="text-2xl font-black text-white mt-1">—</div>
+                            <span class="text-[10px] text-brand-400 font-semibold hq-sub" title="Booking page views, last 30 days"><span class="hq-label-full">Booking page views</span><span class="hq-label-short">Page views</span></span>
+                        </div>
+                        <div class="w-12 h-12 rounded-xl bg-brand-500/10 text-brand-400 flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-chart-simple"></i>
                         </div>
                     </div>
                 </div>
@@ -3247,6 +3260,12 @@
             platformState.isTenantOwnerLoggedIn = false;
             platformState.ownerSelfSession = false;
             platformState.appointmentCounts = { 'harbor-demo': 42, 'northwind-demo': 6, 'lumen-demo': 11 };
+            platformState.pageVisits = {
+                'harbor-demo': { views: 312, uniques: 198 },
+                'northwind-demo': { views: 28, uniques: 19 },
+                'lumen-demo': { views: 74, uniques: 51 }
+            };
+            platformState.pageVisitsDays = 30;
             platformState.tenantHealth = {
                 'harbor-demo': { month: 18, unpaid: 3, lastBooking: '2026-10-15' },
                 'northwind-demo': { month: 0, unpaid: 0, lastBooking: '' },
@@ -5901,6 +5920,56 @@
         }
 
 // SCHEDI_HQ_START
+        function hqVisitRow(tenant) {
+            var map = platformState.pageVisits;
+            if (!map || typeof map !== 'object') return null;
+            var row = map[tenant && (tenant.id || tenant.slug)];
+            if (!row) return { views: 0, uniques: 0 };
+            return { views: Number(row.views) || 0, uniques: Number(row.uniques) || 0 };
+        }
+        function hqVisitTotal() {
+            var map = platformState.pageVisits;
+            if (!map || typeof map !== 'object') return null;
+            return Object.keys(map).reduce(function (sum, id) {
+                var row = map[id] || {};
+                return sum + (Number(row.views) || 0);
+            }, 0);
+        }
+        function hqEnsurePageVisits() {
+            if (window.__SCHEDI_HQ_DEMO) return;
+            if (platformState.pageVisitsLoading || platformState.pageVisits) return;
+            var session = '';
+            try { session = schediAuthSession(); } catch (errSession) { session = ''; }
+            if (!session) return;
+            platformState.pageVisitsLoading = true;
+            fetch('https://schedi.app/api/page-visits', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'agency', session: session, days: 30 })
+            }).then(function (res) {
+                return res.json().then(function (data) { return { ok: res.ok, data: data || {} }; });
+            }).then(function (out) {
+                platformState.pageVisitsLoading = false;
+                var map = {};
+                if (out.ok && out.data && out.data.ok && Array.isArray(out.data.businesses)) {
+                    out.data.businesses.forEach(function (row) {
+                        if (row && row.tenantId) map[row.tenantId] = { views: Number(row.views) || 0, uniques: Number(row.uniques) || 0 };
+                    });
+                    platformState.pageVisits = map;
+                    platformState.pageVisitsDays = 30;
+                } else {
+                    platformState.pageVisitsError = (out.data && out.data.error) || 'unavailable';
+                    platformState.pageVisits = {};
+                }
+                try { renderAgencyDashboard(); } catch (errRender) {}
+            }).catch(function () {
+                platformState.pageVisitsLoading = false;
+                platformState.pageVisitsError = 'unavailable';
+                platformState.pageVisits = {};
+                try { renderAgencyDashboard(); } catch (errRender) {}
+            });
+        }
+
         function renderAgencyDashboard() {
             const loginBox = document.getElementById('agencyMasterLoginBox');
             const dashboard = document.getElementById('agencyMasterDashboard');
@@ -5936,6 +6005,12 @@
             if (stMRR) stMRR.textContent = `$${totalMRR.toFixed(2)}`;
             if (stBookings) stBookings.textContent = totalBookings === null ? '—' : totalBookings;
             if (stActivePages) stActivePages.textContent = activePages;
+            hqEnsurePageVisits();
+            var stVisits = document.getElementById('statPageVisits');
+            if (stVisits) {
+                var visitTotal = hqVisitTotal();
+                stVisits.textContent = visitTotal === null ? '—' : String(visitTotal);
+            }
 
             const grid = document.getElementById('agencyTenantGrid');
             if (!grid) return;
@@ -6029,7 +6104,7 @@
                 var tagsHtml = hqTagsOf(t).map(function (g) { var c = hqTagColor(g); return '<span class="hq-tag" style="color:' + c + ';border-color:' + c + '66;background:' + c + '1a">' + esc(g) + '</span>'; }).join('');
                 return {
                     plan: plan, st: st, stBadge: stBadge, tagsHtml: tagsHtml, w: w,
-                    month: h ? h.month : null, unpaid: h ? h.unpaid : null, last: h && h.lastBooking ? h.lastBooking : (h ? 'none' : null),
+                    month: h ? h.month : null, unpaid: h ? h.unpaid : null, visits: (function () { var row = hqVisitRow(t); return row ? row.views : null; })(), last: h && h.lastBooking ? h.lastBooking : (h ? 'none' : null),
                     total: counts && typeof counts === 'object' ? (Number(counts[t.id]) || 0) : null,
                     actions: '<button type="button" onclick="loginAsTenantOwner(' + jsArg(t.id) + ')" class="px-3 py-1.5 rounded-lg bg-brand-500 hover:bg-brand-600 text-slate-950 font-bold text-xs">Manage</button>'
                         + '<a href="' + esc(getTenantPublicBookingUrl(t)) + '" target="_blank" rel="noopener" class="p-1.5 text-slate-400 hover:text-white" title="Open booking page"><i class="fa-solid fa-arrow-up-right-from-square text-sm"></i></a>'
@@ -6067,14 +6142,14 @@
                     + '</div></details>';
             }
             var desktop = '<div class="hq-dir-scroll hidden md:block overflow-x-auto"><table class="hq-table w-full text-xs"><thead><tr>'
-                + '<th class="hq-col-biz">Business</th><th class="hq-col-owner">Owner</th><th class="hq-col-plan">Plan</th><th class="hq-col-status">Status</th><th class="hq-col-extra" title="Bookings this month">This month</th><th class="hq-col-extra">Unpaid</th><th class="hq-col-last">Last booking</th><th class="hq-col-health">Health</th><th class="hq-col-actions text-right">Actions</th></tr></thead><tbody>'
+                + '<th class="hq-col-biz">Business</th><th class="hq-col-owner">Owner</th><th class="hq-col-plan">Plan</th><th class="hq-col-status">Status</th><th class="hq-col-visits" title="Booking page views, last 30 days">Visits</th><th class="hq-col-extra" title="Bookings this month">This month</th><th class="hq-col-extra">Unpaid</th><th class="hq-col-last">Last booking</th><th class="hq-col-health">Health</th><th class="hq-col-actions text-right">Actions</th></tr></thead><tbody>'
                 + rows.map(function (t) {
                     var v = view(t);
                     var bill = schediBillingLabel(t);
                     return '<tr><td class="hq-col-biz">' + clipLine(t.name, 'font-bold text-white') + clipLine('/' + (t.slug || t.id), 'font-mono text-[11px] text-slate-400') + (v.tagsHtml ? '<div class="mt-1 flex flex-wrap gap-1">' + v.tagsHtml + '</div>' : '') + '</td>'
                         + '<td class="hq-col-owner">' + clipLine(t.ownerName, 'text-slate-200') + clipLine(t.ownerEmail, 'font-mono text-[11px] text-brand-400 break-all') + '</td>'
                         + '<td class="hq-col-plan"><div class="font-semibold text-white">' + planLabel(v.plan) + '</div>' + clipLine(bill, 'text-[11px] text-slate-400' + (isComplimentaryPro(t) ? ' hq-comp' : ' hq-plan-detail')) + '</td>'
-                        + '<td class="hq-col-status">' + v.stBadge + '</td><td class="hq-col-extra font-bold text-white">' + cell(v.month) + '</td>'
+                        + '<td class="hq-col-status">' + v.stBadge + '</td><td class="hq-col-visits font-bold text-white" title="Page views, last 30 days">' + cell(v.visits) + '</td><td class="hq-col-extra font-bold text-white">' + cell(v.month) + '</td>'
                         + '<td class="hq-col-extra ' + (v.unpaid ? 'font-bold text-amber-400' : 'text-white') + '">' + cell(v.unpaid) + '</td><td class="hq-col-last text-slate-300 whitespace-nowrap"' + (v.last ? ' title="' + esc(String(v.last)) + '"' : '') + '>' + (compactDates ? shortBookingDate(v.last) : cell(v.last)) + '</td>'
                         + '<td class="hq-col-health"><div class="flex flex-col gap-1">' + warnHtml(v.w) + '</div></td>'
                         + '<td class="hq-col-actions">' + (compactDates
@@ -6086,7 +6161,7 @@
                 var lastRaw = v.last === null || v.last === undefined || v.last === '' ? '' : String(v.last);
                 var lastHtml = compactDates ? shortBookingDate(lastRaw) : cell(v.last);
                 return '<div class="glass-card rounded-2xl p-4 space-y-3 border border-slate-800">'
-                    + '<div class="flex items-start justify-between gap-2"><div class="min-w-0"><div class="font-extrabold text-white text-sm">' + esc(t.name) + '</div><div class="font-mono text-[11px] text-slate-400">/' + esc(t.slug || t.id) + '</div>' + (isComplimentaryPro(t) ? '<span class="hq-comp">Complimentary Pro</span>' : '') + '</div>' + v.stBadge + '</div>'
+                    + '<div class="flex items-start justify-between gap-2"><div class="min-w-0"><div class="font-extrabold text-white text-sm">' + esc(t.name) + '</div><div class="font-mono text-[11px] text-slate-400">/' + esc(t.slug || t.id) + '</div><div class="text-[11px] text-slate-400">Page visits · 30 days <span class="font-bold text-white">' + cell(v.visits) + '</span></div>' + (isComplimentaryPro(t) ? '<span class="hq-comp">Complimentary Pro</span>' : '') + '</div>' + v.stBadge + '</div>'
                     + (v.tagsHtml ? '<div class="flex flex-wrap gap-1">' + v.tagsHtml + '</div>' : '')
                     + '<div class="text-[11px] text-slate-300 break-all">' + cell(t.ownerName) + ' · <span class="font-mono text-brand-400">' + cell(t.ownerEmail) + '</span></div>'
                     + '<div class="grid grid-cols-4 gap-2 text-center">'

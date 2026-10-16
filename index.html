@@ -2469,6 +2469,53 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
         font-weight: 800;
     }
     html.schedi-light #tenantPortalSection.schedi-newdash .sd-report-avg { color: #0f172a; }
+    #tenantPortalSection.schedi-newdash .sd-visits {
+        margin-top: 16px;
+        padding: 16px;
+        border: 1px solid var(--sd-line);
+        border-radius: 16px;
+        background: var(--sd-panel);
+        color: var(--sd-text);
+    }
+    #tenantPortalSection.schedi-newdash .sd-visits h4,
+    #tenantPortalSection.schedi-newdash .sd-visits h5 {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 800;
+        color: var(--sd-text);
+    }
+    #tenantPortalSection.schedi-newdash .sd-visits h5 { font-size: 13px; margin-top: 12px; }
+    #tenantPortalSection.schedi-newdash .sd-visit-kpis { display: flex; gap: 20px; margin: 10px 0 6px; }
+    #tenantPortalSection.schedi-newdash .sd-visit-kpis span,
+    #tenantPortalSection.schedi-newdash .sd-visits .sd-muted { color: var(--sd-muted); font-size: 12px; font-weight: 700; }
+    #tenantPortalSection.schedi-newdash .sd-visit-kpis strong {
+        display: block;
+        margin-top: 2px;
+        font-size: 1.6rem;
+        letter-spacing: -0.03em;
+        color: var(--sd-text);
+    }
+    #tenantPortalSection.schedi-newdash .sd-spark { width: 100%; height: 64px; color: var(--sd-brand); display: block; }
+    #tenantPortalSection.schedi-newdash .sd-visit-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+        gap: 18px;
+        margin-top: 8px;
+    }
+    #tenantPortalSection.schedi-newdash .sd-visit-list { list-style: none; margin: 6px 0 0; padding: 0; }
+    #tenantPortalSection.schedi-newdash .sd-visit-list li {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 5px 0;
+        border-top: 1px solid var(--sd-line);
+        font-size: 13px;
+        color: var(--sd-text);
+    }
+    @media (max-width: 720px) {
+        #tenantPortalSection.schedi-newdash .sd-visit-grid { grid-template-columns: 1fr; }
+        #tenantPortalSection.schedi-newdash .sd-visits { padding: 14px; }
+    }
 
 </style>
 <style id="schediNewBookManage">
@@ -17087,9 +17134,179 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
             return '';
         }
 
+        var pageVisitState = { key: '', report: null, error: '', loading: false };
+
+        function pageVisitDays() {
+            if (reportRangePreset === '7' || reportRangePreset === '30' || reportRangePreset === '90') return Number(reportRangePreset);
+            return 0;
+        }
+
+        function pageVisitSourceLabel(label) {
+            var name = String(label || '');
+            if (name === 'direct') return 'Direct';
+            if (name === 'other') return 'Other';
+            if (name === 'unknown') return 'Unknown';
+            return name || 'Unknown';
+        }
+
+        function pageVisitDeviceLabel(label) {
+            var name = String(label || '').toLowerCase();
+            if (name === 'mobile') return 'Mobile';
+            if (name === 'tablet') return 'Tablet';
+            if (name === 'desktop') return 'Desktop';
+            return name ? name.charAt(0).toUpperCase() + name.slice(1) : 'Unknown';
+        }
+
+        function pageVisitPlace(item) {
+            var bits = [];
+            if (item && item.city && item.city !== 'unknown') bits.push(item.city);
+            if (item && item.region && item.region !== 'unknown') bits.push(item.region);
+            var country = item && item.country && item.country !== 'unknown' ? String(item.country) : '';
+            try {
+                if (country.length === 2 && typeof Intl !== 'undefined' && Intl.DisplayNames) {
+                    country = new Intl.DisplayNames(['en'], { type: 'region' }).of(country) || country;
+                }
+            } catch (errCountry) {}
+            if (country) bits.push(country);
+            return bits.join(', ') || 'Unknown';
+        }
+
+        function pageVisitSample(days) {
+            var n = days === 7 ? 7 : (days === 90 ? 90 : 30);
+            var series = [];
+            var views = 0;
+            var uniques = 0;
+            var end = '2026-10-16';
+            var i;
+            for (i = 0; i < n; i++) {
+                var v = 4 + ((i * 3) % 9);
+                var u = Math.max(1, v - 2);
+                views += v;
+                uniques += u;
+                series.push({ date: reportShiftIso(end, i - (n - 1)), views: v, uniques: u });
+            }
+            return {
+                ok: true,
+                sample: true,
+                days: days,
+                views: views,
+                uniques: uniques,
+                series: series,
+                locations: [
+                    { city: 'Austin', region: 'Texas', country: 'US', views: 42 },
+                    { city: 'Toronto', region: 'Ontario', country: 'CA', views: 17 },
+                    { city: 'Brooklyn', region: 'New York', country: 'US', views: 11 }
+                ],
+                sources: [
+                    { label: 'Instagram', views: 38 },
+                    { label: 'QR', views: 21 },
+                    { label: 'Google', views: 14 },
+                    { label: 'direct', views: 11 }
+                ],
+                devices: [
+                    { label: 'mobile', views: 51 },
+                    { label: 'desktop', views: 22 },
+                    { label: 'tablet', views: 6 }
+                ],
+                browsers: [
+                    { label: 'Safari', views: 33 },
+                    { label: 'Chrome', views: 29 }
+                ]
+            };
+        }
+
+        function pageVisitEnsure(tenant, days) {
+            if (!days) return;
+            var id = String((tenant && (tenant.id || tenant.slug)) || '');
+            var key = id + ':' + days;
+            if (window.__SCHEDI_DEMO) {
+                pageVisitState = { key: key, report: pageVisitSample(days), error: '', loading: false };
+                return;
+            }
+            if (pageVisitState.key === key && (pageVisitState.report || pageVisitState.loading || pageVisitState.error)) return;
+            pageVisitState = { key: key, report: null, error: '', loading: true };
+            var session = '';
+            try { session = schediAuthSession(); } catch (errSession) { session = ''; }
+            fetch('https://schedi.app/api/page-visits', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'read', session: session, days: days })
+            }).then(function (res) {
+                return res.json().then(function (data) { return { ok: res.ok, data: data || {} }; });
+            }).then(function (out) {
+                if (pageVisitState.key !== key) return;
+                pageVisitState.loading = false;
+                if (!out.ok || !out.data || !out.data.ok) pageVisitState.error = (out.data && out.data.error) || 'unavailable';
+                else pageVisitState.report = out.data;
+                var current = getTenant();
+                if (current) renderTenantReport(current);
+            }).catch(function () {
+                if (pageVisitState.key !== key) return;
+                pageVisitState.loading = false;
+                pageVisitState.error = 'unavailable';
+                var current = getTenant();
+                if (current) renderTenantReport(current);
+            });
+        }
+
+        function pageVisitSparkline(series) {
+            var rows = series || [];
+            if (!rows.length) return '';
+            var max = 1;
+            rows.forEach(function (row) { if (row && row.views > max) max = row.views; });
+            var w = 320;
+            var h = 64;
+            var pad = 4;
+            var step = rows.length === 1 ? 0 : (w - pad * 2) / (rows.length - 1);
+            var pts = rows.map(function (row, i) {
+                var x = pad + step * i;
+                var y = h - pad - ((Number(row.views) || 0) / max) * (h - pad * 2);
+                return x.toFixed(1) + ',' + y.toFixed(1);
+            }).join(' ');
+            var last = rows[rows.length - 1];
+            return '<svg class="sd-spark" viewBox="0 0 ' + w + ' ' + h + '" role="img" aria-label="' + esc('Page views by day, ending ' + ((last && last.date) || '')) + '"><polyline fill="none" stroke="currentColor" stroke-width="2" points="' + pts + '"/></svg>';
+        }
+
+        function pageVisitList(items, labelOf) {
+            var rows = items || [];
+            if (!rows.length) return '<li><span class="sd-muted">None yet</span><span></span></li>';
+            return rows.slice(0, 5).map(function (item) {
+                return '<li><span>' + esc(labelOf(item)) + '</span><span>' + esc(String(item.views || 0)) + '</span></li>';
+            }).join('');
+        }
+
+        function pageVisitSectionHtml(days) {
+            if (!days) {
+                return '<section class="sd-visits" id="tenantVisitReport" aria-label="Page visits"><h4>Page visits</h4><p class="sd-muted">These counts are kept for the last 7, 30, and 90 days.</p></section>';
+            }
+            var report = pageVisitState.report;
+            if (pageVisitState.loading && !report) {
+                return '<section class="sd-visits" id="tenantVisitReport" aria-label="Page visits"><h4>Page visits</h4><p class="sd-muted">Loading page visits.</p></section>';
+            }
+            if (!report) {
+                var fail = pageVisitState.error === 'visits_unconfigured'
+                    ? 'Visit counts are not turned on yet.'
+                    : 'Visit counts could not be loaded.';
+                return '<section class="sd-visits" id="tenantVisitReport" aria-label="Page visits"><h4>Page visits</h4><p class="sd-muted">' + esc(fail) + '</p></section>';
+            }
+            var badge = report.sample ? ' <span class="sd-sample-badge">Sample data</span>' : '';
+            return '<section class="sd-visits" id="tenantVisitReport" aria-label="Page visits">'
+                + '<h4>Page visits' + badge + '</h4>'
+                + '<p class="sd-muted">Views and approximate unique visitors. Country and city come from the network request. The visitor is not stored.</p>'
+                + '<div class="sd-visit-kpis"><div><span>Views</span><strong>' + esc(String(report.views)) + '</strong></div><div><span>Unique visitors</span><strong>' + esc(String(report.uniques)) + '</strong></div></div>'
+                + pageVisitSparkline(report.series)
+                + '<div class="sd-visit-grid">'
+                + '<div><h5>Top locations</h5><ul class="sd-visit-list">' + pageVisitList(report.locations, pageVisitPlace) + '</ul></div>'
+                + '<div><h5>Top sources</h5><ul class="sd-visit-list">' + pageVisitList(report.sources, function (item) { return pageVisitSourceLabel(item.label); }) + '</ul>'
+                + '<h5>Devices</h5><ul class="sd-visit-list">' + pageVisitList(report.devices, function (item) { return pageVisitDeviceLabel(item.label); }) + '</ul></div>'
+                + '</div></section>';
+        }
+
         function renderTenantReport(tenant) {
             var body = document.getElementById('tenantReportBody');
             if (!body) return;
+            var visitDays = pageVisitDays();
+            pageVisitEnsure(tenant, visitDays);
             ['7', '30', '90', 'custom'].forEach(function (key) {
                 var btn = document.getElementById('tenantReportRange' + (key === 'custom' ? 'Custom' : key));
                 if (btn) btn.setAttribute('aria-pressed', reportRangePreset === key ? 'true' : 'false');
@@ -17099,8 +17316,6 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
             var toEl = document.getElementById('tenantReportTo');
             var range = appointmentReportRange(reportRangePreset, today, fromEl && fromEl.value, toEl && toEl.value);
             var model = appointmentReportModel(appointmentReportRows(tenant), range, bookingPaymentState);
-            var sample = window.__SCHEDI_DEMO === true;
-            var visits = sample ? appointmentReportSampleVisits(range.from, range.to) : null;
             var byClient = {};
             model.rows.forEach(function (app) {
                 if (reportIsCancelled(app) || reportIsDenied(app)) return;
@@ -17118,9 +17333,16 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
             function card(kicker, value, note, extra) {
                 return '<div class="sd-report-card p-3 rounded-xl bg-slate-900 border border-slate-800"><div class="sd-report-kicker text-slate-500">' + kicker + (extra || '') + '</div><div class="sd-report-value text-lg font-black text-white">' + value + '</div>' + (note ? '<p class="sd-report-note text-slate-500 mt-1">' + note + '</p>' : '') + '</div>';
             }
-            var visitCard = sample
-                ? card('Page visits', String(visits.total), 'Sample counts for this date range. Nothing is collected from visitors.', ' <span class="sd-sample-badge">Sample data</span>')
-                : card('Page visits', 'Unavailable', 'The booking page does not send visit counts yet.');
+            var visitReport = pageVisitState.report;
+            var visitExtra = visitReport && visitReport.sample ? ' <span class="sd-sample-badge">Sample data</span>' : '';
+            var visitCard;
+            if (!visitDays) visitCard = card('Page visits', '—', 'Switch to the last 7, 30, or 90 days for page visits.');
+            else if (pageVisitState.loading && !visitReport) visitCard = card('Page visits', '…', 'Loading page visits.', visitExtra);
+            else if (!visitReport) {
+                var visitFail = pageVisitState.error === 'visits_unconfigured' ? 'Visit counts are not turned on yet.' : 'Visit counts could not be loaded.';
+                visitCard = card('Page visits', '—', visitFail, visitExtra);
+            } else if (visitReport.sample) visitCard = card('Page visits', String(visitReport.views), 'Sample counts for this date range. Nothing is collected from visitors.', visitExtra);
+            else visitCard = card('Page visits', String(visitReport.views), visitReport.uniques + ' approximate unique visitors. No cookies are stored.', visitExtra);
             var noShow = model.noShow;
             var noShowCard = card('No-shows', esc(noShow.label), esc(noShow.reason));
             var countLabel = function (n) { return String(n); };
@@ -17148,7 +17370,8 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                 + '</div>'
                 + '<p>Status: ' + model.pending + ' pending, ' + model.accepted + ' accepted, ' + (model.confirmed - model.accepted) + ' confirmed with no separate status, ' + model.denied + ' denied, ' + model.cancelled + ' cancelled.' + (walkIns ? (' Walk-ins: ' + walkIns + '.') : '') + '</p>'
                 + '<p>' + esc(noShow.reason) + ' Recorded prices add the amount stored on each appointment that is not cancelled or denied.</p>'
-                + '<div><div class="font-bold text-white mb-1">Repeat clients</div><p class="text-slate-500 mb-1">Someone with 2 or more appointments in this range that were not cancelled or denied. Matched by email, then phone, then name.</p><ul class="list-disc pl-5 space-y-1">' + repeatHtml + '</ul></div>';
+                + '<div><div class="font-bold text-white mb-1">Repeat clients</div><p class="text-slate-500 mb-1">Someone with 2 or more appointments in this range that were not cancelled or denied. Matched by email, then phone, then name.</p><ul class="list-disc pl-5 space-y-1">' + repeatHtml + '</ul></div>'
+                + pageVisitSectionHtml(visitDays);
         }
 
         // Print only the Appointments Report: copy it into #schediPrintRoot (a direct child of <body>) and hide everything else.
@@ -18132,12 +18355,35 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
             if (label) label.textContent = `${tenant.name} (/${tenant.slug})`;
             if (!iframe) return;
 
-            const standaloneHtml = generateStandaloneHtmlForTenant(tenant);
+            const standaloneHtml = generateStandaloneHtmlForTenant(tenant, { countVisits: false });
             iframe.srcdoc = standaloneHtml;
         }
 
         function formatServiceDuration(d) { d = String(d == null ? '' : d).trim(); return /^[0-9]+([.][0-9]+)?$/.test(d) ? d + ' min' : d; }
-        function generateStandaloneHtmlForTenant(tenant) {
+        function schediVisitBeaconHtml(tenant, countVisits) {
+            var close = '<' + '/script>';
+            if (!countVisits) return '<script>window.__SCHEDI_VISIT_OFF=true;' + close;
+            var id = JSON.stringify(String((tenant && (tenant.slug || tenant.id)) || ''));
+            var body = '(function(){'
+                + 'if(window.__SCHEDI_VISIT_OFF)return;'
+                + 'var topWin=window;'
+                + 'try{if(window.parent&&window.parent!==window)topWin=window.parent;}catch(e){topWin=window;}'
+                + 'try{'
+                + 'if(topWin.__SCHEDI_DEMO||topWin.__SCHEDI_HQ_DEMO)return;'
+                + 'if(window.frameElement&&window.frameElement.id==="livePreviewIframe")return;'
+                + 'var meta={};'
+                + 'try{meta=JSON.parse(topWin.localStorage.getItem("schedi.authMeta")||"null")||{};}catch(e2){meta={};}'
+                + 'if(meta.role==="owner"||meta.role==="agency")return;'
+                + 'var q=new URLSearchParams((topWin.location&&topWin.location.search)||"");'
+                + 'if(q.get("demo")==="1"||q.get("preview")==="1")return;'
+                + 'var refHost="";'
+                + 'try{var ref=(topWin.document&&topWin.document.referrer)||"";if(ref)refHost=new URL(ref).hostname||"";}catch(e3){refHost="";}'
+                + 'fetch("https://schedi.app/api/page-visits",{method:"POST",headers:{"Content-Type":"application/json"},keepalive:true,credentials:"same-origin",body:JSON.stringify({tenantId:' + id + ',src:String(q.get("src")||"").slice(0,40),utmSource:String(q.get("utm_source")||"").slice(0,40),refHost:String(refHost).slice(0,253)})}).catch(function(){});'
+                + '}catch(e4){}'
+                + '})();';
+            return '<script>' + body + close;
+        }
+        function generateStandaloneHtmlForTenant(tenant, visitOpts) {
             ensurePaymentGateways(tenant);
             ensureCancellationFeeSettings(tenant);
             ensureAllowRecurringBookings(tenant);
@@ -18224,6 +18470,9 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
             const appIdStr = (typeof window !== 'undefined' && window.__app_id) ? window.__app_id : (typeof __app_id !== 'undefined' ? __app_id : 'siteforge-97699');
             var schediNewBook = false;
             try { schediNewBook = schediNewBookOn(); } catch (newBookErr) { schediNewBook = false; }
+            var countVisits = !(visitOpts && visitOpts.countVisits === false);
+            try { if (window.__SCHEDI_DEMO || window.__SCHEDI_HQ_DEMO) countVisits = false; } catch (visitFlagErr) { countVisits = false; }
+            const visitBeaconHtml = schediVisitBeaconHtml(tenant, countVisits);
 
             return `<!DOCTYPE html>
 <html lang="en" class="dark${schediNewBook ? ' schedi-newbook' : ''}">
@@ -21753,6 +22002,7 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
             }, 600);
         }
     <\/script>
+${visitBeaconHtml}
 </body>
 </html>`;
         }
