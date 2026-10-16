@@ -134,4 +134,32 @@ describe("logo upload", () => {
     expect(html).toContain('id="logoCropCanvas"');
     expect(html).toContain("Or paste a link");
   });
+
+  it("zooms around the center of the crop frame and saves that same square", () => {
+    const source = new Function(`${extractFunction(html, "logoCropSource")}; return logoCropSource;`)() as (
+      w: number, h: number, stage: number, zoom: number, x: number, y: number,
+    ) => { sx: number; sy: number; sw: number; ox: number; oy: number; scale: number };
+    const apply = new Function(`${extractFunction(html, "logoCropApplyZoom")}; return logoCropApplyZoom;`)() as (
+      state: { zoom: number; ox: number; oy: number }, zoom: number, stage: number,
+    ) => { zoom: number; ox: number; oy: number };
+    const stage = 280;
+    const fitScale = stage / 400;
+    const fitted = source(1000, 400, stage, 1, (stage - 1000 * fitScale) / 2, (stage - 400 * fitScale) / 2);
+    const wide = { zoom: 1, ox: fitted.ox, oy: fitted.oy };
+    const before = { x: (stage / 2 - fitted.ox) / fitted.scale, y: (stage / 2 - fitted.oy) / fitted.scale };
+    apply(wide, 2, stage);
+    const drawn = source(1000, 400, stage, wide.zoom, wide.ox, wide.oy);
+    expect((stage / 2 - drawn.ox) / drawn.scale).toBeCloseTo(before.x, 4);
+    expect((stage / 2 - drawn.oy) / drawn.scale).toBeCloseTo(before.y, 4);
+    expect(drawn.sx).toBeGreaterThan(fitted.sx);
+    expect(drawn.sw).toBeCloseTo(stage / drawn.scale, 4);
+
+    const squareState = { zoom: 1, ox: 0, oy: 0 };
+    apply(squareState, 2, stage);
+    const square = source(800, 800, stage, squareState.zoom, squareState.ox, squareState.oy);
+    expect(square.ox).toBeLessThan(0);
+    expect(square.oy).toBeLessThan(0);
+    expect((stage / 2 - square.ox) / square.scale).toBeCloseTo(400, 4);
+    expect((stage / 2 - square.oy) / square.scale).toBeCloseTo(400, 4);
+  });
 });

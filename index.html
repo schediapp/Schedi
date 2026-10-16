@@ -597,11 +597,14 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pill-grey { color: #33
 #tenantPortalSection.schedi-newdash .sd-pay { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; border-radius: 999px; padding: 2px 8px; font-size: 11px; font-weight: 800; line-height: 1.3; border: 1px solid var(--sd-line); color: var(--sd-text); background: rgba(148, 163, 184, 0.14); }
 #tenantPortalSection.schedi-newdash .sd-pay svg { width: 14px; height: 14px; display: block; flex: none; }
 #tenantPortalSection.schedi-newdash .sd-pay-card { color: var(--sd-brand-2); border-color: rgba(16, 185, 129, 0.4); background: rgba(16, 185, 129, 0.14); }
+#tenantPortalSection.schedi-newdash .sd-pay-square { color: #a5b4fc; border-color: rgba(129, 140, 248, 0.45); background: rgba(129, 140, 248, 0.16); }
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-square { color: #3730a3; border-color: rgba(67, 56, 202, 0.35); background: rgba(99, 102, 241, 0.12); }
 #tenantPortalSection.schedi-newdash .sd-pay-unpaid { color: var(--sd-rose); border-color: rgba(244, 63, 94, 0.35); background: rgba(244, 63, 94, 0.1); }
 #tenantPortalSection.schedi-newdash .sd-pay.is-icon { padding: 3px; }
 #tenantPortalSection.schedi-newdash .sd-pay.is-icon .sd-pay-word { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); border: 0; }
 #tenantPortalSection.schedi-newdash .sd-pay-filters { display: flex; flex-wrap: wrap; gap: 6px; }
-#tenantPortalSection.schedi-newdash .sd-chip { min-height: 36px; border-radius: 999px; border: 1px solid var(--sd-line); background: transparent; color: var(--sd-text); font-weight: 800; font-size: 12px; padding: 4px 10px; }
+#tenantPortalSection.schedi-newdash .sd-chip { min-height: 36px; border-radius: 999px; border: 1px solid var(--sd-line); background: transparent; color: var(--sd-text); font-weight: 800; font-size: 12px; padding: 4px 10px; display: inline-flex; align-items: center; }
+#tenantPortalSection.schedi-newdash .sd-chip svg { width: 14px; height: 14px; display: block; flex: none; margin-right: 4px; }
 #tenantPortalSection.schedi-newdash .sd-chip.is-on { background: rgba(16, 185, 129, 0.16); color: var(--sd-brand-2); border-color: rgba(16, 185, 129, 0.45); }
 #tenantPortalSection.schedi-newdash .sd-chip-count { margin-left: 4px; color: var(--sd-muted); font-weight: 700; }
 #tenantPortalSection.schedi-newdash .sd-chip.is-on .sd-chip-count { color: inherit; }
@@ -1488,6 +1491,28 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-busy-error { color: #b
 #tenantPortalSection.schedi-newdash .sd-cal-block,
 #tenantPortalSection.schedi-newdash .sd-cal-editor { overflow: visible; }
 #tenantPortalSection.schedi-newdash .sd-cal-block { max-width: 520px; }
+#tenantPortalSection.schedi-newdash .sd-hours-aside {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+    align-items: start;
+}
+@media (min-width: 900px) {
+    #tenantPortalSection.schedi-newdash .sd-hours-aside { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+    #tenantPortalSection.schedi-newdash .sd-hours-aside .sd-cal-block,
+    #tenantPortalSection.schedi-newdash .sd-hours-aside .sd-busy { max-width: none; width: 100%; }
+}
+#tenantPortalSection.schedi-newdash .sd-pay-settings {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+    align-items: start;
+}
+@media (min-width: 900px) {
+    #tenantPortalSection.schedi-newdash .sd-pay-settings { grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr); }
+}
+body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt { display: flex; align-items: center; gap: 8px; text-align: left; }
+body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt svg { width: 16px; height: 16px; flex: none; }
 #tenantPortalSection.schedi-newdash .sd-cal-heading {
     margin: 0 0 4px;
     font-size: 16px;
@@ -2558,8 +2583,6 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                         <p class="text-xs text-slate-400">Set individual day operating hours or create recurring outage time blocks.</p>
                     </div>
 
-                    <section id="sdBusyCard" class="sd-busy" aria-labelledby="sdBusyTitle"></section>
-
                     <form onsubmit="handleUpdateShiftsSubmit(event)" class="space-y-4 border-b border-slate-800 pb-6">
                         <div id="tenantHoursShiftBlock">
                         <div id="perDayShiftsGrid" class="sd-hours-grid"></div>
@@ -2655,6 +2678,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                     </form>
 
                     <div id="tenantHoursTimeOff">
+                    <div class="sd-hours-aside">
                     <div class="sd-cal-block">
                         <h4 class="sd-cal-heading">Special hours and time off</h4>
                         <p class="sd-hours-hint">Tap a date to set custom hours or close that day. Drag across days, or hold a date and tap the last day, to mark time off. With a keyboard, use the arrow keys, then Enter. Shift plus the arrow keys selects a range.</p>
@@ -2701,6 +2725,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                             <div id="sdHoursUpcoming"></div>
                         </div>
                     </div>
+                    <section id="sdBusyCard" class="sd-busy" aria-labelledby="sdBusyTitle"></section>
+                    </div>
 
                     <div class="space-y-4 border-t border-slate-800 pt-6">
                         <div class="flex items-center justify-between">
@@ -2718,6 +2744,22 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                             <!-- Injected via JS -->
                         </div>
                     </div>
+
+                    <div class="space-y-4 border-t border-slate-800 pt-6">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div>
+                                <h4 class="text-sm font-bold text-white">Vacation &amp; Date Blocks</h4>
+                                <p class="text-xs text-slate-400">Block specific dates or ranges (e.g. Mar 10–17) without changing weekly hours. Optional all-day or time window. Edit or remove a block from the list.</p>
+                            </div>
+                            <button type="button" onclick="openAddDateBlockModal()" class="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold text-xs border border-amber-500/20 flex items-center space-x-1.5 shrink-0">
+                                <i class="fa-solid fa-calendar-xmark"></i>
+                                <span>Add Date Block</span>
+                            </button>
+                        </div>
+                        <div id="tenantDateBlocksList" class="space-y-2">
+                            <!-- Injected via JS -->
+                        </div>
+                    </div>
                     </div>
                 </div>
 
@@ -2728,7 +2770,9 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                         <p class="text-xs text-slate-400">Enable or disable payment methods made available to clients during checkout.</p>
                     </div>
 
-                    <form onsubmit="handleSaveTenantPayments(event)" class="space-y-4 max-w-xl text-xs">
+                    <form onsubmit="handleSaveTenantPayments(event)" class="space-y-4 text-xs">
+                        <div class="sd-pay-settings">
+                        <div class="sd-pay-methods space-y-4">
                         <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center justify-between">
                             <div class="flex items-center space-x-3">
                                 <i class="fa-solid fa-credit-card text-indigo-400 text-lg"></i>
@@ -2836,7 +2880,9 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                             </div>
                             <input type="checkbox" id="tenantPayLaterCheck" class="w-4 h-4 accent-brand-500 rounded cursor-pointer">
                         </div>
+                        </div>
 
+                        <div class="sd-pay-rules space-y-4">
                         <div id="tenantDepositBox" class="p-4 rounded-xl bg-slate-900/80 border border-indigo-500/30 space-y-3">
                             <div class="flex items-center justify-between gap-3">
                                 <div>
@@ -2876,6 +2922,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                                 <label id="tenantCancelFeeValueLabel" class="block text-[11px] text-slate-400 mb-1" for="tenantCancelFeeValue">Percent</label>
                                 <input type="number" id="tenantCancelFeeValue" min="0" max="100" step="1" value="0" class="w-full px-3 py-2 rounded-lg glass-input font-mono">
                             </div>
+                        </div>
+                        </div>
                         </div>
 
                         <button type="submit" class="px-6 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-slate-950 font-bold shadow-md glow-emerald transition-all">
@@ -3560,15 +3608,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
             </div>
             <p id="rosterPaidMethodCode" class="hidden text-xs text-slate-300 rounded-xl bg-slate-900 border border-slate-800 px-3 py-2"></p>
             <input type="hidden" id="rosterPaidMethodAppId" value="">
-            <div class="grid grid-cols-2 gap-2" id="rosterPaidMethodOptions">
-                <button type="button" data-paid-method="cash" class="roster-paid-opt px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 font-bold text-sm border border-slate-700 transition-all">Cash</button>
-                <button type="button" data-paid-method="card" class="roster-paid-opt px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 font-bold text-sm border border-slate-700 transition-all">Card</button>
-                <button type="button" data-paid-method="cashapp" class="roster-paid-opt px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 font-bold text-sm border border-slate-700 transition-all">Cash App</button>
-                <button type="button" data-paid-method="venmo" class="roster-paid-opt px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 font-bold text-sm border border-slate-700 transition-all">Venmo</button>
-                <button type="button" data-paid-method="zelle" class="roster-paid-opt px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 font-bold text-sm border border-slate-700 transition-all">Zelle</button>
-                <button type="button" data-paid-method="paypal" class="roster-paid-opt px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 font-bold text-sm border border-slate-700 transition-all">PayPal</button>
-                <button type="button" data-paid-method="other" class="roster-paid-opt px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 font-bold text-sm border border-slate-700 transition-all col-span-2">Other</button>
-            </div>
+            <div class="grid grid-cols-1 gap-2" id="rosterPaidMethodOptions"></div>
             <div class="pt-1 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
                 <button type="button" onclick="closeRosterPaidMethodModal()" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-sm transition-all">Cancel</button>
                 <button type="button" id="rosterPaidMethodConfirmBtn" onclick="confirmRosterMarkPaid()" class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm border border-emerald-400/40 transition-all">Mark paid</button>
@@ -3697,9 +3737,14 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                 <div>
                     <label class="block font-semibold text-slate-300 mb-1">Payment Method / Status</label>
                     <select id="manPaymentStatus" class="w-full px-3 py-2 rounded-xl glass-input">
-                        <option value="PAID IN CASH">Paid in Cash</option>
-                        <option value="PAID VIA CARD">Paid via Card</option>
-                        <option value="PAY AT APPOINTMENT">Pay at Appointment (Unpaid)</option>
+                        <option value="PAID VIA CARD">Card</option>
+                        <option value="PAID CASH APP">Cash App</option>
+                        <option value="PAID ZELLE">Zelle</option>
+                        <option value="PAID VENMO">Venmo</option>
+                        <option value="PAID PAYPAL">PayPal</option>
+                        <option value="PAID SQUARE">Square</option>
+                        <option value="PAID IN CASH">In person / Cash</option>
+                        <option value="PAY AT APPOINTMENT">Unpaid</option>
                     </select>
                 </div>
                 <div id="manDepositBox" class="hidden p-3 rounded-xl bg-slate-900 border border-slate-800 text-[11px] text-slate-300 space-y-1">
@@ -5195,8 +5240,9 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                 : (up.indexOf('ZELLE') !== -1 ? 'Zelle'
                 : (up.indexOf('VENMO') !== -1 ? 'Venmo'
                 : (up.indexOf('PAYPAL') !== -1 ? 'PayPal'
+                : (up.indexOf('SQUARE') !== -1 ? 'Square'
                 : (up.indexOf('CARD') !== -1 ? 'Card'
-                : (up.indexOf('CASH') !== -1 ? 'Cash' : '')))));
+                : (up.indexOf('CASH') !== -1 ? 'Cash' : ''))))));
             if (/\bUNPAID\b/.test(up) || /\bNOT\s+PAID\b/.test(up)) return 'Unpaid';
             if (up.indexOf('PAID') !== -1) {
                 if (app.paidMethod) return 'Paid · ' + paidMethodLabel(app.paidMethod);
@@ -8014,6 +8060,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
             if (kind === 'zelle') return 'Zelle';
             if (kind === 'venmo') return 'Venmo';
             if (kind === 'paypal') return 'PayPal';
+            if (kind === 'square') return 'Square';
             if (kind === 'cash') return 'In person / Cash';
             return '';
         }
@@ -8047,8 +8094,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
             var visitCount = 0;
             var firstVisit = '';
             var lastVisit = '';
-            var counts = { card: 0, cashapp: 0, zelle: 0, venmo: 0, paypal: 0, cash: 0 };
-            var recent = { card: '', cashapp: '', zelle: '', venmo: '', paypal: '', cash: '' };
+            var counts = { card: 0, cashapp: 0, zelle: 0, venmo: 0, paypal: 0, square: 0, cash: 0 };
+            var recent = { card: '', cashapp: '', zelle: '', venmo: '', paypal: '', square: '', cash: '' };
             matched.forEach(function (app) {
                 if (reportIsCancelled(app) || reportIsDenied(app)) return;
                 visitCount += 1;
@@ -8068,7 +8115,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                     }
                 } else unpaidRevenue += amount;
             });
-            var order = ['card', 'cashapp', 'zelle', 'venmo', 'paypal', 'cash'];
+            var order = ['card', 'cashapp', 'zelle', 'venmo', 'paypal', 'square', 'cash'];
             var usual = '';
             var best = 0;
             order.forEach(function (kind) {
@@ -8776,25 +8823,20 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
         window.bookingPaymentState = bookingPaymentState;
 
         var rosterPayFilter = 'all';
-        var ROSTER_PAY_FILTERS = [
-            ['all', 'All'],
-            ['card', 'Card'],
-            ['cashapp', 'Cash App'],
-            ['zelle', 'Zelle'],
-            ['venmo', 'Venmo'],
-            ['paypal', 'PayPal'],
-            ['cash', 'In person'],
-            ['unpaid', 'Unpaid']
+        var OWNER_PAY_METHODS = [
+            ['card', 'Card', 'Card (Stripe)'],
+            ['cashapp', 'Cash App', 'Cash App'],
+            ['zelle', 'Zelle', 'Zelle'],
+            ['venmo', 'Venmo', 'Venmo'],
+            ['paypal', 'PayPal', 'PayPal'],
+            ['square', 'Square', 'Square'],
+            ['cash', 'In person / Cash', 'In person / Cash']
         ];
-        var ROSTER_PAY_WORDS = {
-            card: 'Card (Stripe)',
-            cashapp: 'Cash App',
-            zelle: 'Zelle',
-            venmo: 'Venmo',
-            paypal: 'PayPal',
-            cash: 'In person / Cash',
-            unpaid: 'Unpaid'
-        };
+        var ROSTER_PAY_FILTERS = [['all', 'All']].concat(OWNER_PAY_METHODS.map(function (row) {
+            return [row[0], row[1]];
+        })).concat([['unpaid', 'Unpaid']]);
+        var ROSTER_PAY_WORDS = { unpaid: 'Unpaid' };
+        OWNER_PAY_METHODS.forEach(function (row) { ROSTER_PAY_WORDS[row[0]] = row[2]; });
 
         function appointmentPayKind(app) {
             if (bookingPaymentState(app) !== 'paid') return 'unpaid';
@@ -8802,7 +8844,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
             var method = (app && typeof inferPaidMethodFromBooking === 'function') ? inferPaidMethodFromBooking(app) : '';
             if (app && (app.stripePaymentIntentId || app.stripePaymentMethodId || app.stripeChargeId)) return 'card';
             if (method === 'card' || status.indexOf('STRIPE') !== -1 || status.indexOf('CARD') !== -1) return 'card';
-            if (method === 'cashapp' || method === 'zelle' || method === 'venmo' || method === 'paypal') return method;
+            if (method === 'cashapp' || method === 'zelle' || method === 'venmo' || method === 'paypal' || method === 'square') return method;
             return 'cash';
         }
 
@@ -8813,6 +8855,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                 zelle: '<path d="M3 6h7M8 3.5 11.5 6 8 8.5M13 10H6M8 7.5 4.5 10 8 12.5" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>',
                 venmo: '<path d="M2.5 8.2 13 3.5l-3.2 10-1.6-4.2z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>',
                 paypal: '<rect x="2" y="4" width="12" height="8.5" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="11" cy="8.2" r="1" fill="currentColor"/>',
+                square: '<rect x="2.2" y="2.2" width="11.6" height="11.6" rx="2" fill="none" stroke="currentColor" stroke-width="1.4"/><rect x="5.2" y="5.2" width="5.6" height="5.6" rx="0.6" fill="currentColor"/>',
                 cash: '<circle cx="8" cy="5" r="2" fill="currentColor"/><path d="M3.8 13.2c.7-2.3 2.2-3.4 4.2-3.4s3.5 1.1 4.2 3.4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>',
                 unpaid: '<circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M5.2 8h5.6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>'
             };
@@ -8833,7 +8876,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
 
         function renderRosterPayFilter(tenant) {
             var apps = (tenant && tenant.appointments) || [];
-            var counts = { all: 0, card: 0, cashapp: 0, zelle: 0, venmo: 0, paypal: 0, cash: 0, unpaid: 0 };
+            var counts = { all: 0 };
+            ROSTER_PAY_FILTERS.forEach(function (row) { counts[row[0]] = 0; });
             apps.forEach(function (app) {
                 if (!app) return;
                 counts.all += 1;
@@ -8844,8 +8888,9 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
             if (box) {
                 box.innerHTML = ROSTER_PAY_FILTERS.map(function (row) {
                     var on = rosterPayFilter === row[0];
+                    var icon = row[0] === 'all' ? '' : payKindSvg(row[0]);
                     return '<button type="button" class="sd-chip' + (on ? ' is-on' : '') + '" data-pay-filter="' + row[0] + '" aria-pressed="' + (on ? 'true' : 'false') + '">' +
-                        esc(row[1]) + '<span class="sd-chip-count">' + counts[row[0]] + '</span></button>';
+                        icon + esc(row[1]) + '<span class="sd-chip-count">' + counts[row[0]] + '</span></button>';
                 }).join('');
                 if (!box._payBound) {
                     box._payBound = true;
@@ -9721,7 +9766,10 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                     return map;
                 })(),
                 blockedRules: [{ id: 'rule-lunch', title: 'Lunch', time: '12:00 PM', duration: '1 hour', frequency: 'Daily' }],
-                blockedTimes: [{ id: 'block-vacation', startDate: day(20), endDate: day(22), allDay: true, note: 'Out of studio' }],
+                blockedTimes: [
+                    { id: 'block-vacation', startDate: day(20), endDate: day(22), allDay: true, note: 'Out of studio' },
+                    { id: 'block-errand', startDate: day(6), endDate: day(6), allDay: false, startTime: '12:00 PM', endTime: '01:00 PM', note: 'Vendor pickup' }
+                ],
                 services: [
                     { id: 1, name: 'Cut & style', duration: '45 mins', durationMins: 45, price: 65, desc: 'Cut, style, and finish.', icon: 'fa-scissors' },
                     { id: 2, name: 'Beard trim', duration: '20 mins', durationMins: 20, price: 28, desc: 'Shape and tidy.', icon: 'fa-user' },
@@ -9743,7 +9791,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                     { id: 'HB-1009', clientName: 'Casey Ng', clientPhone: '(555) 201-4410', clientEmail: 'casey@example.com', serviceName: 'Beard trim', date: day(-2), time: '03:00 PM', status: 'accepted', paymentStatus: 'PAID', paidMethod: 'cashapp', paymentMethod: 'cashapp', durationMins: 20 },
                     { id: 'HB-1010', clientName: 'Drew Patel', clientPhone: '(555) 201-4411', clientEmail: 'drew@example.com', serviceName: 'Consultation', date: day(-3), time: '05:00 PM', status: 'accepted', paymentStatus: 'PAID', paidMethod: 'zelle', paymentMethod: 'zelle', durationMins: 30 },
                     { id: 'HB-1011', clientName: 'Quinn Brooks', clientPhone: '(555) 201-4412', clientEmail: 'quinn@example.com', serviceName: 'Cut & style', date: day(1), time: '03:30 PM', status: 'accepted', paymentStatus: 'PAID', paidMethod: 'venmo', paymentMethod: 'venmo', durationMins: 45 },
-                    { id: 'HB-1012', clientName: 'Harper Diaz', clientPhone: '(555) 201-4413', clientEmail: 'harper@example.com', serviceName: 'Gloss', date: day(2), time: '04:30 PM', status: 'accepted', paymentStatus: 'PAID', paidMethod: 'paypal', paymentMethod: 'paypal', durationMins: 75 },
+                    { id: 'HB-1012', clientName: 'Harper Diaz', clientPhone: '(555) 201-4413', clientEmail: 'harper@example.com', serviceName: 'Gloss', date: day(2), time: '04:30 PM', status: 'accepted', paymentStatus: 'PAID SQUARE', paidMethod: 'square', paymentMethod: 'square', paymentOptionLabel: 'Square', durationMins: 75 },
                     { id: 'HB-1013', clientName: 'Maya Chen', clientPhone: '(555) 999-0142', clientEmail: 'Maya@Example.com', serviceName: 'Beard trim', date: day(-16), time: '10:00 AM', status: 'accepted', paymentStatus: 'PAID VIA CARD', paidMethod: 'card', amount: 28, durationMins: 20 },
                     { id: 'HB-1014', clientName: 'Maya Chen', clientPhone: '(555) 201-0142', clientEmail: 'maya@example.com', serviceName: 'Gloss', date: day(-22), time: '02:00 PM', status: 'accepted', paymentStatus: 'PAID IN CASH', paidMethod: 'cash', amount: 80, durationMins: 75, noShow: true },
                     { id: 'HB-1015', clientName: 'Maya Chen', clientPhone: '(555) 201-0142', clientEmail: 'maya@example.com', serviceName: 'Cut & style', date: day(-30), time: '09:30 AM', status: 'cancelled', paymentStatus: 'PAID', paidMethod: 'card', amount: 65, durationMins: 45 },
@@ -9755,7 +9803,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                     { id: 'HB-1021', clientName: 'Jordan Lee', clientPhone: '(555) 201-7730', clientEmail: '', serviceName: 'Gloss', date: day(-26), time: '11:00 AM', status: 'denied', paymentStatus: 'PAY AT APPOINTMENT', amount: 80, durationMins: 75 },
                     { id: 'HB-1022', clientName: 'Jordan Lee', clientPhone: '(555) 201-7730', clientEmail: '', serviceName: 'Beard trim', date: day(11), time: '09:00 AM', status: 'accepted', paymentStatus: 'PAY AT APPOINTMENT', amount: 28, durationMins: 20 },
                     { id: 'HB-1023', clientName: 'Elena Vasquez', clientPhone: '(555) 201-4419', clientEmail: 'elena@example.com', serviceName: 'Color', date: day(-12), time: '01:00 PM', status: 'accepted', paymentStatus: 'PAID VIA CARD', paidMethod: 'card', amount: 120, durationMins: 90 },
-                    { id: 'HB-1024', clientName: 'Elena Vasquez', clientPhone: '(555) 201-4419', clientEmail: 'elena@example.com', serviceName: 'Gloss', date: day(-18), time: '02:30 PM', status: 'accepted', paymentStatus: 'PAID', paidMethod: 'venmo', paymentMethod: 'venmo', amount: 80, durationMins: 75 },
+                    { id: 'HB-1024', clientName: 'Elena Vasquez', clientPhone: '(555) 201-4419', clientEmail: 'elena@example.com', serviceName: 'Gloss', date: day(-18), time: '02:30 PM', status: 'accepted', paymentStatus: 'PAID', paidMethod: 'paypal', paymentMethod: 'paypal', amount: 80, durationMins: 75 },
                     { id: 'HB-1025', clientName: 'Elena Vasquez', clientPhone: '(555) 201-4419', clientEmail: 'ELENA@example.com', serviceName: 'Color', date: day(-35), time: '10:00 AM', status: 'accepted', paymentStatus: 'PAID VIA CARD', paidMethod: 'card', amount: 120, durationMins: 90 },
                     { id: 'HB-1026', clientName: 'Elena Vasquez', clientPhone: '(555) 201-4419', clientEmail: 'elena@example.com', serviceName: 'Color', date: day(16), time: '01:00 PM', status: 'accepted', paymentStatus: 'PAY AT APPOINTMENT', amount: 120, durationMins: 90 }
                 ]
@@ -11762,6 +11810,34 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
             (tenant.blockedTimes || []).forEach(function (b, i) {
                 if (b && (b.id == null || b.id === '')) b.id = 'block-' + i;
             });
+            const dateBlocksList = document.getElementById('tenantDateBlocksList');
+            if (dateBlocksList) {
+                const blocks = tenant.blockedTimes || [];
+                if (!blocks.length) {
+                    dateBlocksList.innerHTML = '<p class="text-xs text-slate-500">No vacation or date blocks configured.</p>';
+                } else {
+                    var dateActions = canManageBlockedTimes();
+                    dateBlocksList.innerHTML = blocks.slice().sort(function (a, b) {
+                        return String(a.startDate || '').localeCompare(String(b.startDate || ''));
+                    }).map(function (b) {
+                        const end = b.endDate && b.endDate !== b.startDate ? (' → ' + esc(b.endDate)) : '';
+                        const when = b.allDay !== false && !b.startTime
+                            ? 'All day'
+                            : (esc(b.startTime || '') + ' – ' + esc(b.endTime || ''));
+                        const note = b.note ? esc(b.note) : 'Blocked';
+                        const actions = dateActions ? '<div class="flex items-center gap-2 shrink-0 ml-auto">'
+                            + '<button type="button" onclick="openEditDateBlock(' + jsArg(b.id) + ')" aria-label="Edit date block" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold">Edit</button>'
+                            + '<button type="button" onclick="deleteDateBlock(' + jsArg(b.id) + ')" aria-label="Remove date block" class="px-2 py-1 rounded bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-bold">Remove</button>'
+                            + '</div>' : '';
+                        return '<div class="p-3 rounded-xl bg-slate-900 border border-slate-800 flex flex-wrap items-center justify-between text-xs gap-2">'
+                            + '<div class="flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0 flex-1">'
+                            + '<i class="fa-solid fa-calendar-xmark text-amber-400 shrink-0"></i>'
+                            + '<span class="font-bold text-white break-words">' + note + '</span>'
+                            + '<span class="text-slate-400">(' + esc(b.startDate || '') + end + ' • <span class="text-amber-400 font-semibold">' + when + '</span>)</span>'
+                            + '</div>' + actions + '</div>';
+                    }).join('');
+                }
+            }
             ensureSpecialHours(tenant);
             hoursCalPaint(tenant);
 
@@ -11818,6 +11894,23 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
             var oy = Math.max(minY, Math.min(0, Number(offsetY) || 0));
             var src = S / scale;
             return { sx: -ox / scale, sy: -oy / scale, sw: src, ox: ox, oy: oy, scale: scale, out: Math.max(1, Math.min(512, Math.round(src))) };
+        }
+
+        function logoCropApplyZoom(state, nextZoom, stage) {
+            if (!state) return state;
+            var prev = Number(state.zoom);
+            var next = Number(nextZoom);
+            if (!(prev >= 1)) prev = 1;
+            if (!(next >= 1)) next = 1;
+            if (next > 4) next = 4;
+            var S = Number(stage) || 0;
+            if (S > 0 && next !== prev) {
+                var ratio = next / prev;
+                state.ox = S / 2 - (S / 2 - (Number(state.ox) || 0)) * ratio;
+                state.oy = S / 2 - (S / 2 - (Number(state.oy) || 0)) * ratio;
+            }
+            state.zoom = next;
+            return state;
         }
 
         function logoUploadMessage(error) {
@@ -12121,7 +12214,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
             var zoom = document.getElementById('logoCropZoom');
             if (zoom) zoom.addEventListener('input', function () {
                 if (!logoCropState) return;
-                logoCropState.zoom = Number(zoom.value) || 1;
+                var canvas = document.getElementById('logoCropCanvas');
+                logoCropApplyZoom(logoCropState, Number(zoom.value) || 1, canvas ? canvas.width : LOGO_STAGE);
                 drawLogoCrop();
             });
             if (canvas) {
@@ -13790,6 +13884,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                 zelle: 'Zelle',
                 venmo: 'Venmo',
                 paypal: 'PayPal',
+                square: 'Square',
                 later: 'Pay at Appointment',
                 cash: 'Cash'
             };
@@ -13798,6 +13893,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
             if (status.indexOf('ZELLE') !== -1) return 'Zelle';
             if (status.indexOf('VENMO') !== -1) return 'Venmo';
             if (status.indexOf('PAYPAL') !== -1) return 'PayPal';
+            if (status.indexOf('SQUARE') !== -1) return 'Square';
             if (status.indexOf('CARD') !== -1) return 'Card';
             if (status.indexOf('PAY AT APPOINTMENT') !== -1 || status.indexOf('AT APPOINTMENT') !== -1) return 'Pay at Appointment';
             if (status.indexOf('CASH') !== -1) return 'Cash';
@@ -13809,7 +13905,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
         function paidMethodLabel(method) {
             var m = String(method || '').toLowerCase().trim();
             var map = {
-                cash: 'Cash',
+                cash: 'In person / Cash',
                 card: 'Card',
                 cashapp: 'Cash App',
                 'cash-app': 'Cash App',
@@ -13817,6 +13913,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                 venmo: 'Venmo',
                 zelle: 'Zelle',
                 paypal: 'PayPal',
+                square: 'Square',
                 other: 'Other'
             };
             return map[m] || (m ? (m.charAt(0).toUpperCase() + m.slice(1)) : '');
@@ -13836,10 +13933,42 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
             if (method === 'venmo' || status.indexOf('VENMO') !== -1 || label.indexOf('venmo') !== -1) return 'venmo';
             if (method === 'zelle' || status.indexOf('ZELLE') !== -1 || label.indexOf('zelle') !== -1) return 'zelle';
             if (method === 'paypal' || status.indexOf('PAYPAL') !== -1 || label.indexOf('paypal') !== -1) return 'paypal';
+            if (method === 'square' || status.indexOf('SQUARE') !== -1 || label.indexOf('square') !== -1) return 'square';
             if (method === 'cash' || status.indexOf('CASH') !== -1) return 'cash';
             // Pay at appointment / later → default Cash
             if (method === 'later' || status.indexOf('PAY AT APPOINTMENT') !== -1 || status.indexOf('AT APPOINTMENT') !== -1 || label.indexOf('appointment') !== -1) return 'cash';
             return 'cash';
+        }
+
+        var MANUAL_PAY_CHOICES = [
+            { value: 'PAID VIA CARD', method: 'card', label: 'Card' },
+            { value: 'PAID CASH APP', method: 'cashapp', label: 'Cash App' },
+            { value: 'PAID ZELLE', method: 'zelle', label: 'Zelle' },
+            { value: 'PAID VENMO', method: 'venmo', label: 'Venmo' },
+            { value: 'PAID PAYPAL', method: 'paypal', label: 'PayPal' },
+            { value: 'PAID SQUARE', method: 'square', label: 'Square' },
+            { value: 'PAID IN CASH', method: 'cash', label: 'In person / Cash' },
+            { value: 'PAY AT APPOINTMENT', method: 'later', label: 'Unpaid', unpaid: true }
+        ];
+
+        function manualPayFromStatus(status) {
+            var want = String(status || '');
+            for (var i = 0; i < MANUAL_PAY_CHOICES.length; i++) {
+                if (MANUAL_PAY_CHOICES[i].value === want) return MANUAL_PAY_CHOICES[i];
+            }
+            return null;
+        }
+
+        function manualPaySelectFor(app) {
+            if (app && bookingPaymentState(app) === 'paid') {
+                var method = inferPaidMethodFromBooking(app);
+                for (var i = 0; i < MANUAL_PAY_CHOICES.length; i++) {
+                    if (!MANUAL_PAY_CHOICES[i].unpaid && MANUAL_PAY_CHOICES[i].method === method) return MANUAL_PAY_CHOICES[i].value;
+                }
+            }
+            var status = String((app && app.paymentStatus) || '');
+            if (manualPayFromStatus(status)) return status;
+            return status || 'PAY AT APPOINTMENT';
         }
 
         function paidByPhrase(booking, opts) {
@@ -15401,16 +15530,17 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
             setManualWalkIn(app.walkIn === true, false);
             if (app.walkIn === true && app.time) ensureManualTimeOption(app.time);
             var pay = document.getElementById('manPaymentStatus');
-            if (pay && app.paymentStatus) {
+            if (pay) {
+                var wantPay = manualPaySelectFor(app);
                 var hasPay = false;
-                for (var i = 0; i < pay.options.length; i++) if (pay.options[i].value === app.paymentStatus) hasPay = true;
-                if (!hasPay) {
+                for (var i = 0; i < pay.options.length; i++) if (pay.options[i].value === wantPay) hasPay = true;
+                if (!hasPay && wantPay) {
                     var opt = document.createElement('option');
-                    opt.value = app.paymentStatus;
-                    opt.textContent = app.paymentStatus;
+                    opt.value = wantPay;
+                    opt.textContent = wantPay;
                     pay.appendChild(opt);
                 }
-                pay.value = app.paymentStatus;
+                if (wantPay) pay.value = wantPay;
             }
             var depBox = document.getElementById('manDepositBox');
             var depText = document.getElementById('manDepositText');
@@ -15477,16 +15607,20 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                 return;
             }
 
-            const payOptLabel = paymentOptionLabel({ paymentStatus: paymentStatus });
-            let payMethod = '';
-            const _pol = String(payOptLabel || '').toLowerCase();
-            if (_pol === 'card') payMethod = 'card';
-            else if (_pol === 'cash app') payMethod = 'cashapp';
-            else if (_pol === 'zelle') payMethod = 'zelle';
-            else if (_pol === 'venmo') payMethod = 'venmo';
-            else if (_pol === 'paypal') payMethod = 'paypal';
-            else if (_pol === 'pay at appointment') payMethod = 'later';
-            else if (_pol === 'cash') payMethod = 'cash';
+            var manualChoice = manualPayFromStatus(paymentStatus);
+            const payOptLabel = manualChoice ? manualChoice.label : paymentOptionLabel({ paymentStatus: paymentStatus });
+            let payMethod = manualChoice ? manualChoice.method : '';
+            if (!manualChoice) {
+                const _pol = String(payOptLabel || '').toLowerCase();
+                if (_pol === 'card') payMethod = 'card';
+                else if (_pol === 'cash app') payMethod = 'cashapp';
+                else if (_pol === 'zelle') payMethod = 'zelle';
+                else if (_pol === 'venmo') payMethod = 'venmo';
+                else if (_pol === 'paypal') payMethod = 'paypal';
+                else if (_pol === 'square') payMethod = 'square';
+                else if (_pol === 'pay at appointment' || _pol === 'unpaid') payMethod = 'later';
+                else if (_pol === 'cash' || _pol === 'in person / cash') payMethod = 'cash';
+            }
 
             if (existing) {
                 existing.clientName = clientName;
@@ -15502,6 +15636,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                 existing.paymentStatus = paymentStatus;
                 existing.paymentMethod = payMethod;
                 existing.paymentOptionLabel = payOptLabel;
+                if (manualChoice && manualChoice.unpaid) delete existing.paidMethod;
+                else if (manualChoice) existing.paidMethod = manualChoice.method;
                 if (walkIn) existing.walkIn = true;
                 else delete existing.walkIn;
                 saveState();
@@ -15525,6 +15661,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                 paymentStatus,
                 paymentMethod: payMethod,
                 paymentOptionLabel: payOptLabel,
+                ...(manualChoice && !manualChoice.unpaid ? { paidMethod: manualChoice.method } : {}),
                 manageToken: newManageToken(),
                 createdAt: new Date().toISOString()
             };
@@ -16161,23 +16298,24 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
         };
 
         function paintRosterPaidMethodOptions() {
-            var opts = document.querySelectorAll('#rosterPaidMethodOptions .roster-paid-opt');
+            var box = document.getElementById('rosterPaidMethodOptions');
+            if (!box) return;
+            box.innerHTML = OWNER_PAY_METHODS.map(function (row) {
+                var on = row[0] === _rosterPaidMethodSelected;
+                var cls = on
+                    ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
+                    : 'bg-slate-800 border-slate-700 text-slate-100';
+                return '<button type="button" data-paid-method="' + row[0] + '" class="roster-paid-opt px-3 py-2.5 rounded-xl hover:bg-slate-700 font-bold text-sm border transition-all ' + cls + '">' +
+                    payKindSvg(row[0]) + '<span>' + esc(row[1]) + '</span></button>';
+            }).join('');
+            var opts = box.querySelectorAll('.roster-paid-opt');
             for (var i = 0; i < opts.length; i++) {
-                var btn = opts[i];
-                var m = btn.getAttribute('data-paid-method');
-                var on = m === _rosterPaidMethodSelected;
-                btn.classList.toggle('bg-emerald-500/20', on);
-                btn.classList.toggle('border-emerald-500/40', on);
-                btn.classList.toggle('text-emerald-300', on);
-                btn.classList.toggle('bg-slate-800', !on);
-                btn.classList.toggle('border-slate-700', !on);
-                btn.classList.toggle('text-slate-100', !on);
-                btn.onclick = (function (method) {
+                opts[i].onclick = (function (method) {
                     return function () {
                         _rosterPaidMethodSelected = method;
                         paintRosterPaidMethodOptions();
                     };
-                })(m);
+                })(opts[i].getAttribute('data-paid-method'));
             }
         }
 

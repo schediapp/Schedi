@@ -146,6 +146,7 @@ describe("client history matching", () => {
     expect(none.usualMethod).toBe("");
     expect(none.usualLabel).toBe("");
     expect(api.clientPayWord("cashapp")).toBe("Cash App");
+    expect(api.clientPayWord("square")).toBe("Square");
   });
 
   it("keeps the panel, Book again, and recurring action in the owner script", () => {

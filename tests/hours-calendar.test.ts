@@ -232,8 +232,10 @@ describe("hours calendar mapping", () => {
     expect(hours).toContain("Custom hours");
     expect(hours).toContain("hold a date and tap the last day");
     expect(hours).toContain("Add Recurring Outage");
+    expect(hours).toContain("Vacation &amp; Date Blocks");
+    expect(hours).toContain('id="tenantDateBlocksList"');
+    expect(hours).toContain("Add Date Block");
     expect(hours).not.toContain("Add Special Hours");
-    expect(hours).not.toContain("Add Date Block");
     expect(ownerHtml).toContain('role="gridcell"');
     expect(ownerHtml).toContain("ArrowLeft");
     expect(ownerHtml).toContain("HOURS_CAL_HOLD_MS = 500");

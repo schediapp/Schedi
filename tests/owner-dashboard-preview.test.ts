@@ -229,6 +229,7 @@ describe("owner dashboard preview", () => {
     expect(kind({ paymentStatus: "PAID", paidMethod: "zelle" })).toBe("zelle");
     expect(kind({ paymentStatus: "PAID", paidMethod: "venmo" })).toBe("venmo");
     expect(kind({ paymentStatus: "PAID", paidMethod: "paypal" })).toBe("paypal");
+    expect(kind({ paymentStatus: "PAID SQUARE", paidMethod: "square" })).toBe("square");
     expect(kind({ paymentStatus: "PAID IN CASH", paidMethod: "cash" })).toBe("cash");
     expect(kind({ paymentStatus: "PAY AT APPOINTMENT" })).toBe("unpaid");
     expect(kind({ paymentStatus: "PENDING CASH APP", paymentMethod: "cashapp" })).toBe("unpaid");
@@ -236,9 +237,16 @@ describe("owner dashboard preview", () => {
     expect(html).toContain('id="rosterPayFilter"');
     expect(html).toContain("Card (Stripe)");
     expect(html).toContain("In person / Cash");
-    for (const method of ["card", "cashapp", "zelle", "venmo", "paypal", "cash"]) {
+    for (const method of ["card", "cashapp", "zelle", "venmo", "paypal", "square", "cash"]) {
       expect(html).toContain(`paidMethod: '${method}'`);
     }
+    expect(html).toContain('value="PAID SQUARE"');
+    expect(html).toContain("In person / Cash");
+    expect(html).toContain('id="tenantDateBlocksList"');
+    expect(html).toContain("openAddDateBlockModal");
+    expect(extractFunction(html, "renderTenantHours")).toContain("tenantDateBlocksList");
+    expect(html).toContain('class="sd-hours-aside"');
+    expect(html).toContain('class="sd-pay-settings"');
   });
 
   it("serves the preview shell and keeps production opt-in", async () => {

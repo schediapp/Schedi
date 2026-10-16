@@ -117,6 +117,16 @@ export function publicSlotFromBooking(booking) {
   };
 }
 
+// Recorded ways a client paid. Square here is a label only. It is not a Square charge.
+export const RECORDED_PAY_METHODS = ['card', 'cashapp', 'zelle', 'venmo', 'paypal', 'square', 'cash', 'later', 'other'];
+
+export function recordedPayMethod(value) {
+  const raw = clip(String(value == null ? '' : value), 40).toLowerCase().trim();
+  if (raw === 'cash-app' || raw === 'cash app') return 'cashapp';
+  if (RECORDED_PAY_METHODS.includes(raw)) return raw;
+  return '';
+}
+
 const BOOKING_KEYS = [
   'id', 'tenantId', 'manageToken', 'clientName', 'clientPhone', 'clientEmail', 'serviceName',
   'date', 'time', 'paymentStatus', 'paymentMethod', 'paymentOptionLabel', 'paidMethod', 'amount', 'durationMins',
@@ -321,6 +331,11 @@ export function sanitizeBooking(raw, tenantId) {
     if (key === 'payCode') {
       const code = clip(raw[key], 8).toUpperCase();
       if (PAY_CODE_RE.test(code)) out[key] = code;
+      continue;
+    }
+    if (key === 'paidMethod' || key === 'paymentMethod') {
+      const method = recordedPayMethod(raw[key]);
+      if (method) out[key] = method;
       continue;
     }
     if (key === 'cancellationFeeAt') {

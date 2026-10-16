@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { sanitizeBooking } from "../workers/schedi-email-worker/src/private-bookings.js";
+import { recordedPayMethod, sanitizeBooking } from "../workers/schedi-email-worker/src/private-bookings.js";
 
 const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const BOOKING_TEMPLATE_SHA_MARKER = "return `<!DOCTYPE html>";
@@ -265,5 +265,17 @@ describe("no-show booking field", () => {
     expect(cleared && cleared.noShow).toBe(false);
     const absent = sanitizeBooking({ id: "HB-1009", clientName: "Casey" }, "harbor-demo");
     expect(absent).not.toHaveProperty("noShow");
+    const square = sanitizeBooking({
+      id: "HB-1012",
+      paidMethod: "square",
+      paymentMethod: "Square",
+      paymentOptionLabel: "Square",
+    }, "harbor-demo");
+    expect(square).toMatchObject({ paidMethod: "square", paymentMethod: "square", paymentOptionLabel: "Square" });
+    expect(recordedPayMethod("cash app")).toBe("cashapp");
+    expect(recordedPayMethod("not-a-rail")).toBe("");
+    const dropped = sanitizeBooking({ id: "HB-1099", paidMethod: "not-a-rail", paymentMethod: "bitcoin" }, "harbor-demo");
+    expect(dropped).not.toHaveProperty("paidMethod");
+    expect(dropped).not.toHaveProperty("paymentMethod");
   });
 });
