@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { runInNewContext } from "node:vm";
 import { describe, expect, it } from "vitest";
 import { handleRequest, type SchediEnv } from "../worker/handler";
 import { HQ_PUBLIC_MARKERS, shellHasHqMarkers } from "../worker/public-shell";
@@ -129,6 +130,65 @@ describe("HQ route", () => {
       ctx(),
     );
     assertNoHq(await response.text(), "no kv");
+  });
+
+  it("serves the HQ shell for demo preview without a session and still asks for sign-in otherwise", async () => {
+    const demo = await handleRequest(new Request("https://schedi-dashboard-preview.axl199.workers.dev/hq?demo=1&newhq=1"), env(hqHtml), ctx());
+    expect(demo.status).toBe(200);
+    const html = await demo.text();
+    expect(html).toContain('id="agencyHqSection"');
+    expect(html).toContain("window.__SCHEDI_HQ_DEMO");
+    expect(html).toContain("schedi-newhq");
+    expect(html).not.toContain("schediNewHq");
+    expect(html).toContain("Agency HQ Master Login");
+    const plain = await handleRequest(new Request("https://schedi.app/hq?demo=0"), env(hqHtml), ctx());
+    assertNoHq(await plain.text(), "demo off");
+  });
+
+  it("blocks live calls in HQ demo and keeps the new frame off unless the query asks for it", async () => {
+    const boot = hqHtml.slice(hqHtml.indexOf("<script>"), hqHtml.indexOf("</script>") + 9);
+    expect(boot).not.toContain("localStorage");
+    const calls: string[] = [];
+    const classes: string[] = [];
+    const context = {
+      window: {} as Record<string, unknown>,
+      location: { search: "?newhq=1&demo=1" },
+      URLSearchParams,
+      document: { documentElement: { classList: { add(name: string) { classes.push(name); } } } },
+      navigator: { sendBeacon(url: string) { calls.push("BEACON " + url); return true; } },
+      Response,
+      Promise,
+      fetch: async (input: unknown) => {
+        calls.push("FETCH " + String(input));
+        return new Response("upstream");
+      },
+    };
+    context.window = context as unknown as Record<string, unknown>;
+    runInNewContext(boot.replace(/^<script>/, "").replace(/<\/script>$/, ""), context, { filename: "hq-demo-boot.js" });
+    const guarded = context.window.fetch as (input: string, init?: { method?: string }) => Promise<Response>;
+    const blocked = await guarded("https://schedi.app/api/ops-snapshot", { method: "POST" });
+    expect(blocked.status).toBe(403);
+    expect(calls).toEqual([]);
+    expect((context.window.__schediHqDemoBlocked as { url: string }[])[0].url).toContain("/api/ops-snapshot");
+    expect(classes).toEqual(["schedi-newhq", "schedi-hq-demo"]);
+    const beacon = context.navigator.sendBeacon as (url: string) => boolean;
+    expect(beacon("https://schedi.app/api/profile")).toBe(true);
+    expect(calls).toEqual([]);
+
+    const off: string[] = [];
+    const quiet = {
+      window: {} as Record<string, unknown>,
+      location: { search: "?demo=1" },
+      URLSearchParams,
+      document: { documentElement: { classList: { add(name: string) { off.push(name); } } } },
+      navigator: {},
+      Response,
+      Promise,
+    };
+    quiet.window = quiet as unknown as Record<string, unknown>;
+    runInNewContext(boot.replace(/^<script>/, "").replace(/<\/script>$/, ""), quiet, { filename: "hq-demo-off.js" });
+    expect(off).toEqual(["schedi-hq-demo"]);
+    expect(quiet.window.__SCHEDI_HQ_DEMO).toBe(true);
   });
 
   it("does not serve the HQ document as a static HTML file", async () => {

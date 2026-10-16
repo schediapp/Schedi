@@ -629,10 +629,20 @@ async function serveSpa(
   return new Response(body, { status: 200, headers });
 }
 
+function hqDemoRequest(request: Request): boolean {
+  try {
+    return new URL(request.url).searchParams.get("demo") === "1";
+  } catch {
+    return false;
+  }
+}
+
 async function serveHq(request: Request, env: SchediEnv, method: string): Promise<Response> {
   const token = agencySessionToken(request);
   const allowed = await hasAgencySession(env.AUTH_KV, token);
-  if (!allowed) {
+  // Preview only. demo=1 paints sample businesses and the page blocks live calls.
+  // It does not create an agency session and does not authorize API routes.
+  if (!allowed && !hqDemoRequest(request)) {
     return textResponse(
       hqLoginDocument(),
       200,
