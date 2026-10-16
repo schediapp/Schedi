@@ -492,7 +492,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
         dash: document.body.classList.contains("schedi-newdash"),
         demo: document.getElementById("schediDemoNote")?.hidden === false,
       }));
-      expect(stats).toEqual({ week: "$478", unpaid: "7", setup: "Finish setting up 4 of 5", dash: true, demo: true });
+      expect(stats).toEqual({ week: "$478", unpaid: "7", setup: "Finish setting up 5 of 6", dash: true, demo: true });
       const accept = await page.evaluate(() => {
         const button = [...document.querySelectorAll("button")].find((node) => node.textContent === "Accept");
         if (!button) return "missing";

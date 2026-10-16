@@ -1318,6 +1318,170 @@ body.schedi-newdash #addBlockedTimeModal button { min-height: 44px; }
     #tenantPortalSection.schedi-newdash .sd-cal-row { gap: 2px; }
     #tenantPortalSection.schedi-newdash .sd-cal-actions button { flex: 1 1 auto; }
 }
+#tenantPortalSection.schedi-newdash .sd-busy {
+    box-sizing: border-box;
+    max-width: 720px;
+    margin: 0;
+    padding: 16px;
+    border: 1px solid var(--sd-line);
+    border-radius: 18px;
+    background: var(--sd-panel);
+    color: var(--sd-text);
+}
+#tenantPortalSection.schedi-newdash[data-dash="profile"] #sdBusyCard { display: none !important; }
+#tenantPortalSection.schedi-newdash .sd-busy-top { margin-bottom: 12px; }
+#tenantPortalSection.schedi-newdash .sd-busy h3,
+#tenantPortalSection.schedi-newdash .sd-busy h4 {
+    margin: 0;
+    color: var(--sd-text);
+    font-weight: 800;
+}
+#tenantPortalSection.schedi-newdash .sd-busy h3 { font-size: 18px; }
+#tenantPortalSection.schedi-newdash .sd-busy h4 { font-size: 16px; }
+#tenantPortalSection.schedi-newdash .sd-busy-lead,
+#tenantPortalSection.schedi-newdash .sd-busy-status,
+#tenantPortalSection.schedi-newdash .sd-busy-hint {
+    margin: 6px 0 0;
+    color: var(--sd-muted);
+    font-size: 14px;
+    line-height: 1.45;
+}
+#tenantPortalSection.schedi-newdash .sd-busy-account {
+    box-sizing: border-box;
+    margin-top: 12px;
+    padding: 12px;
+    border: 1px solid var(--sd-line);
+    border-radius: 14px;
+    background: var(--sd-bg);
+    min-width: 0;
+}
+#tenantPortalSection.schedi-newdash .sd-busy-account-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-width: 0;
+}
+#tenantPortalSection.schedi-newdash .sd-busy-account-head > div { min-width: 0; }
+#tenantPortalSection.schedi-newdash .sd-busy-status { overflow-wrap: anywhere; }
+#tenantPortalSection.schedi-newdash .sd-busy-connect,
+#tenantPortalSection.schedi-newdash .sd-busy-disconnect,
+#tenantPortalSection.schedi-newdash .sd-busy-soon,
+#tenantPortalSection.schedi-newdash .sd-busy-actions button {
+    box-sizing: border-box;
+    min-height: 44px;
+    min-width: 44px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 800;
+    cursor: pointer;
+}
+#tenantPortalSection.schedi-newdash .sd-busy-connect {
+    border: 0;
+    background: #10b981;
+    color: #022c22;
+}
+#tenantPortalSection.schedi-newdash .sd-busy-disconnect {
+    border: 1px solid #64748b;
+    background: #0f172a;
+    color: #f8fafc;
+}
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-busy-disconnect {
+    background: #ffffff;
+    color: #0f172a;
+    border-color: #64748b;
+}
+#tenantPortalSection.schedi-newdash .sd-busy-soon,
+#tenantPortalSection.schedi-newdash .sd-busy-soon:disabled {
+    border: 1px solid #334155;
+    background: #1e293b;
+    color: #e2e8f0;
+    cursor: not-allowed;
+}
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-busy-soon,
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-busy-soon:disabled {
+    border-color: #cbd5e1;
+    background: #e2e8f0;
+    color: #0f172a;
+}
+#tenantPortalSection.schedi-newdash .sd-busy-cals {
+    margin: 12px 0 0;
+    padding: 0;
+    border: 0;
+    min-width: 0;
+}
+#tenantPortalSection.schedi-newdash .sd-busy-cals legend {
+    padding: 0;
+    margin-bottom: 6px;
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--sd-text);
+}
+#tenantPortalSection.schedi-newdash .sd-busy-cal,
+#tenantPortalSection.schedi-newdash .sd-busy-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+    margin: 0;
+    color: var(--sd-text);
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+}
+#tenantPortalSection.schedi-newdash .sd-busy-cal input,
+#tenantPortalSection.schedi-newdash .sd-busy-toggle input {
+    width: 20px;
+    height: 20px;
+    flex: none;
+}
+#tenantPortalSection.schedi-newdash .sd-busy-warn {
+    margin: 4px 0 0;
+    color: #fbbf24;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.4;
+}
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-busy-warn { color: #9a3412; }
+#tenantPortalSection.schedi-newdash .sd-busy-apple { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+#tenantPortalSection.schedi-newdash .sd-busy-field { display: flex; flex-direction: column; gap: 4px; color: var(--sd-text); font-size: 14px; font-weight: 700; }
+#tenantPortalSection.schedi-newdash .sd-busy-field input {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 44px;
+    padding: 8px 12px;
+    border-radius: 12px;
+    border: 1px solid #64748b;
+    background: #0f172a;
+    color: #f8fafc;
+    font-size: 16px;
+}
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-busy-field input {
+    background: #ffffff;
+    color: #0f172a;
+    border-color: #64748b;
+}
+#tenantPortalSection.schedi-newdash .sd-busy-hint a { color: #7dd3fc; font-weight: 800; }
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-busy-hint a { color: #0369a1; }
+#tenantPortalSection.schedi-newdash .sd-busy-error {
+    margin: 0;
+    color: #fb7185;
+    font-size: 14px;
+    font-weight: 700;
+}
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-busy-error { color: #be123c; }
+#tenantPortalSection.schedi-newdash .sd-busy-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+#tenantPortalSection.schedi-newdash .sd-busy button:focus-visible,
+#tenantPortalSection.schedi-newdash .sd-busy input:focus-visible,
+#tenantPortalSection.schedi-newdash .sd-busy a:focus-visible { outline: 2px solid #38bdf8; outline-offset: 2px; }
+@media (max-width: 859px) {
+    #tenantPortalSection.schedi-newdash .sd-busy-account-head { flex-direction: column; align-items: stretch; }
+    #tenantPortalSection.schedi-newdash .sd-busy-connect,
+    #tenantPortalSection.schedi-newdash .sd-busy-disconnect,
+    #tenantPortalSection.schedi-newdash .sd-busy-soon,
+    #tenantPortalSection.schedi-newdash .sd-busy-actions button { width: 100%; }
+}
 #tenantPortalSection.schedi-newdash #tenantSectionHours,
 #tenantPortalSection.schedi-newdash .sd-cal-block,
 #tenantPortalSection.schedi-newdash .sd-cal-editor { overflow: visible; }
@@ -2182,7 +2346,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                         </div>
                         <div class="sd-block sd-setup">
                             <div class="sd-setup-head">
-                                <h3 id="schediSetupTitle">Finish setting up 0 of 5</h3>
+                                <h3 id="schediSetupTitle">Finish setting up 0 of 6</h3>
                                 <div class="sd-progress" aria-hidden="true"><span id="schediSetupBar"></span></div>
                             </div>
                             <div id="schediSetupList" class="sd-stack"></div>
@@ -2391,6 +2555,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                         <h3 class="text-lg font-bold text-white">Daily Shifts & Operating Hours</h3>
                         <p class="text-xs text-slate-400">Set individual day operating hours or create recurring outage time blocks.</p>
                     </div>
+
+                    <section id="sdBusyCard" class="sd-busy" aria-labelledby="sdBusyTitle"></section>
 
                     <form onsubmit="handleUpdateShiftsSubmit(event)" class="space-y-4 border-b border-slate-800 pb-6">
                         <div id="tenantHoursShiftBlock">
@@ -8726,6 +8892,86 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
             if (more) more.hidden = true;
         }
 
+        function calendarSyncProviders() {
+            return [
+                { id: 'google', name: 'Google Calendar' },
+                { id: 'microsoft', name: 'Outlook / Microsoft 365' },
+                { id: 'apple', name: 'Apple iCloud' }
+            ];
+        }
+
+        function calendarSyncNormalize(sync) {
+            var src = sync && typeof sync === 'object' ? sync : {};
+            var out = {};
+            calendarSyncProviders().forEach(function (provider) {
+                var row = src[provider.id] && typeof src[provider.id] === 'object' ? src[provider.id] : {};
+                var calendars = [];
+                var rawCals = Array.isArray(row.calendars) ? row.calendars : [];
+                rawCals.forEach(function (cal) {
+                    var id = String(cal && cal.id || '').trim();
+                    if (!id) return;
+                    calendars.push({
+                        id: id,
+                        name: String(cal && cal.name || 'Calendar'),
+                        checked: !!(cal && cal.checked)
+                    });
+                });
+                var email = String(row.email || '').trim();
+                out[provider.id] = {
+                    connected: !!row.connected && !!email,
+                    email: email,
+                    writeBookings: row.writeBookings !== false,
+                    calendars: calendars
+                };
+            });
+            return out;
+        }
+
+        function calendarSyncConnected(sync) {
+            var norm = calendarSyncNormalize(sync);
+            return calendarSyncProviders().some(function (provider) {
+                return !!norm[provider.id].connected;
+            });
+        }
+
+        function appleConnectError(appleId, password) {
+            var id = String(appleId || '').trim();
+            var secret = String(password || '').replace(/[\s-]/g, '');
+            if (!id) return 'Enter an Apple ID.';
+            var at = id.indexOf('@');
+            var dot = id.lastIndexOf('.');
+            if (at < 1 || dot < at + 2 || dot >= id.length - 1) return 'Enter an Apple ID that looks like an email.';
+            if (!secret) return 'Enter an app-specific password.';
+            if (secret.length < 16) return 'That app-specific password looks too short.';
+            return '';
+        }
+
+        function calendarSyncDemoSample(providerId) {
+            if (providerId === 'google') {
+                return {
+                    connected: true,
+                    email: 'demo@harbor.studio',
+                    writeBookings: true,
+                    calendars: [
+                        { id: 'harbor', name: 'Harbor Studio', checked: true },
+                        { id: 'personal', name: 'Personal', checked: false }
+                    ]
+                };
+            }
+            if (providerId === 'microsoft') {
+                return {
+                    connected: true,
+                    email: 'avery.cole@outlook.com',
+                    writeBookings: true,
+                    calendars: [
+                        { id: 'calendar', name: 'Calendar', checked: true },
+                        { id: 'birthdays', name: 'Birthdays', checked: false }
+                    ]
+                };
+            }
+            return null;
+        }
+
         function schediSetupSteps(tenant) {
             var services = !!(tenant && Array.isArray(tenant.services) && tenant.services.some(function (s) { return s && String(s.name || '').trim(); }));
             var hours = false;
@@ -8746,7 +8992,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                 { label: 'Set your hours', done: hours, page: 'hours' },
                 { label: 'Choose how clients pay', done: pay, page: 'payments' },
                 { label: 'Add your logo', done: logo, page: 'profile' },
-                { label: 'Booking calendar', done: calendar, page: 'appointments' }
+                { label: 'Booking calendar', done: calendar, page: 'appointments' },
+                { label: 'Avoid double-booking', done: calendarSyncConnected(tenant && tenant.calendarSync), page: 'hours' }
             ];
         }
 
@@ -8843,8 +9090,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
             var title = document.getElementById('schediSetupTitle');
             var bar = document.getElementById('schediSetupBar');
             var list = document.getElementById('schediSetupList');
-            if (title) title.textContent = 'Finish setting up ' + done + ' of 5';
-            if (bar) bar.style.width = Math.round((done / 5) * 100) + '%';
+            if (title) title.textContent = 'Finish setting up ' + done + ' of ' + steps.length;
+            if (bar) bar.style.width = (steps.length ? Math.round((done / steps.length) * 100) : 0) + '%';
             if (list) {
                 list.innerHTML = steps.map(function (step) {
                     return '<button type="button" class="sd-check' + (step.done ? ' is-done' : '') + '" data-dash-go="' + step.page + '">' +
@@ -9427,6 +9674,17 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                 deposit: { enabled: true, type: 'fixed', percent: 0, amount: 25 },
                 cancellationFee: { enabled: true, hours: 24, type: 'fixed', percent: 0, amount: 15 },
                 notifications: { emailConfirmations: true, replyTo: 'demo@harbor.studio', extraNote: 'Street parking is on Harbor Lane.', remindersEnabled: true, reminderHour: 8 },
+                calendarSync: {
+                    google: {
+                        connected: true,
+                        email: 'demo@harbor.studio',
+                        writeBookings: true,
+                        calendars: [
+                            { id: 'harbor', name: 'Harbor Studio', checked: true },
+                            { id: 'personal', name: 'Personal', checked: false }
+                        ]
+                    }
+                },
                 operatingHours: {
                     Mon: { open: true, start: '09:00 AM', end: '06:00 PM' },
                     Tue: { open: true, start: '09:00 AM', end: '06:00 PM' },
@@ -11245,7 +11503,166 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
             if (upcoming) upcoming.addEventListener('click', hoursCalOnUpcomingClick);
         }
 
+        var busyAppleFormOpen = false;
+        var busyAppleDraft = { appleId: '', password: '', error: '' };
+
+        function busyAppleFormHtml() {
+            var err = busyAppleDraft.error ? '<p class="sd-busy-error" role="alert">' + esc(busyAppleDraft.error) + '</p>' : '';
+            return '<h4>Apple iCloud</h4><form class="sd-busy-apple" data-busy-apple-form="1">' +
+                '<label class="sd-busy-field"><span>Apple ID</span><input type="email" name="appleId" autocomplete="username" inputmode="email" value="' + esc(busyAppleDraft.appleId) + '"></label>' +
+                '<label class="sd-busy-field"><span>App-specific password</span><input type="password" name="applePassword" autocomplete="off" value="' + esc(busyAppleDraft.password) + '"></label>' +
+                '<p class="sd-busy-hint">Use the 16-character app-specific password, not your Apple ID password. <a href="https://support.apple.com/en-us/102654" target="_blank" rel="noopener noreferrer">how to make one</a></p>' +
+                '<p class="sd-busy-hint">This preview does not save the password.</p>' +
+                err +
+                '<div class="sd-busy-actions"><button type="submit" class="sd-busy-connect">Connect</button><button type="button" class="sd-busy-disconnect" data-busy-apple-cancel="1">Cancel</button></div></form>';
+        }
+
+        function busyAccountHtml(provider, row, demo) {
+            var name = esc(provider.name);
+            var id = esc(provider.id);
+            if (!demo) {
+                return '<article class="sd-busy-account"><div class="sd-busy-account-head"><div><h4>' + name + '</h4><p class="sd-busy-status">Not connected</p></div>' +
+                    '<button type="button" class="sd-busy-soon" disabled aria-disabled="true" aria-label="Coming soon, ' + name + '">Coming soon</button></div></article>';
+            }
+            if (provider.id === 'apple' && busyAppleFormOpen && !row.connected) {
+                return '<article class="sd-busy-account">' + busyAppleFormHtml() + '</article>';
+            }
+            if (!row.connected) {
+                return '<article class="sd-busy-account"><div class="sd-busy-account-head"><div><h4>' + name + '</h4><p class="sd-busy-status">Not connected</p></div>' +
+                    '<button type="button" class="sd-busy-connect" data-busy-connect="' + id + '">Connect</button></div></article>';
+            }
+            var cals = row.calendars.map(function (cal) {
+                return '<label class="sd-busy-cal"><input type="checkbox" data-busy-cal="' + id + '" data-cal-id="' + esc(cal.id) + '"' + (cal.checked ? ' checked' : '') + '><span>' + esc(cal.name) + '</span></label>';
+            }).join('');
+            var noneChecked = row.calendars.length > 0 && row.calendars.every(function (cal) { return !cal.checked; });
+            var warn = noneChecked ? '<p class="sd-busy-warn">Pick at least one calendar so Schedi can see when you are busy.</p>' : '';
+            return '<article class="sd-busy-account"><div class="sd-busy-account-head"><div><h4>' + name + '</h4><p class="sd-busy-status">Connected as ' + esc(row.email) + '</p></div>' +
+                '<button type="button" class="sd-busy-disconnect" data-busy-disconnect="' + id + '">Disconnect</button></div>' +
+                '<fieldset class="sd-busy-cals"><legend>Calendars to check for busy times</legend>' + cals + '</fieldset>' +
+                warn +
+                '<label class="sd-busy-toggle"><input type="checkbox" data-busy-write="' + id + '"' + (row.writeBookings ? ' checked' : '') + '><span>Add Schedi bookings to my calendar</span></label>' +
+                '<p class="sd-busy-hint">On means new, changed, and cancelled bookings can be written to this calendar. Off means Schedi only reads busy times.</p></article>';
+        }
+
+        function paintBusyCard(tenant) {
+            var card = document.getElementById('sdBusyCard');
+            if (!card) return;
+            var demo = window.__SCHEDI_DEMO === true;
+            var sync = calendarSyncNormalize(tenant && tenant.calendarSync);
+            var lead = demo
+                ? 'Connect a calendar so Schedi can skip times you are already busy. This preview does not talk to Google, Microsoft, or Apple.'
+                : 'Calendar connections are coming soon. Connect buttons stay off until the backend exists.';
+            var accounts = calendarSyncProviders().map(function (provider) {
+                return busyAccountHtml(provider, sync[provider.id], demo);
+            }).join('');
+            card.innerHTML = '<div class="sd-busy-top"><h3 id="sdBusyTitle">Avoid double-booking</h3><p class="sd-busy-lead">' + esc(lead) + '</p></div>' + accounts;
+            if (card.getAttribute('data-bound') === '1') return;
+            card.setAttribute('data-bound', '1');
+            card.addEventListener('click', onBusyCardClick);
+            card.addEventListener('change', onBusyCardChange);
+            card.addEventListener('submit', onBusyCardSubmit);
+        }
+
+        function onBusyCardClick(event) {
+            if (window.__SCHEDI_DEMO !== true) return;
+            var node = event.target && event.target.closest ? event.target.closest('[data-busy-connect], [data-busy-disconnect], [data-busy-apple-cancel]') : null;
+            if (!node) return;
+            var tenant = getTenant();
+            if (!tenant) return;
+            if (node.hasAttribute('data-busy-apple-cancel')) {
+                busyAppleFormOpen = false;
+                busyAppleDraft = { appleId: '', password: '', error: '' };
+                paintBusyCard(tenant);
+                return;
+            }
+            var connectId = node.getAttribute('data-busy-connect');
+            if (connectId === 'apple') {
+                busyAppleFormOpen = true;
+                paintBusyCard(tenant);
+                return;
+            }
+            if (connectId) {
+                var sample = calendarSyncDemoSample(connectId);
+                if (!sample) return;
+                var sync = calendarSyncNormalize(tenant.calendarSync);
+                sync[connectId] = sample;
+                tenant.calendarSync = sync;
+                paintBusyCard(tenant);
+                try { renderSchediToday(tenant); } catch (errConnect) {}
+                return;
+            }
+            var disconnectId = node.getAttribute('data-busy-disconnect');
+            if (!disconnectId) return;
+            var next = calendarSyncNormalize(tenant.calendarSync);
+            next[disconnectId] = { connected: false, email: '', writeBookings: true, calendars: [] };
+            tenant.calendarSync = next;
+            if (disconnectId === 'apple') {
+                busyAppleFormOpen = false;
+                busyAppleDraft = { appleId: '', password: '', error: '' };
+            }
+            paintBusyCard(tenant);
+            try { renderSchediToday(tenant); } catch (errDisconnect) {}
+        }
+
+        function onBusyCardChange(event) {
+            if (window.__SCHEDI_DEMO !== true) return;
+            var input = event.target;
+            if (!input || !input.getAttribute) return;
+            var tenant = getTenant();
+            if (!tenant) return;
+            var sync = calendarSyncNormalize(tenant.calendarSync);
+            var calProvider = input.getAttribute('data-busy-cal');
+            if (calProvider && sync[calProvider]) {
+                var calId = input.getAttribute('data-cal-id');
+                sync[calProvider].calendars.forEach(function (cal) {
+                    if (cal.id === calId) cal.checked = !!input.checked;
+                });
+                tenant.calendarSync = sync;
+                paintBusyCard(tenant);
+                return;
+            }
+            var writeProvider = input.getAttribute('data-busy-write');
+            if (writeProvider && sync[writeProvider]) {
+                sync[writeProvider].writeBookings = !!input.checked;
+                tenant.calendarSync = sync;
+            }
+        }
+
+        function onBusyCardSubmit(event) {
+            var form = event.target;
+            if (!form || !form.getAttribute || form.getAttribute('data-busy-apple-form') !== '1') return;
+            event.preventDefault();
+            if (window.__SCHEDI_DEMO !== true) return;
+            var tenant = getTenant();
+            if (!tenant) return;
+            var appleId = form.appleId ? form.appleId.value : '';
+            var password = form.applePassword ? form.applePassword.value : '';
+            var error = appleConnectError(appleId, password);
+            if (error) {
+                busyAppleFormOpen = true;
+                busyAppleDraft = { appleId: String(appleId || '').trim(), password: String(password || ''), error: error };
+                paintBusyCard(tenant);
+                return;
+            }
+            var sync = calendarSyncNormalize(tenant.calendarSync);
+            sync.apple = {
+                connected: true,
+                email: String(appleId || '').trim(),
+                writeBookings: true,
+                calendars: [
+                    { id: 'home', name: 'Home', checked: true },
+                    { id: 'work', name: 'Work', checked: false }
+                ]
+            };
+            tenant.calendarSync = sync;
+            busyAppleFormOpen = false;
+            busyAppleDraft = { appleId: '', password: '', error: '' };
+            paintBusyCard(tenant);
+            try { renderSchediToday(tenant); } catch (errApple) {}
+        }
+
         function renderTenantHours(tenant) {
+            paintBusyCard(tenant);
             const shiftsGrid = document.getElementById('perDayShiftsGrid');
             const rulesList = document.getElementById('tenantBlockedRulesList');
             ensureSlotInterval(tenant);
