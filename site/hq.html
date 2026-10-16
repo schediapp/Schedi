@@ -580,7 +580,6 @@
         html.schedi-newhq .hq-table th.hq-col-biz,
         html.schedi-newhq .hq-table td.hq-col-biz { text-align: left; padding-left: 0; }
         html.schedi-newhq .hq-table tbody tr:hover { background: color-mix(in srgb, var(--hq-brand) 8%, transparent); }
-        html.schedi-newhq .hq-dir-slot { min-height: calc(100vh - 80px); }
         html.schedi-newhq #agencyDirectory { padding: 20px 16px; }
         html.schedi-newhq .hq-table .hq-clip {
             display: block; width: max-content; max-width: none;
@@ -694,7 +693,6 @@
             }
             html.schedi-newhq #hqNewTabs button.is-on { color: var(--hq-brand); }
             html.schedi-newhq #agencyHqSection { padding: 76px 16px 96px; }
-            html.schedi-newhq .hq-dir-slot { min-height: 0; }
         }
     </style>
 </head>
@@ -851,6 +849,47 @@
                     </div>
                 </div>
 
+                <!-- Client Sites Roster -->
+                <div id="agencyDirectory" class="glass-card rounded-2xl p-6 space-y-5" data-hq-collapse="directory">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4" data-hq-collapse-head>
+                        <div>
+                            <h2 class="text-xl font-extrabold text-white">Client Business Directory</h2>
+                            <p class="text-xs text-slate-400 mt-0.5">Provision new sites, update owner profile details, adjust subscription plans, or log into tenant portals.</p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2" data-hq-collapse-tools>
+                            <input type="search" id="agencySearchInput" oninput="filterAgencyTenants(this.value)" placeholder="Search name, owner email, or slug" aria-label="Search businesses" class="px-3.5 py-2 rounded-xl glass-input text-xs w-full sm:w-64">
+                            <button type="button" onclick="openProvisionModal()" class="px-4 py-2 rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-slate-950 font-bold text-xs shadow-md glow-emerald flex items-center space-x-2 transition-all">
+                                <i class="fa-solid fa-plus"></i>
+                                <span>Provision New Site</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div data-hq-collapse-body class="space-y-5">
+                        <div id="hqDirControls" class="flex flex-wrap items-center gap-2 text-xs">
+                            <label class="sr-only" for="hqDirSort">Sort</label>
+                            <select id="hqDirSort" onchange="hqDirSet('sort', this.value)" class="w-auto max-w-[11rem] px-2.5 py-1.5 rounded-lg glass-input text-xs">
+                                <option value="name">Sort: Name</option>
+                                <option value="newest">Sort: Newest</option>
+                                <option value="plan">Sort: Plan</option>
+                                <option value="lastBooking">Sort: Last booking</option>
+                            </select>
+                            <select id="hqDirPlan" onchange="hqDirSet('plan', this.value)" aria-label="Plan filter" class="w-auto max-w-[11rem] px-2.5 py-1.5 rounded-lg glass-input text-xs">
+                                <option value="">All plans</option><option value="free">Free</option><option value="starter">Starter</option><option value="pro">Pro</option>
+                            </select>
+                            <select id="hqDirStatus" onchange="hqDirSet('status', this.value)" aria-label="Status filter" class="w-auto max-w-[11rem] px-2.5 py-1.5 rounded-lg glass-input text-xs">
+                                <option value="">All statuses</option><option value="active">Active</option><option value="paused">Paused</option><option value="setup">Needs setup</option>
+                            </select>
+                            <select id="hqDirType" onchange="hqDirSet('type', this.value)" aria-label="Business type filter" class="w-auto max-w-[11rem] px-2.5 py-1.5 rounded-lg glass-input text-xs"></select>
+                            <select id="hqDirTag" onchange="hqDirSet('tag', this.value)" aria-label="Tag filter" class="w-auto max-w-[11rem] px-2.5 py-1.5 rounded-lg glass-input text-xs"></select>
+                            <button type="button" onclick="hqDirReset()" class="px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-white">Clear</button>
+                            <span id="hqDirCount" class="ml-auto text-[11px] text-slate-400"></span>
+                        </div>
+                        <div id="agencyTenantGrid">
+                            <!-- Directory injected via JS -->
+                        </div>
+                    </div>
+                </div>
+
                 <!-- HQ Gateways -->
                 <div id="agencyBilling" class="glass-card rounded-2xl p-6 space-y-5" data-hq-collapse="gateways">
                     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4" data-hq-collapse-head>
@@ -947,49 +986,6 @@
                         </div>
                         <p class="text-[11px] text-slate-500">Until this URL is set, bookings still queue messages in Firestore under <span class="font-mono text-slate-400">mail</span>, but nothing is delivered to inboxes.</p>
                     </form>
-                </div>
-
-                <!-- Client Sites Roster -->
-                <div class="hq-dir-slot">
-                <div id="agencyDirectory" class="glass-card rounded-2xl p-6 space-y-5">
-                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
-                        <div>
-                            <h2 class="text-xl font-extrabold text-white">Client Business Directory</h2>
-                            <p class="text-xs text-slate-400 mt-0.5">Provision new sites, update owner profile details, adjust subscription plans, or log into tenant portals.</p>
-                        </div>
-
-                        <div class="flex flex-wrap items-center gap-2">
-                            <input type="search" id="agencySearchInput" oninput="filterAgencyTenants(this.value)" placeholder="Search name, owner email, or slug" aria-label="Search businesses" class="px-3.5 py-2 rounded-xl glass-input text-xs w-full sm:w-64">
-                            <button type="button" onclick="openProvisionModal()" class="px-4 py-2 rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-slate-950 font-bold text-xs shadow-md glow-emerald flex items-center space-x-2 transition-all">
-                                <i class="fa-solid fa-plus"></i>
-                                <span>Provision New Site</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div id="hqDirControls" class="flex flex-wrap items-center gap-2 text-xs">
-                        <label class="sr-only" for="hqDirSort">Sort</label>
-                        <select id="hqDirSort" onchange="hqDirSet('sort', this.value)" class="w-auto max-w-[11rem] px-2.5 py-1.5 rounded-lg glass-input text-xs">
-                            <option value="name">Sort: Name</option>
-                            <option value="newest">Sort: Newest</option>
-                            <option value="plan">Sort: Plan</option>
-                            <option value="lastBooking">Sort: Last booking</option>
-                        </select>
-                        <select id="hqDirPlan" onchange="hqDirSet('plan', this.value)" aria-label="Plan filter" class="w-auto max-w-[11rem] px-2.5 py-1.5 rounded-lg glass-input text-xs">
-                            <option value="">All plans</option><option value="free">Free</option><option value="starter">Starter</option><option value="pro">Pro</option>
-                        </select>
-                        <select id="hqDirStatus" onchange="hqDirSet('status', this.value)" aria-label="Status filter" class="w-auto max-w-[11rem] px-2.5 py-1.5 rounded-lg glass-input text-xs">
-                            <option value="">All statuses</option><option value="active">Active</option><option value="paused">Paused</option><option value="setup">Needs setup</option>
-                        </select>
-                        <select id="hqDirType" onchange="hqDirSet('type', this.value)" aria-label="Business type filter" class="w-auto max-w-[11rem] px-2.5 py-1.5 rounded-lg glass-input text-xs"></select>
-                        <select id="hqDirTag" onchange="hqDirSet('tag', this.value)" aria-label="Tag filter" class="w-auto max-w-[11rem] px-2.5 py-1.5 rounded-lg glass-input text-xs"></select>
-                        <button type="button" onclick="hqDirReset()" class="px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-white">Clear</button>
-                        <span id="hqDirCount" class="ml-auto text-[11px] text-slate-400"></span>
-                    </div>
-                    <div id="agencyTenantGrid">
-                        <!-- Directory injected via JS -->
-                    </div>
-                </div>
                 </div>
 
             </div>
@@ -6223,6 +6219,7 @@
             var head = card.querySelector('[data-hq-collapse-head]');
             var btn = card.querySelector('.hq-collapse-btn');
             if (body) body.classList.toggle('hidden', collapsed);
+            card.querySelectorAll('[data-hq-collapse-tools]').forEach(function (el) { el.classList.toggle('hidden', collapsed); });
             if (head) { head.classList.toggle('border-b', !collapsed); head.classList.toggle('pb-4', !collapsed); }
             if (btn) { btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true'); btn.querySelector('i').style.transform = collapsed ? 'rotate(-90deg)' : ''; }
         }
@@ -6240,7 +6237,8 @@
                 head.appendChild(btn);
                 head.style.cursor = 'pointer';
                 head.addEventListener('click', function (ev) {
-                    if (ev.target.closest('input,select,a,label') ) return;
+                    if (ev.target.closest('input,select,textarea,a,label,[data-hq-collapse-tools]')) return;
+                    if (ev.target.closest('button') && !ev.target.closest('.hq-collapse-btn')) return;
                     var m = hqCollapsedMap();
                     m[key] = !m[key];
                     try { window.localStorage.setItem(HQ_COLLAPSE_KEY, JSON.stringify(m)); } catch (e) {}
