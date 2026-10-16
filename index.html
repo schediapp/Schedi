@@ -557,6 +557,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-demo-note { color: #03
     cursor: pointer;
     border: 1px solid var(--sd-line);
 }
+#tenantPortalSection.schedi-newdash .sd-btn.sd-add-phone { display: none; }
 #tenantPortalSection.schedi-newdash .sd-btn-ghost { background: var(--sd-panel); color: var(--sd-text); }
 #tenantPortalSection.schedi-newdash .sd-btn-brand { background: var(--sd-brand); color: var(--sd-ink); border-color: transparent; }
 #tenantPortalSection.schedi-newdash .sd-btn-ok { background: rgba(16, 185, 129, 0.16); color: var(--sd-brand-2); border-color: rgba(16, 185, 129, 0.35); }
@@ -938,6 +939,8 @@ body.schedi-newdash.sd-client-panel-open { overflow: hidden; }
     #tenantPortalSection.schedi-newdash .sd-today-actions,
     #tenantPortalSection.schedi-newdash .sd-today-actions .sd-btn { width: 100%; }
     #tenantPortalSection.schedi-newdash .sd-today-actions .sd-btn { justify-content: center; }
+    #tenantPortalSection.schedi-newdash .sd-btn.sd-add-desktop { display: none; }
+    #tenantPortalSection.schedi-newdash .sd-btn.sd-add-phone { display: flex; width: 100%; justify-content: center; margin: 0; }
     #tenantPortalSection.schedi-newdash #schediDashTabbar {
         display: grid;
         grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -2354,7 +2357,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                             </div>
                             <div class="sd-today-actions">
                                 <button type="button" class="sd-btn sd-btn-ghost" onclick="copyTenantPublicBookingLink()"><i class="fa-solid fa-link" aria-hidden="true"></i><span>Copy booking link</span></button>
-                                <button type="button" class="sd-btn sd-btn-brand" data-dash-add-open="1" onclick="schediDashToggleAdd(event)"><i class="fa-solid fa-plus" aria-hidden="true"></i><span>Add appointment</span></button>
+                                <button type="button" class="sd-btn sd-btn-brand sd-add-desktop" data-dash-add-open="1" onclick="schediDashToggleAdd(event)"><i class="fa-solid fa-plus" aria-hidden="true"></i><span>Add appointment</span></button>
                             </div>
                         </div>
                         <div class="sd-stats" aria-live="polite">
@@ -2363,6 +2366,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                             <article class="sd-stat"><p>This week</p><strong id="schediStatWeek">$0</strong><span>booked revenue</span></article>
                             <article class="sd-stat"><p>Unpaid</p><strong id="schediStatUnpaid">0</strong><span>needs follow-up</span></article>
                         </div>
+                        <button type="button" class="sd-btn sd-btn-brand sd-add-phone" data-dash-add-open="1" onclick="schediDashToggleAdd(event)"><i class="fa-solid fa-plus" aria-hidden="true"></i><span>Add appointment</span></button>
                         <div class="sd-block">
                             <h3>New requests</h3>
                             <div id="schediTodayRequests" class="sd-stack"></div>

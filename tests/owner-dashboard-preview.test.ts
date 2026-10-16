@@ -446,6 +446,24 @@ describe("owner dashboard preview", () => {
     expect(save).toContain("svc.icon = icon");
     expect(html.indexOf("id=\"tenantServiceModal\"")).toBeLessThan(html.indexOf("return `<!DOCTYPE html>"));
   });
+
+  it("places Add appointment directly above New requests on a phone", () => {
+    const panel = html.slice(html.indexOf('id="schediTodayPanel"'), html.indexOf('id="schediDashTabbar"'));
+    const desktopBtn = panel.indexOf("sd-add-desktop");
+    const phoneBtn = panel.indexOf("sd-add-phone");
+    const requests = panel.indexOf(">New requests<");
+    expect(desktopBtn).toBeGreaterThan(-1);
+    expect(phoneBtn).toBeGreaterThan(desktopBtn);
+    expect(requests).toBeGreaterThan(phoneBtn);
+    expect(panel.slice(phoneBtn, requests)).not.toContain("sd-stats");
+    expect(panel.slice(phoneBtn, requests)).not.toContain("Today's schedule");
+    const css = dashCss(html);
+    expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-btn.sd-add-phone { display: none; }");
+    const phone = css.slice(css.indexOf("@media (max-width: 859px)"));
+    expect(phone).toContain("#tenantPortalSection.schedi-newdash .sd-btn.sd-add-desktop { display: none; }");
+    expect(phone).toContain("#tenantPortalSection.schedi-newdash .sd-btn.sd-add-phone { display: flex; width: 100%; justify-content: center; margin: 0; }");
+    expect(css.slice(0, css.indexOf("@media (max-width: 859px)"))).not.toContain(".sd-add-desktop { display: none");
+  });
 });
 
 const chrome = ["/usr/bin/google-chrome", "/usr/bin/google-chrome-stable", "/usr/bin/chromium", "/usr/bin/chromium-browser"].find((path) => existsSync(path));
