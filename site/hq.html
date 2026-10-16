@@ -499,7 +499,7 @@
             background: var(--hq-panel);
             border-bottom: 1px solid var(--hq-line);
         }
-        html.schedi-newhq #agencyHqSection { min-height: 100vh; padding: 84px 28px calc(100vh - 80px) 268px; animation: none; transform: none; }
+        html.schedi-newhq #agencyHqSection { min-height: 100vh; padding: 84px 28px 48px 268px; animation: none; transform: none; }
         html.schedi-newhq .hq-brand { font-weight: 800; letter-spacing: -0.03em; font-size: 1.15rem; color: var(--hq-text); }
         html.schedi-newhq .hq-kicker { margin: 14px 8px 6px; font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--hq-brand); }
         html.schedi-newhq .hq-nav-btn {
@@ -546,9 +546,10 @@
         .hq-label-short { display: none; }
         html.schedi-newhq #agencyStats .hq-label-full { display: none; }
         html.schedi-newhq #agencyStats .hq-label-short { display: inline; white-space: nowrap; }
-        html.schedi-newhq #agencyStats .hq-sub {
-            display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-        }
+        html.schedi-newhq #agencyStats span.uppercase { letter-spacing: 0.04em; white-space: nowrap; }
+        html.schedi-newhq #agencyStats .hq-sub .hq-label-full { display: inline; }
+        html.schedi-newhq #agencyStats .hq-sub .hq-label-short { display: none; }
+        html.schedi-newhq #agencyStats .hq-sub { display: block; white-space: normal; }
         html.schedi-newhq #agencyStats .text-2xl { letter-spacing: -0.03em; }
         html.schedi-newhq #agencyStripeStatusBadge { white-space: nowrap; flex-shrink: 0; }
         html.schedi-newhq #agencyMasterDashboard h2 { letter-spacing: -0.03em; }
@@ -572,18 +573,29 @@
             color: var(--hq-ink) !important;
             box-shadow: none !important;
         }
-        html.schedi-newhq .hq-table { table-layout: fixed; }
-        html.schedi-newhq .hq-table th { color: var(--hq-muted); border-color: var(--hq-line); font-size: 11px; letter-spacing: 0.06em; }
-        html.schedi-newhq .hq-table td { border-color: var(--hq-line); overflow: hidden; }
+        html.schedi-newhq .hq-table { table-layout: auto; width: 100%; }
+        html.schedi-newhq .hq-table th { color: var(--hq-muted); border-color: var(--hq-line); font-size: 11px; letter-spacing: 0.04em; white-space: nowrap; padding: 8px 6px; }
+        html.schedi-newhq .hq-table td { border-color: var(--hq-line); padding: 8px 6px; overflow: visible; }
         html.schedi-newhq .hq-table tbody tr:hover { background: color-mix(in srgb, var(--hq-brand) 8%, transparent); }
+        html.schedi-newhq #agencyDirectory { padding: 20px 16px; }
         html.schedi-newhq .hq-table .hq-clip {
-            display: block; max-width: 100%;
-            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+            display: block; width: max-content; max-width: none;
+            overflow: visible; text-overflow: clip; white-space: nowrap;
             word-break: normal; overflow-wrap: normal;
         }
-        html.schedi-newhq .hq-col-actions { width: 15.5rem; }
-        html.schedi-newhq .hq-col-actions .flex { flex-wrap: nowrap; }
-        @media (max-width: 1440px) {
+        html.schedi-newhq .hq-table .hq-plan-detail {
+            width: auto; max-width: 10.5rem; white-space: normal;
+        }
+        html.schedi-newhq .hq-table div.hq-comp { display: inline-flex; width: auto; max-width: none; white-space: nowrap; }
+        html.schedi-newhq .hq-col-status,
+        html.schedi-newhq .hq-col-extra,
+        html.schedi-newhq .hq-col-last,
+        html.schedi-newhq .hq-col-health { width: 1%; white-space: nowrap; }
+        html.schedi-newhq .hq-col-actions { width: 7.75rem; white-space: normal; }
+        html.schedi-newhq .hq-col-actions .flex { flex-wrap: wrap; justify-content: flex-end; width: 7.75rem; }
+        html.schedi-newhq .hq-table button,
+        html.schedi-newhq .hq-table a { min-height: 32px; }
+        @media (max-width: 1099px) {
             html.schedi-newhq .hq-col-extra { display: none; }
         }
         html.schedi-newhq .hq-badge { border-radius: 999px; padding: 3px 8px; }
@@ -756,7 +768,7 @@
                 <div id="agencyStats" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div class="glass-card rounded-2xl p-5 border-l-4 border-l-brand-500 flex items-center justify-between">
                         <div>
-                            <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider"><span class="hq-label-full">Managed Business Sites</span><span class="hq-label-short">Sites</span></span>
+                            <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider"><span class="hq-label-full">Managed Business Sites</span><span class="hq-label-short">Active sites</span></span>
                             <div id="statTotalSites" class="text-2xl font-black text-white mt-1">0</div>
                             <span class="text-[10px] text-brand-400 font-semibold hq-sub" title="Active &amp; Deployed"><span class="hq-label-full">Active &amp; Deployed</span><span class="hq-label-short">Active</span></span>
                         </div>
@@ -767,7 +779,7 @@
 
                     <div class="glass-card rounded-2xl p-5 border-l-4 border-l-accent-400 flex items-center justify-between">
                         <div>
-                            <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider"><span class="hq-label-full">Agency MRR</span><span class="hq-label-short">MRR</span></span>
+                            <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider"><span class="hq-label-full">Agency MRR</span><span class="hq-label-short">Monthly revenue</span></span>
                             <div id="statAgencyMRR" class="text-2xl font-black text-white mt-1">$0.00</div>
                             <span class="text-[10px] text-accent-400 font-semibold hq-sub" title="Monthly Subscription Volume"><span class="hq-label-full">Monthly Subscription Volume</span><span class="hq-label-short">Monthly</span></span>
                         </div>
@@ -778,7 +790,7 @@
 
                     <div class="glass-card rounded-2xl p-5 border-l-4 border-l-indigo-500 flex items-center justify-between">
                         <div>
-                            <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider"><span class="hq-label-full">Total System Bookings</span><span class="hq-label-short">Bookings</span></span>
+                            <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider"><span class="hq-label-full">Total System Bookings</span><span class="hq-label-short">Bookings (all)</span></span>
                             <div id="statTotalBookings" class="text-2xl font-black text-white mt-1">0</div>
                             <span class="text-[10px] text-indigo-400 font-semibold hq-sub" title="Cross-Tenant Volume"><span class="hq-label-full">Cross-Tenant Volume</span><span class="hq-label-short">All tenants</span></span>
                         </div>
@@ -789,7 +801,7 @@
 
                     <div class="glass-card rounded-2xl p-5 border-l-4 border-l-amber-400 flex items-center justify-between">
                         <div>
-                            <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider"><span class="hq-label-full">Active Booking Pages</span><span class="hq-label-short">Pages</span></span>
+                            <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider"><span class="hq-label-full">Active Booking Pages</span><span class="hq-label-short">Live pages</span></span>
                             <div id="statActivePages" class="text-2xl font-black text-white mt-1">0</div>
                             <span class="text-[10px] text-amber-400 font-semibold hq-sub" title="Live on schedi.app/{slug}/"><span class="hq-label-full">Live on schedi.app/{slug}/</span><span class="hq-label-short">Live pages</span></span>
                         </div>
@@ -1817,7 +1829,8 @@
                     </div>
                     <div>
                         <label class="block font-semibold text-slate-300 mb-1">Owner Password *</label>
-                        <input type="text" id="editOwnerPassword" autocomplete="new-password" placeholder="Leave blank to keep the current password" class="w-full min-w-0 px-3 py-2 rounded-xl glass-input font-mono">
+                        <input type="text" id="editOwnerPassword" autocomplete="new-password" placeholder="Leave blank to keep" class="w-full min-w-0 px-3 py-2 rounded-xl glass-input font-mono">
+                        <p class="text-[10px] text-slate-500 mt-1">Leave blank to keep the current password.</p>
                     </div>
                 </div>
 
@@ -6006,9 +6019,9 @@
                     var bill = schediBillingLabel(t);
                     return '<tr><td class="hq-col-biz">' + clipLine(t.name, 'font-bold text-white') + clipLine('/' + (t.slug || t.id), 'font-mono text-[11px] text-slate-400') + (v.tagsHtml ? '<div class="mt-1 flex flex-wrap gap-1">' + v.tagsHtml + '</div>' : '') + '</td>'
                         + '<td class="hq-col-owner">' + clipLine(t.ownerName, 'text-slate-200') + clipLine(t.ownerEmail, 'font-mono text-[11px] text-brand-400 break-all') + '</td>'
-                        + '<td class="hq-col-plan"><div class="font-semibold text-white">' + planLabel(v.plan) + '</div>' + clipLine(bill, 'text-[11px] text-slate-400' + (isComplimentaryPro(t) ? ' hq-comp' : '')) + '</td>'
+                        + '<td class="hq-col-plan"><div class="font-semibold text-white">' + planLabel(v.plan) + '</div>' + clipLine(bill, 'text-[11px] text-slate-400' + (isComplimentaryPro(t) ? ' hq-comp' : ' hq-plan-detail')) + '</td>'
                         + '<td class="hq-col-status">' + v.stBadge + '</td><td class="hq-col-extra font-bold text-white">' + cell(v.month) + '</td>'
-                        + '<td class="hq-col-extra ' + (v.unpaid ? 'font-bold text-amber-400' : 'text-white') + '">' + cell(v.unpaid) + '</td><td class="hq-col-last text-slate-300 whitespace-nowrap">' + cell(v.last) + '</td>'
+                        + '<td class="hq-col-extra ' + (v.unpaid ? 'font-bold text-amber-400' : 'text-white') + '">' + cell(v.unpaid) + '</td><td class="hq-col-last text-slate-300 whitespace-nowrap"' + (v.last ? ' title="' + esc(String(v.last)) + '"' : '') + '>' + (compactDates ? shortBookingDate(v.last) : cell(v.last)) + '</td>'
                         + '<td class="hq-col-health"><div class="flex flex-col gap-1">' + warnHtml(v.w) + '</div></td>'
                         + '<td class="hq-col-actions"><div class="flex items-center justify-end gap-0.5">' + v.actions + '</div></td></tr>';
                 }).join('') + '</tbody></table></div>';
