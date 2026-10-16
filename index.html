@@ -627,7 +627,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-square { color: #3
 #tenantPortalSection.schedi-newdash .sd-client-list { display: flex; flex-direction: column; }
 #tenantPortalSection.schedi-newdash .sd-client { display: block; padding: 12px 0; border-top: 1px solid var(--sd-line); }
 #tenantPortalSection.schedi-newdash .sd-client:first-child { border-top: 0; }
-#tenantPortalSection.schedi-newdash .sd-client-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+#tenantPortalSection.schedi-newdash .sd-client-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 8px; }
+#tenantPortalSection.schedi-newdash .sd-client-copy { flex: 1 1 16rem; min-width: 0; }
 #tenantPortalSection.schedi-newdash .sd-client-main { min-width: 0; }
 #tenantPortalSection.schedi-newdash .sd-client-name { font-weight: 800; font-size: 14px; color: var(--sd-text); background: transparent; border: 0; padding: 0; text-align: left; cursor: pointer; }
 #tenantPortalSection.schedi-newdash .sd-client-contact,
@@ -635,7 +636,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-square { color: #3
 #tenantPortalSection.schedi-newdash .sd-client-notes { margin-top: 4px; overflow-wrap: anywhere; }
 #tenantPortalSection.schedi-newdash .sd-client-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
 #tenantPortalSection.schedi-newdash .sd-tag { display: inline-flex; align-items: center; border-radius: 999px; padding: 2px 8px; font-size: 11px; font-weight: 800; color: var(--sd-brand-2); background: rgba(16, 185, 129, 0.14); border: 1px solid rgba(16, 185, 129, 0.35); }
-#tenantPortalSection.schedi-newdash .sd-client-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+#tenantPortalSection.schedi-newdash .sd-client-actions { display: flex; flex: 0 0 auto; flex-wrap: wrap; align-items: center; gap: 6px; }
 #tenantPortalSection.schedi-newdash .sd-client-actions button,
 #tenantPortalSection.schedi-newdash .sd-client-actions-form button { min-height: 36px; border-radius: 12px; padding: 6px 12px; font-weight: 800; font-size: 12px; cursor: pointer; }
 #tenantPortalSection.schedi-newdash .sd-client-edit-btn,
@@ -1606,6 +1607,9 @@ body.schedi-newdash .sd-theme {
 }
 #tenantPortalSection.schedi-newdash #schediDashSidebar .sd-theme { margin: 0 0 8px; align-self: flex-start; }
 #tenantPortalSection.schedi-newdash #schediDashMoreSheet .sd-theme { margin: 8px; }
+@media (min-width: 860px) {
+    #tenantPortalSection.schedi-newdash #schediDashTop .sd-theme { display: none; }
+}
 #tenantPortalSection.schedi-newdash .sd-user-phone { display: none; }
 #tenantPortalSection.schedi-newdash .sd-side-foot {
     margin-top: auto;
@@ -2220,8 +2224,9 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
     #tenantPortalSection.schedi-newdash .sd-client-edit input,
     #tenantPortalSection.schedi-newdash .sd-client-edit textarea { min-height: 44px; }
     #tenantPortalSection.schedi-newdash .sd-client-edit textarea { min-height: 88px; }
-    #tenantPortalSection.schedi-newdash .sd-client-actions { width: 100%; }
-    #tenantPortalSection.schedi-newdash .sd-client-actions button { flex: 1 1 8rem; }
+    #tenantPortalSection.schedi-newdash .sd-client-copy { flex-basis: 100%; }
+    #tenantPortalSection.schedi-newdash .sd-client-actions { width: auto; }
+    #tenantPortalSection.schedi-newdash .sd-client-actions button { flex: 0 0 auto; }
     #tenantPortalSection.schedi-newdash .sd-client-name { min-height: 44px; }
     #tenantPortalSection.schedi-newdash .sd-client-panel { top: 0; left: 0; }
     #tenantPortalSection.schedi-newdash .sd-client-panel-backdrop { display: none; }
@@ -2797,6 +2802,7 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                         </div>
                         <button type="button" class="sd-user sd-user-phone" id="schediDashUserBtnPhone" onclick="schediDashToggleAccount(event)" aria-haspopup="menu" aria-expanded="false" aria-controls="schediDashAccountMenu">
                             <span id="schediDashUserInitialsPhone" class="sd-avatar" aria-hidden="true">S</span>
+                            <img id="schediDashUserLogoPhone" class="sd-avatar-img" alt="" hidden>
                         </button>
                     </header>
                     <p id="schediDemoNote" class="sd-demo-note" hidden>Demo · sample business · nothing is saved or sent</p>
@@ -9245,12 +9251,12 @@ function schediQrModules(text) {
                     + (x.notes ? ('<div class="sd-client-notes text-[11px] text-slate-500 mt-1 break-words">' + esc(x.notes) + '</div>') : '')
                     + tags);
                 return '<div class="sd-client py-3">'
-                    + '<div class="sd-client-head"><div class="sd-client-main min-w-0 text-sm break-words"><button type="button" class="sd-client-name font-bold text-white text-left" data-client-id="' + esc(x.id) + '" onclick="openClientDetail(' + jsArg(x.id) + ')" aria-expanded="' + (open ? 'true' : 'false') + '" aria-controls="sdClientPanel">' + esc(x.name) + '</button>' + clientSourceTag(x) + '</div>'
-                    + '<div class="sd-client-actions">'
+                    + '<div class="sd-client-head"><div class="sd-client-copy"><div class="sd-client-main min-w-0 text-sm break-words"><button type="button" class="sd-client-name font-bold text-white text-left" data-client-id="' + esc(x.id) + '" onclick="openClientDetail(' + jsArg(x.id) + ')" aria-expanded="' + (open ? 'true' : 'false') + '" aria-controls="sdClientPanel">' + esc(x.name) + '</button>' + clientSourceTag(x) + '</div>'
+                    + summary
+                    + '</div><div class="sd-client-actions">'
                     + (editing ? '' : ('<button type="button" class="sd-client-edit-btn px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold text-[11px] border border-slate-700" onclick="startOwnerClientEdit(' + jsArg(x.id) + ')" aria-label="Edit ' + esc(x.name) + '">Edit</button>'))
                     + '<button type="button" class="sd-client-remove px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-bold text-[11px] border border-rose-500/30" onclick="deleteOwnerClient(' + jsArg(x.id) + ')">Remove</button>'
                     + '</div></div>'
-                    + summary
                     + editor
                     + '</div>';
             }).join('') + '</div>' + (shown.length > cap ? ('<p class="text-[11px] text-slate-500 pt-2">Showing the first ' + cap + '. Search to find others.</p>') : '');
@@ -10530,7 +10536,6 @@ function schediQrModules(text) {
             if (!tenant) return;
             var biz = document.getElementById('schediDashBizName');
             if (biz) biz.textContent = tenant.name || 'Business';
-            var who = tenant.ownerName || tenant.ownerEmail || 'Owner';
             var bizName = tenant.name || 'Business';
             var planWord = 'Free';
             try {
@@ -10541,27 +10546,32 @@ function schediQrModules(text) {
             var phoneInitials = document.getElementById('schediDashUserInitialsPhone');
             var planEl = document.getElementById('schediDashUserPlan');
             var logoEl = document.getElementById('schediDashUserLogo');
+            var phoneLogo = document.getElementById('schediDashUserLogoPhone');
             var logo = String(tenant.logoUrl || tenant.logo || '').trim();
+            var mark = schediDashInitials(bizName);
             if (nameEl) nameEl.textContent = bizName;
             if (planEl) planEl.textContent = planWord;
-            if (initials) initials.textContent = schediDashInitials(bizName);
-            if (phoneInitials) phoneInitials.textContent = schediDashInitials(who);
-            if (logoEl) {
+            if (initials) initials.textContent = mark;
+            if (phoneInitials) phoneInitials.textContent = mark;
+            function schediDashApplyLogo(img, letters) {
+                if (!img) return;
                 if (logo) {
-                    logoEl.hidden = false;
-                    logoEl.src = logo;
-                    logoEl.alt = '';
-                    if (initials) initials.hidden = true;
+                    img.hidden = false;
+                    img.src = logo;
+                    img.alt = '';
+                    if (letters) letters.hidden = true;
                 } else {
-                    logoEl.hidden = true;
-                    logoEl.removeAttribute('src');
-                    if (initials) initials.hidden = false;
+                    img.hidden = true;
+                    img.removeAttribute('src');
+                    if (letters) letters.hidden = false;
                 }
             }
+            schediDashApplyLogo(logoEl, initials);
+            schediDashApplyLogo(phoneLogo, phoneInitials);
             var userBtn = document.getElementById('schediDashUserBtn');
             if (userBtn) userBtn.setAttribute('aria-label', bizName + ', ' + planWord + ', account');
             var phoneBtn = document.getElementById('schediDashUserBtnPhone');
-            if (phoneBtn) phoneBtn.setAttribute('aria-label', who + ', account');
+            if (phoneBtn) phoneBtn.setAttribute('aria-label', bizName + ', account');
             schediDashSetPage(schediDashPage());
             try { renderSchediToday(tenant); } catch (errPaint) {}
         }

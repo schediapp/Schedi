@@ -162,9 +162,10 @@
         html.schedi-light .hq-warn { color: #b91c1c; }
         html.schedi-light .hq-collapse-btn { background: #fff !important; border-color: #64748b !important; color: #0f172a !important; }
         #agencyHqSection .hq-glance-head { display: flex; flex-direction: column; gap: 4px; min-width: 0; cursor: pointer; }
-        #agencyHqSection .hq-glance-title-row { display: flex; flex-direction: row; align-items: flex-start; gap: 8px; min-width: 0; }
-        #agencyHqSection .hq-glance-title-row h2 { flex: 1 1 auto; min-width: 0; margin: 0; line-height: 1.25; padding-top: 8px; }
-        #agencyHqSection .hq-glance-summary { margin: 0; font-size: 13px; line-height: 1.35; color: #e2e8f0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #agencyHqSection .hq-glance-title-row { display: flex; flex-direction: row; align-items: center; gap: 8px; min-width: 0; position: relative; padding-right: 52px; }
+        #agencyHqSection .hq-glance-title-row h2 { flex: 1 1 auto; min-width: 0; margin: 0; line-height: 1.25; }
+        #agencyHqSection .hq-glance-title-row > .hq-collapse-btn { position: absolute; right: 0; top: 50%; margin-left: 0; transform: translateY(-50%); z-index: 1; }
+        #agencyHqSection .hq-glance-summary { margin: 0; padding-right: 52px; font-size: 13px; line-height: 1.35; color: #e2e8f0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         #agencyHqSection .hq-glance-summary[hidden] { display: none !important; }
         #agencyHqSection .hq-glance-body { display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 12px; }
         #agencyHqSection .hq-glance-body[hidden] { display: none !important; }
@@ -743,20 +744,30 @@
             }
             html.schedi-newhq #hqNewTabs button.is-on { color: var(--hq-brand); }
             html.schedi-newhq #agencyHqSection { padding: 76px 16px 96px; }
-            html.schedi-newhq #agencyDirectory [data-hq-collapse-head] {
-                display: grid;
-                grid-template-columns: minmax(0, 1fr) 44px;
-                column-gap: 8px;
-                align-items: start;
+            html.schedi-newhq #agencyDirectory [data-hq-collapse-head],
+            html.schedi-newhq #agencyBilling [data-hq-collapse-head],
+            html.schedi-newhq #agencyEmail [data-hq-collapse-head] { position: relative; }
+            html.schedi-newhq #agencyDirectory .hq-card-copy > h2,
+            html.schedi-newhq #agencyDirectory .hq-card-copy > p,
+            html.schedi-newhq #agencyBilling .hq-card-copy,
+            html.schedi-newhq #agencyEmail .hq-card-copy { padding-right: 52px; }
+            html.schedi-newhq #agencyDirectory .hq-card-copy > h2,
+            html.schedi-newhq #agencyBilling .hq-card-copy > h2,
+            html.schedi-newhq #agencyEmail .hq-card-copy > h2 { margin: 0; line-height: 1.75rem; }
+            html.schedi-newhq #agencyDirectory .hq-card-copy > p,
+            html.schedi-newhq #agencyBilling .hq-card-copy > p,
+            html.schedi-newhq #agencyEmail .hq-card-copy > p { margin-top: 2px; }
+            html.schedi-newhq #agencyDirectory .hq-collapse-btn,
+            html.schedi-newhq #agencyBilling .hq-collapse-btn,
+            html.schedi-newhq #agencyEmail .hq-collapse-btn {
+                position: absolute;
+                right: 0;
+                top: 0;
+                margin-left: 0;
+                z-index: 1;
+                transform: translateY(calc(0.875rem - 50%));
             }
-            html.schedi-newhq #agencyDirectory .hq-card-main,
-            html.schedi-newhq #agencyDirectory .hq-card-copy { display: contents; }
-            html.schedi-newhq #agencyDirectory .hq-card-copy > h2 { grid-column: 1; grid-row: 1; }
-            html.schedi-newhq #agencyDirectory .hq-card-copy > p { grid-column: 1; grid-row: 2; }
-            html.schedi-newhq #agencyDirectory .hq-collapse-btn { grid-column: 2; grid-row: 1; margin-left: 0; }
             html.schedi-newhq #agencyDirectory [data-hq-collapse-tools] {
-                grid-column: 1 / -1;
-                grid-row: 3;
                 flex-direction: column;
                 align-items: flex-start;
                 width: 100%;
@@ -1019,22 +1030,23 @@
                 </div>
 
                 <!-- Client Sites Roster -->
-                <div id="agencyDirectory" class="glass-card rounded-2xl p-6 space-y-5">
-                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
-                        <div>
+                <div id="agencyDirectory" class="glass-card rounded-2xl p-6 space-y-5" data-hq-collapse="directory">
+                    <div class="hq-card-head border-b border-slate-800 pb-4" data-hq-collapse-head>
+                        <div class="hq-card-main">
+                        <div class="hq-card-copy">
                             <h2 class="text-xl font-extrabold text-white">Client Business Directory</h2>
                             <p class="text-xs text-slate-400 mt-0.5">Provision new sites, update owner profile details, adjust subscription plans, or log into tenant portals.</p>
-                        </div>
-
-                        <div class="flex flex-wrap items-center gap-2">
+                        <div class="flex flex-wrap items-center gap-2 mt-3" data-hq-collapse-tools>
                             <input type="search" id="agencySearchInput" oninput="filterAgencyTenants(this.value)" placeholder="Search name, owner email, or slug" aria-label="Search businesses" class="px-3.5 py-2 rounded-xl glass-input text-xs w-full sm:w-64">
                             <button type="button" onclick="openProvisionModal()" class="px-4 py-2 rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-slate-950 font-bold text-xs shadow-md glow-emerald flex items-center space-x-2 transition-all">
                                 <i class="fa-solid fa-plus"></i>
                                 <span>Provision New Site</span>
                             </button>
                         </div>
+                        </div>
+                        </div>
                     </div>
-
+                    <div data-hq-collapse-body class="space-y-5">
                     <div id="hqDirControls" class="flex flex-wrap items-center gap-2 text-xs">
                         <label class="sr-only" for="hqDirSort">Sort</label>
                         <select id="hqDirSort" onchange="hqDirSet('sort', this.value)" class="w-auto max-w-[11rem] px-2.5 py-1.5 rounded-lg glass-input text-xs">
@@ -1056,6 +1068,7 @@
                     </div>
                     <div id="agencyTenantGrid">
                         <!-- Directory injected via JS -->
+                    </div>
                     </div>
                 </div>
 
