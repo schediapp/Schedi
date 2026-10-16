@@ -8,6 +8,7 @@
  */
 import { readSession } from './owner-auth.js';
 import { loadPrivateAppointments, persistTenantAppointments } from './private-bookings.js';
+import { rateLimitOk } from './rate-limit.js';
 import {
   SQUARE_CONNECTION_KEY,
   deletePrivateFields,
@@ -27,6 +28,7 @@ export const SQUARE_SCOPES = [
 export const SQUARE_VERSION = '2024-10-17';
 const STATE_PREFIX = 'sqstate:';
 const ORDER_PREFIX = 'sqord:';
+const BOOKING_ORDER_PREFIX = 'sqbk:';
 const PAYMENT_PREFIX = 'sqpay:';
 const EVENT_PREFIX = 'sqevt:';
 const STATE_TTL_SECONDS = 600;
@@ -182,12 +184,12 @@ export function squarePaymentNote(tenantId, bookingIds, kind) {
 }
 
 export function parseSquarePaymentNote(note) {
-  const parts = String(note || '').split('|');
-  if (parts[0] !== 'schedi' || parts.length < 4) return null;
-  if (!/^[A-Za-z0-9_-]{1,80}$/.test(parts[1])) return null;
-  const ids = parts[2].split(',').map((id) => id.trim()).filter((id) => /^[A-Za-z0-9_-]{4,40}$/.test(id));
+  const text = String(note || '');
+  const match = text.match(/schedi\|([A-Za-z0-9_-]{1,80})\|([A-Za-z0-9_-]{4,40}(?:,[A-Za-z0-9_-]{4,40})*)\|(deposit|full)\b/);
+  if (!match) return null;
+  const ids = match[2].split(',').map((id) => id.trim()).filter((id) => /^[A-Za-z0-9_-]{4,40}$/.test(id));
   if (!ids.length) return null;
-  return { tenantId: parts[1], bookingIds: ids, kind: parts[3] === 'deposit' ? 'deposit' : 'full' };
+  return { tenantId: match[1], bookingIds: ids, kind: match[3] === 'deposit' ? 'deposit' : 'full' };
 }
 
 export function buildPaymentLinkBody(input) {
@@ -241,9 +243,22 @@ function paidAlready(booking, paymentId) {
   return paid && booking.paidMethod === 'square' && String(booking.squarePaymentId || '') === String(paymentId || '');
 }
 
+function squarePaymentStatus(payment) {
+  return String((payment && payment.status) || '').trim().toUpperCase();
+}
+
+function bookingPaidState(booking) {
+  if (!booking || booking.paidMethod !== 'square') return false;
+  const status = String(booking.paymentStatus || '').toUpperCase();
+  if (!status || status.indexOf('AWAITING') !== -1) return false;
+  if (status.indexOf('UNPAID') !== -1 || status.indexOf('NOT PAID') !== -1) return false;
+  if (status.indexOf('REFUND') !== -1) return false;
+  return status.indexOf('PAID') !== -1;
+}
+
 export function applySquarePaymentUpdate(booking, payment, kind) {
   if (!booking || !payment) return { booking, changed: false, duplicate: false };
-  const status = String(payment.status || '');
+  const status = squarePaymentStatus(payment);
   if (status === 'FAILED' || status === 'CANCELED' || status === 'CANCELLED') {
     return { booking, changed: false, duplicate: false };
   }
@@ -344,13 +359,30 @@ export async function readVerifiedSquareEvent(rawBody, signatureHeader, env) {
   return { ok: true, event };
 }
 
+function paymentFromSquareEvent(event) {
+  const object = event && event.data && event.data.object;
+  if (!object || typeof object !== 'object') return null;
+  if (object.payment && typeof object.payment === 'object') return object.payment;
+  if (object.id && (object.status || object.order_id || object.orderId || object.amount_money)) return object;
+  return null;
+}
+
+function orderUpdateFromEvent(event) {
+  const object = event && event.data && event.data.object;
+  if (!object || typeof object !== 'object') return null;
+  if (object.order_updated && typeof object.order_updated === 'object') return object.order_updated;
+  return object;
+}
+
 export async function processSquareNotification(event, store) {
   const type = String((event && event.type) || '');
   const eventId = String((event && event.event_id) || '');
   if (eventId && store.seenEvent && await store.seenEvent(eventId)) return { ok: true, duplicate: true };
-  if (type === 'payment.updated') {
-    const payment = event && event.data && event.data.object && event.data.object.payment;
-    if (!payment || String(payment.status || '') !== 'COMPLETED') return { ok: true, ignored: true };
+  if (type === 'payment.updated' || type === 'payment.created') {
+    const payment = paymentFromSquareEvent(event);
+    // A Payment Link card charge is often created already COMPLETED. Sandbox
+    // sometimes delivers that as payment.created and never sends payment.updated.
+    if (!payment || squarePaymentStatus(payment) !== 'COMPLETED') return { ok: true, ignored: true };
     const found = await store.findPaymentBooking(payment);
     if (!found || !found.bookings || !found.bookings.length) return { ok: true, ignored: true };
     let changed = false;
@@ -366,6 +398,17 @@ export async function processSquareNotification(event, store) {
     }
     if (eventId && store.markEvent) await store.markEvent(eventId);
     return { ok: true, changed, duplicate: duplicate && !changed };
+  }
+  if (type === 'order.updated') {
+    const info = orderUpdateFromEvent(event);
+    const state = String((info && info.state) || '').toUpperCase();
+    const orderId = info && (info.order_id || info.id);
+    if (!orderId || (state && state !== 'COMPLETED')) return { ok: true, ignored: true };
+    if (!store.reconcileCompletedOrder) return { ok: true, ignored: true };
+    const result = await store.reconcileCompletedOrder(String(orderId));
+    if (result && result.retry) return result;
+    if (eventId && store.markEvent && result && (result.changed || result.duplicate)) await store.markEvent(eventId);
+    return result || { ok: true, ignored: true };
   }
   if (type === 'refund.updated') {
     const refund = event && event.data && event.data.object && event.data.object.refund;
@@ -580,11 +623,33 @@ function bookingIdsFrom(value) {
   return out;
 }
 
-async function rememberLookup(env, payment, tenantId, bookingIds) {
+function bookingOrderKey(tenantId, bookingId) {
+  return BOOKING_ORDER_PREFIX + tenantId + ':' + bookingId;
+}
+
+async function rememberOrder(env, orderId, tenantId, bookingIds, kind) {
+  if (!env || !env.AUTH_KV || !orderId) return;
+  const chargeKind = kind === 'deposit' ? 'deposit' : (kind === 'full' ? 'full' : '');
+  const ids = (Array.isArray(bookingIds) ? bookingIds : []).map((id) => String(id)).filter(Boolean);
+  let keptKind = chargeKind;
+  if (!keptKind) {
+    const prev = await kvGet(env, ORDER_PREFIX + orderId);
+    if (prev && (prev.kind === 'deposit' || prev.kind === 'full')) keptKind = prev.kind;
+  }
+  const payload = JSON.stringify({ tenantId, bookingIds: ids, kind: keptKind || undefined });
+  await env.AUTH_KV.put(ORDER_PREFIX + orderId, payload);
+  for (const id of ids) {
+    await env.AUTH_KV.put(bookingOrderKey(tenantId, id), JSON.stringify({ orderId: String(orderId), kind: keptKind || undefined }));
+  }
+}
+
+async function rememberLookup(env, payment, tenantId, bookingIds, kind) {
   if (!env.AUTH_KV) return;
-  const payload = JSON.stringify({ tenantId, bookingIds });
-  if (payment && payment.order_id) await env.AUTH_KV.put(ORDER_PREFIX + payment.order_id, payload);
-  if (payment && payment.id) await env.AUTH_KV.put(PAYMENT_PREFIX + payment.id, payload);
+  const ids = (Array.isArray(bookingIds) ? bookingIds : []).map((id) => String(id)).filter(Boolean);
+  if (payment && payment.order_id) await rememberOrder(env, payment.order_id, tenantId, ids, kind);
+  if (payment && payment.id) {
+    await env.AUTH_KV.put(PAYMENT_PREFIX + payment.id, JSON.stringify({ tenantId, bookingIds: ids }));
+  }
 }
 
 async function stampBookings(env, deps, tenantId, nextBookings) {
@@ -611,7 +676,10 @@ export async function handleSquareHttp(request, env, origin, path, deps) {
     const verified = await readVerifiedSquareEvent(raw, request.headers.get('x-square-hmacsha256-signature'), env);
     if (!verified.ok) return jsonResponse(deps, { ok: false, error: verified.error }, verified.status, origin);
     const store = squareEventStore(env, deps);
-    await processSquareNotification(verified.event, store);
+    const result = await processSquareNotification(verified.event, store);
+    if (result && result.retry) {
+      return jsonResponse(deps, { ok: false, error: result.error || 'square_unavailable' }, 503, origin);
+    }
     return jsonResponse(deps, { ok: true }, 200, origin);
   }
 
@@ -623,10 +691,13 @@ export async function handleSquareHttp(request, env, origin, path, deps) {
   if (path === '/api/square/checkout') {
     if (request.method !== 'POST') return jsonResponse(deps, { ok: false, error: 'method_not_allowed' }, 405, origin);
     const res = await handleCheckout(request, env, deps);
-    const headers = new Headers(res.headers);
-    const cors = checkoutCors();
-    for (const key of Object.keys(cors)) headers.set(key, cors[key]);
-    return new Response(res.body, { status: res.status, headers });
+    return withCheckoutCors(res);
+  }
+
+  if (path === '/api/square/confirm') {
+    if (request.method !== 'POST') return jsonResponse(deps, { ok: false, error: 'method_not_allowed' }, 405, origin);
+    const res = await handleConfirm(request, env, deps);
+    return withCheckoutCors(res);
   }
 
   if (request.method !== 'POST') return jsonResponse(deps, { ok: false, error: 'method_not_allowed' }, 405, origin);
@@ -653,6 +724,13 @@ function checkoutCors() {
     'Access-Control-Allow-Headers': 'Content-Type',
     'Access-Control-Max-Age': '86400',
   };
+}
+
+function withCheckoutCors(res) {
+  const headers = new Headers(res.headers);
+  const cors = checkoutCors();
+  for (const key of Object.keys(cors)) headers.set(key, cors[key]);
+  return new Response(res.body, { status: res.status, headers });
 }
 
 async function handleConnect(env, tenantId, sessionToken, deps, origin) {
@@ -868,10 +946,172 @@ async function handleCheckout(request, env, deps) {
     });
   });
   await stampBookings(env, deps, tenantId, updated);
-  if (env.AUTH_KV && orderId) {
-    await env.AUTH_KV.put(ORDER_PREFIX + orderId, JSON.stringify({ tenantId, bookingIds, kind }));
-  }
+  if (orderId) await rememberOrder(env, orderId, tenantId, bookingIds, kind);
   return jsonResponse(deps, { ok: true, url: payUrl, purpose: kind, amountCents: totalCents }, 200, '');
+}
+
+function clientIp(request) {
+  const headers = request && request.headers;
+  const raw = headers && (headers.get('CF-Connecting-IP') || headers.get('X-Real-IP'));
+  return String(raw || 'unknown').slice(0, 64);
+}
+
+async function limitConfirm(request, env, deps, tenantId, hasSession) {
+  const check = (deps && deps.rateLimitOk) || rateLimitOk;
+  if (hasSession) return check(env && env.RL_CLIENTS, 'sqcf:' + tenantId, 30, 'sqcf');
+  return check(env && env.RL_BOOKING_CREATE, 'sqcf:' + clientIp(request), 12, 'sqcf');
+}
+
+function paymentIdsFromOrder(order) {
+  const ids = [];
+  const push = (value) => {
+    const id = String(value || '').trim();
+    if (!id || ids.indexOf(id) !== -1) return;
+    ids.push(id);
+  };
+  const tenders = Array.isArray(order && order.tenders) ? order.tenders : [];
+  for (const tender of tenders) {
+    if (tender && tender.payment_id) push(tender.payment_id);
+  }
+  const payments = Array.isArray(order && order.payments) ? order.payments : [];
+  for (const payment of payments) {
+    if (!payment) continue;
+    if (typeof payment === 'string') push(payment);
+    else push(payment.id || payment.payment_id);
+  }
+  if (!ids.length) {
+    for (const tender of tenders) {
+      if (tender && tender.id) push(tender.id);
+    }
+  }
+  return ids;
+}
+
+async function loadSquareOrderPayment(env, deps, token, orderId) {
+  const orderRes = await squareApi(env, deps, token, '/v2/orders/' + encodeURIComponent(orderId));
+  if (!orderRes.ok) {
+    const status = orderRes.status || 502;
+    return {
+      error: 'square_order_lookup_failed',
+      status,
+      retry: status >= 500 || status === 429,
+    };
+  }
+  const order = (orderRes.data && orderRes.data.order) || orderRes.data || {};
+  const paymentIds = paymentIdsFromOrder(order);
+  if (!paymentIds.length) return { order, payment: null, paymentStatus: 'UNPAID' };
+  let lastStatus = 'UNPAID';
+  for (const paymentId of paymentIds.slice(0, 5)) {
+    const payRes = await squareApi(env, deps, token, '/v2/payments/' + encodeURIComponent(paymentId));
+    if (!payRes.ok) {
+      const status = payRes.status || 502;
+      if (status >= 500 || status === 429) {
+        return { error: 'square_payment_lookup_failed', status, retry: true };
+      }
+      continue;
+    }
+    const payment = (payRes.data && payRes.data.payment) || payRes.data || {};
+    const status = squarePaymentStatus(payment);
+    if (status) lastStatus = status;
+    if (status === 'COMPLETED') return { order, payment, paymentStatus: 'COMPLETED' };
+  }
+  return { order, payment: null, paymentStatus: lastStatus };
+}
+
+async function applyFetchedSquarePayment(env, deps, tenantId, bookingIds, payment, kind) {
+  const load = (deps && deps.loadAppointments) || loadPrivateAppointments;
+  const appointments = await load(env, tenantId);
+  const wanted = (Array.isArray(bookingIds) ? bookingIds : []).map((id) => String(id));
+  const bookings = wanted.map((id) => (appointments || []).find((item) => item && String(item.id) === id)).filter(Boolean);
+  if (!bookings.length) return { error: 'booking_not_found', status: 404 };
+  const store = squareEventStore(env, deps || {});
+  await rememberLookup(env, payment, tenantId, bookings.map((item) => String(item.id)), kind);
+  let changed = false;
+  let duplicate = true;
+  let paid = false;
+  for (const booking of bookings) {
+    const applied = applySquarePaymentUpdate(booking, payment, kind);
+    if (bookingPaidState(applied.booking)) paid = true;
+    if (applied.duplicate) continue;
+    duplicate = false;
+    if (applied.changed) {
+      changed = true;
+      await store.saveBooking(tenantId, applied.booking);
+    }
+  }
+  return { paid, changed, duplicate: duplicate && !changed };
+}
+
+async function handleConfirm(request, env, deps) {
+  const body = await readJsonBody(request);
+  const tenantId = safeTenant(body.tenantId);
+  const bookingId = bookingIdsFrom(body.bookingId)[0] || '';
+  if (!tenantId) return jsonResponse(deps, { ok: false, error: 'invalid_tenant', paid: false }, 400, '');
+  if (!bookingId) return jsonResponse(deps, { ok: false, error: 'invalid_booking', paid: false }, 400, '');
+  const sessionToken = String(body.session || '').trim();
+  if (sessionToken) {
+    const session = await readSession(env, sessionToken);
+    if (!sessionCan(session, tenantId)) return jsonResponse(deps, { ok: false, error: 'forbidden', paid: false }, 403, '');
+  }
+  const allowed = await limitConfirm(request, env, deps, tenantId, !!sessionToken);
+  if (!allowed) return jsonResponse(deps, { ok: false, error: 'rate_limited', paid: false }, 429, '');
+
+  const load = (deps && deps.loadAppointments) || loadPrivateAppointments;
+  const appointments = await load(env, tenantId);
+  const booking = (appointments || []).find((item) => item && String(item.id) === bookingId);
+  if (!booking) return jsonResponse(deps, { ok: false, error: 'booking_not_found', paid: false }, 404, '');
+
+  // Order id, payment id, and amount come from our records and from Square. Client fields are ignored.
+  const reverse = await kvGet(env, bookingOrderKey(tenantId, bookingId));
+  const orderId = String(booking.squareOrderId || (reverse && reverse.orderId) || '').trim();
+  if (!orderId) {
+    const paid = bookingPaidState(booking);
+    return jsonResponse(deps, { ok: true, paid, status: paid ? String(booking.paymentStatus || 'PAID') : 'UNPAID' }, 200, '');
+  }
+  const mapped = await kvGet(env, ORDER_PREFIX + orderId);
+  if (mapped && mapped.tenantId && String(mapped.tenantId) !== tenantId) {
+    return jsonResponse(deps, { ok: false, error: 'square_order_mismatch', paid: false }, 409, '');
+  }
+  if (mapped && Array.isArray(mapped.bookingIds) && mapped.bookingIds.length && mapped.bookingIds.map(String).indexOf(bookingId) === -1) {
+    return jsonResponse(deps, { ok: false, error: 'square_order_mismatch', paid: false }, 409, '');
+  }
+  const bookingIds = mapped && Array.isArray(mapped.bookingIds) && mapped.bookingIds.length
+    ? mapped.bookingIds.map(String)
+    : [bookingId];
+  const kind = (mapped && mapped.kind) || (reverse && reverse.kind) || '';
+
+  const got = await accessTokenFor(env, tenantId, deps);
+  if (got.error) {
+    if (bookingPaidState(booking)) {
+      return jsonResponse(deps, { ok: true, paid: true, status: String(booking.paymentStatus || 'PAID') }, 200, '');
+    }
+    return jsonResponse(deps, { ok: false, error: got.error, paid: false, status: String(booking.paymentStatus || '') }, got.status || 409, '');
+  }
+  const fetched = await loadSquareOrderPayment(env, deps, got.token, orderId);
+  if (fetched.error) {
+    if (bookingPaidState(booking)) {
+      return jsonResponse(deps, { ok: true, paid: true, status: String(booking.paymentStatus || 'PAID') }, 200, '');
+    }
+    return jsonResponse(deps, { ok: false, error: fetched.error, paid: false, status: String(booking.paymentStatus || '') }, fetched.status || 502, '');
+  }
+  if (!fetched.payment) {
+    return jsonResponse(deps, {
+      ok: true,
+      paid: bookingPaidState(booking),
+      status: fetched.paymentStatus || 'UNPAID',
+    }, 200, '');
+  }
+  const payment = Object.assign({}, fetched.payment);
+  if (!payment.order_id) payment.order_id = orderId;
+  const note = parseSquarePaymentNote(payment.note) || parseSquarePaymentNote(payment.payment_note);
+  const chargeKind = kind || (note && note.kind) || '';
+  const applied = await applyFetchedSquarePayment(env, deps, tenantId, bookingIds, payment, chargeKind);
+  if (applied.error) return jsonResponse(deps, { ok: false, error: applied.error, paid: false }, applied.status || 404, '');
+  return jsonResponse(deps, {
+    ok: true,
+    paid: applied.paid === true,
+    status: squarePaymentStatus(payment) || 'COMPLETED',
+  }, 200, '');
 }
 
 async function handleRefund(env, tenantId, body, deps, origin) {
@@ -938,26 +1178,49 @@ function squareEventStore(env, deps) {
       if (!env.AUTH_KV || !eventId) return;
       await env.AUTH_KV.put(EVENT_PREFIX + eventId, '1', { expirationTtl: 7 * 24 * 60 * 60 });
     },
-    async findPaymentBooking(payment) {
-      const note = parseSquarePaymentNote(payment.note) || parseSquarePaymentNote(payment.payment_note);
-      let tenantId = note && note.tenantId;
-      let bookingIds = note && note.bookingIds;
-      let kind = note && note.kind;
-      if ((!tenantId || !bookingIds) && payment.order_id) {
-        const mapped = await kvGet(env, ORDER_PREFIX + payment.order_id);
-        if (mapped) {
-          tenantId = tenantId || mapped.tenantId;
-          bookingIds = bookingIds || mapped.bookingIds;
-          kind = kind || mapped.kind;
-        }
-      }
-      if (!tenantId || !bookingIds || !bookingIds.length) return null;
+    async bookingsFor(tenantId, ids) {
+      if (!tenantId || !ids || !ids.length) return [];
       const load = deps.loadAppointments || loadPrivateAppointments;
       const appointments = await load(env, tenantId);
-      const bookings = bookingIds.map((id) => (appointments || []).find((item) => item && String(item.id) === id)).filter(Boolean);
-      if (!bookings.length) return null;
-      await rememberLookup(env, payment, tenantId, bookingIds);
-      return { tenantId, bookings, kind };
+      return ids.map((id) => (appointments || []).find((item) => item && String(item.id) === String(id))).filter(Boolean);
+    },
+    async findPaymentBooking(payment) {
+      const orderId = String((payment && (payment.order_id || payment.orderId)) || '');
+      const note = parseSquarePaymentNote(payment && payment.note) || parseSquarePaymentNote(payment && payment.payment_note);
+      const mapped = orderId ? await kvGet(env, ORDER_PREFIX + orderId) : null;
+      // The sqord: record is written by checkout. Prefer it over payment.note:
+      // Square often omits payment_note on the webhook, and a buyer note must
+      // not steer the payment onto a different appointment.
+      if (mapped && mapped.tenantId && mapped.bookingIds && mapped.bookingIds.length) {
+        const bookings = await this.bookingsFor(mapped.tenantId, mapped.bookingIds);
+        if (bookings.length) {
+          const kind = mapped.kind || (note && note.kind) || '';
+          await rememberLookup(env, payment, mapped.tenantId, bookings.map((item) => String(item.id)), kind);
+          return { tenantId: String(mapped.tenantId), bookings, kind };
+        }
+      }
+      if (note && note.tenantId && note.bookingIds && note.bookingIds.length) {
+        const bookings = await this.bookingsFor(note.tenantId, note.bookingIds);
+        if (bookings.length) {
+          await rememberLookup(env, payment, note.tenantId, bookings.map((item) => String(item.id)), note.kind);
+          return { tenantId: note.tenantId, bookings, kind: note.kind };
+        }
+      }
+      return null;
+    },
+    async reconcileCompletedOrder(orderId) {
+      const mapped = await kvGet(env, ORDER_PREFIX + orderId);
+      if (!mapped || !mapped.tenantId || !mapped.bookingIds || !mapped.bookingIds.length) return { ok: true, ignored: true };
+      const got = await accessTokenFor(env, mapped.tenantId, deps);
+      if (got.error) return { ok: true, ignored: true };
+      const fetched = await loadSquareOrderPayment(env, deps, got.token, orderId);
+      if (fetched.error) return { ok: false, retry: fetched.retry === true, error: fetched.error };
+      if (!fetched.payment) return { ok: true, ignored: true };
+      const payment = Object.assign({}, fetched.payment);
+      if (!payment.order_id) payment.order_id = orderId;
+      const applied = await applyFetchedSquarePayment(env, deps, mapped.tenantId, mapped.bookingIds, payment, mapped.kind || '');
+      if (applied.error) return { ok: true, ignored: true };
+      return { ok: true, changed: applied.changed === true, duplicate: applied.duplicate === true };
     },
     async findRefundBooking(refund) {
       const paymentId = String((refund && refund.payment_id) || '');
