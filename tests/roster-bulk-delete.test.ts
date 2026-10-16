@@ -36,7 +36,7 @@ const selection = new Function(
 
 const confirmText = new Function(
   `${extractFunction(html, "rosterBulkDeleteConfirmText")}; return rosterBulkDeleteConfirmText;`,
-)() as (n: number) => string;
+)() as (n: number) => { title: string; body: string };
 
 const toastText = new Function(
   `${extractFunction(html, "rosterBulkDeleteToast")}; return rosterBulkDeleteToast;`,
@@ -57,8 +57,13 @@ describe("roster bulk delete", () => {
   });
 
   it("asks once with the bulk confirmation and names partial failures in one toast", () => {
-    expect(confirmText(3)).toBe("Delete 3 appointments? This can't be undone.");
-    expect(confirmText(1)).toBe("Delete 1 appointment? This can't be undone.");
+    expect(confirmText(3)).toEqual({ title: "Delete 3 appointments?", body: "This can't be undone." });
+    expect(confirmText(1)).toEqual({ title: "Delete 1 appointment?", body: "This can't be undone." });
+    const open = html.slice(html.indexOf("window.openRosterBulkDelete"), html.indexOf("window.confirmRosterDeleteFromModal"));
+    expect(open).toContain("copy.title");
+    expect(open).toContain("copy.body");
+    const search = extractFunction(html, "renderRosterSearchResults");
+    expect(search).toContain("rosterSearchListCoversSelectAll()");
     expect(toastText(3, 0)).toBe("Deleted 3 appointments.");
     expect(toastText(2, 1)).toBe("Deleted 2 appointments. 1 failed.");
     expect(toastText(0, 2)).toBe("Deleted 0 appointments. 2 failed.");
@@ -136,5 +141,12 @@ describe("roster bulk delete", () => {
     expect(css).toContain("html.schedi-light body.schedi-newdash .sd-bulk");
     expect(css).toContain("min-height: 44px");
     expect(css).toContain("body.schedi-newdash .sd-bulk-count");
+    expect(css).toContain("td.roster-cell-check");
+    expect(css).toContain("flex: 0 0 44px");
+    expect(css).toContain("td.roster-cell-ref");
+    expect(css).toContain(".sd-roster-all");
+    expect(css).toContain("padding-left: 2px");
+    expect(css).toContain(".sd-roster-results { left: 0; right: 0; width: auto; max-width: 100%; box-sizing: border-box; }");
+    expect(css).not.toContain("100vw - 28px");
   });
 });

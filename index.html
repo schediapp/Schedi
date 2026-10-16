@@ -2189,7 +2189,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
     #tenantPortalSection.schedi-newdash .sd-roster-search:not(.is-open) .sd-roster-results { display: none; }
     #tenantPortalSection.schedi-newdash .sd-roster-search.is-open { flex: 1 1 100%; }
     #tenantPortalSection.schedi-newdash .sd-roster-search.is-open .sd-roster-search-field { display: flex; width: 100%; min-width: 0; }
-    #tenantPortalSection.schedi-newdash .sd-roster-results { width: min(420px, calc(100vw - 28px)); }
+    #tenantPortalSection.schedi-newdash .sd-roster-results { left: 0; right: 0; width: auto; max-width: 100%; box-sizing: border-box; }
     #tenantPortalSection.schedi-newdash #schediDashTop .sd-text-btn,
     #tenantPortalSection.schedi-newdash #schediDashTop .sd-user { min-height: 44px; }
     #tenantPortalSection.schedi-newdash .sd-btn,
@@ -2651,10 +2651,29 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
         #tenantPortalSection.schedi-newdash #rosterListWrap.has-bulk { padding-bottom: 76px; }
     }
     @media (max-width: 639px) {
-        #tenantPortalSection.schedi-newdash .sd-roster-all { display: flex; }
+        #tenantPortalSection.schedi-newdash .sd-roster-all {
+            display: flex;
+            align-items: center;
+            box-sizing: border-box;
+            padding-left: 2px;
+            padding-right: 2px;
+        }
+        #tenantPortalSection.schedi-newdash .sd-roster-all .sd-roster-check {
+            justify-content: flex-start;
+            gap: 8px;
+        }
+        #tenantPortalSection.schedi-newdash .sd-roster-all .sd-roster-check input { margin-left: 11px; }
+        #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row { column-gap: 8px; align-items: center; }
         #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-check {
+            width: 44px;
+            flex: 0 0 44px;
+            padding: 0;
+        }
+        #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-ref {
             width: auto;
-            flex: 0 0 auto;
+            flex: 1 1 calc(100% - 52px);
+            max-width: calc(100% - 52px);
+            min-width: 0;
         }
     }
 
@@ -10416,6 +10435,12 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                 if (typeof window.placeSchediMoreMenu === 'function') window.placeSchediMoreMenu(el);
             });
             try { if (typeof placeRosterBulkBar === 'function') placeRosterBulkBar(); } catch (errPlace) {}
+            try {
+                if (typeof rosterSearchListCoversSelectAll === 'function' && rosterSearchListCoversSelectAll()) {
+                    var rosterResults = document.getElementById('rosterSearchResults');
+                    if (rosterResults) rosterResults.hidden = true;
+                }
+            } catch (errSearch) {}
         });
 
         window.addEventListener('scroll', function (event) {
@@ -11215,6 +11240,11 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
             return hits;
         }
 
+        function rosterSearchListCoversSelectAll() {
+            if (rosterCalendarView === 'week' || rosterCalendarView === 'month') return false;
+            try { return window.matchMedia('(max-width: 639px)').matches; } catch (errMedia) { return false; }
+        }
+
         function renderRosterSearchResults(apps) {
             var box = document.getElementById('rosterSearchResults');
             var input = document.getElementById('rosterSearchInput');
@@ -11222,7 +11252,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
             if (!box || !input) return;
             var q = String(input.value || '').trim();
             if (clearBtn) clearBtn.hidden = !q;
-            if (!q) {
+            if (!q || rosterSearchListCoversSelectAll()) {
                 box.hidden = true;
                 box.innerHTML = '';
                 return;
@@ -11343,7 +11373,10 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
 
         function rosterBulkDeleteConfirmText(n) {
             var count = Math.max(0, Math.floor(Number(n) || 0));
-            return "Delete " + count + " appointment" + (count === 1 ? "" : "s") + "? This can't be undone.";
+            return {
+                title: "Delete " + count + " appointment" + (count === 1 ? "" : "s") + "?",
+                body: "This can't be undone."
+            };
         }
 
         function rosterBulkDeleteToast(deleted, failed) {
@@ -18363,11 +18396,11 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
             var ids = Object.keys(rosterSelectedIds).filter(function (id) { return rosterSelectedIds[id]; });
             if (!ids.length) return;
             rosterBulkDeleteIds = ids.slice();
-            var text = rosterBulkDeleteConfirmText(ids.length);
+            var copy = rosterBulkDeleteConfirmText(ids.length);
             var title = document.getElementById('rosterDeleteTitle');
-            if (title) title.textContent = text;
+            if (title) title.textContent = copy.title;
             var body = document.getElementById('rosterDeleteBody');
-            if (body) body.textContent = text;
+            if (body) body.textContent = copy.body;
             var idEl = document.getElementById('rosterDeleteAppId');
             if (idEl) idEl.value = '';
             var modal = document.getElementById('rosterDeleteModal');
