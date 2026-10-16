@@ -738,9 +738,23 @@
             }
             html.schedi-newhq #hqNewTabs button.is-on { color: var(--hq-brand); }
             html.schedi-newhq #agencyHqSection { padding: 76px 16px 96px; }
+            html.schedi-newhq #agencyDirectory [data-hq-collapse-head] {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) 44px;
+                column-gap: 8px;
+                align-items: start;
+            }
+            html.schedi-newhq #agencyDirectory .hq-card-main,
+            html.schedi-newhq #agencyDirectory .hq-card-copy { display: contents; }
+            html.schedi-newhq #agencyDirectory .hq-card-copy > h2 { grid-column: 1; grid-row: 1; }
+            html.schedi-newhq #agencyDirectory .hq-card-copy > p { grid-column: 1; grid-row: 2; }
+            html.schedi-newhq #agencyDirectory .hq-collapse-btn { grid-column: 2; grid-row: 1; margin-left: 0; }
             html.schedi-newhq #agencyDirectory [data-hq-collapse-tools] {
+                grid-column: 1 / -1;
+                grid-row: 3;
                 flex-direction: column;
                 align-items: flex-start;
+                width: 100%;
             }
             html.schedi-newhq #agencyDirectory #agencySearchInput {
                 width: 100%;
