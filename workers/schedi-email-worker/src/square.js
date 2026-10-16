@@ -906,10 +906,11 @@ async function handleRefund(env, tenantId, body, deps, origin) {
   });
   if (!created.ok) {
     const detail = (created.data && created.data.errors && created.data.errors[0]) || {};
+    const squareDetail = detail.detail || 'Square could not refund this payment.';
     return jsonResponse(deps, {
       ok: false,
       error: detail.code || 'refund_failed',
-      message: detail.detail || 'Square could not refund this payment. The appointment was not changed.',
+      message: squareDetail + ' The appointment was not changed.',
     }, created.status || 502, origin);
   }
   const result = applyRefundApiResult(booking, { ok: true, refund: created.data.refund || created.data });
