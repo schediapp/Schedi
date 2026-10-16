@@ -104,7 +104,7 @@ const noShow =
 const HELP_VIDEOS: { slug: string; title: string; desc: string; dur: string; v: number }[] = [
   { slug: "owner-01-create-your-page", title: "Create your booking page", desc: "Sign up and get your booking page ready in a few minutes.", dur: "0:24", v: 8 },
   { slug: "owner-02-add-services", title: "Add your services", desc: "Add each service with its length and an optional price.", dur: "0:21", v: 8 },
-  { slug: "owner-03-set-hours", title: "Set your hours", desc: "Pick the days you work and your open and close times.", dur: "0:20", v: 7 },
+  { slug: "owner-03-set-hours", title: "Set your hours", desc: "Pick the days you work and your open and close times.", dur: "0:20", v: 9 },
   { slug: "owner-04-payment-options", title: "Payment options", desc: "Turn on Cash App, Zelle, Venmo, or PayPal, or keep pay at appointment.", dur: "0:28", v: 7 },
   { slug: "owner-05-share-booking-link", title: "Share your booking link", desc: "Copy or Share your link from the top of your portal. Open Public Page and Add to home screen are in More & settings.", dur: "0:20", v: 8 },
   { slug: "owner-06-accept-booking-request", title: "Accept a booking request", desc: "On phones, each booking is a card. Tap Accept and it shows as Accepted.", dur: "0:20", v: 8 },
@@ -113,15 +113,15 @@ const HELP_VIDEOS: { slug: string; title: string; desc: string; dur: string; v: 
   { slug: "owner-09-mark-paid", title: "Mark an appointment paid", desc: "Tap Mark paid, pick how the client paid, and the booking turns green.", dur: "0:22", v: 8 },
   { slug: "owner-10-reschedule", title: "Reschedule an appointment", desc: "Pick a new date and an open time slot, then tap Update Reservation.", dur: "0:23", v: 8 },
   { slug: "owner-11-cancel-appointment", title: "Cancel an appointment", desc: "Tap Cancel and confirm; the booking stays on your roster as Cancelled.", dur: "0:20", v: 8 },
-  { slug: "owner-12-special-hours", title: "Special hours", desc: "Close or change your hours for one date without touching your weekly hours.", dur: "0:21", v: 8 },
-  { slug: "owner-13-date-blocks", title: "Vacation and date blocks", desc: "Block a range of dates so clients cannot book them.", dur: "0:22", v: 8 },
+  { slug: "owner-12-special-hours", title: "Special hours", desc: "Close or change your hours for one date without touching your weekly hours.", dur: "0:21", v: 9 },
+  { slug: "owner-13-date-blocks", title: "Vacation and date blocks", desc: "Block a range of dates so clients cannot book them.", dur: "0:22", v: 9 },
   { slug: "owner-14-email-confirmations", title: "Email confirmations and reminders", desc: "Set your Reply-To email, an extra note, and same-day reminder emails.", dur: "0:23", v: 7 },
   { slug: "owner-15-recurring-visits-pro", title: "Recurring appointments", desc: "Let clients book weekly, every two weeks, or monthly. It stays off until you turn it on.", dur: "0:21", v: 7 },
   { slug: "owner-16-clients", title: "Clients list", desc: "Search, add, or remove clients. Clients added from a booking are labeled so you can tell.", dur: "0:24", v: 7 },
   { slug: "owner-17-import-clients-csv", title: "Import clients from CSV", desc: "Upload a CSV, match columns, preview, and import. Schedi never emails imports.", dur: "0:22", v: 8 },
   { slug: "owner-18-compare-plans", title: "Compare plans", desc: "Open the plan chart from your Schedi subscription card to see what each plan includes.", dur: "0:18", v: 8 },
   { slug: "owner-19-roster-week-month", title: "Week and month roster", desc: "Switch to Week or Month, move with Previous, Next, or Today, tap a booking for details, and tap a busy day.", dur: "0:22", v: 8 },
-  { slug: "client-booking-demo", title: "How clients book", desc: "Clients pick a service, a day and time, enter their info, and choose how to pay.", dur: "0:29", v: 4 },
+  { slug: "client-booking-demo", title: "How clients book", desc: "Clients pick a service, a day and time, enter their info, and choose how to pay.", dur: "0:29", v: 9 },
 ];
 
 export const MARKETING_PAGES: MarketingPage[] = [
