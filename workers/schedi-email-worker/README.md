@@ -57,6 +57,10 @@ Prefer injecting the secret from a build/config step rather than hardcoding a lo
 | `TWILIO_ACCOUNT_SID` | `npx wrangler secret put TWILIO_ACCOUNT_SID` |
 | `TWILIO_AUTH_TOKEN` | `npx wrangler secret put TWILIO_AUTH_TOKEN` |
 | `TWILIO_FROM` | `npx wrangler secret put TWILIO_FROM` |
+| `SQUARE_APPLICATION_ID` | `npx wrangler secret put SQUARE_APPLICATION_ID` |
+| `SQUARE_APPLICATION_SECRET` | `npx wrangler secret put SQUARE_APPLICATION_SECRET` |
+| `SQUARE_WEBHOOK_SIGNATURE_KEY` | `npx wrangler secret put SQUARE_WEBHOOK_SIGNATURE_KEY` |
+| `SQUARE_TOKEN_KEY` | `npx wrangler secret put SQUARE_TOKEN_KEY` (32-byte AES key, base64) |
 
 Twilio secrets are optional. If any of the three is missing, SMS is skipped and booking/reminder email still sends. Do not put Twilio credentials in HTML. See `/workspace/schedi-sms-twilio-notes.md` for 10DLC.
 

@@ -15,6 +15,15 @@ compatibility_date = "2026-09-28"
 # SMS sends are skipped until all three Twilio secrets are set.
 # Stripe secrets are wrangler secrets only. Never put them in this file or in HTML.
 # FIREBASE_SERVICE_ACCOUNT_JSON is a wrangler secret. Never commit it or put it in HTML.
+# Square (the business's own account; Schedi takes no fee). Set with `wrangler secret put`. Never commit values.
+#   SQUARE_APPLICATION_ID
+#   SQUARE_APPLICATION_SECRET
+#   SQUARE_WEBHOOK_SIGNATURE_KEY
+#   SQUARE_TOKEN_KEY            32-byte AES-256 key, base64 (openssl rand -base64 32)
+# Optional vars, not secrets:
+#   SQUARE_ENVIRONMENT          sandbox (default when unset) or production
+#   SQUARE_REDIRECT_URL         default https://schedi.app/api/square/callback
+#   SQUARE_WEBHOOK_NOTIFICATION_URL   default https://schedi.app/api/webhooks/square
 #
 [[routes]]
 pattern = "schedi.app/api/send-booking-email"
@@ -54,6 +63,14 @@ zone_name = "schedi.app"
 
 [[routes]]
 pattern = "schedi.app/api/clients"
+zone_name = "schedi.app"
+
+[[routes]]
+pattern = "schedi.app/api/square/*"
+zone_name = "schedi.app"
+
+[[routes]]
+pattern = "schedi.app/api/webhooks/square"
 zone_name = "schedi.app"
 
 # Hourly: each tenant sends when local hour matches tenant.reminderHour (default 8).

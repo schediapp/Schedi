@@ -28,6 +28,11 @@ export const PRIVATE_TENANT_KEYS = [
 ];
 /** notifications.replyTo (an email address) is stored privately as this key. */
 export const PRIVATE_REPLY_TO_KEY = 'notificationsReplyTo';
+/**
+ * Square OAuth ciphertext and seller tokens. Private doc only.
+ * Never returned by privateView and never merged onto the tenant object the browser can save.
+ */
+export const SQUARE_CONNECTION_KEY = 'squareConnection';
 /** Billing keys only the agency (or the worker itself) may change. Owners can edit their contact info. */
 export const AGENCY_ONLY_PRIVATE_KEYS = new Set([
   'stripeCustomerId',
@@ -123,7 +128,7 @@ export function splitTenant(tenant) {
       priv[k] = tenant[k];
       continue;
     }
-    if (k === PRIVATE_REPLY_TO_KEY) {
+    if (k === PRIVATE_REPLY_TO_KEY || k === SQUARE_CONNECTION_KEY) {
       priv[k] = tenant[k];
       continue;
     }
@@ -203,7 +208,7 @@ export async function listPrivateTenants(env) {
 export async function patchPrivateTenant(env, tenantId, priv) {
   const id = safeId(tenantId);
   if (!id) throw new Error('invalid_tenant');
-  const keys = Object.keys(priv || {}).filter((k) => priv[k] !== undefined && (PRIVATE_SET.has(k) || k === PRIVATE_REPLY_TO_KEY));
+  const keys = Object.keys(priv || {}).filter((k) => priv[k] !== undefined && (PRIVATE_SET.has(k) || k === PRIVATE_REPLY_TO_KEY || k === SQUARE_CONNECTION_KEY));
   if (!keys.length) return { ok: true, written: 0 };
   const body = {};
   for (const k of keys) body[k] = priv[k];
@@ -235,6 +240,39 @@ export async function deletePrivateTenant(env, tenantId) {
     headers: { Authorization: headers.Authorization },
   });
   if (!res.ok && res.status !== 404) throw new Error('private_tenant_delete_failed:' + res.status);
+}
+
+/** Merge-write a few public fields without replacing the rest of the tenant doc. */
+export async function patchPublicFields(env, tenantId, fields) {
+  const id = safeId(tenantId);
+  const keys = Object.keys(fields || {}).filter((k) => fields[k] !== undefined);
+  if (!id || !keys.length) return { ok: true, written: 0 };
+  const qs = keys.map((k) => 'updateMask.fieldPaths=' + encodeURIComponent(k)).join('&');
+  const encoded = {};
+  for (const k of keys) encoded[k] = encodeValue(fields[k]);
+  const headers = await adminAuthHeaders(env);
+  const res = await fetch(publicTenantsUrl(env) + '/' + encodeURIComponent(id) + '?' + qs, {
+    method: 'PATCH',
+    headers,
+    body: JSON.stringify({ fields: encoded }),
+  });
+  if (!res.ok) throw new Error('public_field_patch_failed:' + res.status);
+  return { ok: true, written: keys.length };
+}
+
+/** Delete named fields from the private tenant doc. */
+export async function deletePrivateFields(env, tenantId, fieldPaths) {
+  const id = safeId(tenantId);
+  if (!id || !fieldPaths || !fieldPaths.length) return;
+  const qs = fieldPaths.map((k) => 'updateMask.fieldPaths=' + encodeURIComponent(k)).join('&')
+    + '&currentDocument.exists=true';
+  const headers = await adminAuthHeaders(env);
+  const res = await fetch(privateTenantsUrl(env) + '/' + encodeURIComponent(id) + '?' + qs, {
+    method: 'PATCH',
+    headers,
+    body: JSON.stringify({ fields: {} }),
+  });
+  if (!res.ok && res.status !== 404) throw new Error('private_field_delete_failed:' + res.status);
 }
 
 /** Remove private keys from the public doc (REST equivalent of FieldValue.delete()). */

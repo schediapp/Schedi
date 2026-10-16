@@ -27,6 +27,10 @@ const FORBIDDEN = new Set([
   'clientPhone',
   'manageToken',
   '_privateBookingsLoaded',
+  'squareConnection',
+  'squareTokenCipher',
+  'squareAccessToken',
+  'squareRefreshToken',
 ]);
 
 function projectBits(env) {
