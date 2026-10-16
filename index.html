@@ -2564,6 +2564,100 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
     }
     html.schedi-light #tenantPortalSection.schedi-newdash .sd-report-avg { color: #0f172a; }
 
+    #tenantPortalSection.schedi-newdash .sd-roster-check {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-width: 44px;
+        min-height: 44px;
+        margin: 0;
+        cursor: pointer;
+        color: var(--sd-text);
+        font-size: 13px;
+        font-weight: 800;
+        letter-spacing: 0;
+        text-transform: none;
+    }
+    #tenantPortalSection.schedi-newdash .sd-roster-check input {
+        width: 22px;
+        height: 22px;
+        margin: 0;
+        accent-color: var(--sd-brand);
+        cursor: pointer;
+    }
+    #tenantPortalSection.schedi-newdash .sd-roster-all {
+        display: none;
+        align-items: center;
+        color: var(--sd-text);
+    }
+    body.schedi-newdash .sd-bulk {
+        position: sticky;
+        bottom: 12px;
+        z-index: 25;
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px 12px;
+        margin: 0 0 10px;
+        padding: 8px 12px;
+        border-radius: 14px;
+        background: var(--sd-panel);
+        color: var(--sd-text);
+        border: 1px solid var(--sd-line);
+        box-shadow: var(--sd-shadow);
+    }
+    body.schedi-newdash .sd-bulk[hidden] { display: none !important; }
+    body.schedi-newdash .sd-bulk-count {
+        font-size: 13px;
+        font-weight: 800;
+        color: var(--sd-text);
+    }
+    body.schedi-newdash .sd-bulk button {
+        min-height: 44px;
+        padding: 0 14px;
+        border-radius: 12px;
+        font-size: 13px;
+        font-weight: 800;
+        cursor: pointer;
+    }
+    body.schedi-newdash .sd-bulk-delete {
+        background: #e11d48;
+        color: #ffffff;
+        border: 1px solid #fb7185;
+    }
+    body.schedi-newdash .sd-bulk-clear {
+        background: transparent;
+        color: var(--sd-text);
+        border: 1px solid var(--sd-line);
+    }
+    html.schedi-light body.schedi-newdash .sd-bulk {
+        background: #ffffff;
+        color: #0f172a;
+        border-color: #cbd5e1;
+    }
+    html.schedi-light body.schedi-newdash .sd-bulk-count,
+    html.schedi-light body.schedi-newdash .sd-bulk-clear,
+    html.schedi-light #tenantPortalSection.schedi-newdash .sd-roster-check { color: #0f172a; }
+    @media (max-width: 859px) {
+        body.schedi-newdash .sd-bulk {
+            position: fixed;
+            z-index: 45;
+            left: 12px;
+            right: 12px;
+            bottom: calc(96px + env(safe-area-inset-bottom));
+            margin: 0;
+        }
+        #tenantPortalSection.schedi-newdash #rosterListWrap.has-bulk { padding-bottom: 76px; }
+    }
+    @media (max-width: 639px) {
+        #tenantPortalSection.schedi-newdash .sd-roster-all { display: flex; }
+        #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-check {
+            width: auto;
+            flex: 0 0 auto;
+        }
+    }
+
 </style>
 <script>
 (function () {
@@ -2953,9 +3047,25 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                     <p id="rosterCalendarNote" class="hidden text-[11px] text-slate-500"></p>
 
                     <div id="rosterListWrap" class="overflow-x-auto">
+                        <div id="rosterBulkBar" class="sd-bulk" hidden>
+                            <span id="rosterBulkCount" class="sd-bulk-count">0 selected</span>
+                            <button type="button" class="sd-bulk-delete" onclick="openRosterBulkDelete()">Delete selected</button>
+                            <button type="button" class="sd-bulk-clear" onclick="clearRosterSelection()">Clear</button>
+                        </div>
+                        <div id="rosterSelectAllPhone" class="sd-roster-all">
+                            <label class="sd-roster-check">
+                                <input type="checkbox" id="rosterSelectAllMobile" aria-label="Select all" onchange="setRosterSelectAll(this.checked)">
+                                <span>Select all</span>
+                            </label>
+                        </div>
                         <table class="w-full text-left text-xs text-slate-300">
                             <thead class="bg-slate-900/90 text-slate-400 font-bold uppercase tracking-wider">
                                 <tr>
+                                    <th class="roster-cell-check p-3">
+                                        <label class="sd-roster-check">
+                                            <input type="checkbox" id="rosterSelectAll" aria-label="Select all" onchange="setRosterSelectAll(this.checked)">
+                                        </label>
+                                    </th>
                                     <th class="p-3">Ref ID</th>
                                     <th class="p-3">Client Name</th>
                                     <th class="p-3">Service</th>
@@ -4078,7 +4188,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
             <input type="hidden" id="rosterDeleteAppId" value="">
             <div class="pt-1 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
                 <button type="button" onclick="closeRosterDeleteModal()" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-sm transition-all">Cancel</button>
-                <button type="button" id="rosterDeleteConfirmBtn" onclick="confirmRosterDeleteAppointment()" class="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-sm border border-rose-400/40 shadow-lg shadow-rose-900/30 transition-all">Delete</button>
+                <button type="button" id="rosterDeleteConfirmBtn" onclick="confirmRosterDeleteFromModal()" class="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-sm border border-rose-400/40 shadow-lg shadow-rose-900/30 transition-all">Delete</button>
             </div>
         </div>
     </div>
@@ -9806,6 +9916,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                 window.__schediDashLock = false;
             }
             try { window.scrollTo(0, 0); } catch (errScroll) {}
+            try { if (typeof paintRosterBulkBar === 'function') paintRosterBulkBar(); } catch (errBulk) {}
         };
 
         window.schediDashToggleAccount = function (event) {
@@ -10304,6 +10415,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
             document.querySelectorAll('details.sd-more[open]').forEach(function (el) {
                 if (typeof window.placeSchediMoreMenu === 'function') window.placeSchediMoreMenu(el);
             });
+            try { if (typeof placeRosterBulkBar === 'function') placeRosterBulkBar(); } catch (errPlace) {}
         });
 
         window.addEventListener('scroll', function (event) {
@@ -10547,6 +10659,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
         }
 
         var rosterCalendarView = 'list';
+        var rosterSelectedIds = {};
+        var rosterBulkDeleteIds = [];
         var rosterCalendarCursor = '';
         var ROSTER_WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
         var ROSTER_MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -11143,7 +11257,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
             clearTimeout(rosterSearchTimer);
             rosterSearchTimer = setTimeout(function () {
                 var tenant = (typeof getTenant === 'function') ? getTenant() : null;
-                renderRosterSearchResults(tenant && tenant.appointments);
+                renderTenantRoster(tenant);
             }, 160);
         };
 
@@ -11151,7 +11265,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
             var input = document.getElementById('rosterSearchInput');
             if (input) input.value = '';
             var tenant = (typeof getTenant === 'function') ? getTenant() : null;
-            renderRosterSearchResults(tenant && tenant.appointments);
+            renderTenantRoster(tenant);
             if (input) input.focus();
         };
 
@@ -11187,29 +11301,165 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
             if (typeof openRosterApptModal === 'function') openRosterApptModal(id);
         };
 
+        function rosterListRows(tenant) {
+            var apps = ((tenant && tenant.appointments) || []).filter(rosterPassesPayFilter);
+            var input = document.getElementById('rosterSearchInput');
+            var q = input ? String(input.value || '').trim() : '';
+            if (q) {
+                var hits = rosterSearchAppointments(apps, q);
+                var allow = {};
+                (hits || []).forEach(function (row) {
+                    if (row && row.id != null) allow[String(row.id)] = true;
+                });
+                apps = apps.filter(function (row) { return row && allow[String(row.id)]; });
+            }
+            return apps.slice().sort(compareRosterAppointmentsNewestFirst);
+        }
+
+        function rosterBulkSelection(visibleIds, selected, action) {
+            var next = {};
+            Object.keys(selected || {}).forEach(function (id) {
+                if (selected[id]) next[String(id)] = true;
+            });
+            var visible = (visibleIds || []).map(function (id) { return String(id); }).filter(Boolean);
+            if (action === 'all') visible.forEach(function (id) { next[id] = true; });
+            if (action === 'none') visible.forEach(function (id) { delete next[id]; });
+            if (action === 'clear') next = {};
+            if (action && action.toggle) {
+                var toggled = String(action.toggle);
+                if (next[toggled]) delete next[toggled];
+                else next[toggled] = true;
+            }
+            var visibleSelected = visible.filter(function (id) { return next[id]; });
+            var ids = Object.keys(next);
+            return {
+                selected: next,
+                count: ids.length,
+                ids: ids,
+                allChecked: visible.length > 0 && visibleSelected.length === visible.length,
+                indeterminate: visibleSelected.length > 0 && visibleSelected.length < visible.length
+            };
+        }
+
+        function rosterBulkDeleteConfirmText(n) {
+            var count = Math.max(0, Math.floor(Number(n) || 0));
+            return "Delete " + count + " appointment" + (count === 1 ? "" : "s") + "? This can't be undone.";
+        }
+
+        function rosterBulkDeleteToast(deleted, failed) {
+            var d = Math.max(0, Math.floor(Number(deleted) || 0));
+            var f = Math.max(0, Math.floor(Number(failed) || 0));
+            var noun = d === 1 ? "appointment" : "appointments";
+            var base = "Deleted " + d + " " + noun + ".";
+            if (f > 0) return base + " " + f + " failed.";
+            return base;
+        }
+
+        function placeRosterBulkBar() {
+            var bar = document.getElementById('rosterBulkBar');
+            var wrap = document.getElementById('rosterListWrap');
+            if (!bar || !wrap) return;
+            var phone = window.matchMedia('(max-width: 859px)').matches;
+            if (phone) {
+                if (bar.parentElement !== document.body) document.body.appendChild(bar);
+            } else if (wrap.firstChild !== bar) {
+                wrap.insertBefore(bar, wrap.firstChild);
+            }
+        }
+
+        function paintRosterBulkBar() {
+            var tenant = (typeof getTenant === 'function') ? getTenant() : null;
+            var live = {};
+            ((tenant && tenant.appointments) || []).forEach(function (row) {
+                if (row && row.id != null) live[String(row.id)] = true;
+            });
+            Object.keys(rosterSelectedIds).forEach(function (id) {
+                if (!live[id]) delete rosterSelectedIds[id];
+            });
+            var visible = rosterListRows(tenant).map(function (row) { return row && row.id; });
+            var state = rosterBulkSelection(visible, rosterSelectedIds, null);
+            var bar = document.getElementById('rosterBulkBar');
+            var countEl = document.getElementById('rosterBulkCount');
+            var listWrap = document.getElementById('rosterListWrap');
+            var section = document.getElementById('tenantPortalSection');
+            var onAppointments = !section || section.getAttribute('data-dash') === 'appointments';
+            try { placeRosterBulkBar(); } catch (errPlace) {}
+            if (countEl) countEl.textContent = state.count + ' selected';
+            if (bar) bar.hidden = state.count < 1 || !onAppointments;
+            if (listWrap) listWrap.classList.toggle('has-bulk', state.count > 0 && onAppointments);
+            ['rosterSelectAll', 'rosterSelectAllMobile'].forEach(function (id) {
+                var box = document.getElementById(id);
+                if (!box) return;
+                box.checked = state.allChecked;
+                box.indeterminate = state.indeterminate;
+                box.disabled = visible.length === 0;
+            });
+        }
+
+        window.setRosterRowSelected = function (id, on) {
+            var key = String(id || '');
+            if (!key) return;
+            var state = rosterBulkSelection([], rosterSelectedIds, { toggle: on ? key : key });
+            if (on) state.selected[key] = true;
+            else delete state.selected[key];
+            rosterSelectedIds = state.selected;
+            paintRosterBulkBar();
+        };
+
+        window.setRosterSelectAll = function (on) {
+            var tenant = (typeof getTenant === 'function') ? getTenant() : null;
+            var visible = rosterListRows(tenant).map(function (row) { return row && row.id; });
+            rosterSelectedIds = rosterBulkSelection(visible, rosterSelectedIds, on ? 'all' : 'none').selected;
+            if (tenant && document.getElementById('tenantRosterTableBody')) renderTenantRoster(tenant);
+            else paintRosterBulkBar();
+        };
+
+        window.clearRosterSelection = function () {
+            rosterSelectedIds = rosterBulkSelection([], rosterSelectedIds, 'clear').selected;
+            var tenant = (typeof getTenant === 'function') ? getTenant() : null;
+            if (tenant && document.getElementById('tenantRosterTableBody')) renderTenantRoster(tenant);
+            else paintRosterBulkBar();
+        };
+
         function renderTenantRoster(tenant) {
             const tbody = document.getElementById('tenantRosterTableBody');
             if (!tbody) return;
 
             try { renderRosterPayFilter(tenant); } catch (errFilter) {}
             if (!tenant || !tenant.appointments || tenant.appointments.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-500">No client appointments logged yet.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-500">No client appointments logged yet.</td></tr>`;
                 renderRosterCalendar(tenant);
                 try { if (window.renderSchediToday) window.renderSchediToday(tenant); } catch (errToday) {}
                 try { renderRosterSearchResults(tenant && tenant.appointments); } catch (errSearch) {}
+                try { paintRosterBulkBar(); } catch (errBulk) {}
                 return;
             }
 
-            var rosterRows = tenant.appointments.filter(rosterPassesPayFilter).slice().sort(compareRosterAppointmentsNewestFirst);
-            if (!rosterRows.length) {
-                tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-slate-500">No appointments use this payment method.</td></tr>';
+            var payRows = tenant.appointments.filter(rosterPassesPayFilter);
+            var rosterRows = rosterListRows(tenant);
+            if (!payRows.length) {
+                tbody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-slate-500">No appointments use this payment method.</td></tr>';
                 renderRosterCalendar(tenant);
                 try { if (window.renderSchediToday) window.renderSchediToday(tenant); } catch (errToday) {}
                 try { renderRosterSearchResults(tenant && tenant.appointments); } catch (errSearch) {}
+                try { paintRosterBulkBar(); } catch (errBulk) {}
+                return;
+            }
+            if (!rosterRows.length) {
+                tbody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-slate-500">No appointments match this search.</td></tr>';
+                renderRosterCalendar(tenant);
+                try { if (window.renderSchediToday) window.renderSchediToday(tenant); } catch (errToday) {}
+                try { renderRosterSearchResults(tenant && tenant.appointments); } catch (errSearch) {}
+                try { paintRosterBulkBar(); } catch (errBulk) {}
                 return;
             }
             tbody.innerHTML = rosterRows.map(app => `
                 <tr data-booking-id="${esc(app.id)}" class="roster-row hover:bg-slate-900/40 transition-all${window.schediRosterHitClass ? window.schediRosterHitClass(app) : ''}">
+                    <td class="roster-cell-check p-3">
+                        <label class="sd-roster-check">
+                            <input type="checkbox" class="roster-select" data-roster-id="${esc(app.id)}" aria-label="Select ${esc(app.clientName || ('appointment ' + app.id))}"${rosterSelectedIds[String(app.id)] ? ' checked' : ''} onchange="setRosterRowSelected(this.getAttribute('data-roster-id'), this.checked)">
+                        </label>
+                    </td>
                     <td class="roster-cell-ref p-3 font-mono font-bold text-white">#${esc(app.id)}${app.payCode ? ('<br>' + payCodeChipHtml(app)) : ''}</td>
                     <td class="roster-cell-client p-3">
                         <div class="font-bold text-white">${esc(app.clientName)}${app.walkIn === true ? ' <span class="ml-1 align-middle inline-block px-1.5 py-0.5 rounded-md bg-slate-800 border border-slate-700 text-slate-300 text-[10px] font-semibold whitespace-nowrap"><i class="fa-solid fa-person-walking mr-1"></i>Walk-in</span>' : ''}</div>
@@ -11233,6 +11483,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
             renderRosterCalendar(tenant);
             try { if (window.renderSchediToday) window.renderSchediToday(tenant); } catch (errToday) {}
             try { renderRosterSearchResults(tenant && tenant.appointments); } catch (errSearch) {}
+            try { paintRosterBulkBar(); } catch (errBulk) {}
         }
 
         window.openTenantRescheduleModal = function(appId) {
@@ -18002,6 +18253,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
             if (!tenant) return;
             var app = (tenant.appointments || []).find(function (a) { return a && a.id === id; });
             if (!app) return;
+            rosterBulkDeleteIds = [];
             var who = app.clientName ? String(app.clientName) : ('#' + id);
             var body = document.getElementById('rosterDeleteBody');
             if (body) {
@@ -18019,7 +18271,37 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
             if (modal) modal.classList.add('hidden');
             var idEl = document.getElementById('rosterDeleteAppId');
             if (idEl) idEl.value = '';
+            rosterBulkDeleteIds = [];
         };
+
+        async function deleteRosterBookingOnServer(tenant, appId) {
+            if (window.__SCHEDI_DEMO) return { ok: false, skipped: true };
+            var session = typeof schediAuthSession === 'function' ? schediAuthSession() : null;
+            if (!session) return { ok: false, skipped: true };
+            try {
+                var res = await fetch('https://schedi.app/api/bookings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'delete', session: session, tenantId: tenant.id, bookingId: appId })
+                });
+                var data = {};
+                try { data = await res.json(); } catch (errJ) { data = {}; }
+                if (res.ok && data && data.ok) {
+                    rememberRosterRevision(tenant, data);
+                    return { ok: true, data: data };
+                }
+                return { ok: false, data: data };
+            } catch (errDel) {
+                return { ok: false };
+            }
+        }
+
+        async function finishRosterDeletePaint(tenant) {
+            renderTenantRoster(tenant);
+            try { renderAgencyDashboard(); } catch (errDash) {}
+            try { await refreshAppointmentCounts(); } catch (errCnt) {}
+            try { renderLivePreviewIframe(); } catch (errPrev) {}
+        }
 
         window.confirmRosterDeleteAppointment = async function() {
             var tenant = getTenant();
@@ -18033,32 +18315,83 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                 closeRosterDeleteModal();
                 return;
             }
+            delete rosterSelectedIds[appId];
             closeRosterDeleteModal();
             try { closeManualBookingModal(); } catch (errClose) {}
             // Prefer dedicated worker delete when available; fall back to full sync (owner edit path).
             var usedWorkerDelete = false;
-            try {
-                var session = typeof schediAuthSession === 'function' ? schediAuthSession() : null;
-                if (session) {
-                    var res = await fetch('https://schedi.app/api/bookings', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ action: 'delete', session: session, tenantId: tenant.id, bookingId: appId })
-                    });
-                    var data = {};
-                    try { data = await res.json(); } catch (errJ) { data = {}; }
-                    if (res.ok && data && data.ok) {
-                        usedWorkerDelete = true;
-                        rememberRosterRevision(tenant, data);
-                    }
-                }
-            } catch (errDel) {}
+            var serverDelete = await deleteRosterBookingOnServer(tenant, appId);
+            if (serverDelete && serverDelete.ok) usedWorkerDelete = true;
             await saveState();
-            renderTenantRoster(tenant);
-            try { renderAgencyDashboard(); } catch (errDash) {}
-            try { await refreshAppointmentCounts(); } catch (errCnt) {}
-            try { renderLivePreviewIframe(); } catch (errPrev) {}
+            await finishRosterDeletePaint(tenant);
             showToast('Deleted appointment #' + appId + (usedWorkerDelete ? '' : ''), 'info');
+        };
+
+        async function deleteRosterAppointments(tenant, ids) {
+            var wanted = [];
+            var seen = {};
+            (ids || []).forEach(function (id) {
+                var key = String(id || '').trim();
+                if (!key || seen[key]) return;
+                seen[key] = true;
+                wanted.push(key);
+            });
+            var deleted = 0;
+            var failed = 0;
+            for (var i = 0; i < wanted.length; i++) {
+                var appId = wanted[i];
+                var exists = (tenant.appointments || []).some(function (row) { return row && String(row.id) === appId; });
+                if (!exists) {
+                    failed += 1;
+                    delete rosterSelectedIds[appId];
+                    continue;
+                }
+                var serverDelete = await deleteRosterBookingOnServer(tenant, appId);
+                if (serverDelete && (serverDelete.ok || serverDelete.skipped)) {
+                    tenant.appointments = (tenant.appointments || []).filter(function (row) { return !(row && String(row.id) === appId); });
+                    delete rosterSelectedIds[appId];
+                    deleted += 1;
+                } else {
+                    failed += 1;
+                }
+            }
+            await saveState({ quietSyncErrors: true });
+            return { deleted: deleted, failed: failed };
+        }
+
+        window.openRosterBulkDelete = function () {
+            var ids = Object.keys(rosterSelectedIds).filter(function (id) { return rosterSelectedIds[id]; });
+            if (!ids.length) return;
+            rosterBulkDeleteIds = ids.slice();
+            var text = rosterBulkDeleteConfirmText(ids.length);
+            var title = document.getElementById('rosterDeleteTitle');
+            if (title) title.textContent = text;
+            var body = document.getElementById('rosterDeleteBody');
+            if (body) body.textContent = text;
+            var idEl = document.getElementById('rosterDeleteAppId');
+            if (idEl) idEl.value = '';
+            var modal = document.getElementById('rosterDeleteModal');
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.scrollTop = 0;
+            }
+        };
+
+        window.confirmRosterDeleteFromModal = function () {
+            if (rosterBulkDeleteIds.length) return window.confirmRosterBulkDelete();
+            return window.confirmRosterDeleteAppointment();
+        };
+
+        window.confirmRosterBulkDelete = async function () {
+            var tenant = getTenant();
+            if (!tenant) return;
+            var ids = rosterBulkDeleteIds.slice();
+            if (!ids.length) return;
+            closeRosterDeleteModal();
+            try { closeManualBookingModal(); } catch (errClose) {}
+            var result = await deleteRosterAppointments(tenant, ids);
+            await finishRosterDeletePaint(tenant);
+            showToast(rosterBulkDeleteToast(result.deleted, result.failed), result.failed ? 'error' : 'info');
         };
 
         function openTenantOwnerPortal(tenant) {
