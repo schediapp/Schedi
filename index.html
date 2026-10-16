@@ -3193,6 +3193,29 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                             <input type="checkbox" id="tenantPayCardCheck" class="w-4 h-4 accent-brand-500 rounded cursor-pointer">
                         </div>
 
+                        <div id="tenantSquareCard" class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-3">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="flex items-start space-x-3">
+                                    <i class="fa-solid fa-square text-indigo-300 text-lg mt-0.5"></i>
+                                    <div>
+                                        <div class="font-bold text-white">Square</div>
+                                        <div id="tenantSquareNote" class="text-[11px] text-slate-400">Connect this business's own Square account. Clients pay that account. Schedi does not take a fee. Your Schedi subscription stays on Stripe.</div>
+                                    </div>
+                                </div>
+                                <span id="tenantSquarePill" class="text-[10px] font-bold uppercase tracking-wide text-slate-400">Not connected</span>
+                            </div>
+                            <p id="tenantSquareStatus" class="text-[11px] text-slate-300"></p>
+                            <div id="tenantSquareLocationBox" class="hidden space-y-2">
+                                <label class="block text-[11px] text-slate-400" for="tenantSquareLocation">Location for online bookings</label>
+                                <select id="tenantSquareLocation" class="w-full px-3 py-2 rounded-lg glass-input"></select>
+                                <button type="button" onclick="saveSquareLocation()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold border border-slate-700">Use this location</button>
+                            </div>
+                            <div class="flex flex-wrap gap-2">
+                                <button type="button" id="tenantSquareConnect" onclick="connectSquare()" class="px-4 py-2 rounded-xl bg-brand-500 hover:bg-brand-600 text-slate-950 font-bold">Connect Square</button>
+                                <button type="button" id="tenantSquareDisconnect" onclick="disconnectSquare()" class="hidden px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold border border-slate-700">Disconnect</button>
+                            </div>
+                        </div>
+
                         <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-3">
                             <div class="flex items-center justify-between">
                                 <div class="flex items-center space-x-3">
@@ -4158,6 +4181,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
 
                 <div class="pt-2 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-2">
                     <button type="button" id="manUnpaidBtn" onclick="markAppointmentUnpaid(document.getElementById('manEditId').value)" class="hidden px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold border border-slate-700 transition-all">Mark unpaid</button>
+                    <button type="button" id="manSquareRefundBtn" onclick="refundSquarePayment(document.getElementById('manEditId').value)" class="hidden px-4 py-2 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-200 font-bold border border-indigo-500/40 transition-all">Refund Square payment</button>
                     <button type="button" id="manDeleteBtn" onclick="openRosterDeleteModal(document.getElementById('manEditId').value)" class="hidden px-4 py-2 rounded-xl bg-rose-600/15 hover:bg-rose-600/25 text-rose-300 font-bold border border-rose-500/40 transition-all">
                         <i class="fa-solid fa-trash mr-1"></i>Delete
                     </button>
@@ -4652,7 +4676,12 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
         var hydratedFromLocal = false;
 
         function stripTenantSecrets(tenant) {
-            if (tenant && Object.prototype.hasOwnProperty.call(tenant, 'ownerPassword')) delete tenant.ownerPassword;
+            if (!tenant) return;
+            delete tenant.ownerPassword;
+            delete tenant.squareConnection;
+            delete tenant.squareTokenCipher;
+            delete tenant.squareAccessToken;
+            delete tenant.squareRefreshToken;
         }
 
         function publicSlotFromAppointment(a) {
@@ -4680,6 +4709,10 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
         function publicTenantForCloud(t) {
             var copy = JSON.parse(JSON.stringify(t || {}));
             delete copy.ownerPassword;
+            delete copy.squareConnection;
+            delete copy.squareTokenCipher;
+            delete copy.squareAccessToken;
+            delete copy.squareRefreshToken;
             delete copy.appointments;
             delete copy.publicSlots;
             delete copy._privateBookingsLoaded;
@@ -4701,6 +4734,10 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
         function stripPrivateTenantFields(t) {
             var copy = JSON.parse(JSON.stringify(t || {}));
             SCHEDI_PRIVATE_TENANT_KEYS.forEach(function (k) { delete copy[k]; });
+            delete copy.squareConnection;
+            delete copy.squareTokenCipher;
+            delete copy.squareAccessToken;
+            delete copy.squareRefreshToken;
             if (copy.notifications && typeof copy.notifications === 'object') delete copy.notifications.replyTo;
             return copy;
         }
@@ -5217,6 +5254,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                 return;
             }
             consumeBillingReturn();
+            consumeSquareReturn();
             if (bootPublicOrAgency()) return;
             // F0002: restore Business Portal session across reload before painting login UI.
             try { applySchediAuthMetaOptimistic(); } catch (errAuthOpt) {}
@@ -5291,15 +5329,17 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                         else if (_pol === 'paypal') booking.paymentMethod = 'paypal';
                         else if (_pol === 'pay at appointment') booking.paymentMethod = 'later';
                         else if (_pol === 'cash') booking.paymentMethod = 'cash';
+                        else if (_pol === 'square' || _pol === 'square deposit') booking.paymentMethod = 'square';
                     }
                     if (raw && Number(raw.durationMins) > 0) booking.durationMins = Math.min(480, Math.max(5, Math.round(Number(raw.durationMins))));
                     var catalogPrice = catalogServicePrice(tenant, booking.serviceName);
                     if (catalogPrice !== null) booking.amount = catalogPrice;
                     else if (!hasPricedAmount(booking.amount)) delete booking.amount;
                     var choseCard = String(booking.paymentMethod || '').toLowerCase() === 'card';
+                    var choseSquare = String(booking.paymentMethod || '').toLowerCase() === 'square';
                     var depositQuote = quoteDepositForPrice(tenant, hasPricedAmount(booking.amount) ? booking.amount : null);
                     // A deposit or cancellation fee never rewrites the method the client picked.
-                    if (depositRequiredForTenant(tenant) && choseCard) {
+                    if (depositRequiredForTenant(tenant) && (choseCard || choseSquare)) {
                         if (depositQuote.skippedNoPrice) {
                             // Percent deposit with no service price: skip charging, keep card as the chosen method.
                         } else if (!depositQuote.required) booking._depositTooSmall = true;
@@ -5308,7 +5348,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                             booking.depositPaid = false;
                             if (depositQuote.balance != null) booking.balanceDue = depositQuote.balance;
                             booking.paymentStatus = 'AWAITING DEPOSIT';
-                            booking.paymentOptionLabel = 'Card deposit';
+                            booking.paymentOptionLabel = choseSquare ? 'Square deposit' : 'Card deposit';
                         }
                     } else {
                         delete booking.depositAmount;
@@ -7815,6 +7855,195 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                 await new Promise(function (resolve) { setTimeout(resolve, 700); });
             }
             showToast('Card checkout is unavailable. The appointment was saved. You can pay another way, or open the payment link again.', 'error');
+        };
+
+        function consumeSquareReturn() {
+            try {
+                var q = new URLSearchParams(window.location.search || '');
+                var square = q.get('square');
+                if (!square) return false;
+                switchPlatformMode('tenant');
+                if (typeof window.switchTenantTab === 'function') window.switchTenantTab('payments');
+                if (typeof window.schediDashGo === 'function') window.schediDashGo('payments');
+                if (square === 'connected') showToast('Square is connected. Clients can pay this business on Square.', 'success');
+                else if (square === 'location') showToast('Choose which Square location receives online bookings.', 'info');
+                else if (square === 'error') showToast('Square was not connected. Nothing was charged.', 'error');
+                q.delete('square');
+                q.delete('squareReason');
+                var next = window.location.pathname || '/';
+                var rest = q.toString();
+                window.history.replaceState({}, '', rest ? (next + '?' + rest) : next);
+                return true;
+            } catch (err) {
+                return false;
+            }
+        }
+
+        var SCHEDI_SQUARE_BASE = 'https://schedi.app/api/square';
+
+        function paintSquareCard(status) {
+            var pill = document.getElementById('tenantSquarePill');
+            var note = document.getElementById('tenantSquareStatus');
+            var connect = document.getElementById('tenantSquareConnect');
+            var disconnect = document.getElementById('tenantSquareDisconnect');
+            var locBox = document.getElementById('tenantSquareLocationBox');
+            var locSelect = document.getElementById('tenantSquareLocation');
+            var ready = !!(status && status.ready);
+            var connected = !!(status && status.connected);
+            if (pill) {
+                pill.textContent = ready ? 'Connected' : (connected ? 'Choose a location' : 'Not connected');
+                pill.className = 'text-[10px] font-bold uppercase tracking-wide ' + (ready ? 'text-emerald-300' : 'text-slate-400');
+            }
+            if (note) {
+                if (ready) note.textContent = (status.accountName || 'Square account') + (status.locationName ? (' · ' + status.locationName) : '') + '. Card payments go to this Square balance.';
+                else if (status && status.needsLocation) note.textContent = 'This Square account has more than one location. Pick the one that should take online bookings.';
+                else note.textContent = '';
+            }
+            if (connect) connect.classList.toggle('hidden', connected);
+            if (disconnect) disconnect.classList.toggle('hidden', !connected);
+            if (locBox) locBox.classList.toggle('hidden', !(status && status.needsLocation));
+            if (locSelect && status && status.needsLocation) {
+                var options = Array.isArray(status.locations) ? status.locations : [];
+                locSelect.innerHTML = options.map(function (loc) {
+                    return '<option value="' + esc(loc.id) + '">' + esc(loc.name || loc.id) + '</option>';
+                }).join('');
+            }
+            var tenant = getTenant();
+            if (tenant && status) {
+                tenant.squareReady = ready;
+                tenant.squareAccountName = status.accountName || '';
+                tenant.squareLocationName = status.locationName || '';
+                tenant.squareMerchantId = status.merchantId || '';
+                tenant.squareLocationId = status.locationId || '';
+            }
+        }
+
+        function refreshSquareStatus() {
+            var tenant = getTenant();
+            if (!tenant || !schediAuthSession()) return Promise.resolve();
+            return fetch(SCHEDI_SQUARE_BASE + '/status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tenantId: tenant.id, session: schediAuthSession() })
+            }).then(function (res) { return res.json(); }).then(function (data) {
+                if (data && data.ok) paintSquareCard(data);
+            }).catch(function () {});
+        }
+
+        window.connectSquare = function () {
+            var tenant = getTenant();
+            if (!tenant || !schediAuthSession()) {
+                showToast('Sign in to connect Square.', 'error');
+                return;
+            }
+            if (normalizePlan(tenant) === 'free') {
+                showToast('Square checkout is not offered on the Free plan.', 'error');
+                return;
+            }
+            fetch(SCHEDI_SQUARE_BASE + '/connect', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tenantId: tenant.id, session: schediAuthSession() })
+            }).then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data || {} }; }); }).then(function (out) {
+                var url = out.data && out.data.url;
+                if (!out.ok || !url) {
+                    showToast('Square could not be opened. Nothing was connected.', 'error');
+                    return;
+                }
+                window.location.assign(url);
+            }).catch(function () {
+                showToast('Square could not be opened. Nothing was connected.', 'error');
+            });
+        };
+
+        window.disconnectSquare = function () {
+            var tenant = getTenant();
+            if (!tenant || !schediAuthSession()) return;
+            if (!window.confirm('Disconnect Square for this business? New visits will not be sent to Square. Existing appointments stay.')) return;
+            fetch(SCHEDI_SQUARE_BASE + '/disconnect', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tenantId: tenant.id, session: schediAuthSession() })
+            }).then(function (res) { return res.json(); }).then(function (data) {
+                if (!data || data.ok === false) {
+                    showToast('Square could not be disconnected.', 'error');
+                    return;
+                }
+                tenant.squareReady = false;
+                paintSquareCard({ ok: true, connected: false, ready: false });
+                saveState();
+                showToast('Square disconnected.', 'info');
+            }).catch(function () {
+                showToast('Square could not be disconnected.', 'error');
+            });
+        };
+
+        window.saveSquareLocation = function () {
+            var tenant = getTenant();
+            var select = document.getElementById('tenantSquareLocation');
+            if (!tenant || !select || !schediAuthSession()) return;
+            fetch(SCHEDI_SQUARE_BASE + '/location', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tenantId: tenant.id, session: schediAuthSession(), locationId: select.value })
+            }).then(function (res) { return res.json(); }).then(function (data) {
+                if (!data || !data.ok) {
+                    showToast('That Square location was not saved.', 'error');
+                    return;
+                }
+                paintSquareCard(data);
+                saveState();
+                showToast('Square location saved.', 'success');
+            }).catch(function () {
+                showToast('That Square location was not saved.', 'error');
+            });
+        };
+
+        window.refundSquarePayment = function (appId) {
+            var tenant = getTenant();
+            if (!tenant || !schediAuthSession()) return;
+            var app = (tenant.appointments || []).find(function (a) { return a && a.id === appId; });
+            if (!app) return;
+            var paid = Number(app.squareAmountCents);
+            var already = Number(app.squareRefundedCents) || 0;
+            var remaining = isFinite(paid) && paid > 0 ? Math.max(0, paid - already) : 0;
+            var dollars = remaining > 0 ? (remaining / 100).toFixed(2) : '';
+            var entered = window.prompt(dollars ? ('Refund how many dollars? ' + dollars + ' is still on this Square payment.') : 'Refund amount in dollars', dollars);
+            if (entered == null) return;
+            var amount = Number(String(entered).replace(/[^0-9.]/g, ''));
+            if (!isFinite(amount) || amount <= 0) {
+                showToast('Enter a refund amount greater than zero. The appointment was not changed.', 'error');
+                return;
+            }
+            fetch(SCHEDI_SQUARE_BASE + '/refund', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    tenantId: tenant.id,
+                    session: schediAuthSession(),
+                    bookingId: appId,
+                    amountCents: Math.round(amount * 100)
+                })
+            }).then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data || {} }; }); }).then(function (out) {
+                if (!out.ok || !out.data || out.data.ok === false) {
+                    showToast((out.data && out.data.message) || 'Square did not refund this payment. The appointment was not changed.', 'error');
+                    return;
+                }
+                if (out.data.pending) {
+                    showToast('Square is still processing the refund.', 'info');
+                    return;
+                }
+                if (out.data.paymentStatus) app.paymentStatus = out.data.paymentStatus;
+                app.squareRefundStatus = 'COMPLETED';
+                app.paidMethod = 'square';
+                app.paymentMethod = 'square';
+                saveState();
+                renderTenantRoster(tenant);
+                syncManualUnpaidButton(app);
+                showToast('Square refund recorded.', 'success');
+            }).catch(function () {
+                showToast('Square did not refund this payment. The appointment was not changed.', 'error');
+            });
         };
 
         function consumeBillingReturn() {
@@ -14023,6 +14252,16 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
             if (venmoLinkInput) venmoLinkInput.value = tenant.venmoLink || '';
             if (paypalHandleInput) paypalHandleInput.value = tenant.paypalHandle || '';
             if (paypalLinkInput) paypalLinkInput.value = tenant.paypalLink || '';
+            paintSquareCard({
+                ok: true,
+                connected: tenant.squareReady === true || !!tenant.squareMerchantId,
+                ready: tenant.squareReady === true,
+                accountName: tenant.squareAccountName || '',
+                locationName: tenant.squareLocationName || '',
+                merchantId: tenant.squareMerchantId || '',
+                locationId: tenant.squareLocationId || ''
+            });
+            refreshSquareStatus();
         }
 
 
@@ -17520,8 +17759,16 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
 
         function syncManualUnpaidButton(app) {
             var btn = document.getElementById('manUnpaidBtn');
-            if (!btn) return;
-            btn.classList.toggle('hidden', !(app && bookingPaymentState(app) === 'paid'));
+            if (btn) btn.classList.toggle('hidden', !(app && bookingPaymentState(app) === 'paid'));
+            var refundBtn = document.getElementById('manSquareRefundBtn');
+            if (!refundBtn) return;
+            var method = String((app && (app.paidMethod || app.paymentMethod)) || '').toLowerCase();
+            var refunded = app && String(app.squareRefundStatus || '').toUpperCase() === 'COMPLETED';
+            var paidCents = Number(app && app.squareAmountCents);
+            var refundedCents = Number(app && app.squareRefundedCents) || 0;
+            var fully = refunded && isFinite(paidCents) && paidCents > 0 && refundedCents >= paidCents;
+            var showRefund = !!(app && method === 'square' && app.squarePaymentId && !fully && String(app.paymentStatus || '').toUpperCase() !== 'REFUNDED');
+            refundBtn.classList.toggle('hidden', !showRefund);
         }
 
         window.markAppointmentPaid = function(appId) {
@@ -18428,11 +18675,11 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
 
                 <div id="depositNoticeBox" class="hidden p-3 rounded-xl bg-indigo-950/40 border border-indigo-500/40 text-xs space-y-1">
                     <div class="font-bold text-white">Card deposit, if you choose card</div>
-                    <p class="text-slate-300">If you pay by card, a deposit of <strong id="depositDueLabel" class="text-emerald-400"></strong> is due now. The rest (<strong id="depositBalanceLabel" class="text-white"></strong>) is due at the appointment. Card is optional. Cash App, Zelle, Venmo, PayPal, and pay at the appointment stay available.</p>
+                    <p class="text-slate-300">If you pay by card or Square, a deposit of <strong id="depositDueLabel" class="text-emerald-400"></strong> is due now. The rest (<strong id="depositBalanceLabel" class="text-white"></strong>) is due at the appointment. Card and Square are optional. Cash App, Zelle, Venmo, PayPal, and pay at the appointment stay available.</p>
                 </div>
 
                 <div id="noPricePayNote" class="hidden p-3 rounded-xl bg-slate-900/80 border border-slate-700 text-xs text-slate-300">
-                    This service has no price set. Card checkout is unavailable for it — choose another payment option or pay at the appointment.
+                    This service has no price set. Card and Square checkout are unavailable for it — choose another payment option or pay at the appointment.
                 </div>
 
                 <div id="cancelFeeNoticeBox" class="hidden p-3 rounded-xl bg-amber-950/40 border border-amber-500/40 text-xs space-y-1">
@@ -18467,7 +18714,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                         </div>
                     </div>
 
-                    <p class="text-slate-300 leading-relaxed">
+                    <p id="checkoutHostNote" class="text-slate-300 leading-relaxed">
                         Card payment is handled on Stripe's own hosted checkout page. After you
                         confirm below, you'll be taken there to pay. Your card details are entered
                         on Stripe's servers and are never sent to or stored by this site.
@@ -18844,6 +19091,57 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
             }).catch(function () { return platformAttempt(0); });
         }
 
+        function isSquarePayUrl(value) {
+            try {
+                var url = new URL(String(value || ''));
+                var host = url.hostname.toLowerCase();
+                if (url.protocol !== 'https:') return false;
+                return host === 'square.link' || host.slice(-11) === '.square.link'
+                    || host === 'square.site' || host.slice(-11) === '.square.site';
+            } catch (err) { return false; }
+        }
+
+        function assignTopSquare(url) {
+            if (!isSquarePayUrl(url)) return false;
+            try {
+                if (window.top && window.top !== window) {
+                    window.top.location.assign(url);
+                    return true;
+                }
+            } catch (err) {}
+            window.location.assign(url);
+            return true;
+        }
+
+        function requestSquareCheckout(opts) {
+            opts = opts || {};
+            function attempt(n) {
+                return fetch('https://schedi.app/api/square/checkout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        tenantId: opts.tenantId,
+                        bookingIds: opts.bookingIds || [],
+                        bookingId: (opts.bookingIds || [])[0] || '',
+                        email: opts.email || ''
+                    })
+                }).then(function (r) {
+                    return r.json().then(function (data) { return { status: r.status, data: data || {} }; }, function () { return { status: r.status, data: {} }; });
+                }).then(function (out) {
+                    if (out.data && isSquarePayUrl(out.data.url)) return { url: out.data.url, error: '' };
+                    if (out.data && out.data.alreadyPaid) return { url: '', error: 'already_paid' };
+                    if (n < 3 && (out.status === 404 || (out.data && out.data.error === 'booking_not_found'))) {
+                        return new Promise(function (resolve) { setTimeout(function () { resolve(attempt(n + 1)); }, 700); });
+                    }
+                    return { url: '', error: (out.data && out.data.error) || 'checkout_unavailable' };
+                }).catch(function () {
+                    if (n < 3) return new Promise(function (resolve) { setTimeout(function () { resolve(attempt(n + 1)); }, 700); });
+                    return { url: '', error: 'checkout_unavailable' };
+                });
+            }
+            return attempt(0);
+        }
+
         var PLATFORM_ORIGIN = window.location.origin;
         var SITEFORGE_EMAIL_WEBHOOK = "https://schedi.app/api/send-booking-email";
         function paymentOptionLabel(bookingOrMethod) {
@@ -18868,10 +19166,12 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                 zelle: 'Zelle',
                 venmo: 'Venmo',
                 paypal: 'PayPal',
+                square: 'Square',
                 later: 'Pay at Appointment',
                 cash: 'Cash'
             };
             if (map[method]) return map[method];
+            if (status.indexOf('SQUARE') !== -1) return 'Square';
             if (status.indexOf('CASH APP') !== -1 || status.indexOf('CASHAPP') !== -1) return 'Cash App';
             if (status.indexOf('ZELLE') !== -1) return 'Zelle';
             if (status.indexOf('VENMO') !== -1) return 'Venmo';
@@ -20235,11 +20535,14 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                 payBanner.style.margin = '12px auto';
                 payBanner.style.maxWidth = '56rem';
                 payBanner.style.padding = '0 16px';
-                var depositReturn = (typeof SCHEDULE_PAY_KIND === 'undefined') || SCHEDULE_PAY_KIND !== 'card';
+                var squareReturn = (typeof SCHEDULE_PAY_KIND !== 'undefined') && SCHEDULE_PAY_KIND === 'square';
+                var depositReturn = !squareReturn && ((typeof SCHEDULE_PAY_KIND === 'undefined') || SCHEDULE_PAY_KIND !== 'card');
                 if (SCHEDULE_PAY_RETURN === 'success') {
-                    payBanner.innerHTML = depositReturn
+                    payBanner.innerHTML = squareReturn
+                        ? '<div style="padding:12px;border-radius:12px;border:1px solid rgba(16,185,129,.35);background:rgba(16,185,129,.12);color:#6ee7b7;font-size:12px;font-weight:600">Square checkout finished. The visit is marked paid when Square confirms the payment. The business still needs to accept the time on Starter and Pro.</div>'
+                        : (depositReturn
                         ? '<div style="padding:12px;border-radius:12px;border:1px solid rgba(16,185,129,.35);background:rgba(16,185,129,.12);color:#6ee7b7;font-size:12px;font-weight:600">Deposit checkout finished. The appointment is confirmed only after the deposit is recorded and the business accepts the time. Any remaining balance is due at the appointment.</div>'
-                        : '<div style="padding:12px;border-radius:12px;border:1px solid rgba(16,185,129,.35);background:rgba(16,185,129,.12);color:#6ee7b7;font-size:12px;font-weight:600">Card checkout finished. The business still needs to accept the time on Starter and Pro.</div>';
+                        : '<div style="padding:12px;border-radius:12px;border:1px solid rgba(16,185,129,.35);background:rgba(16,185,129,.12);color:#6ee7b7;font-size:12px;font-weight:600">Card checkout finished. The business still needs to accept the time on Starter and Pro.</div>');
                 } else {
                     payBanner.innerHTML = '<div style="padding:12px;border-radius:12px;border:1px solid rgba(245,158,11,.35);background:rgba(245,158,11,.12);color:#fcd34d;font-size:12px;font-weight:600">Checkout canceled. No charge was made. You can open the payment link again.</div>';
                 }
@@ -20733,10 +21036,15 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
             let html = '';
 
             var cardChoice = pg.card && bookingPlan() === 'pro' && (svcPriced || svcQuote.required);
+            var squareChoice = tenantData.squareReady === true && (svcPriced || svcQuote.required);
             if (selectedPay === 'card' && !cardChoice) selectedPay = 'later';
-            // Card stays one choice. A deposit does not hide Cash App, Zelle, Venmo, PayPal, or pay at the appointment.
+            if (selectedPay === 'square' && !squareChoice) selectedPay = 'later';
+            // Card stays one choice. A deposit does not hide Cash App, Zelle, Venmo, PayPal, Square, or pay at the appointment.
             if (cardChoice) {
                 html += \`<button type="button" onclick="selectPay('card')" class="px-4 py-3 flex-1 min-w-[100px] rounded-xl border font-bold \${selectedPay === 'card' ? 'border-emerald-500 text-emerald-400 bg-emerald-500/10 glow-emerald' : 'border-slate-800 text-slate-400 bg-slate-900'}"><i class="fa-solid fa-credit-card block mb-1"></i>Card</button>\`;
+            }
+            if (squareChoice) {
+                html += \`<button type="button" onclick="selectPay('square')" class="px-4 py-3 flex-1 min-w-[100px] rounded-xl border font-bold \${selectedPay === 'square' ? 'border-indigo-400 text-indigo-200 bg-indigo-500/10' : 'border-slate-800 text-slate-400 bg-slate-900'}"><i class="fa-solid fa-square block mb-1"></i>Square</button>\`;
             }
             if (pg.cashapp) {
                 html += \`<button type="button" onclick="selectPay('cashapp')" class="px-4 py-3 flex-1 min-w-[100px] rounded-xl border font-bold \${selectedPay === 'cashapp' ? 'border-emerald-500 text-emerald-400 bg-emerald-500/10 glow-emerald' : 'border-slate-800 text-slate-400 bg-slate-900'}"><i class="fa-solid fa-dollar-sign block mb-1"></i>Cash App</button>\`;
@@ -20758,7 +21066,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                 html = '<button type="button" class="px-4 py-3 flex-1 min-w-[100px] rounded-xl border font-bold border-emerald-500 text-emerald-400 bg-emerald-500/10 glow-emerald"><i class="fa-solid fa-handshake block mb-1"></i>Pay at Appt</button>';
             } else {
                 // The current choice must be one of the options shown (default was 'card' even when card is off).
-                var offered = ['card', 'cashapp', 'zelle', 'venmo', 'paypal', 'later'].filter(function (m) { return html.indexOf("selectPay('" + m + "')") !== -1; });
+                var offered = ['card', 'square', 'cashapp', 'zelle', 'venmo', 'paypal', 'later'].filter(function (m) { return html.indexOf("selectPay('" + m + "')") !== -1; });
                 if (offered.indexOf(selectedPay) === -1 && offered.length) {
                     selectedPay = offered[0];
                     return renderPay();
@@ -20767,7 +21075,13 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
             if (container) container.innerHTML = html;
 
             if (cardFieldsBox) {
-                cardFieldsBox.classList.toggle('hidden', selectedPay !== 'card');
+                cardFieldsBox.classList.toggle('hidden', selectedPay !== 'card' && selectedPay !== 'square');
+            }
+            var hostNote = document.getElementById('checkoutHostNote');
+            if (hostNote) {
+                hostNote.textContent = selectedPay === 'square'
+                    ? 'Square payment is handled on Square\\'s hosted page. After you confirm, you\\'ll be taken there to pay. Your card is entered on Square and is never sent to this site. Schedi does not take a fee.'
+                    : 'Card payment is handled on Stripe\\'s own hosted checkout page. After you confirm below, you\\'ll be taken there to pay. Your card details are entered on Stripe\\'s servers and are never sent to or stored by this site.';
             }
             updatePayAmounts();
             paintPayCodeBox();
@@ -20778,8 +21092,12 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                 failPublicPay('Card checkout is on Pro only. This booking was not saved.');
                 method = 'later';
             }
-            if (method === 'card' && cartPrice() === null && !selectedServiceDepositQuote().required) {
-                failPublicPay('This service has no price set, so card checkout is unavailable.');
+            if ((method === 'card' || method === 'square') && cartPrice() === null && !selectedServiceDepositQuote().required) {
+                failPublicPay('This service has no price set, so checkout is unavailable.');
+                method = 'later';
+            }
+            if (method === 'square' && tenantData.squareReady !== true) {
+                failPublicPay('Square is not connected for this business.');
                 method = 'later';
             }
             if (bookingPlan() === 'free' && method !== 'later') {
@@ -20953,12 +21271,16 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
             }
             var servicePrice = cartPrice();
             var depositQuote = quoteDeposit(servicePrice);
-            if (selectedPay === 'card' && depositRequiredNow() && !depositQuote.required && !depositQuote.skippedNoPrice) {
-                fail('The deposit for this service is under $0.50, so card checkout cannot take it. Choose another way to pay.');
+            if ((selectedPay === 'card' || selectedPay === 'square') && depositRequiredNow() && !depositQuote.required && !depositQuote.skippedNoPrice) {
+                fail('The deposit for this service is under $0.50, so checkout cannot take it. Choose another way to pay.');
                 return;
             }
-            if (selectedPay === 'card' && servicePrice === null && !depositQuote.required) {
-                fail('This service has no price set, so card checkout is unavailable. Choose another payment option or pay at the appointment.');
+            if ((selectedPay === 'card' || selectedPay === 'square') && servicePrice === null && !depositQuote.required) {
+                fail('This service has no price set, so checkout is unavailable. Choose another payment option or pay at the appointment.');
+                return;
+            }
+            if (selectedPay === 'square' && tenantData.squareReady !== true) {
+                fail('Square is not connected for this business. This booking was not saved.');
                 return;
             }
             if (recFreq === 'custom' && !Object.keys(customDates).length) recFreq = 'once';
@@ -20999,8 +21321,10 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                 }
                 const bookingAmount = depositQuote.priced ? depositQuote.price : null;
                 const payByCard = selectedPay === 'card';
+                const payBySquare = selectedPay === 'square';
                 const payStatus = (function () {
-                        if (payByCard && depositQuote.required) return 'AWAITING DEPOSIT';
+                        if ((payByCard || payBySquare) && depositQuote.required) return 'AWAITING DEPOSIT';
+                        if (payBySquare) return 'AWAITING SQUARE';
                         if (payByCard) return 'AWAITING CARD CHECKOUT';
                         if (selectedPay === 'cashapp') return 'PENDING CASH APP';
                         if (selectedPay === 'zelle') return 'PENDING ZELLE';
@@ -21009,6 +21333,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                         return 'PAY AT APPOINTMENT';
                     })();
                 const payOptLabel = (function () {
+                        if (payBySquare && depositQuote.required) return 'Square deposit';
+                        if (payBySquare) return 'Square';
                         if (payByCard && depositQuote.required) return 'Card deposit';
                         if (payByCard) return 'Card';
                         if (selectedPay === 'cashapp') return 'Cash App';
@@ -21062,14 +21388,14 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                         durationMins: cartDurationMins()
                     };
                     if (bookingAmount !== null && bookingAmount !== undefined) b.amount = bookingAmount;
-                    if (payByCard && depositQuote.required) {
+                    if ((payByCard || payBySquare) && depositQuote.required) {
                         b.depositAmount = depositQuote.deposit;
                         b.depositPaid = false;
                         b.balanceDue = depositQuote.balance;
                     }
                     if (bookingIsPendingReview) b.status = 'pending';
                     if (!b.createdAt) b.createdAt = new Date().toISOString();
-                    if (selectedPay !== 'card' && !depositQuote.required) b.payCode = idx === 0 ? pubPayCode : newPayCode();
+                    if (selectedPay !== 'card' && selectedPay !== 'square' && !depositQuote.required) b.payCode = idx === 0 ? pubPayCode : newPayCode();
                     if (seriesId) {
                         b.seriesId = seriesId;
                         b.recurrence = {
@@ -21318,7 +21644,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
 
                 hideAllPayBoxes();
 
-                if (selectedPay === 'card') {
+                if (selectedPay === 'card' || selectedPay === 'square') {
                     if (cardReceiptBox) {
                         cardReceiptBox.classList.remove('hidden');
                         var cardShow = depositQuote.required ? depositQuote.deposit : bookingAmount;
@@ -21351,23 +21677,37 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
 
                         var checkoutBtn = document.getElementById('resCheckoutBtn');
                         if (checkoutBtn) {
-                            checkoutBtn.textContent = 'Continue to secure payment';
+                            checkoutBtn.textContent = selectedPay === 'square' ? 'Continue to Square' : 'Continue to secure payment';
                             checkoutBtn.target = '_top';
-                            checkoutBtn.href = cardPayUrl || '#';
+                            checkoutBtn.href = selectedPay === 'square' ? '#' : (cardPayUrl || '#');
                             checkoutBtn.onclick = function (ev) {
                                 ev.preventDefault();
                                 if (checkoutErr) checkoutErr.classList.add('hidden');
                                 checkoutBtn.textContent = 'Opening secure checkout...';
-                                requestPublicCardCheckout({
-                                    tenantId: tenantData.id,
-                                    slug: tenantData.slug || tenantData.id,
-                                    bookingIds: bookings.map(function (item) { return item.id; }),
-                                    email: email,
-                                    serviceName: booking.serviceName,
-                                    amountCents: cardChargeCents,
-                                    chargeKind: depositQuote.required ? 'deposit' : 'full'
-                                }).then(function (out) {
-                                    paintPayLink(out && out.url);
+                                var pending = selectedPay === 'square'
+                                    ? requestSquareCheckout({
+                                        tenantId: tenantData.id,
+                                        bookingIds: bookings.map(function (item) { return item.id; }),
+                                        email: email
+                                    })
+                                    : requestPublicCardCheckout({
+                                        tenantId: tenantData.id,
+                                        slug: tenantData.slug || tenantData.id,
+                                        bookingIds: bookings.map(function (item) { return item.id; }),
+                                        email: email,
+                                        serviceName: booking.serviceName,
+                                        amountCents: cardChargeCents,
+                                        chargeKind: depositQuote.required ? 'deposit' : 'full'
+                                    });
+                                pending.then(function (out) {
+                                    if (selectedPay !== 'square') paintPayLink(out && out.url);
+                                    if (selectedPay === 'square') {
+                                        if (out && out.url && assignTopSquare(out.url)) return;
+                                        checkoutBtn.textContent = 'Continue to Square';
+                                        if (out && out.error === 'already_paid') showCheckoutError('That Square payment is already paid.');
+                                        else showCheckoutError('Square checkout did not open. Nothing was charged. Card checkout was not started.');
+                                        return;
+                                    }
                                     if (out && out.url && assignTopStripe(out.url)) return;
                                     checkoutBtn.textContent = 'Continue to secure payment';
                                     if (out && out.error === 'already_paid') showCheckoutError('That card payment is already paid.');

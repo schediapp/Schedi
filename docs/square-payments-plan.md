@@ -84,3 +84,7 @@ This is relative size, next to code that already exists. It is not a calendar es
 5. Web Payments SDK on the booking page. Optional and larger than phase 3. CSP, the booking template again, and tokenize-then-charge. Do not start it until Payment Links have been used for real visits.
 
 Phases 2 through 4 together are about the size of the Stripe Connect direct-charge path already in this repo, plus the private token store. Phase 5 is extra and should not block the first time a client pays a business through Square.
+
+## Implementation note
+
+Phases 2–4 are on the email worker, at the URLs in this plan (`/api/square/callback`, `/api/webhooks/square`). Private bookings and the owner session already live there. The ciphertext is the private-doc field `squareConnection` (AES-256-GCM). It is not copied into `privateView`, so the browser never receives it. The public tenant doc only gets `squareReady` plus the merchant id, location id, and display name after a location is chosen. `SQUARE_ENVIRONMENT=production` selects `connect.squareup.com`; when that var is unset the worker uses the sandbox host. Schedi still does not set `app_fee_money`.

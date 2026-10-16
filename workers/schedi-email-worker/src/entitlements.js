@@ -84,6 +84,11 @@ export function applyOwnerEntitlementLock(incomingPub, storedPub, storedPriv) {
       }
     }
 
+    if (plan === 'free' && pub.squareReady === true && (storedPub || {}).squareReady !== true) {
+      pub.squareReady = false;
+      ignored.push('squareReady');
+    }
+
     if (plan === 'free' && Array.isArray(pub.services)) {
       const storedCount = Array.isArray((storedPub || {}).services) ? storedPub.services.length : 0;
       const cap = Math.max(1, storedCount);

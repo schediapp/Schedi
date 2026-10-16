@@ -49,6 +49,7 @@ import {
   listPrivateTenants,
   patchPrivateTenant,
 } from './tenant-private.js';
+import { handleSquareHttp } from './square.js';
 
 const ALLOWED_ORIGINS = new Set([
   'https://schedi.app',
@@ -2967,6 +2968,20 @@ export default {
       }
       return handleProfileRequest(request, env, origin, json);
     }
+    if (path === '/api/webhooks/square' || path === '/api/square/callback' || path === '/api/square/checkout' || path === '/api/square/connect' || path === '/api/square/status' || path === '/api/square/location' || path === '/api/square/disconnect' || path === '/api/square/refund') {
+      return handleSquareHttp(request, env, origin, path, {
+        json,
+        isAllowedOrigin,
+        getTenantById,
+        firebaseAnonymousToken,
+        planName: tenantPlanName,
+        bookingPrice: bookingPriceForCharge,
+        depositQuote: quoteDepositForPrice,
+        depositOn: depositRequiredForTenant,
+        slugFor: publicBookingSlug,
+      });
+    }
+
     if (path === '/api/logo-upload') {
       if (request.method === 'OPTIONS') {
         if (origin && !isAllowedOrigin(origin)) return new Response(null, { status: 403 });
