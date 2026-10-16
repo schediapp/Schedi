@@ -5226,7 +5226,7 @@
                     main.appendChild(frame);
                 } else {
                     document.open();
-                    document.write(pageHtml);
+                    document.write(generateStandaloneHtmlForTenant(tenant, { topDocument: true }));
                     document.close();
                 }
             } catch (err) {
@@ -11790,7 +11790,7 @@
         }
 
         function formatServiceDuration(d) { d = String(d == null ? '' : d).trim(); return /^[0-9]+([.][0-9]+)?$/.test(d) ? d + ' min' : d; }
-        function generateStandaloneHtmlForTenant(tenant) {
+        function generateStandaloneHtmlForTenant(tenant, analyticsOpts) {
             ensurePaymentGateways(tenant);
             ensureCancellationFeeSettings(tenant);
             ensureAllowRecurringBookings(tenant);
@@ -11863,6 +11863,19 @@
             
             const configStr = JSON.stringify(rawConfig);
             const appIdStr = (typeof window !== 'undefined' && window.__app_id) ? window.__app_id : (typeof __app_id !== 'undefined' ? __app_id : 'siteforge-97699');
+
+            // srcdoc iframes are about:srcdoc. The shell at /{slug} already has the beacon.
+            // Only the document.write fallback, which replaces that shell, should include it.
+            var schediWebAnalytics = '';
+            if (analyticsOpts && analyticsOpts.topDocument) {
+                try {
+                    var analyticsHost = String(location.hostname || '').toLowerCase();
+                    var analyticsDemo = new URLSearchParams(location.search || '').get('demo') === '1';
+                    if (analyticsHost !== 'schedi-dashboard-preview.axl199.workers.dev' && !analyticsDemo) {
+                        schediWebAnalytics = "<!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{\"token\": \"0dd8dc6f9fab4de484d8c5f5a1f1a57e\"}'><\/script><!-- End Cloudflare Web Analytics -->";
+                    }
+                } catch (analyticsErr) {}
+            }
 
             return `<!DOCTYPE html>
 <html lang="en" class="dark">
@@ -15212,6 +15225,7 @@
             }, 600);
         }
     <\/script>
+${schediWebAnalytics}
 </body>
 </html>`;
         }

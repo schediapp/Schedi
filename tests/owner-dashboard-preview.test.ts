@@ -9,7 +9,7 @@ import { renderRobots, renderSitemap } from "../worker/render";
 
 const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const root = new URL("..", import.meta.url).pathname;
-const BOOKING_TEMPLATE_SHA = "ca8217208350ca1dc18a6de6fc067191a6666d3b0aa7eca22332442db3ce06ac";
+const BOOKING_TEMPLATE_SHA = "3140fa3d645113996cdf0ef4192559283c72e55f4dee7d4957352ac021205d10";
 const SHELL_STYLE_SHA = "7c1f1bbb7af97aa8c1e95ab8de650f6493512361a409fd083bcbe3a2c04332d6";
 
 function bookingTemplate(source: string): string {
@@ -282,7 +282,11 @@ describe("owner dashboard preview", () => {
     for (const path of ["/?demo=1", "/?newdash=1"]) {
       const response = await handleRequest(new Request("https://schedi.app" + path), env(), ctx());
       expect(response.status, path).toBe(200);
-      expect(await response.text(), path).toContain("<body>app</body>");
+      const text = await response.text();
+      expect(text, path).toContain("<body>app");
+      expect(text, path).toContain("</body>");
+      if (path.includes("demo=1")) expect(text, path).toContain("<body>app</body>");
+      else expect(text, path).toContain("Cloudflare Web Analytics");
     }
 
     const home = await handleRequest(new Request("https://schedi.app/"), env(), ctx());
@@ -461,6 +465,12 @@ describe("owner dashboard preview", () => {
     expect(suggest("Scar treatment", "")).toBe("fa-calendar");
     expect(suggest("House cleaning", "")).toBe("fa-calendar");
     expect(suggest("Consult about my car", "")).toBe("fa-briefcase");
+    expect(suggest("Yoga", "")).toBe("fa-yoga-mat");
+    expect(suggest("Kettlebell swings", "")).toBe("fa-kettlebell");
+    expect(suggest("French tips", "")).toBe("fa-french-tips");
+    expect(suggest("Nail file", "")).toBe("fa-hand");
+    expect(suggest("Vacuum floors", "")).toBe("fa-vacuum");
+    expect(suggest("Spanish conversation", "")).toBe("fa-language");
     expect(html).not.toContain("FontAwesome Icon Class");
     expect(html).toContain('id="svcIconGrid"');
     expect(html).toContain("Upload your own");
