@@ -117,8 +117,13 @@
         .hq-stat { background: rgba(15,23,42,.8); border: 1px solid #1e293b; border-radius: 10px; padding: 6px 2px; }
         .hq-stat div { font-weight: 800; color: #fff; font-size: 13px; }
         .hq-stat span { display: block; font-size: 9px; color: #94a3b8; text-transform: uppercase; letter-spacing: .05em; }
-        .hq-collapse-btn { margin-left: auto; width: 32px; height: 32px; border-radius: 10px; color: #94a3b8; border: 1px solid #334155; background: rgba(15,23,42,.6); flex-shrink: 0; }
+        #agencyHqSection [data-hq-collapse-head] { display: flex; flex-direction: row; flex-wrap: nowrap; align-items: flex-start; justify-content: flex-start; gap: 8px; min-width: 0; }
+        #agencyHqSection .hq-card-main { flex: 1 1 auto; min-width: 0; display: flex; align-items: flex-start; gap: 12px; }
+        #agencyHqSection .hq-card-icon { flex-shrink: 0; }
+        #agencyHqSection .hq-card-copy { min-width: 0; flex: 1 1 auto; }
+        .hq-collapse-btn { margin-left: auto; align-self: flex-start; display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; min-width: 44px; min-height: 44px; flex: 0 0 44px; padding: 0; border-radius: 10px; color: #f8fafc; border: 1px solid #64748b; background: #1e293b; cursor: pointer; }
         .hq-collapse-btn i { transition: transform .15s; }
+        .hq-collapse-btn:focus-visible { outline: 2px solid #10b981; outline-offset: 2px; }
         html.schedi-light .hq-table th { color: #475569; border-color: #e2e8f0; }
         html.schedi-light .hq-table td { border-color: #e2e8f0; }
         html.schedi-light .hq-table tbody tr:hover { background: #f8fafc; }
@@ -126,7 +131,7 @@
         html.schedi-light .hq-stat div { color: #0f172a; }
         html.schedi-light .hq-stat span { color: #475569; }
         html.schedi-light .hq-warn { color: #b91c1c; }
-        html.schedi-light .hq-collapse-btn { background: #fff; border-color: #cbd5e1; color: #475569; }
+        html.schedi-light .hq-collapse-btn { background: #fff !important; border-color: #64748b !important; color: #0f172a !important; }
 <!-- SCHEDI_HQ_END -->
         html.schedi-light .text-emerald-200, html.schedi-light .text-emerald-300, html.schedi-light .text-emerald-400, html.schedi-light .text-emerald-500 { color: #047857 !important; }
         html.schedi-light .text-amber-200, html.schedi-light .text-amber-300, html.schedi-light .text-amber-400, html.schedi-light .text-amber-500,
@@ -550,22 +555,21 @@
 
                 <!-- HQ Gateways -->
                 <div class="glass-card rounded-2xl p-6 space-y-5" data-hq-collapse="gateways">
-                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4" data-hq-collapse-head>
-                        <div class="flex items-center space-x-3">
-                            <div class="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center text-xl border border-indigo-500/20">
+                    <div class="hq-card-head border-b border-slate-800 pb-4" data-hq-collapse-head>
+                        <div class="hq-card-main">
+                            <div class="hq-card-icon w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center text-xl border border-indigo-500/20">
                                 <i class="fa-solid fa-plug text-lg"></i>
                             </div>
-                            <div>
+                            <div class="hq-card-copy">
                                 <h2 class="text-lg font-extrabold text-white">Agency Payment Gateways & Revenue Settlement</h2>
                                 <p class="text-xs text-slate-400 mt-0.5">Owner subscriptions bill through Stripe on the server. Starter is $29/mo and Pro is $49/mo. Free businesses are not charged.</p>
+                                <div class="flex items-center space-x-2 mt-2">
+                                    <span id="agencyStripeStatusBadge" class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center space-x-1.5">
+                                        <i class="fa-solid fa-circle text-[8px] animate-pulse"></i>
+                                        <span>Live Stripe · server-side</span>
+                                    </span>
+                                </div>
                             </div>
-                        </div>
-
-                        <div class="flex items-center space-x-2">
-                            <span id="agencyStripeStatusBadge" class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center space-x-1.5">
-                                <i class="fa-solid fa-circle text-[8px] animate-pulse"></i>
-                                <span>Live Stripe · server-side</span>
-                            </span>
                         </div>
                     </div>
 
@@ -617,17 +621,17 @@
 
                 <!-- Booking email delivery -->
                 <div class="glass-card rounded-2xl p-6 space-y-4" data-hq-collapse="email">
-                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4" data-hq-collapse-head>
-                        <div class="flex items-center space-x-3">
-                            <div class="w-10 h-10 rounded-xl bg-brand-500/10 text-brand-400 flex items-center justify-center text-xl border border-brand-500/20">
+                    <div class="hq-card-head border-b border-slate-800 pb-4" data-hq-collapse-head>
+                        <div class="hq-card-main">
+                            <div class="hq-card-icon w-10 h-10 rounded-xl bg-brand-500/10 text-brand-400 flex items-center justify-center text-xl border border-brand-500/20">
                                 <i class="fa-solid fa-envelope"></i>
                             </div>
-                            <div>
+                            <div class="hq-card-copy">
                                 <h2 class="text-lg font-extrabold text-white">Booking Email Delivery</h2>
                                 <p class="text-xs text-slate-400 mt-0.5">Booking confirmations send through Schedi email (Cloudflare Worker → Resend). Reply-To stays the business contact.</p>
+                                <span id="agencyEmailDeliveryBadge" class="mt-2 inline-block px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">Connected</span>
                             </div>
                         </div>
-                        <span id="agencyEmailDeliveryBadge" class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">Connected</span>
                     </div>
                     <form onsubmit="handleSaveEmailSender(event)" class="space-y-3 text-xs max-w-3xl" data-hq-collapse-body>
                         <div>
