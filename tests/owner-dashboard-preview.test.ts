@@ -488,6 +488,24 @@ describe("owner dashboard preview", () => {
     expect(phone).toContain("#tenantPortalSection.schedi-newdash .sd-btn.sd-add-phone { display: flex; width: 100%; justify-content: center; margin: 0; }");
     expect(css.slice(0, css.indexOf("@media (max-width: 859px)"))).not.toContain(".sd-add-desktop { display: none");
   });
+
+  it("puts client actions beside the details and uses the business mark on every avatar", () => {
+    const row = html.slice(html.indexOf("sd-client-copy"), html.indexOf("function clientTagsHtml"));
+    expect(row.indexOf("sd-client-copy")).toBeLessThan(row.indexOf("sd-client-contact"));
+    expect(row.indexOf("sd-client-contact")).toBeLessThan(row.indexOf("sd-client-actions"));
+    const css = dashCss(html);
+    const phone = css.slice(css.indexOf("@media (max-width: 859px)"));
+    expect(phone).toContain("#tenantPortalSection.schedi-newdash .sd-client-actions button { flex: 0 0 auto; }");
+    expect(phone).not.toContain(".sd-client-actions { width: 100%; }");
+    expect(css).toContain("@media (min-width: 860px)");
+    expect(css).toContain("#tenantPortalSection.schedi-newdash #schediDashTop .sd-theme { display: none; }");
+    expect(html).toContain('id="schediDashUserLogoPhone"');
+    const paint = extractFunction(html, "schediDashPaint");
+    expect(paint).toContain("schediDashInitials(bizName)");
+    expect(paint).not.toContain("schediDashInitials(who)");
+    expect(paint).toContain("schediDashUserLogoPhone");
+    expect(paint).toContain("schediDashApplyLogo(phoneLogo, phoneInitials)");
+  });
 });
 
 const chrome = ["/usr/bin/google-chrome", "/usr/bin/google-chrome-stable", "/usr/bin/chromium", "/usr/bin/chromium-browser"].find((path) => existsSync(path));
