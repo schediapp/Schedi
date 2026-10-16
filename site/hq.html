@@ -580,7 +580,7 @@
         html.schedi-newhq .hq-table th.hq-col-biz,
         html.schedi-newhq .hq-table td.hq-col-biz { text-align: left; padding-left: 0; }
         html.schedi-newhq .hq-table tbody tr:hover { background: color-mix(in srgb, var(--hq-brand) 8%, transparent); }
-        html.schedi-newhq #agencyDirectory { padding: 20px 16px; }
+        html.schedi-newhq #agencyDirectory { padding: 20px 16px; min-height: calc(100vh - 80px); }
         html.schedi-newhq .hq-table .hq-clip {
             display: block; width: max-content; max-width: none;
             overflow: visible; text-overflow: clip; white-space: nowrap;
@@ -631,6 +631,8 @@
         html.schedi-newhq .hq-more-menu button:hover,
         html.schedi-newhq .hq-more-menu a:hover { background: color-mix(in srgb, var(--hq-brand) 12%, transparent); }
         html.schedi-newhq .hq-more-menu .hq-more-danger { color: #fb7185; }
+        html.schedi-light.schedi-newhq .hq-more-menu .hq-more-danger { color: #dc2626; }
+        html.schedi-light.schedi-newhq .hq-more-menu .hq-more-danger:hover { background: #fef2f2; color: #dc2626; }
         @media (max-width: 1099px) {
             html.schedi-newhq .hq-col-extra { display: none; }
         }
@@ -691,6 +693,7 @@
             }
             html.schedi-newhq #hqNewTabs button.is-on { color: var(--hq-brand); }
             html.schedi-newhq #agencyHqSection { padding: 76px 16px 96px; }
+            html.schedi-newhq #agencyDirectory { min-height: 0; }
         }
     </style>
 </head>
