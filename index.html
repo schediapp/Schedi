@@ -10493,8 +10493,40 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
             };
         }
 
+        function schediApplyDemoBiz(tenant) {
+            var asked = '';
+            try {
+                var q = new URLSearchParams(window.location.search || '');
+                asked = String(q.get('biz') || q.get('slug') || q.get('tenant') || '').trim().toLowerCase();
+            } catch (errAsk) { asked = ''; }
+            if (!asked || asked === 'harbor-demo' || asked === 'harbor') return tenant;
+            var profiles = {
+                'northwind-demo': { id: 'northwind-demo', name: 'Northwind Clinic', slug: 'northwind-clinic', industry: 'Medical', ownerName: 'Riley North', ownerEmail: 'demo@northwind.clinic', ownerPhone: '(555) 010-2200', plan: 'starter', monthlyPrice: 29, subscriptionStatus: 'paused' },
+                'northwind-clinic': { id: 'northwind-demo', name: 'Northwind Clinic', slug: 'northwind-clinic', industry: 'Medical', ownerName: 'Riley North', ownerEmail: 'demo@northwind.clinic', ownerPhone: '(555) 010-2200', plan: 'starter', monthlyPrice: 29, subscriptionStatus: 'paused' },
+                'lumen-demo': { id: 'lumen-demo', name: 'Lumen Studio', slug: 'lumen-studio', industry: 'Consulting', ownerName: 'Jules Lumen', ownerEmail: 'demo@lumen.studio', ownerPhone: '(555) 010-3300', plan: 'pro', monthlyPrice: 0, subscriptionStatus: 'active' },
+                'lumen-studio': { id: 'lumen-demo', name: 'Lumen Studio', slug: 'lumen-studio', industry: 'Consulting', ownerName: 'Jules Lumen', ownerEmail: 'demo@lumen.studio', ownerPhone: '(555) 010-3300', plan: 'pro', monthlyPrice: 0, subscriptionStatus: 'active' }
+            };
+            var hit = profiles[asked];
+            if (!hit) return tenant;
+            Object.keys(hit).forEach(function (key) { tenant[key] = hit[key]; });
+            tenant.appointments = [];
+            tenant.specialHours = {};
+            tenant.blockedRules = [];
+            tenant.blockedTimes = [];
+            if (hit.id === 'lumen-demo') {
+                tenant.complimentaryPro = true;
+                tenant.billingExempt = true;
+                tenant.services = [{ id: 1, name: 'Consult', duration: '30 mins', durationMins: 30, price: 0, desc: 'A consult.', icon: 'fa-comments' }];
+                tenant.paymentGateways = { card: false, cashapp: false, zelle: false, venmo: false, paypal: false, later: true };
+            } else {
+                tenant.services = [];
+                tenant.paymentGateways = { card: false, cashapp: false, zelle: false, venmo: false, paypal: false, later: false };
+            }
+            return tenant;
+        }
+
         function bootSchediDemoPortal() {
-            var tenant = schediBuildDemoTenant();
+            var tenant = schediApplyDemoBiz(schediBuildDemoTenant());
             platformState.tenants = [tenant];
             platformState.activeTenantId = tenant.id;
             platformState.isTenantOwnerLoggedIn = true;
@@ -10502,9 +10534,9 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
             platformState.isAgencyMasterLoggedIn = false;
             platformState.currentMode = 'tenant';
             window.__schediDemoClientRows = {};
-            window.__schediDemoClientRows[tenant.id] = schediDemoClientRows();
+            window.__schediDemoClientRows[tenant.id] = tenant.id === 'harbor-demo' ? schediDemoClientRows() : [];
             ownerClientCache[tenant.id] = { loaded: true, loading: null, clients: window.__schediDemoClientRows[tenant.id].slice(), error: '' };
-            try { document.title = 'Harbor Studio · Schedi demo'; } catch (errTitle) {}
+            try { document.title = tenant.name + ' · Schedi demo'; } catch (errTitle) {}
             try { applySchediTheme(localStorage.getItem('schedi.theme') === 'light' ? 'light' : 'dark'); } catch (errTheme) { try { applySchediTheme('dark'); } catch (errTheme2) {} }
             var section = document.getElementById('tenantPortalSection');
             if (section) section.classList.remove('hidden');

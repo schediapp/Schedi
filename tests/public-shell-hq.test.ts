@@ -260,6 +260,42 @@ describe("HQ route", () => {
     expect(hqHtml.match(/>Manage<\/button>/g)).toHaveLength(2);
   });
 
+  it("uses Harbor's portal sample, and the other HQ demo profiles when Manage asks for them", () => {
+    function extractFunction(source: string, name: string) {
+      const start = source.indexOf("function " + name);
+      const brace = source.indexOf("{", start);
+      let depth = 0;
+      for (let i = brace; i < source.length; i++) {
+        if (source[i] === "{") depth += 1;
+        else if (source[i] === "}") {
+          depth -= 1;
+          if (depth === 0) return source.slice(start, i + 1);
+        }
+      }
+      throw new Error("missing " + name);
+    }
+    const fn = `${extractFunction(publicHtml, "schediApplyDemoBiz")}\nschediApplyDemoBiz(tenant);`;
+    function apply(search: string) {
+      const tenant = { id: "harbor-demo", name: "Harbor Studio", slug: "harbor-demo", appointments: [{ id: "HB-1001" }], services: [{ id: 1 }] };
+      return runInNewContext(fn, {
+        window: { location: { search } },
+        URLSearchParams,
+        tenant,
+      }) as { name: string; slug: string; appointments: unknown[]; services: unknown[] };
+    }
+    expect(apply("").name).toBe("Harbor Studio");
+    expect(apply("?biz=harbor-demo").appointments).toHaveLength(1);
+    const north = apply("?biz=northwind-clinic&tenant=northwind-demo");
+    expect(north).toMatchObject({ name: "Northwind Clinic", slug: "northwind-clinic", appointments: [], services: [] });
+    const lumen = apply("?tenant=lumen-demo");
+    expect(lumen.name).toBe("Lumen Studio");
+    expect(lumen.services).toHaveLength(1);
+    expect(apply("?biz=someone-else").name).toBe("Harbor Studio");
+    const boot = publicHtml.slice(publicHtml.indexOf("function bootSchediDemoPortal"), publicHtml.indexOf("function bootSchediDemoPortal") + 900);
+    expect(boot).toContain("schediApplyDemoBiz(schediBuildDemoTenant())");
+    expect(boot).toContain("tenant.id === 'harbor-demo' ? schediDemoClientRows() : []");
+  });
+
   it("does not serve the HQ document as a static HTML file", async () => {
     const response = await handleRequest(new Request("https://schedi.app/hq.html"), env(hqHtml, sessions), ctx());
     expect(response.status).toBe(404);
