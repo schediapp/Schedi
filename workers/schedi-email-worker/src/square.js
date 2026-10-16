@@ -30,7 +30,12 @@ const STATE_PREFIX = 'sqstate:';
 const ORDER_PREFIX = 'sqord:';
 const BOOKING_ORDER_PREFIX = 'sqbk:';
 const PAYMENT_PREFIX = 'sqpay:';
+const REFUND_PREFIX = 'sqref:';
+const RECONCILE_CURSOR_KEY = 'sqrecon:after';
 const EVENT_PREFIX = 'sqevt:';
+const RECONCILE_CAP = 20;
+const AWAITING_MAX_AGE_MS = 48 * 60 * 60 * 1000;
+const APPT_PREFIX = 'privateAppts:';
 const STATE_TTL_SECONDS = 600;
 const REDIRECT_DEFAULT = 'https://schedi.app/api/square/callback';
 const WEBHOOK_URL_DEFAULT = 'https://schedi.app/api/webhooks/square';
@@ -238,9 +243,10 @@ export function buildRefundBody(input) {
 
 function paidAlready(booking, paymentId) {
   if (!booking) return false;
+  if (booking.paidMethod !== 'square' || String(booking.squarePaymentId || '') !== String(paymentId || '')) return false;
   const status = String(booking.paymentStatus || '').toUpperCase();
-  const paid = status.indexOf('PAID') !== -1 && status.indexOf('AWAITING') === -1;
-  return paid && booking.paidMethod === 'square' && String(booking.squarePaymentId || '') === String(paymentId || '');
+  if (status.indexOf('REFUND') !== -1) return true;
+  return status.indexOf('PAID') !== -1 && status.indexOf('AWAITING') === -1;
 }
 
 function squarePaymentStatus(payment) {
@@ -306,14 +312,37 @@ export function applySquareRefundUpdate(booking, refund) {
   return { booking: next, changed: true, duplicate: false };
 }
 
-/** A failed Square refund leaves the appointment as it was. */
+function squareRefundStatusOf(refund) {
+  return String((refund && refund.status) || '').trim().toUpperCase();
+}
+
+function refundStatusIsFinal(status) {
+  const value = String(status || '').trim().toUpperCase();
+  return value === 'COMPLETED' || value === 'FAILED' || value === 'REJECTED' || value === 'CANCELED' || value === 'CANCELLED';
+}
+
+/** Remember a refund that Square has not finished. Does not mark the visit refunded or store an amount. */
+export function recordSquareRefundProgress(booking, refund) {
+  const refundId = String((refund && refund.id) || '');
+  const status = squareRefundStatusOf(refund);
+  if (!booking || !refundId || !status || status === 'COMPLETED') return { booking, changed: false };
+  if (String(booking.squareRefundId || '') === refundId && String(booking.squareRefundStatus || '').toUpperCase() === status) {
+    return { booking, changed: false, duplicate: true, pending: status === 'PENDING' };
+  }
+  const next = Object.assign({}, booking);
+  next.squareRefundId = refundId;
+  next.squareRefundStatus = status;
+  return { booking: next, changed: true, pending: status === 'PENDING' };
+}
+
+/** A failed Square refund leaves the appointment as it was. A PENDING refund keeps its id. */
 export function applyRefundApiResult(booking, apiResult) {
   if (!apiResult || apiResult.ok !== true || !apiResult.refund) {
     return { booking, changed: false, error: (apiResult && apiResult.error) || 'refund_failed' };
   }
-  if (String(apiResult.refund.status || '') !== 'COMPLETED') {
-    return { booking, changed: false, pending: true };
-  }
+  const status = squareRefundStatusOf(apiResult.refund);
+  if (status === 'PENDING') return recordSquareRefundProgress(booking, apiResult.refund);
+  if (status !== 'COMPLETED') return { booking, changed: false, pending: true };
   return applySquareRefundUpdate(booking, apiResult.refund);
 }
 
@@ -649,6 +678,29 @@ async function rememberLookup(env, payment, tenantId, bookingIds, kind) {
   if (payment && payment.order_id) await rememberOrder(env, payment.order_id, tenantId, ids, kind);
   if (payment && payment.id) {
     await env.AUTH_KV.put(PAYMENT_PREFIX + payment.id, JSON.stringify({ tenantId, bookingIds: ids }));
+  }
+}
+
+async function rememberRefund(env, refund, tenantId, bookingId, paymentId) {
+  if (!env || !env.AUTH_KV) return;
+  const id = String(bookingId || '');
+  const payId = String(paymentId || (refund && refund.payment_id) || '');
+  const refundId = String((refund && refund.id) || '');
+  if (payId && id) {
+    const prev = await kvGet(env, PAYMENT_PREFIX + payId);
+    const ids = Array.isArray(prev && prev.bookingIds) ? prev.bookingIds.map((item) => String(item)) : [];
+    if (ids.indexOf(id) === -1) ids.push(id);
+    await env.AUTH_KV.put(PAYMENT_PREFIX + payId, JSON.stringify({
+      tenantId: (prev && prev.tenantId) || tenantId,
+      bookingIds: ids,
+    }));
+  }
+  if (refundId && id) {
+    await env.AUTH_KV.put(REFUND_PREFIX + refundId, JSON.stringify({
+      tenantId,
+      bookingIds: [id],
+      paymentId: payId,
+    }));
   }
 }
 
@@ -1018,7 +1070,310 @@ async function loadSquareOrderPayment(env, deps, token, orderId) {
   return { order, payment: null, paymentStatus: lastStatus };
 }
 
-async function applyFetchedSquarePayment(env, deps, tenantId, bookingIds, payment, kind) {
+function refundNeedsFetch(booking) {
+  const refundId = String((booking && booking.squareRefundId) || '').trim();
+  if (!refundId) return false;
+  return !refundStatusIsFinal(booking.squareRefundStatus);
+}
+
+function refundIdsFromPayment(payment) {
+  const raw = payment && payment.refund_ids;
+  if (!Array.isArray(raw)) return [];
+  const ids = [];
+  for (const item of raw) {
+    const id = String(item || '').trim();
+    if (!id || ids.indexOf(id) !== -1) continue;
+    ids.push(id);
+    if (ids.length === 5) break;
+  }
+  return ids;
+}
+
+async function fetchSquareRefund(env, deps, token, refundId) {
+  const res = await squareApi(env, deps, token, '/v2/refunds/' + encodeURIComponent(refundId));
+  if (!res.ok) {
+    const status = res.status || 502;
+    return {
+      error: 'square_refund_lookup_failed',
+      status,
+      retry: status >= 500 || status === 429,
+      missing: status === 404,
+    };
+  }
+  return { refund: (res.data && res.data.refund) || res.data || {} };
+}
+
+async function persistRefundBooking(env, deps, tenantId, booking, paymentId) {
+  const store = squareEventStore(env, deps || {});
+  await store.saveBooking(tenantId, booking);
+  await rememberRefund(env, {
+    id: booking.squareRefundId,
+    payment_id: paymentId || booking.squarePaymentId,
+  }, tenantId, booking.id, paymentId || booking.squarePaymentId);
+}
+
+/** Apply one Square refund object. Amounts come only from that object. */
+async function applyFetchedRefund(env, deps, tenantId, booking, refund) {
+  const status = squareRefundStatusOf(refund);
+  const paymentId = String((refund && refund.payment_id) || (booking && booking.squarePaymentId) || '');
+  if (status === 'COMPLETED') {
+    const applied = applySquareRefundUpdate(booking, refund);
+    if (applied.changed) await persistRefundBooking(env, deps, tenantId, applied.booking, paymentId);
+    return {
+      booking: applied.booking,
+      changed: applied.changed === true,
+      refundStatus: 'COMPLETED',
+    };
+  }
+  const recorded = recordSquareRefundProgress(booking, refund);
+  if (recorded.changed) await persistRefundBooking(env, deps, tenantId, recorded.booking, paymentId);
+  return {
+    booking: recorded.booking,
+    changed: recorded.changed === true,
+    refundStatus: status || String((booking && booking.squareRefundStatus) || ''),
+  };
+}
+
+async function reconcileBookingRefunds(env, deps, token, tenantId, booking, knownPayment) {
+  let current = booking;
+  if (refundNeedsFetch(current)) {
+    const fetched = await fetchSquareRefund(env, deps, token, current.squareRefundId);
+    if (fetched.error) {
+      if (fetched.missing) {
+        return {
+          booking: current,
+          checked: true,
+          refundStatus: String(current.squareRefundStatus || 'PENDING').toUpperCase(),
+        };
+      }
+      return {
+        error: fetched.error,
+        status: fetched.status || 502,
+        requiredRefund: true,
+        booking: current,
+      };
+    }
+    const applied = await applyFetchedRefund(env, deps, tenantId, current, fetched.refund);
+    return {
+      booking: applied.booking,
+      checked: true,
+      changed: applied.changed,
+      refundStatus: applied.refundStatus,
+    };
+  }
+
+  const paymentId = String((current && current.squarePaymentId) || '').trim();
+  if (!bookingPaidState(current) || !paymentId || String(current.squareRefundId || '').trim()) {
+    return { booking: current, checked: false };
+  }
+  let payment = knownPayment;
+  if (!payment || String(payment.id || '') !== paymentId) {
+    const payRes = await squareApi(env, deps, token, '/v2/payments/' + encodeURIComponent(paymentId));
+    if (!payRes.ok) return { booking: current, checked: false };
+    payment = (payRes.data && payRes.data.payment) || payRes.data || {};
+  }
+  const ids = refundIdsFromPayment(payment);
+  if (!ids.length) return { booking: current, checked: false };
+  let changed = false;
+  let refundStatus = '';
+  for (const refundId of ids) {
+    const fetched = await fetchSquareRefund(env, deps, token, refundId);
+    if (fetched.error || !fetched.refund) continue;
+    const applied = await applyFetchedRefund(env, deps, tenantId, current, fetched.refund);
+    current = applied.booking;
+    if (applied.changed) changed = true;
+    if (applied.refundStatus) refundStatus = applied.refundStatus;
+  }
+  return { booking: current, checked: true, changed, refundStatus };
+}
+
+/**
+ * Refresh one booking from Square. Payment ids and amounts come from Square.
+ * A stored non-final refund is required; refund_ids on a paid booking with no
+ * stored refund id are best-effort.
+ */
+async function reconcileSquareBooking(env, deps, tenantId, booking, context) {
+  const ctx = context || {};
+  const bookingIds = ctx.bookingIds && ctx.bookingIds.length
+    ? ctx.bookingIds.map(String)
+    : [String(booking.id)];
+  const kind = ctx.kind || '';
+  let current = Object.assign({}, booking);
+  let payment = null;
+  let squareStatus = '';
+  let sawPayment = false;
+  let paymentChanged = false;
+  let orderError = null;
+
+  const got = await accessTokenFor(env, tenantId, deps);
+  if (got.error) {
+    return {
+      error: got.error,
+      status: got.status || 409,
+      requiredRefund: refundNeedsFetch(current),
+      booking: current,
+    };
+  }
+
+  const orderId = String(current.squareOrderId || '').trim();
+  if (orderId) {
+    const fetched = await loadSquareOrderPayment(env, deps, got.token, orderId);
+    if (fetched.error) {
+      orderError = fetched;
+    } else {
+      squareStatus = fetched.paymentStatus || '';
+      if (fetched.payment) {
+        payment = Object.assign({}, fetched.payment);
+        if (!payment.order_id) payment.order_id = orderId;
+        sawPayment = true;
+        const note = parseSquarePaymentNote(payment.note) || parseSquarePaymentNote(payment.payment_note);
+        const chargeKind = kind || (note && note.kind) || '';
+        const applied = await applyFetchedSquarePayment(env, deps, tenantId, bookingIds, payment, chargeKind, String(booking.id));
+        if (applied.error) return { error: applied.error, status: applied.status || 404, booking: current };
+        if (applied.booking) current = applied.booking;
+        paymentChanged = applied.changed === true;
+      }
+    }
+  }
+
+  if (orderError && !refundNeedsFetch(current) && !(bookingPaidState(current) && current.squarePaymentId && !current.squareRefundId)) {
+    return { error: orderError.error, status: orderError.status || 502, requiredRefund: false, booking: current };
+  }
+
+  const refunds = await reconcileBookingRefunds(env, deps, got.token, tenantId, current, payment);
+  if (refunds.error) return refunds;
+  if (refunds.booking) current = refunds.booking;
+  if (orderError && !refunds.checked) {
+    return { error: orderError.error, status: orderError.status || 502, requiredRefund: false, booking: current };
+  }
+
+  const paid = bookingPaidState(current);
+  const refundedNow = refunds.checked === true && String(current.paymentStatus || '').toUpperCase().indexOf('REFUND') !== -1;
+  let status = 'UNPAID';
+  if (refundedNow) status = 'REFUNDED';
+  else if (sawPayment) status = squarePaymentStatus(payment) || 'COMPLETED';
+  else if (squareStatus) status = squareStatus;
+  else if (paid) status = String(current.paymentStatus || 'PAID');
+  return {
+    ok: true,
+    paid,
+    status,
+    booking: current,
+    paymentChanged,
+    refundChecked: refunds.checked === true,
+    refundStatus: refunds.refundStatus || '',
+    refunded: refundedNow && refunds.changed === true,
+  };
+}
+
+function pendingSquareRefund(booking) {
+  return !!(booking && String(booking.squareRefundId || '').trim() && String(booking.squareRefundStatus || '').trim().toUpperCase() === 'PENDING');
+}
+
+function awaitingSquarePayment(booking, now) {
+  if (!booking || !String(booking.squareOrderId || '').trim()) return false;
+  if (bookingPaidState(booking)) return false;
+  const status = String(booking.paymentStatus || '').toUpperCase();
+  if (status.indexOf('AWAITING') === -1) return false;
+  const created = Date.parse(String(booking.createdAt || ''));
+  if (!Number.isFinite(created)) return false;
+  const age = now - created;
+  return age >= 0 && age <= AWAITING_MAX_AGE_MS;
+}
+
+function reconcileLimit(value) {
+  const n = Math.round(Number(value));
+  if (!Number.isFinite(n) || n < 1) return RECONCILE_CAP;
+  return Math.min(RECONCILE_CAP, n);
+}
+
+async function tenantIdsForReconcile(env, deps) {
+  if (Array.isArray(deps && deps.tenantIds)) {
+    const ids = [];
+    for (const item of deps.tenantIds) {
+      const id = safeTenant(item);
+      if (id && ids.indexOf(id) === -1) ids.push(id);
+    }
+    return ids;
+  }
+  if (!env || !env.AUTH_KV || typeof env.AUTH_KV.list !== 'function') return [];
+  const ids = [];
+  let cursor;
+  for (let page = 0; page < 40; page += 1) {
+    const listed = await env.AUTH_KV.list({ prefix: APPT_PREFIX, cursor });
+    const keys = (listed && listed.keys) || [];
+    for (const key of keys) {
+      const name = String((key && key.name) || '');
+      if (name.indexOf(APPT_PREFIX) !== 0) continue;
+      const id = safeTenant(name.slice(APPT_PREFIX.length));
+      if (id && ids.indexOf(id) === -1) ids.push(id);
+    }
+    if (!listed || listed.list_complete !== false || !listed.cursor) break;
+    cursor = listed.cursor;
+  }
+  return ids;
+}
+
+function rotateTenants(ids, after) {
+  if (!after) return ids.slice();
+  const idx = ids.indexOf(after);
+  if (idx === -1) return ids.slice();
+  return ids.slice(idx + 1).concat(ids.slice(0, idx + 1));
+}
+
+/** Hourly catch-up for Square payments and refunds that never received a webhook. */
+export async function runSquareReconcile(env, deps) {
+  deps = deps || {};
+  const limit = reconcileLimit(deps.limit);
+  const now = typeof deps.now === 'number' ? deps.now : Date.now();
+  const ids = await tenantIdsForReconcile(env, deps);
+  let after = '';
+  if (env && env.AUTH_KV) {
+    after = safeTenant(await env.AUTH_KV.get(RECONCILE_CURSOR_KEY));
+  }
+  const ordered = rotateTenants(ids, after);
+  let checked = 0;
+  let paid = 0;
+  let refunded = 0;
+  let errors = 0;
+  let lastTenant = '';
+  const load = (deps && deps.loadAppointments) || loadPrivateAppointments;
+  for (const tenantId of ordered) {
+    if (checked >= limit) break;
+    lastTenant = tenantId;
+    let appointments = [];
+    try {
+      appointments = await load(env, tenantId);
+    } catch (_) {
+      errors += 1;
+      continue;
+    }
+    for (const booking of appointments || []) {
+      if (checked >= limit) break;
+      if (!pendingSquareRefund(booking) && !awaitingSquarePayment(booking, now)) continue;
+      checked += 1;
+      try {
+        const result = await reconcileSquareBooking(env, deps, tenantId, booking, {
+          bookingIds: [String(booking.id)],
+        });
+        if (result.error) {
+          errors += 1;
+          continue;
+        }
+        if (result.paymentChanged && result.paid) paid += 1;
+        if (result.refunded) refunded += 1;
+      } catch (_) {
+        errors += 1;
+      }
+    }
+  }
+  if (lastTenant && env && env.AUTH_KV) {
+    await env.AUTH_KV.put(RECONCILE_CURSOR_KEY, lastTenant);
+  }
+  return { ok: true, checked, paid, refunded, errors };
+}
+
+async function applyFetchedSquarePayment(env, deps, tenantId, bookingIds, payment, kind, focusId) {
   const load = (deps && deps.loadAppointments) || loadPrivateAppointments;
   const appointments = await load(env, tenantId);
   const wanted = (Array.isArray(bookingIds) ? bookingIds : []).map((id) => String(id));
@@ -1029,8 +1384,10 @@ async function applyFetchedSquarePayment(env, deps, tenantId, bookingIds, paymen
   let changed = false;
   let duplicate = true;
   let paid = false;
+  let focus = null;
   for (const booking of bookings) {
     const applied = applySquarePaymentUpdate(booking, payment, kind);
+    if (!focusId || String(booking.id) === String(focusId)) focus = applied.booking;
     if (bookingPaidState(applied.booking)) paid = true;
     if (applied.duplicate) continue;
     duplicate = false;
@@ -1039,7 +1396,7 @@ async function applyFetchedSquarePayment(env, deps, tenantId, bookingIds, paymen
       await store.saveBooking(tenantId, applied.booking);
     }
   }
-  return { paid, changed, duplicate: duplicate && !changed };
+  return { paid, changed, duplicate: duplicate && !changed, booking: focus };
 }
 
 async function handleConfirm(request, env, deps) {
@@ -1064,54 +1421,44 @@ async function handleConfirm(request, env, deps) {
   // Order id, payment id, and amount come from our records and from Square. Client fields are ignored.
   const reverse = await kvGet(env, bookingOrderKey(tenantId, bookingId));
   const orderId = String(booking.squareOrderId || (reverse && reverse.orderId) || '').trim();
-  if (!orderId) {
-    const paid = bookingPaidState(booking);
-    return jsonResponse(deps, { ok: true, paid, status: paid ? String(booking.paymentStatus || 'PAID') : 'UNPAID' }, 200, '');
-  }
-  const mapped = await kvGet(env, ORDER_PREFIX + orderId);
+  const mapped = orderId ? await kvGet(env, ORDER_PREFIX + orderId) : null;
   if (mapped && mapped.tenantId && String(mapped.tenantId) !== tenantId) {
     return jsonResponse(deps, { ok: false, error: 'square_order_mismatch', paid: false }, 409, '');
   }
   if (mapped && Array.isArray(mapped.bookingIds) && mapped.bookingIds.length && mapped.bookingIds.map(String).indexOf(bookingId) === -1) {
     return jsonResponse(deps, { ok: false, error: 'square_order_mismatch', paid: false }, 409, '');
   }
+  const working = Object.assign({}, booking);
+  if (orderId && !working.squareOrderId) working.squareOrderId = orderId;
+  const refundOpen = refundNeedsFetch(working);
+  const paidWithoutRefund = bookingPaidState(working) && String(working.squarePaymentId || '').trim() && !String(working.squareRefundId || '').trim();
+  if (!orderId && !refundOpen && !paidWithoutRefund) {
+    const paid = bookingPaidState(working);
+    return jsonResponse(deps, { ok: true, paid, status: paid ? String(working.paymentStatus || 'PAID') : 'UNPAID' }, 200, '');
+  }
   const bookingIds = mapped && Array.isArray(mapped.bookingIds) && mapped.bookingIds.length
     ? mapped.bookingIds.map(String)
     : [bookingId];
   const kind = (mapped && mapped.kind) || (reverse && reverse.kind) || '';
-
-  const got = await accessTokenFor(env, tenantId, deps);
-  if (got.error) {
-    if (bookingPaidState(booking)) {
+  const result = await reconcileSquareBooking(env, deps, tenantId, working, { bookingIds, kind });
+  if (result.error) {
+    if (bookingPaidState(booking) && result.requiredRefund !== true) {
       return jsonResponse(deps, { ok: true, paid: true, status: String(booking.paymentStatus || 'PAID') }, 200, '');
     }
-    return jsonResponse(deps, { ok: false, error: got.error, paid: false, status: String(booking.paymentStatus || '') }, got.status || 409, '');
-  }
-  const fetched = await loadSquareOrderPayment(env, deps, got.token, orderId);
-  if (fetched.error) {
-    if (bookingPaidState(booking)) {
-      return jsonResponse(deps, { ok: true, paid: true, status: String(booking.paymentStatus || 'PAID') }, 200, '');
-    }
-    return jsonResponse(deps, { ok: false, error: fetched.error, paid: false, status: String(booking.paymentStatus || '') }, fetched.status || 502, '');
-  }
-  if (!fetched.payment) {
     return jsonResponse(deps, {
-      ok: true,
-      paid: bookingPaidState(booking),
-      status: fetched.paymentStatus || 'UNPAID',
-    }, 200, '');
+      ok: false,
+      error: result.error,
+      paid: false,
+      status: String(booking.paymentStatus || ''),
+    }, result.status || 502, '');
   }
-  const payment = Object.assign({}, fetched.payment);
-  if (!payment.order_id) payment.order_id = orderId;
-  const note = parseSquarePaymentNote(payment.note) || parseSquarePaymentNote(payment.payment_note);
-  const chargeKind = kind || (note && note.kind) || '';
-  const applied = await applyFetchedSquarePayment(env, deps, tenantId, bookingIds, payment, chargeKind);
-  if (applied.error) return jsonResponse(deps, { ok: false, error: applied.error, paid: false }, applied.status || 404, '');
-  return jsonResponse(deps, {
+  const payload = {
     ok: true,
-    paid: applied.paid === true,
-    status: squarePaymentStatus(payment) || 'COMPLETED',
-  }, 200, '');
+    paid: result.paid === true,
+    status: result.status || 'UNPAID',
+  };
+  if (result.refundChecked) payload.refundStatus = result.refundStatus || '';
+  return jsonResponse(deps, payload, 200, '');
 }
 
 async function handleRefund(env, tenantId, body, deps, origin) {
@@ -1122,6 +1469,9 @@ async function handleRefund(env, tenantId, body, deps, origin) {
   const booking = (appointments || []).find((item) => item && String(item.id) === bookingId);
   if (!booking) return jsonResponse(deps, { ok: false, error: 'booking_not_found' }, 404, origin);
   if (!booking.squarePaymentId) return jsonResponse(deps, { ok: false, error: 'square_payment_missing' }, 409, origin);
+  if (String(booking.squareRefundId || '').trim() && String(booking.squareRefundStatus || '').trim().toUpperCase() === 'PENDING') {
+    return jsonResponse(deps, { ok: false, error: 'refund_pending' }, 409, origin);
+  }
   const paidCents = Math.round(Number(booking.squareAmountCents) || 0);
   const already = Math.round(Number(booking.squareRefundedCents) || 0);
   const remaining = paidCents > 0 ? Math.max(0, paidCents - already) : 0;
@@ -1153,7 +1503,8 @@ async function handleRefund(env, tenantId, body, deps, origin) {
       message: squareDetail + ' The appointment was not changed.',
     }, created.status || 502, origin);
   }
-  const result = applyRefundApiResult(booking, { ok: true, refund: created.data.refund || created.data });
+  const refund = (created.data && created.data.refund) || created.data;
+  const result = applyRefundApiResult(booking, { ok: true, refund });
   if (!result.changed) {
     return jsonResponse(deps, {
       ok: true,
@@ -1164,6 +1515,16 @@ async function handleRefund(env, tenantId, body, deps, origin) {
   }
   const updated = (appointments || []).map((item) => (item && String(item.id) === bookingId ? result.booking : item));
   await stampBookings(env, deps, tenantId, updated);
+  await rememberRefund(env, refund, tenantId, bookingId, booking.squarePaymentId);
+  if (result.pending === true) {
+    return jsonResponse(deps, {
+      ok: true,
+      pending: true,
+      bookingId,
+      refundStatus: 'PENDING',
+      message: 'Square is still processing the refund.',
+    }, 200, origin);
+  }
   return jsonResponse(deps, { ok: true, bookingId, refundStatus: 'COMPLETED', paymentStatus: result.booking.paymentStatus }, 200, origin);
 }
 
@@ -1224,7 +1585,11 @@ function squareEventStore(env, deps) {
     },
     async findRefundBooking(refund) {
       const paymentId = String((refund && refund.payment_id) || '');
-      const mapped = paymentId ? await kvGet(env, PAYMENT_PREFIX + paymentId) : null;
+      const refundId = String((refund && refund.id) || '');
+      let mapped = paymentId ? await kvGet(env, PAYMENT_PREFIX + paymentId) : null;
+      if (!mapped || !mapped.tenantId) {
+        mapped = refundId ? await kvGet(env, REFUND_PREFIX + refundId) : null;
+      }
       if (!mapped || !mapped.tenantId) return null;
       const load = deps.loadAppointments || loadPrivateAppointments;
       const appointments = await load(env, mapped.tenantId);

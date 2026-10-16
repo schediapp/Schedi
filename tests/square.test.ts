@@ -16,6 +16,7 @@ import {
   encryptSquareTokens,
   handleSquareHttp,
   parseSquarePaymentNote,
+  runSquareReconcile,
   readVerifiedSquareEvent,
   squareTokenKeyBytes,
   squareWebhookSignature,
@@ -36,6 +37,10 @@ function kv(entries: Record<string, string> = {}) {
     get: vi.fn(async (key: string) => store.get(key) ?? null),
     put: vi.fn(async (key: string, value: string) => { store.set(key, value); }),
     delete: vi.fn(async (key: string) => { store.delete(key); }),
+    list: vi.fn(async ({ prefix }: { prefix?: string } = {}) => ({
+      keys: [...store.keys()].filter((key) => !prefix || key.startsWith(prefix)).map((name) => ({ name })),
+      list_complete: true,
+    })),
   };
 }
 
@@ -317,8 +322,12 @@ describe("Square refunds and payment links", () => {
       ok: true,
       refund: { id: "rf_1", status: "PENDING", amount_money: { amount: 2500, currency: "USD" } },
     });
-    expect(pending.changed).toBe(false);
+    expect(pending.changed).toBe(true);
     expect(pending.pending).toBe(true);
+    expect(pending.booking.squareRefundId).toBe("rf_1");
+    expect(pending.booking.squareRefundStatus).toBe("PENDING");
+    expect(pending.booking.paymentStatus).toBe("PAID");
+    expect(pending.booking.squareRefundedCents).toBeUndefined();
     const done = applyRefundApiResult(paid, {
       ok: true,
       refund: { id: "rf_1", status: "COMPLETED", payment_id: "pay_1", amount_money: { amount: 2500, currency: "USD" } },
@@ -384,6 +393,163 @@ describe("Square refunds and payment links", () => {
     expect(body.payment_id).toBe("pay_1");
     expect(body.amount_money).toEqual({ amount: 2500, currency: "USD" });
     expect(body).not.toHaveProperty("app_fee_money");
+  });
+
+  it("stores a PENDING refund id and the lookup keys without marking the visit refunded", async () => {
+    const key = await tokenKey();
+    const cipher = await encryptSquareTokens(key.raw, { accessToken: "sq_at", refreshToken: "sq_rt" });
+    const store = kv({
+      ["sqpay:pay_1"]: JSON.stringify({ tenantId: TENANT, bookingIds: ["BK-OTHER0001"] }),
+    });
+    putSession(store);
+    let saved: Record<string, unknown> | null = null;
+    const squareFetch = vi.fn(async () => jsonResponse({
+      refund: {
+        id: "rf_1",
+        status: "PENDING",
+        payment_id: "pay_1",
+        amount_money: { amount: 2500, currency: "USD" },
+      },
+    }));
+    const res = await handleSquareHttp(
+      new Request("https://schedi.app/api/square/refund", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tenantId: TENANT, session: "owner-token", bookingId: BOOKING_ID, amountCents: 2500 }),
+      }),
+      {
+        AUTH_KV: store,
+        SQUARE_TOKEN_KEY: key.b64,
+        SQUARE_APPLICATION_ID: "sq0idp-test",
+        SQUARE_APPLICATION_SECRET: "secret",
+      },
+      "https://schedi.app",
+      "/api/square/refund",
+      {
+        json: (body: unknown, status = 200) => jsonResponse(body, status),
+        loadConnection: async () => ({
+          merchantId: "MERCHANT",
+          cipher,
+          expiresAt: new Date(Date.now() + 10 * 86400000).toISOString(),
+          locationId: "LOC",
+        }),
+        loadAppointments: async () => [booking({
+          paymentStatus: "PAID",
+          paidMethod: "square",
+          paymentMethod: "square",
+          squarePaymentId: "pay_1",
+          squareAmountCents: 2500,
+          squareCurrency: "USD",
+        })],
+        saveAppointments: async (_env: unknown, _token: string, _tenantId: string, appointments: Array<Record<string, unknown>>) => {
+          saved = appointments[0];
+        },
+        squareFetch,
+      },
+    );
+    const data = await res.json();
+    expect(res.status).toBe(200);
+    expect(data).toMatchObject({
+      ok: true,
+      pending: true,
+      bookingId: BOOKING_ID,
+      refundStatus: "PENDING",
+      message: "Square is still processing the refund.",
+    });
+    expect(saved).toMatchObject({
+      squareRefundId: "rf_1",
+      squareRefundStatus: "PENDING",
+      paymentStatus: "PAID",
+    });
+    expect(saved && saved.squareRefundedCents).toBeUndefined();
+    const pay = JSON.parse(String(store.store.get("sqpay:pay_1")));
+    expect(pay.bookingIds).toEqual(["BK-OTHER0001", BOOKING_ID]);
+    const mapped = JSON.parse(String(store.store.get("sqref:rf_1")));
+    expect(mapped).toMatchObject({ tenantId: TENANT, bookingIds: [BOOKING_ID], paymentId: "pay_1" });
+  });
+
+  it("refuses a second refund while one is still PENDING", async () => {
+    const store = kv();
+    putSession(store);
+    const squareFetch = vi.fn();
+    const res = await handleSquareHttp(
+      new Request("https://schedi.app/api/square/refund", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tenantId: TENANT, session: "owner-token", bookingId: BOOKING_ID, amountCents: 2500 }),
+      }),
+      { AUTH_KV: store },
+      "https://schedi.app",
+      "/api/square/refund",
+      {
+        json: (body: unknown, status = 200) => jsonResponse(body, status),
+        loadAppointments: async () => [booking({
+          paymentStatus: "PAID",
+          paidMethod: "square",
+          squarePaymentId: "pay_1",
+          squareAmountCents: 2500,
+          squareRefundId: "rf_1",
+          squareRefundStatus: "pending",
+        })],
+        saveAppointments: async () => { throw new Error("should not save"); },
+        squareFetch,
+      },
+    );
+    expect(res.status).toBe(409);
+    expect(await res.json()).toMatchObject({ ok: false, error: "refund_pending" });
+    expect(squareFetch).not.toHaveBeenCalled();
+  });
+
+  it("allows another refund after Square reports the previous one FAILED", async () => {
+    const key = await tokenKey();
+    const cipher = await encryptSquareTokens(key.raw, { accessToken: "sq_at", refreshToken: "sq_rt" });
+    const store = kv();
+    putSession(store);
+    let saved: Record<string, unknown> | null = null;
+    const squareFetch = vi.fn(async () => jsonResponse({
+      refund: { id: "rf_2", status: "PENDING", payment_id: "pay_1", amount_money: { amount: 2500, currency: "USD" } },
+    }));
+    const res = await handleSquareHttp(
+      new Request("https://schedi.app/api/square/refund", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tenantId: TENANT, session: "owner-token", bookingId: BOOKING_ID }),
+      }),
+      {
+        AUTH_KV: store,
+        SQUARE_TOKEN_KEY: key.b64,
+        SQUARE_APPLICATION_ID: "sq0idp-test",
+        SQUARE_APPLICATION_SECRET: "secret",
+      },
+      "https://schedi.app",
+      "/api/square/refund",
+      {
+        json: (body: unknown, status = 200) => jsonResponse(body, status),
+        loadConnection: async () => ({
+          merchantId: "MERCHANT",
+          cipher,
+          expiresAt: new Date(Date.now() + 10 * 86400000).toISOString(),
+          locationId: "LOC",
+        }),
+        loadAppointments: async () => [booking({
+          paymentStatus: "PAID",
+          paidMethod: "square",
+          squarePaymentId: "pay_1",
+          squareAmountCents: 2500,
+          squareCurrency: "USD",
+          squareRefundId: "rf_1",
+          squareRefundStatus: "FAILED",
+        })],
+        saveAppointments: async (_env: unknown, _token: string, _tenantId: string, appointments: Array<Record<string, unknown>>) => {
+          saved = appointments[0];
+        },
+        squareFetch,
+      },
+    );
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ ok: true, pending: true, refundStatus: "PENDING" });
+    expect(saved).toMatchObject({ squareRefundId: "rf_2", squareRefundStatus: "PENDING", paymentStatus: "PAID" });
+    expect(squareFetch).toHaveBeenCalled();
   });
 
   it("builds a payment link with no application fee", () => {
@@ -903,6 +1069,333 @@ describe("Square payment confirm", () => {
     expect(await res.json()).toEqual({ ok: true, paid: true, status: "COMPLETED" });
     expect(saved).toMatchObject({ squareOrderId: "ord_9", squarePaymentId: "pay_9", squareAmountCents: 1800, paymentStatus: "PAID" });
   });
+
+  function paidBooking(extra: Record<string, unknown> = {}) {
+    return booking({
+      paymentStatus: "PAID",
+      paidMethod: "square",
+      paymentMethod: "square",
+      squarePaymentId: "pay_1",
+      squareOrderId: "ord_1",
+      squareAmountCents: 2500,
+      squareCurrency: "USD",
+      ...extra,
+    });
+  }
+
+  it("completes a stored PENDING refund from Square and ignores the client amount", async () => {
+    const seller = await readySeller();
+    const store = kv({
+      ["sqord:ord_1"]: JSON.stringify({ tenantId: TENANT, bookingIds: [BOOKING_ID], kind: "full" }),
+    });
+    let rows = [paidBooking({ squareRefundId: "rf_1", squareRefundStatus: "PENDING" })];
+    let saves = 0;
+    const calls: string[] = [];
+    const squareFetch = vi.fn(async (url: string) => {
+      const u = String(url);
+      calls.push(u);
+      if (u.includes("/v2/orders/ord_1")) {
+        return jsonResponse({ order: { id: "ord_1", state: "COMPLETED", tenders: [{ payment_id: "pay_1" }] } });
+      }
+      if (u.includes("/v2/payments/pay_1")) {
+        return jsonResponse({
+          payment: { id: "pay_1", status: "COMPLETED", order_id: "ord_1", amount_money: { amount: 2500, currency: "USD" } },
+        });
+      }
+      if (u.includes("/v2/refunds/rf_1")) {
+        return jsonResponse({
+          refund: { id: "rf_1", status: "COMPLETED", payment_id: "pay_1", amount_money: { amount: 2500, currency: "USD" } },
+        });
+      }
+      return jsonResponse({}, 404);
+    });
+    const deps = {
+      json: (body: unknown, status = 200) => jsonResponse(body, status),
+      loadConnection: async () => seller.connection,
+      loadAppointments: async () => rows.map((row) => ({ ...row })),
+      saveAppointments: async (_env: unknown, _token: string, _tenantId: string, appointments: Array<Record<string, unknown>>) => {
+        saves += 1;
+        rows = appointments.map((row) => ({ ...row }));
+      },
+      squareFetch,
+    };
+    const env = { ...seller.envBase, AUTH_KV: store };
+    const first = await handleSquareHttp(
+      confirmRequest({ tenantId: TENANT, bookingId: BOOKING_ID, amountCents: 1 }, "203.0.113.30"),
+      env, "", "/api/square/confirm", deps,
+    );
+    const second = await handleSquareHttp(
+      confirmRequest({ tenantId: TENANT, bookingId: BOOKING_ID, amountCents: 1 }, "203.0.113.30"),
+      env, "", "/api/square/confirm", deps,
+    );
+    expect(await first.json()).toEqual({ ok: true, paid: false, status: "REFUNDED", refundStatus: "COMPLETED" });
+    expect(await second.json()).toEqual({ ok: true, paid: false, status: "COMPLETED" });
+    expect(saves).toBe(1);
+    expect(rows[0]).toMatchObject({
+      paymentStatus: "REFUNDED",
+      squareRefundId: "rf_1",
+      squareRefundStatus: "COMPLETED",
+      squareRefundedCents: 2500,
+      squareAmountCents: 2500,
+    });
+    expect(calls.filter((url) => url.includes("/v2/refunds/rf_1"))).toHaveLength(1);
+  });
+
+  it("picks up an earlier refund from the payment when no refund id was stored", async () => {
+    const seller = await readySeller();
+    const store = kv();
+    putSession(store);
+    let saved: Record<string, unknown> | null = null;
+    const calls: string[] = [];
+    const squareFetch = vi.fn(async (url: string) => {
+      const u = String(url);
+      calls.push(u);
+      if (u.includes("/v2/payments/pay_1")) {
+        return jsonResponse({
+          payment: {
+            id: "pay_1",
+            status: "COMPLETED",
+            amount_money: { amount: 1, currency: "USD" },
+            refund_ids: ["rf_old"],
+          },
+        });
+      }
+      if (u.includes("/v2/refunds/rf_old")) {
+        return jsonResponse({
+          refund: { id: "rf_old", status: "COMPLETED", payment_id: "pay_1", amount_money: { amount: 2500, currency: "USD" } },
+        });
+      }
+      return jsonResponse({}, 404);
+    });
+    const res = await handleSquareHttp(
+      confirmRequest({
+        tenantId: TENANT,
+        session: "owner-token",
+        bookingId: BOOKING_ID,
+        amountCents: 1,
+        paymentId: "spoof",
+        refundId: "spoof",
+      }, "203.0.113.31"),
+      { ...seller.envBase, AUTH_KV: store },
+      "",
+      "/api/square/confirm",
+      {
+        json: (body: unknown, status = 200) => jsonResponse(body, status),
+        loadConnection: async () => seller.connection,
+        loadAppointments: async () => [paidBooking({ squareOrderId: undefined })],
+        saveAppointments: async (_env: unknown, _token: string, _tenantId: string, appointments: Array<Record<string, unknown>>) => {
+          saved = appointments[0];
+        },
+        squareFetch,
+      },
+    );
+    expect(await res.json()).toEqual({ ok: true, paid: false, status: "REFUNDED", refundStatus: "COMPLETED" });
+    expect(saved).toMatchObject({
+      paymentStatus: "REFUNDED",
+      squareRefundId: "rf_old",
+      squareRefundStatus: "COMPLETED",
+      squareRefundedCents: 2500,
+      squareAmountCents: 2500,
+      squarePaymentId: "pay_1",
+    });
+    expect(calls.some((url) => url.includes("/v2/payments/pay_1"))).toBe(true);
+    expect(calls.join(" ")).not.toContain("spoof");
+    expect(JSON.parse(String(store.store.get("sqref:rf_old"))).bookingIds).toEqual([BOOKING_ID]);
+  });
+
+  it("leaves a paid booking paid while Square still reports the refund as PENDING", async () => {
+    const seller = await readySeller();
+    let saves = 0;
+    const squareFetch = vi.fn(async (url: string) => {
+      const u = String(url);
+      if (u.includes("/v2/orders/ord_1")) {
+        return jsonResponse({ order: { id: "ord_1", tenders: [{ payment_id: "pay_1" }] } });
+      }
+      if (u.includes("/v2/payments/pay_1")) {
+        return jsonResponse({
+          payment: { id: "pay_1", status: "COMPLETED", order_id: "ord_1", amount_money: { amount: 2500, currency: "USD" } },
+        });
+      }
+      if (u.includes("/v2/refunds/rf_1")) {
+        return jsonResponse({
+          refund: { id: "rf_1", status: "PENDING", payment_id: "pay_1", amount_money: { amount: 2500, currency: "USD" } },
+        });
+      }
+      return jsonResponse({}, 404);
+    });
+    const res = await handleSquareHttp(
+      confirmRequest({ tenantId: TENANT, bookingId: BOOKING_ID, amountCents: 9 }, "203.0.113.32"),
+      { ...seller.envBase, AUTH_KV: kv() },
+      "",
+      "/api/square/confirm",
+      {
+        json: (body: unknown, status = 200) => jsonResponse(body, status),
+        loadConnection: async () => seller.connection,
+        loadAppointments: async () => [paidBooking({ squareRefundId: "rf_1", squareRefundStatus: "PENDING" })],
+        saveAppointments: async () => { saves += 1; },
+        squareFetch,
+      },
+    );
+    expect(await res.json()).toEqual({ ok: true, paid: true, status: "COMPLETED", refundStatus: "PENDING" });
+    expect(saves).toBe(0);
+  });
+});
+
+describe("Square hourly reconcile", () => {
+  async function sellerEnv(store: ReturnType<typeof kv>) {
+    const key = await tokenKey();
+    const cipher = await encryptSquareTokens(key.raw, { accessToken: "sq_at", refreshToken: "sq_rt" });
+    return {
+      env: {
+        AUTH_KV: store,
+        SQUARE_TOKEN_KEY: key.b64,
+        SQUARE_APPLICATION_ID: "sq0idp-test",
+        SQUARE_APPLICATION_SECRET: "secret",
+      },
+      connection: {
+        merchantId: "MERCHANT",
+        cipher,
+        expiresAt: new Date(Date.now() + 10 * 86400000).toISOString(),
+        locationId: "LOC",
+      },
+    };
+  }
+
+  it("pays a recent Square order, skips an old one, and completes an old pending refund", async () => {
+    const now = Date.parse("2026-10-16T18:00:00.000Z");
+    const recent = new Date(now - 2 * 60 * 60 * 1000).toISOString();
+    const old = new Date(now - 72 * 60 * 60 * 1000).toISOString();
+    const store = kv();
+    store.store.set("privateAppts:" + TENANT, "1");
+    const seller = await sellerEnv(store);
+    let rows = [
+      booking({ id: "BK-RECENT001", squareOrderId: "ord_new", paymentStatus: "AWAITING SQUARE", createdAt: recent }),
+      booking({ id: "BK-OLD000001", squareOrderId: "ord_old", paymentStatus: "AWAITING SQUARE", createdAt: old }),
+      booking({ id: "BK-NOCREATED1", squareOrderId: "ord_nodate", paymentStatus: "AWAITING SQUARE", createdAt: undefined }),
+      booking({
+        id: "BK-REFUND001",
+        paymentStatus: "PAID",
+        paidMethod: "square",
+        paymentMethod: "square",
+        squarePaymentId: "pay_ref",
+        squareAmountCents: 2500,
+        squareCurrency: "USD",
+        squareRefundId: "rf_old",
+        squareRefundStatus: "PENDING",
+        createdAt: old,
+      }),
+    ];
+    const calls: string[] = [];
+    const result = await runSquareReconcile(seller.env, {
+      now,
+      loadConnection: async () => seller.connection,
+      loadAppointments: async () => rows.map((row) => ({ ...row })),
+      saveAppointments: async (_env: unknown, _token: string, _tenantId: string, appointments: Array<Record<string, unknown>>) => {
+        rows = appointments.map((row) => ({ ...row }));
+      },
+      squareFetch: vi.fn(async (url: string) => {
+        const u = String(url);
+        calls.push(u);
+        if (u.includes("/v2/orders/ord_new")) {
+          return jsonResponse({ order: { id: "ord_new", tenders: [{ payment_id: "pay_new" }] } });
+        }
+        if (u.includes("/v2/payments/pay_new")) {
+          return jsonResponse({
+            payment: { id: "pay_new", status: "COMPLETED", order_id: "ord_new", amount_money: { amount: 2500, currency: "USD" } },
+          });
+        }
+        if (u.includes("/v2/refunds/rf_old")) {
+          return jsonResponse({
+            refund: { id: "rf_old", status: "COMPLETED", payment_id: "pay_ref", amount_money: { amount: 2500, currency: "USD" } },
+          });
+        }
+        throw new Error("unexpected Square call " + u);
+      }),
+    });
+    expect(result).toEqual({ ok: true, checked: 2, paid: 1, refunded: 1, errors: 0 });
+    expect(rows.find((row) => row.id === "BK-RECENT001")).toMatchObject({
+      paymentStatus: "PAID",
+      squarePaymentId: "pay_new",
+      squareAmountCents: 2500,
+    });
+    expect(rows.find((row) => row.id === "BK-OLD000001")?.paymentStatus).toBe("AWAITING SQUARE");
+    expect(rows.find((row) => row.id === "BK-NOCREATED1")?.paymentStatus).toBe("AWAITING SQUARE");
+    expect(rows.find((row) => row.id === "BK-REFUND001")).toMatchObject({
+      paymentStatus: "REFUNDED",
+      squareRefundStatus: "COMPLETED",
+      squareRefundedCents: 2500,
+    });
+    expect(calls.join(" ")).not.toContain("ord_old");
+    expect(calls.join(" ")).not.toContain("ord_nodate");
+    expect(store.store.get("sqrecon:after")).toBe(TENANT);
+  });
+
+  it("caps each run and reconciles the next tenant after the cursor", async () => {
+    const now = Date.parse("2026-10-16T18:00:00.000Z");
+    const recent = new Date(now - 60 * 60 * 1000).toISOString();
+    const store = kv();
+    const seller = await sellerEnv(store);
+    const rows: Record<string, Array<Record<string, unknown>>> = {
+      alpha: [booking({
+        id: "BK-ALPHA0001",
+        tenantId: "alpha",
+        squareOrderId: "ord_a",
+        paymentStatus: "AWAITING SQUARE",
+        createdAt: recent,
+      })],
+      beta: [booking({
+        id: "BK-BETA00001",
+        tenantId: "beta",
+        squareOrderId: "ord_b",
+        paymentStatus: "AWAITING SQUARE",
+        createdAt: recent,
+      })],
+    };
+    const calls: string[] = [];
+    const deps = {
+      now,
+      limit: 1,
+      tenantIds: ["alpha", "beta"],
+      loadConnection: async () => seller.connection,
+      loadAppointments: async (_env: unknown, tenantId: string) => (rows[tenantId] || []).map((row) => ({ ...row })),
+      saveAppointments: async (_env: unknown, _token: string, tenantId: string, appointments: Array<Record<string, unknown>>) => {
+        rows[tenantId] = appointments.map((row) => ({ ...row }));
+      },
+      squareFetch: vi.fn(async (url: string) => {
+        const u = String(url);
+        calls.push(u);
+        if (u.includes("/v2/orders/ord_a")) {
+          return jsonResponse({ order: { id: "ord_a", tenders: [{ payment_id: "pay_a" }] } });
+        }
+        if (u.includes("/v2/orders/ord_b")) {
+          return jsonResponse({ order: { id: "ord_b", tenders: [{ payment_id: "pay_b" }] } });
+        }
+        if (u.includes("/v2/payments/pay_a")) {
+          return jsonResponse({
+            payment: { id: "pay_a", status: "PENDING", order_id: "ord_a", amount_money: { amount: 2500, currency: "USD" } },
+          });
+        }
+        if (u.includes("/v2/payments/pay_b")) {
+          return jsonResponse({
+            payment: { id: "pay_b", status: "COMPLETED", order_id: "ord_b", amount_money: { amount: 1800, currency: "USD" } },
+          });
+        }
+        return jsonResponse({}, 404);
+      }),
+    };
+    const first = await runSquareReconcile(seller.env, deps);
+    expect(first).toMatchObject({ ok: true, checked: 1, paid: 0, errors: 0 });
+    expect(rows.alpha[0].paymentStatus).toBe("AWAITING SQUARE");
+    expect(rows.beta[0].paymentStatus).toBe("AWAITING SQUARE");
+    expect(store.store.get("sqrecon:after")).toBe("alpha");
+    calls.length = 0;
+    const second = await runSquareReconcile(seller.env, deps);
+    expect(second).toMatchObject({ ok: true, checked: 1, paid: 1, errors: 0 });
+    expect(rows.beta[0]).toMatchObject({ paymentStatus: "PAID", squarePaymentId: "pay_b", squareAmountCents: 1800 });
+    expect(rows.alpha[0].paymentStatus).toBe("AWAITING SQUARE");
+    expect(calls.join(" ")).not.toContain("ord_a");
+    expect(calls.some((url) => url.includes("ord_b"))).toBe(true);
+  });
 });
 
 describe("Square webhook lookup gaps", () => {
@@ -1121,5 +1614,46 @@ describe("Square webhook lookup gaps", () => {
     );
     expect(res.status).toBe(503);
     expect(saves).toBe(0);
+  });
+
+  it("applies refund.updated from the sqref mapping when the payment key is missing", async () => {
+    const store = kv({
+      ["sqref:rf_1"]: JSON.stringify({ tenantId: TENANT, bookingIds: [BOOKING_ID], paymentId: "pay_1" }),
+    });
+    let saved: Record<string, unknown> | null = null;
+    const raw = JSON.stringify({
+      event_id: "evt_refund_sqref",
+      type: "refund.updated",
+      data: {
+        object: {
+          refund: {
+            id: "rf_1",
+            status: "COMPLETED",
+            payment_id: "pay_missing",
+            amount_money: { amount: 2500, currency: "USD" },
+          },
+        },
+      },
+    });
+    const res = await postEvent(raw, {
+      loadAppointments: async () => [booking({
+        paymentStatus: "PAID",
+        paidMethod: "square",
+        paymentMethod: "square",
+        squarePaymentId: "pay_1",
+        squareAmountCents: 2500,
+        squareCurrency: "USD",
+      })],
+      saveAppointments: async (_env: unknown, _token: string, _tenantId: string, appointments: Array<Record<string, unknown>>) => {
+        saved = appointments[0];
+      },
+    }, { AUTH_KV: store });
+    expect(res.status).toBe(200);
+    expect(saved).toMatchObject({
+      paymentStatus: "REFUNDED",
+      squareRefundId: "rf_1",
+      squareRefundStatus: "COMPLETED",
+      squareRefundedCents: 2500,
+    });
   });
 });
