@@ -2,8 +2,10 @@
  * One-time maintenance: which tenant logins still use the old default provision password.
  *
  * GET|POST /api/ops-default-passwords
- *   Agency session (X-Schedi-Session, schedi_hq cookie, or JSON session)
- *   AND Authorization: Bearer <OPS_SNAPSHOT_TOKEN>
+ *   An agency session (X-Schedi-Session, schedi_hq cookie, or JSON session),
+ *   with or without Authorization: Bearer <OPS_SNAPSHOT_TOKEN>,
+ *   OR the bearer on its own.
+ *   A presented owner session is 403. No valid bearer and no valid agency session is 401.
  *
  * Read-only. For each AUTH_KV `tenant:*` password record, hashes that default
  * with the record's salt and AUTH_PEPPER via passwordMatches (existing PBKDF2
@@ -11,10 +13,10 @@
  * Never returns hashes, salts, or the password. Does not write KV.
  */
 
-import { authReady, passwordMatches, readSession } from './owner-auth.js';
+import { authReady, passwordMatches } from './owner-auth.js';
+import { authorizeBearerOrAgency } from './agency-session.js';
 
 const LEGACY_DEFAULT_PASSWORD = 'vance123';
-const AGENCY_COOKIE = 'schedi_hq';
 
 function timingSafeEqualStr(a, b) {
   if (typeof a !== 'string' || typeof b !== 'string') return false;
@@ -39,38 +41,6 @@ function bearerMatches(request, env) {
   const auth = String(request.headers.get('Authorization') || '');
   const given = auth.startsWith('Bearer ') ? auth.slice(7).trim() : '';
   return !!(expected && given && timingSafeEqualStr(given, expected));
-}
-
-function cookieToken(request) {
-  const cookie = String((request && request.headers && request.headers.get('Cookie')) || '');
-  const parts = cookie.split(';');
-  for (let i = 0; i < parts.length; i += 1) {
-    const part = parts[i];
-    const idx = part.indexOf('=');
-    if (idx < 0) continue;
-    if (part.slice(0, idx).trim() !== AGENCY_COOKIE) continue;
-    const raw = part.slice(idx + 1).trim();
-    try { return decodeURIComponent(raw).slice(0, 256); } catch (_) { return raw.slice(0, 256); }
-  }
-  return '';
-}
-
-function sessionTokenFromRequest(request, body) {
-  const header = String((request && request.headers && request.headers.get('X-Schedi-Session')) || '').trim();
-  if (header) return header.slice(0, 256);
-  const fromCookie = cookieToken(request);
-  if (fromCookie) return fromCookie;
-  if (body && body.session) return String(body.session).trim().slice(0, 256);
-  return '';
-}
-
-async function requireAgency(env, request, body) {
-  const token = sessionTokenFromRequest(request, body || {});
-  if (!token) return { ok: false, status: 401, error: 'session_required' };
-  const session = await readSession(env, token);
-  if (!session) return { ok: false, status: 401, error: 'session_required' };
-  if (session.role !== 'agency') return { ok: false, status: 403, error: 'forbidden' };
-  return { ok: true, session };
 }
 
 function tenantIdFromKey(name) {
@@ -113,12 +83,11 @@ export async function handleDefaultPasswordAudit(request, env) {
   if (!request || (request.method !== 'GET' && request.method !== 'POST')) {
     return auditJson({ ok: false, error: 'method_not_allowed' }, 405);
   }
-  if (!bearerMatches(request, env || {})) return auditJson({ ok: false, error: 'unauthorized' }, 401);
   let body = {};
   if (request.method === 'POST') {
     try { body = await request.clone().json(); } catch (_) { body = {}; }
   }
-  const gate = await requireAgency(env, request, body);
+  const gate = await authorizeBearerOrAgency(env || {}, request, body, bearerMatches(request, env || {}));
   if (!gate.ok) return auditJson({ ok: false, error: gate.error }, gate.status);
   if (!authReady(env) || typeof env.AUTH_KV.list !== 'function') {
     return auditJson({ ok: false, error: 'auth_not_configured' }, 500);

@@ -22,6 +22,7 @@ import {
   renderRobots,
   renderSitemap,
 } from "./render";
+import { injectWebAnalytics, WEB_ANALYTICS_CONNECT_ORIGIN, WEB_ANALYTICS_SCRIPT_ORIGIN } from "./web-analytics";
 
 export interface AssetFetcher {
   fetch(input: Request): Promise<Response>;
@@ -89,28 +90,28 @@ export function contentSecurityPolicy(html: boolean): string {
     "object-src 'none'",
     "frame-ancestors 'none'",
     "form-action 'self' https://schedi.app https://checkout.stripe.com",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://www.gstatic.com",
+    `script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://www.gstatic.com ${WEB_ANALYTICS_SCRIPT_ORIGIN}`,
     "style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://fonts.googleapis.com",
     "font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com",
     "img-src 'self' data: blob: https:",
-    "connect-src 'self' https://schedi.app https://schedi-connect-production.up.railway.app https://*.googleapis.com https://*.firebasestorage.app https://*.firebaseio.com wss://*.firebaseio.com",
+    `connect-src 'self' https://schedi.app https://schedi-connect-production.up.railway.app https://*.googleapis.com https://*.firebasestorage.app https://*.firebaseio.com wss://*.firebaseio.com ${WEB_ANALYTICS_CONNECT_ORIGIN}`,
     "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://checkout.stripe.com",
     "manifest-src 'self'",
   ].join("; ");
 }
 
-function marketingCsp(): string {
+export function marketingContentSecurityPolicy(): string {
   return [
     "default-src 'self'",
     "base-uri 'self'",
     "object-src 'none'",
     "frame-ancestors 'none'",
     "form-action 'self'",
-    "script-src 'self'",
+    `script-src 'self' ${WEB_ANALYTICS_SCRIPT_ORIGIN}`,
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com",
     "img-src 'self' data:",
-    "connect-src 'none'",
+    `connect-src ${WEB_ANALYTICS_CONNECT_ORIGIN}`,
     "frame-src 'none'",
     "manifest-src 'self'",
   ].join("; ");
@@ -378,16 +379,17 @@ function textResponse(
   return new Response(body, { status, headers });
 }
 
-function marketingResponse(html: string, method: string, status = 200): Response {
+function marketingResponse(html: string, method: string, pageUrl: URL, status = 200): Response {
   const headers = new Headers();
   headers.set("Content-Type", "text/html; charset=utf-8");
-  headers.set("Content-Security-Policy", marketingCsp());
+  headers.set("Content-Security-Policy", marketingContentSecurityPolicy());
   headers.set("X-Frame-Options", "DENY");
   headers.set("Cache-Control", "public, max-age=600");
   applySecurityHeaders(headers, false);
-  headers.set("Content-Security-Policy", marketingCsp());
+  headers.set("Content-Security-Policy", marketingContentSecurityPolicy());
+  const body = injectWebAnalytics(html, pageUrl);
   if (method === "HEAD") return new Response(null, { status, headers });
-  return new Response(html, { status, headers });
+  return new Response(body, { status, headers });
 }
 
 function redirect(location: string, status: number): Response {
@@ -510,7 +512,7 @@ export async function handleRequest(request: Request, env: SchediEnv, ctx: Sched
   try {
     lower = decodeURIComponent(stripped).toLowerCase();
   } catch {
-    return notFound(method);
+    return notFound(method, url);
   }
 
   if (lower === "/" && url.searchParams.get("portal") === "login") {
@@ -536,7 +538,7 @@ export async function handleRequest(request: Request, env: SchediEnv, ctx: Sched
       dest.pathname = page.path;
       return redirect(dest.toString(), 301);
     }
-    return marketingResponse(renderMarketingPage(page), method, 200);
+    return marketingResponse(renderMarketingPage(page), method, url, 200);
   }
 
   const spa = classifySpa(stripped);
@@ -545,15 +547,15 @@ export async function handleRequest(request: Request, env: SchediEnv, ctx: Sched
     return serveSpa(request, env, ctx, method, spa.slug, spa.indexable);
   }
 
-  return notFound(method);
+  return notFound(method, url);
 }
 
 function isWww(hostname: string): boolean {
   return hostname.toLowerCase().replace(/\.+$/, "") === "www.schedi.app";
 }
 
-function notFound(method: string): Response {
-  const response = marketingResponse(renderNotFound(), method, 404);
+function notFound(method: string, pageUrl: URL): Response {
+  const response = marketingResponse(renderNotFound(), method, pageUrl, 404);
   response.headers.set("X-Robots-Tag", "noindex, follow");
   response.headers.set("Cache-Control", "no-store");
   return response;
@@ -620,6 +622,7 @@ async function serveSpa(
     });
   }
   if (body != null && !indexableTenant) body = injectNoindex(body);
+  if (body != null) body = injectWebAnalytics(body, new URL(request.url));
   const headers = new Headers(shell.headers);
   applySecurityHeaders(headers, true);
   headers.set("Cache-Control", "no-store");
@@ -634,7 +637,7 @@ async function serveHq(request: Request, env: SchediEnv, method: string): Promis
   const allowed = await hasAgencySession(env.AUTH_KV, token);
   if (!allowed) {
     return textResponse(
-      hqLoginDocument(),
+      injectWebAnalytics(hqLoginDocument(), new URL(request.url)),
       200,
       "text/html; charset=utf-8",
       { "Cache-Control": "no-store", "X-Robots-Tag": "noindex, nofollow" },
@@ -655,7 +658,7 @@ async function serveHq(request: Request, env: SchediEnv, method: string): Promis
     await discard(shell);
     return new Response(null, { status: 200, headers });
   }
-  const body = await shell.text();
+  const body = injectWebAnalytics(await shell.text(), new URL(request.url));
   return new Response(body, { status: 200, headers });
 }
 

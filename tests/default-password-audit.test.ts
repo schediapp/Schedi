@@ -183,13 +183,13 @@ describe("GET|POST /api/ops-default-passwords", () => {
     expect(kv.writes).toEqual([]);
   });
 
-  it("rejects a missing or wrong bearer before reading sessions or tenant records", async () => {
+  it("rejects a missing or wrong bearer when no session is presented, without listing tenants", async () => {
     const { kv, env } = envFrom(seededStore());
     for (const headers of [
       {},
       { Authorization: "Bearer " },
-      { Authorization: "Bearer nope", "X-Schedi-Session": AGENCY },
-      { Authorization: TOKEN, "X-Schedi-Session": AGENCY },
+      { Authorization: "Bearer nope" },
+      { Authorization: TOKEN },
     ]) {
       const res = await handleDefaultPasswordAudit(call("/api/ops-default-passwords", { method: "GET", headers }), env);
       expect(res.status).toBe(401);
@@ -199,23 +199,75 @@ describe("GET|POST /api/ops-default-passwords", () => {
     expect(kv.writes).toEqual([]);
   });
 
-  it("requires an agency session after the bearer matches", async () => {
-    const { kv, env } = envFrom(seededStore());
-    const missing = await handleDefaultPasswordAudit(call("/api/ops-default-passwords", {
+  it("accepts an agency session with or without the bearer", async () => {
+    const { env } = envFrom(seededStore());
+    const headerOnly = await handleDefaultPasswordAudit(call("/api/ops-default-passwords", {
+      method: "GET",
+      headers: { "X-Schedi-Session": AGENCY },
+    }), env);
+    expect(await headerOnly.json()).toEqual({ ok: true, tenantIds: ["legacy-shop"] });
+
+    const wrongBearer = await handleDefaultPasswordAudit(call("/api/ops-default-passwords", {
+      method: "GET",
+      headers: { Authorization: "Bearer nope", "X-Schedi-Session": AGENCY },
+    }), env);
+    expect(await wrongBearer.json()).toEqual({ ok: true, tenantIds: ["legacy-shop"] });
+
+    const notABearer = await handleDefaultPasswordAudit(call("/api/ops-default-passwords", {
+      method: "GET",
+      headers: { Authorization: TOKEN, "X-Schedi-Session": AGENCY },
+    }), env);
+    expect(await notABearer.json()).toEqual({ ok: true, tenantIds: ["legacy-shop"] });
+
+    const cookieOnly = await handleDefaultPasswordAudit(call("/api/ops-default-passwords", {
+      method: "GET",
+      headers: { Cookie: "schedi_hq=" + encodeURIComponent(AGENCY) },
+    }), env);
+    expect(await cookieOnly.json()).toEqual({ ok: true, tenantIds: ["legacy-shop"] });
+
+    const bodyOnly = await handleDefaultPasswordAudit(call("/api/ops-default-passwords", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ session: AGENCY }),
+    }), env);
+    expect(bodyOnly.status).toBe(200);
+    const body = await bodyOnly.json();
+    expect(body).toEqual({ ok: true, tenantIds: ["legacy-shop"] });
+    expect(Object.keys(body).sort()).toEqual(["ok", "tenantIds"]);
+  });
+
+  it("accepts a valid bearer on its own", async () => {
+    const { env } = envFrom(seededStore());
+    const res = await handleDefaultPasswordAudit(call("/api/ops-default-passwords", {
       method: "GET",
       headers: { Authorization: "Bearer " + TOKEN },
     }), env);
-    expect(missing.status).toBe(401);
-    expect(await missing.json()).toEqual({ ok: false, error: "session_required" });
+    const text = await res.text();
+    const body = JSON.parse(text);
+    expect(body).toEqual({ ok: true, tenantIds: ["legacy-shop"] });
+    expect(Object.keys(body).sort()).toEqual(["ok", "tenantIds"]);
+    expect(text).not.toContain("vance123");
+    expect(text).not.toContain(PEPPER);
+  });
 
+  it("rejects an owner session with 403 and a stale session with 401, without listing tenants", async () => {
+    const { kv, env } = envFrom(seededStore());
     const owner = await handleDefaultPasswordAudit(authed("GET", OWNER), env);
     expect(owner.status).toBe(403);
     expect(await owner.json()).toEqual({ ok: false, error: "forbidden" });
+
+    const ownerOnly = await handleDefaultPasswordAudit(call("/api/ops-default-passwords", {
+      method: "GET",
+      headers: { "X-Schedi-Session": OWNER },
+    }), env);
+    expect(ownerOnly.status).toBe(403);
+    expect(await ownerOnly.json()).toEqual({ ok: false, error: "forbidden" });
 
     const stale = await handleDefaultPasswordAudit(authed("POST", "missing-session"), env);
     expect(stale.status).toBe(401);
     expect(await stale.json()).toEqual({ ok: false, error: "session_required" });
     expect(kv.listCalls).toEqual([]);
+    expect(kv.writes).toEqual([]);
   });
 
   it("does not scan when auth is not configured, and rejects other methods", async () => {
