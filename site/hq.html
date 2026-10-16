@@ -12634,6 +12634,17 @@
         html.schedi-light .cal-day-selected.cal-day-today { box-shadow: 0 0 0 2px #065f46, inset 0 0 0 2px #ffffff; }
         /* Month title sits on the dark slate-900 bar. Light mode otherwise remaps .text-white to near-black. */
         html.schedi-light #monthTitleLabel { color: #f8fafc !important; }
+        @media (max-width: 639px) {
+            .cal-day { container-type: inline-size; padding-left: 1px; padding-right: 1px; overflow: hidden; }
+            .cal-day-label,
+            html.schedi-newbook .cal-day-away .cal-day-label {
+                font-size: 22cqw;
+                letter-spacing: 0;
+                text-transform: none;
+                line-height: 1.05;
+                white-space: nowrap;
+            }
+        }
         /* /booking-day-contrast */
         .biz-header { border-radius: 1rem; overflow: hidden; border: 1px solid rgba(255,255,255,0.08); background: rgba(17, 24, 39, 0.8); }
         html.schedi-light .biz-header { background: #ffffff; border-color: #d7dee8; }

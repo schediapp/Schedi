@@ -55,6 +55,17 @@ describe("booking calendar contrast", () => {
     expect(html).not.toContain("bg-slate-900/90 border-slate-800 text-slate-200 hover:border-emerald-500/50");
   });
 
+  it("shrinks calendar status labels to the day cell on narrow screens", () => {
+    const at = html.indexOf("font-size: 22cqw");
+    expect(at).toBeGreaterThan(0);
+    expect(html.indexOf("font-size: 22cqw", at + 1)).toBe(-1);
+    const rule = html.slice(at - 450, at + 350);
+    expect(rule).toContain("@media (max-width: 639px)");
+    expect(rule).toContain("container-type: inline-size");
+    expect(rule).toContain("text-transform: none");
+    expect(rule).toContain("html.schedi-newbook .cal-day-away .cal-day-label");
+  });
+
   it("keeps the month title light on the dark calendar bar", () => {
     expect(html).toContain("html.schedi-light #monthTitleLabel { color: #f8fafc !important; }");
     // The bar is slate-900 (#0f172a) at 90% over a white card, about #272e3f.
