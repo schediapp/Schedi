@@ -37,6 +37,7 @@ import { handleOpsSnapshotHttp, runOpsSnapshotCron } from './ops-snapshot.js';
 import { handleDefaultPasswordAudit } from './default-password-audit.js';
 import { handleResendEventsHttp } from './email-events.js';
 import { notifyOwnerOfNewBooking, notifyOwnerOfCancellation, ownerNotifyEnabledForTenant } from './owner-notify.js';
+import { deliverSeriesConfirmations } from './series-mail.js';
 import { handleBookingIcs } from './booking-ics.js';
 import { handleBookingMailPost } from './booking-mail.js';
 import { rateLimitOk } from './rate-limit.js';
@@ -2948,6 +2949,7 @@ export default {
         applyCancellationFee: (env2, tenant, booking) => applyCancellationFee(env2, tenant, booking, stripeRequest),
         notifyOwnerOfNewBookings,
         notifyOwnerOfCancellations,
+        sendSeriesConfirmed: (env2, tenant2, bookings2) => deliverSeriesConfirmations(env2, tenant2, bookings2, { sendResend }),
       }, ctx);
     }
     if (path === '/api/push-token') {
@@ -3010,7 +3012,7 @@ export default {
         {
           ok: true,
           service: 'schedi-email-worker',
-          features: ['booking_email', 'same_day_reminders', 'sms_confirmations', 'sms_reminders', 'owner_billing', 'booking_deposits', 'cancellation_fees', 'owner_booking_notify'],
+          features: ['booking_email', 'same_day_reminders', 'sms_confirmations', 'sms_reminders', 'owner_billing', 'booking_deposits', 'cancellation_fees', 'owner_booking_notify', 'series_confirmation'],
           rateLimits: ['RL_MAIL', 'RL_MAIL_TENANT', 'RL_SIGNUP', 'RL_SIGNUP_GLOBAL', 'RL_BOOKING_CREATE'].filter((k) => env[k] && typeof env[k].limit === 'function'),
         },
         200,
