@@ -225,6 +225,7 @@ describe("owner dashboard preview", () => {
     ) => string;
     expect(kind({ paymentStatus: "PAID VIA CARD", paidMethod: "card", stripePaymentMethodId: "pm_1" })).toBe("card");
     expect(kind({ paymentStatus: "PAID", stripeChargeId: "ch_1" })).toBe("card");
+    expect(kind({ paymentStatus: "PAID", paidMethod: "venmo", stripePaymentMethodId: "pm_1", stripeChargeId: "ch_1" })).toBe("venmo");
     expect(kind({ paymentStatus: "PAID", paidMethod: "cashapp" })).toBe("cashapp");
     expect(kind({ paymentStatus: "PAID", paidMethod: "zelle" })).toBe("zelle");
     expect(kind({ paymentStatus: "PAID", paidMethod: "venmo" })).toBe("venmo");
@@ -240,7 +241,23 @@ describe("owner dashboard preview", () => {
     for (const method of ["card", "cashapp", "zelle", "venmo", "paypal", "square", "cash"]) {
       expect(html).toContain(`paidMethod: '${method}'`);
     }
-    expect(html).toContain('value="PAID SQUARE"');
+    expect(html).toContain("value: 'PAID SQUARE'");
+    expect(html).toContain('id="manPaymentChoices"');
+    expect(html).toContain('class="sd-pay-choice');
+    expect(html).toContain("does not refund");
+    expect(html).toContain('id="unpaidStripeModal"');
+    expect(html).toContain("data-theme-set=\"light\"");
+    expect(html).toContain("data-theme-set=\"dark\"");
+    expect(html).toContain("window.setSchediTheme");
+    expect(html).toContain('class="sd-book-rules"');
+    expect(html).toContain('class="sd-outages"');
+    expect(html).toContain("sd-hours-hint-gap");
+    expect(html).toContain('id="svcIconCats"');
+    expect(html).toContain("Hair & Barber");
+    expect(extractFunction(html, "markAppointmentUnpaid")).toContain("appointmentChargedOnStripe");
+    expect(extractFunction(html, "refreshOwnerPaymentSurfaces")).toContain("renderSchediToday");
+    expect(extractFunction(html, "paintRosterPayment")).toContain("refreshOwnerPaymentSurfaces");
+    expect(html.slice(html.indexOf("window.handleManualBookingSubmit"), html.indexOf("function appointmentReportRows"))).toContain("refreshOwnerPaymentSurfaces");
     expect(html).toContain("In person / Cash");
     expect(html).toContain('id="tenantDateBlocksList"');
     expect(html).toContain("openAddDateBlockModal");

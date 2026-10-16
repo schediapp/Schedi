@@ -1205,6 +1205,8 @@ body.schedi-newdash .sd-hours-hint {
 }
 html.schedi-light #tenantPortalSection.schedi-newdash .sd-hours-hint,
 html.schedi-light body.schedi-newdash .sd-hours-hint { color: #334155; }
+#tenantPortalSection.schedi-newdash .sd-hours-hint.sd-hours-hint-gap,
+body.schedi-newdash .sd-hours-hint.sd-hours-hint-gap { margin-top: 12px; }
 body.schedi-newdash .sd-time { min-width: 0; position: relative; }
 body.schedi-newdash .sd-time.is-open { z-index: 30; }
 body.schedi-newdash .sd-time-label {
@@ -1514,8 +1516,172 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-busy-error { color: #b
 @media (min-width: 900px) {
     #tenantPortalSection.schedi-newdash .sd-pay-settings { grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr); }
 }
-body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt { display: flex; align-items: center; gap: 8px; text-align: left; }
+#tenantPortalSection.schedi-newdash .sd-book-rules {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+    align-items: start;
+}
+#tenantPortalSection.schedi-newdash .sd-book-rules > div { min-width: 0; }
+#tenantPortalSection.schedi-newdash .sd-book-rules select { width: 100%; max-width: none; }
+#tenantPortalSection.schedi-newdash .sd-book-rules p { margin: 0; line-height: 1.4; }
+@media (min-width: 601px) {
+    #tenantPortalSection.schedi-newdash .sd-book-rules { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+#tenantPortalSection.schedi-newdash .sd-outages {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+    align-items: start;
+    border-top: 1px solid rgba(51, 65, 85, 0.8);
+    padding-top: 16px;
+}
+@media (min-width: 900px) {
+    #tenantPortalSection.schedi-newdash .sd-outages { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+}
+#tenantPortalSection.schedi-newdash .sd-outage-head {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+#tenantPortalSection.schedi-newdash .sd-outage-head p { margin: 0; }
+#tenantPortalSection.schedi-newdash .sd-outage-list { display: flex; flex-direction: column; gap: 6px; }
+#tenantPortalSection.schedi-newdash .sd-outage-list > div { padding: 8px 10px; }
+#tenantPortalSection.schedi-newdash .sd-theme,
+body.schedi-newdash .sd-theme {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px;
+    border-radius: 999px;
+    border: 1px solid var(--sd-line);
+    background: transparent;
+}
+#tenantPortalSection.schedi-newdash #schediDashSidebar .sd-theme { margin: 10px 4px 0; align-self: flex-start; }
+#tenantPortalSection.schedi-newdash #schediDashMoreSheet .sd-theme { margin: 8px; }
+#tenantPortalSection.schedi-newdash .sd-theme-opt,
+body.schedi-newdash .sd-theme-opt {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 32px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+}
+#tenantPortalSection.schedi-newdash .sd-theme-opt:focus-visible,
+body.schedi-newdash .sd-theme-opt:focus-visible { outline: 2px solid #38bdf8; outline-offset: 2px; }
+#tenantPortalSection.schedi-newdash .sd-theme-light,
+body.schedi-newdash .sd-theme-light {
+    background: #f8fafc;
+    color: #0f172a;
+    border-color: #d7dee8;
+}
+#tenantPortalSection.schedi-newdash .sd-theme-dark,
+body.schedi-newdash .sd-theme-dark {
+    background: #0f172a;
+    color: #f8fafc;
+    border-color: #334155;
+}
+#tenantPortalSection.schedi-newdash .sd-theme-opt[aria-pressed="true"],
+body.schedi-newdash .sd-theme-opt[aria-pressed="true"] { box-shadow: 0 0 0 2px #10b981; }
+body.schedi-newdash .sd-pay-choices { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
+body.schedi-newdash .sd-pay-choice,
+body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    text-align: left;
+    min-height: 44px;
+    padding: 8px 12px;
+    border-radius: 12px;
+    border: 1px solid #334155;
+    background: #0f172a;
+    color: #f8fafc;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+}
+body.schedi-newdash .sd-pay-choice svg,
 body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt svg { width: 16px; height: 16px; flex: none; }
+body.schedi-newdash .sd-pay-choice.is-on,
+body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.is-on {
+    border-color: #34d399;
+    box-shadow: inset 0 0 0 1px #34d399;
+    color: #ecfdf5;
+}
+html.schedi-light body.schedi-newdash .sd-pay-choice,
+html.schedi-light body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt {
+    background: #ffffff;
+    color: #0f172a;
+    border-color: #cbd5e1;
+}
+html.schedi-light body.schedi-newdash .sd-pay-choice.is-on,
+html.schedi-light body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.is-on {
+    background: #d1fae5;
+    color: #064e3b;
+    border-color: #047857;
+    box-shadow: inset 0 0 0 1px #047857;
+}
+body.schedi-newdash select,
+body.schedi-newdash select option { color-scheme: dark; }
+html.schedi-light body.schedi-newdash select,
+html.schedi-light body.schedi-newdash select option {
+    color-scheme: light;
+    background-color: #ffffff;
+    color: #0f172a;
+}
+body.schedi-newdash .sd-icon-cats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 0 0 8px;
+}
+body.schedi-newdash .sd-icon-cat {
+    border-radius: 999px;
+    border: 1px solid #334155;
+    background: #0f172a;
+    color: #f8fafc;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.2;
+    padding: 6px 10px;
+    min-height: 32px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+body.schedi-newdash .sd-icon-cat[aria-selected="true"] {
+    border-color: #10b981;
+    box-shadow: 0 0 0 1px #10b981;
+}
+html.schedi-light body.schedi-newdash .sd-icon-cat {
+    background: #ffffff;
+    color: #0f172a;
+    border-color: #cbd5e1;
+}
+html.schedi-light body.schedi-newdash .sd-icon-cat[aria-selected="true"] {
+    background: #d1fae5;
+    color: #064e3b;
+    border-color: #047857;
+    box-shadow: 0 0 0 1px #047857;
+}
+body.schedi-newdash .sd-icon-cat:focus-visible { outline: 2px solid #38bdf8; outline-offset: 2px; }
+@media (max-width: 859px) {
+    body.schedi-newdash .sd-icon-cats {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    body.schedi-newdash .sd-icon-cat { flex: none; }
+}
 #tenantPortalSection.schedi-newdash .sd-cal-heading {
     margin: 0 0 4px;
     font-size: 16px;
@@ -1839,7 +2005,9 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
         padding-left: max(12px, env(safe-area-inset-left));
         padding-right: max(12px, env(safe-area-inset-right));
     }
+    #tenantPortalSection.schedi-newdash #schediDashTop .sd-theme-opt span,
     #tenantPortalSection.schedi-newdash #schediDashTop .schedi-theme-btn-label { display: none; }
+    #tenantPortalSection.schedi-newdash #schediDashTop .sd-theme-opt { min-width: 44px; min-height: 44px; padding: 0 10px; }
     #tenantPortalSection.schedi-newdash #schediDashTop .sd-text-btn,
     #tenantPortalSection.schedi-newdash #schediDashTop .sd-user { min-height: 44px; }
     #tenantPortalSection.schedi-newdash .sd-btn,
@@ -2332,6 +2500,10 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                             <button type="button" data-dash-go="profile"><i class="fa-solid fa-store" aria-hidden="true"></i><span>Business profile</span></button>
                             <button type="button" data-dash-go="billing"><i class="fa-solid fa-receipt" aria-hidden="true"></i><span>Plan &amp; billing</span></button>
                         </div>
+                        <div class="sd-theme" role="group" aria-label="Color theme">
+                            <button type="button" class="sd-theme-opt sd-theme-light" data-theme-set="light" onclick="setSchediTheme('light')" aria-pressed="false"><i class="fa-solid fa-sun" aria-hidden="true"></i><span>Light</span></button>
+                            <button type="button" class="sd-theme-opt sd-theme-dark" data-theme-set="dark" onclick="setSchediTheme('dark')" aria-pressed="true"><i class="fa-solid fa-moon" aria-hidden="true"></i><span>Dark</span></button>
+                        </div>
                     </aside>
                     <header id="schediDashTop">
                         <a href="/" class="sd-brand sd-brand-mobile" aria-label="Schedi home">
@@ -2340,7 +2512,10 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                         </a>
                         <div class="sd-top-spacer"></div>
                         <button type="button" class="sd-text-btn" onclick="schediDashHelp(true)"><i class="fa-solid fa-circle-question" aria-hidden="true"></i><span>Help</span></button>
-                        <button type="button" class="sd-text-btn schedi-theme-btn" onclick="toggleSchediTheme()" title="Switch to light theme" aria-label="Switch to light theme"><i class="fa-solid fa-sun" aria-hidden="true"></i><span class="schedi-theme-btn-label">Light</span></button>
+                        <div class="sd-theme" role="group" aria-label="Color theme">
+                            <button type="button" class="sd-theme-opt sd-theme-light" data-theme-set="light" onclick="setSchediTheme('light')" aria-pressed="false"><i class="fa-solid fa-sun" aria-hidden="true"></i><span>Light</span></button>
+                            <button type="button" class="sd-theme-opt sd-theme-dark" data-theme-set="dark" onclick="setSchediTheme('dark')" aria-pressed="true"><i class="fa-solid fa-moon" aria-hidden="true"></i><span>Dark</span></button>
+                        </div>
                         <button type="button" class="sd-user" data-dash-go="account" id="schediDashUserBtn">
                             <span id="schediDashUserInitials" class="sd-avatar" aria-hidden="true">S</span>
                             <span id="schediDashUserName" class="sd-user-name">Owner</span>
@@ -2408,6 +2583,10 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                             <button type="button" data-dash-go="account"><i class="fa-solid fa-key" aria-hidden="true"></i><span>Account &amp; password</span></button>
                             <button type="button" data-dash-go="billing"><i class="fa-solid fa-receipt" aria-hidden="true"></i><span>Plan &amp; billing</span></button>
                             <button type="button" onclick="schediDashHelp(true)"><i class="fa-solid fa-circle-question" aria-hidden="true"></i><span>Help</span></button>
+                            <div class="sd-theme" role="group" aria-label="Color theme">
+                                <button type="button" class="sd-theme-opt sd-theme-light" data-theme-set="light" onclick="setSchediTheme('light')" aria-pressed="false"><i class="fa-solid fa-sun" aria-hidden="true"></i><span>Light</span></button>
+                                <button type="button" class="sd-theme-opt sd-theme-dark" data-theme-set="dark" onclick="setSchediTheme('dark')" aria-pressed="true"><i class="fa-solid fa-moon" aria-hidden="true"></i><span>Dark</span></button>
+                            </div>
                             <button type="button" class="sd-danger" onclick="handleTenantLogout()"><i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i><span>Sign out</span></button>
                         </div>
                     </div>
@@ -2590,15 +2769,16 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                     <form onsubmit="handleUpdateShiftsSubmit(event)" class="space-y-4 border-b border-slate-800 pb-6">
                         <div id="tenantHoursShiftBlock">
                         <div id="perDayShiftsGrid" class="sd-hours-grid"></div>
-                        <p class="sd-hours-hint">Type a time or pick one. With no am or pm, 7–11 are morning, 12 is noon, and 1–6 are afternoon, so 9 is 9:00 AM and 5 is 5:00 PM. Type 6a for 6:00 AM, or 17:00 for 5:00 PM. The list follows your start-times interval.</p>
-                        <div class="pt-2 border-t border-slate-800/80 space-y-3 max-w-xl">
+                        <p class="sd-hours-hint sd-hours-hint-gap">Type a time or pick one. With no am or pm, 7–11 are morning, 12 is noon, and 1–6 are afternoon, so 9 is 9:00 AM and 5 is 5:00 PM. Type 6a for 6:00 AM, or 17:00 for 5:00 PM. The list follows your start-times interval.</p>
+                        <div class="pt-2 border-t border-slate-800/80 space-y-3">
                             <div>
                                 <h4 class="text-sm font-bold text-white">Booking rules</h4>
                                 <p class="text-[11px] text-slate-500">These apply on your public booking page.</p>
                             </div>
+                            <div class="sd-book-rules">
                             <div class="space-y-2">
                                 <label for="tenantSlotInterval" class="block text-xs font-semibold text-slate-300">Start times every</label>
-                                <select id="tenantSlotInterval" class="w-full sm:w-56 px-3 py-2 rounded-xl glass-input text-xs font-bold text-brand-400">
+                                <select id="tenantSlotInterval" class="w-full px-3 py-2 rounded-xl glass-input text-xs font-bold text-brand-400">
                                     <option value="15">15 minutes</option>
                                     <option value="30">30 minutes</option>
                                     <option value="60">1 hour</option>
@@ -2607,7 +2787,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                             </div>
                             <div class="space-y-2">
                                 <label for="tenantBreakAfter" class="block text-xs font-semibold text-slate-300">Break after appointments</label>
-                                <select id="tenantBreakAfter" class="w-full sm:w-56 px-3 py-2 rounded-xl glass-input text-xs font-bold text-brand-400">
+                                <select id="tenantBreakAfter" class="w-full px-3 py-2 rounded-xl glass-input text-xs font-bold text-brand-400">
                                     <option value="0">None</option>
                                     <option value="5">5 minutes</option>
                                     <option value="10">10 minutes</option>
@@ -2621,7 +2801,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                             </div>
                             <div class="space-y-2">
                                 <label for="tenantMinNotice" class="block text-xs font-semibold text-slate-300">Minimum booking notice</label>
-                                <select id="tenantMinNotice" class="w-full sm:w-56 px-3 py-2 rounded-xl glass-input text-xs font-bold text-brand-400">
+                                <select id="tenantMinNotice" class="w-full px-3 py-2 rounded-xl glass-input text-xs font-bold text-brand-400">
                                     <option value="0">None</option>
                                     <option value="1">1 hour</option>
                                     <option value="2">2 hours</option>
@@ -2631,6 +2811,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                                     <option value="48">48 hours</option>
                                 </select>
                                 <p class="text-[10px] text-slate-500">Clients cannot request a start time inside this window. New businesses are saved at 2 hours. A business with no saved setting keeps none.</p>
+                            </div>
                             </div>
                         </div>
                         </div>
@@ -2710,7 +2891,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                             </div>
                             <div id="sdCalOpenFields">
                                 <div id="sdCalTimes" class="sd-hours-times"></div>
-                                <p id="sdCalMultiHint" class="sd-hours-hint" hidden>This day has more than one open window. Saving keeps the one window above.</p>
+                                <p class="sd-hours-hint sd-hours-hint-gap">Type a time or pick one. Close needs to be after open.</p>
+                                <p id="sdCalMultiHint" class="sd-hours-hint sd-hours-hint-gap" hidden>This day has more than one open window. Saving keeps the one window above.</p>
                             </div>
                             <div id="sdCalNoteWrap">
                                 <label class="sd-cal-note-label" for="sdCalNote">Label <span class="sd-cal-optional">(optional, for example Holiday)</span></label>
@@ -2732,37 +2914,33 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                     <section id="sdBusyCard" class="sd-busy" aria-labelledby="sdBusyTitle"></section>
                     </div>
 
-                    <div class="space-y-4 border-t border-slate-800 pt-6">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <h4 class="text-sm font-bold text-white">Recurring Blocked Times & Outages</h4>
-                                <p class="text-xs text-slate-400">Automatically block out repeating windows like lunch breaks or staff syncs. Edit or remove a block from the list.</p>
-                            </div>
+                    <div class="sd-outages">
+                    <section class="sd-outage">
+                        <div class="sd-outage-head">
+                            <h4 class="text-sm font-bold text-white">Recurring Blocked Times &amp; Outages</h4>
+                            <p class="text-xs text-slate-400">Automatically block out repeating windows like lunch breaks or staff syncs. Edit or remove a block from the list.</p>
                             <button type="button" onclick="openAddBlockedTimeModal()" class="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-brand-400 font-bold text-xs border border-brand-500/20 flex items-center space-x-1.5">
                                 <i class="fa-solid fa-ban"></i>
                                 <span>Add Recurring Outage</span>
                             </button>
                         </div>
-
-                        <div id="tenantBlockedRulesList" class="space-y-2">
+                        <div id="tenantBlockedRulesList" class="sd-outage-list">
                             <!-- Injected via JS -->
                         </div>
-                    </div>
-
-                    <div class="space-y-4 border-t border-slate-800 pt-6">
-                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                            <div>
-                                <h4 class="text-sm font-bold text-white">Vacation &amp; Date Blocks</h4>
-                                <p class="text-xs text-slate-400">Block specific dates or ranges (e.g. Mar 10–17) without changing weekly hours. Optional all-day or time window. Edit or remove a block from the list.</p>
-                            </div>
-                            <button type="button" onclick="openAddDateBlockModal()" class="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold text-xs border border-amber-500/20 flex items-center space-x-1.5 shrink-0">
+                    </section>
+                    <section class="sd-outage">
+                        <div class="sd-outage-head">
+                            <h4 class="text-sm font-bold text-white">Vacation &amp; Date Blocks</h4>
+                            <p class="text-xs text-slate-400">Block specific dates or ranges (e.g. Mar 10–17) without changing weekly hours. Optional all-day or time window. Edit or remove a block from the list.</p>
+                            <button type="button" onclick="openAddDateBlockModal()" class="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold text-xs border border-amber-500/20 flex items-center space-x-1.5">
                                 <i class="fa-solid fa-calendar-xmark"></i>
                                 <span>Add Date Block</span>
                             </button>
                         </div>
-                        <div id="tenantDateBlocksList" class="space-y-2">
+                        <div id="tenantDateBlocksList" class="sd-outage-list">
                             <!-- Injected via JS -->
                         </div>
+                    </section>
                     </div>
                     </div>
                 </div>
@@ -3109,7 +3287,10 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                             <i class="fa-solid fa-circle-question" aria-hidden="true"></i>
                             <span>Help</span>
                         </a>
-                        <button type="button" class="schedi-theme-btn" onclick="toggleSchediTheme()" title="Switch to light theme" aria-label="Switch to light theme"><i class="fa-solid fa-sun" aria-hidden="true"></i><span class="schedi-theme-btn-label">Light</span></button>
+                        <div class="sd-theme" role="group" aria-label="Color theme">
+                            <button type="button" class="sd-theme-opt sd-theme-light" data-theme-set="light" onclick="setSchediTheme('light')" aria-pressed="false"><i class="fa-solid fa-sun" aria-hidden="true"></i><span>Light</span></button>
+                            <button type="button" class="sd-theme-opt sd-theme-dark" data-theme-set="dark" onclick="setSchediTheme('dark')" aria-pressed="true"><i class="fa-solid fa-moon" aria-hidden="true"></i><span>Dark</span></button>
+                        </div>
                         <button type="button" id="tenantChangePassBtn" onclick="openTenantChangePassModal()" class="hidden px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white font-semibold text-xs transition-all border border-slate-800">
                             <i class="fa-solid fa-key mr-1" aria-hidden="true"></i>
                             <span>Change password</span>
@@ -3498,7 +3679,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                         </div>
                     </div>
                     <p id="vacTimeError" class="sd-hours-error" role="alert"></p>
-                    <p class="sd-hours-hint">Type 9, 930, 9:30a, or 5p, or pick a time. Close needs to be after open.</p>
+                    <p class="sd-hours-hint sd-hours-hint-gap">Type 9, 930, 9:30a, or 5p, or pick a time. Close needs to be after open.</p>
                 </div>
                 <div class="pt-2 flex justify-end space-x-2">
                     <button type="button" onclick="closeAddDateBlockModal()" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300">Cancel</button>
@@ -3533,8 +3714,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                             <i class="fa-solid fa-plus mr-1"></i>Add window
                         </button>
                     </div>
-                    <p class="sd-hours-hint">Type 9, 930, 9:30a, or 5p, or pick a time. Close needs to be after open.</p>
                     <div id="specialHoursRangesList" class="space-y-2"></div>
+                    <p class="sd-hours-hint sd-hours-hint-gap">Type 9, 930, 9:30a, or 5p, or pick a time. Close needs to be after open.</p>
                 </div>
                 <div class="pt-2 flex justify-end space-x-2">
                     <button type="button" onclick="closeAddSpecialHoursModal()" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300">Cancel</button>
@@ -3574,6 +3755,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                     <input type="hidden" id="svcImageUrl" value="">
                     <input type="hidden" id="svcIsNew" value="1">
                     <input type="search" id="svcIconSearch" placeholder="Search icons" autocomplete="off" oninput="renderServiceIconPicker()" aria-controls="svcIconGrid" class="w-full px-3 py-2 rounded-xl glass-input mb-2">
+                    <div id="svcIconCats" class="sd-icon-cats" role="tablist" aria-label="Icon categories"></div>
                     <div id="svcIconGrid" role="listbox" aria-label="Service icons" onkeydown="onServiceIconKey(event)" class="grid grid-cols-4 sm:grid-cols-5 gap-2 max-h-56 overflow-y-auto p-1"></div>
                     <p id="svcIconEmpty" class="hidden text-[11px] text-slate-500 mt-1">No icons match that search.</p>
                     <div class="mt-3 pt-3 border-t border-slate-800 space-y-2">
@@ -3739,17 +3921,9 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                 </div>
 
                 <div>
-                    <label class="block font-semibold text-slate-300 mb-1">Payment Method / Status</label>
-                    <select id="manPaymentStatus" class="w-full px-3 py-2 rounded-xl glass-input">
-                        <option value="PAID VIA CARD">Card</option>
-                        <option value="PAID CASH APP">Cash App</option>
-                        <option value="PAID ZELLE">Zelle</option>
-                        <option value="PAID VENMO">Venmo</option>
-                        <option value="PAID PAYPAL">PayPal</option>
-                        <option value="PAID SQUARE">Square</option>
-                        <option value="PAID IN CASH">In person / Cash</option>
-                        <option value="PAY AT APPOINTMENT">Unpaid</option>
-                    </select>
+                    <label class="block font-semibold text-slate-300 mb-1" id="manPaymentLabel">Payment Method / Status</label>
+                    <input type="hidden" id="manPaymentStatus" value="PAY AT APPOINTMENT">
+                    <div id="manPaymentChoices" class="sd-pay-choices" role="listbox" aria-labelledby="manPaymentLabel"></div>
                 </div>
                 <div id="manDepositBox" class="hidden p-3 rounded-xl bg-slate-900 border border-slate-800 text-[11px] text-slate-300 space-y-1">
                     <div class="font-bold text-white">Deposit</div>
@@ -3757,6 +3931,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                 </div>
 
                 <div class="pt-2 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-2">
+                    <button type="button" id="manUnpaidBtn" onclick="markAppointmentUnpaid(document.getElementById('manEditId').value)" class="hidden px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold border border-slate-700 transition-all">Mark unpaid</button>
                     <button type="button" id="manDeleteBtn" onclick="openRosterDeleteModal(document.getElementById('manEditId').value)" class="hidden px-4 py-2 rounded-xl bg-rose-600/15 hover:bg-rose-600/25 text-rose-300 font-bold border border-rose-500/40 transition-all">
                         <i class="fa-solid fa-trash mr-1"></i>Delete
                     </button>
@@ -3784,6 +3959,25 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
             <div class="pt-1 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
                 <button type="button" id="denyConfirmKeep" onclick="closeDenyConfirmModal()" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-sm transition-all">Keep the request</button>
                 <button type="button" id="denyConfirmBtn" onclick="confirmDenyAppointment()" class="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-sm border border-rose-400/40 transition-all">Decline</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="unpaidStripeModal" role="dialog" aria-modal="true" aria-labelledby="unpaidStripeTitle" aria-describedby="unpaidStripeBody" tabindex="-1" class="fixed inset-0 z-[70] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto overscroll-contain hidden" onclick="if (event.target === this) closeUnpaidStripeModal()">
+        <div class="max-w-sm w-full glass-card rounded-2xl p-5 sm:p-6 space-y-4 fade-in border border-amber-500/30 my-4 min-w-0">
+            <div class="flex items-start gap-3">
+                <div class="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-300 shrink-0" aria-hidden="true">
+                    <i class="fa-solid fa-credit-card"></i>
+                </div>
+                <div class="min-w-0">
+                    <h3 id="unpaidStripeTitle" class="text-lg font-bold text-white">Mark this card payment unpaid?</h3>
+                    <p id="unpaidStripeBody" class="text-sm text-slate-300 mt-2 leading-relaxed">This clears the paid status and payment method in Schedi. It does not refund the client.</p>
+                </div>
+            </div>
+            <input type="hidden" id="unpaidStripeAppId" value="">
+            <div class="pt-1 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+                <button type="button" onclick="closeUnpaidStripeModal()" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-sm transition-all">Keep paid</button>
+                <button type="button" id="unpaidStripeConfirm" onclick="confirmStripeMarkUnpaid()" class="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm transition-all">Mark unpaid</button>
             </div>
         </div>
     </div>
@@ -5910,8 +6104,16 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                 btn.title = tip;
                 btn.setAttribute('aria-label', tip);
             });
-            try { localStorage.setItem('schedi.theme', light ? 'light' : 'dark'); } catch (err) {}
+            var themeName = light ? 'light' : 'dark';
+            document.querySelectorAll('[data-theme-set]').forEach(function (btn) {
+                btn.setAttribute('aria-pressed', btn.getAttribute('data-theme-set') === themeName ? 'true' : 'false');
+            });
+            try { localStorage.setItem('schedi.theme', themeName); } catch (err) {}
         }
+
+        window.setSchediTheme = function (mode) {
+            applySchediTheme(mode === 'light' ? 'light' : 'dark');
+        };
 
         window.toggleSchediTheme = function() {
             var light = !document.documentElement.classList.contains('schedi-light');
@@ -8845,8 +9047,11 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
         function appointmentPayKind(app) {
             if (bookingPaymentState(app) !== 'paid') return 'unpaid';
             var status = String((app && app.paymentStatus) || '').toUpperCase();
-            var method = (app && typeof inferPaidMethodFromBooking === 'function') ? inferPaidMethodFromBooking(app) : '';
+            var explicit = String((app && app.paidMethod) || '').toLowerCase().trim();
+            if (explicit === 'cash-app' || explicit === 'cash app') explicit = 'cashapp';
+            if (explicit === 'cashapp' || explicit === 'zelle' || explicit === 'venmo' || explicit === 'paypal' || explicit === 'square' || explicit === 'cash') return explicit;
             if (app && (app.stripePaymentIntentId || app.stripePaymentMethodId || app.stripeChargeId)) return 'card';
+            var method = (app && typeof inferPaidMethodFromBooking === 'function') ? inferPaidMethodFromBooking(app) : '';
             if (method === 'card' || status.indexOf('STRIPE') !== -1 || status.indexOf('CARD') !== -1) return 'card';
             if (method === 'cashapp' || method === 'zelle' || method === 'venmo' || method === 'paypal' || method === 'square') return method;
             return 'cash';
@@ -14925,35 +15130,69 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
             { words: ['pet', 'groom', 'dog'], icon: 'fa-paw' }
         ];
 
-        var SERVICE_ICON_CHOICES = [
-            { id: 'fa-scissors', name: 'Haircut', keywords: 'scissors barber fade trim hair salon' },
-            { id: 'fa-hand', name: 'Nails', keywords: 'hand nail manicure pedicure' },
-            { id: 'fa-spa', name: 'Spa', keywords: 'massage spa facial relax' },
-            { id: 'fa-wand-magic-sparkles', name: 'Makeup', keywords: 'makeup beauty glam' },
-            { id: 'fa-briefcase', name: 'Consult', keywords: 'briefcase meeting strategy coaching work' },
-            { id: 'fa-camera', name: 'Photo', keywords: 'camera portrait headshot photo' },
-            { id: 'fa-broom', name: 'Cleaning', keywords: 'broom clean tidy' },
-            { id: 'fa-dumbbell', name: 'Fitness', keywords: 'dumbbell training workout gym' },
-            { id: 'fa-person', name: 'Yoga', keywords: 'yoga stretch meditation person' },
-            { id: 'fa-book', name: 'Tutoring', keywords: 'book tutor lesson class education school' },
-            { id: 'fa-car', name: 'Auto', keywords: 'car auto detail vehicle' },
-            { id: 'fa-paw', name: 'Pet', keywords: 'paw pet groom dog cat' },
-            { id: 'fa-heart-pulse', name: 'Wellness', keywords: 'medical wellness health clinic' },
-            { id: 'fa-pen-nib', name: 'Tattoo', keywords: 'tattoo ink pen' },
-            { id: 'fa-music', name: 'Music', keywords: 'music song' },
-            { id: 'fa-house', name: 'Real estate', keywords: 'house home property' },
-            { id: 'fa-utensils', name: 'Catering', keywords: 'catering food utensils chef' },
-            { id: 'fa-screwdriver-wrench', name: 'Home repair', keywords: 'repair tools wrench plumber' },
-            { id: 'fa-calendar', name: 'Calendar', keywords: 'generic calendar appointment' },
-            { id: 'fa-star', name: 'Star', keywords: 'generic star favorite' },
-            { id: 'fa-gem', name: 'Gem', keywords: 'generic gem' },
-            { id: 'fa-cubes', name: 'Cubes', keywords: 'generic cubes' },
-            { id: 'fa-clock', name: 'Clock', keywords: 'generic time clock' },
-            { id: 'fa-comments', name: 'Chat', keywords: 'generic chat talk' },
-            { id: 'fa-user', name: 'Beard', keywords: 'beard user face' },
-            { id: 'fa-droplet', name: 'Gloss', keywords: 'droplet gloss shine treatment' },
-            { id: 'fa-palette', name: 'Color', keywords: 'palette dye tint' }
+        var SERVICE_ICON_CATEGORIES = [
+            { id: 'all', label: 'All' },
+            { id: 'hair', label: 'Hair & Barber' },
+            { id: 'nails', label: 'Nails' },
+            { id: 'beauty', label: 'Beauty & Skin' },
+            { id: 'wellness', label: 'Wellness & Massage' },
+            { id: 'fitness', label: 'Fitness' },
+            { id: 'health', label: 'Health' },
+            { id: 'pets', label: 'Pets' },
+            { id: 'photo', label: 'Photography & Events' },
+            { id: 'home', label: 'Home & Cleaning' },
+            { id: 'auto', label: 'Auto' },
+            { id: 'lessons', label: 'Lessons & Coaching' },
+            { id: 'other', label: 'Consulting & Other' }
         ];
+        var serviceIconCategory = 'all';
+
+        var SERVICE_ICON_CHOICES = [
+            { id: 'fa-scissors', name: 'Haircut', category: 'hair', keywords: 'scissors barber fade trim hair salon' },
+            { id: 'fa-user', name: 'Beard', category: 'hair', keywords: 'beard user face' },
+            { id: 'fa-droplet', name: 'Gloss', category: 'hair', keywords: 'droplet gloss shine treatment' },
+            { id: 'fa-palette', name: 'Color', category: 'hair', keywords: 'palette dye tint' },
+            { id: 'fa-hand', name: 'Nails', category: 'nails', keywords: 'hand nail manicure pedicure' },
+            { id: 'fa-wand-magic-sparkles', name: 'Makeup', category: 'beauty', keywords: 'makeup beauty glam' },
+            { id: 'fa-pen-nib', name: 'Tattoo', category: 'beauty', keywords: 'tattoo ink pen' },
+            { id: 'fa-spa', name: 'Spa', category: 'wellness', keywords: 'massage spa facial relax' },
+            { id: 'fa-person', name: 'Yoga', category: 'wellness', keywords: 'yoga stretch meditation person' },
+            { id: 'fa-dumbbell', name: 'Fitness', category: 'fitness', keywords: 'dumbbell training workout gym' },
+            { id: 'fa-heart-pulse', name: 'Wellness', category: 'health', keywords: 'medical wellness health clinic' },
+            { id: 'fa-paw', name: 'Pet', category: 'pets', keywords: 'paw pet groom dog cat' },
+            { id: 'fa-camera', name: 'Photo', category: 'photo', keywords: 'camera portrait headshot photo' },
+            { id: 'fa-music', name: 'Music', category: 'photo', keywords: 'music song' },
+            { id: 'fa-utensils', name: 'Catering', category: 'photo', keywords: 'catering food utensils chef' },
+            { id: 'fa-broom', name: 'Cleaning', category: 'home', keywords: 'broom clean tidy' },
+            { id: 'fa-house', name: 'Real estate', category: 'home', keywords: 'house home property' },
+            { id: 'fa-screwdriver-wrench', name: 'Home repair', category: 'home', keywords: 'repair tools wrench plumber' },
+            { id: 'fa-car', name: 'Auto', category: 'auto', keywords: 'car auto detail vehicle' },
+            { id: 'fa-book', name: 'Tutoring', category: 'lessons', keywords: 'book tutor lesson class education school' },
+            { id: 'fa-briefcase', name: 'Consult', category: 'other', keywords: 'briefcase meeting strategy coaching work' },
+            { id: 'fa-calendar', name: 'Calendar', category: 'other', keywords: 'generic calendar appointment' },
+            { id: 'fa-star', name: 'Star', category: 'other', keywords: 'generic star favorite' },
+            { id: 'fa-gem', name: 'Gem', category: 'other', keywords: 'generic gem' },
+            { id: 'fa-cubes', name: 'Cubes', category: 'other', keywords: 'generic cubes' },
+            { id: 'fa-clock', name: 'Clock', category: 'other', keywords: 'generic time clock' },
+            { id: 'fa-comments', name: 'Chat', category: 'other', keywords: 'generic chat talk' }
+        ];
+
+        function serviceIconCategoryFor(iconId) {
+            var id = String(iconId || '');
+            for (var i = 0; i < SERVICE_ICON_CHOICES.length; i++) {
+                if (SERVICE_ICON_CHOICES[i].id === id && SERVICE_ICON_CHOICES[i].category) return SERVICE_ICON_CHOICES[i].category;
+            }
+            return 'all';
+        }
+
+        function setServiceIconCategory(id) {
+            var next = 'all';
+            for (var i = 0; i < SERVICE_ICON_CATEGORIES.length; i++) {
+                if (SERVICE_ICON_CATEGORIES[i].id === id) next = id;
+            }
+            serviceIconCategory = next;
+            renderServiceIconPicker();
+        }
 
         function serviceIconWords(text) {
             return String(text || '').toLowerCase().match(/[a-z0-9]+/g) || [];
@@ -15105,9 +15344,17 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
             if (!explicit) selected = suggestion;
             var iconInput = document.getElementById('svcIcon');
             if (iconInput && !explicit) iconInput.value = suggestion;
+            var cats = document.getElementById('svcIconCats');
+            if (cats) {
+                cats.innerHTML = SERVICE_ICON_CATEGORIES.map(function (cat) {
+                    var on = cat.id === serviceIconCategory;
+                    return '<button type="button" class="sd-icon-cat" role="tab" aria-selected="' + (on ? 'true' : 'false') + '" onclick="setServiceIconCategory(' + jsArg(cat.id) + ')">' + esc(cat.label) + '</button>';
+                }).join('');
+            }
             var choices = serviceIconChoices(selected).filter(function (row) {
+                if (serviceIconCategory && serviceIconCategory !== 'all' && row.category !== serviceIconCategory) return false;
                 if (!query) return true;
-                var hay = (row.name + ' ' + row.keywords + ' ' + row.id).toLowerCase();
+                var hay = (row.name + ' ' + row.keywords + ' ' + row.id + ' ' + (row.category || '')).toLowerCase();
                 return hay.indexOf(query) !== -1;
             });
             var empty = document.getElementById('svcIconEmpty');
@@ -15202,6 +15449,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
             document.getElementById('svcIconExplicit').value = '0';
             document.getElementById('svcImageUrl').value = '';
             document.getElementById('svcIconSearch').value = '';
+            serviceIconCategory = serviceIconCategoryFor(suggestServiceIcon('', ''));
             var addUpload = document.getElementById('svcIconUpload');
             if (addUpload) addUpload.value = '';
             document.getElementById('svcDesc').value = '';
@@ -15232,6 +15480,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
             var savedImage = String(svc.imageUrl || '');
             document.getElementById('svcImageUrl').value = /^https:\/\//i.test(savedImage) ? savedImage : '';
             document.getElementById('svcIconSearch').value = '';
+            serviceIconCategory = serviceIconCategoryFor(svc.icon || suggestServiceIcon(svc.name, svc.desc));
             var editUpload = document.getElementById('svcIconUpload');
             if (editUpload) editUpload.value = '';
             document.getElementById('svcDesc').value = svc.desc || '';
@@ -15505,6 +15754,10 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
             setManualWalkIn(false, false);
             var freshDep = document.getElementById('manDepositBox');
             if (freshDep) freshDep.classList.add('hidden');
+            var freshPay = document.getElementById('manPaymentStatus');
+            if (freshPay) freshPay.value = 'PAY AT APPOINTMENT';
+            paintManualPayChoices();
+            syncManualUnpaidButton(null);
             document.getElementById('manualBookingModal').classList.remove('hidden');
             document.getElementById('manualBookingModal').scrollTop = 0;
         };
@@ -15534,18 +15787,9 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
             setManualWalkIn(app.walkIn === true, false);
             if (app.walkIn === true && app.time) ensureManualTimeOption(app.time);
             var pay = document.getElementById('manPaymentStatus');
-            if (pay) {
-                var wantPay = manualPaySelectFor(app);
-                var hasPay = false;
-                for (var i = 0; i < pay.options.length; i++) if (pay.options[i].value === wantPay) hasPay = true;
-                if (!hasPay && wantPay) {
-                    var opt = document.createElement('option');
-                    opt.value = wantPay;
-                    opt.textContent = wantPay;
-                    pay.appendChild(opt);
-                }
-                if (wantPay) pay.value = wantPay;
-            }
+            if (pay) pay.value = manualPaySelectFor(app) || 'PAY AT APPOINTMENT';
+            paintManualPayChoices();
+            syncManualUnpaidButton(app);
             var depBox = document.getElementById('manDepositBox');
             var depText = document.getElementById('manDepositText');
             if (depBox && depText && Number(app.depositAmount) > 0) {
@@ -15612,6 +15856,11 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
             }
 
             var manualChoice = manualPayFromStatus(paymentStatus);
+            if (existing && manualChoice && manualChoice.unpaid && bookingPaymentState(existing) === 'paid' && appointmentChargedOnStripe(existing) && String(stripeUnpaidConfirmedId) !== String(existing.id)) {
+                openUnpaidStripeModal(existing.id, 'save');
+                return;
+            }
+            if (existing && String(stripeUnpaidConfirmedId) === String(existing.id)) stripeUnpaidConfirmedId = '';
             const payOptLabel = manualChoice ? manualChoice.label : paymentOptionLabel({ paymentStatus: paymentStatus });
             let payMethod = manualChoice ? manualChoice.method : '';
             if (!manualChoice) {
@@ -15646,7 +15895,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                 else delete existing.walkIn;
                 saveState();
                 closeManualBookingModal();
-                renderTenantRoster(tenant);
+                refreshOwnerPaymentSurfaces(tenant);
                 renderLivePreviewIframe();
                 showToast('Updated appointment #' + existing.id, 'success');
                 return;
@@ -15674,7 +15923,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
             tenant.appointments.unshift(booking);
 
             closeManualBookingModal();
-            renderTenantRoster(tenant);
+            refreshOwnerPaymentSurfaces(tenant);
             showToast('Saving appointment #' + refId + '\u2026', 'info');
             saveNewOwnerBooking(tenant, booking).then(function (saved) {
                 if (!saved.ok) {
@@ -16306,10 +16555,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
             if (!box) return;
             box.innerHTML = OWNER_PAY_METHODS.map(function (row) {
                 var on = row[0] === _rosterPaidMethodSelected;
-                var cls = on
-                    ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
-                    : 'bg-slate-800 border-slate-700 text-slate-100';
-                return '<button type="button" data-paid-method="' + row[0] + '" class="roster-paid-opt px-3 py-2.5 rounded-xl hover:bg-slate-700 font-bold text-sm border transition-all ' + cls + '">' +
+                return '<button type="button" data-paid-method="' + row[0] + '" class="sd-pay-choice roster-paid-opt' + (on ? ' is-on' : '') + '" aria-pressed="' + (on ? 'true' : 'false') + '">' +
                     payKindSvg(row[0]) + '<span>' + esc(row[1]) + '</span></button>';
             }).join('');
             var opts = box.querySelectorAll('.roster-paid-opt');
@@ -16364,11 +16610,54 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
             return { paymentStatus: status, paymentMethod: method || '', paymentOptionLabel: label || '', clearPaidMethod: true };
         }
 
-        function paintRosterPayment(tenant) {
+        function refreshOwnerPaymentSurfaces(tenant) {
             if (!tenant) return;
             try { renderTenantRoster(tenant); } catch (errRoster) {}
             try { renderClientList(); } catch (errClients) {}
             try { renderTenantReport(tenant); } catch (errReport) {}
+            try { renderSchediToday(tenant); } catch (errToday) {}
+            try { if (ownerClientPanelId) paintClientPanel(); } catch (errPanel) {}
+        }
+
+        function paintRosterPayment(tenant) {
+            refreshOwnerPaymentSurfaces(tenant);
+        }
+
+        var stripeUnpaidConfirmedId = '';
+        var unpaidStripeMode = '';
+
+        function appointmentChargedOnStripe(app) {
+            return !!(app && (app.stripePaymentIntentId || app.stripeChargeId || app.stripePaymentMethodId));
+        }
+
+        function openUnpaidStripeModal(appId, mode) {
+            unpaidStripeMode = mode || 'clear';
+            var idEl = document.getElementById('unpaidStripeAppId');
+            if (idEl) idEl.value = appId || '';
+            var modal = document.getElementById('unpaidStripeModal');
+            if (!modal) return;
+            modal.classList.remove('hidden');
+            modal.scrollTop = 0;
+            var keep = modal.querySelector('button');
+            if (keep && keep.focus) keep.focus();
+        }
+
+        window.closeUnpaidStripeModal = function () {
+            unpaidStripeMode = '';
+            var modal = document.getElementById('unpaidStripeModal');
+            if (modal) modal.classList.add('hidden');
+        };
+
+        async function finishMarkUnpaid(app) {
+            if (!app) return;
+            var patch = rosterUnpaidPatch(app);
+            var result = await commitRosterPayment(app, patch);
+            if (!result.ok) return;
+            delete app.paymentStatusBeforePaid;
+            delete app.paymentMethodBeforePaid;
+            delete app.paymentOptionBeforePaid;
+            try { closeManualBookingModal(); } catch (errClose) {}
+            showToast('Marked #' + app.id + ' as unpaid.', 'success');
         }
 
         async function commitRosterPayment(app, next) {
@@ -16423,19 +16712,62 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
             try { sendOwnerPaymentReceivedEmail(result.tenant, result.app); } catch (errO) { console.warn(errO); }
         };
 
-        window.markAppointmentUnpaid = async function(appId) {
+        async function markAppointmentUnpaid(appId) {
             var tenant = getTenant();
             if (!tenant) return;
             var app = (tenant.appointments || []).find(function (a) { return a && a.id === appId; });
             if (!app || bookingPaymentState(app) !== 'paid') return;
-            var patch = rosterUnpaidPatch(app);
-            var result = await commitRosterPayment(app, patch);
-            if (!result.ok) return;
-            delete app.paymentStatusBeforePaid;
-            delete app.paymentMethodBeforePaid;
-            delete app.paymentOptionBeforePaid;
-            showToast('Marked #' + appId + ' as unpaid.', 'success');
+            if (appointmentChargedOnStripe(app)) {
+                openUnpaidStripeModal(app.id, 'clear');
+                return;
+            }
+            await finishMarkUnpaid(app);
+        }
+        window.markAppointmentUnpaid = markAppointmentUnpaid;
+
+        window.confirmStripeMarkUnpaid = async function () {
+            var appId = String((document.getElementById('unpaidStripeAppId') || {}).value || '');
+            var mode = unpaidStripeMode;
+            closeUnpaidStripeModal();
+            if (mode === 'save') {
+                stripeUnpaidConfirmedId = appId;
+                var form = document.querySelector('#manualBookingModal form');
+                if (form && form.requestSubmit) form.requestSubmit();
+                return;
+            }
+            var tenant = getTenant();
+            if (!tenant) return;
+            var app = (tenant.appointments || []).find(function (a) { return a && a.id === appId; });
+            await finishMarkUnpaid(app);
         };
+
+        function paintManualPayChoices() {
+            var box = document.getElementById('manPaymentChoices');
+            var input = document.getElementById('manPaymentStatus');
+            if (!box || !input) return;
+            var current = input.value || 'PAY AT APPOINTMENT';
+            box.innerHTML = MANUAL_PAY_CHOICES.map(function (row) {
+                var on = row.value === current;
+                var kind = row.unpaid ? 'unpaid' : row.method;
+                return '<button type="button" class="sd-pay-choice' + (on ? ' is-on' : '') + '" role="option" aria-selected="' + (on ? 'true' : 'false') + '" data-pay-status="' + esc(row.value) + '">' +
+                    payKindSvg(kind) + '<span>' + esc(row.label) + '</span></button>';
+            }).join('');
+            var opts = box.querySelectorAll('[data-pay-status]');
+            for (var i = 0; i < opts.length; i++) {
+                opts[i].onclick = (function (status) {
+                    return function () {
+                        input.value = status;
+                        paintManualPayChoices();
+                    };
+                })(opts[i].getAttribute('data-pay-status'));
+            }
+        }
+
+        function syncManualUnpaidButton(app) {
+            var btn = document.getElementById('manUnpaidBtn');
+            if (!btn) return;
+            btn.classList.toggle('hidden', !(app && bookingPaymentState(app) === 'paid'));
+        }
 
         window.markAppointmentPaid = function(appId) {
             openRosterPaidMethodModal(appId);

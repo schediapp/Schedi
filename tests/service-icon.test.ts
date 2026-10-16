@@ -82,6 +82,11 @@ describe("owner service images", () => {
     expect(markup).toContain("serviceSvgMarkup");
     expect(markup).not.toContain("fa-solid");
     expect(html).toContain('id="svcIconGrid"');
+    expect(html).toContain('id="svcIconCats"');
+    expect(html).toContain("Hair & Barber");
+    expect(html).toContain("Photography & Events");
+    expect(html).toContain("function setServiceIconCategory");
+    expect(html).toContain("serviceIconCategoryFor");
     expect(html).toContain("Upload your own");
     expect(html).toContain("Current icon");
     expect(html).toContain("<svg viewBox=\"0 0 24 24\"");

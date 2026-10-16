@@ -277,5 +277,14 @@ describe("no-show booking field", () => {
     const dropped = sanitizeBooking({ id: "HB-1099", paidMethod: "not-a-rail", paymentMethod: "bitcoin" }, "harbor-demo");
     expect(dropped).not.toHaveProperty("paidMethod");
     expect(dropped).not.toHaveProperty("paymentMethod");
+    const clearedPay = sanitizeBooking({
+      id: "HB-1013",
+      paidMethod: "",
+      paymentMethod: null,
+      paymentOptionLabel: "Was card",
+    }, "harbor-demo");
+    expect(clearedPay).not.toHaveProperty("paidMethod");
+    expect(clearedPay).not.toHaveProperty("paymentMethod");
+    expect(clearedPay).toMatchObject({ paymentOptionLabel: "Was card" });
   });
 });
