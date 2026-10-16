@@ -573,9 +573,12 @@
             color: var(--hq-ink) !important;
             box-shadow: none !important;
         }
-        html.schedi-newhq .hq-table { table-layout: auto; width: 100%; }
-        html.schedi-newhq .hq-table th { color: var(--hq-muted); border-color: var(--hq-line); font-size: 11px; letter-spacing: 0.04em; white-space: nowrap; padding: 8px 6px; }
-        html.schedi-newhq .hq-table td { border-color: var(--hq-line); padding: 8px 6px; overflow: visible; }
+        html.schedi-newhq .hq-dir-scroll { max-width: 100%; overflow-x: auto; }
+        html.schedi-newhq .hq-table { table-layout: auto; width: 100%; max-width: 100%; border-collapse: collapse; border-spacing: 0; }
+        html.schedi-newhq .hq-table th { color: var(--hq-muted); border-color: var(--hq-line); font-size: 11px; letter-spacing: 0.04em; white-space: nowrap; padding: 8px 6px; text-align: left; }
+        html.schedi-newhq .hq-table td { border-color: var(--hq-line); padding: 8px 6px; overflow: visible; text-align: left; }
+        html.schedi-newhq .hq-table th.hq-col-biz,
+        html.schedi-newhq .hq-table td.hq-col-biz { text-align: left; padding-left: 0; }
         html.schedi-newhq .hq-table tbody tr:hover { background: color-mix(in srgb, var(--hq-brand) 8%, transparent); }
         html.schedi-newhq #agencyDirectory { padding: 20px 16px; }
         html.schedi-newhq .hq-table .hq-clip {
@@ -591,10 +594,43 @@
         html.schedi-newhq .hq-col-extra,
         html.schedi-newhq .hq-col-last,
         html.schedi-newhq .hq-col-health { width: 1%; white-space: nowrap; }
-        html.schedi-newhq .hq-col-actions { width: 7.75rem; white-space: normal; }
-        html.schedi-newhq .hq-col-actions .flex { flex-wrap: wrap; justify-content: flex-end; width: 7.75rem; }
+        html.schedi-newhq .hq-col-actions { width: 1%; white-space: nowrap; }
+        html.schedi-newhq .hq-table th.hq-col-actions,
+        html.schedi-newhq .hq-table td.hq-col-actions { text-align: right; }
+        html.schedi-newhq .hq-col-actions .flex { flex-wrap: nowrap; justify-content: flex-end; align-items: center; width: auto; gap: 6px; }
         html.schedi-newhq .hq-table button,
         html.schedi-newhq .hq-table a { min-height: 32px; }
+        html.schedi-newhq .hq-more { position: relative; display: inline-flex; vertical-align: middle; }
+        html.schedi-newhq .hq-more > summary {
+            list-style: none;
+            width: 32px; height: 32px; min-height: 32px;
+            border-radius: 10px;
+            border: 1px solid var(--hq-line);
+            background: var(--hq-panel-2);
+            color: var(--hq-text);
+            display: inline-flex; align-items: center; justify-content: center;
+            cursor: pointer; font-weight: 800; line-height: 1; letter-spacing: 0;
+        }
+        html.schedi-newhq .hq-more > summary::-webkit-details-marker,
+        html.schedi-newhq .hq-more > summary::marker { display: none; content: ""; }
+        html.schedi-newhq .hq-more-menu {
+            position: fixed; z-index: 80; left: 0; top: 0; visibility: hidden;
+            min-width: 188px; max-height: min(320px, calc(100vh - 96px));
+            overflow: auto; padding: 6px; border-radius: 14px;
+            border: 1px solid var(--hq-line); background: var(--hq-panel);
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
+        }
+        html.schedi-newhq .hq-more-menu button,
+        html.schedi-newhq .hq-more-menu a {
+            display: flex; align-items: center; gap: 8px;
+            width: 100%; min-height: 36px; text-align: left;
+            background: transparent; border: 0; color: var(--hq-text);
+            border-radius: 10px; padding: 8px 10px;
+            font-size: 13px; font-weight: 700; cursor: pointer; text-decoration: none;
+        }
+        html.schedi-newhq .hq-more-menu button:hover,
+        html.schedi-newhq .hq-more-menu a:hover { background: color-mix(in srgb, var(--hq-brand) 12%, transparent); }
+        html.schedi-newhq .hq-more-menu .hq-more-danger { color: #fb7185; }
         @media (max-width: 1099px) {
             html.schedi-newhq .hq-col-extra { display: none; }
         }
@@ -6012,7 +6048,19 @@
                 return mon ? esc(mon + ' ' + Number(raw.slice(8, 10))) : esc(raw);
             }
             var compactDates = document.documentElement.classList.contains('schedi-newhq');
-            var desktop = '<div class="hidden md:block overflow-x-auto"><table class="hq-table w-full text-xs"><thead><tr>'
+            function hqMoreMenu(t) {
+                var id = jsArg(t.id);
+                var pause = t.subscriptionStatus === 'active';
+                return '<details class="hq-more"><summary aria-label="More actions for ' + esc(t.name || 'business') + '">⋯</summary><div class="hq-more-menu" role="menu">'
+                    + '<a role="menuitem" href="' + esc(getTenantPublicBookingUrl(t)) + '" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square text-xs" aria-hidden="true"></i>Open booking page</a>'
+                    + '<button type="button" role="menuitem" onclick="hqEditTags(' + id + ')"><i class="fa-solid fa-tags text-xs" aria-hidden="true"></i>Edit tags</button>'
+                    + '<button type="button" role="menuitem" onclick="openEditTenantModal(' + id + ')"><i class="fa-solid fa-pen-to-square text-xs" aria-hidden="true"></i>Edit profile</button>'
+                    + '<button type="button" role="menuitem" onclick="resendProvisionWelcome(' + id + ')"><i class="fa-solid fa-envelope text-xs" aria-hidden="true"></i>Email welcome</button>'
+                    + '<button type="button" role="menuitem" onclick="toggleSubscriptionPause(' + id + ')"><i class="fa-solid ' + (pause ? 'fa-pause' : 'fa-play') + ' text-xs" aria-hidden="true"></i>' + (pause ? 'Pause business' : 'Resume business') + '</button>'
+                    + '<button type="button" role="menuitem" class="hq-more-danger" onclick="deleteAgencyTenant(' + id + ')"><i class="fa-solid fa-trash-can text-xs" aria-hidden="true"></i>Delete business</button>'
+                    + '</div></details>';
+            }
+            var desktop = '<div class="hq-dir-scroll hidden md:block overflow-x-auto"><table class="hq-table w-full text-xs"><thead><tr>'
                 + '<th class="hq-col-biz">Business</th><th class="hq-col-owner">Owner</th><th class="hq-col-plan">Plan</th><th class="hq-col-status">Status</th><th class="hq-col-extra" title="Bookings this month">This month</th><th class="hq-col-extra">Unpaid</th><th class="hq-col-last">Last booking</th><th class="hq-col-health">Health</th><th class="hq-col-actions text-right">Actions</th></tr></thead><tbody>'
                 + rows.map(function (t) {
                     var v = view(t);
@@ -6023,7 +6071,9 @@
                         + '<td class="hq-col-status">' + v.stBadge + '</td><td class="hq-col-extra font-bold text-white">' + cell(v.month) + '</td>'
                         + '<td class="hq-col-extra ' + (v.unpaid ? 'font-bold text-amber-400' : 'text-white') + '">' + cell(v.unpaid) + '</td><td class="hq-col-last text-slate-300 whitespace-nowrap"' + (v.last ? ' title="' + esc(String(v.last)) + '"' : '') + '>' + (compactDates ? shortBookingDate(v.last) : cell(v.last)) + '</td>'
                         + '<td class="hq-col-health"><div class="flex flex-col gap-1">' + warnHtml(v.w) + '</div></td>'
-                        + '<td class="hq-col-actions"><div class="flex items-center justify-end gap-0.5">' + v.actions + '</div></td></tr>';
+                        + '<td class="hq-col-actions">' + (compactDates
+                            ? '<div class="flex items-center justify-end gap-1.5"><button type="button" onclick="loginAsTenantOwner(' + jsArg(t.id) + ')" class="px-3 py-1.5 rounded-lg bg-brand-500 hover:bg-brand-600 text-slate-950 font-bold text-xs">Manage</button>' + hqMoreMenu(t) + '</div>'
+                            : '<div class="flex items-center justify-end gap-0.5">' + v.actions + '</div>') + '</td></tr>';
                 }).join('') + '</tbody></table></div>';
             var mobile = '<div class="md:hidden space-y-3">' + rows.map(function (t) {
                 var v = view(t);
@@ -6042,6 +6092,103 @@
                     + '<div class="flex items-center justify-between gap-1 pt-2 border-t border-slate-800">' + v.actions + '</div></div>';
             }).join('') + '</div>';
             grid.innerHTML = desktop + mobile;
+        }
+
+        window.placeHqMoreMenu = function (details) {
+            if (!details || !details.classList || !details.classList.contains('hq-more')) return;
+            var menu = details.querySelector('.hq-more-menu');
+            if (!menu) return;
+            if (!details.open) {
+                menu.style.visibility = 'hidden';
+                return;
+            }
+            document.querySelectorAll('details.hq-more[open]').forEach(function (el) {
+                if (el !== details) el.open = false;
+            });
+            var summary = details.querySelector('summary');
+            if (!summary) return;
+            menu.style.visibility = 'hidden';
+            menu.style.position = 'fixed';
+            menu.style.right = 'auto';
+            menu.style.bottom = 'auto';
+            menu.style.maxHeight = '';
+            menu.style.zIndex = '80';
+            var rect = summary.getBoundingClientRect();
+            var width = Math.max(menu.offsetWidth || 0, 188);
+            var sidebar = window.innerWidth > 800 ? 244 : 0;
+            var topLimit = 72;
+            var bottomGap = window.innerWidth > 800 ? 12 : 80;
+            var leftLimit = sidebar + 8;
+            var rightLimit = window.innerWidth - 8;
+            var bottomLimit = window.innerHeight - bottomGap;
+            var left = rect.right - width;
+            if (left < leftLimit) left = rect.left;
+            if (left + width > rightLimit) left = Math.max(leftLimit, rightLimit - width);
+            var natural = menu.scrollHeight || menu.offsetHeight || 240;
+            var spaceBelow = bottomLimit - (rect.bottom + 6);
+            var spaceAbove = rect.top - 6 - topLimit;
+            var openUp = spaceBelow < natural && spaceAbove > spaceBelow;
+            var room = Math.max(96, openUp ? spaceAbove : spaceBelow);
+            menu.style.maxHeight = Math.min(320, Math.floor(room)) + 'px';
+            var height = menu.offsetHeight || Math.min(natural, room);
+            var top = openUp ? rect.top - height - 6 : rect.bottom + 6;
+            var buttonVisible = rect.bottom > topLimit && rect.top < bottomLimit;
+            if (buttonVisible) {
+                if (top < topLimit) top = topLimit;
+                if (top + height > bottomLimit) top = Math.max(topLimit, bottomLimit - height);
+            }
+            menu.style.left = Math.round(left) + 'px';
+            menu.style.top = Math.round(top) + 'px';
+            menu.style.visibility = 'visible';
+        };
+
+        if (!window.__hqMoreMenuBound) {
+            window.__hqMoreMenuBound = true;
+            document.addEventListener('click', function (event) {
+                if (!document.documentElement.classList.contains('schedi-newhq')) return;
+                var summaryHost = event.target;
+                if (summaryHost && summaryHost.nodeType === 3) summaryHost = summaryHost.parentElement;
+                var summaryNode = summaryHost && summaryHost.closest ? summaryHost.closest('details.hq-more > summary') : null;
+                if (!summaryNode) return;
+                event.preventDefault();
+                var details = summaryNode.parentElement;
+                if (!details) return;
+                details.open = !details.open;
+                window.placeHqMoreMenu(details);
+            }, true);
+            document.addEventListener('toggle', function (event) {
+                var details = event.target;
+                if (!details || !details.classList || !details.classList.contains('hq-more')) return;
+                window.placeHqMoreMenu(details);
+            }, true);
+            document.addEventListener('click', function (event) {
+                if (!document.documentElement.classList.contains('schedi-newhq')) return;
+                var node = event.target && event.target.closest ? event.target : null;
+                if (!node && event.target && event.target.parentElement) node = event.target.parentElement;
+                if (!node || !node.closest) return;
+                var item = node.closest('.hq-more-menu [role="menuitem"]');
+                if (item) {
+                    var host = item.closest('details.hq-more');
+                    if (host) host.open = false;
+                }
+                document.querySelectorAll('details.hq-more[open]').forEach(function (el) {
+                    if (!el.contains(node)) el.open = false;
+                });
+            });
+            document.addEventListener('keydown', function (event) {
+                if (!document.documentElement.classList.contains('schedi-newhq') || event.key !== 'Escape') return;
+                document.querySelectorAll('details.hq-more[open]').forEach(function (el) { el.open = false; });
+            });
+            window.addEventListener('resize', function () {
+                if (!document.documentElement.classList.contains('schedi-newhq')) return;
+                document.querySelectorAll('details.hq-more[open]').forEach(function (el) { window.placeHqMoreMenu(el); });
+            });
+            window.addEventListener('scroll', function (event) {
+                if (!document.documentElement.classList.contains('schedi-newhq')) return;
+                var target = event.target;
+                if (target && target.closest && target.closest('.hq-more-menu')) return;
+                document.querySelectorAll('details.hq-more[open]').forEach(function (el) { el.open = false; });
+            }, true);
         }
 
         window.hqEditTags = function (tenantId) {
