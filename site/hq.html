@@ -12635,14 +12635,19 @@
         /* Month title sits on the dark slate-900 bar. Light mode otherwise remaps .text-white to near-black. */
         html.schedi-light #monthTitleLabel { color: #f8fafc !important; }
         @media (max-width: 639px) {
-            .cal-day { container-type: inline-size; padding-left: 1px; padding-right: 1px; overflow: hidden; }
+            .cal-day { container-type: inline-size; padding-left: 1px; padding-right: 1px; }
             .cal-day-label,
             html.schedi-newbook .cal-day-away .cal-day-label {
                 font-size: 22cqw;
                 letter-spacing: 0;
                 text-transform: none;
                 line-height: 1.05;
-                white-space: nowrap;
+                white-space: normal;
+                overflow-wrap: anywhere;
+                display: -webkit-box;
+                -webkit-box-orient: vertical;
+                -webkit-line-clamp: 2;
+                max-height: 2.15em;
             }
         }
         /* /booking-day-contrast */

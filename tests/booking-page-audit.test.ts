@@ -63,7 +63,10 @@ describe("booking calendar contrast", () => {
     expect(rule).toContain("@media (max-width: 639px)");
     expect(rule).toContain("container-type: inline-size");
     expect(rule).toContain("text-transform: none");
+    expect(rule).toContain("white-space: normal");
+    expect(rule).toContain("-webkit-line-clamp: 2");
     expect(rule).toContain("html.schedi-newbook .cal-day-away .cal-day-label");
+    expect(html).toContain("(SCHEDI_NEWBOOK && !phoneCal) ? awayShort : 'Away'");
   });
 
   it("keeps the month title light on the dark calendar bar", () => {

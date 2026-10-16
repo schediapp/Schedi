@@ -19995,14 +19995,19 @@ function schediQrCardPixels(text, color) {
         html.schedi-newbook .cal-day { border-radius: 12px; min-height: 3.4rem; }
         html.schedi-newbook .cal-day-away .cal-day-label { letter-spacing: 0; text-transform: none; font-size: 0.58rem; line-height: 1.15; }
         @media (max-width: 639px) {
-            .cal-day { container-type: inline-size; padding-left: 1px; padding-right: 1px; overflow: hidden; }
+            .cal-day { container-type: inline-size; padding-left: 1px; padding-right: 1px; }
             .cal-day-label,
             html.schedi-newbook .cal-day-away .cal-day-label {
                 font-size: 22cqw;
                 letter-spacing: 0;
                 text-transform: none;
                 line-height: 1.05;
-                white-space: nowrap;
+                white-space: normal;
+                overflow-wrap: anywhere;
+                display: -webkit-box;
+                -webkit-box-orient: vertical;
+                -webkit-line-clamp: 2;
+                max-height: 2.15em;
             }
         }
         html.schedi-newbook #paymentMethodsGrid > button { border-radius: 12px; min-height: 44px; }
@@ -22325,7 +22330,9 @@ function schediQrCardPixels(text, color) {
                 let label = 'Open';
                 var awayText = String(awayLabel || 'Away');
                 var awayShort = awayText.length > 18 ? (awayText.slice(0, 17) + '\\u2026') : awayText;
-                if (isAway) label = SCHEDI_NEWBOOK ? awayShort : 'Away';
+                var phoneCal = false;
+                try { phoneCal = window.matchMedia('(max-width: 639px)').matches; } catch (errPhoneCal) {}
+                if (isAway) label = (SCHEDI_NEWBOOK && !phoneCal) ? awayShort : 'Away';
                 else if (!isOpen || isPast) label = isPast && isOpen ? 'Past' : 'Closed';
                 else if (isSelected && isToday) label = 'Today';
                 else if (isSelected) label = 'Selected';
@@ -22341,6 +22348,18 @@ function schediQrCardPixels(text, color) {
 
             container.innerHTML = html;
         }
+
+        try {
+            var phoneCalMq = window.matchMedia('(max-width: 639px)');
+            var phoneCalWas = phoneCalMq.matches;
+            var onPhoneCal = function () {
+                if (phoneCalMq.matches === phoneCalWas) return;
+                phoneCalWas = phoneCalMq.matches;
+                renderMonthCalendar();
+            };
+            if (phoneCalMq.addEventListener) phoneCalMq.addEventListener('change', onPhoneCal);
+            else if (phoneCalMq.addListener) phoneCalMq.addListener(onPhoneCal);
+        } catch (errPhoneCalWatch) {}
 
         window.selectDate = function(dateStr) {
             selectedDateStr = dateStr;
