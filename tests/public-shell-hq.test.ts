@@ -210,6 +210,56 @@ describe("HQ route", () => {
     expect(production.window.fetch).toBe(production.fetch);
   });
 
+  it("opens the new owner dashboard from Manage only behind the HQ preview flags", () => {
+    function extractFunction(source: string, name: string) {
+      const start = source.indexOf("function " + name);
+      const brace = source.indexOf("{", start);
+      let depth = 0;
+      for (let i = brace; i < source.length; i++) {
+        if (source[i] === "{") depth += 1;
+        else if (source[i] === "}") {
+          depth -= 1;
+          if (depth === 0) return source.slice(start, i + 1);
+        }
+      }
+      throw new Error("missing " + name);
+    }
+    const fn = extractFunction(hqHtml, "hqManagedPortalUrl");
+    function portalUrl(input: { demo?: boolean; framed?: boolean; search?: string; tenant: { id?: string; slug?: string } | null }) {
+      return runInNewContext(`${fn}\nhqManagedPortalUrl(tenant);`, {
+        window: { __SCHEDI_HQ_DEMO: input.demo === true, location: { search: input.search || "" } },
+        document: { documentElement: { classList: { contains: (name: string) => input.framed === true && name === "schedi-newhq" } } },
+        URLSearchParams,
+        tenant: input.tenant,
+      }) as string;
+    }
+    const harbor = { id: "harbor-demo", slug: "harbor-demo" };
+    expect(portalUrl({ tenant: harbor, search: "?booking=HB-1" })).toBe("");
+    expect(portalUrl({
+      demo: true,
+      framed: true,
+      search: "?newhq=1&demo=1&booking=HB-1006&date=2026-10-16&biz=somewhere&from=hq",
+      tenant: harbor,
+    })).toBe("/portal-preview?booking=HB-1006&date=2026-10-16&biz=harbor-demo&from=hq&tenant=harbor-demo&demo=1");
+    expect(portalUrl({ demo: true, search: "?demo=1", tenant: { id: "northwind-demo", slug: "northwind-clinic" } }))
+      .toBe("/portal-preview?biz=northwind-clinic&tenant=northwind-demo&demo=1");
+    expect(portalUrl({
+      framed: true,
+      search: "?newhq=1&demo=1&booking=BK-9&appt=BK-9&ref=mail",
+      tenant: { id: "lumen-demo", slug: "lumen-studio" },
+    })).toBe("/?booking=BK-9&appt=BK-9&ref=mail&biz=lumen-studio&tenant=lumen-demo&newdash=1");
+    const ownerStart = hqHtml.indexOf("window.loginAsTenantOwner = function");
+    const owner = hqHtml.slice(ownerStart, hqHtml.indexOf("// SCHEDI_HQ_END", ownerStart));
+    expect(owner.indexOf("hqManagedPortalUrl")).toBeGreaterThan(-1);
+    expect(owner.indexOf("hqManagedPortalUrl")).toBeLessThan(owner.indexOf("switchPlatformMode('tenant')"));
+    expect(owner).toContain("if (managedTenant) managedUrl = hqManagedPortalUrl(managedTenant)");
+    expect(owner).toContain("window.location.assign(managedUrl)");
+    expect(owner).toContain("ownerSelfSession = false");
+    expect(hqHtml).toContain("window.loginAsTenantOwner(tenantId);");
+    expect(hqHtml.match(/onclick="loginAsTenantOwner\(/g)).toHaveLength(2);
+    expect(hqHtml.match(/>Manage<\/button>/g)).toHaveLength(2);
+  });
+
   it("does not serve the HQ document as a static HTML file", async () => {
     const response = await handleRequest(new Request("https://schedi.app/hq.html"), env(hqHtml, sessions), ctx());
     expect(response.status).toBe(404);
