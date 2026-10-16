@@ -61,6 +61,23 @@ describe("public booking HTML", () => {
     expect(publicHtml).toContain("function ownerPlanActiveUntilText");
     expect(hqHtml).toContain('id="agencyHqSection"');
     expect(hqHtml).toContain("Agency HQ Master Login");
+    const hqCss = hqHtml.slice(hqHtml.indexOf("SCHEDI_HQ_START"), hqHtml.indexOf("SCHEDI_HQ_END"));
+    expect(hqCss).toMatch(/\[data-hq-collapse-head\]\s*\{[^}]*flex-direction:\s*row/);
+    expect(hqCss).toMatch(/\.hq-collapse-btn\s*\{[^}]*min-height:\s*44px/);
+    expect(hqHtml.match(/data-hq-collapse-head>/g) || []).toHaveLength(2);
+    expect(hqHtml).not.toContain("flex-col md:flex-row md:items-center justify-between gap-4\" data-hq-collapse-head");
+    expect(hqHtml).toContain('id="hqGlanceCard"');
+    expect(hqHtml).toContain(">At a glance<");
+    expect(hqHtml).toContain('id="hqGlanceSummary"');
+    expect(hqHtml).toContain('aria-controls="hqGlanceBody"');
+    expect(hqHtml).toContain("schedi.hqGlanceOpen.v1");
+    expect(hqHtml).toContain('id="statTotalSites"');
+    expect(hqHtml).toContain('id="statAgencyMRR"');
+    expect(hqHtml).toContain('id="statTotalBookings"');
+    expect(hqHtml).toContain('id="statActivePages"');
+    expect(hqCss).toContain(".hq-glance-body[hidden]");
+    expect(hqCss).toContain(".hq-glance-summary[hidden]");
+    expect(hqCss).toMatch(/@media \(min-width:\s*860px\)/);
   });
 
   it.each(["/axeldelcidphotography", "/login", "/portal"])(

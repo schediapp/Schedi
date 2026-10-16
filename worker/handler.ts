@@ -80,7 +80,7 @@ const STATIC_TYPES: Record<string, string> = {
   "/firebase-messaging-sw.js": "text/javascript; charset=utf-8",
 };
 
-const SPA_EXACT = new Set(["login", "signup", "reset", "auth", "agency", "hq", "hq-9h7p52"]);
+const SPA_EXACT = new Set(["login", "signup", "reset", "auth", "agency", "hq", "hq-9h7p52", "portal-preview"]);
 
 export function contentSecurityPolicy(html: boolean): string {
   if (!html) return "";
@@ -154,6 +154,8 @@ function wantsPortal(url: URL): boolean {
   if (portal === "login") return true;
   if (url.searchParams.get("forgot") === "1") return true;
   if (url.searchParams.has("billing")) return true;
+  if (url.searchParams.get("demo") === "1") return true;
+  if (url.searchParams.get("newdash") === "1") return true;
   return false;
 }
 
