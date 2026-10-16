@@ -1632,6 +1632,192 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
         border: 0;
         background: #020617;
     }
+    #tenantPortalSection.schedi-newdash .sd-report-title { color: #f8fafc; }
+    html.schedi-light #tenantPortalSection.schedi-newdash .sd-report-title { color: #0f172a; }
+    #tenantPortalSection.schedi-newdash .sd-report-lead,
+    #tenantPortalSection.schedi-newdash .sd-report-note { color: #cbd5e1; font-size: 13px; line-height: 1.45; }
+    html.schedi-light #tenantPortalSection.schedi-newdash .sd-report-lead,
+    html.schedi-light #tenantPortalSection.schedi-newdash .sd-report-note { color: #334155; }
+    #tenantPortalSection.schedi-newdash .sd-report-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    #tenantPortalSection.schedi-newdash .sd-report-actions button,
+    #tenantPortalSection.schedi-newdash .sd-report-range button {
+        min-height: 44px;
+        padding: 8px 14px;
+        border-radius: 12px;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+    }
+    #tenantPortalSection.schedi-newdash .sd-report-actions button {
+        background: #1e293b;
+        color: #f8fafc;
+        border: 1px solid #334155;
+    }
+    html.schedi-light #tenantPortalSection.schedi-newdash .sd-report-actions button {
+        background: #f8fafc;
+        color: #0f172a;
+        border-color: #cbd5e1;
+    }
+    #tenantPortalSection.schedi-newdash .sd-report-range {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    #tenantPortalSection.schedi-newdash .sd-report-range button {
+        background: #0f172a;
+        color: #e2e8f0;
+        border: 1px solid #334155;
+    }
+    #tenantPortalSection.schedi-newdash .sd-report-range button[aria-pressed="true"] {
+        background: #065f46;
+        color: #ecfdf5;
+        border-color: #059669;
+    }
+    #tenantPortalSection.schedi-newdash .sd-report-range button:focus-visible,
+    #tenantPortalSection.schedi-newdash .sd-report-actions button:focus-visible,
+    #tenantPortalSection.schedi-newdash .sd-report-date input:focus-visible {
+        outline: 2px solid #34d399;
+        outline-offset: 2px;
+    }
+    html.schedi-light #tenantPortalSection.schedi-newdash .sd-report-range button {
+        background: #ffffff;
+        color: #0f172a;
+        border-color: #cbd5e1;
+    }
+    html.schedi-light #tenantPortalSection.schedi-newdash .sd-report-range button[aria-pressed="true"] {
+        background: #d1fae5;
+        color: #064e3b;
+        border-color: #059669;
+    }
+    #tenantPortalSection.schedi-newdash .sd-report-custom {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+    #tenantPortalSection.schedi-newdash .sd-report-custom[hidden] { display: none !important; }
+    #tenantPortalSection.schedi-newdash .sd-report-date {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        font-size: 13px;
+        font-weight: 700;
+        color: #e2e8f0;
+        min-width: 0;
+        flex: 1 1 140px;
+    }
+    html.schedi-light #tenantPortalSection.schedi-newdash .sd-report-date { color: #0f172a; }
+    #tenantPortalSection.schedi-newdash .sd-report-date input {
+        min-height: 44px;
+        width: 100%;
+        box-sizing: border-box;
+        border-radius: 12px;
+        border: 1px solid #334155;
+        background: #0f172a;
+        color: #f8fafc;
+        font-size: 16px;
+        padding: 8px 10px;
+        color-scheme: dark;
+    }
+    html.schedi-light #tenantPortalSection.schedi-newdash .sd-report-date input {
+        background: #ffffff;
+        color: #0f172a;
+        border-color: #cbd5e1;
+        color-scheme: light;
+    }
+    #tenantPortalSection.schedi-newdash .sd-report-stats {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+    }
+    @media (min-width: 860px) {
+        #tenantPortalSection.schedi-newdash .sd-report-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    }
+    #tenantPortalSection.schedi-newdash .sd-report-card {
+        min-width: 0;
+        padding: 12px;
+        border-radius: 14px;
+        border: 1px solid #1e293b;
+        background: #111827;
+    }
+    html.schedi-light #tenantPortalSection.schedi-newdash .sd-report-card {
+        background: #f8fafc;
+        border-color: #e2e8f0;
+    }
+    #tenantPortalSection.schedi-newdash .sd-report-kicker {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+        color: #94a3b8;
+        font-size: 12px;
+        font-weight: 700;
+    }
+    html.schedi-light #tenantPortalSection.schedi-newdash .sd-report-kicker { color: #475569; }
+    #tenantPortalSection.schedi-newdash .sd-report-value {
+        margin-top: 4px;
+        color: #f8fafc;
+        font-size: 1.35rem;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        line-height: 1.2;
+    }
+    html.schedi-light #tenantPortalSection.schedi-newdash .sd-report-value { color: #0f172a; }
+    #tenantPortalSection.schedi-newdash .sd-sample-badge {
+        display: inline-flex;
+        align-items: center;
+        min-height: 22px;
+        padding: 0 8px;
+        border-radius: 999px;
+        background: #075985;
+        color: #e0f2fe;
+        font-size: 11px;
+        font-weight: 800;
+    }
+    html.schedi-light #tenantPortalSection.schedi-newdash .sd-sample-badge {
+        background: #e0f2fe;
+        color: #0c4a6e;
+    }
+    #tenantPortalSection.schedi-newdash .sd-report-charts {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    @media (min-width: 860px) {
+        #tenantPortalSection.schedi-newdash .sd-report-charts { grid-template-columns: 1fr 1fr; }
+    }
+    #tenantPortalSection.schedi-newdash .sd-report-chart {
+        min-width: 0;
+        padding: 12px;
+        border-radius: 14px;
+        border: 1px solid #1e293b;
+        background: #111827;
+        color: #cbd5e1;
+    }
+    html.schedi-light #tenantPortalSection.schedi-newdash .sd-report-chart {
+        background: #f8fafc;
+        border-color: #e2e8f0;
+        color: #334155;
+    }
+    #tenantPortalSection.schedi-newdash .sd-report-chart h4 {
+        margin: 0;
+        color: #f8fafc;
+        font-size: 14px;
+        font-weight: 800;
+    }
+    html.schedi-light #tenantPortalSection.schedi-newdash .sd-report-chart h4 { color: #0f172a; }
+    #tenantPortalSection.schedi-newdash .sd-report-chart svg {
+        display: block;
+        width: 100%;
+        height: auto;
+        margin-top: 8px;
+    }
+    #tenantPortalSection.schedi-newdash .sd-report-avg {
+        margin: 4px 0 0;
+        color: #f8fafc;
+        font-size: 1.35rem;
+        font-weight: 800;
+    }
+    html.schedi-light #tenantPortalSection.schedi-newdash .sd-report-avg { color: #0f172a; }
 
 </style>
 <script>
@@ -2588,15 +2774,29 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
 
 
                 <div id="tenantSectionReport" class="glass-card rounded-2xl p-6 space-y-4 hidden">
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                         <div>
-                            <h3 class="text-lg font-bold text-white">Appointments Report</h3>
-                            <p class="text-xs text-slate-400">Counts, status, and revenue from the prices recorded on appointments. Nothing here is estimated.</p>
+                            <h3 class="text-lg font-bold text-white sd-report-title">Reports</h3>
+                            <p class="text-xs text-slate-400 sd-report-lead">Bookings and prices already saved on the calendar. Last 7, 30, and 90 days end today. Custom can include later dates.</p>
                         </div>
-                        <div class="flex flex-wrap gap-2">
+                        <div class="flex flex-wrap gap-2 sd-report-actions">
                             <button type="button" onclick="exportAppointmentReport()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs border border-slate-700">Export CSV</button>
                             <button type="button" onclick="printAppointmentReport()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs border border-slate-700">Print</button>
                         </div>
+                    </div>
+                    <div class="sd-report-range" role="group" aria-label="Date range">
+                        <button type="button" id="tenantReportRange7" onclick="setAppointmentReportRange('7')">Last 7 days</button>
+                        <button type="button" id="tenantReportRange30" onclick="setAppointmentReportRange('30')" aria-pressed="true">Last 30 days</button>
+                        <button type="button" id="tenantReportRange90" onclick="setAppointmentReportRange('90')">Last 90 days</button>
+                        <button type="button" id="tenantReportRangeCustom" onclick="setAppointmentReportRange('custom')">Custom</button>
+                    </div>
+                    <div id="tenantReportCustom" class="sd-report-custom" hidden>
+                        <label class="sd-report-date" for="tenantReportFrom">From
+                            <input type="date" id="tenantReportFrom" onchange="setAppointmentReportCustom()">
+                        </label>
+                        <label class="sd-report-date" for="tenantReportTo">To
+                            <input type="date" id="tenantReportTo" onchange="setAppointmentReportCustom()">
+                        </label>
                     </div>
                     <div id="tenantReportBody" class="space-y-4 text-xs text-slate-300"></div>
                 </div>
@@ -14448,6 +14648,261 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
             return (tenant && tenant.appointments) ? tenant.appointments.slice() : [];
         }
 
+        var reportRangePreset = '30';
+
+        function reportTodayIso(timeZone, now) {
+            var tz = String(timeZone || 'America/New_York');
+            var date = now instanceof Date ? now : new Date();
+            try {
+                var fmt = new Intl.DateTimeFormat('en-US', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' });
+                var map = {};
+                fmt.formatToParts(date).forEach(function (part) {
+                    if (part.type !== 'literal') map[part.type] = part.value;
+                });
+                if (map.year && map.month && map.day) return map.year + '-' + map.month + '-' + map.day;
+            } catch (errToday) {}
+            return date.toISOString().slice(0, 10);
+        }
+
+        function reportShiftIso(iso, days) {
+            var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || ''));
+            if (!m) return '';
+            var dt = new Date(Date.UTC(parseInt(m[1], 10), parseInt(m[2], 10) - 1, parseInt(m[3], 10)));
+            dt.setUTCDate(dt.getUTCDate() + (parseInt(days, 10) || 0));
+            return dt.toISOString().slice(0, 10);
+        }
+
+        function reportWeekStart(iso) {
+            var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || ''));
+            if (!m) return '';
+            var dt = new Date(Date.UTC(parseInt(m[1], 10), parseInt(m[2], 10) - 1, parseInt(m[3], 10)));
+            dt.setUTCDate(dt.getUTCDate() - dt.getUTCDay());
+            return dt.toISOString().slice(0, 10);
+        }
+
+        function reportPrettyShort(iso) {
+            var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || ''));
+            if (!m) return '';
+            return months[parseInt(m[2], 10) - 1] + ' ' + parseInt(m[3], 10);
+        }
+
+        function reportMoney(n) {
+            var v = Number(n);
+            if (!isFinite(v)) v = 0;
+            return '$' + (Math.round(v * 100) / 100).toFixed(2);
+        }
+
+        function reportAmount(app) {
+            var n = Number(app && app.amount);
+            if (!isFinite(n) || n < 0) return 0;
+            return n;
+        }
+
+        function reportIsCancelled(app) {
+            if (!app) return false;
+            if (app.cancelled === true) return true;
+            var s = String(app.status || '').toLowerCase();
+            return s === 'cancelled' || s === 'canceled';
+        }
+
+        function reportIsDenied(app) {
+            return String((app && app.status) || '').toLowerCase() === 'denied';
+        }
+
+        function appointmentReportNoShow() {
+            return {
+                available: false,
+                label: 'Unavailable',
+                reason: 'Appointments do not have a no-show field, so this card stays unavailable.'
+            };
+        }
+
+        function appointmentReportRange(preset, today, customFrom, customTo) {
+            var p = String(preset || '30');
+            var end = String(today || '').slice(0, 10);
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(end)) return { preset: p, from: '', to: '', label: '' };
+            if (p === 'custom') {
+                var from = String(customFrom || '').slice(0, 10);
+                var to = String(customTo || '').slice(0, 10);
+                if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) {
+                    return { preset: 'custom', from: '', to: '', label: 'Custom' };
+                }
+                if (from > to) { var swap = from; from = to; to = swap; }
+                var cap = reportShiftIso(from, 366);
+                var clamped = false;
+                if (cap && to > cap) { to = cap; clamped = true; }
+                return {
+                    preset: 'custom',
+                    from: from,
+                    to: to,
+                    clamped: clamped,
+                    label: reportPrettyShort(from) + ' – ' + reportPrettyShort(to) + (clamped ? ' (one year at a time)' : '')
+                };
+            }
+            var days = p === '7' ? 7 : (p === '90' ? 90 : 30);
+            var start = reportShiftIso(end, 1 - days);
+            var name = days === 7 ? 'Last 7 days' : (days === 90 ? 'Last 90 days' : 'Last 30 days');
+            return { preset: String(days), from: start, to: end, label: name + ' · ' + reportPrettyShort(start) + ' – ' + reportPrettyShort(end) };
+        }
+
+        function appointmentReportSampleVisits(from, to) {
+            var total = 0;
+            var days = 0;
+            var cursor = String(from || '');
+            var end = String(to || '');
+            var guard = 0;
+            while (cursor && end && cursor <= end && guard < 400) {
+                var n = 0;
+                var i;
+                for (i = 0; i < cursor.length; i++) n = (n + cursor.charCodeAt(i) * (i + 3)) % 19;
+                total += 6 + n;
+                days += 1;
+                cursor = reportShiftIso(cursor, 1);
+                guard += 1;
+            }
+            return { total: total, days: days, sample: true };
+        }
+
+        function appointmentReportModel(appointments, range, paymentState) {
+            var from = range && range.from;
+            var to = range && range.to;
+            var payOf = typeof paymentState === 'function' ? paymentState : function () { return 'unpaid'; };
+            var rows = [];
+            (appointments || []).forEach(function (app) {
+                if (!app) return;
+                var date = String(app.date || '').slice(0, 10);
+                if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
+                if (from && date < from) return;
+                if (to && date > to) return;
+                rows.push(app);
+            });
+            var total = rows.length;
+            var revenue = 0;
+            var confirmed = 0;
+            var cancelled = 0;
+            var unpaid = 0;
+            var denied = 0;
+            var pending = 0;
+            var accepted = 0;
+            rows.forEach(function (app) {
+                var status = String(app.status || '').toLowerCase();
+                var isCancelled = reportIsCancelled(app);
+                var isDenied = reportIsDenied(app);
+                if (isCancelled) cancelled += 1;
+                else if (isDenied) denied += 1;
+                else {
+                    revenue += reportAmount(app);
+                    if (payOf(app) !== 'paid') unpaid += 1;
+                    if (status === 'pending') pending += 1;
+                    else if (status === 'accepted') { accepted += 1; confirmed += 1; }
+                    else confirmed += 1;
+                }
+            });
+            var weeks = [];
+            if (from && to) {
+                var cursor = reportWeekStart(from);
+                var guard = 0;
+                while (cursor && cursor <= to && guard < 60) {
+                    weeks.push({ start: cursor, end: reportShiftIso(cursor, 6), bookings: 0, revenue: 0 });
+                    cursor = reportShiftIso(cursor, 7);
+                    guard += 1;
+                }
+            }
+            rows.forEach(function (app) {
+                var start = reportWeekStart(String(app.date || '').slice(0, 10));
+                var bucket = null;
+                weeks.forEach(function (w) { if (w.start === start) bucket = w; });
+                if (!bucket) return;
+                bucket.bookings += 1;
+                if (!reportIsCancelled(app) && !reportIsDenied(app)) bucket.revenue += reportAmount(app);
+            });
+            var weekCount = weeks.length;
+            return {
+                rows: rows,
+                total: total,
+                revenue: revenue,
+                confirmed: confirmed,
+                cancelled: cancelled,
+                unpaid: unpaid,
+                denied: denied,
+                pending: pending,
+                accepted: accepted,
+                weeks: weeks,
+                avgBookings: weekCount ? total / weekCount : 0,
+                avgRevenue: weekCount ? revenue / weekCount : 0,
+                noShow: appointmentReportNoShow()
+            };
+        }
+
+        function appointmentReportCsv(model, paymentState) {
+            var payOf = typeof paymentState === 'function' ? paymentState : function () { return 'unpaid'; };
+            function cell(v) {
+                var s = String(v == null ? '' : v);
+                if (/[",\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+                return s;
+            }
+            var lines = [[
+                'id', 'client', 'phone', 'email', 'service', 'date', 'time', 'status', 'payment',
+                'payment_state', 'amount', 'counts_toward_revenue', 'confirmed', 'cancelled', 'unpaid', 'no_show', 'walk_in'
+            ].join(',')];
+            (model && model.rows ? model.rows : []).forEach(function (app) {
+                var cancelled = reportIsCancelled(app);
+                var denied = reportIsDenied(app);
+                var status = String(app.status || '').toLowerCase();
+                var pay = payOf(app);
+                var toward = !cancelled && !denied;
+                var confirmed = toward && status !== 'pending';
+                var unpaid = toward && pay !== 'paid';
+                lines.push([
+                    app.id, app.clientName, app.clientPhone, app.clientEmail, app.serviceName,
+                    app.date, app.time, app.status || '', app.paymentStatus || '',
+                    pay, reportAmount(app), toward ? 'yes' : 'no', confirmed ? 'yes' : 'no',
+                    cancelled ? 'yes' : 'no', unpaid ? 'yes' : 'no', 'not recorded',
+                    app.walkIn === true ? 'yes' : ''
+                ].map(cell).join(','));
+            });
+            return lines.join('\n');
+        }
+
+        function appointmentReportChartSvg(weeks, field, format, label) {
+            var list = weeks || [];
+            var max = 0;
+            list.forEach(function (w) { if (Number(w[field]) > max) max = Number(w[field]); });
+            if (max <= 0) max = 1;
+            var width = 320;
+            var height = 128;
+            var pad = 4;
+            var n = list.length || 1;
+            var gap = n > 16 ? 2 : 4;
+            var bw = Math.max(2, (width - pad * 2 - gap * (n - 1)) / n);
+            var step = n > 10 ? Math.ceil(n / 8) : 1;
+            var parts = [];
+            var summary = [];
+            list.forEach(function (week, i) {
+                var val = Number(week[field]) || 0;
+                var bh = Math.round((val / max) * (height - 28));
+                if (val > 0 && bh < 2) bh = 2;
+                var x = pad + i * (bw + gap);
+                var y = height - 18 - bh;
+                var name = reportPrettyShort(week.start);
+                summary.push(name + ' ' + format(val));
+                parts.push('<rect x="' + x.toFixed(1) + '" y="' + y + '" width="' + Math.max(1, bw).toFixed(1) + '" height="' + bh + '" rx="2" fill="#059669"><title>' + name + ': ' + format(val) + '</title></rect>');
+                if (i % step === 0) {
+                    parts.push('<text x="' + (x + bw / 2).toFixed(1) + '" y="' + (height - 4) + '" text-anchor="middle" font-size="9" fill="currentColor">' + name.replace(' ', '\u00a0') + '</text>');
+                }
+            });
+            var caption = String(label || 'Chart') + '. ' + summary.join(', ');
+            caption = caption.replace(/[&<>"']/g, ' ');
+            return '<svg viewBox="0 0 ' + width + ' ' + height + '" role="img" aria-label="' + caption + '">' + parts.join('') + '</svg>';
+        }
+
+        function appointmentReportAvgLabel(n) {
+            var v = Math.round(Number(n) * 10) / 10;
+            if (!isFinite(v)) v = 0;
+            return String(v);
+        }
+
         function appointmentClientKey(app) {
             var email = String(app.clientEmail || '').trim().toLowerCase();
             if (email) return 'e:' + email;
@@ -14461,52 +14916,65 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
         function renderTenantReport(tenant) {
             var body = document.getElementById('tenantReportBody');
             if (!body) return;
-            var rows = appointmentReportRows(tenant);
-            if (!rows.length) {
-                body.innerHTML = '<p class="text-slate-400">No appointments yet. Totals stay at zero until a booking is recorded.</p>';
-                return;
-            }
-            var counts = { total: rows.length, pending: 0, accepted: 0, confirmed: 0, denied: 0, cancelled: 0 };
-            var bookedValue = 0;
-            var paidValue = 0;
-            var active = 0;
+            ['7', '30', '90', 'custom'].forEach(function (key) {
+                var btn = document.getElementById('tenantReportRange' + (key === 'custom' ? 'Custom' : key));
+                if (btn) btn.setAttribute('aria-pressed', reportRangePreset === key ? 'true' : 'false');
+            });
+            var today = reportTodayIso(getTenantTimezone(tenant), new Date());
+            var fromEl = document.getElementById('tenantReportFrom');
+            var toEl = document.getElementById('tenantReportTo');
+            var range = appointmentReportRange(reportRangePreset, today, fromEl && fromEl.value, toEl && toEl.value);
+            var model = appointmentReportModel(appointmentReportRows(tenant), range, bookingPaymentState);
+            var sample = window.__SCHEDI_DEMO === true;
+            var visits = sample ? appointmentReportSampleVisits(range.from, range.to) : null;
             var byClient = {};
-            rows.forEach(function (app) {
-                var status = String(app.status || '').toLowerCase();
-                var cancelled = appointmentIsCancelled(app);
-                var denied = status === 'denied';
-                if (cancelled) counts.cancelled += 1;
-                else if (denied) counts.denied += 1;
-                else if (status === 'pending') counts.pending += 1;
-                else if (status === 'accepted') counts.accepted += 1;
-                else counts.confirmed += 1;
-                if (!cancelled && !denied) {
-                    active += 1;
-                    bookedValue += Number(app.amount) || 0;
-                    if (bookingPaymentState(app) === 'paid') paidValue += Number(app.amount) || 0;
-                    var key = appointmentClientKey(app);
-                    if (key) {
-                        if (!byClient[key]) byClient[key] = { name: app.clientName || 'Unnamed', visits: 0 };
-                        byClient[key].visits += 1;
-                    }
-                }
+            model.rows.forEach(function (app) {
+                if (reportIsCancelled(app) || reportIsDenied(app)) return;
+                var key = appointmentClientKey(app);
+                if (!key) return;
+                if (!byClient[key]) byClient[key] = { name: app.clientName || 'Unnamed', visits: 0 };
+                byClient[key].visits += 1;
             });
             var repeat = Object.keys(byClient).filter(function (k) { return byClient[k].visits >= 2; });
             repeat.sort(function (a, b) { return byClient[b].visits - byClient[a].visits; });
             var repeatHtml = repeat.length ? repeat.slice(0, 12).map(function (k) {
                 return '<li>' + esc(byClient[k].name) + ' — ' + byClient[k].visits + ' visits</li>';
             }).join('') : '<li class="text-slate-500">No repeat clients yet.</li>';
-            function money(n) { return '$' + (Math.round(n * 100) / 100).toFixed(2); }
+            var walkIns = model.rows.filter(function (r) { return r && r.walkIn === true; }).length;
+            function card(kicker, value, note, extra) {
+                return '<div class="sd-report-card p-3 rounded-xl bg-slate-900 border border-slate-800"><div class="sd-report-kicker text-slate-500">' + kicker + (extra || '') + '</div><div class="sd-report-value text-lg font-black text-white">' + value + '</div>' + (note ? '<p class="sd-report-note text-slate-500 mt-1">' + note + '</p>' : '') + '</div>';
+            }
+            var visitCard = sample
+                ? card('Page visits', String(visits.total), 'Sample counts for this date range. Nothing is collected from visitors.', ' <span class="sd-sample-badge">Sample data</span>')
+                : card('Page visits', 'Unavailable', 'The booking page does not send visit counts yet.');
+            var noShow = model.noShow;
+            var noShowCard = card('No-shows', esc(noShow.label), esc(noShow.reason));
+            var countLabel = function (n) { return String(n); };
+            var bookingAvgChart = appointmentReportChartSvg(model.weeks, 'bookings', countLabel, 'Average appointments per week');
+            var revenueAvgChart = appointmentReportChartSvg(model.weeks, 'revenue', reportMoney, 'Average revenue per week');
+            var bookingChart = appointmentReportChartSvg(model.weeks, 'bookings', countLabel, 'Bookings by week');
+            var revenueChart = appointmentReportChartSvg(model.weeks, 'revenue', reportMoney, 'Revenue by week');
+            body.setAttribute('data-report-range', range.label || '');
             body.innerHTML = ''
-                + '<div class="grid grid-cols-2 sm:grid-cols-4 gap-2">'
-                + '<div class="p-3 rounded-xl bg-slate-900 border border-slate-800"><div class="text-slate-500">Appointments</div><div class="text-lg font-black text-white">' + counts.total + '</div></div>'
-                + '<div class="p-3 rounded-xl bg-slate-900 border border-slate-800"><div class="text-slate-500">Still on the calendar</div><div class="text-lg font-black text-white">' + active + '</div></div>'
-                + '<div class="p-3 rounded-xl bg-slate-900 border border-slate-800"><div class="text-slate-500">Recorded prices</div><div class="text-lg font-black text-white">' + money(bookedValue) + '</div></div>'
-                + '<div class="p-3 rounded-xl bg-slate-900 border border-slate-800"><div class="text-slate-500">Marked paid</div><div class="text-lg font-black text-white">' + money(paidValue) + '</div></div>'
+                + '<p class="sd-report-note">' + esc(range.label || 'Pick a date range.') + '</p>'
+                + '<div class="sd-report-stats grid grid-cols-2 sm:grid-cols-4 gap-2">'
+                + visitCard
+                + card('Total bookings', String(model.total), 'Every appointment in this range.')
+                + card('Revenue', reportMoney(model.revenue), 'Booked prices, excluding cancelled and denied.')
+                + card('Confirmed', String(model.confirmed), 'Accepted or already confirmed. Pending stays out.')
+                + card('Cancelled', String(model.cancelled), '')
+                + noShowCard
+                + card('Unpaid', String(model.unpaid), 'Still on the calendar and not marked paid.')
                 + '</div>'
-                + '<p>Status: ' + counts.pending + ' pending, ' + counts.accepted + ' accepted, ' + counts.confirmed + ' confirmed with no separate status, ' + counts.denied + ' denied, ' + counts.cancelled + ' cancelled.' + (rows.filter(function (r) { return r && r.walkIn === true; }).length ? (' Walk-ins: ' + rows.filter(function (r) { return r && r.walkIn === true; }).length + '.') : '') + '</p>'
-                + '<p>Recorded prices add the amount stored on each appointment that is not cancelled or denied. Marked paid is that amount only when the payment status says paid.</p>'
-                + '<div><div class="font-bold text-white mb-1">Repeat clients</div><p class="text-slate-500 mb-1">Someone with 2 or more appointments that were not cancelled or denied. Matched by email, then phone, then name.</p><ul class="list-disc pl-5 space-y-1">' + repeatHtml + '</ul></div>';
+                + '<div class="sd-report-charts">'
+                + '<div class="sd-report-chart"><h4>Average appointments per week</h4><p class="sd-report-avg">' + appointmentReportAvgLabel(model.avgBookings) + '</p><p class="sd-report-note">Total bookings divided by the weeks in this range, including weeks with none.</p>' + bookingAvgChart + '</div>'
+                + '<div class="sd-report-chart"><h4>Average revenue per week</h4><p class="sd-report-avg">' + reportMoney(model.avgRevenue) + '</p><p class="sd-report-note">Revenue divided by the same weeks.</p>' + revenueAvgChart + '</div>'
+                + '<div class="sd-report-chart"><h4>Bookings by week</h4><p class="sd-report-note">Weeks start on Sunday. Every appointment in the range is counted.</p>' + bookingChart + '</div>'
+                + '<div class="sd-report-chart"><h4>Revenue by week</h4><p class="sd-report-note">Booked prices in that week, excluding cancelled and denied.</p>' + revenueChart + '</div>'
+                + '</div>'
+                + '<p>Status: ' + model.pending + ' pending, ' + model.accepted + ' accepted, ' + (model.confirmed - model.accepted) + ' confirmed with no separate status, ' + model.denied + ' denied, ' + model.cancelled + ' cancelled.' + (walkIns ? (' Walk-ins: ' + walkIns + '.') : '') + '</p>'
+                + '<p>' + esc(noShow.reason) + ' Recorded prices add the amount stored on each appointment that is not cancelled or denied.</p>'
+                + '<div><div class="font-bold text-white mb-1">Repeat clients</div><p class="text-slate-500 mb-1">Someone with 2 or more appointments in this range that were not cancelled or denied. Matched by email, then phone, then name.</p><ul class="list-disc pl-5 space-y-1">' + repeatHtml + '</ul></div>';
         }
 
         // Print only the Appointments Report: copy it into #schediPrintRoot (a direct child of <body>) and hide everything else.
@@ -14526,7 +14994,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
             try { stamp = new Date().toLocaleString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }); } catch (e) { stamp = new Date().toISOString().slice(0, 16).replace('T', ' '); }
             var head = document.createElement('div');
             head.className = 'print-head';
-            head.innerHTML = '<h1>Appointments Report</h1><p>' + esc((tenant && tenant.name) || '') + (tenant && tenant.name ? ' · ' : '') + 'Printed ' + esc(stamp) + '</p>';
+            var rangeLabel = body.getAttribute('data-report-range') || '';
+            head.innerHTML = '<h1>Appointments Report</h1><p>' + esc((tenant && tenant.name) || '') + (tenant && tenant.name ? ' · ' : '') + (rangeLabel ? (esc(rangeLabel) + ' · ') : '') + 'Printed ' + esc(stamp) + '</p>';
             var copy = body.cloneNode(true);
             copy.removeAttribute('id');
             copy.querySelectorAll('[id]').forEach(function (el) { el.removeAttribute('id'); });
@@ -14557,23 +15026,40 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
         });
         window.addEventListener('afterprint', clearReportPrintRoot);
 
+        window.setAppointmentReportRange = function (preset) {
+            reportRangePreset = preset === '7' || preset === '90' || preset === 'custom' ? preset : '30';
+            var custom = document.getElementById('tenantReportCustom');
+            if (custom) custom.hidden = reportRangePreset !== 'custom';
+            if (reportRangePreset === 'custom') {
+                var tenant = getTenant();
+                var today = reportTodayIso(getTenantTimezone(tenant), new Date());
+                var fromEl = document.getElementById('tenantReportFrom');
+                var toEl = document.getElementById('tenantReportTo');
+                if (fromEl && !fromEl.value) fromEl.value = reportShiftIso(today, -29);
+                if (toEl && !toEl.value) toEl.value = today;
+            }
+            var current = getTenant();
+            if (current) renderTenantReport(current);
+        };
+
+        window.setAppointmentReportCustom = function () {
+            reportRangePreset = 'custom';
+            var custom = document.getElementById('tenantReportCustom');
+            if (custom) custom.hidden = false;
+            var current = getTenant();
+            if (current) renderTenantReport(current);
+        };
+
         window.exportAppointmentReport = function() {
             var tenant = getTenant();
             if (!tenant) return;
-            var rows = appointmentReportRows(tenant);
-            function cell(v) {
-                var s = String(v == null ? '' : v);
-                if (/[",\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
-                return s;
-            }
-            var lines = [['id','client','phone','email','service','date','time','status','payment','amount','walk_in'].join(',')];
-            rows.forEach(function (app) {
-                lines.push([
-                    app.id, app.clientName, app.clientPhone, app.clientEmail, app.serviceName,
-                    app.date, app.time, app.status || '', app.paymentStatus || '', Number(app.amount) || 0, app.walkIn === true ? 'yes' : ''
-                ].map(cell).join(','));
-            });
-            var blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8' });
+            var today = reportTodayIso(getTenantTimezone(tenant), new Date());
+            var fromEl = document.getElementById('tenantReportFrom');
+            var toEl = document.getElementById('tenantReportTo');
+            var range = appointmentReportRange(reportRangePreset, today, fromEl && fromEl.value, toEl && toEl.value);
+            var model = appointmentReportModel(appointmentReportRows(tenant), range, bookingPaymentState);
+            var csv = appointmentReportCsv(model, bookingPaymentState);
+            var blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
             var url = URL.createObjectURL(blob);
             var a = document.createElement('a');
             a.href = url;
