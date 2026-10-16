@@ -1543,6 +1543,95 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
     body.schedi-newdash #tenantServiceModal input,
     body.schedi-newdash #logoCropPanel.is-overlay button { min-height: 44px; }
 }
+#tenantPortalSection.schedi-newdash .sd-series-preview-open {
+        min-height: 44px;
+        padding: 10px 16px;
+        border-radius: 12px;
+        border: 1px solid #38bdf8;
+        background: #0f172a;
+        color: #e0f2fe;
+        font-weight: 700;
+        font-size: 14px;
+    }
+    html.schedi-light #tenantPortalSection.schedi-newdash .sd-series-preview-open {
+        background: #f0f9ff;
+        color: #0369a1;
+        border-color: #0284c7;
+    }
+    #tenantPortalSection.schedi-newdash .sd-series-preview-open:focus-visible,
+    #tenantPortalSection.schedi-newdash .sd-series-preview-bar button:focus-visible {
+        outline: 2px solid #38bdf8;
+        outline-offset: 2px;
+    }
+    #tenantPortalSection.schedi-newdash .sd-series-preview {
+        position: fixed;
+        inset: 0;
+        z-index: 80;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+        background: rgba(2, 6, 23, 0.72);
+    }
+    #tenantPortalSection.schedi-newdash .sd-series-preview[hidden] { display: none; }
+    #tenantPortalSection.schedi-newdash .sd-series-preview-card {
+        width: min(640px, 100%);
+        max-height: calc(100vh - 32px);
+        display: flex;
+        flex-direction: column;
+        background: #0f172a;
+        color: #f8fafc;
+        border: 1px solid #334155;
+        border-radius: 16px;
+        overflow: hidden;
+    }
+    html.schedi-light #tenantPortalSection.schedi-newdash .sd-series-preview-card {
+        background: #ffffff;
+        color: #0f172a;
+        border-color: #cbd5e1;
+    }
+    #tenantPortalSection.schedi-newdash .sd-series-preview-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 12px 14px;
+    }
+    #tenantPortalSection.schedi-newdash .sd-series-preview-bar h3 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 800;
+        color: #f8fafc;
+    }
+    html.schedi-light #tenantPortalSection.schedi-newdash .sd-series-preview-bar h3 { color: #0f172a; }
+    #tenantPortalSection.schedi-newdash .sd-series-preview-bar button {
+        min-height: 44px;
+        min-width: 44px;
+        padding: 8px 14px;
+        border-radius: 12px;
+        border: 1px solid #334155;
+        background: #1e293b;
+        color: #f8fafc;
+        font-weight: 700;
+    }
+    html.schedi-light #tenantPortalSection.schedi-newdash .sd-series-preview-bar button {
+        background: #f8fafc;
+        color: #0f172a;
+        border-color: #cbd5e1;
+    }
+    #tenantPortalSection.schedi-newdash .sd-series-preview-note {
+        margin: 0;
+        padding: 0 14px 10px;
+        font-size: 13px;
+        color: #94a3b8;
+    }
+    html.schedi-light #tenantPortalSection.schedi-newdash .sd-series-preview-note { color: #475569; }
+    #tenantPortalSection.schedi-newdash .sd-series-preview iframe {
+        width: 100%;
+        height: min(70vh, 640px);
+        border: 0;
+        background: #020617;
+    }
 
 </style>
 <script>
@@ -2393,9 +2482,22 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                             <button type="button" onclick="sendTestConfirmationEmail()" class="px-6 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold border border-slate-700 transition-all">
                                 Send test to owner email
                             </button>
+                            <button type="button" id="sdSeriesPreviewOpen" class="sd-series-preview-open" onclick="openSeriesEmailPreview()">
+                                Preview email
+                            </button>
                         </div>
                         <p id="tenantNotifyStatus" class="text-[11px] text-slate-500">Emails come from Schedi. Client replies go to your Reply-to email, or to your owner email if that box is empty.</p>
                     </form>
+                    <div id="sdSeriesPreview" class="sd-series-preview" hidden role="dialog" aria-modal="true" aria-labelledby="sdSeriesPreviewTitle">
+                        <div class="sd-series-preview-card">
+                            <div class="sd-series-preview-bar">
+                                <h3 id="sdSeriesPreviewTitle">Recurring series email</h3>
+                                <button type="button" id="sdSeriesPreviewClose" onclick="closeSeriesEmailPreview()">Close</button>
+                            </div>
+                            <p class="sd-series-preview-note">A sample with this business's details. Nothing is sent.</p>
+                            <iframe id="sdSeriesPreviewFrame" title="Sample recurring series email" sandbox=""></iframe>
+                        </div>
+                    </div>
                 </div>
 
                 <style id="clientsFeatureLightStyle">
@@ -13288,6 +13390,129 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                 hourSel.value = hv;
             }
         }
+
+        // Sample of the recurring-series email. Same card as the worker's series confirmation
+        // (workers/schedi-email-worker/src/series-mail.js). This only draws it. Nothing is sent.
+        function schediSeriesEmailSample(tenant) {
+            tenant = tenant || {};
+            function addDays(iso, days) {
+                var p = String(iso || '').split('-');
+                var dt = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+                if (!isFinite(dt.getTime())) dt = new Date();
+                dt.setDate(dt.getDate() + days);
+                return dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0');
+            }
+            function friendly(iso) {
+                var p = String(iso || '').split('-');
+                var dt = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+                if (!isFinite(dt.getTime())) return String(iso || '');
+                return dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+            }
+            function calParts(iso) {
+                var p = String(iso || '').split('-');
+                var dt = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+                if (!isFinite(dt.getTime())) return { mon: '', day: '' };
+                return { mon: dt.toLocaleDateString('en-US', { month: 'short' }).toUpperCase(), day: String(dt.getDate()) };
+            }
+            var today = (typeof localISODate === 'function') ? localISODate(new Date()) : addDays('2026-10-16', 0);
+            var start = addDays(today, 10);
+            var dates = [];
+            for (var i = 0; i < 8; i++) dates.push(addDays(start, i * 7));
+            var biz = tenant.name || 'Harbor Studio';
+            var service = 'Color';
+            var zone = 'Eastern Time';
+            try {
+                var tz = (tenant.timezone || tenant.timeZone || 'America/New_York');
+                var parts = new Intl.DateTimeFormat('en-US', { timeZone: tz, timeZoneName: 'longGeneric' }).formatToParts(new Date('2026-06-15T16:00:00Z'));
+                var namePart = parts.filter(function (part) { return part.type === 'timeZoneName'; })[0];
+                if (namePart && namePart.value) zone = namePart.value;
+            } catch (errZone) {}
+            var shown = dates.slice(1, 7).map(function (d) { return friendly(d) + ' at 10:00 AM'; });
+            var hidden = dates.length - 1 - shown.length;
+            var coming = shown.join(', ') + (hidden > 0 ? (', and ' + hidden + ' more') : '');
+            var deposit = 25;
+            var price = 120;
+            var pay = 'A deposit of $' + deposit.toFixed(2) + ' is due. $' + (price - deposit).toFixed(2) + ' is due at the visit. Payment: Cash App.';
+            var fee = 'If you cancel within 24 hours of the appointment, a cancellation fee of $15.00 applies.';
+            var extra = (tenant.notifications && tenant.notifications.extraNote) || 'Street parking is on Harbor Lane.';
+            var contactName = tenant.ownerName || 'Avery Cole';
+            var contactEmail = (tenant.notifications && tenant.notifications.replyTo) || tenant.ownerEmail || 'demo@harbor.studio';
+            var contactPhone = tenant.ownerPhone || '(555) 010-1944';
+            var manageUrl = 'https://schedi.app/' + (tenant.slug || tenant.id || 'harbor-demo') + '/manage/previewseriesmail000000000001';
+            var first = dates[0];
+            var cal = calParts(first);
+            var markUrl = 'https://schedi.app/assets/email-calendar-check.png';
+            function row(label, value, last) {
+                var border = last ? 'border-bottom:none;' : 'border-bottom:1px dashed #334155;';
+                return '<tr><td style="padding:13px 0;' + border + 'font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#94a3b8;">' + esc(label) + '</td>'
+                    + '<td style="padding:13px 0;' + border + 'font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#f1f5f9;font-weight:600;text-align:right;">' + esc(value) + '</td></tr>';
+            }
+            var rows = [
+                ['Business', biz],
+                ['Service', service],
+                ['Repeats', 'Weekly'],
+                ['First visit', friendly(first) + ' at 10:00 AM'],
+                ['Coming up', coming],
+                ['Time zone', zone],
+                ['Payment', pay]
+            ];
+            var rowsHtml = rows.map(function (pair, idx) { return row(pair[0], pair[1], idx === rows.length - 1); }).join('');
+            var href = manageUrl.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+            return '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>'
+                + '<body style="margin:0;padding:0;background-color:#020617;">'
+                + '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:#020617;"><tr><td align="center" style="padding:24px 12px;">'
+                + '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:560px;width:100%;background-color:#0b1325;border:1px solid #334155;border-radius:24px;overflow:hidden;">'
+                + '<tr><td align="center" bgcolor="#059669" style="background-color:#059669;padding:36px 28px 40px;">'
+                + '<img src="' + markUrl + '" width="72" height="72" alt="" style="display:block;width:72px;height:72px;border:0;border-radius:20px;margin:0 auto 16px;">'
+                + '<div style="font-family:Arial,Helvetica,sans-serif;font-size:28px;font-weight:700;color:#ffffff;">Your visits are booked</div>'
+                + '<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#ecfdf5;margin-top:8px;">See you soon at ' + esc(biz) + '</div>'
+                + '</td></tr>'
+                + '<tr><td style="padding:0 24px;"><table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top:-22px;background-color:#111c33;border:1px solid #334155;border-radius:18px;"><tr>'
+                + '<td width="62" style="padding:14px 0 14px 16px;"><table role="presentation" cellpadding="0" cellspacing="0" border="0" width="62">'
+                + '<tr><td align="center" bgcolor="#059669" style="background-color:#059669;color:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:11px;font-weight:700;letter-spacing:1.5px;padding:4px 0;">' + esc(cal.mon) + '</td></tr>'
+                + '<tr><td align="center" bgcolor="#ffffff" style="background-color:#ffffff;color:#020617;font-family:Arial,Helvetica,sans-serif;font-size:24px;font-weight:700;padding:4px 0 6px;">' + esc(cal.day) + '</td></tr>'
+                + '</table></td>'
+                + '<td style="padding:14px 16px;font-family:Arial,Helvetica,sans-serif;"><div style="color:#ffffff;font-size:16px;font-weight:600;">' + esc(friendly(first)) + '</div>'
+                + '<div style="color:#94a3b8;font-size:14px;margin-top:4px;"><strong style="color:#34d399;">10:00 AM</strong></div></td>'
+                + '</tr></table></td></tr>'
+                + '<tr><td style="padding:8px 28px 6px;"><table role="presentation" width="100%">' + rowsHtml + '</table></td></tr>'
+                + '<tr><td align="center" style="padding:18px 28px 8px;"><table role="presentation" width="100%"><tr><td align="center" bgcolor="#059669" style="background-color:#059669;border-radius:14px;">'
+                + '<a href="' + href + '" style="display:block;padding:14px 18px;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;">Manage / reschedule / cancel</a>'
+                + '</td></tr></table><p style="margin:10px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#64748b;">Cancel or reschedule without signing in. This link is for the first visit.</p></td></tr>'
+                + '<tr><td style="padding:8px 28px 0;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#94a3b8;">' + esc(fee) + '</td></tr>'
+                + '<tr><td style="padding:10px 28px 0;"><div style="padding:12px 14px;border-radius:10px;background-color:#111c33;border:1px solid #334155;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#cbd5e1;">' + esc(extra) + '</div></td></tr>'
+                + '<tr><td style="padding:18px 28px 24px;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#64748b;">Questions? Contact ' + esc(contactName) + ' at <a href="mailto:' + esc(contactEmail) + '" style="color:#34d399;text-decoration:none;">' + esc(contactEmail) + '</a> or ' + esc(contactPhone) + '.</td></tr>'
+                + '</table><div style="font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#475569;padding:16px 8px 0;">Powered by Schedi</div>'
+                + '</td></tr></table></body></html>';
+        }
+
+        var seriesPreviewReturn = null;
+        window.openSeriesEmailPreview = function () {
+            var dialog = document.getElementById('sdSeriesPreview');
+            var frame = document.getElementById('sdSeriesPreviewFrame');
+            if (!dialog || !frame) return;
+            var tenant = (typeof getTenant === 'function') ? getTenant() : null;
+            frame.srcdoc = schediSeriesEmailSample(tenant || {});
+            seriesPreviewReturn = document.activeElement;
+            dialog.hidden = false;
+            var closeBtn = document.getElementById('sdSeriesPreviewClose');
+            if (closeBtn && closeBtn.focus) closeBtn.focus();
+        };
+        window.closeSeriesEmailPreview = function () {
+            var dialog = document.getElementById('sdSeriesPreview');
+            if (dialog) dialog.hidden = true;
+            if (seriesPreviewReturn && seriesPreviewReturn.focus) {
+                try { seriesPreviewReturn.focus(); } catch (errFocus) {}
+            }
+            seriesPreviewReturn = null;
+        };
+        document.addEventListener('keydown', function (event) {
+            if (!event || event.key !== 'Escape') return;
+            var dialog = document.getElementById('sdSeriesPreview');
+            if (!dialog || dialog.hidden) return;
+            event.preventDefault();
+            window.closeSeriesEmailPreview();
+        });
 
         window.handleSaveTenantNotifications = function(e) {
             e.preventDefault();
