@@ -21392,8 +21392,10 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                     doUpdate().then(function (out) {
                         var created = !!(out && out.ok && out.data && out.data.ok);
                         var emailQueued = false;
-                        if (created && !SCHEDI_DEMO) {
-                            try { queueStandaloneConfirmationEmail(booking); emailQueued = true; } catch (err) { console.warn('Confirmation email skipped:', err); }
+                        if (created) {
+                            if (!SCHEDI_DEMO) {
+                                try { queueStandaloneConfirmationEmail(booking); emailQueued = true; } catch (err) { console.warn('Confirmation email skipped:', err); }
+                            }
                         }
                         if (window.parent === window) return;
                         // A too_soon reject was not saved; do not hand the portal a booking the server refused.
