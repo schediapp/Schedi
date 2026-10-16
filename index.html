@@ -590,6 +590,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-demo-note { color: #03
 #tenantPortalSection.schedi-newdash .sd-pill-ok { color: var(--sd-brand-2); background: rgba(16, 185, 129, 0.14); border-color: rgba(16, 185, 129, 0.3); }
 #tenantPortalSection.schedi-newdash .sd-pill-amber { color: var(--sd-amber); background: rgba(245, 158, 11, 0.12); border-color: rgba(245, 158, 11, 0.3); }
 #tenantPortalSection.schedi-newdash .sd-pill-rose { color: var(--sd-rose); background: rgba(244, 63, 94, 0.1); border-color: rgba(244, 63, 94, 0.28); }
+#tenantPortalSection.schedi-newdash .sd-pill-grey { color: #e2e8f0; background: rgba(148, 163, 184, 0.2); border-color: rgba(148, 163, 184, 0.45); }
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-pill-grey { color: #334155; background: rgba(100, 116, 139, 0.16); border-color: rgba(100, 116, 139, 0.4); }
 #tenantPortalSection.schedi-newdash .sd-visit { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; padding: 8px 0; border-top: 1px solid var(--sd-line); }
 #tenantPortalSection.schedi-newdash .sd-visit p { margin: 0; min-width: 0; }
 #tenantPortalSection.schedi-newdash .sd-pay { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; border-radius: 999px; padding: 2px 8px; font-size: 11px; font-weight: 800; line-height: 1.3; border: 1px solid var(--sd-line); color: var(--sd-text); background: rgba(148, 163, 184, 0.14); }
@@ -2582,13 +2584,13 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                                     <option value="0">None</option>
                                     <option value="5">5 minutes</option>
                                     <option value="10">10 minutes</option>
-                                    <option value="15">15 minutes</option>
+                                    <option value="15" selected>15 minutes</option>
                                     <option value="20">20 minutes</option>
                                     <option value="30">30 minutes</option>
                                     <option value="45">45 minutes</option>
                                     <option value="60">60 minutes</option>
                                 </select>
-                                <p class="text-[10px] text-slate-500">Free time after each appointment before the next one can start. None is the default, so a business that has not saved a break stays back-to-back.</p>
+                                <p class="text-[10px] text-slate-500">Free time after each appointment before the next one can start. 15 minutes is the default when a business has not saved a break. None means the next visit can start as soon as the last one ends.</p>
                             </div>
                             <div class="space-y-2">
                                 <label for="tenantMinNotice" class="block text-xs font-semibold text-slate-300">Minimum booking notice</label>
@@ -5354,6 +5356,17 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
             return s === 'cancelled' || s === 'canceled';
         }
 
+        function appointmentIsNoShow(app) {
+            if (!app) return false;
+            if (app.noShow === true) return true;
+            var status = String(app.status || '').toLowerCase();
+            return status === 'no_show' || status === 'noshow' || status === 'no-show';
+        }
+
+        function noShowPillHtml() {
+            return '<span class="sd-pill sd-pill-grey">No-show</span>';
+        }
+
         function appointmentReleasesSlot(app) {
             if (!app) return true;
             if (appointmentIsCancelled(app)) return true;
@@ -5368,7 +5381,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
             app.cancelledBy = by === 'owner' ? 'owner' : 'client';
         }
 
-        var APPOINTMENT_BUFFER_MINS = 0;
+        var APPOINTMENT_BUFFER_MINS = 15;
         var APPOINTMENT_BUFFER_CHOICES = [0, 5, 10, 15, 20, 30, 45, 60];
 
         function appointmentDurationMins(tenant, app) {
@@ -7980,6 +7993,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
         function clientHistoryStatus(app) {
             if (reportIsCancelled(app)) return 'Cancelled';
             if (reportIsDenied(app)) return 'Denied';
+            if (appointmentIsNoShow(app)) return 'No-show';
             var status = String((app && app.status) || '').toLowerCase();
             if (status === 'pending') return 'Pending';
             if (status === 'accepted') return 'Confirmed';
@@ -8075,7 +8089,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                 visitCount: visitCount,
                 firstVisit: firstVisit,
                 lastVisit: lastVisit,
-                noShow: appointmentReportNoShow()
+                noShow: appointmentReportNoShow(matched)
             };
         }
 
@@ -8126,10 +8140,12 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                 var when = rosterPrettyDate(app && app.date) || String((app && app.date) || '');
                 if (app && app.time) when = when ? (when + ' · ' + app.time) : String(app.time);
                 var price = clientHistoryPrice(app);
+                var statusLabel = clientHistoryStatus(app);
+                var statusHtml = statusLabel === 'No-show' ? noShowPillHtml() : esc(statusLabel);
                 return '<article class="sd-client-visit"><div class="sd-client-visit-main">'
                     + '<p class="sd-client-visit-when">' + esc(when || 'Date not set') + '</p>'
                     + '<p class="sd-client-visit-svc"><span class="sd-svc-line">' + serviceMarkHtml(tenant, app && app.serviceName) + '<span>' + esc((app && app.serviceName) || 'Appointment') + '</span></span></p>'
-                    + '<p class="sd-client-visit-meta"><span>' + esc(clientHistoryStatus(app)) + '</span><span>' + esc(price || '—') + '</span></p>'
+                    + '<p class="sd-client-visit-meta"><span>' + statusHtml + '</span><span>' + esc(price || '—') + '</span></p>'
                     + '</div>' + appointmentPayMarkup(app, false) + '</article>';
             }).join('');
             var empty = title === 'Upcoming' ? 'No upcoming visits.' : 'No past visits.';
@@ -8156,8 +8172,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
             var model = clientHistoryModel(client, (tenant && tenant.appointments) || [], today, bookingPaymentState, appointmentPayKind);
             var contact = [client.phone, client.email].filter(Boolean).join(' · ');
             var noShow = (model.noShow && model.noShow.available)
-                ? String(model.noShow.label || '')
-                : 'Unavailable. Appointments do not have a no-show field, so this stays unavailable.';
+                ? String(model.noShow.label || '0')
+                : '0';
             var first = model.firstVisit ? (rosterPrettyDate(model.firstVisit) || model.firstVisit) : '—';
             var last = model.lastVisit ? (rosterPrettyDate(model.lastVisit) || model.lastVisit) : '—';
             title.textContent = client.name || 'Client';
@@ -9069,9 +9085,12 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                     var payAction = rosterPayMenuLabel(app) === 'Mark unpaid'
                         ? '<button type="button" role="menuitem" onclick="markAppointmentUnpaid(' + id + ')">Mark unpaid</button>'
                         : '<button type="button" role="menuitem" onclick="markAppointmentPaid(' + id + ')">Mark paid</button>';
+                    var noShowAction = appointmentIsNoShow(app)
+                        ? ''
+                        : '<button type="button" role="menuitem" onclick="markAppointmentNoShow(' + id + ')">Mark no-show</button>';
                     return '<article class="sd-card sd-row">' +
                         '<div class="sd-time">' + esc(app.time || '') + '</div>' +
-                        '<div><h4>' + esc(app.clientName || 'Client') + (app.walkIn ? ' · Walk-in' : '') + '</h4>' +
+                        '<div><h4>' + esc(app.clientName || 'Client') + (app.walkIn ? ' · Walk-in' : '') + (appointmentIsNoShow(app) ? (' ' + noShowPillHtml()) : '') + '</h4>' +
                         '<p class="sd-meta"><span class="sd-svc-line">' + serviceMarkHtml(tenant, app.serviceName) + '<span>' + esc(app.serviceName || 'Appointment') + '</span></span></p></div>' +
                         (pendingRow ? '<span class="sd-pill sd-pill-amber">New request</span>' : '') +
                         appointmentPayMarkup(app, false) +
@@ -9079,6 +9098,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                         '<div class="sd-more-menu" role="menu">' +
                         payAction +
                         '<button type="button" role="menuitem" onclick="openTenantRescheduleModal(' + id + ')">Reschedule</button>' +
+                        noShowAction +
                         '<button type="button" role="menuitem" onclick="deleteAppointment(' + id + ')">Cancel</button>' +
                         '<button type="button" role="menuitem" onclick="openEditAppointment(' + id + ')">Edit</button>' +
                         '<button type="button" role="menuitem" onclick="openRosterDeleteModal(' + id + ')">Delete</button>' +
@@ -9668,6 +9688,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                 paypalHandle: '',
                 paypalLink: '',
                 slotInterval: 30,
+                appointmentBufferMins: 15,
                 minNoticeHours: 2,
                 allowRecurringBookings: true,
                 paymentGateways: { card: false, cashapp: true, zelle: true, venmo: true, paypal: false, later: true },
@@ -9715,16 +9736,16 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                     { id: 'HB-1002', clientName: 'Luis Ortega', clientPhone: '(555) 201-2288', clientEmail: 'luis@example.com', serviceName: 'Beard trim', date: today, time: '11:30 AM', status: 'pending', paymentStatus: 'PENDING CASH APP', paymentMethod: 'cashapp', amount: 28, durationMins: 20 },
                     { id: 'HB-1003', clientName: 'Jordan Lee', clientPhone: '(555) 201-7730', clientEmail: '', serviceName: 'Gloss', date: today, time: '01:30 PM', status: 'accepted', paymentStatus: 'PAY AT APPOINTMENT', amount: 80, durationMins: 75, walkIn: true },
                     { id: 'HB-1004', clientName: 'Priya Shah', clientPhone: '(555) 201-9094', clientEmail: 'priya@example.com', serviceName: 'Consultation', date: today, time: '04:00 PM', status: 'pending', paymentStatus: 'PENDING ZELLE', paymentMethod: 'zelle', durationMins: 30 },
-                    { id: 'HB-1005', clientName: 'Avery Kim', clientPhone: '(555) 201-6621', clientEmail: 'avery@example.com', serviceName: 'Cut & style', date: day(-1), time: '02:00 PM', status: 'accepted', paymentStatus: 'PENDING VENMO', paymentMethod: 'venmo', amount: 55, durationMins: 45 },
+                    { id: 'HB-1005', clientName: 'Avery Kim', clientPhone: '(555) 201-6621', clientEmail: 'avery@example.com', serviceName: 'Cut & style', date: day(-1), time: '02:00 PM', status: 'accepted', paymentStatus: 'PENDING VENMO', paymentMethod: 'venmo', amount: 55, durationMins: 45, noShow: true },
                     { id: 'HB-1006', clientName: 'Noah Brooks', clientPhone: '(555) 201-1180', clientEmail: 'noah@example.com', serviceName: 'Cut & style', date: tomorrow, time: '10:00 AM', status: 'accepted', paymentStatus: 'PAID', paidMethod: 'cash', amount: 65, durationMins: 45 },
                     { id: 'HB-1007', clientName: 'Elena Vasquez', clientPhone: '(555) 201-4419', clientEmail: 'elena@example.com', serviceName: 'Color', date: day(2), time: '01:00 PM', status: 'accepted', paymentStatus: 'PAY AT APPOINTMENT', amount: 120, durationMins: 90, seriesId: 'series-harbor-elena', recurrence: { frequency: 'weekly', count: 4, index: 2, total: 4, dates: [day(-5), day(2), day(9), day(16)] } },
-                    { id: 'HB-1008', clientName: 'Sam Okonkwo', clientPhone: '(555) 201-3304', clientEmail: 'sam@example.com', serviceName: 'Cut & style', date: day(-4), time: '11:00 AM', status: 'accepted', paymentStatus: 'PAID IN CASH', paidMethod: 'cash', amount: 65, durationMins: 45 },
+                    { id: 'HB-1008', clientName: 'Sam Okonkwo', clientPhone: '(555) 201-3304', clientEmail: 'sam@example.com', serviceName: 'Cut & style', date: day(-4), time: '11:00 AM', status: 'accepted', paymentStatus: 'PAID IN CASH', paidMethod: 'cash', amount: 65, durationMins: 45, noShow: true },
                     { id: 'HB-1009', clientName: 'Casey Ng', clientPhone: '(555) 201-4410', clientEmail: 'casey@example.com', serviceName: 'Beard trim', date: day(-2), time: '03:00 PM', status: 'accepted', paymentStatus: 'PAID', paidMethod: 'cashapp', paymentMethod: 'cashapp', durationMins: 20 },
                     { id: 'HB-1010', clientName: 'Drew Patel', clientPhone: '(555) 201-4411', clientEmail: 'drew@example.com', serviceName: 'Consultation', date: day(-3), time: '05:00 PM', status: 'accepted', paymentStatus: 'PAID', paidMethod: 'zelle', paymentMethod: 'zelle', durationMins: 30 },
                     { id: 'HB-1011', clientName: 'Quinn Brooks', clientPhone: '(555) 201-4412', clientEmail: 'quinn@example.com', serviceName: 'Cut & style', date: day(1), time: '03:30 PM', status: 'accepted', paymentStatus: 'PAID', paidMethod: 'venmo', paymentMethod: 'venmo', durationMins: 45 },
                     { id: 'HB-1012', clientName: 'Harper Diaz', clientPhone: '(555) 201-4413', clientEmail: 'harper@example.com', serviceName: 'Gloss', date: day(2), time: '04:30 PM', status: 'accepted', paymentStatus: 'PAID', paidMethod: 'paypal', paymentMethod: 'paypal', durationMins: 75 },
                     { id: 'HB-1013', clientName: 'Maya Chen', clientPhone: '(555) 999-0142', clientEmail: 'Maya@Example.com', serviceName: 'Beard trim', date: day(-16), time: '10:00 AM', status: 'accepted', paymentStatus: 'PAID VIA CARD', paidMethod: 'card', amount: 28, durationMins: 20 },
-                    { id: 'HB-1014', clientName: 'Maya Chen', clientPhone: '(555) 201-0142', clientEmail: 'maya@example.com', serviceName: 'Gloss', date: day(-22), time: '02:00 PM', status: 'accepted', paymentStatus: 'PAID IN CASH', paidMethod: 'cash', amount: 80, durationMins: 75 },
+                    { id: 'HB-1014', clientName: 'Maya Chen', clientPhone: '(555) 201-0142', clientEmail: 'maya@example.com', serviceName: 'Gloss', date: day(-22), time: '02:00 PM', status: 'accepted', paymentStatus: 'PAID IN CASH', paidMethod: 'cash', amount: 80, durationMins: 75, noShow: true },
                     { id: 'HB-1015', clientName: 'Maya Chen', clientPhone: '(555) 201-0142', clientEmail: 'maya@example.com', serviceName: 'Cut & style', date: day(-30), time: '09:30 AM', status: 'cancelled', paymentStatus: 'PAID', paidMethod: 'card', amount: 65, durationMins: 45 },
                     { id: 'HB-1016', clientName: 'Maya Chen', clientPhone: '(555) 201-0142', clientEmail: 'maya@example.com', serviceName: 'Color', date: day(12), time: '11:00 AM', status: 'accepted', paymentStatus: 'PAY AT APPOINTMENT', amount: 120, durationMins: 90 },
                     { id: 'HB-1017', clientName: 'Luis Ortega', clientPhone: '+1 (555) 201-2288', clientEmail: '', serviceName: 'Beard trim', date: day(-15), time: '01:00 PM', status: 'accepted', paymentStatus: 'PAID', paidMethod: 'cashapp', paymentMethod: 'cashapp', amount: 28, durationMins: 20 },
@@ -9921,14 +9942,15 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
             var name = esc((app && app.clientName) || 'Client');
             var service = esc((app && app.serviceName) || 'Appointment');
             var paid = !closed && bookingPaymentState(app) === 'paid';
-            var badge = paid ? 'Paid' : (cancelled ? 'Cancelled' : (denied ? 'Denied' : (pending ? 'Pending' : '')));
+            var noShow = appointmentIsNoShow(app);
+            var badge = noShow ? 'No-show' : (paid ? 'Paid' : (cancelled ? 'Cancelled' : (denied ? 'Denied' : (pending ? 'Pending' : ''))));
             var strike = closed ? 'line-through text-rose-300' : 'text-white';
             var label = esc('Open appointment: ' + ((app && app.time) || '') + ' ' + ((app && app.clientName) || 'Client'));
             return '<button type="button" onclick="event.stopPropagation(); openRosterApptModal(' + esc(jsArg(app && app.id)) + ')" aria-label="' + label + '" class="roster-appt block w-full text-left min-h-[44px] rounded-lg border px-2 py-1.5 cursor-pointer hover:border-brand-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 ' + box + '">' +
                 '<span class="block font-bold text-[11px] ' + strike + '">' + time + '</span>' +
                 '<span class="block text-[11px] ' + strike + '">' + name + '</span>' +
                 '<span class="sd-svc-line block text-[10px] text-slate-400 ' + (closed ? 'line-through' : '') + '">' + serviceMarkHtml(getTenant(), app && app.serviceName) + '<span>' + service + '</span></span>' +
-                (badge ? '<span class="sd-pill ' + (paid ? 'sd-pill-ok' : '') + ' block text-[10px] font-bold mt-1 ' + (paid ? '' : (closed ? 'text-rose-300' : 'text-amber-300')) + '">' + badge + '</span>' : '') +
+                (badge ? '<span class="sd-pill ' + (noShow ? 'sd-pill-grey' : (paid ? 'sd-pill-ok' : '')) + ' block text-[10px] font-bold mt-1 ' + (noShow || paid ? '' : (closed ? 'text-rose-300' : 'text-amber-300')) + '">' + badge + '</span>' : '') +
                 appointmentPayMarkup(app, !!iconOnly) +
                 '</button>';
         }
@@ -9938,7 +9960,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
             var denied = String((app && app.status) || '').toLowerCase() === 'denied';
             var closed = cancelled || denied;
             var label = esc((app && app.time) || '') + ' ' + esc((app && app.clientName) || 'Client');
-            if (cancelled) label += ' · Cancelled';
+            if (appointmentIsNoShow(app)) label += ' · No-show';
+            else if (cancelled) label += ' · Cancelled';
             else if (denied) label += ' · Denied';
             return '<div class="truncate text-[10px] ' + (closed ? 'line-through text-rose-300' : 'text-slate-300') + '">' + appointmentPayMarkup(app, true) + ' ' + label + '</div>';
         }
@@ -10071,6 +10094,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
         function rosterStatusCellHtml(app) {
             var st = String((app && app.status) || '').toLowerCase();
             var h;
+            var noShowPill = appointmentIsNoShow(app) ? (noShowPillHtml() + ' ') : '';
             if (appointmentIsCancelled(app)) {
                 h = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">Cancelled</span>';
             } else if (st === 'denied') {
@@ -10081,7 +10105,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                 h = rosterAcceptedBadge(app) + appointmentPayMarkup(app, false) +
                     (hasPricedAmount(app.amount) ? (' <span class="text-[10px] font-bold text-slate-300">$' + (Number(app.amount) || 0) + '</span>') : '');
             }
-            return h + depositRosterLine(app) + cancellationFeeRosterLine(app);
+            return noShowPill + h + depositRosterLine(app) + cancellationFeeRosterLine(app);
         }
 
         // Action buttons for one appointment's state. big = details pop-up (44px buttons that close the pop-up first).
@@ -10110,13 +10134,14 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                 }
                 out.push(btn('openEditAppointment', 'bg-slate-800 hover:bg-slate-700 text-slate-200', 'Edit'));
                 out.push(btn('openTenantRescheduleModal', 'bg-slate-800 hover:bg-slate-700 text-brand-400', '<i class="fa-solid fa-calendar-days mr-1"></i>Reschedule'));
+                if (!appointmentIsNoShow(app)) out.push(btn('markAppointmentNoShow', 'bg-slate-500/15 hover:bg-slate-500/25 text-slate-200 border border-slate-400/40', 'Mark no-show'));
                 out.push(btn('deleteAppointment', 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30', '<i class="fa-solid fa-xmark mr-1"></i>Cancel'));
             }
             out.push(btn('openRosterDeleteModal', 'bg-rose-600/15 hover:bg-rose-600/25 text-rose-300 border border-rose-500/40', '<i class="fa-solid fa-trash mr-1"></i>Delete'));
             return out.join('\n');
         }
 
-        var ROSTER_SHEET_ACTIONS = ['acceptAppointment', 'denyAppointment', 'markAppointmentPaid', 'markAppointmentUnpaid', 'openEditAppointment', 'openTenantRescheduleModal', 'deleteAppointment', 'openRosterDeleteModal'];
+        var ROSTER_SHEET_ACTIONS = ['acceptAppointment', 'denyAppointment', 'markAppointmentPaid', 'markAppointmentUnpaid', 'openEditAppointment', 'openTenantRescheduleModal', 'markAppointmentNoShow', 'deleteAppointment', 'openRosterDeleteModal'];
 
         // Pop-up action: close the details first, then run the same function the list button runs.
         window.rosterApptDo = function (fn, appId) {
@@ -10191,12 +10216,13 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                 var st = String(a.status || '').toLowerCase();
                 var closed = cancelled || st === 'denied';
                 var paid = !closed && bookingPaymentState(a) === 'paid';
-                var badge = paid ? 'Paid' : (cancelled ? 'Cancelled' : (st === 'denied' ? 'Denied' : (st === 'pending' ? 'Pending' : '')));
+                var noShow = appointmentIsNoShow(a);
+                var badge = noShow ? 'No-show' : (paid ? 'Paid' : (cancelled ? 'Cancelled' : (st === 'denied' ? 'Denied' : (st === 'pending' ? 'Pending' : ''))));
                 return '<button type="button" onclick="openRosterApptModal(' + esc(jsArg(a.id)) + ', ' + esc(jsArg(iso)) + ')" class="w-full text-left min-h-[44px] rounded-xl border px-3 py-2.5 flex items-center justify-between gap-3 ' +
                     (closed ? 'border-rose-500/40 bg-rose-500/10' : (st === 'pending' ? 'border-amber-500/40 bg-amber-500/10' : 'border-slate-700 bg-slate-950/40 hover:border-brand-400')) + '">' +
                     '<span class="min-w-0"><span class="block text-sm font-bold ' + (closed ? 'line-through text-rose-300' : 'text-white') + '">' + esc(a.time || 'Time not set') + ' · ' + esc(a.clientName || 'Client') + '</span>' +
                     '<span class="sd-svc-line block text-xs text-slate-400 truncate">' + serviceMarkHtml(tenant, a.serviceName) + '<span>' + esc(a.serviceName || 'Appointment') + '</span></span>' +
-                    (badge ? ('<span class="sd-pill ' + (paid ? 'sd-pill-ok' : '') + ' block text-xs font-bold ' + (paid ? '' : (closed ? 'text-rose-300' : 'text-amber-300')) + '">' + badge + '</span>') : '') +
+                    (badge ? ('<span class="sd-pill ' + (noShow ? 'sd-pill-grey' : (paid ? 'sd-pill-ok' : '')) + ' block text-xs font-bold ' + (noShow || paid ? '' : (closed ? 'text-rose-300' : 'text-amber-300')) + '">' + badge + '</span>') : '') +
                     appointmentPayMarkup(a, false) + '</span>' +
                     '<i class="fa-solid fa-chevron-right text-slate-400 shrink-0"></i></button>';
             }).join('');
@@ -12247,7 +12273,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
             var rawInterval = slotIntervalEl ? Number(slotIntervalEl.value) : 30;
             tenant.slotInterval = (rawInterval === 15 || rawInterval === 30 || rawInterval === 60) ? rawInterval : 30;
             var breakEl = document.getElementById('tenantBreakAfter');
-            tenant.appointmentBufferMins = getAppointmentBufferMins({ appointmentBufferMins: breakEl ? breakEl.value : 0 });
+            tenant.appointmentBufferMins = getAppointmentBufferMins({ appointmentBufferMins: breakEl ? breakEl.value : 15 });
             var minNoticeEl = document.getElementById('tenantMinNotice');
             tenant.minNoticeHours = getMinNoticeHours({ minNoticeHours: minNoticeEl ? minNoticeEl.value : 0 });
             var addressEl = document.getElementById('tenantAddress');
@@ -15591,11 +15617,16 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
             return String((app && app.status) || '').toLowerCase() === 'denied';
         }
 
-        function appointmentReportNoShow() {
+        function appointmentReportNoShow(rows) {
+            var count = 0;
+            (rows || []).forEach(function (app) {
+                if (appointmentIsNoShow(app)) count += 1;
+            });
             return {
-                available: false,
-                label: 'Unavailable',
-                reason: 'Appointments do not have a no-show field, so this card stays unavailable.'
+                available: true,
+                count: count,
+                label: String(count),
+                reason: 'Appointments marked no-show in this range.'
             };
         }
 
@@ -15712,7 +15743,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                 weeks: weeks,
                 avgBookings: weekCount ? total / weekCount : 0,
                 avgRevenue: weekCount ? revenue / weekCount : 0,
-                noShow: appointmentReportNoShow()
+                noShow: appointmentReportNoShow(rows)
             };
         }
 
@@ -15739,7 +15770,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                     app.id, app.clientName, app.clientPhone, app.clientEmail, app.serviceName,
                     app.date, app.time, app.status || '', app.paymentStatus || '',
                     pay, reportAmount(app), toward ? 'yes' : 'no', confirmed ? 'yes' : 'no',
-                    cancelled ? 'yes' : 'no', unpaid ? 'yes' : 'no', 'not recorded',
+                    cancelled ? 'yes' : 'no', unpaid ? 'yes' : 'no', appointmentIsNoShow(app) ? 'yes' : 'no',
                     app.walkIn === true ? 'yes' : ''
                 ].map(cell).join(','));
             });
@@ -16266,6 +16297,19 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
 
         window.markAppointmentPaid = function(appId) {
             openRosterPaidMethodModal(appId);
+        };
+
+        window.markAppointmentNoShow = function(appId) {
+            var tenant = getTenant();
+            if (!tenant) return;
+            var app = (tenant.appointments || []).find(function (a) { return a && a.id === appId; });
+            if (!app || appointmentIsNoShow(app) || appointmentIsCancelled(app)) return;
+            if (String(app.status || '').toLowerCase() === 'denied') return;
+            app.noShow = true;
+            saveState();
+            renderTenantRoster(tenant);
+            try { if (ownerClientPanelId) paintClientPanel(); } catch (errNoShow) {}
+            showToast('Marked #' + appId + ' as a no-show.', 'info');
         };
 
         window.deleteAppointment = function(appId) {
@@ -18721,15 +18765,15 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
 
         function appointmentBufferMins(tenant) {
             var raw = tenant && tenant.appointmentBufferMins;
-            if (raw == null || raw === '') return 0;
+            if (raw == null || raw === '') return 15;
             var n = Number(raw);
             if (n === 0 || n === 5 || n === 10 || n === 15 || n === 20 || n === 30 || n === 45 || n === 60) return n;
-            return 0;
+            return 15;
         }
 
         function bufferedOverlap(start, end, otherStart, otherEnd, gap) {
-            var g = (gap == null || gap === '') ? 0 : Number(gap);
-            if (!isFinite(g) || g < 0) g = 0;
+            var g = (gap == null || gap === '') ? 15 : Number(gap);
+            if (!isFinite(g) || g < 0) g = 15;
             return start < otherEnd + g && otherStart < end + g;
         }
 

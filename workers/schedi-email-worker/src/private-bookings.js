@@ -120,7 +120,7 @@ export function publicSlotFromBooking(booking) {
 const BOOKING_KEYS = [
   'id', 'tenantId', 'manageToken', 'clientName', 'clientPhone', 'clientEmail', 'serviceName',
   'date', 'time', 'paymentStatus', 'paymentMethod', 'paymentOptionLabel', 'paidMethod', 'amount', 'durationMins',
-  'status', 'seriesId', 'recurrence', 'depositAmount', 'depositPaid', 'balanceDue', 'cancelled',
+  'status', 'seriesId', 'recurrence', 'depositAmount', 'depositPaid', 'balanceDue', 'cancelled', 'noShow',
   'cancelledAt', 'cancelledBy', 'reminderSentAt', 'smsReminderSentAt', 'smsConfirmSentAt',
   'depositConfirmSentAt', 'notes', 'createdAt', 'walkIn',
   'depositNudgeSentAt', 'depositDayBeforeSentAt', 'depositOwnerWarnSentAt', 'depositExpiredAt',
@@ -296,7 +296,7 @@ export function sanitizeBooking(raw, tenantId) {
       if (Number.isFinite(n) && n >= 0) out[key] = Math.round(n * 100) / 100;
       continue;
     }
-    if (key === 'depositPaid' || key === 'cancelled') {
+    if (key === 'depositPaid' || key === 'cancelled' || key === 'noShow') {
       out[key] = raw[key] === true;
       continue;
     }
@@ -726,15 +726,15 @@ export const APPOINTMENT_BUFFER_CHOICES = [0, 5, 10, 15, 20, 30, 45, 60];
 
 export function appointmentBufferMins(tenant) {
   const raw = tenant && tenant.appointmentBufferMins;
-  if (raw == null || raw === '') return 0;
+  if (raw == null || raw === '') return 15;
   const n = Number(raw);
   if (APPOINTMENT_BUFFER_CHOICES.includes(n)) return n;
-  return 0;
+  return 15;
 }
 
 function bufferedOverlap(aStart, aEnd, bStart, bEnd, gap) {
-  const g = gap == null || gap === '' ? 0 : Number(gap);
-  const buf = Number.isFinite(g) && g >= 0 ? g : 0;
+  const g = gap == null || gap === '' ? 15 : Number(gap);
+  const buf = Number.isFinite(g) && g >= 0 ? g : 15;
   return aStart < bEnd + buf && bStart < aEnd + buf;
 }
 
@@ -750,7 +750,7 @@ function slotTaken(existing, booking, ignoreId, bufferMins) {
     const tStart = toMinutes(other.time);
     if (tStart === null) return false;
     const tDur = Number(other.durationMins) > 0 ? Math.round(Number(other.durationMins)) : 60;
-    return bufferedOverlap(start, end, tStart, tStart + tDur, bufferMins == null ? 0 : bufferMins);
+    return bufferedOverlap(start, end, tStart, tStart + tDur, bufferMins == null ? 15 : bufferMins);
   });
 }
 

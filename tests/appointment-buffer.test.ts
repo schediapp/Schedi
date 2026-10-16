@@ -27,14 +27,20 @@ function bookingTemplate(source: string): string {
   return source.slice(openTick, end + "</html>`".length);
 }
 
+function extractAssignment(source: string, name: string): string {
+  const match = source.match(new RegExp("var " + name + " = [^;]+;"));
+  if (!match) throw new Error("missing " + name);
+  return match[0];
+}
+
 describe("break after appointments", () => {
-  it("defaults a missing break to none and keeps a saved break", () => {
-    expect(appointmentBufferMins({})).toBe(0);
-    expect(appointmentBufferMins({ appointmentBufferMins: null })).toBe(0);
-    expect(appointmentBufferMins({ appointmentBufferMins: undefined })).toBe(0);
-    expect(appointmentBufferMins({ appointmentBufferMins: "" })).toBe(0);
-    expect(appointmentBufferMins({ appointmentBufferMins: 7 })).toBe(0);
-    expect(appointmentBufferMins({ appointmentBufferMins: "nope" })).toBe(0);
+  it("defaults a missing break to 15 minutes and keeps a saved break, including none", () => {
+    expect(appointmentBufferMins({})).toBe(15);
+    expect(appointmentBufferMins({ appointmentBufferMins: null })).toBe(15);
+    expect(appointmentBufferMins({ appointmentBufferMins: undefined })).toBe(15);
+    expect(appointmentBufferMins({ appointmentBufferMins: "" })).toBe(15);
+    expect(appointmentBufferMins({ appointmentBufferMins: 7 })).toBe(15);
+    expect(appointmentBufferMins({ appointmentBufferMins: "nope" })).toBe(15);
     expect(appointmentBufferMins({ appointmentBufferMins: 0 })).toBe(0);
     expect(appointmentBufferMins({ appointmentBufferMins: "0" })).toBe(0);
     expect(appointmentBufferMins({ appointmentBufferMins: 15 })).toBe(15);
@@ -44,7 +50,7 @@ describe("break after appointments", () => {
     expect(appointmentBufferMins({ appointmentBufferMins: 60 })).toBe(60);
 
     const owner = new Function(
-      `${extractFunction(html, "getAppointmentBufferMins")}; var APPOINTMENT_BUFFER_MINS = 0; var APPOINTMENT_BUFFER_CHOICES = [0, 5, 10, 15, 20, 30, 45, 60]; return getAppointmentBufferMins;`,
+      `${extractAssignment(html, "APPOINTMENT_BUFFER_MINS")}; ${extractAssignment(html, "APPOINTMENT_BUFFER_CHOICES")}; ${extractFunction(html, "getAppointmentBufferMins")}; return getAppointmentBufferMins;`,
     )() as (tenant: { appointmentBufferMins?: unknown }) => number;
     const pub = new Function(
       `${extractFunction(bookingTemplate(html), "appointmentBufferMins")}; return appointmentBufferMins;`,
@@ -58,18 +64,23 @@ describe("break after appointments", () => {
 
   it("uses that break in slot checks, including zero and 20 minutes", () => {
     const slotsNeedBuffer = new Function(
-      `${extractFunction(html, "slotsNeedBuffer")}; var APPOINTMENT_BUFFER_MINS = 0; return slotsNeedBuffer;`,
+      `${extractAssignment(html, "APPOINTMENT_BUFFER_MINS")}; ${extractFunction(html, "slotsNeedBuffer")}; return slotsNeedBuffer;`,
     )() as (start: number, end: number, otherStart: number, otherEnd: number, gap?: number) => boolean;
     expect(slotsNeedBuffer(60, 90, 0, 50, 15)).toBe(true);
     expect(slotsNeedBuffer(60, 90, 0, 50, 20)).toBe(true);
     expect(slotsNeedBuffer(70, 100, 0, 50, 20)).toBe(false);
     expect(slotsNeedBuffer(60, 90, 0, 50, 0)).toBe(false);
     expect(slotsNeedBuffer(40, 70, 0, 50, 0)).toBe(true);
+    expect(slotsNeedBuffer(60, 90, 0, 50)).toBe(true);
+    expect(slotsNeedBuffer(65, 90, 0, 50)).toBe(false);
     expect(html).toContain('id="tenantBreakAfter"');
     expect(html).toContain('<option value="20">20 minutes</option>');
+    expect(html).toContain('<option value="15" selected>15 minutes</option>');
     expect(html).toContain(">None</option>");
-    expect(html).toContain("None is the default");
-    expect(html).not.toContain("Schedi keeps 15 minutes");
+    expect(html).toContain("15 minutes is the default");
+    expect(html).not.toContain("None is the default");
+    expect(html).toContain("appointmentBufferMins: 15");
+    expect(html).toContain("breakEl ? breakEl.value : 15");
     expect(html).toContain("tenant.appointmentBufferMins");
     expect(bookingTemplate(html)).toContain("appointmentBufferMins(tenantData)");
     expect(bookingTemplate(html)).not.toContain("tEnd + 15");

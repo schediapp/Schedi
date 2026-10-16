@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { sanitizeBooking } from "../workers/schedi-email-worker/src/private-bookings.js";
 
 const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const BOOKING_TEMPLATE_SHA_MARKER = "return `<!DOCTYPE html>";
@@ -74,6 +75,7 @@ const names = [
   "reportAmount",
   "reportIsCancelled",
   "reportIsDenied",
+  "appointmentIsNoShow",
   "appointmentReportNoShow",
   "appointmentReportRange",
   "appointmentReportSampleVisits",
@@ -101,12 +103,12 @@ const api = new Function(`${lib}; return { reportTodayIso, reportShiftIso, appoi
     weeks: { start: string; bookings: number; revenue: number }[];
     avgBookings: number;
     avgRevenue: number;
-    noShow: { available: boolean; reason: string };
+    noShow: { available: boolean; count: number; label: string; reason: string };
     rows: unknown[];
   };
   appointmentReportCsv: (model: { rows: unknown[] }, pay: (row: unknown) => string) => string;
   appointmentReportChartSvg: (weeks: { start: string; bookings: number; revenue: number }[], field: string, format: (n: number) => string, label: string) => string;
-  appointmentReportNoShow: () => { available: boolean; label: string; reason: string };
+  appointmentReportNoShow: (rows?: unknown[]) => { available: boolean; count: number; label: string; reason: string };
   bookingPaymentState: (row: unknown) => string;
 };
 
@@ -159,8 +161,26 @@ describe("appointment report math", () => {
     expect(model.weeks[1].revenue).toBe(45);
     expect(model.avgBookings).toBe(2.5);
     expect(model.avgRevenue).toBe(22.5);
-    expect(model.noShow.available).toBe(false);
-    expect(model.noShow.reason).toMatch(/do not have a no-show field/);
+    expect(model.noShow).toMatchObject({ available: true, count: 0, label: "0" });
+    expect(model.noShow.reason).toMatch(/marked no-show/);
+  });
+
+  it("counts a no-show flag and a no_show status inside the range", () => {
+    const rows = [
+      { id: "shown", date: "2026-10-12", amount: 40, status: "accepted", paymentStatus: "PAID", noShow: true },
+      { id: "status", date: "2026-10-13", amount: 10, status: "no_show", paymentStatus: "UNPAID" },
+      { id: "kept", date: "2026-10-14", amount: 20, status: "accepted", paymentStatus: "PAID" },
+      { id: "old", date: "2026-10-01", amount: 80, status: "accepted", noShow: true, paymentStatus: "PAID" },
+    ];
+    const model = api.appointmentReportModel(rows, range, pay);
+    expect(model.rows.map((row) => (row as { id: string }).id)).toEqual(["shown", "status", "kept"]);
+    expect(model.noShow).toMatchObject({ available: true, count: 2, label: "2" });
+    expect(model.total).toBe(3);
+    const csv = api.appointmentReportCsv(model, pay);
+    expect(csv).toContain("paid,40,yes,yes,no,no,yes");
+    expect(csv).toContain("unpaid,10,yes,yes,no,yes,yes");
+    expect(csv).not.toContain("not recorded");
+    expect(csv).not.toContain("old");
   });
 
   it("exports only the range and includes the computed fields", () => {
@@ -168,6 +188,7 @@ describe("appointment report math", () => {
       { id: "in", clientName: 'Ada "A"', date: "2026-10-13", time: "9:00 AM", status: "accepted", paymentStatus: "PAID", amount: 20, serviceName: "Cut" },
       { id: "out", date: "2026-10-01", status: "accepted", amount: 80, paymentStatus: "PAID" },
       { id: "late", date: "2026-10-12", status: "cancelled", amount: 40, paymentStatus: "PENDING" },
+      { id: "miss", clientName: "Bea", date: "2026-10-14", time: "1:00 PM", status: "accepted", paymentStatus: "PAID", amount: 10, serviceName: "Cut", noShow: true },
     ];
     const model = api.appointmentReportModel(rows, range, pay);
     const csv = api.appointmentReportCsv(model, pay);
@@ -176,11 +197,12 @@ describe("appointment report math", () => {
     expect(lines[0]).toContain("counts_toward_revenue");
     expect(lines[0]).toContain("confirmed");
     expect(lines[0]).toContain("no_show");
-    expect(lines).toHaveLength(3);
+    expect(lines).toHaveLength(4);
     expect(csv).toContain('"Ada ""A"""');
-    expect(csv).toContain("paid,20,yes,yes,no,no,not recorded");
+    expect(csv).toContain("paid,20,yes,yes,no,no,no");
+    expect(csv).toContain("paid,10,yes,yes,no,no,yes");
     expect(csv).not.toContain("out");
-    expect(csv).toContain("not recorded");
+    expect(csv).not.toContain("not recorded");
   });
 
   it("builds a bar for each week and a stable sample visit count", () => {
@@ -198,7 +220,8 @@ describe("appointment report math", () => {
     expect(sample.days).toBe(7);
     expect(sample.total).toBeGreaterThan(0);
     expect(api.appointmentReportSampleVisits("2026-10-10", "2026-10-16").total).toBe(sample.total);
-    expect(api.appointmentReportNoShow().available).toBe(false);
+    expect(api.appointmentReportNoShow().available).toBe(true);
+    expect(api.appointmentReportNoShow().count).toBe(0);
   });
 });
 
@@ -216,7 +239,10 @@ describe("reports tab markup", () => {
     expect(owner).toContain("Last 90 days");
     expect(owner).toContain(">Custom<");
     expect(owner).toContain("Sample data");
-    expect(owner).toContain("Appointments do not have a no-show field");
+    expect(owner).toContain("Mark no-show");
+    expect(owner).toContain("sd-pill-grey");
+    expect(owner).toContain("Appointments marked no-show in this range.");
+    expect(owner).not.toContain("Appointments do not have a no-show field");
     expect(owner).toContain("window.printAppointmentReport");
     expect(owner).toContain("schedi-printing-report");
     expect(owner).toContain("<h1>Appointments Report</h1>");
@@ -227,5 +253,17 @@ describe("reports tab markup", () => {
     expect(template).not.toContain("sd-report-stats");
     expect(owner).not.toMatch(/Reports[\s\S]{0,400}Pro only/);
     expect(unscopedSelectors(dashCss(html))).toEqual([]);
+  });
+});
+
+describe("no-show booking field", () => {
+  it("keeps a saved no-show flag and drops a field that is not on the allow list", () => {
+    const kept = sanitizeBooking({ id: "HB-1008", noShow: true, clientName: "Sam", secret: "nope" }, "harbor-demo");
+    expect(kept).toMatchObject({ id: "HB-1008", noShow: true, clientName: "Sam" });
+    expect(kept).not.toHaveProperty("secret");
+    const cleared = sanitizeBooking({ id: "HB-1008", noShow: false }, "harbor-demo");
+    expect(cleared && cleared.noShow).toBe(false);
+    const absent = sanitizeBooking({ id: "HB-1009", clientName: "Casey" }, "harbor-demo");
+    expect(absent).not.toHaveProperty("noShow");
   });
 });

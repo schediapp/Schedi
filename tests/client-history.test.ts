@@ -34,6 +34,7 @@ const names = [
   "reportIsDenied",
   "reportAmount",
   "reportMoney",
+  "appointmentIsNoShow",
   "appointmentReportNoShow",
 ];
 
@@ -61,7 +62,7 @@ const api = new Function(`${lib}; return { clientNormEmail, clientBookingMatches
     visitCount: number;
     firstVisit: string;
     lastVisit: string;
-    noShow: { available: boolean; label: string };
+    noShow: { available: boolean; count: number; label: string };
   };
 };
 
@@ -106,12 +107,19 @@ describe("client history matching", () => {
     expect(model.lastVisit).toBe("2026-10-28");
     expect(model.usualMethod).toBe("card");
     expect(model.usualLabel).toBe("Card (Stripe)");
-    expect(model.noShow).toMatchObject({ available: false, label: "Unavailable" });
+    expect(model.noShow).toMatchObject({ available: true, count: 0, label: "0" });
+    const missed = api.clientHistoryModel(maya, rows.concat([
+      { id: "missed", date: "2026-09-12", time: "11:00 AM", status: "accepted", clientEmail: "maya@example.com", amount: 65, pay: "paid", kind: "card", noShow: true },
+      { id: "flagged", date: "2026-09-02", time: "11:00 AM", status: "no_show", clientEmail: "maya@example.com", amount: 40, pay: "unpaid", kind: "unpaid" },
+    ]), "2026-10-16", payState, payKind);
+    expect(missed.noShow).toMatchObject({ available: true, count: 2, label: "2" });
     expect(api.clientHistoryPrice({ amount: null })).toBe("");
     expect(api.clientHistoryPrice({ amount: 28 })).toBe("$28.00");
     expect(api.clientHistoryStatus({ status: "accepted" })).toBe("Confirmed");
     expect(api.clientHistoryStatus({ status: "cancelled" })).toBe("Cancelled");
     expect(api.clientHistoryStatus({ status: "denied" })).toBe("Denied");
+    expect(api.clientHistoryStatus({ status: "accepted", noShow: true })).toBe("No-show");
+    expect(api.clientHistoryStatus({ status: "no_show" })).toBe("No-show");
   });
 
   it("picks the most common paid method and breaks ties by the latest visit", () => {
@@ -150,7 +158,10 @@ describe("client history matching", () => {
     expect(owner).toContain("window.bookClientAgain = function");
     expect(owner).toContain("openManualBookingModal({ clientName:");
     expect(owner).toContain("No usual method yet.");
-    expect(owner).toContain("Appointments do not have a no-show field");
+    expect(owner).toContain("No-shows: ");
+    expect(owner).toContain("sd-pill-grey");
+    expect(owner).toContain("markAppointmentNoShow");
+    expect(owner).not.toContain("Appointments do not have a no-show field");
     const modal = owner.slice(owner.indexOf("window.openManualBookingModal = function"), owner.indexOf("window.openEditAppointment"));
     expect(modal).toContain("clientName ? 'Add appointment'");
     expect(modal).toContain("setManualWalkIn(false, false)");
