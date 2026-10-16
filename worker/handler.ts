@@ -79,7 +79,7 @@ const STATIC_TYPES: Record<string, string> = {
   "/firebase-messaging-sw.js": "text/javascript; charset=utf-8",
 };
 
-const SPA_EXACT = new Set(["login", "signup", "reset", "auth", "agency", "hq", "hq-9h7p52"]);
+const SPA_EXACT = new Set(["login", "signup", "reset", "auth", "agency", "hq", "hq-9h7p52", "portal-preview"]);
 
 export function contentSecurityPolicy(html: boolean): string {
   if (!html) return "";
@@ -153,6 +153,8 @@ function wantsPortal(url: URL): boolean {
   if (portal === "login") return true;
   if (url.searchParams.get("forgot") === "1") return true;
   if (url.searchParams.has("billing")) return true;
+  if (url.searchParams.get("demo") === "1") return true;
+  if (url.searchParams.get("newdash") === "1") return true;
   return false;
 }
 
@@ -627,10 +629,24 @@ async function serveSpa(
   return new Response(body, { status: 200, headers });
 }
 
+function hqDemoRequest(request: Request): boolean {
+  try {
+    const url = new URL(request.url);
+    if (url.searchParams.get("demo") !== "1") return false;
+    const host = url.hostname.toLowerCase().replace(/\.$/, "");
+    // Production keeps the agency session gate. The assets-only preview has no KV.
+    return host !== "schedi.app" && host !== "www.schedi.app";
+  } catch {
+    return false;
+  }
+}
+
 async function serveHq(request: Request, env: SchediEnv, method: string): Promise<Response> {
   const token = agencySessionToken(request);
   const allowed = await hasAgencySession(env.AUTH_KV, token);
-  if (!allowed) {
+  // Preview only. demo=1 paints sample businesses and the page blocks live calls.
+  // It does not create an agency session and does not authorize API routes.
+  if (!allowed && !hqDemoRequest(request)) {
     return textResponse(
       hqLoginDocument(),
       200,

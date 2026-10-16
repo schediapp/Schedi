@@ -65,13 +65,46 @@ function encodeFirestoreValue(v) {
   return { stringValue: String(v) };
 }
 
-function sanitizeProfile(raw, tenantId) {
+function cleanServiceText(value, max) {
+  return String(value == null ? '' : value).trim().slice(0, max);
+}
+
+/** Catalog fields an owner may save on a service. Drops data-URL leftovers and unknown keys. */
+export function sanitizeService(raw) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  const out = {};
+  const idRaw = raw.id;
+  if (typeof idRaw === 'number' && Number.isFinite(idRaw)) out.id = idRaw;
+  else if (typeof idRaw === 'string' && /^[A-Za-z0-9_-]{1,40}$/.test(idRaw.trim())) out.id = idRaw.trim();
+  const name = cleanServiceText(raw.name, 160);
+  if (name) out.name = name;
+  if (raw.duration != null && raw.duration !== '') {
+    const duration = cleanServiceText(raw.duration, 40);
+    if (duration) out.duration = duration;
+  }
+  const mins = Number(raw.durationMins);
+  if (Number.isFinite(mins) && mins > 0 && mins <= 24 * 60) out.durationMins = Math.round(mins);
+  if (raw.price === null) out.price = null;
+  else if (typeof raw.price === 'number' && Number.isFinite(raw.price) && raw.price >= 0 && raw.price <= 1000000) out.price = raw.price;
+  if (typeof raw.desc === 'string') out.desc = cleanServiceText(raw.desc, 500);
+  const icon = cleanServiceText(raw.icon, 80).toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 40);
+  if (icon) out.icon = icon;
+  const imageUrl = cleanServiceText(raw.imageUrl, 500);
+  if (/^https:\/\/\S+$/i.test(imageUrl)) out.imageUrl = imageUrl;
+  if (out.id == null && !out.name) return null;
+  return out;
+}
+
+export function sanitizeProfile(raw, tenantId) {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
   const out = {};
   for (const k of Object.keys(raw)) {
     if (!k || FORBIDDEN.has(k) || k.charAt(0) === '_') continue;
     if (raw[k] === undefined) continue;
     out[k] = raw[k];
+  }
+  if (Array.isArray(out.services)) {
+    out.services = out.services.map(sanitizeService).filter(Boolean).slice(0, 200);
   }
   out.id = tenantId;
   return out;

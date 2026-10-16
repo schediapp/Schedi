@@ -4,6 +4,35 @@
 <!-- schedi-deploy 7c4a91e0-no-store-html stale-first-paint-fix -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <script>
+    (function () {
+        var demo = false;
+        var hq = false;
+        try {
+            var q = new URLSearchParams(location.search || '');
+            var flag = q.get('newhq');
+            hq = flag === '1' || flag === 'true' || flag === 'on';
+            var host = String(location.hostname || '').toLowerCase().replace(/\.$/, '');
+            demo = q.get('demo') === '1' && host !== 'schedi.app' && host !== 'www.schedi.app';
+        } catch (errFlag) {}
+        if (hq) document.documentElement.classList.add('schedi-newhq');
+        if (!demo) return;
+        window.__SCHEDI_HQ_DEMO = true;
+        document.documentElement.classList.add('schedi-hq-demo');
+        window.__schediHqDemoBlocked = [];
+        function block(url, method) {
+            try { window.__schediHqDemoBlocked.push({ url: String(url || ''), method: String(method || 'GET') }); } catch (errNote) {}
+        }
+        window.fetch = function (input, init) {
+            var url = typeof input === 'string' ? input : (input && input.url) || '';
+            var method = (init && init.method) || (input && input.method) || 'GET';
+            block(url, method);
+            return Promise.resolve(new Response(JSON.stringify({ ok: false, demo: true }), { status: 403, headers: { 'content-type': 'application/json' } }));
+        };
+        if (navigator.sendBeacon) navigator.sendBeacon = function (url) { block(url, 'BEACON'); return true; };
+        window.WebSocket = function (url) { block(url, 'WS'); return { close: function () {}, send: function () {}, addEventListener: function () {}, readyState: 3 }; };
+    })();
+    </script>
     <title>Schedi</title>
     <link rel="icon" href="/assets/homescreen-icon.png" type="image/png">
     <link rel="shortcut icon" href="/assets/homescreen-icon.png" type="image/png">
@@ -413,6 +442,263 @@
         html.schedi-light #navModeAgency.bg-slate-800 { background-color: #e2e8f0 !important; }
         <!-- SCHEDI_HQ_END -->
     </style>
+    <style id="schedi-hq-frame">
+        html.schedi-newhq {
+            --hq-bg: #06080d;
+            --hq-panel: #121826;
+            --hq-panel-2: #0c1018;
+            --hq-line: rgba(148, 163, 184, 0.18);
+            --hq-text: #e7edf5;
+            --hq-muted: #94a3b8;
+            --hq-brand: #10b981;
+            --hq-ink: #022c22;
+        }
+        html.schedi-light.schedi-newhq {
+            --hq-bg: #f4f7fb;
+            --hq-panel: #ffffff;
+            --hq-panel-2: #f8fafc;
+            --hq-line: #d7dee8;
+            --hq-text: #0f172a;
+            --hq-muted: #475569;
+            --hq-brand: #059669;
+            --hq-ink: #ffffff;
+        }
+        html.schedi-newhq body { background: var(--hq-bg); color: var(--hq-text); }
+        html.schedi-newhq body > header,
+        html.schedi-newhq #publicHomeFooter { display: none !important; }
+        html.schedi-newhq main { max-width: none !important; width: 100% !important; margin: 0 !important; padding: 0 !important; }
+        #hqNewSidebar, #hqNewTop, #hqNewTabs { display: none; }
+        html.schedi-newhq #hqNewSidebar,
+        html.schedi-newhq #hqNewTop,
+        html.schedi-newhq #hqNewTabs { margin: 0 !important; }
+        html.schedi-newhq #agencyStats,
+        html.schedi-newhq #agencyDirectory,
+        html.schedi-newhq #agencyBilling,
+        html.schedi-newhq #agencyEmail { scroll-margin-top: 80px; }
+        html.schedi-newhq #hqNewSidebar {
+            display: flex;
+            position: fixed;
+            z-index: 40;
+            left: 0; top: 0; bottom: 0;
+            width: 244px;
+            flex-direction: column;
+            gap: 4px;
+            padding: 18px 14px 16px;
+            background: var(--hq-panel);
+            border-right: 1px solid var(--hq-line);
+        }
+        html.schedi-newhq #hqNewTop {
+            display: flex;
+            position: fixed;
+            z-index: 41;
+            top: 0; left: 244px; right: 0;
+            height: 64px;
+            align-items: center;
+            gap: 12px;
+            padding: 0 18px;
+            background: var(--hq-panel);
+            border-bottom: 1px solid var(--hq-line);
+        }
+        html.schedi-newhq #agencyHqSection { min-height: 100vh; padding: 84px 28px 48px 268px; animation: none; transform: none; }
+        html.schedi-newhq .hq-brand { font-weight: 800; letter-spacing: -0.03em; font-size: 1.15rem; color: var(--hq-text); }
+        html.schedi-newhq .hq-kicker { margin: 14px 8px 6px; font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--hq-brand); }
+        html.schedi-newhq .hq-nav-btn {
+            display: flex; align-items: center; gap: 10px;
+            width: 100%; min-height: 44px; padding: 0 12px;
+            border: 0; border-radius: 12px;
+            background: transparent; color: var(--hq-muted);
+            font-weight: 700; text-align: left; cursor: pointer;
+        }
+        html.schedi-newhq .hq-nav-btn.is-on,
+        html.schedi-newhq .hq-nav-btn:hover { background: color-mix(in srgb, var(--hq-brand) 14%, transparent); color: var(--hq-text); }
+        html.schedi-newhq #hqNewTop .hq-brand { white-space: nowrap; flex: 0 0 auto; }
+        html.schedi-newhq #hqDemoNote {
+            margin-right: auto; min-width: 0;
+            font-size: 13px; font-weight: 700; line-height: 1.2; color: var(--hq-muted);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .hq-demo-short { display: none; }
+        html.schedi-newhq #hqNewTheme {
+            margin-left: auto; min-height: 40px; padding: 0 12px;
+            border-radius: 12px; border: 1px solid var(--hq-line);
+            background: var(--hq-panel-2); color: var(--hq-text); font-weight: 700;
+        }
+        html.schedi-newhq #agencyMasterDashboard .glass-card,
+        html.schedi-newhq #editTenantModal .glass-card,
+        html.schedi-newhq #provisionModal .glass-card {
+            background: var(--hq-panel) !important;
+            color: var(--hq-text);
+            border: 1px solid var(--hq-line) !important;
+            border-radius: 20px !important;
+            box-shadow: none !important;
+            backdrop-filter: none !important;
+        }
+        html.schedi-newhq #agencyStats { gap: 12px; }
+        html.schedi-newhq #agencyStats > div {
+            background: var(--hq-panel);
+            border: 1px solid var(--hq-line) !important;
+            border-left-width: 1px !important;
+            border-radius: 20px;
+            box-shadow: none;
+            min-width: 0;
+        }
+        html.schedi-newhq #agencyStats > div > div:first-child { min-width: 0; }
+        .hq-label-short { display: none; }
+        html.schedi-newhq #agencyStats .hq-label-full { display: none; }
+        html.schedi-newhq #agencyStats .hq-label-short { display: inline; white-space: nowrap; }
+        html.schedi-newhq #agencyStats span.uppercase { letter-spacing: 0.04em; white-space: nowrap; }
+        html.schedi-newhq #agencyStats .hq-sub .hq-label-full { display: inline; }
+        html.schedi-newhq #agencyStats .hq-sub .hq-label-short { display: none; }
+        html.schedi-newhq #agencyStats .hq-sub { display: block; white-space: normal; }
+        html.schedi-newhq #agencyStats .text-2xl { letter-spacing: -0.03em; }
+        html.schedi-newhq #agencyStripeStatusBadge { white-space: nowrap; flex-shrink: 0; }
+        html.schedi-newhq #agencyMasterDashboard h2 { letter-spacing: -0.03em; }
+        html.schedi-newhq #agencyMasterDashboard .glass-input,
+        html.schedi-newhq #editTenantModal .glass-input,
+        html.schedi-newhq #provisionModal .glass-input {
+            background: var(--hq-panel-2);
+            border: 1px solid var(--hq-line);
+            border-radius: 12px;
+            min-height: 44px;
+            color: var(--hq-text);
+        }
+        html.schedi-newhq #agencyMasterDashboard button,
+        html.schedi-newhq #editTenantModal button,
+        html.schedi-newhq #provisionModal button { min-height: 44px; border-radius: 12px; }
+        html.schedi-newhq #agencyMasterDashboard button.bg-gradient-to-r,
+        html.schedi-newhq #agencyMasterDashboard button[type="submit"],
+        html.schedi-newhq #editTenantModal button[type="submit"],
+        html.schedi-newhq #provisionModal button[type="submit"] {
+            background: var(--hq-brand) !important;
+            color: var(--hq-ink) !important;
+            box-shadow: none !important;
+        }
+        html.schedi-newhq .hq-dir-scroll { max-width: 100%; overflow-x: auto; }
+        html.schedi-newhq .hq-table { table-layout: auto; width: 100%; max-width: 100%; border-collapse: collapse; border-spacing: 0; }
+        html.schedi-newhq .hq-table th { color: var(--hq-muted); border-color: var(--hq-line); font-size: 11px; letter-spacing: 0.04em; white-space: nowrap; padding: 8px 6px; text-align: left; }
+        html.schedi-newhq .hq-table td { border-color: var(--hq-line); padding: 8px 6px; overflow: visible; text-align: left; }
+        html.schedi-newhq .hq-table th.hq-col-biz,
+        html.schedi-newhq .hq-table td.hq-col-biz { text-align: left; padding-left: 0; }
+        html.schedi-newhq .hq-table tbody tr:hover { background: color-mix(in srgb, var(--hq-brand) 8%, transparent); }
+        html.schedi-newhq .hq-dir-slot { min-height: calc(100vh - 80px); }
+        html.schedi-newhq #agencyDirectory { padding: 20px 16px; }
+        html.schedi-newhq .hq-table .hq-clip {
+            display: block; width: max-content; max-width: none;
+            overflow: visible; text-overflow: clip; white-space: nowrap;
+            word-break: normal; overflow-wrap: normal;
+        }
+        html.schedi-newhq .hq-table .hq-plan-detail {
+            width: auto; max-width: 10.5rem; white-space: normal;
+        }
+        html.schedi-newhq .hq-table div.hq-comp { display: inline-flex; width: auto; max-width: none; white-space: nowrap; }
+        html.schedi-newhq .hq-col-status,
+        html.schedi-newhq .hq-col-extra,
+        html.schedi-newhq .hq-col-visits,
+        html.schedi-newhq .hq-col-last,
+        html.schedi-newhq .hq-col-health { width: 1%; white-space: nowrap; }
+        html.schedi-newhq .hq-col-visits { font-variant-numeric: tabular-nums; }
+        html.schedi-newhq .hq-col-actions { width: 1%; white-space: nowrap; }
+        html.schedi-newhq .hq-table th.hq-col-actions,
+        html.schedi-newhq .hq-table td.hq-col-actions { text-align: right; }
+        html.schedi-newhq .hq-col-actions .flex { flex-wrap: nowrap; justify-content: flex-end; align-items: center; width: auto; gap: 6px; }
+        html.schedi-newhq .hq-table button,
+        html.schedi-newhq .hq-table a { min-height: 32px; }
+        html.schedi-newhq .hq-more { position: relative; display: inline-flex; vertical-align: middle; }
+        html.schedi-newhq .hq-more > summary {
+            list-style: none;
+            width: 32px; height: 32px; min-height: 32px;
+            border-radius: 10px;
+            border: 1px solid var(--hq-line);
+            background: var(--hq-panel-2);
+            color: var(--hq-text);
+            display: inline-flex; align-items: center; justify-content: center;
+            cursor: pointer; font-weight: 800; line-height: 1; letter-spacing: 0;
+        }
+        html.schedi-newhq .hq-more > summary::-webkit-details-marker,
+        html.schedi-newhq .hq-more > summary::marker { display: none; content: ""; }
+        html.schedi-newhq .hq-more-menu {
+            position: fixed; z-index: 80; left: 0; top: 0; visibility: hidden;
+            min-width: 188px; max-height: min(320px, calc(100vh - 96px));
+            overflow: auto; padding: 6px; border-radius: 14px;
+            border: 1px solid var(--hq-line); background: var(--hq-panel);
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
+        }
+        html.schedi-newhq .hq-more-menu button,
+        html.schedi-newhq .hq-more-menu a {
+            display: flex; align-items: center; gap: 8px;
+            width: 100%; min-height: 36px; text-align: left;
+            background: transparent; border: 0; color: var(--hq-text);
+            border-radius: 10px; padding: 8px 10px;
+            font-size: 13px; font-weight: 700; cursor: pointer; text-decoration: none;
+        }
+        html.schedi-newhq .hq-more-menu button:hover,
+        html.schedi-newhq .hq-more-menu a:hover { background: color-mix(in srgb, var(--hq-brand) 12%, transparent); }
+        html.schedi-newhq .hq-more-menu .hq-more-danger { color: #fb7185; }
+        html.schedi-light.schedi-newhq .hq-more-menu .hq-more-danger { color: #dc2626; }
+        html.schedi-light.schedi-newhq .hq-more-menu .hq-more-danger:hover { background: #fef2f2; color: #dc2626; }
+        @media (max-width: 1099px) {
+            html.schedi-newhq .hq-col-extra { display: none; }
+        }
+        html.schedi-newhq .hq-badge { border-radius: 999px; padding: 3px 8px; }
+        html.schedi-newhq .hq-stat { background: var(--hq-panel-2); border-color: var(--hq-line); border-radius: 12px; }
+        html.schedi-newhq .hq-stat > div { white-space: nowrap; }
+        html.schedi-newhq .hq-empty {
+            border: 0 !important;
+            background: transparent !important;
+            text-align: left;
+            padding: 4px 0 !important;
+            color: var(--hq-muted) !important;
+        }
+        span.hq-comp { display: none; }
+        html.schedi-newhq div.hq-comp,
+        html.schedi-newhq span.hq-comp {
+            display: inline-flex;
+            margin-top: 4px;
+            padding: 2px 8px;
+            border-radius: 999px;
+            background: color-mix(in srgb, var(--hq-brand) 16%, transparent);
+            color: var(--hq-brand) !important;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+        html.schedi-newhq #editTenantModal,
+        html.schedi-newhq #provisionModal { background: rgba(6, 8, 13, 0.72); backdrop-filter: none; }
+        html.schedi-light.schedi-newhq #editTenantModal,
+        html.schedi-light.schedi-newhq #provisionModal { background: rgba(15, 23, 42, 0.35); }
+        @media (max-width: 800px) {
+            html.schedi-newhq #hqNewSidebar { display: none; }
+            html.schedi-newhq #hqNewTop { left: 0; gap: 8px; padding: 0 12px; }
+            html.schedi-newhq #hqNewTop .hq-brand { font-size: 1rem; }
+            html.schedi-newhq #hqDemoNote { font-size: 12px; }
+            html.schedi-newhq .hq-demo-full { display: none; }
+            html.schedi-newhq .hq-demo-short { display: inline; }
+            html.schedi-newhq #hqNewTabs {
+                display: flex;
+                position: fixed;
+                z-index: 42;
+                left: 0; right: 0; bottom: 0;
+                height: 64px;
+                align-items: stretch;
+                justify-content: space-around;
+                background: var(--hq-panel);
+                border-top: 1px solid var(--hq-line);
+                padding-bottom: env(safe-area-inset-bottom);
+            }
+            html.schedi-newhq #hqNewTabs button {
+                flex: 1;
+                border: 0;
+                background: transparent;
+                color: var(--hq-muted);
+                font-size: 11px;
+                font-weight: 800;
+            }
+            html.schedi-newhq #hqNewTabs button.is-on { color: var(--hq-brand); }
+            html.schedi-newhq #agencyHqSection { padding: 76px 16px 96px; }
+            html.schedi-newhq .hq-dir-slot { min-height: 0; }
+        }
+    </style>
 </head>
 <body class="min-h-screen flex flex-col justify-between selection:bg-brand-500 selection:text-slate-950">
 
@@ -468,7 +754,26 @@
 <!-- SCHEDI_HQ_START -->
         <!-- AGENCY HQ SECTION -->
         <div id="agencyHqSection" class="space-y-6 fade-in hidden">
-            
+            <aside id="hqNewSidebar" aria-label="Agency HQ">
+                <div class="hq-brand">Schedi HQ</div>
+                <p class="hq-kicker">Agency</p>
+                <button type="button" class="hq-nav-btn is-on" data-hq-go="agencyStats" onclick="hqNewGo('agencyStats')"><i class="fa-solid fa-chart-pie" aria-hidden="true"></i><span>Overview</span></button>
+                <button type="button" class="hq-nav-btn" data-hq-go="agencyDirectory" onclick="hqNewGo('agencyDirectory')"><i class="fa-solid fa-store" aria-hidden="true"></i><span>Directory</span></button>
+                <button type="button" class="hq-nav-btn" data-hq-go="agencyBilling" onclick="hqNewGo('agencyBilling')"><i class="fa-solid fa-credit-card" aria-hidden="true"></i><span>Billing</span></button>
+                <button type="button" class="hq-nav-btn" data-hq-go="agencyEmail" onclick="hqNewGo('agencyEmail')"><i class="fa-solid fa-envelope" aria-hidden="true"></i><span>Email</span></button>
+            </aside>
+            <header id="hqNewTop">
+                <strong class="hq-brand">Schedi HQ</strong>
+                <p id="hqDemoNote" hidden><span class="hq-demo-full">Demo · sample businesses · nothing is saved or sent</span><span class="hq-demo-short">Demo · not saved</span></p>
+                <button type="button" id="hqNewTheme" class="schedi-theme-btn" onclick="toggleSchediTheme()" title="Switch to light theme" aria-label="Switch to light theme"><i class="fa-solid fa-sun" aria-hidden="true"></i><span class="schedi-theme-btn-label">Light</span></button>
+            </header>
+            <nav id="hqNewTabs" aria-label="Agency HQ">
+                <button type="button" class="is-on" data-hq-go="agencyStats" onclick="hqNewGo('agencyStats')">Overview</button>
+                <button type="button" data-hq-go="agencyDirectory" onclick="hqNewGo('agencyDirectory')">Directory</button>
+                <button type="button" data-hq-go="agencyBilling" onclick="hqNewGo('agencyBilling')">Billing</button>
+                <button type="button" data-hq-go="agencyEmail" onclick="hqNewGo('agencyEmail')">Email</button>
+            </nav>
+
             <!-- MASTER AGENCY AUTH GATEWAY -->
             <div id="agencyMasterLoginBox" class="max-w-md mx-auto glass-card rounded-2xl p-6 sm:p-8 space-y-6 my-10">
                 <div class="text-center space-y-2">
@@ -502,12 +807,12 @@
             <div id="agencyMasterDashboard" class="space-y-6 hidden">
                 
                 <!-- Metrics Grid -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div id="agencyStats" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div class="glass-card rounded-2xl p-5 border-l-4 border-l-brand-500 flex items-center justify-between">
                         <div>
-                            <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Managed Business Sites</span>
+                            <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider"><span class="hq-label-full">Managed Business Sites</span><span class="hq-label-short">Active sites</span></span>
                             <div id="statTotalSites" class="text-2xl font-black text-white mt-1">0</div>
-                            <span class="text-[10px] text-brand-400 font-semibold">Active & Deployed</span>
+                            <span class="text-[10px] text-brand-400 font-semibold hq-sub" title="Active &amp; Deployed"><span class="hq-label-full">Active &amp; Deployed</span><span class="hq-label-short">Active</span></span>
                         </div>
                         <div class="w-12 h-12 rounded-xl bg-brand-500/10 text-brand-400 flex items-center justify-center text-xl">
                             <i class="fa-solid fa-store"></i>
@@ -516,9 +821,9 @@
 
                     <div class="glass-card rounded-2xl p-5 border-l-4 border-l-accent-400 flex items-center justify-between">
                         <div>
-                            <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Agency MRR</span>
+                            <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider"><span class="hq-label-full">Agency MRR</span><span class="hq-label-short">Monthly revenue</span></span>
                             <div id="statAgencyMRR" class="text-2xl font-black text-white mt-1">$0.00</div>
-                            <span class="text-[10px] text-accent-400 font-semibold">Monthly Subscription Volume</span>
+                            <span class="text-[10px] text-accent-400 font-semibold hq-sub" title="Monthly Subscription Volume"><span class="hq-label-full">Monthly Subscription Volume</span><span class="hq-label-short">Monthly</span></span>
                         </div>
                         <div class="w-12 h-12 rounded-xl bg-accent-400/10 text-accent-400 flex items-center justify-center text-xl">
                             <i class="fa-solid fa-sack-dollar"></i>
@@ -527,9 +832,9 @@
 
                     <div class="glass-card rounded-2xl p-5 border-l-4 border-l-indigo-500 flex items-center justify-between">
                         <div>
-                            <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Total System Bookings</span>
+                            <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider"><span class="hq-label-full">Total System Bookings</span><span class="hq-label-short">Bookings (all)</span></span>
                             <div id="statTotalBookings" class="text-2xl font-black text-white mt-1">0</div>
-                            <span class="text-[10px] text-indigo-400 font-semibold">Cross-Tenant Volume</span>
+                            <span class="text-[10px] text-indigo-400 font-semibold hq-sub" title="Cross-Tenant Volume"><span class="hq-label-full">Cross-Tenant Volume</span><span class="hq-label-short">All tenants</span></span>
                         </div>
                         <div class="w-12 h-12 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center text-xl">
                             <i class="fa-solid fa-calendar-check"></i>
@@ -538,18 +843,29 @@
 
                     <div class="glass-card rounded-2xl p-5 border-l-4 border-l-amber-400 flex items-center justify-between">
                         <div>
-                            <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Active Booking Pages</span>
+                            <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider"><span class="hq-label-full">Active Booking Pages</span><span class="hq-label-short">Live pages</span></span>
                             <div id="statActivePages" class="text-2xl font-black text-white mt-1">0</div>
-                            <span class="text-[10px] text-amber-400 font-semibold">Live on schedi.app/{slug}/</span>
+                            <span class="text-[10px] text-amber-400 font-semibold hq-sub" title="Live on schedi.app/{slug}/"><span class="hq-label-full">Live on schedi.app/{slug}/</span><span class="hq-label-short">Live pages</span></span>
                         </div>
                         <div class="w-12 h-12 rounded-xl bg-amber-400/10 text-amber-400 flex items-center justify-center text-xl">
                             <i class="fa-solid fa-link"></i>
                         </div>
                     </div>
+
+                    <div class="glass-card rounded-2xl p-5 border-l-4 border-l-brand-500 flex items-center justify-between">
+                        <div>
+                            <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider"><span class="hq-label-full">Page visits · 30 days</span><span class="hq-label-short">Visits · 30d</span></span>
+                            <div id="statPageVisits" class="text-2xl font-black text-white mt-1">—</div>
+                            <span class="text-[10px] text-brand-400 font-semibold hq-sub" title="Booking page views, last 30 days"><span class="hq-label-full">Booking page views</span><span class="hq-label-short">Page views</span></span>
+                        </div>
+                        <div class="w-12 h-12 rounded-xl bg-brand-500/10 text-brand-400 flex items-center justify-center text-xl">
+                            <i class="fa-solid fa-chart-simple"></i>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- HQ Gateways -->
-                <div class="glass-card rounded-2xl p-6 space-y-5" data-hq-collapse="gateways">
+                <div id="agencyBilling" class="glass-card rounded-2xl p-6 space-y-5" data-hq-collapse="gateways">
                     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4" data-hq-collapse-head>
                         <div class="flex items-center space-x-3">
                             <div class="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center text-xl border border-indigo-500/20">
@@ -616,7 +932,7 @@
                 </div>
 
                 <!-- Booking email delivery -->
-                <div class="glass-card rounded-2xl p-6 space-y-4" data-hq-collapse="email">
+                <div id="agencyEmail" class="glass-card rounded-2xl p-6 space-y-4" data-hq-collapse="email">
                     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4" data-hq-collapse-head>
                         <div class="flex items-center space-x-3">
                             <div class="w-10 h-10 rounded-xl bg-brand-500/10 text-brand-400 flex items-center justify-center text-xl border border-brand-500/20">
@@ -647,7 +963,8 @@
                 </div>
 
                 <!-- Client Sites Roster -->
-                <div class="glass-card rounded-2xl p-6 space-y-5">
+                <div class="hq-dir-slot">
+                <div id="agencyDirectory" class="glass-card rounded-2xl p-6 space-y-5">
                     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
                         <div>
                             <h2 class="text-xl font-extrabold text-white">Client Business Directory</h2>
@@ -685,6 +1002,7 @@
                     <div id="agencyTenantGrid">
                         <!-- Directory injected via JS -->
                     </div>
+                </div>
                 </div>
 
             </div>
@@ -1559,26 +1877,27 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-3">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                         <label class="block font-semibold text-slate-300 mb-1">Owner Login Email *</label>
                         <input type="email" id="editOwnerEmail" required class="w-full px-3 py-2 rounded-xl glass-input">
                     </div>
                     <div>
                         <label class="block font-semibold text-slate-300 mb-1">Owner Password *</label>
-                        <input type="text" id="editOwnerPassword" autocomplete="new-password" placeholder="Leave blank to keep the current password" class="w-full px-3 py-2 rounded-xl glass-input font-mono">
+                        <input type="text" id="editOwnerPassword" autocomplete="new-password" placeholder="Leave blank to keep" class="w-full min-w-0 px-3 py-2 rounded-xl glass-input font-mono">
+                        <p class="text-[10px] text-slate-500 mt-1">Leave blank to keep the current password.</p>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-3">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                         <label class="block font-semibold text-slate-300 mb-1">Monthly Pricing ($USD) *</label>
                         <input type="number" id="editMonthlyPrice" required class="w-full px-3 py-2 rounded-xl glass-input font-bold text-brand-400">
                     </div>
                     <div>
-                        <div class="flex items-center justify-between gap-2 mb-1">
-                            <label class="block font-semibold text-slate-300" for="editTenantPlan">Plan tier *</label>
-                            <button type="button" onclick="openComparePlansModal()" class="shrink-0 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide bg-slate-800 hover:bg-slate-700 text-brand-400 border border-brand-500/30">
+                        <div class="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 mb-1">
+                            <label class="font-semibold text-slate-300 whitespace-nowrap shrink-0" for="editTenantPlan">Plan tier *</label>
+                            <button type="button" onclick="openComparePlansModal()" class="shrink-0 whitespace-nowrap px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide bg-slate-800 hover:bg-slate-700 text-brand-400 border border-brand-500/30">
                                 <i class="fa-solid fa-table-columns mr-1" aria-hidden="true"></i>Compare Plans
                             </button>
                         </div>
@@ -2119,9 +2438,12 @@
     </script>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        if (window.__SCHEDI_HQ_DEMO) {
+            window.dispatchEvent(new Event('db_ready'));
+        } else {
+        const { initializeApp } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js");
+        const { getAuth, signInAnonymously, signInWithCustomToken } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js");
+        const { getFirestore, doc, getDoc, onSnapshot, collection } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
 
         // Safely parse injected configs to prevent [object Object] syntax crashes
         let firebaseConfig = {};
@@ -2178,6 +2500,7 @@
             } catch (error) {
                 console.warn("Failed to initialize Firebase App:", error);
             }
+        }
         }
     </script>
 
@@ -2664,6 +2987,7 @@
         }
 
         async function saveState() {
+            if (window.__SCHEDI_HQ_DEMO) return { appointments: {}, profile: { ok: false, skipped: true, demo: true } };
             (platformState.tenants || []).forEach(stripTenantSecrets);
             try {
                 window.localStorage.setItem(STORAGE_KEY, JSON.stringify({
@@ -2741,6 +3065,7 @@
         }
 
         function loadState() {
+            if (window.__SCHEDI_HQ_DEMO) return;
             try {
                 var raw = window.localStorage.getItem(STORAGE_KEY);
                 if (!raw) return;
@@ -2915,7 +3240,57 @@
         }
         window.addEventListener('db_ready', attachCloudDbSync);
 
+        function bootSchediHqDemo() {
+            var tenants = [
+                { id: 'harbor-demo', name: 'Harbor Studio', slug: 'harbor-demo', industry: 'Salon', ownerName: 'Avery Cole', ownerEmail: 'demo@harbor.studio', ownerPhone: '(555) 010-1944', plan: 'pro', monthlyPrice: 49, subscriptionStatus: 'active', paymentGateways: { card: true, cashapp: true, later: true }, cashAppTag: '$HarborStudio', services: [{ id: 1, name: 'Cut & style', price: 65, icon: 'fa-scissors' }], createdAt: '2026-01-04' },
+                { id: 'northwind-demo', name: 'Northwind Clinic', slug: 'northwind-clinic', industry: 'Medical', ownerName: 'Riley North', ownerEmail: 'demo@northwind.clinic', ownerPhone: '(555) 010-2200', plan: 'starter', monthlyPrice: 29, subscriptionStatus: 'paused', paymentGateways: {}, services: [], createdAt: '2026-02-11' },
+                { id: 'lumen-demo', name: 'Lumen Studio', slug: 'lumen-studio', industry: 'Consulting', ownerName: 'Jules Lumen', ownerEmail: 'demo@lumen.studio', ownerPhone: '(555) 010-3300', plan: 'pro', monthlyPrice: 0, subscriptionStatus: 'active', complimentaryPro: true, billingExempt: true, paymentGateways: { later: true }, services: [{ id: 1, name: 'Consult', price: 0, icon: 'fa-comments' }], createdAt: '2026-03-02' }
+            ];
+            tenants.forEach(function (t) {
+                try { ensurePaymentGateways(t); } catch (errPay) {}
+                try { ensureDepositSettings(t); } catch (errDep) {}
+                try { ensureCancellationFeeSettings(t); } catch (errFee) {}
+                try { ensureAllowRecurringBookings(t); } catch (errRec) {}
+                try { ensureBlockedArrays(t); } catch (errBlock) {}
+                try { ensureTenantPlan(t); } catch (errPlan) {}
+            });
+            platformState.tenants = tenants;
+            platformState.activeTenantId = tenants[0].id;
+            platformState.isAgencyMasterLoggedIn = true;
+            platformState.isTenantOwnerLoggedIn = false;
+            platformState.ownerSelfSession = false;
+            platformState.appointmentCounts = { 'harbor-demo': 42, 'northwind-demo': 6, 'lumen-demo': 11 };
+            platformState.pageVisits = {
+                'harbor-demo': { views: 312, uniques: 198 },
+                'northwind-demo': { views: 28, uniques: 19 },
+                'lumen-demo': { views: 74, uniques: 51 }
+            };
+            platformState.pageVisitsDays = 30;
+            platformState.tenantHealth = {
+                'harbor-demo': { month: 18, unpaid: 3, lastBooking: '2026-10-15' },
+                'northwind-demo': { month: 0, unpaid: 0, lastBooking: '' },
+                'lumen-demo': { month: 4, unpaid: 0, lastBooking: '2026-10-12' }
+            };
+            window.__schediCloudTenantsLoaded = true;
+            var note = document.getElementById('hqDemoNote');
+            if (note) note.hidden = false;
+            try { applySchediTheme(localStorage.getItem('schedi.theme') === 'light' ? 'light' : 'dark'); } catch (errTheme) {}
+            try { updateMasterAuthUI(); } catch (errAuth) {}
+            switchPlatformMode('agency');
+        }
+        window.hqNewGo = function (id) {
+            var el = document.getElementById(id);
+            if (el && el.scrollIntoView) el.scrollIntoView({ block: 'start' });
+            document.querySelectorAll('[data-hq-go]').forEach(function (btn) {
+                btn.classList.toggle('is-on', btn.getAttribute('data-hq-go') === id);
+            });
+        };
+
         window.addEventListener('DOMContentLoaded', function () {
+            if (window.__SCHEDI_HQ_DEMO && typeof isAgencyHqRoute === 'function' && isAgencyHqRoute()) {
+                try { bootSchediHqDemo(); } catch (errDemo) { console.error(errDemo); }
+                return;
+            }
             loadState();
             if (!window.db && ensureAppointmentManageTokens(platformState.tenants)) saveState();
             if (platformState.agencyStripe) {
@@ -5545,6 +5920,56 @@
         }
 
 // SCHEDI_HQ_START
+        function hqVisitRow(tenant) {
+            var map = platformState.pageVisits;
+            if (!map || typeof map !== 'object') return null;
+            var row = map[tenant && (tenant.id || tenant.slug)];
+            if (!row) return { views: 0, uniques: 0 };
+            return { views: Number(row.views) || 0, uniques: Number(row.uniques) || 0 };
+        }
+        function hqVisitTotal() {
+            var map = platformState.pageVisits;
+            if (!map || typeof map !== 'object') return null;
+            return Object.keys(map).reduce(function (sum, id) {
+                var row = map[id] || {};
+                return sum + (Number(row.views) || 0);
+            }, 0);
+        }
+        function hqEnsurePageVisits() {
+            if (window.__SCHEDI_HQ_DEMO) return;
+            if (platformState.pageVisitsLoading || platformState.pageVisits) return;
+            var session = '';
+            try { session = schediAuthSession(); } catch (errSession) { session = ''; }
+            if (!session) return;
+            platformState.pageVisitsLoading = true;
+            fetch('https://schedi.app/api/page-visits', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'agency', session: session, days: 30 })
+            }).then(function (res) {
+                return res.json().then(function (data) { return { ok: res.ok, data: data || {} }; });
+            }).then(function (out) {
+                platformState.pageVisitsLoading = false;
+                var map = {};
+                if (out.ok && out.data && out.data.ok && Array.isArray(out.data.businesses)) {
+                    out.data.businesses.forEach(function (row) {
+                        if (row && row.tenantId) map[row.tenantId] = { views: Number(row.views) || 0, uniques: Number(row.uniques) || 0 };
+                    });
+                    platformState.pageVisits = map;
+                    platformState.pageVisitsDays = 30;
+                } else {
+                    platformState.pageVisitsError = (out.data && out.data.error) || 'unavailable';
+                    platformState.pageVisits = {};
+                }
+                try { renderAgencyDashboard(); } catch (errRender) {}
+            }).catch(function () {
+                platformState.pageVisitsLoading = false;
+                platformState.pageVisitsError = 'unavailable';
+                platformState.pageVisits = {};
+                try { renderAgencyDashboard(); } catch (errRender) {}
+            });
+        }
+
         function renderAgencyDashboard() {
             const loginBox = document.getElementById('agencyMasterLoginBox');
             const dashboard = document.getElementById('agencyMasterDashboard');
@@ -5580,6 +6005,12 @@
             if (stMRR) stMRR.textContent = `$${totalMRR.toFixed(2)}`;
             if (stBookings) stBookings.textContent = totalBookings === null ? '—' : totalBookings;
             if (stActivePages) stActivePages.textContent = activePages;
+            hqEnsurePageVisits();
+            var stVisits = document.getElementById('statPageVisits');
+            if (stVisits) {
+                var visitTotal = hqVisitTotal();
+                stVisits.textContent = visitTotal === null ? '—' : String(visitTotal);
+            }
 
             const grid = document.getElementById('agencyTenantGrid');
             if (!grid) return;
@@ -5660,7 +6091,7 @@
             });
             var cnt = document.getElementById('hqDirCount');
             if (cnt) cnt.textContent = rows.length + ' of ' + all.length + ' businesses';
-            if (!rows.length) { grid.innerHTML = '<div class="p-6 text-center text-xs text-slate-400 border border-dashed border-slate-700 rounded-xl">No businesses match these filters.</div>'; return; }
+            if (!rows.length) { grid.innerHTML = '<div class="hq-empty p-6 text-center text-xs text-slate-400 border border-dashed border-slate-700 rounded-xl">No businesses match these filters.</div>'; return; }
             var counts = platformState.appointmentCounts;
             function cell(v) { return v === null || v === undefined || v === '' ? '<span class="text-slate-500">—</span>' : esc(String(v)); }
             function view(t) {
@@ -5673,7 +6104,7 @@
                 var tagsHtml = hqTagsOf(t).map(function (g) { var c = hqTagColor(g); return '<span class="hq-tag" style="color:' + c + ';border-color:' + c + '66;background:' + c + '1a">' + esc(g) + '</span>'; }).join('');
                 return {
                     plan: plan, st: st, stBadge: stBadge, tagsHtml: tagsHtml, w: w,
-                    month: h ? h.month : null, unpaid: h ? h.unpaid : null, last: h && h.lastBooking ? h.lastBooking : (h ? 'none' : null),
+                    month: h ? h.month : null, unpaid: h ? h.unpaid : null, visits: (function () { var row = hqVisitRow(t); return row ? row.views : null; })(), last: h && h.lastBooking ? h.lastBooking : (h ? 'none' : null),
                     total: counts && typeof counts === 'object' ? (Number(counts[t.id]) || 0) : null,
                     actions: '<button type="button" onclick="loginAsTenantOwner(' + jsArg(t.id) + ')" class="px-3 py-1.5 rounded-lg bg-brand-500 hover:bg-brand-600 text-slate-950 font-bold text-xs">Manage</button>'
                         + '<a href="' + esc(getTenantPublicBookingUrl(t)) + '" target="_blank" rel="noopener" class="p-1.5 text-slate-400 hover:text-white" title="Open booking page"><i class="fa-solid fa-arrow-up-right-from-square text-sm"></i></a>'
@@ -5686,33 +6117,159 @@
             }
             var planLabel = function (pl) { return pl === 'pro' ? 'Pro' : (pl === 'starter' ? 'Starter' : 'Free'); };
             var warnHtml = function (w) { return w.length ? w.map(function (x) { return '<span class="hq-warn"><i class="fa-solid fa-triangle-exclamation mr-1"></i>' + esc(x) + '</span>'; }).join('') : '<span class="text-[11px] text-slate-500">No issues</span>'; };
-            var desktop = '<div class="hidden md:block overflow-x-auto"><table class="hq-table w-full text-xs"><thead><tr>'
-                + '<th>Business</th><th>Owner</th><th>Plan</th><th>Status</th><th title="Bookings this month">This month</th><th>Unpaid</th><th>Last booking</th><th>Health</th><th class="text-right">Actions</th></tr></thead><tbody>'
+            function clipLine(text, cls) {
+                var raw = text === null || text === undefined || text === '' ? '' : String(text);
+                var body = raw ? esc(raw) : '<span class="text-slate-500">—</span>';
+                return '<div class="hq-clip ' + cls + '"' + (raw ? ' title="' + esc(raw) + '"' : '') + '>' + body + '</div>';
+            }
+            function shortBookingDate(iso) {
+                var raw = iso === null || iso === undefined || iso === '' ? '' : String(iso);
+                if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw ? esc(raw) : '<span class="text-slate-500">—</span>';
+                var mon = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][Number(raw.slice(5, 7)) - 1];
+                return mon ? esc(mon + ' ' + Number(raw.slice(8, 10))) : esc(raw);
+            }
+            var compactDates = document.documentElement.classList.contains('schedi-newhq');
+            function hqMoreMenu(t) {
+                var id = jsArg(t.id);
+                var pause = t.subscriptionStatus === 'active';
+                return '<details class="hq-more"><summary aria-label="More actions for ' + esc(t.name || 'business') + '">⋯</summary><div class="hq-more-menu" role="menu">'
+                    + '<a role="menuitem" href="' + esc(getTenantPublicBookingUrl(t)) + '" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square text-xs" aria-hidden="true"></i>Open booking page</a>'
+                    + '<button type="button" role="menuitem" onclick="hqEditTags(' + id + ')"><i class="fa-solid fa-tags text-xs" aria-hidden="true"></i>Edit tags</button>'
+                    + '<button type="button" role="menuitem" onclick="openEditTenantModal(' + id + ')"><i class="fa-solid fa-pen-to-square text-xs" aria-hidden="true"></i>Edit profile</button>'
+                    + '<button type="button" role="menuitem" onclick="resendProvisionWelcome(' + id + ')"><i class="fa-solid fa-envelope text-xs" aria-hidden="true"></i>Email welcome</button>'
+                    + '<button type="button" role="menuitem" onclick="toggleSubscriptionPause(' + id + ')"><i class="fa-solid ' + (pause ? 'fa-pause' : 'fa-play') + ' text-xs" aria-hidden="true"></i>' + (pause ? 'Pause business' : 'Resume business') + '</button>'
+                    + '<button type="button" role="menuitem" class="hq-more-danger" onclick="deleteAgencyTenant(' + id + ')"><i class="fa-solid fa-trash-can text-xs" aria-hidden="true"></i>Delete business</button>'
+                    + '</div></details>';
+            }
+            var desktop = '<div class="hq-dir-scroll hidden md:block overflow-x-auto"><table class="hq-table w-full text-xs"><thead><tr>'
+                + '<th class="hq-col-biz">Business</th><th class="hq-col-owner">Owner</th><th class="hq-col-plan">Plan</th><th class="hq-col-status">Status</th><th class="hq-col-visits" title="Booking page views, last 30 days">Visits</th><th class="hq-col-extra" title="Bookings this month">This month</th><th class="hq-col-extra">Unpaid</th><th class="hq-col-last">Last booking</th><th class="hq-col-health">Health</th><th class="hq-col-actions text-right">Actions</th></tr></thead><tbody>'
                 + rows.map(function (t) {
                     var v = view(t);
-                    return '<tr><td><div class="font-bold text-white">' + esc(t.name) + '</div><div class="font-mono text-[11px] text-slate-400">/' + esc(t.slug || t.id) + '</div>' + (v.tagsHtml ? '<div class="mt-1 flex flex-wrap gap-1">' + v.tagsHtml + '</div>' : '') + '</td>'
-                        + '<td><div class="text-slate-200">' + cell(t.ownerName) + '</div><div class="font-mono text-[11px] text-brand-400 break-all">' + cell(t.ownerEmail) + '</div></td>'
-                        + '<td><div class="font-semibold text-white">' + planLabel(v.plan) + '</div><div class="text-[11px] text-slate-400">' + esc(schediBillingLabel(t)) + '</div></td>'
-                        + '<td>' + v.stBadge + '</td><td class="font-bold text-white">' + cell(v.month) + '</td>'
-                        + '<td class="' + (v.unpaid ? 'font-bold text-amber-400' : 'text-white') + '">' + cell(v.unpaid) + '</td><td class="text-slate-300 whitespace-nowrap">' + cell(v.last) + '</td>'
-                        + '<td><div class="flex flex-col gap-1">' + warnHtml(v.w) + '</div></td>'
-                        + '<td><div class="flex items-center justify-end gap-0.5">' + v.actions + '</div></td></tr>';
+                    var bill = schediBillingLabel(t);
+                    return '<tr><td class="hq-col-biz">' + clipLine(t.name, 'font-bold text-white') + clipLine('/' + (t.slug || t.id), 'font-mono text-[11px] text-slate-400') + (v.tagsHtml ? '<div class="mt-1 flex flex-wrap gap-1">' + v.tagsHtml + '</div>' : '') + '</td>'
+                        + '<td class="hq-col-owner">' + clipLine(t.ownerName, 'text-slate-200') + clipLine(t.ownerEmail, 'font-mono text-[11px] text-brand-400 break-all') + '</td>'
+                        + '<td class="hq-col-plan"><div class="font-semibold text-white">' + planLabel(v.plan) + '</div>' + clipLine(bill, 'text-[11px] text-slate-400' + (isComplimentaryPro(t) ? ' hq-comp' : ' hq-plan-detail')) + '</td>'
+                        + '<td class="hq-col-status">' + v.stBadge + '</td><td class="hq-col-visits font-bold text-white" title="Page views, last 30 days">' + cell(v.visits) + '</td><td class="hq-col-extra font-bold text-white">' + cell(v.month) + '</td>'
+                        + '<td class="hq-col-extra ' + (v.unpaid ? 'font-bold text-amber-400' : 'text-white') + '">' + cell(v.unpaid) + '</td><td class="hq-col-last text-slate-300 whitespace-nowrap"' + (v.last ? ' title="' + esc(String(v.last)) + '"' : '') + '>' + (compactDates ? shortBookingDate(v.last) : cell(v.last)) + '</td>'
+                        + '<td class="hq-col-health"><div class="flex flex-col gap-1">' + warnHtml(v.w) + '</div></td>'
+                        + '<td class="hq-col-actions">' + (compactDates
+                            ? '<div class="flex items-center justify-end gap-1.5"><button type="button" onclick="loginAsTenantOwner(' + jsArg(t.id) + ')" class="px-3 py-1.5 rounded-lg bg-brand-500 hover:bg-brand-600 text-slate-950 font-bold text-xs">Manage</button>' + hqMoreMenu(t) + '</div>'
+                            : '<div class="flex items-center justify-end gap-0.5">' + v.actions + '</div>') + '</td></tr>';
                 }).join('') + '</tbody></table></div>';
             var mobile = '<div class="md:hidden space-y-3">' + rows.map(function (t) {
                 var v = view(t);
+                var lastRaw = v.last === null || v.last === undefined || v.last === '' ? '' : String(v.last);
+                var lastHtml = compactDates ? shortBookingDate(lastRaw) : cell(v.last);
                 return '<div class="glass-card rounded-2xl p-4 space-y-3 border border-slate-800">'
-                    + '<div class="flex items-start justify-between gap-2"><div class="min-w-0"><div class="font-extrabold text-white text-sm">' + esc(t.name) + '</div><div class="font-mono text-[11px] text-slate-400">/' + esc(t.slug || t.id) + '</div></div>' + v.stBadge + '</div>'
+                    + '<div class="flex items-start justify-between gap-2"><div class="min-w-0"><div class="font-extrabold text-white text-sm">' + esc(t.name) + '</div><div class="font-mono text-[11px] text-slate-400">/' + esc(t.slug || t.id) + '</div><div class="text-[11px] text-slate-400">Page visits · 30 days <span class="font-bold text-white">' + cell(v.visits) + '</span></div>' + (isComplimentaryPro(t) ? '<span class="hq-comp">Complimentary Pro</span>' : '') + '</div>' + v.stBadge + '</div>'
                     + (v.tagsHtml ? '<div class="flex flex-wrap gap-1">' + v.tagsHtml + '</div>' : '')
                     + '<div class="text-[11px] text-slate-300 break-all">' + cell(t.ownerName) + ' · <span class="font-mono text-brand-400">' + cell(t.ownerEmail) + '</span></div>'
                     + '<div class="grid grid-cols-4 gap-2 text-center">'
                     + '<div class="hq-stat"><div>' + planLabel(v.plan) + '</div><span>Plan</span></div>'
                     + '<div class="hq-stat"><div>' + cell(v.month) + '</div><span>This month</span></div>'
                     + '<div class="hq-stat"><div class="' + (v.unpaid ? 'text-amber-400' : '') + '">' + cell(v.unpaid) + '</div><span>Unpaid</span></div>'
-                    + '<div class="hq-stat"><div class="text-[11px]">' + cell(v.last) + '</div><span>Last booking</span></div></div>'
+                    + '<div class="hq-stat"><div class="text-[11px]"' + (lastRaw ? ' title="' + esc(lastRaw) + '"' : '') + '>' + lastHtml + '</div><span>Last booking</span></div></div>'
                     + '<div class="flex flex-wrap gap-1">' + warnHtml(v.w) + '</div>'
                     + '<div class="flex items-center justify-between gap-1 pt-2 border-t border-slate-800">' + v.actions + '</div></div>';
             }).join('') + '</div>';
             grid.innerHTML = desktop + mobile;
+        }
+
+        window.placeHqMoreMenu = function (details) {
+            if (!details || !details.classList || !details.classList.contains('hq-more')) return;
+            var menu = details.querySelector('.hq-more-menu');
+            if (!menu) return;
+            if (!details.open) {
+                menu.style.visibility = 'hidden';
+                return;
+            }
+            document.querySelectorAll('details.hq-more[open]').forEach(function (el) {
+                if (el !== details) el.open = false;
+            });
+            var summary = details.querySelector('summary');
+            if (!summary) return;
+            menu.style.visibility = 'hidden';
+            menu.style.position = 'fixed';
+            menu.style.right = 'auto';
+            menu.style.bottom = 'auto';
+            menu.style.maxHeight = '';
+            menu.style.zIndex = '80';
+            var rect = summary.getBoundingClientRect();
+            var width = Math.max(menu.offsetWidth || 0, 188);
+            var sidebar = window.innerWidth > 800 ? 244 : 0;
+            var topLimit = 72;
+            var bottomGap = window.innerWidth > 800 ? 12 : 80;
+            var leftLimit = sidebar + 8;
+            var rightLimit = window.innerWidth - 8;
+            var bottomLimit = window.innerHeight - bottomGap;
+            var left = rect.right - width;
+            if (left < leftLimit) left = rect.left;
+            if (left + width > rightLimit) left = Math.max(leftLimit, rightLimit - width);
+            var natural = menu.scrollHeight || menu.offsetHeight || 240;
+            var spaceBelow = bottomLimit - (rect.bottom + 6);
+            var spaceAbove = rect.top - 6 - topLimit;
+            var openUp = spaceBelow < natural && spaceAbove > spaceBelow;
+            var room = Math.max(96, openUp ? spaceAbove : spaceBelow);
+            menu.style.maxHeight = Math.min(320, Math.floor(room)) + 'px';
+            var height = menu.offsetHeight || Math.min(natural, room);
+            var top = openUp ? rect.top - height - 6 : rect.bottom + 6;
+            var buttonVisible = rect.bottom > topLimit && rect.top < bottomLimit;
+            if (buttonVisible) {
+                if (top < topLimit) top = topLimit;
+                if (top + height > bottomLimit) top = Math.max(topLimit, bottomLimit - height);
+            }
+            menu.style.left = Math.round(left) + 'px';
+            menu.style.top = Math.round(top) + 'px';
+            menu.style.visibility = 'visible';
+        };
+
+        if (!window.__hqMoreMenuBound) {
+            window.__hqMoreMenuBound = true;
+            document.addEventListener('click', function (event) {
+                if (!document.documentElement.classList.contains('schedi-newhq')) return;
+                var summaryHost = event.target;
+                if (summaryHost && summaryHost.nodeType === 3) summaryHost = summaryHost.parentElement;
+                var summaryNode = summaryHost && summaryHost.closest ? summaryHost.closest('details.hq-more > summary') : null;
+                if (!summaryNode) return;
+                event.preventDefault();
+                var details = summaryNode.parentElement;
+                if (!details) return;
+                details.open = !details.open;
+                window.placeHqMoreMenu(details);
+            }, true);
+            document.addEventListener('toggle', function (event) {
+                var details = event.target;
+                if (!details || !details.classList || !details.classList.contains('hq-more')) return;
+                window.placeHqMoreMenu(details);
+            }, true);
+            document.addEventListener('click', function (event) {
+                if (!document.documentElement.classList.contains('schedi-newhq')) return;
+                var node = event.target && event.target.closest ? event.target : null;
+                if (!node && event.target && event.target.parentElement) node = event.target.parentElement;
+                if (!node || !node.closest) return;
+                var item = node.closest('.hq-more-menu [role="menuitem"]');
+                if (item) {
+                    var host = item.closest('details.hq-more');
+                    if (host) host.open = false;
+                }
+                document.querySelectorAll('details.hq-more[open]').forEach(function (el) {
+                    if (!el.contains(node)) el.open = false;
+                });
+            });
+            document.addEventListener('keydown', function (event) {
+                if (!document.documentElement.classList.contains('schedi-newhq') || event.key !== 'Escape') return;
+                document.querySelectorAll('details.hq-more[open]').forEach(function (el) { el.open = false; });
+            });
+            window.addEventListener('resize', function () {
+                if (!document.documentElement.classList.contains('schedi-newhq')) return;
+                document.querySelectorAll('details.hq-more[open]').forEach(function (el) { window.placeHqMoreMenu(el); });
+            });
+            window.addEventListener('scroll', function (event) {
+                if (!document.documentElement.classList.contains('schedi-newhq')) return;
+                var target = event.target;
+                if (target && target.closest && target.closest('.hq-more-menu')) return;
+                document.querySelectorAll('details.hq-more[open]').forEach(function (el) { el.open = false; });
+            }, true);
         }
 
         window.hqEditTags = function (tenantId) {
@@ -6660,7 +7217,49 @@
             showToast('Stripe billing is connected on the server. Keys are not saved in the browser.', 'info');
         }
 
+        function hqManagedPortalUrl(tenant) {
+            var demo = window.__SCHEDI_HQ_DEMO === true;
+            var framed = false;
+            try { framed = document.documentElement.classList.contains('schedi-newhq'); } catch (errFrame) {}
+            if (!demo && !framed) return '';
+            var slug = '';
+            var id = '';
+            try {
+                slug = String((tenant && (tenant.slug || tenant.id)) || '').trim();
+                id = String((tenant && tenant.id) || '').trim();
+            } catch (errId) {}
+            var params = new URLSearchParams();
+            var keep = ['booking', 'date', 'biz', 'tenant', 'slug', 'from', 'appt', 'ref'];
+            try {
+                var current = new URLSearchParams(window.location.search || '');
+                keep.forEach(function (key) {
+                    if (current.has(key)) params.set(key, current.get(key) || '');
+                });
+            } catch (errCur) {}
+            if (slug) params.set('biz', slug);
+            if (id) params.set('tenant', id);
+            if (demo) {
+                params.delete('newhq');
+                params.set('demo', '1');
+                var demoQs = params.toString();
+                return '/portal-preview' + (demoQs ? '?' + demoQs : '');
+            }
+            params.set('newdash', '1');
+            params.delete('demo');
+            return '/?' + params.toString();
+        }
+
         window.loginAsTenantOwner = function(tenantId) {
+            var managedTenant = null;
+            try {
+                managedTenant = (platformState.tenants || []).find(function (row) { return row && row.id === tenantId; }) || null;
+            } catch (errFind) { managedTenant = null; }
+            var managedUrl = '';
+            try { if (managedTenant) managedUrl = hqManagedPortalUrl(managedTenant); } catch (errUrl) { managedUrl = ''; }
+            if (managedUrl) {
+                try { window.location.assign(managedUrl); } catch (errGo) {}
+                return;
+            }
             platformState.activeTenantId = tenantId;
             platformState.isTenantOwnerLoggedIn = true;
             platformState.ownerSelfSession = false;

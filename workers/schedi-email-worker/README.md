@@ -242,6 +242,53 @@ Checkout rules (`checkoutEligibility`):
   subdomain (CNAME, DNS-only), create the webhook to the URL above, then
   `XDG_CACHE_HOME=/tmp/wrangler-cache npx -y wrangler@3.114.1 secret put RESEND_WEBHOOK_SECRET`.
 
+## Page visits (booking pages)
+
+`POST /api/page-visits` counts one view of a public booking page. `GET /api/page-visits?days=7|30|90` (or `POST` with `{ action: "read", session, days }`) returns that owner's views, approximate uniques, daily series, locations, sources, devices, and browsers. `POST { action: "agency", days }` or `GET ?scope=agency` returns every business. Agency auth matches `/api/ops-snapshot`: an agency session, or `Authorization: Bearer <OPS_SNAPSHOT_TOKEN>`. An owner session on the agency read is 403. There is no new secret.
+
+The beacon sends only the business id, `src`, `utm_source`, and the referrer hostname. It sends no cookie of its own. Bots (user-agent heuristics, and `request.cf.botManagement` when Cloudflare provides it), owner and agency sessions, `?demo=1`, and preview mode are skipped.
+
+### What is stored
+
+Workers Analytics Engine dataset `schedi_page_visits`, one point per counted view:
+
+| Field | Value |
+| --- | --- |
+| index | business id |
+| blobs | UTC day, country, region, city, device, browser, source bucket |
+| doubles | 1 view, 1 if this is the first time that visitor was seen today else 0 |
+
+Source buckets are Instagram, Facebook, Google, TikTok, direct, QR (`?src=qr` or `utm_source`), and other. The raw referrer, user agent, and IP are not stored.
+
+Approximate uniques use a daily salt in the existing `AUTH_KV` (`visitSalt:YYYY-MM-DD`, 48 hours). The IP is HMAC'd with that salt and kept only as `visitSeen:{business}:{day}:{hash}` for 36 hours, then the key expires. The hash is not written to Analytics Engine. After the salt expires it cannot be rebuilt. Two visits in the same instant can both be counted as new. That under-counts uniques, it does not identify anyone.
+
+Analytics Engine keeps points for three months, which covers the 7, 30, and 90 day reports. Older days fall off.
+
+`AUTH_KV` also caches whether a business id exists (`visitTenantOk:{id}`) so the beacon does not read Firestore on every view. That cache is not a visit record.
+
+### Bindings Axel adds by deploying this worker
+
+No secret and no new KV namespace. `npx wrangler deploy -c wrangler.toml` from this directory creates:
+
+| Binding | Wrangler | Purpose |
+| --- | --- | --- |
+| `PAGE_VISITS` | `[[analytics_engine_datasets]]` dataset `schedi_page_visits` | write each view |
+| `ANALYTICS_SQL` | `[analytics]` | read the dataset. Needs Wrangler 4.145 or newer |
+| `RL_PAGE_VISITS` | rate limit namespace `41007`, 600 per minute per key | beacon cap. The worker also enforces 120 per business per minute in the isolate |
+| route | `schedi.app/api/page-visits` | otherwise schedi-web answers `/api/*` with 404 |
+
+Until those bindings exist, the beacon answers `{ ok: true, skipped: "unconfigured" }` and the dashboard read answers 503 `visits_unconfigured`. The public page still loads.
+
+### Cost
+
+Workers Paid includes 10 million Analytics Engine points written per month and 1 million read queries, then $0.25 per extra million writes and $1 per extra million reads. Cloudflare's pricing page (updated April 23, 2026) says this is not billed yet. A dashboard load runs five read queries. Booking-page volume for Schedi stays inside the included amounts.
+
+The seen-set uses the existing `AUTH_KV`: about one read and, for a new visitor, one write per counted view. Paid KV is $0.50 per million reads and $5 per million writes. One hundred thousand visits in a month is well under a dollar.
+
+### Booking and profile allow lists
+
+Visit fields are not written onto bookings or tenant docs, so `BOOKING_KEYS` and the private-tenant key list are unchanged. The beacon only accepts `tenantId`, `src`, `utmSource`, `refHost`, `preview`, and `demo`. Anything else in the JSON is ignored and not stored.
+
 ## Deploying from this repo
 
 Run from this directory and name the config explicitly so Wrangler never picks up the repo-root `wrangler.jsonc` (that one is `schedi-web`):

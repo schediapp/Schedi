@@ -34,6 +34,7 @@ export function renderRobots(): string {
     "User-agent: *",
     "Allow: /",
     "Disallow: /portal",
+    "Disallow: /portal-preview",
     "Disallow: /admin",
     "Disallow: /hq",
     "Disallow: /agency",
