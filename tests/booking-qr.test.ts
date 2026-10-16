@@ -40,7 +40,13 @@ describe("booking QR code", () => {
     expect(html).toContain('id="schediQrModal"');
     expect(html).toContain("Upload QR code");
     expect(html).toContain("Generate one from my booking link");
-    expect(html).toContain("Replace QR code");
+    expect(html).toContain("Change QR code");
+    expect(html).toContain("Confirm replacement");
+    expect(html).toContain('id="schediQrChange"');
+    const qrActions = html.indexOf('id="schediQrDownload"');
+    const qrRow = html.slice(qrActions, qrActions + 700);
+    expect(qrRow.indexOf("Download")).toBeLessThan(qrRow.indexOf("Print"));
+    expect(qrRow.indexOf("Print")).toBeLessThan(qrRow.indexOf("Change QR code"));
     expect(html).toContain("Not saved in this demo. The preview stays on this screen only.");
     expect(html).toContain("QR upload is not turned on yet. The preview stays on this screen only.");
     expect(html).toContain("purpose: 'qr'");
