@@ -580,7 +580,8 @@
         html.schedi-newhq .hq-table th.hq-col-biz,
         html.schedi-newhq .hq-table td.hq-col-biz { text-align: left; padding-left: 0; }
         html.schedi-newhq .hq-table tbody tr:hover { background: color-mix(in srgb, var(--hq-brand) 8%, transparent); }
-        html.schedi-newhq #agencyDirectory { padding: 20px 16px; min-height: calc(100vh - 80px); }
+        html.schedi-newhq .hq-dir-slot { min-height: calc(100vh - 80px); }
+        html.schedi-newhq #agencyDirectory { padding: 20px 16px; }
         html.schedi-newhq .hq-table .hq-clip {
             display: block; width: max-content; max-width: none;
             overflow: visible; text-overflow: clip; white-space: nowrap;
@@ -693,7 +694,7 @@
             }
             html.schedi-newhq #hqNewTabs button.is-on { color: var(--hq-brand); }
             html.schedi-newhq #agencyHqSection { padding: 76px 16px 96px; }
-            html.schedi-newhq #agencyDirectory { min-height: 0; }
+            html.schedi-newhq .hq-dir-slot { min-height: 0; }
         }
     </style>
 </head>
@@ -949,6 +950,7 @@
                 </div>
 
                 <!-- Client Sites Roster -->
+                <div class="hq-dir-slot">
                 <div id="agencyDirectory" class="glass-card rounded-2xl p-6 space-y-5">
                     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
                         <div>
@@ -987,6 +989,7 @@
                     <div id="agencyTenantGrid">
                         <!-- Directory injected via JS -->
                     </div>
+                </div>
                 </div>
 
             </div>
