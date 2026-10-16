@@ -12,7 +12,8 @@
             var q = new URLSearchParams(location.search || '');
             var flag = q.get('newhq');
             hq = flag === '1' || flag === 'true' || flag === 'on';
-            demo = q.get('demo') === '1';
+            var host = String(location.hostname || '').toLowerCase().replace(/\.$/, '');
+            demo = q.get('demo') === '1' && host !== 'schedi.app' && host !== 'www.schedi.app';
         } catch (errFlag) {}
         if (hq) document.documentElement.classList.add('schedi-newhq');
         if (!demo) return;
@@ -498,7 +499,7 @@
             background: var(--hq-panel);
             border-bottom: 1px solid var(--hq-line);
         }
-        html.schedi-newhq #agencyHqSection { min-height: 100vh; padding: 84px 28px 48px 268px; }
+        html.schedi-newhq #agencyHqSection { min-height: 100vh; padding: 84px 28px 48px 268px; animation: none; transform: none; }
         html.schedi-newhq .hq-brand { font-weight: 800; letter-spacing: -0.03em; font-size: 1.15rem; color: var(--hq-text); }
         html.schedi-newhq .hq-kicker { margin: 14px 8px 6px; font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--hq-brand); }
         html.schedi-newhq .hq-nav-btn {

@@ -631,7 +631,11 @@ async function serveSpa(
 
 function hqDemoRequest(request: Request): boolean {
   try {
-    return new URL(request.url).searchParams.get("demo") === "1";
+    const url = new URL(request.url);
+    if (url.searchParams.get("demo") !== "1") return false;
+    const host = url.hostname.toLowerCase().replace(/\.$/, "");
+    // Production keeps the agency session gate. The assets-only preview has no KV.
+    return host !== "schedi.app" && host !== "www.schedi.app";
   } catch {
     return false;
   }

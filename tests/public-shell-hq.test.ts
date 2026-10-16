@@ -143,6 +143,8 @@ describe("HQ route", () => {
     expect(html).toContain("Agency HQ Master Login");
     const plain = await handleRequest(new Request("https://schedi.app/hq?demo=0"), env(hqHtml), ctx());
     assertNoHq(await plain.text(), "demo off");
+    const production = await handleRequest(new Request("https://schedi.app/hq?demo=1"), env(hqHtml), ctx());
+    assertNoHq(await production.text(), "production demo");
   });
 
   it("blocks live calls in HQ demo and keeps the new frame off unless the query asks for it", async () => {
@@ -152,7 +154,7 @@ describe("HQ route", () => {
     const classes: string[] = [];
     const context = {
       window: {} as Record<string, unknown>,
-      location: { search: "?newhq=1&demo=1" },
+      location: { search: "?newhq=1&demo=1", hostname: "schedi-dashboard-preview.axl199.workers.dev" },
       URLSearchParams,
       document: { documentElement: { classList: { add(name: string) { classes.push(name); } } } },
       navigator: { sendBeacon(url: string) { calls.push("BEACON " + url); return true; } },
@@ -178,7 +180,7 @@ describe("HQ route", () => {
     const off: string[] = [];
     const quiet = {
       window: {} as Record<string, unknown>,
-      location: { search: "?demo=1" },
+      location: { search: "?demo=1", hostname: "127.0.0.1" },
       URLSearchParams,
       document: { documentElement: { classList: { add(name: string) { off.push(name); } } } },
       navigator: {},
@@ -189,6 +191,23 @@ describe("HQ route", () => {
     runInNewContext(boot.replace(/^<script>/, "").replace(/<\/script>$/, ""), quiet, { filename: "hq-demo-off.js" });
     expect(off).toEqual(["schedi-hq-demo"]);
     expect(quiet.window.__SCHEDI_HQ_DEMO).toBe(true);
+
+    const live: string[] = [];
+    const production = {
+      window: {} as Record<string, unknown>,
+      location: { search: "?newhq=1&demo=1", hostname: "schedi.app" },
+      URLSearchParams,
+      document: { documentElement: { classList: { add(name: string) { live.push(name); } } } },
+      navigator: {},
+      Response,
+      Promise,
+      fetch: async () => new Response("upstream"),
+    };
+    production.window = production as unknown as Record<string, unknown>;
+    runInNewContext(boot.replace(/^<script>/, "").replace(/<\/script>$/, ""), production, { filename: "hq-demo-live.js" });
+    expect(live).toEqual(["schedi-newhq"]);
+    expect(production.window.__SCHEDI_HQ_DEMO).toBeUndefined();
+    expect(production.window.fetch).toBe(production.fetch);
   });
 
   it("does not serve the HQ document as a static HTML file", async () => {
