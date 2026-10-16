@@ -48,7 +48,7 @@ import {
   listPrivateTenants,
   patchPrivateTenant,
 } from './tenant-private.js';
-import { handleSquareHttp } from './square.js';
+import { handleSquareHttp, runSquareReconcile } from './square.js';
 
 const ALLOWED_ORIGINS = new Set([
   'https://schedi.app',
@@ -3086,6 +3086,11 @@ export default {
       runSignupReminders(env, { firebaseAnonymousToken, listAllTenants, patchTenantFields, sendResend, onboardingFrom: ONBOARDING_FROM })
         .then((r) => { if (r.sent || r.errors) console.log('signup reminders', JSON.stringify({ sent: r.sent, errors: r.errors })); })
         .catch((err) => console.error('signup reminders failed', err && err.message ? err.message : err))
+    );
+    ctx.waitUntil(
+      runSquareReconcile(env)
+        .then((r) => { if (r && (r.checked || r.errors)) console.log('square reconcile', JSON.stringify(r)); })
+        .catch((err) => console.error('square reconcile failed', err && err.message ? err.message : err))
     );
   },
 };
