@@ -2471,6 +2471,36 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
     html.schedi-light #tenantPortalSection.schedi-newdash .sd-report-avg { color: #0f172a; }
 
 </style>
+<style id="schediNewBookManage">
+body.schedi-newbook { background: #06080d; color: #e7edf5; }
+html.schedi-light body.schedi-newbook { background: #f4f7fb; color: #0f172a; }
+body.schedi-newbook .schedi-manage-card {
+    background: #121826;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    border-radius: 20px;
+    box-shadow: none;
+    backdrop-filter: none;
+    color: #e7edf5;
+}
+html.schedi-light body.schedi-newbook .schedi-manage-card {
+    background: #ffffff;
+    border-color: #d7dee8;
+    color: #0f172a;
+}
+body.schedi-newbook .schedi-manage-card h2 { letter-spacing: -0.03em; font-weight: 800; }
+body.schedi-newbook .schedi-manage-card .schedi-kicker {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #34d399;
+}
+html.schedi-light body.schedi-newbook .schedi-manage-card .schedi-kicker { color: #047857; }
+body.schedi-newbook .schedi-manage-card input,
+body.schedi-newbook .schedi-manage-card button { min-height: 44px; }
+body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; border-radius: 12px; }
+</style>
 <script>
 (function () {
     var path = '';
@@ -3222,12 +3252,25 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                             </div>
                         </div>
 
+                        <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-2">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-3">
+                                    <i class="fa-solid fa-square text-slate-300 text-lg"></i>
+                                    <div>
+                                        <div class="font-bold text-white">Square</div>
+                                        <div id="tenantPaySquareNote" class="text-[11px] text-slate-400">Off. Square stays hidden on the booking page until Schedi turns it on. No Square charge is taken here.</div>
+                                    </div>
+                                </div>
+                                <input type="checkbox" id="tenantPaySquareCheck" class="w-4 h-4 accent-brand-500 rounded cursor-pointer" disabled>
+                            </div>
+                        </div>
+
                         <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center justify-between">
                             <div class="flex items-center space-x-3">
                                 <i class="fa-solid fa-handshake text-amber-400 text-lg"></i>
                                 <div>
                                     <div class="font-bold text-white">Pay at Appointment</div>
-                                    <div class="text-[11px] text-slate-400">Allow in-person payment on arrival</div>
+                                    <div class="text-[11px] text-slate-400">Allow in-person payment on arrival. The public page still says Pay at Appt.</div>
                                 </div>
                             </div>
                             <input type="checkbox" id="tenantPayLaterCheck" class="w-4 h-4 accent-brand-500 rounded cursor-pointer">
@@ -3250,6 +3293,15 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                             <div>
                                 <label id="tenantDepositValueLabel" class="block text-[11px] text-slate-400 mb-1" for="tenantDepositValue">Percent</label>
                                 <input type="number" id="tenantDepositValue" min="0" max="100" step="1" value="0" class="w-full px-3 py-2 rounded-lg glass-input font-mono">
+                            </div>
+                            <div id="tenantDepositMethods" class="space-y-2 pt-2 border-t border-slate-800">
+                                <div class="text-[11px] font-bold text-slate-300">Accept this deposit on</div>
+                                <p class="text-[11px] text-slate-500">Checked methods collect the deposit. Unchecked methods stay available without one. If you have not saved this yet, it starts as the methods you already turned on. Pay at Appt does not take a deposit.</p>
+                                <label class="flex items-center gap-2 text-[11px] text-slate-300"><input type="checkbox" id="tenantDepositMethodCard" class="w-4 h-4 accent-brand-500"> Card</label>
+                                <label class="flex items-center gap-2 text-[11px] text-slate-300"><input type="checkbox" id="tenantDepositMethodCashapp" class="w-4 h-4 accent-brand-500"> Cash App</label>
+                                <label class="flex items-center gap-2 text-[11px] text-slate-300"><input type="checkbox" id="tenantDepositMethodZelle" class="w-4 h-4 accent-brand-500"> Zelle</label>
+                                <label class="flex items-center gap-2 text-[11px] text-slate-300"><input type="checkbox" id="tenantDepositMethodVenmo" class="w-4 h-4 accent-brand-500"> Venmo</label>
+                                <label class="flex items-center gap-2 text-[11px] text-slate-300"><input type="checkbox" id="tenantDepositMethodPaypal" class="w-4 h-4 accent-brand-500"> PayPal</label>
                             </div>
                         </div>
 
@@ -5126,6 +5178,15 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
         window.addEventListener('DOMContentLoaded', function () {
             if (window.__SCHEDI_DEMO) {
                 try { bootSchediDemoPortal(); } catch (errDemo) { console.error(errDemo); }
+                try {
+                    var demoManage = getManageRouteFromPath();
+                    if (demoManage && demoManage.token) {
+                        var demoTenant = findTenantBySlug(demoManage.slug);
+                        var demoAppt = demoTenant && (demoTenant.appointments || []).find(function (a) { return a && a.id === 'HB-1006'; });
+                        if (demoAppt && !demoAppt.manageToken) demoAppt.manageToken = demoManage.token;
+                    }
+                    if (getPublicSlugFromPath() || demoManage) bootPublicOrAgency({ allowNotFound: true });
+                } catch (errDemoPublic) { console.error(errDemoPublic); }
                 return;
             }
             loadState();
@@ -5498,14 +5559,30 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
             return '$' + (Number.isInteger(p) ? String(p) : p.toFixed(2));
         }
 
+        var DEPOSIT_METHOD_KEYS = ['card', 'cashapp', 'zelle', 'venmo', 'paypal'];
+
+        function depositMethodMapFor(tenant) {
+            var stored = tenant && tenant.deposit && tenant.deposit.methods;
+            var explicit = !!(stored && typeof stored === 'object' && !Array.isArray(stored));
+            var pg = (tenant && tenant.paymentGateways) || {};
+            var out = {};
+            DEPOSIT_METHOD_KEYS.forEach(function (key) {
+                var on = pg[key] === true;
+                if (explicit && typeof stored[key] === 'boolean') out[key] = stored[key] === true && on;
+                else out[key] = on;
+            });
+            return out;
+        }
+
         function readDepositSettings(tenant) {
             var d = tenant && tenant.deposit;
-            if (!d || typeof d !== 'object') return { enabled: false, type: 'percent', percent: 0, amount: 0 };
+            if (!d || typeof d !== 'object') d = {};
             return {
                 enabled: !!d.enabled,
                 type: d.type === 'fixed' ? 'fixed' : 'percent',
                 percent: Math.min(100, Math.max(0, Number(d.percent) || 0)),
-                amount: Math.max(0, roundMoney(d.amount))
+                amount: Math.max(0, roundMoney(d.amount)),
+                methods: depositMethodMapFor(tenant)
             };
         }
 
@@ -6950,7 +7027,13 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
         }
 
         function managePageFrame(inner) {
-            return '<div class="max-w-lg mx-auto my-10 glass-card rounded-2xl p-6 sm:p-8 space-y-4 border border-slate-800 bg-slate-950/80">' + inner + '</div>';
+            var book = schediNewBookOn();
+            document.body.classList.toggle('schedi-newbook', book);
+            var card = book ? ' schedi-manage-card' : '';
+            var framed = book
+                ? inner.replace('text-[10px] uppercase tracking-widest text-slate-500 font-semibold', 'schedi-kicker')
+                : inner;
+            return '<div class="max-w-lg mx-auto my-10 glass-card rounded-2xl p-6 sm:p-8 space-y-4 border border-slate-800 bg-slate-950/80' + card + '">' + framed + '</div>';
         }
 
         function renderManageUnavailable(main) {
@@ -9198,6 +9281,15 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
         };
         function schediNewDashOn() {
             return window.__SCHEDI_NEWDASH === true;
+        }
+
+        function schediNewBookOn() {
+            try {
+                var flag = new URLSearchParams(window.location.search || '').get('newbook');
+                return flag === '1' || flag === 'true' || flag === 'on';
+            } catch (errBook) {
+                return false;
+            }
         }
 
         function bookingPaymentState(bookingOrStatus) {
@@ -13867,6 +13959,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
         }
 
 
+        var SCHEDI_SQUARE_PUBLIC_ENABLED = false;
+
         function ensurePaymentGateways(tenant) {
             if (!tenant) return tenant;
             if (!tenant.paymentGateways || typeof tenant.paymentGateways !== 'object') {
@@ -13878,6 +13972,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
             if (typeof pg.zelle !== 'boolean') pg.zelle = false;
             if (typeof pg.venmo !== 'boolean') pg.venmo = false;
             if (typeof pg.paypal !== 'boolean') pg.paypal = false;
+            if (typeof pg.square !== 'boolean') pg.square = false;
+            if (!SCHEDI_SQUARE_PUBLIC_ENABLED) pg.square = false;
             if (typeof pg.later !== 'boolean') pg.later = true;
             if (typeof tenant.cashAppTag !== 'string') tenant.cashAppTag = '';
             if (typeof tenant.zelleHandle !== 'string') tenant.zelleHandle = '';
@@ -13959,6 +14055,31 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
             if (venmoCheck) venmoCheck.checked = !!tenant.paymentGateways.venmo;
             if (paypalCheck) paypalCheck.checked = !!tenant.paymentGateways.paypal;
             if (laterCheck) laterCheck.checked = !!tenant.paymentGateways.later;
+            var squareCheck = document.getElementById('tenantPaySquareCheck');
+            var squareNote = document.getElementById('tenantPaySquareNote');
+            if (squareCheck) {
+                squareCheck.checked = SCHEDI_SQUARE_PUBLIC_ENABLED && !!tenant.paymentGateways.square;
+                squareCheck.disabled = !SCHEDI_SQUARE_PUBLIC_ENABLED || normalizePlan(tenant) === 'free';
+            }
+            if (squareNote) {
+                squareNote.textContent = SCHEDI_SQUARE_PUBLIC_ENABLED
+                    ? 'Clients can choose Square only when this is on. No Square charge is taken here.'
+                    : 'Off. Square stays hidden on the booking page until Schedi turns it on. No Square charge is taken here.';
+            }
+            var depMethods = dep.methods || depositMethodMapFor(tenant);
+            var depMethodIds = {
+                card: 'tenantDepositMethodCard',
+                cashapp: 'tenantDepositMethodCashapp',
+                zelle: 'tenantDepositMethodZelle',
+                venmo: 'tenantDepositMethodVenmo',
+                paypal: 'tenantDepositMethodPaypal'
+            };
+            Object.keys(depMethodIds).forEach(function (key) {
+                var box = document.getElementById(depMethodIds[key]);
+                if (!box) return;
+                box.checked = !!depMethods[key];
+                box.disabled = !proPlan || !tenant.paymentGateways[key];
+            });
             if (tagInput) tagInput.value = tenant.cashAppTag || '';
             if (zelleHandleInput) zelleHandleInput.value = tenant.zelleHandle || '';
             if (zelleLinkInput) zelleLinkInput.value = tenant.zelleLink || '';
@@ -14450,43 +14571,49 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
         function confirmEmailPaymentInstructions(tenant, booking) {
             if (!tenant || !booking) return { text: '', html: '' };
             var method = String(booking.paymentMethod || '').toLowerCase();
-            var amountStr = confirmEmailPriceLabel(booking.amount);
-            var amountBit = amountStr && amountStr !== 'Free' ? (' for ' + amountStr) : '';
+            var depositDue = Number(booking.depositAmount) > 0 && booking.depositPaid !== true;
+            var amountStr = depositDue
+                ? ('$' + Number(booking.depositAmount).toFixed(2))
+                : confirmEmailPriceLabel(booking.amount);
+            var amountBit = '';
+            if (depositDue && amountStr) amountBit = ' for the deposit of ' + amountStr;
+            else if (amountStr && amountStr !== 'Free') amountBit = ' for ' + amountStr;
+            var unpaidBit = depositDue ? ' This deposit stays unpaid until you mark it paid.' : '';
             var text = '';
             var html = '';
             if (method === 'cashapp' || method === 'cash-app' || method === 'cash app') {
                 var tag = String(tenant.cashAppTag || tenant.cashappTag || '').trim();
                 if (tag) {
                     if (tag.charAt(0) !== '$') tag = '$' + tag.replace(/^\$/, '');
-                    text = 'Please send your payment to Cash App ' + tag + amountBit + '.';
-                    html = '<div style="padding:12px 14px;border-radius:10px;background-color:#064e3b;border:1px solid #059669;color:#d1fae5;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.45;">Please send your payment to Cash App <strong style="font-family:monospace;">' + esc(tag) + '</strong>' + esc(amountBit) + '.</div>';
+                    text = 'Please send your payment to Cash App ' + tag + amountBit + '.' + unpaidBit;
+                    html = '<div style="padding:12px 14px;border-radius:10px;background-color:#064e3b;border:1px solid #059669;color:#d1fae5;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.45;">Please send your payment to Cash App <strong style="font-family:monospace;">' + esc(tag) + '</strong>' + esc(amountBit) + '.' + esc(unpaidBit) + '</div>';
                 }
             } else if (method === 'venmo') {
                 var vh = String(tenant.venmoHandle || '').trim();
                 var vl = String(tenant.venmoLink || '').trim();
                 if (vh || vl) {
-                    text = 'Please send your payment via Venmo' + (vh ? (' to ' + vh) : '') + amountBit + '.' + (vl ? ('\n' + vl) : '');
+                    text = 'Please send your payment via Venmo' + (vh ? (' to ' + vh) : '') + amountBit + '.' + unpaidBit + (vl ? ('\n' + vl) : '');
                     html = '<div style="padding:12px 14px;border-radius:10px;background-color:#0c4a6e;border:1px solid #0ea5e9;color:#e0f2fe;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.45;">Please send your payment via Venmo'
                         + (vh ? (' to <strong style="font-family:monospace;">' + esc(vh) + '</strong>') : '')
-                        + esc(amountBit) + '.'
+                        + esc(amountBit) + '.' + esc(unpaidBit)
                         + (vl ? ('<br><a href="' + String(vl).replace(/&/g,'&amp;').replace(/"/g,'&quot;') + '" style="color:#7dd3fc;font-weight:700;">' + esc(vl) + '</a>') : '')
                         + '</div>';
                 }
             } else if (method === 'zelle') {
                 var zh = String(tenant.zelleHandle || '').trim();
                 if (zh) {
-                    text = 'Send via Zelle to ' + zh + amountBit + '. Open your bank app and use Zelle.';
-                    html = '<div style="padding:12px 14px;border-radius:10px;background-color:#2e1065;border:1px solid #8b5cf6;color:#ede9fe;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.45;">Send via Zelle to <strong style="font-family:monospace;">' + esc(zh) + '</strong>' + esc(amountBit) + '. Open your bank app and use Zelle.</div>';
+                    text = 'Send via Zelle to ' + zh + amountBit + '. Open your bank app and use Zelle.' + unpaidBit;
+                    html = '<div style="padding:12px 14px;border-radius:10px;background-color:#2e1065;border:1px solid #8b5cf6;color:#ede9fe;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.45;">Send via Zelle to <strong style="font-family:monospace;">' + esc(zh) + '</strong>' + esc(amountBit) + '. Open your bank app and use Zelle.' + esc(unpaidBit) + '</div>';
                 }
             } else if (method === 'paypal') {
                 var ph = String(tenant.paypalHandle || '').trim();
                 var pl = String(tenant.paypalLink || '').trim();
                 var target = pl || ph;
                 if (target) {
-                    text = 'Please send your payment via PayPal' + (ph ? (' to ' + ph) : '') + amountBit + '.' + (pl ? ('\n' + pl) : '');
+                    text = 'Please send your payment via PayPal' + (ph ? (' to ' + ph) : '') + amountBit + '.' + unpaidBit + (pl ? ('\n' + pl) : '');
                     html = '<div style="padding:12px 14px;border-radius:10px;background-color:#1e3a8a;border:1px solid #3b82f6;color:#dbeafe;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.45;">Please send your payment via PayPal'
                         + (ph ? (' to <strong style="font-family:monospace;">' + esc(ph) + '</strong>') : '')
-                        + esc(amountBit) + '.'
+                        + esc(amountBit) + '.' + esc(unpaidBit)
                         + (pl ? ('<br><a href="' + String(pl).replace(/&/g,'&amp;').replace(/"/g,'&quot;') + '" style="color:#93c5fd;font-weight:700;">' + esc(pl) + '</a>') : '')
                         + '</div>';
                 }
@@ -14826,6 +14953,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                 'Payment option: ' + payOpt + '\n' +
                 'Payment status: ' + (booking.paymentStatus || '') + '\n' +
                 (amountStr ? ('Amount: ' + amountStr + '\n') : '') +
+                (booking.payCode ? ('Payment code: ' + booking.payCode + '\n') : '') +
+                (Number(booking.depositAmount) > 0 ? ('Deposit: $' + Number(booking.depositAmount).toFixed(2) + ' (' + (booking.depositPaid === true ? 'paid' : 'unpaid until you mark it paid') + ')\nRemaining balance: $' + (Number(booking.balanceDue) || 0).toFixed(2) + '\n') : '') +
                 (cardPayUrl ? ('Card payment link: ' + cardPayUrl + '\n') : '') +
                 '\n— Schedi';
             var html = '<div style="font-family:Inter,Arial,sans-serif;line-height:1.5;color:#0f172a">' +
@@ -15649,6 +15778,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
             tenant.paymentGateways.zelle = wantZelle;
             tenant.paymentGateways.venmo = wantVenmo;
             tenant.paymentGateways.paypal = wantPaypal;
+            tenant.paymentGateways.square = SCHEDI_SQUARE_PUBLIC_ENABLED && !!(document.getElementById('tenantPaySquareCheck') && document.getElementById('tenantPaySquareCheck').checked);
             tenant.paymentGateways.later = wantLater;
             tenant.cashAppTag = document.getElementById('tenantCashAppTagInput').value.trim();
             tenant.zelleHandle = document.getElementById('tenantZelleHandleInput').value.trim();
@@ -15677,6 +15807,18 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
             }
             depSettings.enabled = wantDeposit;
             depSettings.type = depType;
+            var depMethodIds = {
+                card: 'tenantDepositMethodCard',
+                cashapp: 'tenantDepositMethodCashapp',
+                zelle: 'tenantDepositMethodZelle',
+                venmo: 'tenantDepositMethodVenmo',
+                paypal: 'tenantDepositMethodPaypal'
+            };
+            depSettings.methods = {};
+            Object.keys(depMethodIds).forEach(function (key) {
+                var box = document.getElementById(depMethodIds[key]);
+                depSettings.methods[key] = !!(box && box.checked && tenant.paymentGateways[key]);
+            });
             if (depType === 'fixed') {
                 depSettings.amount = roundMoney(depRaw);
                 depSettings.percent = 0;
@@ -18048,9 +18190,11 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
             
             const configStr = JSON.stringify(rawConfig);
             const appIdStr = (typeof window !== 'undefined' && window.__app_id) ? window.__app_id : (typeof __app_id !== 'undefined' ? __app_id : 'siteforge-97699');
+            var schediNewBook = false;
+            try { schediNewBook = schediNewBookOn(); } catch (newBookErr) { schediNewBook = false; }
 
             return `<!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en" class="dark${schediNewBook ? ' schedi-newbook' : ''}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -18194,6 +18338,44 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
             .biz-logo { width: 64px; height: 64px; }
             .biz-title { font-size: 1.5rem; }
             .biz-header-body { align-items: center; padding: 16px 20px; }
+        }
+        html.schedi-newbook body { background: #06080d; color: #e7edf5; }
+        html.schedi-light.schedi-newbook body { background: #f4f7fb; color: #0f172a; }
+        html.schedi-newbook .glass-card {
+            background: #121826;
+            backdrop-filter: none;
+            border: 1px solid rgba(148, 163, 184, 0.16);
+            border-radius: 16px;
+            box-shadow: none;
+        }
+        html.schedi-light.schedi-newbook .glass-card { background: #ffffff; border-color: #d7dee8; color: #0f172a; }
+        html.schedi-newbook .glass-input { background: #0c1018; border: 1px solid rgba(148, 163, 184, 0.28); border-radius: 12px; color: #e7edf5; }
+        html.schedi-light.schedi-newbook .glass-input { background: #ffffff; color: #0f172a; border-color: #cbd5e1; }
+        html.schedi-newbook main { padding-bottom: 28px; }
+        html.schedi-newbook h2, html.schedi-newbook .biz-title { letter-spacing: -0.03em; }
+        html.schedi-newbook #pubSubmitBtn,
+        html.schedi-newbook .bg-gradient-to-r {
+            background: #10b981 !important;
+            background-image: none !important;
+            color: #042f2e !important;
+            box-shadow: none !important;
+            border-radius: 12px !important;
+            min-height: 44px;
+        }
+        html.schedi-light.schedi-newbook #pubSubmitBtn { background: #059669 !important; color: #ffffff !important; }
+        html.schedi-newbook .svc-icon, html.schedi-newbook .svc-icon-img {
+            width: 36px; height: 36px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center;
+            background: rgba(16, 185, 129, 0.14); color: #34d399; flex: 0 0 auto; object-fit: cover;
+        }
+        html.schedi-light.schedi-newbook .svc-icon { background: #ecfdf5; color: #047857; }
+        html.schedi-newbook .cal-day { border-radius: 12px; min-height: 3.4rem; }
+        html.schedi-newbook .cal-day-away .cal-day-label { letter-spacing: 0; text-transform: none; font-size: 0.58rem; line-height: 1.15; }
+        html.schedi-newbook #paymentMethodsGrid > button { border-radius: 12px; min-height: 44px; }
+        html.schedi-newbook #timeSlotsContainer button { border-radius: 12px; min-height: 44px; }
+        @media (max-width: 640px) {
+            html.schedi-newbook header { padding-left: 12px; padding-right: 12px; }
+            html.schedi-newbook main { padding-left: 12px; padding-right: 12px; }
+            html.schedi-newbook .svc-qty { width: 44px; height: 44px; }
         }
     </style>
 </head>
@@ -18618,6 +18800,50 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
 
     <script>
         var tenantData = ${jsonTenant};
+        var SCHEDI_NEWBOOK = ${schediNewBook ? 'true' : 'false'};
+        var SCHEDI_DEMO = ${(typeof window !== 'undefined' && window.__SCHEDI_DEMO) ? 'true' : 'false'};
+        var SCHEDI_SQUARE_PUBLIC_ENABLED = false;
+        try {
+            var newBookFlag = new URLSearchParams(location.search || '').get('newbook');
+            if (newBookFlag === '1' || newBookFlag === 'true' || newBookFlag === 'on') SCHEDI_NEWBOOK = true;
+            if (newBookFlag === '0' || newBookFlag === 'false' || newBookFlag === 'off') SCHEDI_NEWBOOK = false;
+            var demoFlag = new URLSearchParams(location.search || '').get('demo');
+            if (demoFlag === '1' || demoFlag === 'true' || demoFlag === 'on') SCHEDI_DEMO = true;
+        } catch (newBookErr) {}
+        if (SCHEDI_NEWBOOK) document.documentElement.classList.add('schedi-newbook');
+        var PUBLIC_DEPOSIT_METHODS = ['card', 'cashapp', 'zelle', 'venmo', 'paypal'];
+        function publicDepositMethodMap() {
+            var stored = tenantData && tenantData.deposit && tenantData.deposit.methods;
+            var explicit = !!(stored && typeof stored === 'object' && !Array.isArray(stored));
+            var pg = (tenantData && tenantData.paymentGateways) || {};
+            var out = {};
+            PUBLIC_DEPOSIT_METHODS.forEach(function (key) {
+                var on = pg[key] === true;
+                if (explicit && typeof stored[key] === 'boolean') out[key] = stored[key] === true && on;
+                else out[key] = on;
+            });
+            return out;
+        }
+        function publicMethodAcceptsDeposit(method) {
+            if (!SCHEDI_NEWBOOK) return false;
+            var key = String(method || '').toLowerCase();
+            if (key === 'cash-app' || key === 'cash app') key = 'cashapp';
+            if (PUBLIC_DEPOSIT_METHODS.indexOf(key) === -1) return false;
+            return publicDepositMethodMap()[key] === true;
+        }
+        function publicSquareOffered() {
+            var pg = (tenantData && tenantData.paymentGateways) || {};
+            return SCHEDI_NEWBOOK && SCHEDI_SQUARE_PUBLIC_ENABLED === true && pg.square === true;
+        }
+        function publicSvcIcon(svc) {
+            if (!SCHEDI_NEWBOOK || !svc) return '';
+            var image = String(svc.imageUrl || '');
+            if (/^https:\\/\\//i.test(image)) return '<img src="' + escHtml(image) + '" alt="" class="svc-icon-img">';
+            var icon = String(svc.icon || '').toLowerCase().replace(/[^a-z0-9-]/g, '');
+            if (!icon) return '';
+            if (icon.indexOf('fa-') !== 0) icon = 'fa-' + icon;
+            return '<span class="svc-icon" aria-hidden="true"><i class="fa-solid ' + icon + '"></i></span>';
+        }
         window.addEventListener('db_ready', function () {
             if (!(window.db && window.collection && window.onSnapshot && tenantData && tenantData.id && window.appId)) return;
             var col = window.collection(window.db, 'artifacts', window.appId, 'public', 'data', 'tenants', tenantData.id, 'slots');
@@ -18959,6 +19185,21 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                     ? (bizName + ' will confirm your time. You will get an email when it is accepted.')
                     : ('See you soon at ' + bizName);
 
+                function standaloneDepositInstruction(booking) {
+                    if (!booking || !(Number(booking.depositAmount) > 0) || booking.depositPaid === true) return '';
+                    var method = String(booking.paymentMethod || '').toLowerCase();
+                    var amt = String.fromCharCode(36) + Number(booking.depositAmount).toFixed(2);
+                    var handle = '';
+                    if (method === 'cashapp') {
+                        var tag = String(tenantData.cashAppTag || '').replace(/[^A-Za-z0-9_]/g, '');
+                        handle = tag ? ('Cash App $' + tag) : '';
+                    } else if (method === 'zelle') handle = String(tenantData.zelleHandle || '').trim();
+                    else if (method === 'venmo') handle = String(tenantData.venmoHandle || '').trim();
+                    else if (method === 'paypal') handle = String(tenantData.paypalHandle || '').trim();
+                    if (method !== 'cashapp' && method !== 'zelle' && method !== 'venmo' && method !== 'paypal' && method !== 'card') return '';
+                    return 'Send the deposit of ' + amt + (handle ? (' to ' + handle) : '') + '. It stays unpaid until the business marks it paid.';
+                }
+                var depositInstr = standaloneDepositInstruction(booking);
                 var text = headline + nl + sub + nl + nl +
                     'Service: ' + (booking.serviceName || 'Appointment') + nl +
                     'Date: ' + friendlyDate + nl +
@@ -18972,6 +19213,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                     'Booking ref: #' + (booking.id || '') + nl +
                     (isSeries ? ('Recurrence: ' + recFreqLabelLocal + ' × ' + (rec.total || rec.dates.length) + nl + 'Upcoming dates: ' + seriesDatesLine + nl) : '') +
                     (Number(booking.depositAmount) > 0 ? ('Deposit: ' + String.fromCharCode(36) + Number(booking.depositAmount).toFixed(2) + nl + 'Deposit paid: ' + (booking.depositPaid === true ? 'yes' : 'no') + nl + 'Remaining balance: ' + String.fromCharCode(36) + (Number(booking.balanceDue) || 0).toFixed(2) + nl) : '') +
+                    (depositInstr ? (depositInstr + nl) : '') +
                     (cardPayUrl ? ('Pay by card:' + nl + cardPayUrl + nl) : '') +
                     (feeSentence ? (feeSentence + nl) : '') +
                     (extra ? (nl + 'Note: ' + extra + nl) : '') +
@@ -19053,6 +19295,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                         + '<p style="margin:10px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#64748b;">Or copy this link: ' + safe(cardPayUrl) + '</p>'
                         + '</td></tr>';
                 }
+                if (depositInstr) notesHtml += '<tr><td style="padding:8px 28px 0;"><div style="padding:12px 14px;border-radius:10px;background-color:#111c33;border:1px solid #334155;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#e2e8f0;">' + safe(depositInstr) + '</div></td></tr>';
                 if (feeSentence) notesHtml += '<tr><td style="padding:8px 28px 0;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#94a3b8;">' + safe(feeSentence) + '</td></tr>';
                 if (extra) notesHtml += '<tr><td style="padding:10px 28px 0;"><div style="padding:12px 14px;border-radius:10px;background-color:#111c33;border:1px solid #334155;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#cbd5e1;">' + safe(extra) + '</div></td></tr>';
                 var footerLeft = isPending ? 'We will email you when this request is accepted.' : 'Questions? Reply to this email.';
@@ -19106,6 +19349,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                     'Payment option: ' + payOpt + nl +
                     'Payment status: ' + (booking.paymentStatus || '') + nl +
                     (amountStr ? ('Amount: ' + amountStr + nl) : '') +
+                    (booking.payCode ? ('Payment code: ' + booking.payCode + nl) : '') +
+                    (depositInstr ? (depositInstr + nl) : '') +
                     (cardPayUrl ? ('Card payment link: ' + cardPayUrl + nl) : '') +
                     nl + '— Schedi';
                 var oHtml = '<div style="font-family:Arial,sans-serif;line-height:1.5">' +
@@ -19789,6 +20034,29 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
             var bal = document.getElementById('depositBalanceLabel');
             var box = document.getElementById('depositNoticeBox');
             var noPriceNote = document.getElementById('noPricePayNote');
+            var manualPay = selectedPay === 'cashapp' || selectedPay === 'zelle' || selectedPay === 'venmo' || selectedPay === 'paypal';
+            var depositHere = manualPay && quote.required && publicMethodAcceptsDeposit(selectedPay);
+            if (box && !box.dataset.defaultCopy) {
+                var copy0 = box.querySelector('p');
+                var head0 = box.querySelector('.font-bold');
+                if (copy0) box.dataset.defaultCopy = copy0.innerHTML;
+                if (head0) box.dataset.defaultHead = head0.textContent;
+            }
+            if (box) {
+                var head = box.querySelector('.font-bold');
+                var copy = box.querySelector('p');
+                if (depositHere && copy) {
+                    if (head) head.textContent = 'Deposit due now';
+                    copy.innerHTML = 'Send <strong id="depositDueLabel" class="text-emerald-400"></strong> now using the handle below. The rest (<strong id="depositBalanceLabel" class="text-white"></strong>) is due at the appointment. This stays unpaid until the business marks it paid.';
+                    due = document.getElementById('depositDueLabel');
+                    bal = document.getElementById('depositBalanceLabel');
+                } else if (copy && box.dataset.defaultCopy) {
+                    if (head) head.textContent = box.dataset.defaultHead || 'Card deposit, if you choose card';
+                    copy.innerHTML = box.dataset.defaultCopy;
+                    due = document.getElementById('depositDueLabel');
+                    bal = document.getElementById('depositBalanceLabel');
+                }
+            }
             if (quote.required) {
                 if (amt) amt.textContent = '$' + quote.deposit.toFixed(2);
                 if (due) due.textContent = '$' + quote.deposit.toFixed(2);
@@ -20246,7 +20514,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                     var qty = line.qty;
                     var onlyOne = svcCart.length === 1 && qty === 1;
                     side = '<div class="flex items-center gap-1 shrink-0" role="group" aria-label="How many ' + escHtml(s.name) + '">'
-                        + '<button type="button" onclick="changeSvcQty(' + Number(s.id) + ',-1)" ' + (onlyOne ? 'disabled aria-disabled="true" ' : '') + 'class="w-8 h-8 rounded-lg border border-slate-700 bg-slate-900 text-white font-black ' + (onlyOne ? 'opacity-40 cursor-not-allowed' : 'hover:border-emerald-500') + '" aria-label="One less ' + escHtml(s.name) + '">−</button>'
+                        + '<button type="button" onclick="changeSvcQty(' + Number(s.id) + ',-1)" ' + (onlyOne ? 'disabled aria-disabled="true" ' : '') + 'class="svc-qty w-8 h-8 rounded-lg border border-slate-700 bg-slate-900 text-white font-black ' + (onlyOne ? 'opacity-40 cursor-not-allowed' : 'hover:border-emerald-500') + '" aria-label="One less ' + escHtml(s.name) + '">−</button>'
                         + '<span class="min-w-[1.75rem] text-center text-sm font-black text-white" aria-live="polite">' + qty + '</span>'
                         + '<button type="button" onclick="changeSvcQty(' + Number(s.id) + ',1)" class="w-8 h-8 rounded-lg border border-slate-700 bg-slate-900 text-white font-black hover:border-emerald-500" aria-label="One more ' + escHtml(s.name) + '">+</button>'
                         + '</div>';
@@ -20255,6 +20523,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                 }
                 return '<div class="flex items-center gap-2 p-3 rounded-xl border transition-all ' +
                     (active ? 'bg-emerald-500/10 border-emerald-500 glow-emerald' : 'bg-slate-900 border-slate-800') + '">' +
+                    publicSvcIcon(s) +
                     '<button type="button" onclick="selectSvc(' + Number(s.id) + ')" aria-pressed="' + (active ? 'true' : 'false') + '" class="flex-1 min-w-0 text-left p-1 cursor-pointer">' +
                     '<div class="font-bold text-xs text-white">' + escHtml(s.name) + '</div>' +
                     '<div class="text-[11px] text-emerald-400 font-bold mt-1">' + info + '</div>' +
@@ -20419,14 +20688,17 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                 else if (isSpecialOpen) state = 'special';
 
                 let label = 'Open';
-                if (isAway) label = 'Away';
+                var awayText = String(awayLabel || 'Away');
+                var awayShort = awayText.length > 18 ? (awayText.slice(0, 17) + '\\u2026') : awayText;
+                if (isAway) label = SCHEDI_NEWBOOK ? awayShort : 'Away';
                 else if (!isOpen || isPast) label = isPast && isOpen ? 'Past' : 'Closed';
                 else if (isSelected && isToday) label = 'Today';
                 else if (isSelected) label = 'Selected';
                 else if (isSpecialOpen) label = 'Special';
                 else if (isToday) label = 'Today';
 
-                html += \`<button type="button" onclick="selectDate('\${isoStr}')" \${isPast ? 'disabled' : ''} class="cal-day cal-day-\${state}\${isToday ? ' cal-day-today' : ''}" aria-pressed="\${isSelected ? 'true' : 'false'}"\${isToday ? ' aria-current="date"' : ''} aria-label="\${label} \${monthNames[viewMonth]} \${day}">
+                var awayAria = (SCHEDI_NEWBOOK && isAway) ? awayText : label;
+                html += \`<button type="button" onclick="selectDate('\${isoStr}')" \${isPast ? 'disabled' : ''} class="cal-day cal-day-\${state}\${isToday ? ' cal-day-today' : ''}" aria-pressed="\${isSelected ? 'true' : 'false'}"\${isToday ? ' aria-current="date"' : ''} aria-label="\${awayAria} \${monthNames[viewMonth]} \${day}">
                     <span class="cal-day-num">\${day}</span>
                     <span class="cal-day-label">\${label}</span>
                 </button>\`;
@@ -20617,15 +20889,19 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
             if (!box) return;
             var manual = selectedPay === 'cashapp' || selectedPay === 'venmo' || selectedPay === 'zelle' || selectedPay === 'paypal';
             var quote = selectedServiceDepositQuote();
-            if (!manual || quote.required) { box.classList.add('hidden'); return; }
+            var depositHere = manual && quote.required && publicMethodAcceptsDeposit(selectedPay);
+            if (!manual || (quote.required && !depositHere)) { box.classList.add('hidden'); return; }
             var price = cartPrice();
-            var amount = (price !== null && Number(price) > 0) ? ('$' + (Number.isInteger(Number(price)) ? String(Number(price)) : Number(price).toFixed(2))) : 'your payment';
+            var amount = depositHere
+                ? ('the deposit of $' + quote.deposit.toFixed(2))
+                : ((price !== null && Number(price) > 0) ? ('$' + (Number.isInteger(Number(price)) ? String(Number(price)) : Number(price).toFixed(2))) : 'your payment');
             var handle = payCodeHandleFor(selectedPay);
             var biz = String(tenantData.name || 'the business');
+            var rest = depositHere && quote.balance != null ? (' The rest ($' + quote.balance.toFixed(2) + ') is due at the appointment. This deposit stays unpaid until ' + biz + ' marks it paid.') : '';
             var instr = document.getElementById('payCodeInstr');
             if (instr) {
                 instr.innerHTML = 'Send <strong class="text-white">' + escPub(amount) + '</strong>' + (handle ? (' to <strong class="text-white">' + escPub(handle) + '</strong>') : '')
-                    + ' and put <strong class="text-emerald-300 font-mono">' + escPub(pubPayCode) + '</strong> in the note so ' + escPub(biz) + ' can match your payment.';
+                    + ' and put <strong class="text-emerald-300 font-mono">' + escPub(pubPayCode) + '</strong> in the note so ' + escPub(biz) + ' can match your payment.' + escPub(rest);
             }
             var val = document.getElementById('payCodeValue');
             if (val) val.textContent = pubPayCode;
@@ -20693,6 +20969,9 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
             if (pg.paypal) {
                 html += \`<button type="button" onclick="selectPay('paypal')" class="px-4 py-3 flex-1 min-w-[100px] rounded-xl border font-bold \${selectedPay === 'paypal' ? 'border-blue-500 text-blue-300 bg-blue-500/10' : 'border-slate-800 text-slate-400 bg-slate-900'}"><i class="fa-brands fa-paypal block mb-1"></i>PayPal</button>\`;
             }
+            if (publicSquareOffered()) {
+                html += \`<button type="button" onclick="selectPay('square')" class="px-4 py-3 flex-1 min-w-[100px] rounded-xl border font-bold \${selectedPay === 'square' ? 'border-slate-300 text-slate-100 bg-slate-700/40' : 'border-slate-800 text-slate-400 bg-slate-900'}"><i class="fa-solid fa-square block mb-1"></i>Square</button>\`;
+            }
             if (pg.later) {
                 html += \`<button type="button" onclick="selectPay('later')" class="px-4 py-3 flex-1 min-w-[100px] rounded-xl border font-bold \${selectedPay === 'later' ? 'border-emerald-500 text-emerald-400 bg-emerald-500/10 glow-emerald' : 'border-slate-800 text-slate-400 bg-slate-900'}"><i class="fa-solid fa-handshake block mb-1"></i>Pay at Appt</button>\`;
             }
@@ -20701,7 +20980,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                 html = '<button type="button" class="px-4 py-3 flex-1 min-w-[100px] rounded-xl border font-bold border-emerald-500 text-emerald-400 bg-emerald-500/10 glow-emerald"><i class="fa-solid fa-handshake block mb-1"></i>Pay at Appt</button>';
             } else {
                 // The current choice must be one of the options shown (default was 'card' even when card is off).
-                var offered = ['card', 'cashapp', 'zelle', 'venmo', 'paypal', 'later'].filter(function (m) { return html.indexOf("selectPay('" + m + "')") !== -1; });
+                var offered = ['card', 'cashapp', 'zelle', 'venmo', 'paypal', 'square', 'later'].filter(function (m) { return html.indexOf("selectPay('" + m + "')") !== -1; });
                 if (offered.indexOf(selectedPay) === -1 && offered.length) {
                     selectedPay = offered[0];
                     return renderPay();
@@ -20727,6 +21006,10 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
             }
             if (bookingPlan() === 'free' && method !== 'later') {
                 failPublicPay('Free plan only allows pay at the appointment. This booking was not saved.');
+                method = 'later';
+            }
+            if (method === 'square' && !publicSquareOffered()) {
+                failPublicPay('Square is not available on this page. This booking was not saved.');
                 method = 'later';
             }
             selectedPay = method;
@@ -20949,6 +21232,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                         if (selectedPay === 'zelle') return 'PENDING ZELLE';
                         if (selectedPay === 'venmo') return 'PENDING VENMO';
                         if (selectedPay === 'paypal') return 'PENDING PAYPAL';
+                        if (selectedPay === 'square') return 'PENDING SQUARE';
                         return 'PAY AT APPOINTMENT';
                     })();
                 const payOptLabel = (function () {
@@ -20959,6 +21243,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                         if (selectedPay === 'venmo') return 'Venmo';
                         if (selectedPay === 'paypal') return 'PayPal';
                         if (selectedPay === 'later') return 'Pay at Appointment';
+                        if (selectedPay === 'square') return 'Square';
                         return paymentOptionLabel(selectedPay);
                     })();
 
@@ -21005,14 +21290,15 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                         durationMins: cartDurationMins()
                     };
                     if (bookingAmount !== null && bookingAmount !== undefined) b.amount = bookingAmount;
-                    if (payByCard && depositQuote.required) {
+                    var manualDeposit = !payByCard && publicMethodAcceptsDeposit(selectedPay) && depositQuote.required;
+                    if ((payByCard && depositQuote.required) || manualDeposit) {
                         b.depositAmount = depositQuote.deposit;
                         b.depositPaid = false;
                         b.balanceDue = depositQuote.balance;
                     }
                     if (bookingIsPendingReview) b.status = 'pending';
                     if (!b.createdAt) b.createdAt = new Date().toISOString();
-                    if (selectedPay !== 'card' && !depositQuote.required) b.payCode = idx === 0 ? pubPayCode : newPayCode();
+                    if (selectedPay !== 'card' && (!depositQuote.required || manualDeposit)) b.payCode = idx === 0 ? pubPayCode : newPayCode();
                     if (seriesId) {
                         b.seriesId = seriesId;
                         b.recurrence = {
@@ -21072,6 +21358,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                             }
                             return copy;
                         });
+                        if (SCHEDI_DEMO) return Promise.resolve({ ok: true, data: { ok: true, demo: true } });
                         return fetch('https://schedi.app/api/bookings', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
@@ -21105,7 +21392,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                     doUpdate().then(function (out) {
                         var created = !!(out && out.ok && out.data && out.data.ok);
                         var emailQueued = false;
-                        if (created) {
+                        if (created && !SCHEDI_DEMO) {
                             try { queueStandaloneConfirmationEmail(booking); emailQueued = true; } catch (err) { console.warn('Confirmation email skipped:', err); }
                         }
                         if (window.parent === window) return;
@@ -21247,6 +21534,21 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                     return 'https://venmo.com/u/' + encodeURIComponent(user);
                 }
 
+                function shownManualAmount() {
+                    return (publicMethodAcceptsDeposit(selectedPay) && depositQuote.required) ? depositQuote.deposit : bookingAmount;
+                }
+                function paintManualDepositNote(box) {
+                    if (!box) return;
+                    var note = box.querySelector('.manual-deposit-note');
+                    if (!note) {
+                        note = document.createElement('p');
+                        note.className = 'manual-deposit-note hidden text-amber-200';
+                        box.appendChild(note);
+                    }
+                    var on = publicMethodAcceptsDeposit(selectedPay) && depositQuote.required;
+                    note.textContent = on ? 'This amount is the deposit. It stays unpaid until the business marks it paid. The rest is due at the appointment.' : '';
+                    note.classList.toggle('hidden', !on);
+                }
                 function setAmountWrap(wrapId, amountId, amount) {
                     var wrap = document.getElementById(wrapId);
                     var el = document.getElementById(amountId);
@@ -21326,7 +21628,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                         cashAppBox.classList.remove('hidden');
                         document.getElementById('resCashTag').textContent = cleanTag || 'not configured';
                         document.getElementById('cashTagBadge').textContent = cleanTag || '—';
-                        setAmountWrap('resCashAmountWrap', 'resCashAmount', bookingAmount);
+                        setAmountWrap('resCashAmountWrap', 'resCashAmount', shownManualAmount());
+                        paintManualDepositNote(cashAppBox);
                         var cashBtn = document.getElementById('resCashBtn');
                         if (cleanTag) {
                             cashBtn.href = 'https://cash.app/' + encodeURIComponent(cleanTag);
@@ -21343,7 +21646,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                         zelleBox.classList.remove('hidden');
                         document.getElementById('resZelleHandle').textContent = zHandle || 'not configured';
                         document.getElementById('zelleHandleBadge').textContent = zHandle || '—';
-                        setAmountWrap('resZelleAmountWrap', 'resZelleAmount', bookingAmount);
+                        setAmountWrap('resZelleAmountWrap', 'resZelleAmount', shownManualAmount());
+                        paintManualDepositNote(zelleBox);
                         var zCopy = document.getElementById('resZelleCopyBtn');
                         if (zCopy) {
                             zCopy.onclick = function () { copyTextToClipboard(zHandle); zCopy.textContent = 'Copied!'; setTimeout(function(){ zCopy.innerHTML = '<i class="fa-solid fa-copy mr-1"></i> Copy Zelle Handle'; }, 1500); };
@@ -21368,7 +21672,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                         venmoBox.classList.remove('hidden');
                         document.getElementById('resVenmoHandle').textContent = vDisplay;
                         document.getElementById('venmoHandleBadge').textContent = vUser ? ('@' + vUser) : '—';
-                        setAmountWrap('resVenmoAmountWrap', 'resVenmoAmount', bookingAmount);
+                        setAmountWrap('resVenmoAmountWrap', 'resVenmoAmount', shownManualAmount());
+                        paintManualDepositNote(venmoBox);
                         var vBtn = document.getElementById('resVenmoBtn');
                         if (vBtn) {
                             if (vUrl) {
@@ -21389,7 +21694,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                         paypalBox.classList.remove('hidden');
                         document.getElementById('resPaypalHandle').textContent = pHandle || 'not configured';
                         document.getElementById('paypalHandleBadge').textContent = pHandle || '—';
-                        setAmountWrap('resPaypalAmountWrap', 'resPaypalAmount', bookingAmount);
+                        setAmountWrap('resPaypalAmountWrap', 'resPaypalAmount', shownManualAmount());
+                        paintManualDepositNote(paypalBox);
                         var pBtn = document.getElementById('resPaypalBtn');
                         var pCopy = document.getElementById('resPaypalCopyBtn');
                         if (pUrl) {

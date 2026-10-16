@@ -8,6 +8,7 @@
  * Owners also can't switch on Pro-only features unless the stored (effective) plan is Pro.
  */
 import { tenantPlanName } from './cancellation-fee.js';
+import { SCHEDI_SQUARE_PUBLIC_ENABLED } from './deposit-methods.js';
 
 export { tenantPlanName };
 
@@ -53,14 +54,14 @@ export function applyOwnerEntitlementLock(incomingPub, storedPub, storedPriv) {
     const sg = isObj((storedPub || {}).paymentGateways) ? storedPub.paymentGateways : {};
     if (isObj(pub.paymentGateways)) {
       const gw = Object.assign({}, pub.paymentGateways);
-      const lockedOn = plan === 'free' ? ['card', 'cashapp', 'zelle', 'venmo', 'paypal'] : ['card'];
+      const lockedOn = plan === 'free' ? ['card', 'cashapp', 'zelle', 'venmo', 'paypal', 'square'] : ['card'];
       for (const g of lockedOn) {
         if (gw[g] === true && sg[g] !== true) {
           gw[g] = false;
           ignored.push('paymentGateways.' + g);
         }
       }
-      if (plan === 'free' && !['card', 'cashapp', 'zelle', 'venmo', 'paypal'].some((g) => gw[g] === true)) {
+      if (plan === 'free' && !['card', 'cashapp', 'zelle', 'venmo', 'paypal', 'square'].some((g) => gw[g] === true)) {
         gw.later = true;
       }
       pub.paymentGateways = gw;
@@ -92,6 +93,10 @@ export function applyOwnerEntitlementLock(incomingPub, storedPub, storedPriv) {
         ignored.push('services');
       }
     }
+  }
+  if (SCHEDI_SQUARE_PUBLIC_ENABLED !== true && isObj(pub.paymentGateways) && pub.paymentGateways.square === true) {
+    pub.paymentGateways = Object.assign({}, pub.paymentGateways, { square: false });
+    ignored.push('paymentGateways.square');
   }
   return { pub, ignored };
 }
