@@ -1174,6 +1174,326 @@ body.schedi-newdash #addBlockedTimeModal button { min-height: 44px; }
     body.schedi-newdash .sd-time-pair-fields { gap: 8px; }
     body.schedi-newdash .sd-time-pair-fields.has-remove { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
     body.schedi-newdash .sd-time-pair-fields.has-remove .sd-time-remove { grid-column: 1 / -1; justify-self: start; }
+    #tenantPortalSection.schedi-newdash .sd-cal-grid,
+    #tenantPortalSection.schedi-newdash .sd-cal-weekdays,
+    #tenantPortalSection.schedi-newdash .sd-cal-row { gap: 2px; }
+    #tenantPortalSection.schedi-newdash .sd-cal-actions button { flex: 1 1 auto; }
+}
+#tenantPortalSection.schedi-newdash #tenantSectionHours,
+#tenantPortalSection.schedi-newdash .sd-cal-block,
+#tenantPortalSection.schedi-newdash .sd-cal-editor { overflow: visible; }
+#tenantPortalSection.schedi-newdash .sd-cal-block { max-width: 520px; }
+#tenantPortalSection.schedi-newdash .sd-cal-heading {
+    margin: 0 0 4px;
+    font-size: 16px;
+    font-weight: 800;
+    color: #f8fafc;
+}
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-heading { color: #0f172a; }
+#tenantPortalSection.schedi-newdash .sd-cal-wrap { margin-top: 12px; }
+#tenantPortalSection.schedi-newdash .sd-cal-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+#tenantPortalSection.schedi-newdash .sd-cal-head h4 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 800;
+    color: #f8fafc;
+    text-align: center;
+}
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-head h4 { color: #0f172a; }
+#tenantPortalSection.schedi-newdash .sd-cal-head button {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    border: 1px solid #334155;
+    background: #0f172a;
+    color: #f8fafc;
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+}
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-head button {
+    background: #ffffff;
+    color: #0f172a;
+    border-color: #64748b;
+}
+#tenantPortalSection.schedi-newdash .sd-cal-weekdays,
+#tenantPortalSection.schedi-newdash .sd-cal-row {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 4px;
+}
+#tenantPortalSection.schedi-newdash .sd-cal-weekdays { margin-bottom: 4px; }
+#tenantPortalSection.schedi-newdash .sd-cal-weekdays span {
+    text-align: center;
+    font-size: 16px;
+    font-weight: 700;
+    color: #cbd5e1;
+}
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-weekdays span { color: #334155; }
+#tenantPortalSection.schedi-newdash .sd-cal-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+}
+#tenantPortalSection.schedi-newdash .sd-cal-cell {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    min-width: 0;
+    min-height: 44px;
+    padding: 2px 0 4px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    background: #0f172a;
+    color: #f8fafc;
+    font-size: 16px;
+    font-weight: 800;
+    line-height: 1.1;
+    cursor: pointer;
+}
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-cell {
+    background: #ffffff;
+    color: #0f172a;
+    border-color: #e2e8f0;
+}
+#tenantPortalSection.schedi-newdash .sd-cal-cell.is-out {
+    background: transparent;
+    color: #94a3b8;
+    border-color: transparent;
+}
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-cell.is-out { color: #64748b; }
+#tenantPortalSection.schedi-newdash .sd-cal-cell.is-closed {
+    background: #3b2430;
+    color: #ffe4e6;
+    border-color: #3b2430;
+}
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-cell.is-closed {
+    background: #ffe4e6;
+    color: #881337;
+    border-color: #fecdd3;
+}
+#tenantPortalSection.schedi-newdash .sd-cal-cell.is-today .sd-cal-num {
+    box-shadow: inset 0 -2px 0 #34d399;
+}
+#tenantPortalSection.schedi-newdash .sd-cal-cell.is-range {
+    box-shadow: inset 0 0 0 2px #38bdf8;
+}
+#tenantPortalSection.schedi-newdash .sd-cal-cell:hover { border-color: #64748b; }
+#tenantPortalSection.schedi-newdash .sd-cal-cell:focus-visible,
+#tenantPortalSection.schedi-newdash .sd-cal-head button:focus-visible,
+#tenantPortalSection.schedi-newdash .sd-cal-editor button:focus-visible,
+#tenantPortalSection.schedi-newdash .sd-cal-item button:focus-visible,
+#tenantPortalSection.schedi-newdash .sd-cal-modes label:focus-within,
+#tenantPortalSection.schedi-newdash .sd-cal-note:focus-visible {
+    outline: 2px solid #38bdf8;
+    outline-offset: 2px;
+}
+#tenantPortalSection.schedi-newdash .sd-cal-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: #34d399;
+    display: inline-block;
+    flex: 0 0 auto;
+}
+#tenantPortalSection.schedi-newdash .sd-cal-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 16px;
+    margin-top: 10px;
+}
+#tenantPortalSection.schedi-newdash .sd-cal-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    font-size: 16px;
+    font-weight: 700;
+    color: #e2e8f0;
+}
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-legend-item { color: #0f172a; }
+#tenantPortalSection.schedi-newdash .sd-cal-shade {
+    width: 14px;
+    height: 14px;
+    border-radius: 4px;
+    background: #3b2430;
+    border: 1px solid #fb7185;
+    display: inline-block;
+}
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-shade {
+    background: #ffe4e6;
+    border-color: #be123c;
+}
+#tenantPortalSection.schedi-newdash .sd-cal-editor {
+    margin-top: 12px;
+    padding: 12px;
+    border-radius: 16px;
+    border: 1px solid #334155;
+    background: #0f172a;
+}
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-editor {
+    background: #ffffff;
+    border-color: #cbd5e1;
+}
+#tenantPortalSection.schedi-newdash .sd-cal-editor[hidden] { display: none !important; }
+#tenantPortalSection.schedi-newdash .sd-cal-modes {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 8px 0;
+}
+#tenantPortalSection.schedi-newdash .sd-cal-modes label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: #f8fafc;
+    cursor: pointer;
+}
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-modes label { color: #0f172a; }
+#tenantPortalSection.schedi-newdash .sd-cal-modes input { width: 20px; height: 20px; }
+#tenantPortalSection.schedi-newdash .sd-cal-note-label {
+    display: block;
+    margin: 8px 0 4px;
+    font-size: 16px;
+    font-weight: 700;
+    color: #cbd5e1;
+}
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-note-label { color: #334155; }
+#tenantPortalSection.schedi-newdash .sd-cal-optional { font-weight: 600; }
+#tenantPortalSection.schedi-newdash .sd-cal-note {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 44px;
+    padding: 8px 12px;
+    border-radius: 12px;
+    border: 1px solid #64748b;
+    background: #0f172a;
+    color: #f8fafc;
+    font-size: 16px;
+    font-weight: 700;
+}
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-note {
+    background: #ffffff;
+    color: #0f172a;
+}
+#tenantPortalSection.schedi-newdash .sd-cal-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+}
+#tenantPortalSection.schedi-newdash .sd-cal-actions button {
+    min-height: 44px;
+    padding: 8px 14px;
+    border-radius: 12px;
+    border: 1px solid #334155;
+    background: #1e293b;
+    color: #f8fafc;
+    font-size: 16px;
+    font-weight: 800;
+    cursor: pointer;
+}
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-actions button {
+    background: #e2e8f0;
+    color: #0f172a;
+    border-color: #94a3b8;
+}
+#tenantPortalSection.schedi-newdash #sdCalSave {
+    background: #10b981;
+    color: #022c22;
+    border-color: #10b981;
+}
+html.schedi-light #tenantPortalSection.schedi-newdash #sdCalSave {
+    background: #10b981;
+    color: #022c22;
+    border-color: #10b981;
+}
+#tenantPortalSection.schedi-newdash .sd-cal-upcoming { margin-top: 16px; }
+#tenantPortalSection.schedi-newdash .sd-cal-empty {
+    margin: 8px 0 0;
+    font-size: 16px;
+    line-height: 1.4;
+    color: #cbd5e1;
+}
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-empty { color: #334155; }
+#tenantPortalSection.schedi-newdash .sd-cal-item {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 8px;
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid #334155;
+    background: #0f172a;
+}
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item {
+    background: #ffffff;
+    border-color: #cbd5e1;
+}
+#tenantPortalSection.schedi-newdash .sd-cal-item-main { min-width: 0; flex: 1 1 160px; }
+#tenantPortalSection.schedi-newdash .sd-cal-item-label {
+    font-size: 16px;
+    font-weight: 800;
+    color: #f8fafc;
+}
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item-label { color: #0f172a; }
+#tenantPortalSection.schedi-newdash .sd-cal-item-when,
+#tenantPortalSection.schedi-newdash .sd-cal-item-detail {
+    font-size: 16px;
+    line-height: 1.35;
+    color: #cbd5e1;
+}
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item-when,
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item-detail { color: #334155; }
+#tenantPortalSection.schedi-newdash .sd-cal-item-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+#tenantPortalSection.schedi-newdash .sd-cal-item button {
+    min-height: 44px;
+    padding: 8px 12px;
+    border-radius: 12px;
+    border: 1px solid #334155;
+    background: #1e293b;
+    color: #e0f2fe;
+    font-size: 16px;
+    font-weight: 800;
+    cursor: pointer;
+}
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item button {
+    background: #f8fafc;
+    color: #0369a1;
+    border-color: #94a3b8;
+}
+#tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remove {
+    background: #3f1d24;
+    color: #fecdd3;
+    border-color: #9f1239;
+}
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remove {
+    background: #fff1f2;
+    color: #9f1239;
+    border-color: #fecdd3;
+}
+@media (max-width: 480px) {
+    #tenantPortalSection.schedi-newdash .sd-cal-grid,
+    #tenantPortalSection.schedi-newdash .sd-cal-weekdays,
+    #tenantPortalSection.schedi-newdash .sd-cal-row { gap: 2px; }
 }
 @media (max-width: 859px) {
     body.schedi-newdash #toastContainer {
@@ -1737,23 +2057,54 @@ body.schedi-newdash #addBlockedTimeModal button { min-height: 44px; }
                     </form>
 
                     <div id="tenantHoursTimeOff">
-                    <div class="space-y-4 border-t border-slate-800 pt-6">
-                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                            <div>
-                                <h4 class="text-sm font-bold text-white">Special hours</h4>
-                                <p class="text-xs text-slate-400">Open, shorten, or close a specific date without changing your weekly hours. That date uses these hours instead.</p>
+                    <div class="sd-cal-block">
+                        <h4 class="sd-cal-heading">Special hours and time off</h4>
+                        <p class="sd-hours-hint">Tap a date to set custom hours or close that day. Drag across days, or hold a date and tap the last day, to mark time off. With a keyboard, use the arrow keys, then Enter. Shift plus the arrow keys selects a range.</p>
+                        <div class="sd-cal-wrap">
+                            <div class="sd-cal-head">
+                                <button type="button" id="sdCalPrev" aria-label="Previous month">‹</button>
+                                <h4 id="sdCalTitle">Month</h4>
+                                <button type="button" id="sdCalNext" aria-label="Next month">›</button>
                             </div>
-                            <button type="button" onclick="openAddSpecialHoursModal()" class="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-sky-400 font-bold text-xs border border-sky-500/20 flex items-center space-x-1.5 shrink-0">
-                                <i class="fa-solid fa-calendar-plus"></i>
-                                <span>Add Special Hours</span>
-                            </button>
+                            <div class="sd-cal-weekdays" aria-hidden="true">
+                                <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+                            </div>
+                            <div id="sdCalGrid" role="grid" aria-label="Special hours calendar"></div>
+                            <div class="sd-cal-legend">
+                                <span class="sd-cal-legend-item"><i class="sd-cal-dot" aria-hidden="true"></i> Custom hours</span>
+                                <span class="sd-cal-legend-item"><i class="sd-cal-shade" aria-hidden="true"></i> Closed</span>
+                            </div>
+                            <p id="sdCalStatus" class="sd-hours-hint" role="status"></p>
                         </div>
-                        <div id="tenantSpecialHoursList" class="space-y-2">
-                            <!-- Injected via JS -->
+                        <div id="sdCalEditor" class="sd-cal-editor" hidden role="dialog" aria-modal="false" aria-labelledby="sdCalEditorTitle">
+                            <h4 id="sdCalEditorTitle" class="sd-cal-heading">Date</h4>
+                            <div id="sdCalModeRow" class="sd-cal-modes" role="radiogroup" aria-label="This day">
+                                <label><input type="radio" name="sdCalMode" id="sdCalModeOpen" value="open"> Open, custom hours</label>
+                                <label><input type="radio" name="sdCalMode" id="sdCalModeClosed" value="closed"> Closed</label>
+                            </div>
+                            <div id="sdCalOpenFields">
+                                <div id="sdCalTimes" class="sd-hours-times"></div>
+                                <p id="sdCalMultiHint" class="sd-hours-hint" hidden>This day has more than one open window. Saving keeps the one window above.</p>
+                            </div>
+                            <div id="sdCalNoteWrap">
+                                <label class="sd-cal-note-label" for="sdCalNote">Label <span class="sd-cal-optional">(optional, for example Holiday)</span></label>
+                                <input id="sdCalNote" class="sd-cal-note" type="text" maxlength="80" placeholder="Holiday" autocomplete="off">
+                            </div>
+                            <p id="sdCalSplitHint" class="sd-hours-hint" hidden>This day is part of a longer time off. Saving a different label applies to this day only.</p>
+                            <p id="sdCalError" class="sd-hours-error" role="alert"></p>
+                            <div class="sd-cal-actions">
+                                <button type="button" id="sdCalSave">Save</button>
+                                <button type="button" id="sdCalWeekly">Use weekly hours</button>
+                                <button type="button" id="sdCalCancel">Cancel</button>
+                            </div>
+                        </div>
+                        <div class="sd-cal-upcoming">
+                            <h4 class="sd-cal-heading">Upcoming</h4>
+                            <div id="sdHoursUpcoming"></div>
                         </div>
                     </div>
 
-                    <div class="space-y-4">
+                    <div class="space-y-4 border-t border-slate-800 pt-6">
                         <div class="flex items-center justify-between">
                             <div>
                                 <h4 class="text-sm font-bold text-white">Recurring Blocked Times & Outages</h4>
@@ -1766,22 +2117,6 @@ body.schedi-newdash #addBlockedTimeModal button { min-height: 44px; }
                         </div>
 
                         <div id="tenantBlockedRulesList" class="space-y-2">
-                            <!-- Injected via JS -->
-                        </div>
-                    </div>
-
-                    <div class="space-y-4 border-t border-slate-800 pt-6">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <h4 class="text-sm font-bold text-white">Vacation &amp; Date Blocks</h4>
-                                <p class="text-xs text-slate-400">Block specific dates or ranges (e.g. Mar 10–17) without changing weekly hours. Optional all-day or time window. Edit or remove a block from the list.</p>
-                            </div>
-                            <button type="button" onclick="openAddDateBlockModal()" class="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold text-xs border border-amber-500/20 flex items-center space-x-1.5">
-                                <i class="fa-solid fa-calendar-xmark"></i>
-                                <span>Add Date Block</span>
-                            </button>
-                        </div>
-                        <div id="tenantDateBlocksList" class="space-y-2">
                             <!-- Injected via JS -->
                         </div>
                     </div>
@@ -4857,7 +5192,7 @@ body.schedi-newdash #addBlockedTimeModal button { min-height: 44px; }
                     + '<div class="space-y-5 text-sm text-slate-300 leading-relaxed">'
                     + '<section><h2 class="text-base font-bold text-white mb-1">Sign in</h2><ol class="list-decimal pl-5 space-y-1"><li>Open Schedi and sign in to the Business Portal.</li><li>Enter the owner email and password.</li></ol></section>'
                     + '<section><h2 class="text-base font-bold text-white mb-1">Add a service</h2><ol class="list-decimal pl-5 space-y-1"><li>Open Manage Services.</li><li>Click Add New Service.</li><li>Enter the name, duration, optional price, and description, then save. Leave price blank if you do not want a price shown.</li><li>Use Edit or Delete on a service you already added.</li><li>Free keeps one service. A second service is not saved.</li></ol></section>'
-                    + '<section><h2 class="text-base font-bold text-white mb-1">Set hours</h2><ol class="list-decimal pl-5 space-y-1"><li>Open Hours &amp; Blocked Times.</li><li>Check Open for a day, then set Start and End.</li><li>Choose Start times every 15 minutes, 30 minutes, or 1 hour.</li><li>Click Save Operating Hours.</li><li>Use Add Special Hours to open or change one date without editing the weekly schedule.</li><li>Use Add Recurring Outage or Add Date Block when you need time off.</li></ol></section>'
+                    + '<section><h2 class="text-base font-bold text-white mb-1">Set hours</h2><ol class="list-decimal pl-5 space-y-1"><li>Open Hours &amp; Blocked Times.</li><li>Check Open for a day, then set Start and End.</li><li>Choose Start times every 15 minutes, 30 minutes, or 1 hour.</li><li>Click Save Operating Hours.</li><li>On the calendar, tap a date to set custom hours or close that day.</li><li>Drag across days, or hold a date and tap the last day, to mark time off. Use Add Recurring Outage for a repeating break such as lunch.</li></ol></section>'
                     + '<section><h2 class="text-base font-bold text-white mb-1">Payments</h2><ol class="list-decimal pl-5 space-y-1"><li>Open Payment Options.</li><li>Free only allows Pay at Appointment.</li><li>Starter can use Cash App, Venmo, Zelle, PayPal, and Pay at Appointment. Card checkout is not offered.</li><li>Pro can also turn on Credit / Debit Card (Stripe).</li><li>On Pro, Appointment deposit can be a percent of the service price or a fixed amount. It stays off until you turn it on. Percent deposits skip services with no price; card checkout also needs a price. Free and Starter cannot collect a card deposit.</li><li>Cancellation fee stays off until you turn it on. Set the hours (default 24) and a percent or a fixed amount. Pro charges a card already used for that visit. Free and Starter only show the rule.</li><li>Click Save Payment Gateways.</li></ol></section>'
                     + '<section><h2 class="text-base font-bold text-white mb-1">Appointments</h2><ol class="list-decimal pl-5 space-y-1"><li>Open Appointments Roster.</li><li>Free bookings are confirmed as soon as the client reserves.</li><li>Starter and Pro bookings stay pending. Click Accept or Deny. Deny frees that time.</li><li>Mark paid, Reschedule, and Cancel are on the same row.</li><li>Add Manual Appointment records a visit you took in person.</li></ol></section>'
                     + '<section><h2 class="text-base font-bold text-white mb-1">Repeating visits</h2><ol class="list-decimal pl-5 space-y-1"><li>Open Email Confirmations.</li><li>On Pro, turn on Allow recurring appointments and click Save Email Settings.</li><li>Free and Starter do not show repeating visits on the booking page.</li></ol></section>'
@@ -9133,6 +9468,14 @@ body.schedi-newdash #addBlockedTimeModal button { min-height: 44px; }
             if (id === 'newBlockTime') {
                 return { kind: 'single', input: input, err: document.getElementById('blockTimeError') };
             }
+            if (id === 'sdCalStart' || id === 'sdCalEnd') {
+                return {
+                    kind: 'pair',
+                    start: document.getElementById('sdCalStart'),
+                    end: document.getElementById('sdCalEnd'),
+                    err: document.getElementById('sdCalError')
+                };
+            }
             return null;
         }
 
@@ -9268,6 +9611,879 @@ body.schedi-newdash #addBlockedTimeModal button { min-height: 44px; }
         }
         bindOwnerTimeCombos();
 
+        // Month calendar for special hours and time off. Writes the existing specialHours and blockedTimes shapes only.
+        var HOURS_CAL_HOLD_MS = 500;
+        var hoursCalCursor = null;
+        var hoursCalFocus = '';
+        var hoursCalAnchor = '';
+        var hoursCalSel = null;
+        var hoursCalEditor = null;
+        var hoursCalBound = false;
+        var hoursCalPointer = null;
+        var hoursCalHoldTimer = 0;
+        var hoursCalAwaitEnd = false;
+        var hoursCalIgnoreClick = false;
+        var hoursCalWantFocus = false;
+
+        function hoursCalParseIso(iso) {
+            var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || ''));
+            if (!m) return null;
+            var y = parseInt(m[1], 10);
+            var mo = parseInt(m[2], 10);
+            var d = parseInt(m[3], 10);
+            var dt = new Date(y, mo - 1, d);
+            if (dt.getFullYear() !== y || dt.getMonth() !== mo - 1 || dt.getDate() !== d) return null;
+            return { y: y, m: mo, d: d };
+        }
+
+        function hoursCalIsoFromParts(y, m, d) {
+            var dt = new Date(Number(y), Number(m) - 1, Number(d));
+            if (isNaN(dt.getTime())) return '';
+            var mm = dt.getMonth() + 1;
+            var dd = dt.getDate();
+            return dt.getFullYear() + '-' + (mm < 10 ? '0' : '') + mm + '-' + (dd < 10 ? '0' : '') + dd;
+        }
+
+        function hoursCalAddDays(iso, n) {
+            var p = hoursCalParseIso(iso);
+            var delta = Number(n);
+            if (!p || !isFinite(delta)) return '';
+            return hoursCalIsoFromParts(p.y, p.m, p.d + delta);
+        }
+
+        function hoursCalAddMonths(iso, n) {
+            var p = hoursCalParseIso(iso);
+            var delta = Number(n);
+            if (!p || !isFinite(delta)) return '';
+            var target = new Date(p.y, p.m - 1 + delta, 1);
+            var last = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate();
+            var day = p.d > last ? last : p.d;
+            return hoursCalIsoFromParts(target.getFullYear(), target.getMonth() + 1, day);
+        }
+
+        function hoursCalMonthCells(year, month) {
+            var y = Number(year);
+            var m = Number(month);
+            if (!isFinite(y) || m < 1 || m > 12) return [];
+            var firstDow = new Date(y, m - 1, 1).getDay();
+            var count = new Date(y, m, 0).getDate();
+            var cells = [];
+            var i;
+            for (i = 0; i < firstDow; i++) {
+                var lead = new Date(y, m - 1, 1 - (firstDow - i));
+                cells.push({ iso: hoursCalIsoFromParts(lead.getFullYear(), lead.getMonth() + 1, lead.getDate()), inMonth: false });
+            }
+            for (i = 1; i <= count; i++) cells.push({ iso: hoursCalIsoFromParts(y, m, i), inMonth: true });
+            while (cells.length % 7 !== 0) {
+                var prev = hoursCalParseIso(cells[cells.length - 1].iso);
+                cells.push({ iso: hoursCalIsoFromParts(prev.y, prev.m, prev.d + 1), inMonth: false });
+            }
+            return cells;
+        }
+
+        function hoursCalOrder(start, end) {
+            return start <= end ? { start: start, end: end } : { start: end, end: start };
+        }
+
+        function hoursCalInRange(iso, start, end) {
+            if (!hoursCalParseIso(iso) || !hoursCalParseIso(start) || !hoursCalParseIso(end)) return false;
+            var span = hoursCalOrder(start, end);
+            return iso >= span.start && iso <= span.end;
+        }
+
+        function hoursCalDatesBetween(start, end) {
+            if (!hoursCalParseIso(start) || !hoursCalParseIso(end)) return [];
+            var span = hoursCalOrder(start, end);
+            var out = [];
+            var cursor = span.start;
+            var guard = 0;
+            while (cursor && cursor <= span.end && guard < 400) {
+                out.push(cursor);
+                cursor = hoursCalAddDays(cursor, 1);
+                guard++;
+            }
+            return out;
+        }
+
+        function hoursCalEntryRanges(entry) {
+            if (entry == null) return null;
+            if (Array.isArray(entry)) return entry;
+            if (typeof entry === 'object' && Array.isArray(entry.ranges)) return entry.ranges;
+            return null;
+        }
+
+        function hoursCalEntryOpen(entry) {
+            if (entry && typeof entry === 'object' && !Array.isArray(entry) && entry.closed === true) return false;
+            var ranges = hoursCalEntryRanges(entry);
+            if (!ranges) return false;
+            for (var i = 0; i < ranges.length; i++) {
+                var r = ranges[i];
+                if (!r) continue;
+                var s = toMinutes(r.start);
+                var e = toMinutes(r.end);
+                if (s !== null && e !== null && e > s) return true;
+            }
+            return false;
+        }
+
+        function hoursCalEntryClosed(entry) {
+            if (entry == null) return false;
+            if (entry && typeof entry === 'object' && !Array.isArray(entry) && entry.closed === true) return true;
+            var ranges = hoursCalEntryRanges(entry);
+            if (!ranges) return false;
+            return !hoursCalEntryOpen(entry);
+        }
+
+        function hoursCalBlockCovers(block, iso) {
+            if (!block || !iso) return false;
+            var start = String(block.startDate || '');
+            var end = String(block.endDate || block.startDate || '');
+            if (!start) return false;
+            if (!end) end = start;
+            return iso >= start && iso <= end;
+        }
+
+        function hoursCalBlockAllDay(block) {
+            if (!block) return false;
+            return block.allDay === true || !block.startTime;
+        }
+
+        function hoursCalMarks(tenant, iso) {
+            var entry = tenant && tenant.specialHours ? tenant.specialHours[iso] : null;
+            var custom = hoursCalEntryOpen(entry);
+            var closed = hoursCalEntryClosed(entry);
+            var blocks = tenant && Array.isArray(tenant.blockedTimes) ? tenant.blockedTimes : [];
+            for (var i = 0; i < blocks.length; i++) {
+                if (hoursCalBlockCovers(blocks[i], iso) && hoursCalBlockAllDay(blocks[i])) closed = true;
+            }
+            return { custom: custom, closed: closed };
+        }
+
+        function hoursCalNoteLabel(note) {
+            var label = String(note == null ? '' : note).replace(/\s+/g, ' ').trim().slice(0, 80);
+            return label || 'Closed';
+        }
+
+        function hoursCalReleaseDay(tenant, iso) {
+            if (!tenant || typeof tenant !== 'object' || !hoursCalParseIso(iso)) return tenant;
+            if (!Array.isArray(tenant.blockedTimes)) return tenant;
+            var next = [];
+            for (var i = 0; i < tenant.blockedTimes.length; i++) {
+                var b = tenant.blockedTimes[i];
+                if (!b || !hoursCalBlockCovers(b, iso) || !hoursCalBlockAllDay(b)) {
+                    next.push(b);
+                    continue;
+                }
+                var start = String(b.startDate || '');
+                var end = String(b.endDate || b.startDate || '');
+                if (!end) end = start;
+                if (start === iso && end === iso) continue;
+                if (start === iso) {
+                    var after = Object.assign({}, b, { startDate: hoursCalAddDays(iso, 1) });
+                    if (after.startDate && after.startDate <= end) next.push(after);
+                    continue;
+                }
+                if (end === iso) {
+                    var beforeEnd = hoursCalAddDays(iso, -1);
+                    if (start <= beforeEnd) next.push(Object.assign({}, b, { endDate: beforeEnd }));
+                    continue;
+                }
+                var leftEnd = hoursCalAddDays(iso, -1);
+                var rightStart = hoursCalAddDays(iso, 1);
+                if (start <= leftEnd) next.push(Object.assign({}, b, { endDate: leftEnd, id: String(b.id) + '-a' }));
+                if (rightStart && rightStart <= end) next.push(Object.assign({}, b, { startDate: rightStart, id: String(b.id) + '-b' }));
+            }
+            tenant.blockedTimes = next;
+            return tenant;
+        }
+
+        function hoursCalNewBlockId(start) {
+            return 'block-' + start + '-' + String(Date.now()) + '-' + String(Math.floor(Math.random() * 100000));
+        }
+
+        function hoursCalWriteCustom(tenant, iso, start, end) {
+            if (!tenant || typeof tenant !== 'object') return 'Pick a date.';
+            if (!hoursCalParseIso(iso)) return 'Pick a date.';
+            var err = ownerHoursOrderError(start, end);
+            if (err) return err;
+            var open = parseOwnerClock(start);
+            var close = parseOwnerClock(end);
+            if (!tenant.specialHours || typeof tenant.specialHours !== 'object' || Array.isArray(tenant.specialHours)) tenant.specialHours = {};
+            if (!Array.isArray(tenant.blockedTimes)) tenant.blockedTimes = [];
+            hoursCalReleaseDay(tenant, iso);
+            tenant.specialHours[iso] = { closed: false, ranges: [{ start: open, end: close }] };
+            return '';
+        }
+
+        function hoursCalWriteClosed(tenant, startIso, endIso, note, id) {
+            if (!tenant || typeof tenant !== 'object') return 'Pick a date.';
+            if (!hoursCalParseIso(startIso) || !hoursCalParseIso(endIso)) return 'Pick a date.';
+            var span = hoursCalOrder(startIso, endIso);
+            var label = hoursCalNoteLabel(note);
+            if (!Array.isArray(tenant.blockedTimes)) tenant.blockedTimes = [];
+            if (!tenant.specialHours || typeof tenant.specialHours !== 'object' || Array.isArray(tenant.specialHours)) tenant.specialHours = {};
+            if (id != null && String(id) !== '') {
+                var idStr = String(id);
+                tenant.blockedTimes = tenant.blockedTimes.filter(function (b) { return !b || String(b.id) !== idStr; });
+            }
+            var dates = hoursCalDatesBetween(span.start, span.end);
+            for (var i = 0; i < dates.length; i++) {
+                if (tenant.specialHours[dates[i]] != null) delete tenant.specialHours[dates[i]];
+                hoursCalReleaseDay(tenant, dates[i]);
+            }
+            tenant.blockedTimes.push({
+                id: (id != null && String(id) !== '') ? id : hoursCalNewBlockId(span.start),
+                note: label,
+                startDate: span.start,
+                endDate: span.end,
+                allDay: true,
+                startTime: '',
+                endTime: ''
+            });
+            return '';
+        }
+
+        function hoursCalClearRange(tenant, startIso, endIso, id) {
+            if (!tenant || typeof tenant !== 'object') return tenant;
+            if (!hoursCalParseIso(startIso) || !hoursCalParseIso(endIso)) return tenant;
+            if (!Array.isArray(tenant.blockedTimes)) tenant.blockedTimes = [];
+            if (!tenant.specialHours || typeof tenant.specialHours !== 'object' || Array.isArray(tenant.specialHours)) tenant.specialHours = {};
+            if (id != null && String(id) !== '') {
+                var idStr = String(id);
+                tenant.blockedTimes = tenant.blockedTimes.filter(function (b) { return !b || String(b.id) !== idStr; });
+            }
+            var dates = hoursCalDatesBetween(startIso, endIso);
+            for (var i = 0; i < dates.length; i++) {
+                if (tenant.specialHours[dates[i]] != null) delete tenant.specialHours[dates[i]];
+                hoursCalReleaseDay(tenant, dates[i]);
+            }
+            return tenant;
+        }
+
+        function hoursCalUpcoming(tenant, todayIso) {
+            var today = hoursCalParseIso(todayIso) ? todayIso : '0000-01-01';
+            var items = [];
+            var map = tenant && tenant.specialHours && typeof tenant.specialHours === 'object' ? tenant.specialHours : {};
+            Object.keys(map).forEach(function (k) {
+                if (!hoursCalParseIso(k) || k < today) return;
+                var entry = map[k];
+                var open = hoursCalEntryOpen(entry);
+                var ranges = hoursCalEntryRanges(entry) || [];
+                var detail = open
+                    ? ranges.filter(function (r) {
+                        return r && toMinutes(r.start) !== null && toMinutes(r.end) !== null && toMinutes(r.end) > toMinutes(r.start);
+                    }).map(function (r) { return String(r.start) + ' – ' + String(r.end); }).join(', ')
+                    : 'Closed all day';
+                items.push({
+                    kind: 'special',
+                    id: k,
+                    start: k,
+                    end: k,
+                    label: open ? 'Custom hours' : 'Closed',
+                    closed: !open,
+                    detail: detail || 'Closed all day'
+                });
+            });
+            var blocks = tenant && Array.isArray(tenant.blockedTimes) ? tenant.blockedTimes : [];
+            blocks.forEach(function (b, i) {
+                if (!b) return;
+                var start = String(b.startDate || '');
+                var end = String(b.endDate || b.startDate || '');
+                if (!hoursCalParseIso(start)) return;
+                if (!hoursCalParseIso(end)) end = start;
+                if (end < today) return;
+                var allDay = hoursCalBlockAllDay(b);
+                var note = String(b.note || '').trim();
+                items.push({
+                    kind: 'timeoff',
+                    id: b.id != null && b.id !== '' ? b.id : ('block-' + i),
+                    start: start,
+                    end: end,
+                    label: note || (allDay ? 'Closed' : 'Time off'),
+                    closed: allDay,
+                    detail: allDay ? 'All day' : (String(b.startTime || '') + ' – ' + String(b.endTime || ''))
+                });
+            });
+            items.sort(function (a, b) {
+                if (a.start !== b.start) return a.start < b.start ? -1 : 1;
+                if (a.kind !== b.kind) return a.kind === 'special' ? -1 : 1;
+                return String(a.id) < String(b.id) ? -1 : 1;
+            });
+            return items;
+        }
+
+        function hoursCalCoveringBlock(tenant, iso) {
+            var blocks = tenant && Array.isArray(tenant.blockedTimes) ? tenant.blockedTimes : [];
+            for (var i = 0; i < blocks.length; i++) {
+                var b = blocks[i];
+                if (!hoursCalBlockCovers(b, iso) || !hoursCalBlockAllDay(b)) continue;
+                var start = String(b.startDate || '');
+                var end = String(b.endDate || b.startDate || '');
+                if (start && end && start !== end) return b;
+            }
+            return null;
+        }
+
+        function hoursCalExactBlock(tenant, iso) {
+            var blocks = tenant && Array.isArray(tenant.blockedTimes) ? tenant.blockedTimes : [];
+            for (var i = 0; i < blocks.length; i++) {
+                var b = blocks[i];
+                if (!b || !hoursCalBlockAllDay(b)) continue;
+                var start = String(b.startDate || '');
+                var end = String(b.endDate || b.startDate || '');
+                if (start === iso && end === iso) return b;
+            }
+            return null;
+        }
+
+        function hoursCalPretty(iso) {
+            var p = hoursCalParseIso(iso);
+            if (!p) return String(iso || '');
+            try {
+                return new Date(p.y, p.m - 1, p.d).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+            } catch (e) {
+                return iso;
+            }
+        }
+
+        function hoursCalMonthTitle(year, month) {
+            try {
+                return new Date(year, month - 1, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+            } catch (e2) {
+                return year + '-' + month;
+            }
+        }
+
+        function hoursCalStatus(text) {
+            var el = document.getElementById('sdCalStatus');
+            if (el) el.textContent = text || '';
+        }
+
+        function hoursCalShowError(msg) {
+            var el = document.getElementById('sdCalError');
+            if (el) el.textContent = msg || '';
+            var start = document.getElementById('sdCalStart');
+            var end = document.getElementById('sdCalEnd');
+            if (start) start.setAttribute('aria-invalid', msg ? 'true' : 'false');
+            if (end) end.setAttribute('aria-invalid', msg ? 'true' : 'false');
+        }
+
+        function hoursCalEnsureCombos() {
+            var box = document.getElementById('sdCalTimes');
+            if (!box || box.childElementCount) return;
+            box.innerHTML = ownerTimeComboHtml('sdCalStart', '09:00 AM', 'Opens', 'Show open times', '', 'sdCalError')
+                + ownerTimeComboHtml('sdCalEnd', '05:00 PM', 'Closes', 'Show close times', '', 'sdCalError');
+            bindOwnerTimeCombos();
+        }
+
+        function hoursCalSetTimes(start, end) {
+            hoursCalEnsureCombos();
+            var s = document.getElementById('sdCalStart');
+            var e = document.getElementById('sdCalEnd');
+            if (s) s.value = parseOwnerClock(start) || start || '09:00 AM';
+            if (e) e.value = parseOwnerClock(end) || end || '05:00 PM';
+        }
+
+        function hoursCalValidRanges(entry) {
+            var ranges = hoursCalEntryRanges(entry) || [];
+            var out = [];
+            for (var i = 0; i < ranges.length; i++) {
+                var r = ranges[i];
+                if (!r) continue;
+                var s = toMinutes(r.start);
+                var e = toMinutes(r.end);
+                if (s !== null && e !== null && e > s) out.push({ start: String(r.start), end: String(r.end) });
+            }
+            return out;
+        }
+
+        function hoursCalSyncMode() {
+            var editor = hoursCalEditor;
+            var range = !!(editor && editor.kind === 'range');
+            var closed = document.getElementById('sdCalModeClosed');
+            var isClosed = range || !!(closed && closed.checked);
+            var modes = document.getElementById('sdCalModeRow');
+            var openFields = document.getElementById('sdCalOpenFields');
+            var noteWrap = document.getElementById('sdCalNoteWrap');
+            var split = document.getElementById('sdCalSplitHint');
+            var multi = document.getElementById('sdCalMultiHint');
+            if (modes) modes.hidden = range;
+            if (openFields) openFields.hidden = isClosed;
+            if (noteWrap) noteWrap.hidden = !isClosed;
+            if (split) split.hidden = !(editor && editor.covered && isClosed);
+            if (multi) multi.hidden = isClosed || !(editor && editor.multi);
+            if (range && closed) closed.checked = true;
+        }
+
+        function hoursCalCellHtml(tenant, cell, todayIso) {
+            var marks = hoursCalMarks(tenant, cell.iso);
+            var selected = !!(hoursCalSel && hoursCalInRange(cell.iso, hoursCalSel.start, hoursCalSel.end));
+            var parts = hoursCalParseIso(cell.iso);
+            var label = hoursCalPretty(cell.iso);
+            if (marks.custom) label += ', custom hours';
+            if (marks.closed) label += ', closed';
+            if (cell.iso === todayIso) label += ', today';
+            if (!cell.inMonth) label += ', outside this month';
+            var cls = 'sd-cal-cell';
+            if (!cell.inMonth) cls += ' is-out';
+            if (marks.custom) cls += ' is-custom';
+            if (marks.closed) cls += ' is-closed';
+            if (cell.iso === todayIso) cls += ' is-today';
+            if (selected) cls += ' is-range';
+            var dot = marks.custom ? '<span class="sd-cal-dot" aria-hidden="true"></span>' : '';
+            return '<div class="' + cls + '" role="gridcell" data-cal-iso="' + cell.iso + '" tabindex="' + (cell.iso === hoursCalFocus ? '0' : '-1') + '" aria-selected="' + (selected ? 'true' : 'false') + '" aria-label="' + esc(label) + '"><span class="sd-cal-num">' + (parts ? parts.d : '') + '</span>' + dot + '</div>';
+        }
+
+        function hoursCalUpcomingHtml(tenant) {
+            var items = hoursCalUpcoming(tenant, localISODate());
+            if (!items.length) return '<p class="sd-cal-empty">No upcoming special dates or time off.</p>';
+            var can = canManageBlockedTimes();
+            return items.map(function (item) {
+                var when = item.start === item.end ? hoursCalPretty(item.start) : (hoursCalPretty(item.start) + ' – ' + hoursCalPretty(item.end));
+                var actions = '';
+                if (can) {
+                    actions = '<div class="sd-cal-item-actions">'
+                        + '<button type="button" class="sd-cal-edit" data-cal-edit="' + esc(item.kind) + '" data-cal-id="' + esc(String(item.id)) + '" aria-label="' + esc('Edit ' + item.label + ' ' + when) + '">Edit</button>'
+                        + '<button type="button" class="sd-cal-remove" data-cal-remove="' + esc(item.kind) + '" data-cal-id="' + esc(String(item.id)) + '" aria-label="' + esc('Remove ' + item.label) + '">Remove</button>'
+                        + '</div>';
+                }
+                return '<div class="sd-cal-item"><div class="sd-cal-item-main"><div class="sd-cal-item-label">' + esc(item.label) + '</div><div class="sd-cal-item-when">' + esc(when) + '</div><div class="sd-cal-item-detail">' + esc(item.detail) + '</div></div>' + actions + '</div>';
+            }).join('');
+        }
+
+        function hoursCalPaint(tenant) {
+            hoursCalBind();
+            var grid = document.getElementById('sdCalGrid');
+            if (!grid || !tenant) return;
+            if (!hoursCalCursor) {
+                var todayP = hoursCalParseIso(localISODate()) || { y: new Date().getFullYear(), m: new Date().getMonth() + 1, d: 1 };
+                hoursCalCursor = { y: todayP.y, m: todayP.m };
+                if (!hoursCalFocus) hoursCalFocus = hoursCalIsoFromParts(todayP.y, todayP.m, todayP.d);
+            }
+            var title = document.getElementById('sdCalTitle');
+            if (title) title.textContent = hoursCalMonthTitle(hoursCalCursor.y, hoursCalCursor.m);
+            var cells = hoursCalMonthCells(hoursCalCursor.y, hoursCalCursor.m);
+            var seen = false;
+            for (var s = 0; s < cells.length; s++) if (cells[s].iso === hoursCalFocus) seen = true;
+            if (!seen) {
+                for (var f = 0; f < cells.length; f++) {
+                    if (cells[f].inMonth) { hoursCalFocus = cells[f].iso; break; }
+                }
+            }
+            var todayIso = localISODate();
+            var html = '';
+            for (var i = 0; i < cells.length; i += 7) {
+                html += '<div class="sd-cal-row" role="row">';
+                for (var c = 0; c < 7 && cells[i + c]; c++) html += hoursCalCellHtml(tenant, cells[i + c], todayIso);
+                html += '</div>';
+            }
+            grid.innerHTML = html;
+            var list = document.getElementById('sdHoursUpcoming');
+            if (list) list.innerHTML = hoursCalUpcomingHtml(tenant);
+            if (hoursCalWantFocus) {
+                var focusEl = grid.querySelector('[data-cal-iso="' + hoursCalFocus + '"]');
+                if (focusEl && focusEl.focus) focusEl.focus();
+                hoursCalWantFocus = false;
+            }
+        }
+
+        function hoursCalMarkRange(start, end) {
+            var buttons = document.querySelectorAll('#sdCalGrid [data-cal-iso]');
+            for (var i = 0; i < buttons.length; i++) {
+                var iso = buttons[i].getAttribute('data-cal-iso');
+                var on = !!(start && end && hoursCalInRange(iso, start, end));
+                buttons[i].classList.toggle('is-range', on);
+                buttons[i].setAttribute('aria-selected', on ? 'true' : 'false');
+            }
+        }
+
+        function hoursCalResetPointer() {
+            clearTimeout(hoursCalHoldTimer);
+            hoursCalPointer = null;
+            hoursCalAwaitEnd = false;
+        }
+
+        function hoursCalIsoFromEvent(e) {
+            var node = e && e.target && e.target.closest ? e.target.closest('[data-cal-iso]') : null;
+            return node ? node.getAttribute('data-cal-iso') : '';
+        }
+
+        function hoursCalIsoFromPoint(x, y) {
+            var node = document.elementFromPoint(x, y);
+            var cell = node && node.closest ? node.closest('[data-cal-iso]') : null;
+            return cell ? cell.getAttribute('data-cal-iso') : '';
+        }
+
+        function hoursCalHideEditor() {
+            var panel = document.getElementById('sdCalEditor');
+            if (panel) panel.hidden = true;
+            hoursCalEditor = null;
+            hoursCalSel = null;
+            hoursCalShowError('');
+        }
+
+        function hoursCalShowEditor() {
+            var editor = hoursCalEditor;
+            var panel = document.getElementById('sdCalEditor');
+            if (!editor || !panel) return;
+            var tenant = getTenant() || {};
+            ensureSpecialHours(tenant);
+            ensureBlockedArrays(tenant);
+            var entry = tenant.specialHours ? tenant.specialHours[editor.start] : null;
+            var ranges = hoursCalValidRanges(entry);
+            var exact = editor.kind === 'day' ? hoursCalExactBlock(tenant, editor.start) : null;
+            if (editor.kind === 'day') editor.blockId = exact ? exact.id : '';
+            editor.multi = ranges.length > 1;
+            editor.covered = editor.kind === 'day' && !!hoursCalCoveringBlock(tenant, editor.start);
+            var note = '';
+            if (editor.kind === 'range' && editor.blockId) {
+                var found = (tenant.blockedTimes || []).filter(function (b) { return b && String(b.id) === String(editor.blockId); })[0];
+                note = found && found.note ? found.note : '';
+            } else if (exact && exact.note) note = exact.note;
+            else if (editor.covered) {
+                var cover = hoursCalCoveringBlock(tenant, editor.start);
+                note = cover && cover.note ? cover.note : '';
+            }
+            var blockedDay = hoursCalEntryClosed(entry) || !!exact || !!hoursCalCoveringBlock(tenant, editor.start);
+            var openMode = editor.kind !== 'range' && !blockedDay;
+            hoursCalSetTimes(ranges.length ? ranges[0].start : '09:00 AM', ranges.length ? ranges[0].end : '05:00 PM');
+            var noteEl = document.getElementById('sdCalNote');
+            if (noteEl) noteEl.value = note || '';
+            var openRadio = document.getElementById('sdCalModeOpen');
+            var closedRadio = document.getElementById('sdCalModeClosed');
+            if (openMode) { if (openRadio) openRadio.checked = true; }
+            else if (closedRadio) closedRadio.checked = true;
+            var title = document.getElementById('sdCalEditorTitle');
+            if (title) {
+                title.textContent = (editor.kind === 'range' && editor.start !== editor.end)
+                    ? (hoursCalPretty(editor.start) + ' – ' + hoursCalPretty(editor.end))
+                    : hoursCalPretty(editor.start);
+            }
+            hoursCalSyncMode();
+            hoursCalShowError('');
+            panel.hidden = false;
+            var focusEl = (editor.kind === 'range') ? noteEl : (openMode ? openRadio : closedRadio);
+            if (focusEl && focusEl.focus) focusEl.focus();
+        }
+
+        function hoursCalOpenDay(iso) {
+            hoursCalResetPointer();
+            if (!hoursCalParseIso(iso) || !canManageBlockedTimes()) return;
+            hoursCalEditor = { kind: 'day', start: iso, end: iso, blockId: '' };
+            hoursCalSel = { start: iso, end: iso };
+            hoursCalAnchor = iso;
+            hoursCalFocus = iso;
+            var p = hoursCalParseIso(iso);
+            hoursCalCursor = { y: p.y, m: p.m };
+            hoursCalWantFocus = false;
+            hoursCalStatus('');
+            hoursCalPaint(getTenant());
+            hoursCalShowEditor();
+        }
+
+        function hoursCalOpenRange(start, end) {
+            hoursCalResetPointer();
+            if (!hoursCalParseIso(start) || !hoursCalParseIso(end) || !canManageBlockedTimes()) return;
+            var span = hoursCalOrder(start, end);
+            if (span.start === span.end) {
+                hoursCalOpenDay(span.start);
+                return;
+            }
+            hoursCalEditor = { kind: 'range', start: span.start, end: span.end, blockId: '' };
+            hoursCalSel = span;
+            hoursCalAnchor = span.start;
+            hoursCalFocus = span.end;
+            var p = hoursCalParseIso(span.start);
+            hoursCalCursor = { y: p.y, m: p.m };
+            hoursCalWantFocus = false;
+            hoursCalStatus('');
+            hoursCalPaint(getTenant());
+            hoursCalShowEditor();
+        }
+
+        function hoursCalFocusIso(iso, shift) {
+            if (!hoursCalParseIso(iso)) return;
+            var prev = hoursCalFocus;
+            if (shift) {
+                if (!hoursCalAnchor) hoursCalAnchor = prev || iso;
+                var span = hoursCalOrder(hoursCalAnchor, iso);
+                hoursCalSel = span;
+                hoursCalStatus('Selected ' + hoursCalPretty(span.start) + ' through ' + hoursCalPretty(span.end) + '. Press Enter to mark them closed.');
+            } else {
+                hoursCalAnchor = iso;
+                hoursCalSel = null;
+                hoursCalStatus('');
+            }
+            hoursCalFocus = iso;
+            var p = hoursCalParseIso(iso);
+            hoursCalCursor = { y: p.y, m: p.m };
+            hoursCalWantFocus = true;
+            hoursCalPaint(getTenant());
+        }
+
+        function hoursCalCommit() {
+            if (!canManageBlockedTimes()) return;
+            var tenant = getTenant();
+            var editor = hoursCalEditor;
+            if (!tenant || !editor) return;
+            ensureBlockedArrays(tenant);
+            var closedEl = document.getElementById('sdCalModeClosed');
+            var closed = editor.kind === 'range' || !!(closedEl && closedEl.checked);
+            var err = '';
+            if (!closed) {
+                var startEl = document.getElementById('sdCalStart');
+                var endEl = document.getElementById('sdCalEnd');
+                err = hoursCalWriteCustom(tenant, editor.start, startEl ? startEl.value : '', endEl ? endEl.value : '');
+            } else {
+                var noteEl = document.getElementById('sdCalNote');
+                var note = noteEl ? noteEl.value : '';
+                var label = hoursCalNoteLabel(note);
+                if (editor.kind === 'day' && !editor.blockId) {
+                    var cover = hoursCalCoveringBlock(tenant, editor.start);
+                    if (cover && hoursCalNoteLabel(cover.note) === label) {
+                        if (tenant.specialHours && tenant.specialHours[editor.start] != null) delete tenant.specialHours[editor.start];
+                    } else err = hoursCalWriteClosed(tenant, editor.start, editor.end, note, '');
+                } else err = hoursCalWriteClosed(tenant, editor.start, editor.end, note, editor.blockId || '');
+            }
+            if (err) {
+                hoursCalShowError(err);
+                var bad = document.getElementById('sdCalStart');
+                if (bad && bad.focus) bad.focus();
+                return;
+            }
+            hoursCalShowError('');
+            var today = localISODate();
+            if (tenant.specialHours) {
+                Object.keys(tenant.specialHours).forEach(function (k) {
+                    if (k < today) delete tenant.specialHours[k];
+                });
+            }
+            saveState();
+            hoursCalHideEditor();
+            renderTenantHours(tenant);
+            renderLivePreviewIframe();
+            showToast(closed ? 'Time off saved.' : 'Custom hours saved.', 'success');
+        }
+
+        function hoursCalUseWeekly() {
+            if (!canManageBlockedTimes()) return;
+            var tenant = getTenant();
+            var editor = hoursCalEditor;
+            if (!tenant || !editor) return;
+            ensureBlockedArrays(tenant);
+            hoursCalClearRange(tenant, editor.start, editor.end, editor.blockId || '');
+            var today = localISODate();
+            if (tenant.specialHours) {
+                Object.keys(tenant.specialHours).forEach(function (k) {
+                    if (k < today) delete tenant.specialHours[k];
+                });
+            }
+            saveState();
+            hoursCalHideEditor();
+            renderTenantHours(tenant);
+            renderLivePreviewIframe();
+            showToast('Weekly hours apply again.', 'info');
+        }
+
+        function hoursCalCancel() {
+            var back = hoursCalFocus;
+            hoursCalHideEditor();
+            hoursCalStatus('');
+            hoursCalFocus = back;
+            hoursCalWantFocus = true;
+            hoursCalPaint(getTenant());
+        }
+
+        function hoursCalOnUpcomingClick(e) {
+            var edit = e.target && e.target.closest ? e.target.closest('[data-cal-edit]') : null;
+            var remove = e.target && e.target.closest ? e.target.closest('[data-cal-remove]') : null;
+            var btn = edit || remove;
+            if (!btn) return;
+            var kind = btn.getAttribute(edit ? 'data-cal-edit' : 'data-cal-remove');
+            var id = btn.getAttribute('data-cal-id');
+            if (remove) {
+                if (kind === 'special') window.deleteSpecialHours(id);
+                else window.deleteDateBlock(id);
+                return;
+            }
+            if (kind === 'special') {
+                hoursCalOpenDay(id);
+                return;
+            }
+            var tenant = getTenant();
+            if (!tenant) return;
+            var block = (tenant.blockedTimes || []).filter(function (b) { return b && String(b.id) === String(id); })[0];
+            if (!block) return;
+            if (block.allDay === false && block.startTime) {
+                window.openEditDateBlock(id);
+                return;
+            }
+            var start = String(block.startDate || '');
+            var end = String(block.endDate || block.startDate || '');
+            if (start === end) {
+                hoursCalOpenDay(start);
+                return;
+            }
+            hoursCalResetPointer();
+            hoursCalEditor = { kind: 'range', start: start, end: end, blockId: block.id };
+            hoursCalSel = { start: start, end: end };
+            hoursCalAnchor = start;
+            hoursCalFocus = start;
+            var p = hoursCalParseIso(start);
+            if (p) hoursCalCursor = { y: p.y, m: p.m };
+            hoursCalPaint(tenant);
+            hoursCalShowEditor();
+        }
+
+        function hoursCalBind() {
+            if (hoursCalBound) return;
+            var grid = document.getElementById('sdCalGrid');
+            var prev = document.getElementById('sdCalPrev');
+            var next = document.getElementById('sdCalNext');
+            if (!grid || !prev || !next) return;
+            hoursCalBound = true;
+            prev.addEventListener('click', function () {
+                var base = hoursCalFocus || hoursCalIsoFromParts(hoursCalCursor.y, hoursCalCursor.m, 1);
+                hoursCalFocusIso(hoursCalAddMonths(base, -1), false);
+            });
+            next.addEventListener('click', function () {
+                var base = hoursCalFocus || hoursCalIsoFromParts(hoursCalCursor.y, hoursCalCursor.m, 1);
+                hoursCalFocusIso(hoursCalAddMonths(base, 1), false);
+            });
+            grid.addEventListener('pointerdown', function (e) {
+                var iso = hoursCalIsoFromEvent(e);
+                if (!iso || (e.button != null && e.button !== 0)) return;
+                if (hoursCalAwaitEnd) {
+                    hoursCalAwaitEnd = false;
+                    hoursCalIgnoreClick = true;
+                    setTimeout(function () { hoursCalIgnoreClick = false; }, 0);
+                    hoursCalOpenRange(hoursCalAnchor || iso, iso);
+                    e.preventDefault();
+                    return;
+                }
+                if (e.shiftKey) return;
+                hoursCalPointer = { iso: iso, x: e.clientX, y: e.clientY, dragging: false, pid: e.pointerId };
+                clearTimeout(hoursCalHoldTimer);
+                hoursCalHoldTimer = setTimeout(function () {
+                    if (!hoursCalPointer || hoursCalPointer.dragging) return;
+                    hoursCalAwaitEnd = true;
+                    hoursCalAnchor = hoursCalPointer.iso;
+                    hoursCalSel = { start: hoursCalPointer.iso, end: hoursCalPointer.iso };
+                    hoursCalStatus('Tap an end date to mark those days closed.');
+                    hoursCalMarkRange(hoursCalPointer.iso, hoursCalPointer.iso);
+                }, HOURS_CAL_HOLD_MS);
+            });
+            document.addEventListener('pointermove', function (e) {
+                if (!hoursCalPointer || e.pointerId !== hoursCalPointer.pid) return;
+                var dx = e.clientX - hoursCalPointer.x;
+                var dy = e.clientY - hoursCalPointer.y;
+                if (!hoursCalPointer.dragging && (dx * dx + dy * dy) > 64) {
+                    hoursCalPointer.dragging = true;
+                    clearTimeout(hoursCalHoldTimer);
+                    hoursCalAwaitEnd = false;
+                }
+                if (!hoursCalPointer.dragging) return;
+                var iso = hoursCalIsoFromPoint(e.clientX, e.clientY);
+                if (!iso) return;
+                hoursCalSel = hoursCalOrder(hoursCalPointer.iso, iso);
+                hoursCalMarkRange(hoursCalSel.start, hoursCalSel.end);
+                hoursCalStatus('Selected ' + hoursCalPretty(hoursCalSel.start) + ' through ' + hoursCalPretty(hoursCalSel.end) + '. Release to mark them closed.');
+            });
+            document.addEventListener('pointerup', function (e) {
+                if (!hoursCalPointer || e.pointerId !== hoursCalPointer.pid) return;
+                clearTimeout(hoursCalHoldTimer);
+                var start = hoursCalPointer.iso;
+                var dragging = hoursCalPointer.dragging;
+                var end = dragging ? (hoursCalIsoFromPoint(e.clientX, e.clientY) || start) : start;
+                var armed = hoursCalAwaitEnd;
+                hoursCalPointer = null;
+                if (dragging && end && end !== start) {
+                    hoursCalIgnoreClick = true;
+                    setTimeout(function () { hoursCalIgnoreClick = false; }, 0);
+                    hoursCalAwaitEnd = false;
+                    hoursCalOpenRange(start, end);
+                    return;
+                }
+                if (armed) {
+                    hoursCalIgnoreClick = true;
+                    setTimeout(function () { hoursCalIgnoreClick = false; }, 0);
+                }
+            });
+            document.addEventListener('pointercancel', function () {
+                clearTimeout(hoursCalHoldTimer);
+                hoursCalPointer = null;
+            });
+            grid.addEventListener('click', function (e) {
+                var iso = hoursCalIsoFromEvent(e);
+                if (!iso) return;
+                if (hoursCalIgnoreClick) {
+                    hoursCalIgnoreClick = false;
+                    return;
+                }
+                if (e.shiftKey) {
+                    var anchor = hoursCalAnchor || hoursCalFocus || iso;
+                    if (anchor === iso) hoursCalOpenDay(iso);
+                    else hoursCalOpenRange(anchor, iso);
+                    return;
+                }
+                hoursCalAnchor = iso;
+                hoursCalOpenDay(iso);
+            });
+            grid.addEventListener('keydown', function (e) {
+                var cell = e.target && e.target.closest ? e.target.closest('[data-cal-iso]') : null;
+                if (!cell) return;
+                var iso = cell.getAttribute('data-cal-iso');
+                var key = e.key;
+                var move = null;
+                if (key === 'ArrowLeft') move = -1;
+                else if (key === 'ArrowRight') move = 1;
+                else if (key === 'ArrowUp') move = -7;
+                else if (key === 'ArrowDown') move = 7;
+                else if (key === 'Home') {
+                    var homeP = hoursCalParseIso(iso);
+                    var homeDt = homeP ? new Date(homeP.y, homeP.m - 1, homeP.d) : null;
+                    move = homeDt ? -homeDt.getDay() : 0;
+                } else if (key === 'End') {
+                    var endP = hoursCalParseIso(iso);
+                    var endDt = endP ? new Date(endP.y, endP.m - 1, endP.d) : null;
+                    move = endDt ? (6 - endDt.getDay()) : 0;
+                } else if (key === 'PageUp') {
+                    e.preventDefault();
+                    hoursCalFocusIso(hoursCalAddMonths(iso, -1), e.shiftKey);
+                    return;
+                } else if (key === 'PageDown') {
+                    e.preventDefault();
+                    hoursCalFocusIso(hoursCalAddMonths(iso, 1), e.shiftKey);
+                    return;
+                } else if (key === 'Enter' || key === ' ') {
+                    e.preventDefault();
+                    if (hoursCalSel && hoursCalSel.start !== hoursCalSel.end) hoursCalOpenRange(hoursCalSel.start, hoursCalSel.end);
+                    else hoursCalOpenDay(iso);
+                    return;
+                } else return;
+                e.preventDefault();
+                if (!move) return;
+                hoursCalFocusIso(hoursCalAddDays(iso, move), e.shiftKey);
+            });
+            var saveBtn = document.getElementById('sdCalSave');
+            var weeklyBtn = document.getElementById('sdCalWeekly');
+            var cancelBtn = document.getElementById('sdCalCancel');
+            var modes = document.getElementById('sdCalModeRow');
+            var panel = document.getElementById('sdCalEditor');
+            var upcoming = document.getElementById('sdHoursUpcoming');
+            if (saveBtn) saveBtn.addEventListener('click', hoursCalCommit);
+            if (weeklyBtn) weeklyBtn.addEventListener('click', hoursCalUseWeekly);
+            if (cancelBtn) cancelBtn.addEventListener('click', hoursCalCancel);
+            if (modes) modes.addEventListener('change', hoursCalSyncMode);
+            if (panel) panel.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    hoursCalCancel();
+                }
+            });
+            if (upcoming) upcoming.addEventListener('click', hoursCalOnUpcomingClick);
+        }
+
         function renderTenantHours(tenant) {
             const shiftsGrid = document.getElementById('perDayShiftsGrid');
             const rulesList = document.getElementById('tenantBlockedRulesList');
@@ -9342,80 +10558,8 @@ body.schedi-newdash #addBlockedTimeModal button { min-height: 44px; }
             (tenant.blockedTimes || []).forEach(function (b, i) {
                 if (b && (b.id == null || b.id === '')) b.id = 'block-' + i;
             });
-            const dateBlocksList = document.getElementById('tenantDateBlocksList');
-            if (dateBlocksList) {
-                const blocks = tenant.blockedTimes || [];
-                if (!blocks.length) {
-                    dateBlocksList.innerHTML = `<p class="text-xs text-slate-500">No vacation or date blocks configured.</p>`;
-                } else {
-                    var dateActions = canManageBlockedTimes();
-                    dateBlocksList.innerHTML = blocks.slice().sort(function (a, b) {
-                        return String(a.startDate || '').localeCompare(String(b.startDate || ''));
-                    }).map(function (b) {
-                        const end = b.endDate && b.endDate !== b.startDate ? (' → ' + esc(b.endDate)) : '';
-                        const when = b.allDay !== false && !b.startTime
-                            ? 'All day'
-                            : (esc(b.startTime || '') + ' – ' + esc(b.endTime || ''));
-                        const note = b.note ? esc(b.note) : 'Blocked';
-                        const actions = dateActions ? `<div class="flex items-center gap-2 shrink-0 ml-auto">
-                            <button type="button" onclick="openEditDateBlock(${jsArg(b.id)})" aria-label="Edit date block" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold">Edit</button>
-                            <button type="button" onclick="deleteDateBlock(${jsArg(b.id)})" aria-label="Remove date block" class="px-2 py-1 rounded bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-bold">Remove</button>
-                        </div>` : '';
-                        return `
-                        <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 flex flex-wrap items-center justify-between text-xs gap-2">
-                            <div class="flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0 flex-1">
-                                <i class="fa-solid fa-calendar-xmark text-amber-400 shrink-0"></i>
-                                <span class="font-bold text-white break-words">${note}</span>
-                                <span class="text-slate-400">(${esc(b.startDate || '')}${end} • <span class="text-amber-400 font-semibold">${when}</span>)</span>
-                            </div>
-                            ${actions}
-                        </div>`;
-                    }).join('');
-                }
-            }
-
             ensureSpecialHours(tenant);
-            var specialList = document.getElementById('tenantSpecialHoursList');
-            if (specialList) {
-                var today = localISODate();
-                var keys = Object.keys(tenant.specialHours || {}).filter(function (d) {
-                    return /^\d{4}-\d{2}-\d{2}$/.test(d) && d >= today;
-                }).sort();
-                if (!keys.length) {
-                    specialList.innerHTML = '<p class="text-xs text-slate-500">No upcoming special hours. Add a date to open, shorten, or close that day only.</p>';
-                } else {
-                    var canEdit = canManageBlockedTimes();
-                    specialList.innerHTML = keys.map(function (dateKey) {
-                        var entry = tenant.specialHours[dateKey];
-                        var when;
-                        if (entry && typeof entry === 'object' && !Array.isArray(entry) && entry.closed === true) {
-                            when = 'Closed all day';
-                        } else {
-                            var ranges = Array.isArray(entry) ? entry : (entry && Array.isArray(entry.ranges) ? entry.ranges : []);
-                            when = ranges.length
-                                ? ranges.map(function (r) { return esc((r && r.start) || '') + ' – ' + esc((r && r.end) || ''); }).join(', ')
-                                : 'Closed all day';
-                        }
-                        var pretty = dateKey;
-                        try {
-                            var p = dateKey.split('-');
-                            var dt = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
-                            pretty = dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
-                        } catch (e) {}
-                        var actions = canEdit ? ('<div class="flex items-center gap-2 shrink-0">'
-                            + '<button type="button" onclick="openEditSpecialHours(' + jsArg(dateKey) + ')" aria-label="Edit special hours" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-sky-300 font-bold">Edit</button>'
-                            + '<button type="button" onclick="deleteSpecialHours(' + jsArg(dateKey) + ')" aria-label="Remove special hours" class="px-2 py-1 rounded bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-bold">Remove</button>'
-                            + '</div>') : '';
-                        return '<div class="p-3 rounded-xl bg-slate-900 border border-slate-800 flex flex-col sm:flex-row sm:items-center sm:justify-between text-xs gap-2">'
-                            + '<div class="flex items-start gap-2 min-w-0">'
-                            + '<i class="fa-solid fa-calendar-plus text-sky-400 shrink-0 mt-0.5"></i>'
-                            + '<div class="min-w-0">'
-                            + '<div class="font-bold text-white">' + esc(pretty) + '</div>'
-                            + '<div class="text-sky-400 font-semibold mt-0.5">' + when + '</div>'
-                            + '</div></div>' + actions + '</div>';
-                    }).join('');
-                }
-            }
+            hoursCalPaint(tenant);
 
         }
 
