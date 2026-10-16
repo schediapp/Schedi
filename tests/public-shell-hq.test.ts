@@ -65,8 +65,11 @@ describe("public booking HTML", () => {
     const hqCss = hqHtml.slice(hqHtml.indexOf("SCHEDI_HQ_START"), hqHtml.indexOf("SCHEDI_HQ_END"));
     expect(hqCss).toMatch(/\[data-hq-collapse-head\]\s*\{[^}]*flex-direction:\s*row/);
     expect(hqCss).toMatch(/\.hq-collapse-btn\s*\{[^}]*min-height:\s*44px/);
-    expect(hqHtml.match(/data-hq-collapse-head>/g) || []).toHaveLength(3);
+    expect(hqHtml.match(/data-hq-collapse-head>/g) || []).toHaveLength(2);
     expect(hqHtml).not.toContain("flex-col md:flex-row md:items-center justify-between gap-4\" data-hq-collapse-head");
+    expect(hqHtml.indexOf('id="agencyBilling"')).toBeLessThan(hqHtml.indexOf('id="agencyDirectory"'));
+    expect(hqHtml).toContain("function hqPrepareNewDirectory()");
+    expect(hqHtml).toContain("html.schedi-newhq #agencyDirectory { order: 2; }");
     expect(hqHtml).toContain('id="hqGlanceCard"');
     expect(hqHtml).toContain(">At a glance<");
     expect(hqHtml).toContain('id="hqGlanceSummary"');

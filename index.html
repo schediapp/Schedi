@@ -8730,6 +8730,7 @@ function schediQrModules(text) {
             var changeBtn = document.getElementById('schediQrChange');
             if (changeBtn) changeBtn.hidden = !saved;
         }
+        window.schediQrShowFilled = schediQrShowFilled;
 
         function schediQrShowEmpty() {
             var savedBox = document.getElementById('schediQrSaved');
