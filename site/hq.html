@@ -146,8 +146,13 @@
         .hq-stat { background: rgba(15,23,42,.8); border: 1px solid #1e293b; border-radius: 10px; padding: 6px 2px; }
         .hq-stat div { font-weight: 800; color: #fff; font-size: 13px; }
         .hq-stat span { display: block; font-size: 9px; color: #94a3b8; text-transform: uppercase; letter-spacing: .05em; }
-        .hq-collapse-btn { margin-left: auto; width: 32px; height: 32px; border-radius: 10px; color: #94a3b8; border: 1px solid #334155; background: rgba(15,23,42,.6); flex-shrink: 0; }
+        #agencyHqSection [data-hq-collapse-head] { display: flex; flex-direction: row; flex-wrap: nowrap; align-items: flex-start; justify-content: flex-start; gap: 8px; min-width: 0; }
+        #agencyHqSection .hq-card-main { flex: 1 1 auto; min-width: 0; display: flex; align-items: flex-start; gap: 12px; }
+        #agencyHqSection .hq-card-icon { flex-shrink: 0; }
+        #agencyHqSection .hq-card-copy { min-width: 0; flex: 1 1 auto; }
+        .hq-collapse-btn { margin-left: auto; align-self: flex-start; display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; min-width: 44px; min-height: 44px; flex: 0 0 44px; padding: 0; border-radius: 10px; color: #f8fafc; border: 1px solid #64748b; background: #1e293b; cursor: pointer; }
         .hq-collapse-btn i { transition: transform .15s; }
+        .hq-collapse-btn:focus-visible { outline: 2px solid #10b981; outline-offset: 2px; }
         html.schedi-light .hq-table th { color: #475569; border-color: #e2e8f0; }
         html.schedi-light .hq-table td { border-color: #e2e8f0; }
         html.schedi-light .hq-table tbody tr:hover { background: #f8fafc; }
@@ -155,7 +160,47 @@
         html.schedi-light .hq-stat div { color: #0f172a; }
         html.schedi-light .hq-stat span { color: #475569; }
         html.schedi-light .hq-warn { color: #b91c1c; }
-        html.schedi-light .hq-collapse-btn { background: #fff; border-color: #cbd5e1; color: #475569; }
+        html.schedi-light .hq-collapse-btn { background: #fff !important; border-color: #64748b !important; color: #0f172a !important; }
+        #agencyHqSection .hq-glance-head { display: flex; flex-direction: column; gap: 4px; min-width: 0; cursor: pointer; }
+        #agencyHqSection .hq-glance-title-row { display: flex; flex-direction: row; align-items: flex-start; gap: 8px; min-width: 0; }
+        #agencyHqSection .hq-glance-title-row h2 { flex: 1 1 auto; min-width: 0; margin: 0; line-height: 1.25; padding-top: 8px; }
+        #agencyHqSection .hq-glance-summary { margin: 0; font-size: 13px; line-height: 1.35; color: #e2e8f0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #agencyHqSection .hq-glance-summary[hidden] { display: none !important; }
+        #agencyHqSection .hq-glance-body { display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 12px; }
+        #agencyHqSection .hq-glance-body[hidden] { display: none !important; }
+        #agencyHqSection .hq-glance-row { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 8px 10px; border-radius: 12px; background: rgba(15,23,42,.72); border: 1px solid #334155; }
+        #agencyHqSection .hq-glance-ico { width: 36px; height: 36px; flex: 0 0 36px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; font-size: 15px; }
+        #agencyHqSection .hq-glance-meta { min-width: 0; }
+        #agencyHqSection .hq-glance-label { display: block; font-size: 10px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: #94a3b8; }
+        #agencyHqSection .hq-glance-value { font-size: 20px; font-weight: 800; line-height: 1.2; color: #f8fafc; }
+        #agencyHqSection .hq-glance-sub { display: block; font-size: 11px; font-weight: 600; }
+        #agencyHqSection .hq-glance-ico-sites { background: rgba(16,185,129,.12); color: #34d399; }
+        #agencyHqSection .hq-glance-sub-sites { color: #34d399; }
+        #agencyHqSection .hq-glance-ico-mrr { background: rgba(56,189,248,.12); color: #38bdf8; }
+        #agencyHqSection .hq-glance-sub-mrr { color: #38bdf8; }
+        #agencyHqSection .hq-glance-ico-books { background: rgba(99,102,241,.14); color: #a5b4fc; }
+        #agencyHqSection .hq-glance-sub-books { color: #a5b4fc; }
+        #agencyHqSection .hq-glance-ico-live { background: rgba(251,191,36,.12); color: #fbbf24; }
+        #agencyHqSection .hq-glance-sub-live { color: #fbbf24; }
+        @media (min-width: 860px) {
+            #agencyHqSection .hq-glance-body { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+        }
+        html.schedi-light #agencyHqSection .hq-glance-summary { color: #334155 !important; }
+        html.schedi-light #agencyHqSection .hq-glance-row { background: #f8fafc; border-color: #cbd5e1; }
+        html.schedi-light #agencyHqSection .hq-glance-label { color: #475569; }
+        html.schedi-light #agencyHqSection .hq-glance-value { color: #0f172a !important; }
+        html.schedi-light #agencyHqSection .hq-glance-ico-sites,
+        html.schedi-light #agencyHqSection .hq-glance-sub-sites { color: #047857; }
+        html.schedi-light #agencyHqSection .hq-glance-ico-sites { background: #ecfdf5; }
+        html.schedi-light #agencyHqSection .hq-glance-ico-mrr,
+        html.schedi-light #agencyHqSection .hq-glance-sub-mrr { color: #0369a1; }
+        html.schedi-light #agencyHqSection .hq-glance-ico-mrr { background: #f0f9ff; }
+        html.schedi-light #agencyHqSection .hq-glance-ico-books,
+        html.schedi-light #agencyHqSection .hq-glance-sub-books { color: #4338ca; }
+        html.schedi-light #agencyHqSection .hq-glance-ico-books { background: #eef2ff; }
+        html.schedi-light #agencyHqSection .hq-glance-ico-live,
+        html.schedi-light #agencyHqSection .hq-glance-sub-live { color: #b45309; }
+        html.schedi-light #agencyHqSection .hq-glance-ico-live { background: #fffbeb; }
 <!-- SCHEDI_HQ_END -->
         html.schedi-light .text-emerald-200, html.schedi-light .text-emerald-300, html.schedi-light .text-emerald-400, html.schedi-light .text-emerald-500 { color: #047857 !important; }
         html.schedi-light .text-amber-200, html.schedi-light .text-amber-300, html.schedi-light .text-amber-400, html.schedi-light .text-amber-500,
@@ -471,7 +516,7 @@
         html.schedi-newhq #hqNewSidebar,
         html.schedi-newhq #hqNewTop,
         html.schedi-newhq #hqNewTabs { margin: 0 !important; }
-        html.schedi-newhq #agencyStats,
+        html.schedi-newhq #hqGlanceCard,
         html.schedi-newhq #agencyDirectory,
         html.schedi-newhq #agencyBilling,
         html.schedi-newhq #agencyEmail { scroll-margin-top: 80px; }
@@ -753,7 +798,7 @@
             <aside id="hqNewSidebar" aria-label="Agency HQ">
                 <div class="hq-brand">Schedi HQ</div>
                 <p class="hq-kicker">Agency</p>
-                <button type="button" class="hq-nav-btn is-on" data-hq-go="agencyStats" onclick="hqNewGo('agencyStats')"><i class="fa-solid fa-chart-pie" aria-hidden="true"></i><span>Overview</span></button>
+                <button type="button" class="hq-nav-btn is-on" data-hq-go="hqGlanceCard" onclick="hqNewGo('hqGlanceCard')"><i class="fa-solid fa-chart-pie" aria-hidden="true"></i><span>Overview</span></button>
                 <button type="button" class="hq-nav-btn" data-hq-go="agencyDirectory" onclick="hqNewGo('agencyDirectory')"><i class="fa-solid fa-store" aria-hidden="true"></i><span>Directory</span></button>
                 <button type="button" class="hq-nav-btn" data-hq-go="agencyBilling" onclick="hqNewGo('agencyBilling')"><i class="fa-solid fa-credit-card" aria-hidden="true"></i><span>Billing</span></button>
                 <button type="button" class="hq-nav-btn" data-hq-go="agencyEmail" onclick="hqNewGo('agencyEmail')"><i class="fa-solid fa-envelope" aria-hidden="true"></i><span>Email</span></button>
@@ -764,7 +809,7 @@
                 <button type="button" id="hqNewTheme" class="schedi-theme-btn" onclick="toggleSchediTheme()" title="Switch to light theme" aria-label="Switch to light theme"><i class="fa-solid fa-sun" aria-hidden="true"></i><span class="schedi-theme-btn-label">Light</span></button>
             </header>
             <nav id="hqNewTabs" aria-label="Agency HQ">
-                <button type="button" class="is-on" data-hq-go="agencyStats" onclick="hqNewGo('agencyStats')">Overview</button>
+                <button type="button" class="is-on" data-hq-go="hqGlanceCard" onclick="hqNewGo('hqGlanceCard')">Overview</button>
                 <button type="button" data-hq-go="agencyDirectory" onclick="hqNewGo('agencyDirectory')">Directory</button>
                 <button type="button" data-hq-go="agencyBilling" onclick="hqNewGo('agencyBilling')">Billing</button>
                 <button type="button" data-hq-go="agencyEmail" onclick="hqNewGo('agencyEmail')">Email</button>
@@ -802,66 +847,68 @@
             <!-- AGENCY HQ DASHBOARD -->
             <div id="agencyMasterDashboard" class="space-y-6 hidden">
                 
-                <!-- Metrics Grid -->
-                <div id="agencyStats" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div class="glass-card rounded-2xl p-5 border-l-4 border-l-brand-500 flex items-center justify-between">
-                        <div>
-                            <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider"><span class="hq-label-full">Managed Business Sites</span><span class="hq-label-short">Active sites</span></span>
-                            <div id="statTotalSites" class="text-2xl font-black text-white mt-1">0</div>
-                            <span class="text-[10px] text-brand-400 font-semibold hq-sub" title="Active &amp; Deployed"><span class="hq-label-full">Active &amp; Deployed</span><span class="hq-label-short">Active</span></span>
+                <!-- At a glance -->
+                <div class="glass-card rounded-2xl p-4 sm:p-5" id="hqGlanceCard">
+                    <div class="hq-glance-head" id="hqGlanceHead">
+                        <div class="hq-glance-title-row">
+                            <h2 class="text-lg font-extrabold text-white">At a glance</h2>
+                            <button type="button" class="hq-collapse-btn" id="hqGlanceBtn" aria-expanded="false" aria-controls="hqGlanceBody" aria-label="Show or hide the overview numbers">
+                                <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+                            </button>
                         </div>
-                        <div class="w-12 h-12 rounded-xl bg-brand-500/10 text-brand-400 flex items-center justify-center text-xl">
-                            <i class="fa-solid fa-store"></i>
-                        </div>
+                        <p id="hqGlanceSummary" class="hq-glance-summary">0 sites · $0.00/mo · 0 bookings · 0 live</p>
                     </div>
-
-                    <div class="glass-card rounded-2xl p-5 border-l-4 border-l-accent-400 flex items-center justify-between">
-                        <div>
-                            <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider"><span class="hq-label-full">Agency MRR</span><span class="hq-label-short">Monthly revenue</span></span>
-                            <div id="statAgencyMRR" class="text-2xl font-black text-white mt-1">$0.00</div>
-                            <span class="text-[10px] text-accent-400 font-semibold hq-sub" title="Monthly Subscription Volume"><span class="hq-label-full">Monthly Subscription Volume</span><span class="hq-label-short">Monthly</span></span>
+                    <div id="hqGlanceBody" class="hq-glance-body" hidden>
+                        <div class="hq-glance-row">
+                            <div class="hq-glance-ico hq-glance-ico-sites" aria-hidden="true"><i class="fa-solid fa-store"></i></div>
+                            <div class="hq-glance-meta">
+                                <span class="hq-glance-label">Managed Business Sites</span>
+                                <div id="statTotalSites" class="hq-glance-value">0</div>
+                                <span class="hq-glance-sub hq-glance-sub-sites">Active &amp; Deployed</span>
+                            </div>
                         </div>
-                        <div class="w-12 h-12 rounded-xl bg-accent-400/10 text-accent-400 flex items-center justify-center text-xl">
-                            <i class="fa-solid fa-sack-dollar"></i>
+                        <div class="hq-glance-row">
+                            <div class="hq-glance-ico hq-glance-ico-mrr" aria-hidden="true"><i class="fa-solid fa-sack-dollar"></i></div>
+                            <div class="hq-glance-meta">
+                                <span class="hq-glance-label">Agency MRR</span>
+                                <div id="statAgencyMRR" class="hq-glance-value">$0.00</div>
+                                <span class="hq-glance-sub hq-glance-sub-mrr">Monthly Subscription Volume</span>
+                            </div>
                         </div>
-                    </div>
-
-                    <div class="glass-card rounded-2xl p-5 border-l-4 border-l-indigo-500 flex items-center justify-between">
-                        <div>
-                            <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider"><span class="hq-label-full">Total System Bookings</span><span class="hq-label-short">Bookings (all)</span></span>
-                            <div id="statTotalBookings" class="text-2xl font-black text-white mt-1">0</div>
-                            <span class="text-[10px] text-indigo-400 font-semibold hq-sub" title="Cross-Tenant Volume"><span class="hq-label-full">Cross-Tenant Volume</span><span class="hq-label-short">All tenants</span></span>
+                        <div class="hq-glance-row">
+                            <div class="hq-glance-ico hq-glance-ico-books" aria-hidden="true"><i class="fa-solid fa-calendar-check"></i></div>
+                            <div class="hq-glance-meta">
+                                <span class="hq-glance-label">Total System Bookings</span>
+                                <div id="statTotalBookings" class="hq-glance-value">0</div>
+                                <span class="hq-glance-sub hq-glance-sub-books">Cross-Tenant Volume</span>
+                            </div>
                         </div>
-                        <div class="w-12 h-12 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center text-xl">
-                            <i class="fa-solid fa-calendar-check"></i>
-                        </div>
-                    </div>
-
-                    <div class="glass-card rounded-2xl p-5 border-l-4 border-l-amber-400 flex items-center justify-between">
-                        <div>
-                            <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider"><span class="hq-label-full">Active Booking Pages</span><span class="hq-label-short">Live pages</span></span>
-                            <div id="statActivePages" class="text-2xl font-black text-white mt-1">0</div>
-                            <span class="text-[10px] text-amber-400 font-semibold hq-sub" title="Live on schedi.app/{slug}/"><span class="hq-label-full">Live on schedi.app/{slug}/</span><span class="hq-label-short">Live pages</span></span>
-                        </div>
-                        <div class="w-12 h-12 rounded-xl bg-amber-400/10 text-amber-400 flex items-center justify-center text-xl">
-                            <i class="fa-solid fa-link"></i>
+                        <div class="hq-glance-row">
+                            <div class="hq-glance-ico hq-glance-ico-live" aria-hidden="true"><i class="fa-solid fa-link"></i></div>
+                            <div class="hq-glance-meta">
+                                <span class="hq-glance-label">Active Booking Pages</span>
+                                <div id="statActivePages" class="hq-glance-value">0</div>
+                                <span class="hq-glance-sub hq-glance-sub-live">Live on schedi.app/{slug}/</span>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Client Sites Roster -->
                 <div id="agencyDirectory" class="glass-card rounded-2xl p-6 space-y-5" data-hq-collapse="directory">
-                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4" data-hq-collapse-head>
-                        <div>
+                    <div class="hq-card-head border-b border-slate-800 pb-4" data-hq-collapse-head>
+                        <div class="hq-card-main">
+                        <div class="hq-card-copy">
                             <h2 class="text-xl font-extrabold text-white">Client Business Directory</h2>
                             <p class="text-xs text-slate-400 mt-0.5">Provision new sites, update owner profile details, adjust subscription plans, or log into tenant portals.</p>
-                        </div>
-                        <div class="flex flex-wrap items-center gap-2" data-hq-collapse-tools>
+                        <div class="flex flex-wrap items-center gap-2 mt-3" data-hq-collapse-tools>
                             <input type="search" id="agencySearchInput" oninput="filterAgencyTenants(this.value)" placeholder="Search name, owner email, or slug" aria-label="Search businesses" class="px-3.5 py-2 rounded-xl glass-input text-xs w-full sm:w-64">
                             <button type="button" onclick="openProvisionModal()" class="px-4 py-2 rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-slate-950 font-bold text-xs shadow-md glow-emerald flex items-center space-x-2 transition-all">
                                 <i class="fa-solid fa-plus"></i>
                                 <span>Provision New Site</span>
                             </button>
+                        </div>
+                        </div>
                         </div>
                     </div>
                     <div data-hq-collapse-body class="space-y-5">
@@ -892,22 +939,21 @@
 
                 <!-- HQ Gateways -->
                 <div id="agencyBilling" class="glass-card rounded-2xl p-6 space-y-5" data-hq-collapse="gateways">
-                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4" data-hq-collapse-head>
-                        <div class="flex items-center space-x-3">
-                            <div class="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center text-xl border border-indigo-500/20">
+                    <div class="hq-card-head border-b border-slate-800 pb-4" data-hq-collapse-head>
+                        <div class="hq-card-main">
+                            <div class="hq-card-icon w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center text-xl border border-indigo-500/20">
                                 <i class="fa-solid fa-plug text-lg"></i>
                             </div>
-                            <div>
+                            <div class="hq-card-copy">
                                 <h2 class="text-lg font-extrabold text-white">Agency Payment Gateways & Revenue Settlement</h2>
                                 <p class="text-xs text-slate-400 mt-0.5">Owner subscriptions bill through Stripe on the server. Starter is $29/mo and Pro is $49/mo. Free businesses are not charged.</p>
+                                <div class="flex items-center space-x-2 mt-2">
+                                    <span id="agencyStripeStatusBadge" class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center space-x-1.5">
+                                        <i class="fa-solid fa-circle text-[8px] animate-pulse"></i>
+                                        <span>Live Stripe · server-side</span>
+                                    </span>
+                                </div>
                             </div>
-                        </div>
-
-                        <div class="flex items-center space-x-2">
-                            <span id="agencyStripeStatusBadge" class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center space-x-1.5">
-                                <i class="fa-solid fa-circle text-[8px] animate-pulse"></i>
-                                <span>Live Stripe · server-side</span>
-                            </span>
                         </div>
                     </div>
 
@@ -959,17 +1005,17 @@
 
                 <!-- Booking email delivery -->
                 <div id="agencyEmail" class="glass-card rounded-2xl p-6 space-y-4" data-hq-collapse="email">
-                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4" data-hq-collapse-head>
-                        <div class="flex items-center space-x-3">
-                            <div class="w-10 h-10 rounded-xl bg-brand-500/10 text-brand-400 flex items-center justify-center text-xl border border-brand-500/20">
+                    <div class="hq-card-head border-b border-slate-800 pb-4" data-hq-collapse-head>
+                        <div class="hq-card-main">
+                            <div class="hq-card-icon w-10 h-10 rounded-xl bg-brand-500/10 text-brand-400 flex items-center justify-center text-xl border border-brand-500/20">
                                 <i class="fa-solid fa-envelope"></i>
                             </div>
-                            <div>
+                            <div class="hq-card-copy">
                                 <h2 class="text-lg font-extrabold text-white">Booking Email Delivery</h2>
                                 <p class="text-xs text-slate-400 mt-0.5">Booking confirmations send through Schedi email (Cloudflare Worker → Resend). Reply-To stays the business contact.</p>
+                                <span id="agencyEmailDeliveryBadge" class="mt-2 inline-block px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">Connected</span>
                             </div>
                         </div>
-                        <span id="agencyEmailDeliveryBadge" class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">Connected</span>
                     </div>
                     <form onsubmit="handleSaveEmailSender(event)" class="space-y-3 text-xs max-w-3xl" data-hq-collapse-body>
                         <div>
@@ -5932,6 +5978,7 @@
             if (stMRR) stMRR.textContent = `$${totalMRR.toFixed(2)}`;
             if (stBookings) stBookings.textContent = totalBookings === null ? '—' : totalBookings;
             if (stActivePages) stActivePages.textContent = activePages;
+            if (typeof hqPaintGlanceSummary === 'function') hqPaintGlanceSummary();
 
             const grid = document.getElementById('agencyTenantGrid');
             if (!grid) return;
@@ -6248,6 +6295,65 @@
             });
         }
         try { if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initHqCollapsibles); else initHqCollapsibles(); } catch (errCol) {}
+
+        var HQ_GLANCE_KEY = 'schedi.hqGlanceOpen.v1';
+        function hqPaintGlanceSummary() {
+            var el = document.getElementById('hqGlanceSummary');
+            if (!el) return;
+            function text(id, fallback) {
+                var node = document.getElementById(id);
+                var value = node ? String(node.textContent || '').trim() : '';
+                return value || fallback;
+            }
+            var mrr = text('statAgencyMRR', '$0.00');
+            if (mrr.slice(-3) !== '/mo') mrr += '/mo';
+            el.textContent = text('statTotalSites', '0') + ' sites · ' + mrr + ' · ' + text('statTotalBookings', '0') + ' bookings · ' + text('statActivePages', '0') + ' live';
+        }
+        function hqGlanceWantsOpen() {
+            try {
+                var saved = window.localStorage.getItem(HQ_GLANCE_KEY);
+                if (saved === '1') return true;
+                if (saved === '0') return false;
+            } catch (e) {}
+            return window.matchMedia('(min-width: 860px)').matches;
+        }
+        function hqApplyGlance(open) {
+            var body = document.getElementById('hqGlanceBody');
+            var btn = document.getElementById('hqGlanceBtn');
+            var summary = document.getElementById('hqGlanceSummary');
+            if (body) {
+                if (open) body.removeAttribute('hidden');
+                else body.setAttribute('hidden', '');
+            }
+            if (summary) {
+                if (open) summary.setAttribute('hidden', '');
+                else summary.removeAttribute('hidden');
+            }
+            if (btn) {
+                btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+                var icon = btn.querySelector('i');
+                if (icon) icon.style.transform = open ? '' : 'rotate(-90deg)';
+            }
+        }
+        function hqToggleGlance() {
+            var btn = document.getElementById('hqGlanceBtn');
+            var open = !(btn && btn.getAttribute('aria-expanded') === 'true');
+            try { window.localStorage.setItem(HQ_GLANCE_KEY, open ? '1' : '0'); } catch (e) {}
+            hqApplyGlance(open);
+        }
+        function initHqGlance() {
+            var head = document.getElementById('hqGlanceHead');
+            var btn = document.getElementById('hqGlanceBtn');
+            if (!head || !btn || head.getAttribute('data-hq-glance-ready')) return;
+            head.setAttribute('data-hq-glance-ready', '1');
+            head.addEventListener('click', function (ev) {
+                if (ev.target.closest('a,input,select,textarea,label')) return;
+                hqToggleGlance();
+            });
+            hqApplyGlance(hqGlanceWantsOpen());
+            hqPaintGlanceSummary();
+        }
+        try { if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initHqGlance); else initHqGlance(); } catch (errGlance) {}
 
         window.filterAgencyTenants = function(query) {
             hqDirSet('q', String(query || ''));
