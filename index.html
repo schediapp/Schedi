@@ -1039,6 +1039,43 @@ body.schedi-newdash.sd-client-panel-open { overflow: hidden; }
 #tenantPortalSection.schedi-newdash .sd-request > div { min-width: 0; }
 #tenantPortalSection.schedi-newdash .sd-pill { max-width: 100%; }
 body.schedi-newdash #toastContainer { z-index: 80; max-width: min(380px, calc(100vw - 24px)); }
+body.schedi-newdash #toastContainer .sd-undo {
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: min(360px, 100%);
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: #0f172a;
+    color: #f8fafc;
+    border: 1px solid rgba(148, 163, 184, 0.4);
+    box-shadow: 0 12px 30px rgba(2, 6, 23, 0.35);
+}
+html.schedi-light body.schedi-newdash #toastContainer .sd-undo {
+    background: #ffffff;
+    color: #0f172a;
+    border-color: #cbd5e1;
+}
+body.schedi-newdash #toastContainer .sd-undo-copy { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+body.schedi-newdash #toastContainer .sd-undo-title { font-size: 13px; font-weight: 800; line-height: 1.3; }
+body.schedi-newdash #toastContainer .sd-undo-meta { font-size: 12px; font-weight: 800; color: #cbd5e1; }
+html.schedi-light body.schedi-newdash #toastContainer .sd-undo-meta { color: #334155; }
+body.schedi-newdash #toastContainer .sd-undo-bar { display: block; height: 4px; margin-top: 6px; border-radius: 999px; background: rgba(148, 163, 184, 0.28); overflow: hidden; }
+body.schedi-newdash #toastContainer .sd-undo-bar > span { display: block; height: 100%; background: #34d399; }
+body.schedi-newdash #toastContainer .sd-undo button {
+    flex: none;
+    min-height: 44px;
+    min-width: 64px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: 12px;
+    background: #f8fafc;
+    color: #0f172a;
+    font-weight: 800;
+    cursor: pointer;
+}
+html.schedi-light body.schedi-newdash #toastContainer .sd-undo button { background: #0f172a; color: #f8fafc; }
 body.schedi-newdash #denyConfirmModal button,
 body.schedi-newdash #ownerRecurringModal button { min-height: 44px; }
 body.schedi-newdash #ownerRecurringModal .sd-choice {
@@ -6298,7 +6335,7 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
         }
 
         // Help page tutorial videos (files in /assets/help-videos/). preload="none" + poster keeps page load light.
-        var SCHEDI_HELP_VIDEOS = [{"slug": "client-booking-demo", "file": "client-booking-demo.mp4?v=5", "poster": "client-booking-demo.jpg?v=5", "title": "How clients book", "desc": "Clients pick a service, a day and time, enter their info, choose how to pay, and send the request.", "dur": "0:30", "aud": "client"}, {"slug": "owner-01-create-your-page", "file": "owner-01-create-your-page.mp4?v=8", "poster": "owner-01-create-your-page.jpg?v=8", "title": "Create your booking page", "desc": "Sign up, get your free page, and compare Free, Starter, and Pro.", "dur": "0:24", "aud": "owner"}, {"slug": "owner-02-add-services", "file": "owner-02-add-services.mp4?v=8", "poster": "owner-02-add-services.jpg?v=8", "title": "Add your services", "desc": "Add each service with its length and an optional price.", "dur": "0:21", "aud": "owner"}, {"slug": "owner-03-set-hours", "file": "owner-03-set-hours.mp4?v=7", "poster": "owner-03-set-hours.jpg?v=7", "title": "Set your hours", "desc": "Pick the days you work and your open and close times.", "dur": "0:20", "aud": "owner"}, {"slug": "owner-04-payment-options", "file": "owner-04-payment-options.mp4?v=7", "poster": "owner-04-payment-options.jpg?v=7", "title": "Payment options", "desc": "Turn on Cash App, Zelle, Venmo, or PayPal (Starter and Pro) or keep pay at appointment.", "dur": "0:28", "aud": "owner"}, {"slug": "owner-05-share-booking-link", "file": "owner-05-share-booking-link.mp4?v=8", "poster": "owner-05-share-booking-link.jpg?v=8", "title": "Share your booking link", "desc": "Copy or Share your link from the top of your portal. Open Public Page and Add to home screen are in More & settings.", "dur": "0:20", "aud": "owner"}, {"slug": "owner-06-accept-booking-request", "file": "owner-06-accept-booking-request.mp4?v=8", "poster": "owner-06-accept-booking-request.jpg?v=8", "title": "Accept a booking request", "desc": "On phones, each booking is a card; tap Accept and it shows as Accepted (Starter and Pro).", "dur": "0:20", "aud": "owner"}, {"slug": "owner-07-appointments-report", "file": "owner-07-appointments-report.mp4?v=8", "poster": "owner-07-appointments-report.jpg?v=8", "title": "Appointments report", "desc": "See counts, recorded prices, marked paid, and walk-ins; export CSV or print.", "dur": "0:21", "aud": "owner"}, {"slug": "owner-08-add-manual-appointment", "file": "owner-08-add-manual-appointment.mp4?v=8", "poster": "owner-08-add-manual-appointment.jpg?v=8", "title": "Add a walk-in or phone booking", "desc": "Log a walk-in or phone booking with the Walk-in toggle, saved-client suggest, open time slot, and payment status.", "dur": "0:28", "aud": "owner"}, {"slug": "owner-09-mark-paid", "file": "owner-09-mark-paid.mp4?v=8", "poster": "owner-09-mark-paid.jpg?v=8", "title": "Mark an appointment paid", "desc": "Tap Mark paid, pick how the client paid, and the booking turns green.", "dur": "0:22", "aud": "owner"}, {"slug": "owner-10-reschedule", "file": "owner-10-reschedule.mp4?v=8", "poster": "owner-10-reschedule.jpg?v=8", "title": "Reschedule an appointment", "desc": "Pick a new date and an open time slot, then tap Update Reservation.", "dur": "0:23", "aud": "owner"}, {"slug": "owner-11-cancel-appointment", "file": "owner-11-cancel-appointment.mp4?v=8", "poster": "owner-11-cancel-appointment.jpg?v=8", "title": "Cancel an appointment", "desc": "Tap Cancel and confirm; the booking stays on your roster as Cancelled.", "dur": "0:20", "aud": "owner"}, {"slug": "owner-12-special-hours", "file": "owner-12-special-hours.mp4?v=8", "poster": "owner-12-special-hours.jpg?v=8", "title": "Special hours", "desc": "Close or change your hours for one date without touching your weekly hours.", "dur": "0:21", "aud": "owner"}, {"slug": "owner-13-date-blocks", "file": "owner-13-date-blocks.mp4?v=8", "poster": "owner-13-date-blocks.jpg?v=8", "title": "Vacation and date blocks", "desc": "Block a range of dates so clients cannot book them.", "dur": "0:22", "aud": "owner"}, {"slug": "owner-14-email-confirmations", "file": "owner-14-email-confirmations.mp4?v=7", "poster": "owner-14-email-confirmations.jpg?v=7", "title": "Email confirmations and reminders", "desc": "Set your Reply-To email, an extra note, and same-day reminder emails.", "dur": "0:23", "aud": "owner"}, {"slug": "owner-15-recurring-visits-pro", "file": "owner-15-recurring-visits-pro.mp4?v=7", "poster": "owner-15-recurring-visits-pro.jpg?v=7", "title": "Recurring appointments (Pro)", "desc": "On Pro, let clients book weekly, biweekly, or monthly; off until you turn it on.", "dur": "0:21", "aud": "owner"}, {"slug": "owner-16-clients", "file": "owner-16-clients.mp4?v=7", "poster": "owner-16-clients.jpg?v=7", "title": "Clients list", "desc": "Search, add, or remove clients. Auto-added clients show From booking since...", "dur": "0:24", "aud": "owner"}, {"slug": "owner-17-import-clients-csv", "file": "owner-17-import-clients-csv.mp4?v=8", "poster": "owner-17-import-clients-csv.jpg?v=8", "title": "Import clients from CSV", "desc": "Upload a CSV, match columns, preview, and import. Schedi never emails imports.", "dur": "0:22", "aud": "owner"}, {"slug": "owner-18-compare-plans", "file": "owner-18-compare-plans.mp4?v=8", "poster": "owner-18-compare-plans.jpg?v=8", "title": "Compare Plans", "desc": "Open the Free / Starter / Pro chart from your Schedi subscription card (below More & settings), including Agency Management on Pro.", "dur": "0:18", "aud": "owner"}, {"slug": "owner-19-roster-week-month", "file": "owner-19-roster-week-month.mp4?v=8", "poster": "owner-19-roster-week-month.jpg?v=8", "title": "Week and month roster", "desc": "Switch to Week or Month, move with Previous, Next, or Today, tap a booking for details, and tap a busy day.", "dur": "0:22", "aud": "owner"}];
+        var SCHEDI_HELP_VIDEOS = [{"slug": "client-booking-demo", "file": "client-booking-demo.mp4?v=9", "poster": "client-booking-demo.jpg?v=9", "title": "How clients book", "desc": "Clients pick a service, a day and time, enter their info, choose how to pay, and send the request.", "dur": "0:30", "aud": "client"}, {"slug": "owner-01-create-your-page", "file": "owner-01-create-your-page.mp4?v=8", "poster": "owner-01-create-your-page.jpg?v=8", "title": "Create your booking page", "desc": "Sign up, get your free page, and compare Free, Starter, and Pro.", "dur": "0:24", "aud": "owner"}, {"slug": "owner-02-add-services", "file": "owner-02-add-services.mp4?v=8", "poster": "owner-02-add-services.jpg?v=8", "title": "Add your services", "desc": "Add each service with its length and an optional price.", "dur": "0:21", "aud": "owner"}, {"slug": "owner-03-set-hours", "file": "owner-03-set-hours.mp4?v=9", "poster": "owner-03-set-hours.jpg?v=9", "title": "Set your hours", "desc": "Pick the days you work and your open and close times.", "dur": "0:20", "aud": "owner"}, {"slug": "owner-04-payment-options", "file": "owner-04-payment-options.mp4?v=7", "poster": "owner-04-payment-options.jpg?v=7", "title": "Payment options", "desc": "Turn on Cash App, Zelle, Venmo, or PayPal (Starter and Pro) or keep pay at appointment.", "dur": "0:28", "aud": "owner"}, {"slug": "owner-05-share-booking-link", "file": "owner-05-share-booking-link.mp4?v=8", "poster": "owner-05-share-booking-link.jpg?v=8", "title": "Share your booking link", "desc": "Copy or Share your link from the top of your portal. Open Public Page and Add to home screen are in More & settings.", "dur": "0:20", "aud": "owner"}, {"slug": "owner-06-accept-booking-request", "file": "owner-06-accept-booking-request.mp4?v=8", "poster": "owner-06-accept-booking-request.jpg?v=8", "title": "Accept a booking request", "desc": "On phones, each booking is a card; tap Accept and it shows as Accepted (Starter and Pro).", "dur": "0:20", "aud": "owner"}, {"slug": "owner-07-appointments-report", "file": "owner-07-appointments-report.mp4?v=8", "poster": "owner-07-appointments-report.jpg?v=8", "title": "Appointments report", "desc": "See counts, recorded prices, marked paid, and walk-ins; export CSV or print.", "dur": "0:21", "aud": "owner"}, {"slug": "owner-08-add-manual-appointment", "file": "owner-08-add-manual-appointment.mp4?v=8", "poster": "owner-08-add-manual-appointment.jpg?v=8", "title": "Add a walk-in or phone booking", "desc": "Log a walk-in or phone booking with the Walk-in toggle, saved-client suggest, open time slot, and payment status.", "dur": "0:28", "aud": "owner"}, {"slug": "owner-09-mark-paid", "file": "owner-09-mark-paid.mp4?v=8", "poster": "owner-09-mark-paid.jpg?v=8", "title": "Mark an appointment paid", "desc": "Tap Mark paid, pick how the client paid, and the booking turns green.", "dur": "0:22", "aud": "owner"}, {"slug": "owner-10-reschedule", "file": "owner-10-reschedule.mp4?v=8", "poster": "owner-10-reschedule.jpg?v=8", "title": "Reschedule an appointment", "desc": "Pick a new date and an open time slot, then tap Update Reservation.", "dur": "0:23", "aud": "owner"}, {"slug": "owner-11-cancel-appointment", "file": "owner-11-cancel-appointment.mp4?v=8", "poster": "owner-11-cancel-appointment.jpg?v=8", "title": "Cancel an appointment", "desc": "Tap Cancel and confirm; the booking stays on your roster as Cancelled.", "dur": "0:20", "aud": "owner"}, {"slug": "owner-12-special-hours", "file": "owner-12-special-hours.mp4?v=9", "poster": "owner-12-special-hours.jpg?v=9", "title": "Special hours", "desc": "Close or change your hours for one date without touching your weekly hours.", "dur": "0:21", "aud": "owner"}, {"slug": "owner-13-date-blocks", "file": "owner-13-date-blocks.mp4?v=9", "poster": "owner-13-date-blocks.jpg?v=9", "title": "Vacation and date blocks", "desc": "Block a range of dates so clients cannot book them.", "dur": "0:22", "aud": "owner"}, {"slug": "owner-14-email-confirmations", "file": "owner-14-email-confirmations.mp4?v=7", "poster": "owner-14-email-confirmations.jpg?v=7", "title": "Email confirmations and reminders", "desc": "Set your Reply-To email, an extra note, and same-day reminder emails.", "dur": "0:23", "aud": "owner"}, {"slug": "owner-15-recurring-visits-pro", "file": "owner-15-recurring-visits-pro.mp4?v=7", "poster": "owner-15-recurring-visits-pro.jpg?v=7", "title": "Recurring appointments (Pro)", "desc": "On Pro, let clients book weekly, biweekly, or monthly; off until you turn it on.", "dur": "0:21", "aud": "owner"}, {"slug": "owner-16-clients", "file": "owner-16-clients.mp4?v=7", "poster": "owner-16-clients.jpg?v=7", "title": "Clients list", "desc": "Search, add, or remove clients. Auto-added clients show From booking since...", "dur": "0:24", "aud": "owner"}, {"slug": "owner-17-import-clients-csv", "file": "owner-17-import-clients-csv.mp4?v=8", "poster": "owner-17-import-clients-csv.jpg?v=8", "title": "Import clients from CSV", "desc": "Upload a CSV, match columns, preview, and import. Schedi never emails imports.", "dur": "0:22", "aud": "owner"}, {"slug": "owner-18-compare-plans", "file": "owner-18-compare-plans.mp4?v=8", "poster": "owner-18-compare-plans.jpg?v=8", "title": "Compare Plans", "desc": "Open the Free / Starter / Pro chart from your Schedi subscription card (below More & settings), including Agency Management on Pro.", "dur": "0:18", "aud": "owner"}, {"slug": "owner-19-roster-week-month", "file": "owner-19-roster-week-month.mp4?v=8", "poster": "owner-19-roster-week-month.jpg?v=8", "title": "Week and month roster", "desc": "Switch to Week or Month, move with Previous, Next, or Today, tap a booking for details, and tap a busy day.", "dur": "0:22", "aud": "owner"}];
         var SCHEDI_HELP_VIDEO_GROUPS = [["Get set up", ["owner-01-create-your-page", "owner-02-add-services", "owner-03-set-hours", "owner-04-payment-options", "owner-05-share-booking-link", "owner-18-compare-plans"]], ["Bookings and the roster", ["owner-06-accept-booking-request", "owner-08-add-manual-appointment", "owner-09-mark-paid", "owner-10-reschedule", "owner-11-cancel-appointment", "owner-07-appointments-report", "owner-19-roster-week-month"]], ["Clients", ["owner-16-clients", "owner-17-import-clients-csv"]], ["Hours and time off", ["owner-12-special-hours", "owner-13-date-blocks"]], ["Emails and Pro features", ["owner-14-email-confirmations", "owner-15-recurring-visits-pro"]], ["What your clients see", ["client-booking-demo"]]];
         function schediHelpVideoCard(v) {
             var base = '/assets/help-videos/';
@@ -7512,7 +7549,7 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                     main.appendChild(frame);
                 } else {
                     document.open();
-                    document.write(pageHtml);
+                    document.write(generateStandaloneHtmlForTenant(tenant, { topDocument: true }));
                     document.close();
                 }
             } catch (err) {
@@ -10379,6 +10416,9 @@ function schediQrModules(text) {
 
         function renderSchediToday(tenant) {
             if (!schediNewDashOn() || !tenant) return;
+            if (typeof schediDenyUndoBoot === 'function') schediDenyUndoBoot(tenant);
+            if (typeof schediDenyUndoReapply === 'function') schediDenyUndoReapply(tenant);
+            if (typeof schediDenyUndoPaint === 'function') schediDenyUndoPaint(Date.now());
             var today = '';
             try { today = rosterTodayIso(tenant); } catch (errToday) { today = localISODate(new Date()); }
             var heading = document.getElementById('schediTodayHeading');
@@ -16750,7 +16790,31 @@ function schediQrModules(text) {
             { words: ['music'], icon: 'fa-music' },
             { words: ['wrench', 'oil', 'tire'], icon: 'fa-wrench' },
             { words: ['graduation', 'chalkboard'], icon: 'fa-graduation-cap' },
-            { words: ['chart', 'lightbulb'], icon: 'fa-chart-simple' }
+            { words: ['chart', 'lightbulb'], icon: 'fa-chart-simple' },
+            { words: ['emery', 'acrylic'], icon: 'fa-emery-board' },
+            { words: ['lacquer', 'varnish'], icon: 'fa-polish-bottle' },
+            { words: ['french', 'gel'], icon: 'fa-french-tips' },
+            { words: ['mirror', 'vanity'], icon: 'fa-vanity-mirror' },
+            { words: ['moisturizer', 'serum'], icon: 'fa-cream-jar' },
+            { words: ['bodywork', 'aroma', 'diffuser'], icon: 'fa-aroma' },
+            { words: ['yoga', 'pilates'], icon: 'fa-yoga-mat' },
+            { words: ['kettlebell'], icon: 'fa-kettlebell' },
+            { words: ['syringe', 'vaccine'], icon: 'fa-syringe' },
+            { words: ['bandage'], icon: 'fa-bandage' },
+            { words: ['fever', 'thermometer'], icon: 'fa-thermometer' },
+            { words: ['leash', 'collar'], icon: 'fa-leash' },
+            { words: ['kennel', 'carrier'], icon: 'fa-pet-carrier' },
+            { words: ['tripod'], icon: 'fa-tripod' },
+            { words: ['vacuum'], icon: 'fa-vacuum' },
+            { words: ['battery'], icon: 'fa-car-battery' },
+            { words: ['steering'], icon: 'fa-steering-wheel' },
+            { words: ['ruler', 'algebra'], icon: 'fa-ruler' },
+            { words: ['whistle'], icon: 'fa-whistle' },
+            { words: ['rope', 'skipping'], icon: 'fa-jump-rope' },
+            { words: ['ignition', 'sparkplug'], icon: 'fa-spark-plug' },
+            { words: ['language', 'spanish'], icon: 'fa-language' },
+            { words: ['parrot', 'cage'], icon: 'fa-bird-cage' },
+            { words: ['shiatsu'], icon: 'fa-massage-table' }
         ];
 
         var SERVICE_ICON_CATEGORIES = [
@@ -16869,7 +16933,31 @@ function schediQrModules(text) {
             { id: 'fa-handshake', name: 'Deal', category: 'other', keywords: 'handshake meeting consulting' },
             { id: 'fa-phone', name: 'Phone', category: 'other', keywords: 'phone call consulting' },
             { id: 'fa-building', name: 'Office', category: 'other', keywords: 'building office work' },
-            { id: 'fa-clipboard', name: 'Notes', category: 'other', keywords: 'clipboard notes agenda' }
+            { id: 'fa-clipboard', name: 'Notes', category: 'other', keywords: 'clipboard notes agenda' },
+            { id: 'fa-emery-board', name: 'File', category: 'nails', keywords: 'emery file acrylic nail' },
+            { id: 'fa-polish-bottle', name: 'Lacquer', category: 'nails', keywords: 'lacquer varnish bottle polish' },
+            { id: 'fa-french-tips', name: 'Tips', category: 'nails', keywords: 'french tips gel nails' },
+            { id: 'fa-vanity-mirror', name: 'Mirror', category: 'beauty', keywords: 'mirror vanity makeup' },
+            { id: 'fa-cream-jar', name: 'Cream', category: 'beauty', keywords: 'cream moisturizer serum skin' },
+            { id: 'fa-massage-table', name: 'Table', category: 'wellness', keywords: 'table bodywork massage' },
+            { id: 'fa-aroma', name: 'Aroma', category: 'wellness', keywords: 'aroma diffuser oil scent' },
+            { id: 'fa-yoga-mat', name: 'Mat', category: 'fitness', keywords: 'yoga mat pilates stretch' },
+            { id: 'fa-jump-rope', name: 'Rope', category: 'fitness', keywords: 'jump rope skipping cardio' },
+            { id: 'fa-kettlebell', name: 'Kettlebell', category: 'fitness', keywords: 'kettlebell strength weight' },
+            { id: 'fa-syringe', name: 'Syringe', category: 'health', keywords: 'syringe vaccine shot' },
+            { id: 'fa-bandage', name: 'Bandage', category: 'health', keywords: 'bandage wrap injury' },
+            { id: 'fa-thermometer', name: 'Temp', category: 'health', keywords: 'thermometer fever temperature' },
+            { id: 'fa-leash', name: 'Leash', category: 'pets', keywords: 'leash collar walk dog' },
+            { id: 'fa-bird-cage', name: 'Cage', category: 'pets', keywords: 'cage bird parrot' },
+            { id: 'fa-pet-carrier', name: 'Carrier', category: 'pets', keywords: 'carrier kennel pet travel' },
+            { id: 'fa-tripod', name: 'Tripod', category: 'photo', keywords: 'tripod camera stand' },
+            { id: 'fa-vacuum', name: 'Vacuum', category: 'home', keywords: 'vacuum cleaner floor' },
+            { id: 'fa-car-battery', name: 'Battery', category: 'auto', keywords: 'battery charge jump' },
+            { id: 'fa-steering-wheel', name: 'Wheel', category: 'auto', keywords: 'steering wheel alignment' },
+            { id: 'fa-spark-plug', name: 'Plug', category: 'auto', keywords: 'spark plug ignition' },
+            { id: 'fa-ruler', name: 'Ruler', category: 'lessons', keywords: 'ruler math algebra measure' },
+            { id: 'fa-language', name: 'Language', category: 'lessons', keywords: 'language spanish english words' },
+            { id: 'fa-whistle', name: 'Whistle', category: 'lessons', keywords: 'whistle coach practice' }
         ];
 
         function serviceIconCategoryFor(iconId) {
@@ -16944,7 +17032,31 @@ function schediQrModules(text) {
             'fa-comments': serviceSvg('<path d="M5 16.5A7.5 7.5 0 1 1 8 18L5 19z"/>'),
             'fa-droplet': serviceSvg('<path d="M12 3s6 6.2 6 10a6 6 0 0 1-12 0c0-3.8 6-10 6-10z"/>'),
             'fa-palette': serviceSvg('<path d="M12 4a8 8 0 1 0 0 16h1.2a2 2 0 0 0 0-4H13a2 2 0 0 1-2-2 6 6 0 0 1 1-10z"/><circle cx="8" cy="10" r="0.8" fill="currentColor"/><circle cx="10" cy="7.5" r="0.8" fill="currentColor"/><circle cx="14" cy="7.5" r="0.8" fill="currentColor"/>'),
-            'fa-user': serviceSvg('<circle cx="12" cy="8" r="3"/><path d="M6 19c1.2-3 3.2-4.5 6-4.5S16.8 16 18 19"/>')
+            'fa-user': serviceSvg('<circle cx="12" cy="8" r="3"/><path d="M6 19c1.2-3 3.2-4.5 6-4.5S16.8 16 18 19"/>'),
+            'fa-emery-board': serviceSvg('<path d="M8 3h5l3 3v15H8z"/><path d="M13 3v3h3M9.5 9h5M9.5 12h5M9.5 15h5"/>'),
+            'fa-polish-bottle': serviceSvg('<path d="M10 3h4v3h-4z"/><rect x="8" y="6" width="8" height="15" rx="2"/><path d="M8 11h8"/>'),
+            'fa-french-tips': serviceSvg('<path d="M8 14c0-4 1.2-8 4-10 2.8 2 4 6 4 10 0 3-1.6 6-4 6s-4-3-4-6z"/><path d="M9.2 8.5c1.6 1 4 1 5.6 0"/>'),
+            'fa-vanity-mirror': serviceSvg('<ellipse cx="12" cy="9" rx="6" ry="5"/><path d="M12 14v3M8 20h8M9 17h6"/>'),
+            'fa-cream-jar': serviceSvg('<path d="M8 8h8v2H8z"/><rect x="7" y="10" width="10" height="9" rx="2"/><path d="M9 4h6v4H9z"/>'),
+            'fa-massage-table': serviceSvg('<path d="M4 14h16"/><path d="M6 14v5M18 14v5M7 14c1-4 9-4 10 0"/><circle cx="8" cy="8" r="1.4"/>'),
+            'fa-aroma': serviceSvg('<path d="M10 21h4l1-8H9z"/><path d="M11 13V8h2v5"/><path d="M8 6c1-2 2-2 2 0M12 5c1-2 2-2 2 0M10 3c.6-1.4 1.4-1.4 2 0"/>'),
+            'fa-yoga-mat': serviceSvg('<path d="M7 6c0-1.5 2-2.5 5-2.5S17 4.5 17 6v12c0 1.5-2 2.5-5 2.5S7 19.5 7 18z"/><path d="M7 8c2 .8 8 .8 10 0M7 16c2-.8 8-.8 10 0"/>'),
+            'fa-jump-rope': serviceSvg('<path d="M7 5v3M17 5v3"/><path d="M7 8c0 8 10 8 10 0"/><circle cx="7" cy="4.5" r="1.2"/><circle cx="17" cy="4.5" r="1.2"/>'),
+            'fa-kettlebell': serviceSvg('<path d="M9 9a3 3 0 0 1 6 0"/><path d="M8 10h8l1 9a4 4 0 0 1-10 0z"/><path d="M10 14h4"/>'),
+            'fa-syringe': serviceSvg('<path d="M14 4l6 6"/><path d="m15 7-8 8-2 4 4-2 8-8"/><path d="M7 13l4 4M5 19l2-2"/>'),
+            'fa-bandage': serviceSvg('<rect x="4" y="8" width="16" height="8" rx="3"/><path d="M12 10v4M10 12h4"/>'),
+            'fa-thermometer': serviceSvg('<path d="M10 13V6a2 2 0 0 1 4 0v7"/><circle cx="12" cy="16" r="3"/><path d="M12 16V8"/>'),
+            'fa-leash': serviceSvg('<circle cx="8" cy="7" r="3"/><path d="M11 8c4 1 6 4 6 8"/><path d="M17 13v6"/>'),
+            'fa-bird-cage': serviceSvg('<path d="M6 20h12M8 20V9a4 4 0 0 1 8 0v11"/><path d="M8 13h8M12 5V3"/>'),
+            'fa-pet-carrier': serviceSvg('<rect x="3" y="8" width="18" height="11" rx="2"/><path d="M8 8V6a4 4 0 0 1 8 0v2M3 13h18"/>'),
+            'fa-tripod': serviceSvg('<path d="M12 4v8M12 12 6 20M12 12l6 8M8 20h8"/><circle cx="12" cy="4" r="1.4"/>'),
+            'fa-vacuum': serviceSvg('<path d="M5 16h8l2-4h4"/><path d="M14 12V8h3v4"/><circle cx="8" cy="17.5" r="1.4"/><path d="M5 16v3"/>'),
+            'fa-car-battery': serviceSvg('<rect x="3" y="8" width="18" height="11" rx="2"/><path d="M8 8V5h3v3M13 8V5h3v3M8 13h3M13 11v4M11 13h4"/>'),
+            'fa-steering-wheel': serviceSvg('<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2"/><path d="M12 4v6M12 14v6M4.5 14.5 10 12M19.5 14.5 14 12"/>'),
+            'fa-spark-plug': serviceSvg('<path d="M10 3h4v3h-4zM9 6h6v3l-1 2H10L9 9z"/><path d="M11 11h2v4l-1 5-1-5z"/>'),
+            'fa-ruler': serviceSvg('<rect x="4" y="7" width="16" height="10" rx="1.5"/><path d="M8 7v3M12 7v4M16 7v3"/>'),
+            'fa-language': serviceSvg('<path d="M5 6h8M9 6c0 6-3 8-5 9"/><path d="M7 11c1.2 1.2 2.4 2 4 2.6"/><path d="M13 19l4-9 4 9M14.5 16h5"/>'),
+            'fa-whistle': serviceSvg('<circle cx="8" cy="13" r="3"/><path d="M11 12h8l2 2-3 1H11"/><path d="M16 10V8"/>')
         };
 
         function serviceSvgMarkup(iconId) {
@@ -18161,8 +18273,8 @@ function schediQrModules(text) {
             if (body) {
                 var email = String(app.clientEmail || '').trim();
                 body.textContent = email
-                    ? (who + ' will get an email that this time does not work. The time opens up again.')
-                    : 'This time will open up again. There is no email on the request, so the client is not emailed.';
+                    ? (who + ' will get an email that this time does not work. The time opens up again. You can undo it for 30 seconds.')
+                    : 'This time will open up again. There is no email on the request, so the client is not emailed. You can undo it for 30 seconds.';
             }
             if (idEl) idEl.value = app.id;
             var modal = document.getElementById('denyConfirmModal');
@@ -18188,7 +18300,295 @@ function schediQrModules(text) {
             }
         };
 
-        window.confirmDenyAppointment = function () {
+        var SCHEDI_DENY_UNDO_MS = 30000;
+        var SCHEDI_DENY_UNDO_KEY = 'schedi.denyUndo.v1';
+        var schediDenyUndoState = { entries: [] };
+        var schediDenyUndoTickTimer = 0;
+        var schediDenyUndoBooted = false;
+        var schediDenyUndoSeq = 0;
+
+        function schediDenyUndoReduce(state, action, now) {
+            var entries = [];
+            var src = (state && state.entries) || [];
+            for (var i = 0; i < src.length; i++) {
+                var snap = src[i].snapshot || {};
+                entries.push({
+                    token: String(src[i].token || ''),
+                    appId: String(src[i].appId || ''),
+                    tenantId: String(src[i].tenantId || ''),
+                    snapshot: { status: snap.status || 'pending', deniedAt: snap.deniedAt },
+                    deniedAt: src[i].deniedAt || '',
+                    deadline: Number(src[i].deadline) || 0,
+                    committed: !!src[i].committed
+                });
+            }
+            now = Number(now) || 0;
+            action = action || {};
+            var flipped = [];
+            var undone = null;
+            if (action.type === 'queue') {
+                var queuedSnap = action.snapshot || {};
+                entries.push({
+                    token: String(action.token || ''),
+                    appId: String(action.appId || ''),
+                    tenantId: String(action.tenantId || ''),
+                    snapshot: { status: queuedSnap.status || 'pending', deniedAt: queuedSnap.deniedAt },
+                    deniedAt: action.deniedAt || '',
+                    deadline: now + (Number(action.ms) || 30000),
+                    committed: false
+                });
+            } else if (action.type === 'undo') {
+                var token = action.token || '';
+                if (!token) {
+                    for (var u = entries.length - 1; u >= 0; u--) {
+                        if (!entries[u].committed) { token = entries[u].token; break; }
+                    }
+                }
+                var kept = [];
+                for (var k = 0; k < entries.length; k++) {
+                    if (!entries[k].committed && entries[k].token === token) {
+                        undone = entries[k];
+                        continue;
+                    }
+                    kept.push(entries[k]);
+                }
+                entries = kept;
+            } else if (action.type === 'tick' || action.type === 'resume') {
+                for (var t = 0; t < entries.length; t++) {
+                    if (!entries[t].committed && Number(entries[t].deadline) <= now) {
+                        entries[t].committed = true;
+                        flipped.push(entries[t]);
+                    }
+                }
+            } else if (action.type === 'forget') {
+                var live = [];
+                for (var f = 0; f < entries.length; f++) {
+                    if (entries[f].token !== action.token) live.push(entries[f]);
+                }
+                entries = live;
+            }
+            var pending = [];
+            for (var p = 0; p < entries.length; p++) if (!entries[p].committed) pending.push(entries[p]);
+            return {
+                entries: entries,
+                pending: pending,
+                latest: pending.length ? pending[pending.length - 1] : null,
+                flipped: flipped,
+                undone: undone
+            };
+        }
+
+        function schediDenyUndoApply(next) {
+            schediDenyUndoState = { entries: (next && next.entries) || [] };
+            return next;
+        }
+
+        function schediDenyUndoRead() {
+            try {
+                var raw = localStorage.getItem(SCHEDI_DENY_UNDO_KEY);
+                if (!raw) return { entries: [] };
+                var parsed = JSON.parse(raw);
+                if (!parsed || !Array.isArray(parsed.entries)) return { entries: [] };
+                return { entries: parsed.entries };
+            } catch (errRead) {
+                return { entries: [] };
+            }
+        }
+
+        function schediDenyUndoWrite() {
+            try {
+                var slim = [];
+                var rows = schediDenyUndoState.entries || [];
+                for (var i = 0; i < rows.length; i++) {
+                    var row = rows[i];
+                    var snap = row.snapshot || {};
+                    slim.push({
+                        token: row.token,
+                        appId: row.appId,
+                        tenantId: row.tenantId,
+                        snapshot: { status: snap.status || 'pending', deniedAt: snap.deniedAt },
+                        deniedAt: row.deniedAt || '',
+                        deadline: row.deadline,
+                        committed: !!row.committed
+                    });
+                }
+                localStorage.setItem(SCHEDI_DENY_UNDO_KEY, JSON.stringify({ entries: slim }));
+            } catch (errWrite) {}
+        }
+
+        function schediDenyUndoBindHide() {
+            if (window.__schediDenyUndoHideBound) return;
+            window.__schediDenyUndoHideBound = true;
+            // Page close keeps the denial pending instead of sending it.
+            // pagehide also fires on refresh. Committing there would email the client
+            // before the reloaded page can still offer Undo, and a beacon racing the
+            // live timer can send the denial email twice. The queue lives in
+            // localStorage (schedi.denyUndo.v1). While this page stays open, a timer
+            // commits each entry at its deadline. On the next load, entries whose
+            // 30 seconds already elapsed are marked committed and saved before the
+            // denial write and the client email, so a second load cannot send them
+            // again. Entries still inside the window resume the countdown and can
+            // still be undone. If the owner never returns, the request stays pending
+            // and no email is sent.
+            window.addEventListener('pagehide', function () {
+                schediDenyUndoWrite();
+            });
+            window.addEventListener('pageshow', function () {
+                if (!schediDenyUndoBooted) return;
+                schediDenyUndoTick(Date.now());
+            });
+        }
+
+        function schediDenyUndoReapply(tenant) {
+            if (!tenant || !tenant.appointments) return;
+            var id = String(tenant.id || '');
+            var rows = schediDenyUndoState.entries || [];
+            for (var i = 0; i < rows.length; i++) {
+                var row = rows[i];
+                if (row.committed || String(row.tenantId || '') !== id) continue;
+                for (var a = 0; a < tenant.appointments.length; a++) {
+                    var app = tenant.appointments[a];
+                    if (!app || String(app.id) !== String(row.appId)) continue;
+                    app.status = 'denied';
+                    if (row.deniedAt) app.deniedAt = row.deniedAt;
+                    break;
+                }
+            }
+        }
+
+        function schediDenyUndoPaint(now) {
+            var box = document.getElementById('toastContainer');
+            if (!box) return;
+            var pending = [];
+            var rows = schediDenyUndoState.entries || [];
+            for (var i = 0; i < rows.length; i++) if (!rows[i].committed) pending.push(rows[i]);
+            var node = document.getElementById('schediUndoDeny');
+            if (!pending.length) {
+                if (node && node.parentNode) node.parentNode.removeChild(node);
+                return;
+            }
+            var latest = pending[pending.length - 1];
+            var remain = Math.max(0, Number(latest.deadline) - (Number(now) || Date.now()));
+            var secs = Math.ceil(remain / 1000);
+            var meta = secs + 's';
+            if (pending.length > 1) meta += ' · ' + pending.length + ' pending';
+            var width = Math.max(0, Math.min(100, (remain / SCHEDI_DENY_UNDO_MS) * 100));
+            if (!node) {
+                node = document.createElement('div');
+                node.id = 'schediUndoDeny';
+                node.className = 'sd-undo';
+                node.innerHTML = '<div class="sd-undo-copy"><strong class="sd-undo-title"></strong><span class="sd-undo-meta"></span><span class="sd-undo-bar" aria-hidden="true"><span></span></span></div><button type="button"></button>';
+                box.appendChild(node);
+                var btn = node.querySelector('button');
+                if (btn) btn.addEventListener('click', function () { window.schediUndoDeny(); });
+            }
+            var title = node.querySelector('.sd-undo-title');
+            if (title) title.textContent = 'Appointment denied';
+            var metaEl = node.querySelector('.sd-undo-meta');
+            if (metaEl) metaEl.textContent = meta;
+            var button = node.querySelector('button');
+            if (button) button.textContent = 'Undo';
+            var bar = node.querySelector('.sd-undo-bar > span');
+            if (bar) bar.style.width = width + '%';
+        }
+
+        function schediDenyUndoArm() {
+            if (schediDenyUndoTickTimer) clearInterval(schediDenyUndoTickTimer);
+            schediDenyUndoTickTimer = 0;
+            var rows = schediDenyUndoState.entries || [];
+            var pending = false;
+            for (var i = 0; i < rows.length; i++) if (!rows[i].committed) pending = true;
+            if (!pending) return;
+            schediDenyUndoTickTimer = setInterval(function () {
+                schediDenyUndoTick(Date.now());
+            }, 250);
+        }
+
+        function schediDenyUndoSend(entry) {
+            if (!entry || entry._sent) return;
+            entry._sent = true;
+            try {
+                var tenant = null;
+                try {
+                    tenant = getTenant(entry.tenantId) || getTenant();
+                } catch (errTenant) {
+                    tenant = null;
+                }
+                if (tenant && entry.tenantId && String(tenant.id || '') !== String(entry.tenantId)) tenant = null;
+                var app = null;
+                var apps = (tenant && tenant.appointments) || [];
+                for (var i = 0; i < apps.length; i++) {
+                    if (apps[i] && String(apps[i].id) === String(entry.appId)) { app = apps[i]; break; }
+                }
+                if (app) {
+                    app.status = 'denied';
+                    if (entry.deniedAt) app.deniedAt = entry.deniedAt;
+                }
+                try { saveState({ quietSyncErrors: true }); } catch (errSave) {}
+                if (tenant && app) {
+                    try { sendClientDecisionEmail(tenant, app, false); } catch (errMail) {}
+                }
+            } finally {
+                schediDenyUndoApply(schediDenyUndoReduce(schediDenyUndoState, { type: 'forget', token: entry.token }, Date.now()));
+                schediDenyUndoWrite();
+            }
+        }
+
+        function schediDenyUndoTick(now) {
+            var next = schediDenyUndoReduce(schediDenyUndoState, { type: 'tick' }, now);
+            schediDenyUndoApply(next);
+            schediDenyUndoWrite();
+            var flipped = next.flipped || [];
+            for (var i = 0; i < flipped.length; i++) schediDenyUndoSend(flipped[i]);
+            schediDenyUndoPaint(now);
+            var still = false;
+            var rows = schediDenyUndoState.entries || [];
+            for (var r = 0; r < rows.length; r++) if (!rows[r].committed) still = true;
+            if (!still && schediDenyUndoTickTimer) {
+                clearInterval(schediDenyUndoTickTimer);
+                schediDenyUndoTickTimer = 0;
+            }
+        }
+
+        function schediDenyUndoBoot(tenant) {
+            if (schediDenyUndoBooted) return;
+            schediDenyUndoBindHide();
+            var stored = schediDenyUndoRead();
+            var waiting = false;
+            for (var i = 0; i < stored.entries.length; i++) if (!stored.entries[i].committed) waiting = true;
+            var apps = tenant && tenant.appointments;
+            if (waiting && (!apps || !apps.length) && !window.__SCHEDI_DEMO) {
+                schediDenyUndoApply({ entries: stored.entries });
+                return;
+            }
+            schediDenyUndoBooted = true;
+            var already = {};
+            for (var p = 0; p < stored.entries.length; p++) {
+                if (stored.entries[p].committed && stored.entries[p].token) already[stored.entries[p].token] = true;
+            }
+            var resumed = schediDenyUndoReduce(stored, { type: 'resume' }, Date.now());
+            schediDenyUndoApply(resumed);
+            schediDenyUndoWrite();
+            if (tenant) schediDenyUndoReapply(tenant);
+            var flipped = resumed.flipped || [];
+            for (var f = 0; f < flipped.length; f++) {
+                if (already[flipped[f].token]) {
+                    schediDenyUndoApply(schediDenyUndoReduce(schediDenyUndoState, { type: 'forget', token: flipped[f].token }, Date.now()));
+                    schediDenyUndoWrite();
+                    continue;
+                }
+                schediDenyUndoSend(flipped[f]);
+            }
+            schediDenyUndoArm();
+            schediDenyUndoPaint(Date.now());
+        }
+
+        function schediDenyUndoToken() {
+            schediDenyUndoSeq += 1;
+            return 'du-' + Date.now().toString(36) + '-' + schediDenyUndoSeq.toString(36) + '-' + Math.random().toString(36).slice(2, 7);
+        }
+
+        function confirmDenyAppointment() {
             var tenant = getTenant();
             if (!tenant) return;
             var appId = String((document.getElementById('denyConfirmAppId') || {}).value || '').trim();
@@ -18197,23 +18597,61 @@ function schediQrModules(text) {
                 closeDenyConfirmModal({ silent: true });
                 return;
             }
-            var email = String(app.clientEmail || '').trim();
-            var name = String(app.clientName || '').trim().split(/\s+/)[0];
             var decision = document.getElementById('bookingDecisionModal');
             var fromDecision = !!(decision && !decision.classList.contains('hidden') && decision.getAttribute('data-booking-id') === String(app.id));
+            schediDenyUndoBindHide();
+            if (!schediDenyUndoBooted) schediDenyUndoBoot(tenant);
+            if (String(app.status || '').toLowerCase() !== 'pending') {
+                closeDenyConfirmModal({ silent: true });
+                return;
+            }
+            var snapshot = { status: app.status, deniedAt: app.deniedAt };
+            var deniedAt = new Date().toISOString();
             app.status = 'denied';
-            app.deniedAt = new Date().toISOString();
+            app.deniedAt = deniedAt;
+            schediDenyUndoApply(schediDenyUndoReduce(schediDenyUndoState, {
+                type: 'queue',
+                token: schediDenyUndoToken(),
+                appId: String(app.id || ''),
+                tenantId: String(tenant.id || ''),
+                snapshot: snapshot,
+                deniedAt: deniedAt,
+                ms: SCHEDI_DENY_UNDO_MS
+            }, Date.now()));
+            schediDenyUndoWrite();
             closeDenyConfirmModal({ silent: true });
-            saveState();
-            renderTenantRoster(tenant);
+            try { renderTenantRoster(tenant); } catch (errRoster) {}
             try { renderLivePreviewIframe(); } catch (errPreview) {}
             try { renderSchediToday(tenant); } catch (errToday) {}
-            sendClientDecisionEmail(tenant, app, false);
-            showToast('Declined #' + appId + '. The time is open again.', 'info');
-            if (fromDecision && typeof window.schediDecisionLater === 'function') {
-                window.schediDecisionLater();
-                if (email) showToast((name || 'Your client') + ' will get an email letting them know.', 'success');
+            schediDenyUndoArm();
+            schediDenyUndoPaint(Date.now());
+            if (fromDecision && typeof window.schediDecisionLater === 'function') window.schediDecisionLater();
+        }
+        window.confirmDenyAppointment = confirmDenyAppointment;
+
+        window.schediUndoDeny = function (token) {
+            var next = schediDenyUndoReduce(schediDenyUndoState, { type: 'undo', token: token || '' }, Date.now());
+            var undone = next.undone;
+            schediDenyUndoApply(next);
+            schediDenyUndoWrite();
+            if (undone) {
+                var tenant = null;
+                try { tenant = getTenant(undone.tenantId) || getTenant(); } catch (errUndo) { tenant = null; }
+                var apps = (tenant && tenant.appointments) || [];
+                for (var i = 0; i < apps.length; i++) {
+                    if (!apps[i] || String(apps[i].id) !== String(undone.appId)) continue;
+                    var snap = undone.snapshot || {};
+                    apps[i].status = snap.status || 'pending';
+                    if (snap.deniedAt) apps[i].deniedAt = snap.deniedAt;
+                    else delete apps[i].deniedAt;
+                    break;
+                }
+                try { renderTenantRoster(tenant); } catch (errRoster) {}
+                try { renderLivePreviewIframe(); } catch (errPreview) {}
+                try { renderSchediToday(tenant); } catch (errToday) {}
             }
+            schediDenyUndoPaint(Date.now());
+            schediDenyUndoArm();
         };
 
         window.denyAppointment = function denyAppointment(appId) {
@@ -18962,7 +19400,7 @@ function schediQrModules(text) {
         }
 
         function formatServiceDuration(d) { d = String(d == null ? '' : d).trim(); return /^[0-9]+([.][0-9]+)?$/.test(d) ? d + ' min' : d; }
-        function generateStandaloneHtmlForTenant(tenant) {
+        function generateStandaloneHtmlForTenant(tenant, analyticsOpts) {
             ensurePaymentGateways(tenant);
             ensureCancellationFeeSettings(tenant);
             ensureAllowRecurringBookings(tenant);
@@ -19049,6 +19487,19 @@ function schediQrModules(text) {
             const appIdStr = (typeof window !== 'undefined' && window.__app_id) ? window.__app_id : (typeof __app_id !== 'undefined' ? __app_id : 'siteforge-97699');
             var schediNewBook = false;
             try { schediNewBook = schediNewBookOn(); } catch (newBookErr) { schediNewBook = false; }
+
+            // srcdoc iframes are about:srcdoc. The shell at /{slug} already has the beacon.
+            // Only the document.write fallback, which replaces that shell, should include it.
+            var schediWebAnalytics = '';
+            if (analyticsOpts && analyticsOpts.topDocument) {
+                try {
+                    var analyticsHost = String(location.hostname || '').toLowerCase();
+                    var analyticsDemo = new URLSearchParams(location.search || '').get('demo') === '1';
+                    if (analyticsHost !== 'schedi-dashboard-preview.axl199.workers.dev' && !analyticsDemo) {
+                        schediWebAnalytics = "<!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{\"token\": \"0dd8dc6f9fab4de484d8c5f5a1f1a57e\"}'><\/script><!-- End Cloudflare Web Analytics -->";
+                    }
+                } catch (analyticsErr) {}
+            }
 
             return `<!DOCTYPE html>
 <html lang="en" class="dark${schediNewBook ? ' schedi-newbook' : ''}">
@@ -22578,6 +23029,7 @@ function schediQrModules(text) {
             }, 600);
         }
     <\/script>
+${schediWebAnalytics}
 </body>
 </html>`;
         }
