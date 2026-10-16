@@ -92,22 +92,29 @@ describe("owner service images", () => {
     for (const match of choices.matchAll(/category: '([^']+)'/g)) {
       counts[match[1]] = (counts[match[1]] || 0) + 1;
     }
-    expect(counts).toMatchObject({
+    expect(counts).toEqual({
       hair: 10,
-      nails: 7,
-      beauty: 8,
-      wellness: 8,
-      fitness: 7,
-      health: 7,
-      pets: 7,
-      photo: 9,
-      home: 9,
-      auto: 7,
-      lessons: 7,
+      nails: 10,
+      beauty: 10,
+      wellness: 10,
+      fitness: 10,
+      health: 10,
+      pets: 10,
+      photo: 10,
+      home: 10,
+      auto: 10,
+      lessons: 10,
       other: 13,
     });
     const ids = [...choices.matchAll(/id: '(fa-[^']+)'/g)].map((match) => match[1]);
     expect(new Set(ids).size).toBe(ids.length);
+    expect(ids).toHaveLength(123);
+    const svg = html.slice(html.indexOf("var SERVICE_ICON_SVG = {"), html.indexOf("function serviceSvgMarkup"));
+    expect(extractFunction(html, "serviceSvg")).toContain("stroke=\"currentColor\"");
+    expect(extractFunction(html, "serviceSvg")).toContain("stroke-width=\"1.8\"");
+    for (const id of ["fa-emery-board", "fa-polish-bottle", "fa-french-tips", "fa-vanity-mirror", "fa-cream-jar", "fa-massage-table", "fa-aroma", "fa-yoga-mat", "fa-jump-rope", "fa-kettlebell", "fa-syringe", "fa-bandage", "fa-thermometer", "fa-leash", "fa-bird-cage", "fa-pet-carrier", "fa-tripod", "fa-vacuum", "fa-car-battery", "fa-steering-wheel", "fa-spark-plug", "fa-ruler", "fa-language", "fa-whistle"]) {
+      expect(svg).toContain("'" + id + "': serviceSvg(");
+    }
     expect(extractFunction(html, "serviceSvgMarkup")).toContain("fa-solid");
     expect(html).toContain("icon: 'fa-scissors'");
     expect(html).toContain("icon: 'fa-user'");

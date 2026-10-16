@@ -461,6 +461,12 @@ describe("owner dashboard preview", () => {
     expect(suggest("Scar treatment", "")).toBe("fa-calendar");
     expect(suggest("House cleaning", "")).toBe("fa-calendar");
     expect(suggest("Consult about my car", "")).toBe("fa-briefcase");
+    expect(suggest("Yoga", "")).toBe("fa-yoga-mat");
+    expect(suggest("Kettlebell swings", "")).toBe("fa-kettlebell");
+    expect(suggest("French tips", "")).toBe("fa-french-tips");
+    expect(suggest("Nail file", "")).toBe("fa-hand");
+    expect(suggest("Vacuum floors", "")).toBe("fa-vacuum");
+    expect(suggest("Spanish conversation", "")).toBe("fa-language");
     expect(html).not.toContain("FontAwesome Icon Class");
     expect(html).toContain('id="svcIconGrid"');
     expect(html).toContain("Upload your own");
