@@ -76,6 +76,10 @@ describe("public booking HTML", () => {
     expect(hqHtml).toContain('id="statAgencyMRR"');
     expect(hqHtml).toContain('id="statTotalBookings"');
     expect(hqHtml).toContain('id="statActivePages"');
+    expect(hqHtml).toContain("function hqInitScrollSpy()");
+    expect(hqHtml).toContain("new IntersectionObserver");
+    expect(hqHtml).toContain("#agencyDirectory [data-hq-collapse-tools]");
+    expect(hqHtml).toContain("#agencyDirectory #agencySearchInput");
     expect(hqCss).toContain(".hq-glance-body[hidden]");
     expect(hqCss).toContain(".hq-glance-summary[hidden]");
     expect(hqCss).toMatch(/@media \(min-width:\s*860px\)/);

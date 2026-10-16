@@ -738,6 +738,14 @@
             }
             html.schedi-newhq #hqNewTabs button.is-on { color: var(--hq-brand); }
             html.schedi-newhq #agencyHqSection { padding: 76px 16px 96px; }
+            html.schedi-newhq #agencyDirectory [data-hq-collapse-tools] {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            html.schedi-newhq #agencyDirectory #agencySearchInput {
+                width: 100%;
+                max-width: none;
+            }
         }
     </style>
 </head>
@@ -3301,15 +3309,47 @@
             try { updateMasterAuthUI(); } catch (errAuth) {}
             switchPlatformMode('agency');
         }
-        window.hqNewGo = function (id) {
-            var el = document.getElementById(id);
-            if (el && el.scrollIntoView) el.scrollIntoView({ block: 'start' });
+        function hqSetNavOn(id) {
             document.querySelectorAll('[data-hq-go]').forEach(function (btn) {
                 btn.classList.toggle('is-on', btn.getAttribute('data-hq-go') === id);
             });
+        }
+        window.hqNewGo = function (id) {
+            var el = document.getElementById(id);
+            if (el && el.scrollIntoView) el.scrollIntoView({ block: 'start' });
+            hqSetNavOn(id);
         };
+        function hqInitScrollSpy() {
+            if (!document.documentElement.classList.contains('schedi-newhq') || window.__hqScrollSpyOn) return;
+            var ids = ['hqGlanceCard', 'agencyDirectory', 'agencyBilling', 'agencyEmail'];
+            var sections = ids.map(function (id) { return document.getElementById(id); }).filter(Boolean);
+            if (!sections.length || typeof IntersectionObserver !== 'function') return;
+            window.__hqScrollSpyOn = true;
+            function hqSpyPick() {
+                var line = 88;
+                var active = sections[0].id;
+                for (var i = 0; i < sections.length; i++) {
+                    if (sections[i].getBoundingClientRect().top <= line) active = sections[i].id;
+                }
+                var last = sections[sections.length - 1];
+                var doc = document.documentElement;
+                var atBottom = last && window.innerHeight + window.scrollY >= doc.scrollHeight - 4;
+                if (atBottom && window.scrollY > 8 && last.getBoundingClientRect().top > line) active = last.id;
+                hqSetNavOn(active);
+            }
+            var observer = new IntersectionObserver(function () { hqSpyPick(); }, {
+                root: null,
+                rootMargin: '-64px 0px -45% 0px',
+                threshold: [0, 0.15, 0.35, 0.55, 0.75, 1]
+            });
+            sections.forEach(function (el) { observer.observe(el); });
+            hqSpyPick();
+            window.addEventListener('load', hqSpyPick);
+            window.addEventListener('pageshow', hqSpyPick);
+        }
 
         window.addEventListener('DOMContentLoaded', function () {
+            try { hqInitScrollSpy(); } catch (errSpy) {}
             if (window.__SCHEDI_HQ_DEMO && typeof isAgencyHqRoute === 'function' && isAgencyHqRoute()) {
                 try { bootSchediHqDemo(); } catch (errDemo) { console.error(errDemo); }
                 return;
