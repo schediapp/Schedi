@@ -40,6 +40,7 @@ import { notifyOwnerOfNewBooking, notifyOwnerOfCancellation, ownerNotifyEnabledF
 import { handleBookingIcs } from './booking-ics.js';
 import { handleBookingMailPost } from './booking-mail.js';
 import { rateLimitOk } from './rate-limit.js';
+import { handlePageVisits } from './page-visits.js';
 import { handleOwnerBillingSchedule, ownerBillingScheduleAction, subscriptionScheduleFromStripe } from './owner-billing-schedule.js';
 import {
   splitTenant,
@@ -2959,6 +2960,15 @@ export default {
     if (path === '/api/clients') {
       return handleClientsHttp(request, env, origin, { isAllowedOrigin });
     }
+    if (path === '/api/page-visits') {
+      return handlePageVisits(request, env, origin, {
+        json,
+        isAllowedOrigin,
+        readSession,
+        rateLimitOk,
+        tenantExists: (id) => tenantExists(env, id),
+      });
+    }
     if (path === '/api/profile') {
       if (request.method === 'OPTIONS') {
         if (origin && !isAllowedOrigin(origin)) return new Response(null, { status: 403 });
@@ -3010,8 +3020,8 @@ export default {
         {
           ok: true,
           service: 'schedi-email-worker',
-          features: ['booking_email', 'same_day_reminders', 'sms_confirmations', 'sms_reminders', 'owner_billing', 'booking_deposits', 'cancellation_fees', 'owner_booking_notify'],
-          rateLimits: ['RL_MAIL', 'RL_MAIL_TENANT', 'RL_SIGNUP', 'RL_SIGNUP_GLOBAL', 'RL_BOOKING_CREATE'].filter((k) => env[k] && typeof env[k].limit === 'function'),
+          features: ['booking_email', 'same_day_reminders', 'sms_confirmations', 'sms_reminders', 'owner_billing', 'booking_deposits', 'cancellation_fees', 'owner_booking_notify', 'page_visits'],
+          rateLimits: ['RL_MAIL', 'RL_MAIL_TENANT', 'RL_SIGNUP', 'RL_SIGNUP_GLOBAL', 'RL_BOOKING_CREATE', 'RL_PAGE_VISITS'].filter((k) => env[k] && typeof env[k].limit === 'function'),
         },
         200,
         origin

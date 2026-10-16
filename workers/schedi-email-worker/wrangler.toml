@@ -112,3 +112,10 @@ name = "RL_CLIENTS"
 type = "ratelimit"
 namespace_id = "41006"
 simple = { limit = 60, period = 60 }
+
+# RL_PAGE_VISITS: public booking-page counts (/api/page-visits), keyed by tenant id, never by IP.
+[[unsafe.bindings]]
+name = "RL_PAGE_VISITS"
+type = "ratelimit"
+namespace_id = "41007"
+simple = { limit = 120, period = 60 }
