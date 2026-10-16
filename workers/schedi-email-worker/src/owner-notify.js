@@ -111,6 +111,12 @@ export function buildOwnerNotifyEmail(tenant, booking) {
   const notes = clip(booking && booking.notes, 500);
   const ref = clip(booking && booking.id, 40);
   const slug = tenantSlug(tenant);
+  const payLabel = clip(booking && (booking.paymentOptionLabel || booking.paymentMethod), 80);
+  const payCode = clip(booking && booking.payCode, 12);
+  const depositAmt = money(booking && booking.depositAmount);
+  const depositUnpaid = depositAmt && booking && booking.depositPaid !== true;
+  const balance = depositUnpaid ? money(booking && booking.balanceDue) : '';
+  const handle = depositUnpaid ? depositHandleLine(tenant, booking) : '';
 
   const subject = pending
     ? ('New booking request: ' + client + ', ' + service + (when ? (', ' + when) : ''))
@@ -132,6 +138,11 @@ export function buildOwnerNotifyEmail(tenant, booking) {
     date ? ('Date: ' + date) : '',
     time ? ('Time: ' + time) : '',
     ref ? ('Reference: #' + ref) : '',
+    payLabel ? ('Payment: ' + payLabel) : '',
+    payCode ? ('Payment code: ' + payCode) : '',
+    depositUnpaid ? ('Deposit: ' + depositAmt + ' (unpaid until you mark it paid)') : '',
+    handle ? ('Deposit instructions: ' + handle) : '',
+    balance ? ('Remaining balance: ' + balance) : '',
     notes ? ('Notes: ' + notes) : '',
     '',
     'Review in Business Portal:',
@@ -150,6 +161,11 @@ export function buildOwnerNotifyEmail(tenant, booking) {
     date ? ['Date', date] : null,
     time ? ['Time', time] : null,
     ref ? ['Reference', '#' + ref] : null,
+    payLabel ? ['Payment', payLabel] : null,
+    payCode ? ['Payment code', payCode] : null,
+    depositUnpaid ? ['Deposit', depositAmt + ' (unpaid)'] : null,
+    handle ? ['Send deposit to', handle] : null,
+    balance ? ['Remaining balance', balance] : null,
     notes ? ['Notes', notes] : null,
   ].filter(Boolean);
 
@@ -271,6 +287,21 @@ function isCancelledBooking(booking) {
   if (booking.cancelled === true) return true;
   const status = String(booking.status || '').toLowerCase();
   return status === 'cancelled' || status === 'canceled';
+}
+
+function depositHandleLine(tenant, booking) {
+  const method = String(booking && booking.paymentMethod || '').toLowerCase();
+  if (method === 'cashapp' || method === 'cash-app') {
+    let tag = String(tenant && (tenant.cashAppTag || tenant.cashappTag) || '').trim().replace(/^\$/, '');
+    return tag ? ('Cash App $' + tag) : '';
+  }
+  if (method === 'zelle') return clip(tenant && tenant.zelleHandle, 80) ? ('Zelle ' + clip(tenant.zelleHandle, 80)) : '';
+  if (method === 'venmo') {
+    const handle = clip(tenant && tenant.venmoHandle, 80);
+    return handle ? ('Venmo ' + handle) : '';
+  }
+  if (method === 'paypal') return clip(tenant && tenant.paypalHandle, 120) ? ('PayPal ' + clip(tenant.paypalHandle, 120)) : '';
+  return '';
 }
 
 function money(n) {
