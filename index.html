@@ -636,6 +636,145 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-demo-note { color: #03
 #tenantPortalSection.schedi-newdash .sd-client-error:empty { display: none; }
 #tenantPortalSection.schedi-newdash .sd-client-hint { margin: 0; color: var(--sd-muted); font-size: 11px; line-height: 1.4; }
 #tenantPortalSection.schedi-newdash .sd-client-actions-form { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+#tenantPortalSection.schedi-newdash .sd-client-panel {
+    position: fixed;
+    z-index: 45;
+    top: 64px;
+    left: 244px;
+    right: 0;
+    bottom: 0;
+}
+#tenantPortalSection.schedi-newdash .sd-client-panel-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(2, 6, 23, 0.38);
+}
+#tenantPortalSection.schedi-newdash .sd-client-panel-card {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: min(440px, 100%);
+    display: flex;
+    flex-direction: column;
+    background: var(--sd-panel);
+    color: var(--sd-text);
+    border-left: 1px solid var(--sd-line);
+    box-shadow: var(--sd-shadow);
+}
+#tenantPortalSection.schedi-newdash .sd-client-panel-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 16px 8px;
+}
+#tenantPortalSection.schedi-newdash .sd-client-panel-head h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--sd-text);
+    overflow-wrap: anywhere;
+}
+#tenantPortalSection.schedi-newdash .sd-client-panel-close,
+#tenantPortalSection.schedi-newdash .sd-client-panel-actions button {
+    min-height: 44px;
+    border-radius: 12px;
+    padding: 8px 14px;
+    font-weight: 800;
+    font-size: 13px;
+    cursor: pointer;
+    border: 1px solid var(--sd-line);
+    background: var(--sd-bg);
+    color: var(--sd-text);
+}
+#tenantPortalSection.schedi-newdash .sd-client-panel-actions button.is-primary {
+    background: #10b981;
+    color: #022c22;
+    border-color: transparent;
+}
+#tenantPortalSection.schedi-newdash .sd-client-panel-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    padding: 4px 16px 16px;
+}
+#tenantPortalSection.schedi-newdash .sd-client-panel-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--sd-line);
+    background: var(--sd-panel);
+}
+#tenantPortalSection.schedi-newdash .sd-client-panel-line,
+#tenantPortalSection.schedi-newdash .sd-client-panel-notes,
+#tenantPortalSection.schedi-newdash .sd-client-empty,
+#tenantPortalSection.schedi-newdash .sd-client-noshow {
+    margin: 0 0 8px;
+    color: var(--sd-muted);
+    font-size: 13px;
+    overflow-wrap: anywhere;
+}
+#tenantPortalSection.schedi-newdash .sd-client-panel-notes { line-height: 1.4; }
+#tenantPortalSection.schedi-newdash .sd-client-noshow { margin-top: 8px; line-height: 1.45; font-weight: 700; }
+#tenantPortalSection.schedi-newdash .sd-client-usual { margin: 0 0 10px; font-weight: 800; color: var(--sd-text); }
+#tenantPortalSection.schedi-newdash .sd-client-totals,
+#tenantPortalSection.schedi-newdash .sd-client-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin: 0 0 10px;
+}
+#tenantPortalSection.schedi-newdash .sd-client-totals p,
+#tenantPortalSection.schedi-newdash .sd-client-stat {
+    margin: 0;
+    padding: 10px;
+    border: 1px solid var(--sd-line);
+    border-radius: 14px;
+    background: var(--sd-bg);
+    min-width: 0;
+}
+#tenantPortalSection.schedi-newdash .sd-client-totals span,
+#tenantPortalSection.schedi-newdash .sd-client-stat p {
+    display: block;
+    color: var(--sd-muted);
+    font-size: 11px;
+    font-weight: 800;
+}
+#tenantPortalSection.schedi-newdash .sd-client-totals strong,
+#tenantPortalSection.schedi-newdash .sd-client-stat strong {
+    display: block;
+    margin-top: 4px;
+    color: var(--sd-text);
+    font-size: 16px;
+    overflow-wrap: anywhere;
+}
+#tenantPortalSection.schedi-newdash .sd-client-history-group h3,
+#tenantPortalSection.schedi-newdash .sd-client-panel-scroll > h3 {
+    margin: 16px 0 8px;
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--sd-text);
+}
+#tenantPortalSection.schedi-newdash .sd-client-visit {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px 0;
+    border-top: 1px solid var(--sd-line);
+}
+#tenantPortalSection.schedi-newdash .sd-client-visit-main { min-width: 0; }
+#tenantPortalSection.schedi-newdash .sd-client-visit-when,
+#tenantPortalSection.schedi-newdash .sd-client-visit-svc,
+#tenantPortalSection.schedi-newdash .sd-client-visit-meta { margin: 0; overflow-wrap: anywhere; }
+#tenantPortalSection.schedi-newdash .sd-client-visit-when { color: var(--sd-muted); font-size: 12px; font-weight: 700; }
+#tenantPortalSection.schedi-newdash .sd-client-visit-svc { color: var(--sd-text); font-size: 14px; font-weight: 800; }
+#tenantPortalSection.schedi-newdash .sd-client-visit-meta { color: var(--sd-muted); font-size: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
+#tenantPortalSection.schedi-newdash .sd-client-visit .sd-pay { flex: none; align-self: flex-start; margin-top: 2px; }
+body.schedi-newdash.sd-client-panel-open { overflow: hidden; }
 #tenantPortalSection.schedi-newdash .roster-appt .sd-pay { margin-top: 4px; white-space: normal; }
 #tenantPortalSection.schedi-newdash .sd-more { position: relative; }
 #tenantPortalSection.schedi-newdash .sd-more > summary {
@@ -1539,6 +1678,11 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
     #tenantPortalSection.schedi-newdash .sd-client-edit textarea { min-height: 88px; }
     #tenantPortalSection.schedi-newdash .sd-client-actions { width: 100%; }
     #tenantPortalSection.schedi-newdash .sd-client-actions button { flex: 1 1 8rem; }
+    #tenantPortalSection.schedi-newdash .sd-client-name { min-height: 44px; }
+    #tenantPortalSection.schedi-newdash .sd-client-panel { top: 0; left: 0; }
+    #tenantPortalSection.schedi-newdash .sd-client-panel-backdrop { display: none; }
+    #tenantPortalSection.schedi-newdash .sd-client-panel-card { width: 100%; border-left: 0; }
+    #tenantPortalSection.schedi-newdash .sd-client-panel-actions button { flex: 1 1 9rem; }
     body.schedi-newdash #tenantServiceModal button,
     body.schedi-newdash #tenantServiceModal input,
     body.schedi-newdash #logoCropPanel.is-overlay button { min-height: 44px; }
@@ -2078,6 +2222,17 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                             <p class="sd-help-lead">Short videos for the business portal. The written steps live on the help page.</p>
                             <p class="sd-help-lead"><a href="https://schedi.app/help">Open the help page</a></p>
                             <div id="schediDashHelpBody"></div>
+                        </div>
+                    </div>
+                    <div id="sdClientPanel" class="sd-client-panel" hidden>
+                        <div class="sd-client-panel-backdrop" data-client-panel-close="1"></div>
+                        <div class="sd-client-panel-card" role="dialog" aria-modal="true" aria-labelledby="sdClientPanelTitle" tabindex="-1">
+                            <div class="sd-client-panel-head">
+                                <h2 id="sdClientPanelTitle">Client</h2>
+                                <button type="button" id="sdClientPanelClose" class="sd-client-panel-close" data-client-panel-close="1" aria-label="Close client details">Close</button>
+                            </div>
+                            <div id="sdClientPanelBody" class="sd-client-panel-scroll"></div>
+                            <div id="sdClientPanelActions" class="sd-client-panel-actions"></div>
                         </div>
                     </div>
                 </div>
@@ -7570,31 +7725,20 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
             body.innerHTML = '<div class="sd-client-list">' + shown.slice(0, cap).map(function (x) {
                 var contact = [x.phone ? ('<span><i class="fa-solid fa-phone mr-1 text-slate-500"></i>' + esc(x.phone) + '</span>') : '', x.email ? ('<span class="break-all"><i class="fa-solid fa-envelope mr-1 text-slate-500"></i>' + esc(x.email) + '</span>') : ''].filter(Boolean).join('');
                 var editing = ownerClientEditId === x.id;
-                var open = ownerClientDetailId === x.id && !editing;
+                var open = ownerClientPanelId === x.id && !editing;
                 var tags = clientTagsHtml(x);
-                var detail = open
-                    ? ('<div class="sd-client-detail mt-2 rounded-xl border border-slate-800 bg-slate-900 p-3 space-y-2">'
-                        + '<p class="text-[11px] text-slate-400">Client details</p>'
-                        + (contact ? ('<div class="sd-client-contact text-[11px] text-slate-300 flex flex-wrap gap-x-4 gap-y-0.5">' + contact + '</div>') : '')
-                        + (x.notes ? ('<p class="sd-client-notes text-[11px] text-slate-400 break-words">' + esc(x.notes) + '</p>') : '')
-                        + tags
-                        + clientVisitHistoryHtml(x)
-                        + '<button type="button" onclick="openClientRecurring(' + jsArg(x.id) + ')" class="px-3 py-2 rounded-xl bg-brand-500 hover:bg-brand-600 text-slate-950 font-bold text-[11px]">New recurring appointment</button>'
-                        + '</div>')
-                    : '';
                 var editor = editing ? clientEditFormHtml(x) : '';
-                var summary = (editing || open) ? '' : ('<div class="sd-client-contact text-[11px] text-slate-400 flex flex-wrap gap-x-4 gap-y-0.5 mt-0.5">' + contact + '</div>'
+                var summary = editing ? '' : ('<div class="sd-client-contact text-[11px] text-slate-400 flex flex-wrap gap-x-4 gap-y-0.5 mt-0.5">' + contact + '</div>'
                     + (x.notes ? ('<div class="sd-client-notes text-[11px] text-slate-500 mt-1 break-words">' + esc(x.notes) + '</div>') : '')
                     + tags);
                 return '<div class="sd-client py-3">'
-                    + '<div class="sd-client-head"><div class="sd-client-main min-w-0 text-sm break-words"><button type="button" class="sd-client-name font-bold text-white text-left" onclick="openClientDetail(' + jsArg(x.id) + ')" aria-expanded="' + ((open || editing) ? 'true' : 'false') + '">' + esc(x.name) + '</button>' + clientSourceTag(x) + '</div>'
+                    + '<div class="sd-client-head"><div class="sd-client-main min-w-0 text-sm break-words"><button type="button" class="sd-client-name font-bold text-white text-left" data-client-id="' + esc(x.id) + '" onclick="openClientDetail(' + jsArg(x.id) + ')" aria-expanded="' + (open ? 'true' : 'false') + '" aria-controls="sdClientPanel">' + esc(x.name) + '</button>' + clientSourceTag(x) + '</div>'
                     + '<div class="sd-client-actions">'
                     + (editing ? '' : ('<button type="button" class="sd-client-edit-btn px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold text-[11px] border border-slate-700" onclick="startOwnerClientEdit(' + jsArg(x.id) + ')" aria-label="Edit ' + esc(x.name) + '">Edit</button>'))
                     + '<button type="button" class="sd-client-remove px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-bold text-[11px] border border-rose-500/30" onclick="deleteOwnerClient(' + jsArg(x.id) + ')">Remove</button>'
                     + '</div></div>'
                     + summary
                     + editor
-                    + detail
                     + '</div>';
             }).join('') + '</div>' + (shown.length > cap ? ('<p class="text-[11px] text-slate-500 pt-2">Showing the first ' + cap + '. Search to find others.</p>') : '');
         };
@@ -7619,6 +7763,154 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                 + '<button type="button" class="sd-client-cancel px-4 py-2 rounded-xl bg-slate-800 text-slate-300 font-bold" onclick="cancelOwnerClientEdit()">Cancel</button>'
                 + '<button type="submit" class="sd-client-save px-4 py-2 rounded-xl bg-brand-500 hover:bg-brand-600 text-slate-950 font-bold">Save</button>'
                 + '</div></form>';
+        }
+
+        function clientNormEmail(value) {
+            return String(value == null ? '' : value).trim().toLowerCase();
+        }
+
+        function clientHistoryIso(value) {
+            var s = String(value || '').slice(0, 10);
+            var parts = s.split('-');
+            if (parts.length !== 3) return '';
+            if (parts[0].length !== 4 || parts[1].length !== 2 || parts[2].length !== 2) return '';
+            if (!/^\d+$/.test(parts[0] + parts[1] + parts[2])) return '';
+            return s;
+        }
+
+        function clientBookingMatches(client, app) {
+            if (!client || !app) return false;
+            var email = clientNormEmail(client.email);
+            var appEmail = clientNormEmail(app.clientEmail != null ? app.clientEmail : app.email);
+            if (email && appEmail && email === appEmail) return true;
+            var phone = clientPhoneKey(client.phone);
+            var appPhone = clientPhoneKey(app.clientPhone != null ? app.clientPhone : app.phone);
+            if (phone && appPhone && phone.length >= 7 && appPhone.length >= 7 && phone === appPhone) return true;
+            return false;
+        }
+
+        function clientHistoryMinutes(time) {
+            var raw = String(time || '').trim().toUpperCase();
+            var parts = raw.split(':');
+            if (parts.length < 2) return 1500;
+            var hour = parseInt(parts[0], 10);
+            var rest = String(parts[1] || '').trim().split(' ');
+            var minute = parseInt(rest[0], 10);
+            var ap = rest.length > 1 ? rest[rest.length - 1] : '';
+            if (!isFinite(hour) || !isFinite(minute)) return 1500;
+            if (ap === 'PM' && hour < 12) hour += 12;
+            if (ap === 'AM' && hour === 12) hour = 0;
+            if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return 1500;
+            return hour * 60 + minute;
+        }
+
+        function clientHistorySortKey(app) {
+            var date = String((app && app.date) || '').slice(0, 10);
+            var mins = clientHistoryMinutes(app && app.time);
+            var pad = mins < 10 ? '000' : (mins < 100 ? '00' : (mins < 1000 ? '0' : ''));
+            return date + 'T' + pad + String(mins);
+        }
+
+        function clientHistoryStatus(app) {
+            if (reportIsCancelled(app)) return 'Cancelled';
+            if (reportIsDenied(app)) return 'Denied';
+            var status = String((app && app.status) || '').toLowerCase();
+            if (status === 'pending') return 'Pending';
+            if (status === 'accepted') return 'Confirmed';
+            if (!status) return 'Booked';
+            return status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, ' ');
+        }
+
+        function clientHistoryPrice(app) {
+            if (!app || app.amount === null || app.amount === undefined || app.amount === '') return '';
+            var n = Number(app.amount);
+            if (!isFinite(n) || n < 0) return '';
+            return reportMoney(n);
+        }
+
+        function clientPayWord(kind) {
+            if (kind === 'card') return 'Card (Stripe)';
+            if (kind === 'cashapp') return 'Cash App';
+            if (kind === 'zelle') return 'Zelle';
+            if (kind === 'venmo') return 'Venmo';
+            if (kind === 'paypal') return 'PayPal';
+            if (kind === 'cash') return 'In person / Cash';
+            return '';
+        }
+
+        function clientHistoryModel(client, appointments, today, paymentState, payKind) {
+            var payOf = typeof paymentState === 'function' ? paymentState : function () { return 'unpaid'; };
+            var kindOf = typeof payKind === 'function' ? payKind : function () { return 'unpaid'; };
+            var todayIso = clientHistoryIso(today);
+            var matched = [];
+            (appointments || []).forEach(function (app) {
+                if (clientBookingMatches(client, app)) matched.push(app);
+            });
+            var upcoming = [];
+            var past = [];
+            matched.forEach(function (app) {
+                var date = clientHistoryIso(app && app.date);
+                if (date && todayIso && date >= todayIso) upcoming.push(app);
+                else past.push(app);
+            });
+            function bySooner(a, b) {
+                var ka = clientHistorySortKey(a);
+                var kb = clientHistorySortKey(b);
+                if (ka < kb) return -1;
+                if (ka > kb) return 1;
+                return 0;
+            }
+            upcoming.sort(bySooner);
+            past.sort(function (a, b) { return bySooner(b, a); });
+            var paidRevenue = 0;
+            var unpaidRevenue = 0;
+            var visitCount = 0;
+            var firstVisit = '';
+            var lastVisit = '';
+            var counts = { card: 0, cashapp: 0, zelle: 0, venmo: 0, paypal: 0, cash: 0 };
+            var recent = { card: '', cashapp: '', zelle: '', venmo: '', paypal: '', cash: '' };
+            matched.forEach(function (app) {
+                if (reportIsCancelled(app) || reportIsDenied(app)) return;
+                visitCount += 1;
+                var date = clientHistoryIso(app && app.date);
+                if (date) {
+                    if (!firstVisit || date < firstVisit) firstVisit = date;
+                    if (!lastVisit || date > lastVisit) lastVisit = date;
+                }
+                var amount = reportAmount(app);
+                if (payOf(app) === 'paid') {
+                    paidRevenue += amount;
+                    var kind = kindOf(app);
+                    if (counts[kind] != null) {
+                        counts[kind] += 1;
+                        var key = clientHistorySortKey(app);
+                        if (!recent[kind] || key > recent[kind]) recent[kind] = key;
+                    }
+                } else unpaidRevenue += amount;
+            });
+            var order = ['card', 'cashapp', 'zelle', 'venmo', 'paypal', 'cash'];
+            var usual = '';
+            var best = 0;
+            order.forEach(function (kind) {
+                var n = counts[kind];
+                if (n > best) {
+                    best = n;
+                    usual = kind;
+                } else if (n === best && n > 0 && usual && recent[kind] > recent[usual]) usual = kind;
+            });
+            return {
+                upcoming: upcoming,
+                past: past,
+                paidRevenue: paidRevenue,
+                unpaidRevenue: unpaidRevenue,
+                revenue: paidRevenue + unpaidRevenue,
+                usualMethod: usual,
+                usualLabel: clientPayWord(usual),
+                visitCount: visitCount,
+                firstVisit: firstVisit,
+                lastVisit: lastVisit,
+                noShow: appointmentReportNoShow()
+            };
         }
 
         function clientMatchesAppointment(client, app) {
@@ -7649,18 +7941,132 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
 
         var ownerClientDetailId = '';
         var ownerClientEditId = '';
+        var ownerClientPanelId = '';
+        var ownerClientPanelReturnId = '';
+
+        function clientById(clientId) {
+            var t = getTenant();
+            var cache = t && ownerClientCache[t.id];
+            if (!cache || !cache.clients) return null;
+            var found = null;
+            cache.clients.forEach(function (row) {
+                if (row && row.id === clientId) found = row;
+            });
+            return found;
+        }
+
+        function clientHistoryGroupHtml(title, apps, tenant) {
+            var rows = (apps || []).map(function (app) {
+                var when = rosterPrettyDate(app && app.date) || String((app && app.date) || '');
+                if (app && app.time) when = when ? (when + ' · ' + app.time) : String(app.time);
+                var price = clientHistoryPrice(app);
+                return '<article class="sd-client-visit"><div class="sd-client-visit-main">'
+                    + '<p class="sd-client-visit-when">' + esc(when || 'Date not set') + '</p>'
+                    + '<p class="sd-client-visit-svc"><span class="sd-svc-line">' + serviceMarkHtml(tenant, app && app.serviceName) + '<span>' + esc((app && app.serviceName) || 'Appointment') + '</span></span></p>'
+                    + '<p class="sd-client-visit-meta"><span>' + esc(clientHistoryStatus(app)) + '</span><span>' + esc(price || '—') + '</span></p>'
+                    + '</div>' + appointmentPayMarkup(app, false) + '</article>';
+            }).join('');
+            var empty = title === 'Upcoming' ? 'No upcoming visits.' : 'No past visits.';
+            return '<section class="sd-client-history-group"><h3>' + esc(title) + '</h3>' + (rows || ('<p class="sd-client-empty">' + empty + '</p>')) + '</section>';
+        }
+
+        function clientPanelStat(label, value) {
+            return '<article class="sd-client-stat"><p>' + esc(label) + '</p><strong>' + esc(value) + '</strong></article>';
+        }
+
+        function paintClientPanel() {
+            var panel = document.getElementById('sdClientPanel');
+            var body = document.getElementById('sdClientPanelBody');
+            var actions = document.getElementById('sdClientPanelActions');
+            var title = document.getElementById('sdClientPanelTitle');
+            var client = clientById(ownerClientPanelId);
+            if (!panel || !body || !actions || !title || !client) {
+                if (panel) panel.hidden = true;
+                return;
+            }
+            var tenant = getTenant();
+            var today = '';
+            try { today = rosterTodayIso(tenant); } catch (errToday) { today = localISODate(new Date()); }
+            var model = clientHistoryModel(client, (tenant && tenant.appointments) || [], today, bookingPaymentState, appointmentPayKind);
+            var contact = [client.phone, client.email].filter(Boolean).join(' · ');
+            var noShow = (model.noShow && model.noShow.available)
+                ? String(model.noShow.label || '')
+                : 'Unavailable. Appointments do not have a no-show field, so this stays unavailable.';
+            var first = model.firstVisit ? (rosterPrettyDate(model.firstVisit) || model.firstVisit) : '—';
+            var last = model.lastVisit ? (rosterPrettyDate(model.lastVisit) || model.lastVisit) : '—';
+            title.textContent = client.name || 'Client';
+            body.innerHTML = (contact ? ('<p class="sd-client-panel-line">' + esc(contact) + '</p>') : '')
+                + (client.notes ? ('<p class="sd-client-panel-notes">' + esc(client.notes) + '</p>') : '')
+                + clientTagsHtml(client)
+                + '<div class="sd-client-totals">'
+                + '<p><span>Revenue</span><strong>' + esc(reportMoney(model.revenue)) + '</strong></p>'
+                + '<p><span>Paid</span><strong>' + esc(reportMoney(model.paidRevenue)) + '</strong></p>'
+                + '<p><span>Unpaid</span><strong>' + esc(reportMoney(model.unpaidRevenue)) + '</strong></p>'
+                + '</div>'
+                + '<p class="sd-client-usual">' + esc(model.usualLabel ? ('Usually pays ' + model.usualLabel) : 'No usual method yet.') + '</p>'
+                + '<div class="sd-client-stats">'
+                + clientPanelStat('Visit count', String(model.visitCount))
+                + clientPanelStat('First visit', first)
+                + clientPanelStat('Last visit', last)
+                + '</div>'
+                + '<p class="sd-client-noshow">No-shows: ' + esc(noShow) + '</p>'
+                + '<h3 id="sdClientVisitHistory">Visit history</h3>'
+                + clientHistoryGroupHtml('Upcoming', model.upcoming, tenant)
+                + clientHistoryGroupHtml('Past', model.past, tenant);
+            var idArg = jsArg(client.id);
+            actions.innerHTML = '<button type="button" class="is-primary" onclick="bookClientAgain(' + idArg + ')">Book again</button>'
+                + '<button type="button" onclick="openClientRecurring(' + idArg + ')">New recurring appointment</button>'
+                + '<button type="button" onclick="startOwnerClientEdit(' + idArg + ')">Edit</button>';
+            panel.hidden = false;
+            document.body.classList.add('sd-client-panel-open');
+            var closeBtn = document.getElementById('sdClientPanelClose');
+            if (closeBtn && closeBtn.focus) closeBtn.focus();
+        }
+
+        function clientPanelBlocked() {
+            var ids = ['manualBookingModal', 'ownerRecurringModal', 'clientImportModal', 'denyConfirmModal', 'rosterPaidMethodModal'];
+            for (var i = 0; i < ids.length; i++) {
+                var node = document.getElementById(ids[i]);
+                if (node && !node.classList.contains('hidden')) return true;
+            }
+            return false;
+        }
+
+        window.closeClientPanel = function (keepFocus) {
+            var panel = document.getElementById('sdClientPanel');
+            if (panel) panel.hidden = true;
+            document.body.classList.remove('sd-client-panel-open');
+            var was = ownerClientPanelId;
+            var returnId = ownerClientPanelReturnId;
+            ownerClientPanelId = '';
+            ownerClientPanelReturnId = '';
+            if (was) renderClientList();
+            if (keepFocus || !returnId) return;
+            var btn = document.querySelector('.sd-client-name[data-client-id="' + String(returnId).replace(/"/g, '') + '"]');
+            if (btn && btn.focus) {
+                try { btn.focus(); } catch (errFocus) {}
+            }
+        };
 
         window.openClientDetail = function (clientId) {
             if (ownerClientEditId === clientId) return;
             if (ownerClientEditId) ownerClientEditId = '';
-            ownerClientDetailId = ownerClientDetailId === clientId ? '' : clientId;
+            if (ownerClientPanelId === clientId) {
+                window.closeClientPanel();
+                return;
+            }
+            ownerClientPanelReturnId = clientId;
+            ownerClientPanelId = clientId;
+            ownerClientDetailId = '';
             renderClientList();
+            paintClientPanel();
         };
 
         window.startOwnerClientEdit = function (clientId) {
             ownerClientEditId = clientId;
-            ownerClientDetailId = clientId;
-            renderClientList();
+            ownerClientDetailId = '';
+            if (ownerClientPanelId) window.closeClientPanel(true);
+            else renderClientList();
             var name = document.getElementById('clientEditName');
             if (name && name.focus) name.focus();
         };
@@ -7746,12 +8152,51 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
         window.saveOwnerClientEdit = saveOwnerClientEdit;
 
         window.openClientRecurring = function (clientId) {
-            var t = getTenant();
-            var c = t && ownerClientCache[t.id];
-            var x = c && (c.clients || []).find(function (k) { return k && k.id === clientId; });
+            var x = clientById(clientId);
             if (!x || typeof openOwnerRecurringModal !== 'function') return;
             openOwnerRecurringModal({ clientName: x.name || '', clientPhone: x.phone || '', clientEmail: x.email || '' });
         };
+
+        window.bookClientAgain = function (clientId) {
+            var x = clientById(clientId);
+            if (!x || typeof openManualBookingModal !== 'function') return;
+            openManualBookingModal({ clientName: x.name || '', clientPhone: x.phone || '', clientEmail: x.email || '' });
+        };
+
+        (function bindClientPanel() {
+            var panel = document.getElementById('sdClientPanel');
+            if (!panel || panel._clientBound) return;
+            panel._clientBound = true;
+            panel.addEventListener('click', function (event) {
+                var target = event.target;
+                if (!target || !target.closest) return;
+                if (target.closest('[data-client-panel-close]')) window.closeClientPanel();
+            });
+            panel.addEventListener('keydown', function (event) {
+                if (!event || event.key !== 'Tab' || panel.hidden) return;
+                var card = panel.querySelector('.sd-client-panel-card');
+                if (!card) return;
+                var nodes = card.querySelectorAll('button, a, input, select, textarea');
+                var items = [];
+                for (var i = 0; i < nodes.length; i++) if (!nodes[i].disabled) items.push(nodes[i]);
+                if (!items.length) return;
+                var first = items[0];
+                var last = items[items.length - 1];
+                if (event.shiftKey && document.activeElement === first) {
+                    event.preventDefault();
+                    last.focus();
+                } else if (!event.shiftKey && document.activeElement === last) {
+                    event.preventDefault();
+                    first.focus();
+                }
+            });
+            document.addEventListener('keydown', function (event) {
+                if (!event || event.key !== 'Escape') return;
+                if (!panel || panel.hidden || clientPanelBlocked()) return;
+                event.preventDefault();
+                window.closeClientPanel();
+            });
+        })();
 
         window.toggleClientAddForm = function (show) {
             var f = document.getElementById('clientAddForm');
@@ -9019,7 +9464,21 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                     { id: 'HB-1009', clientName: 'Casey Ng', clientPhone: '(555) 201-4410', clientEmail: 'casey@example.com', serviceName: 'Beard trim', date: day(-2), time: '03:00 PM', status: 'accepted', paymentStatus: 'PAID', paidMethod: 'cashapp', paymentMethod: 'cashapp', durationMins: 20 },
                     { id: 'HB-1010', clientName: 'Drew Patel', clientPhone: '(555) 201-4411', clientEmail: 'drew@example.com', serviceName: 'Consultation', date: day(-3), time: '05:00 PM', status: 'accepted', paymentStatus: 'PAID', paidMethod: 'zelle', paymentMethod: 'zelle', durationMins: 30 },
                     { id: 'HB-1011', clientName: 'Quinn Brooks', clientPhone: '(555) 201-4412', clientEmail: 'quinn@example.com', serviceName: 'Cut & style', date: day(1), time: '03:30 PM', status: 'accepted', paymentStatus: 'PAID', paidMethod: 'venmo', paymentMethod: 'venmo', durationMins: 45 },
-                    { id: 'HB-1012', clientName: 'Harper Diaz', clientPhone: '(555) 201-4413', clientEmail: 'harper@example.com', serviceName: 'Gloss', date: day(2), time: '04:30 PM', status: 'accepted', paymentStatus: 'PAID', paidMethod: 'paypal', paymentMethod: 'paypal', durationMins: 75 }
+                    { id: 'HB-1012', clientName: 'Harper Diaz', clientPhone: '(555) 201-4413', clientEmail: 'harper@example.com', serviceName: 'Gloss', date: day(2), time: '04:30 PM', status: 'accepted', paymentStatus: 'PAID', paidMethod: 'paypal', paymentMethod: 'paypal', durationMins: 75 },
+                    { id: 'HB-1013', clientName: 'Maya Chen', clientPhone: '(555) 999-0142', clientEmail: 'Maya@Example.com', serviceName: 'Beard trim', date: day(-16), time: '10:00 AM', status: 'accepted', paymentStatus: 'PAID VIA CARD', paidMethod: 'card', amount: 28, durationMins: 20 },
+                    { id: 'HB-1014', clientName: 'Maya Chen', clientPhone: '(555) 201-0142', clientEmail: 'maya@example.com', serviceName: 'Gloss', date: day(-22), time: '02:00 PM', status: 'accepted', paymentStatus: 'PAID IN CASH', paidMethod: 'cash', amount: 80, durationMins: 75 },
+                    { id: 'HB-1015', clientName: 'Maya Chen', clientPhone: '(555) 201-0142', clientEmail: 'maya@example.com', serviceName: 'Cut & style', date: day(-30), time: '09:30 AM', status: 'cancelled', paymentStatus: 'PAID', paidMethod: 'card', amount: 65, durationMins: 45 },
+                    { id: 'HB-1016', clientName: 'Maya Chen', clientPhone: '(555) 201-0142', clientEmail: 'maya@example.com', serviceName: 'Color', date: day(12), time: '11:00 AM', status: 'accepted', paymentStatus: 'PAY AT APPOINTMENT', amount: 120, durationMins: 90 },
+                    { id: 'HB-1017', clientName: 'Luis Ortega', clientPhone: '+1 (555) 201-2288', clientEmail: '', serviceName: 'Beard trim', date: day(-15), time: '01:00 PM', status: 'accepted', paymentStatus: 'PAID', paidMethod: 'cashapp', paymentMethod: 'cashapp', amount: 28, durationMins: 20 },
+                    { id: 'HB-1018', clientName: 'Luis Ortega', clientPhone: '(555) 201-2288', clientEmail: 'luis@example.com', serviceName: 'Beard trim', date: day(-20), time: '03:00 PM', status: 'accepted', paymentStatus: 'PAID', paidMethod: 'cashapp', paymentMethod: 'cashapp', amount: 28, durationMins: 20 },
+                    { id: 'HB-1019', clientName: 'Luis Ortega', clientPhone: '(555) 201-2288', clientEmail: 'luis@example.com', serviceName: 'Cut & style', date: day(9), time: '10:30 AM', status: 'accepted', paymentStatus: 'PAY AT APPOINTMENT', amount: 65, durationMins: 45 },
+                    { id: 'HB-1020', clientName: 'Jordan Lee', clientPhone: '555.201.7730', clientEmail: 'desk@example.com', serviceName: 'Cut & style', date: day(-14), time: '04:00 PM', status: 'accepted', paymentStatus: 'PAID IN CASH', paidMethod: 'cash', amount: 65, durationMins: 45 },
+                    { id: 'HB-1021', clientName: 'Jordan Lee', clientPhone: '(555) 201-7730', clientEmail: '', serviceName: 'Gloss', date: day(-26), time: '11:00 AM', status: 'denied', paymentStatus: 'PAY AT APPOINTMENT', amount: 80, durationMins: 75 },
+                    { id: 'HB-1022', clientName: 'Jordan Lee', clientPhone: '(555) 201-7730', clientEmail: '', serviceName: 'Beard trim', date: day(11), time: '09:00 AM', status: 'accepted', paymentStatus: 'PAY AT APPOINTMENT', amount: 28, durationMins: 20 },
+                    { id: 'HB-1023', clientName: 'Elena Vasquez', clientPhone: '(555) 201-4419', clientEmail: 'elena@example.com', serviceName: 'Color', date: day(-12), time: '01:00 PM', status: 'accepted', paymentStatus: 'PAID VIA CARD', paidMethod: 'card', amount: 120, durationMins: 90 },
+                    { id: 'HB-1024', clientName: 'Elena Vasquez', clientPhone: '(555) 201-4419', clientEmail: 'elena@example.com', serviceName: 'Gloss', date: day(-18), time: '02:30 PM', status: 'accepted', paymentStatus: 'PAID', paidMethod: 'venmo', paymentMethod: 'venmo', amount: 80, durationMins: 75 },
+                    { id: 'HB-1025', clientName: 'Elena Vasquez', clientPhone: '(555) 201-4419', clientEmail: 'ELENA@example.com', serviceName: 'Color', date: day(-35), time: '10:00 AM', status: 'accepted', paymentStatus: 'PAID VIA CARD', paidMethod: 'card', amount: 120, durationMins: 90 },
+                    { id: 'HB-1026', clientName: 'Elena Vasquez', clientPhone: '(555) 201-4419', clientEmail: 'elena@example.com', serviceName: 'Color', date: day(16), time: '01:00 PM', status: 'accepted', paymentStatus: 'PAY AT APPOINTMENT', amount: 120, durationMins: 90 }
                 ]
             };
         }
@@ -14443,24 +14902,29 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
             setManualWalkIn(!manualWalkInOn(), true);
         };
 
-        window.openManualBookingModal = function() {
+        window.openManualBookingModal = function(prefill) {
             const tenant = getTenant();
             if (!tenant) return;
+            var clientName = prefill && prefill.clientName ? String(prefill.clientName) : '';
+            var clientPhone = prefill && prefill.clientPhone ? String(prefill.clientPhone) : '';
+            var clientEmail = prefill && prefill.clientEmail ? String(prefill.clientEmail) : '';
             document.getElementById('manEditId').value = '';
-            document.getElementById('manModalTitle').textContent = 'Log Manual Walk-In / Phone Booking';
+            document.getElementById('manModalTitle').textContent = clientName ? 'Add appointment' : 'Log Manual Walk-In / Phone Booking';
             var manDelNew = document.getElementById('manDeleteBtn');
             if (manDelNew) manDelNew.classList.add('hidden');
             var manSubNew = document.getElementById('manSubmitBtn');
             if (manSubNew) manSubNew.textContent = 'Log Appointment';
-            document.getElementById('manClientName').value = '';
-            document.getElementById('manClientPhone').value = '';
-            document.getElementById('manClientEmail').value = '';
+            document.getElementById('manClientName').value = clientName;
+            document.getElementById('manClientPhone').value = clientPhone;
+            document.getElementById('manClientEmail').value = clientEmail;
             document.getElementById('manCustomServiceName').value = '';
             fillManualServiceSelect(tenant, '');
             document.getElementById('manDurationMins').value = '60';
             document.getElementById('manPrice').value = '';
             onManualServiceChange();
-            document.getElementById('manDate').value = localISODate();
+            var bookedDate = localISODate();
+            if (clientName) bookedDate = addIsoDays(bookedDate, 1) || bookedDate;
+            document.getElementById('manDate').value = bookedDate;
             populateOwnerTimeSelect('manTime', tenant, '09:00 AM');
             setManualWalkIn(false, false);
             var freshDep = document.getElementById('manDepositBox');

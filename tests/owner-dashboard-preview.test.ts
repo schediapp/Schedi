@@ -573,7 +573,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
           list,
           week: weekJordan?.textContent || "",
           month: monthJordan?.textContent || "",
-          history: document.getElementById("clientListBody")?.textContent || "",
+          history: document.getElementById("sdClientPanel")?.textContent || "",
           status: saved?.paymentStatus || "",
           method: saved?.paidMethod || "",
         };
