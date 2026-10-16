@@ -2194,6 +2194,63 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
     body.schedi-newdash #tenantServiceModal input,
     body.schedi-newdash #logoCropPanel.is-overlay button { min-height: 44px; }
 }
+#tenantPortalSection.schedi-newdash .sd-client-tools {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    justify-content: flex-end;
+    gap: 8px;
+    min-width: 0;
+}
+#tenantPortalSection.schedi-newdash .sd-client-tools button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    box-sizing: border-box;
+    min-height: 44px;
+    padding: 8px 14px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 800;
+    line-height: 1.1;
+    white-space: nowrap;
+    cursor: pointer;
+}
+#tenantPortalSection.schedi-newdash .sd-client-tools button i { font-size: 13px; line-height: 1; }
+#tenantPortalSection.schedi-newdash .sd-client-tool-primary {
+    border: 0;
+    background: #10b981;
+    color: #022c22;
+}
+#tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
+    border: 1px solid #64748b;
+    background: #1e293b;
+    color: #f8fafc;
+}
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-primary {
+    background: #10b981 !important;
+    color: #022c22 !important;
+}
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    border-color: #64748b !important;
+}
+#tenantPortalSection.schedi-newdash .sd-client-tools button:focus-visible {
+    outline: 2px solid #38bdf8;
+    outline-offset: 2px;
+}
+@media (max-width: 520px) {
+    #tenantPortalSection.schedi-newdash .sd-client-tools { width: 100%; gap: 6px; }
+    #tenantPortalSection.schedi-newdash .sd-client-tools button {
+        flex: 1 1 0;
+        min-width: 0;
+        padding: 0 6px;
+        font-size: 12px;
+        gap: 4px;
+    }
+}
 #tenantPortalSection.schedi-newdash .sd-series-preview-open {
         min-height: 44px;
         padding: 10px 16px;
@@ -3421,10 +3478,10 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
                             <h3 class="text-lg font-bold text-white">Clients</h3>
                             <p class="text-xs text-slate-400">Your saved clients. Only you can see this list. Schedi never emails or texts clients you import.</p>
                         </div>
-                        <div class="flex flex-wrap gap-2">
-                            <button type="button" onclick="openClientImport()" class="px-4 py-2 rounded-xl bg-brand-500 hover:bg-brand-600 text-slate-950 font-bold text-xs"><i class="fa-solid fa-file-import mr-1.5"></i>Import CSV</button>
-                            <button type="button" onclick="toggleClientAddForm(true)" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs border border-slate-700"><i class="fa-solid fa-user-plus mr-1.5"></i>Add client</button>
-                            <button type="button" onclick="downloadClientSampleCsv()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs border border-slate-700"><i class="fa-solid fa-download mr-1.5"></i>Sample CSV</button>
+                        <div class="sd-client-tools">
+                            <button type="button" onclick="openClientImport()" class="sd-client-tool sd-client-tool-primary"><i class="fa-solid fa-file-import" aria-hidden="true"></i><span>Import CSV</span></button>
+                            <button type="button" onclick="toggleClientAddForm(true)" class="sd-client-tool sd-client-tool-ghost"><i class="fa-solid fa-user-plus" aria-hidden="true"></i><span>Add client</span></button>
+                            <button type="button" onclick="downloadClientSampleCsv()" class="sd-client-tool sd-client-tool-ghost"><i class="fa-solid fa-download" aria-hidden="true"></i><span>Sample CSV</span></button>
                         </div>
                     </div>
                     <form id="clientAddForm" onsubmit="submitClientAddForm(event)" class="hidden p-4 rounded-xl bg-slate-900 border border-slate-800 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
