@@ -9,7 +9,7 @@ import { renderRobots, renderSitemap } from "../worker/render";
 
 const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const root = new URL("..", import.meta.url).pathname;
-const BOOKING_TEMPLATE_SHA = "5de5e84dce1919870339ecc0db876505c9886749762de97f040adfc8dceea3f8";
+const BOOKING_TEMPLATE_SHA = "e07eb14f8d9174a9ceb5788fce33e426c30df12e0ef9361f3cc9640313bba586";
 const SHELL_STYLE_SHA = "7c1f1bbb7af97aa8c1e95ab8de650f6493512361a409fd083bcbe3a2c04332d6";
 
 function bookingTemplate(source: string): string {
@@ -282,7 +282,11 @@ describe("owner dashboard preview", () => {
     for (const path of ["/?demo=1", "/?newdash=1"]) {
       const response = await handleRequest(new Request("https://schedi.app" + path), env(), ctx());
       expect(response.status, path).toBe(200);
-      expect(await response.text(), path).toContain("<body>app</body>");
+      const text = await response.text();
+      expect(text, path).toContain("<body>app");
+      expect(text, path).toContain("</body>");
+      if (path.includes("demo=1")) expect(text, path).toContain("<body>app</body>");
+      else expect(text, path).toContain("Cloudflare Web Analytics");
     }
 
     const home = await handleRequest(new Request("https://schedi.app/"), env(), ctx());
