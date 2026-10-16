@@ -11509,7 +11509,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
         function busyAppleFormHtml() {
             var err = busyAppleDraft.error ? '<p class="sd-busy-error" role="alert">' + esc(busyAppleDraft.error) + '</p>' : '';
             return '<h4>Apple iCloud</h4><form class="sd-busy-apple" data-busy-apple-form="1">' +
-                '<label class="sd-busy-field"><span>Apple ID</span><input type="email" name="appleId" autocomplete="username" inputmode="email" value="' + esc(busyAppleDraft.appleId) + '"></label>' +
+                '<label class="sd-busy-field"><span>Apple ID</span><input type="text" name="appleId" autocomplete="username" inputmode="email" value="' + esc(busyAppleDraft.appleId) + '"></label>' +
                 '<label class="sd-busy-field"><span>App-specific password</span><input type="password" name="applePassword" autocomplete="off" value="' + esc(busyAppleDraft.password) + '"></label>' +
                 '<p class="sd-busy-hint">Use the 16-character app-specific password, not your Apple ID password. <a href="https://support.apple.com/en-us/102654" target="_blank" rel="noopener noreferrer">how to make one</a></p>' +
                 '<p class="sd-busy-hint">This preview does not save the password.</p>' +
