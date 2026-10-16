@@ -56,14 +56,17 @@ describe("booking calendar contrast", () => {
   });
 
   it("shrinks calendar status labels to the day cell on narrow screens", () => {
-    const at = html.indexOf("font-size: 22cqw");
+    const at = html.indexOf("font-size: 20cqw");
     expect(at).toBeGreaterThan(0);
-    expect(html.indexOf("font-size: 22cqw", at + 1)).toBe(-1);
-    const rule = html.slice(at - 450, at + 350);
+    expect(html.indexOf("font-size: 20cqw", at + 1)).toBe(-1);
+    expect(html).not.toContain("font-size: 22cqw");
+    const rule = html.slice(at - 450, at + 420);
     expect(rule).toContain("@media (max-width: 639px)");
     expect(rule).toContain("container-type: inline-size");
     expect(rule).toContain("text-transform: none");
     expect(rule).toContain("white-space: normal");
+    expect(rule).toContain("overflow-wrap: normal");
+    expect(rule).toContain("word-break: keep-all");
     expect(rule).toContain("-webkit-line-clamp: 2");
     expect(rule).toContain("html.schedi-newbook .cal-day-away .cal-day-label");
     expect(html).toContain("(SCHEDI_NEWBOOK && !phoneCal) ? awayShort : 'Away'");
