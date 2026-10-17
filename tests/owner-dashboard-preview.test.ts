@@ -1127,6 +1127,51 @@ describe("owner dashboard preview", () => {
     expect(html).toContain(">Save series</button>");
     expect(html).toContain(">Cancel</button>");
   });
+
+  it("shares the round close chip on sheets and modals", () => {
+    const css = dashCss(html);
+    expect(css).toContain("body.schedi-newdash .sd-form-close,");
+    expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-form-close {");
+    expect(css).toContain("width: 48px;");
+    expect(css).toContain("height: 48px;");
+    expect(css).toContain("border-radius: 999px;");
+    expect(css).toContain("background: #1e293b;");
+    expect(css).toContain("background: #f1f5f9;");
+    expect(css).toContain("border: 1px solid #cbd5e1;");
+    expect(css).toContain(".sd-form-close i { font-size: 22px;");
+    expect(css).toContain(".sd-sheet-bar {\n    display: flex;");
+    expect(css).toContain("position: sticky;");
+    const markers = [
+      'onclick="schediDashToggleMore(false)"',
+      'onclick="schediDashHelp(false)"',
+      'id="sdClientPanelClose"',
+      'id="sdSeriesPreviewClose"',
+      'onclick="closeSubPaymentModal()"',
+      'onclick="closeComparePlansModal()"',
+      'onclick="closeClientImport()"',
+      'onclick="closeTenantRescheduleModal()"',
+      'onclick="closeTenantChangePassModal()"',
+      'onclick="closeTenantForgotModal()"',
+      'onclick="closeAddBlockedTimeModal()"',
+      'onclick="closeAddDateBlockModal()"',
+      'onclick="closeAddSpecialHoursModal()"',
+      'onclick="closeAddServiceModal()"',
+      'onclick="closeRosterApptModal()"',
+      'onclick="closeManualBookingModal()"',
+      'onclick="closeOwnerRecurringModal()"',
+    ];
+    for (const marker of markers) {
+      const at = html.indexOf(marker);
+      expect(at, marker).toBeGreaterThan(-1);
+      const start = html.lastIndexOf("<button", at);
+      const button = html.slice(start, html.indexOf("</button>", at));
+      expect(button, marker).toContain("sd-form-close");
+      expect(button, marker).toContain('aria-label="Close"');
+      expect(button, marker).toContain("fa-xmark");
+    }
+    expect(html).not.toContain('aria-label="Close help"');
+    expect(unscopedSelectors(css)).toEqual([]);
+  });
 });
 
 const chrome = ["/usr/bin/google-chrome", "/usr/bin/google-chrome-stable", "/usr/bin/chromium", "/usr/bin/chromium-browser"].find((path) => existsSync(path));
@@ -3583,6 +3628,186 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       await expectMutedPicker("ownerRecurPaymentChoices", "dark", ["cashapp", "zelle", "venmo", "cash", "later"], "cash");
       const seriesPay = await page.evaluate(() => (document.getElementById("ownerRecurPayment") as HTMLInputElement).value);
       expect(seriesPay).toBe("PAID IN CASH");
+    } finally {
+      await browser.close();
+      await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+    }
+  }, 120000);
+
+  it("uses the round close chip on More and other sheets at 340 and 390", async () => {
+    const types: Record<string, string> = {
+      ".html": "text/html; charset=utf-8",
+      ".js": "text/javascript; charset=utf-8",
+      ".svg": "image/svg+xml",
+      ".png": "image/png",
+      ".json": "application/json",
+      ".webmanifest": "application/manifest+json",
+    };
+    const server = createServer((req, res) => {
+      const path = new URL(req.url || "/", "http://127.0.0.1").pathname;
+      const file = path === "/" || path === "/portal-preview" ? "/index.html" : path;
+      const full = join(root, file);
+      if (!full.startsWith(root) || !existsSync(full)) {
+        res.writeHead(404);
+        res.end("missing");
+        return;
+      }
+      res.writeHead(200, { "content-type": types[extname(full)] || "application/octet-stream" });
+      res.end(readFileSync(full));
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const address = server.address();
+    const port = typeof address === "object" && address ? address.port : 0;
+    const puppeteer = await import("puppeteer-core");
+    const browser = await puppeteer.default.launch({
+      executablePath: chrome,
+      headless: true,
+      args: ["--no-sandbox", "--disable-dev-shm-usage"],
+    });
+    const page = await browser.newPage();
+    const readClose = (selector: string) => page.evaluate((sel) => {
+      const close = document.querySelector(sel) as HTMLButtonElement | null;
+      const icon = close?.querySelector("i") as HTMLElement | null;
+      const card = close?.closest(".sd-sheet-card, .glass-card, .sd-client-panel-card, .sd-series-preview-card, .sd-form-sheet") as HTMLElement | null;
+      if (!close || !icon || !card) return null;
+      const closeBox = close.getBoundingClientRect();
+      const cardBox = card.getBoundingClientRect();
+      const style = getComputedStyle(close);
+      const iconStyle = getComputedStyle(icon);
+      return {
+        w: closeBox.width,
+        h: closeBox.height,
+        label: close.getAttribute("aria-label"),
+        bg: style.backgroundColor,
+        borderW: style.borderTopWidth,
+        border: style.borderTopColor,
+        radius: parseFloat(style.borderTopLeftRadius),
+        icon: iconStyle.fontSize,
+        iconClass: icon.className,
+        rightGap: cardBox.right - closeBox.right,
+        topGap: closeBox.top - cardBox.top,
+        onRight: closeBox.left > cardBox.left + cardBox.width / 2,
+      };
+    }, selector);
+    const expectChip = (box: Awaited<ReturnType<typeof readClose>>, theme: "dark" | "light", label: string) => {
+      expect(box, label).toBeTruthy();
+      if (!box) return;
+      expect(box.w, label).toBeGreaterThanOrEqual(47.5);
+      expect(box.w, label).toBeLessThanOrEqual(48.5);
+      expect(box.h, label).toBeGreaterThanOrEqual(47.5);
+      expect(box.h, label).toBeLessThanOrEqual(48.5);
+      expect(box.label, label).toBe("Close");
+      expect(box.bg, label).toBe(theme === "dark" ? "rgb(30, 41, 59)" : "rgb(241, 245, 249)");
+      expect(box.borderW, label).toBe(theme === "dark" ? "0px" : "1px");
+      if (theme === "light") expect(box.border, label).toBe("rgb(203, 213, 225)");
+      expect(box.radius, label).toBeGreaterThanOrEqual(24);
+      expect(box.icon, label).toBe("22px");
+      expect(box.iconClass, label).toContain("fa-xmark");
+      expect(box.rightGap, label).toBeGreaterThanOrEqual(0);
+      expect(box.rightGap, label).toBeLessThan(28);
+      expect(box.topGap, label).toBeGreaterThanOrEqual(0);
+      expect(box.topGap, label).toBeLessThan(28);
+      expect(box.onRight, label).toBe(true);
+    };
+    try {
+      await page.goto(`http://127.0.0.1:${port}/portal-preview`, { waitUntil: "domcontentloaded", timeout: 45000 });
+      await page.waitForFunction(() => document.body.classList.contains("schedi-newdash"), { timeout: 20000 });
+      await page.waitForFunction(() => {
+        const apps = (window as unknown as { getTenant?: () => { appointments?: { id?: string }[] } }).getTenant?.()?.appointments || [];
+        return apps.some((row) => row && row.id === "HB-1001");
+      }, { timeout: 20000 });
+      for (const width of [340, 390]) {
+        await page.setViewport({ width, height: 780 });
+        for (const theme of ["dark", "light"] as const) {
+          await page.evaluate((mode) => {
+            const win = window as unknown as {
+              setSchediTheme: (mode: string) => void;
+              schediDashGo: (page: string) => void;
+              closeComparePlansModal: () => void;
+              closeAddServiceModal: () => void;
+              closeRosterApptModal: () => void;
+              closeClientPanel: () => void;
+              closeSeriesEmailPreview: () => void;
+              closeAddBlockedTimeModal: () => void;
+              closeTenantRescheduleModal: () => void;
+              schediDashToggleMore: (force: boolean) => void;
+              schediDashHelp: (force: boolean) => void;
+            };
+            win.setSchediTheme(mode);
+            win.schediDashGo("today");
+            win.closeComparePlansModal();
+            win.closeAddServiceModal();
+            win.closeRosterApptModal();
+            win.closeClientPanel();
+            win.closeSeriesEmailPreview();
+            win.closeAddBlockedTimeModal();
+            win.closeTenantRescheduleModal();
+            win.schediDashToggleMore(false);
+            win.schediDashHelp(false);
+          }, theme);
+          await page.waitForFunction((mode) => document.documentElement.classList.contains("schedi-light") === (mode === "light"), { timeout: 2000 }, theme);
+          await page.evaluate(() => (window as unknown as { schediDashToggleMore: (force: boolean) => void }).schediDashToggleMore(true));
+          await page.waitForSelector("#schediDashMoreSheet:not([hidden]) .sd-form-close", { timeout: 5000 });
+          const pinned = await page.evaluate(() => {
+            const sheet = document.getElementById("schediDashMoreSheet") as HTMLElement;
+            const card = sheet.querySelector(".sd-sheet-card") as HTMLElement;
+            const close = card.querySelector(".sd-form-close") as HTMLElement;
+            card.style.maxHeight = "180px";
+            card.scrollTop = 240;
+            const closeBox = close.getBoundingClientRect();
+            const cardBox = card.getBoundingClientRect();
+            const scrolled = card.scrollTop > 40;
+            card.style.maxHeight = "";
+            card.scrollTop = 0;
+            return { scrolled, topGap: closeBox.top - cardBox.top };
+          });
+          expect(pinned.scrolled, `${width} ${theme}`).toBe(true);
+          expect(pinned.topGap, `${width} ${theme}`).toBeLessThan(28);
+          expectChip(await readClose("#schediDashMoreSheet .sd-form-close"), theme, `more ${width} ${theme}`);
+          await page.click("#schediDashMoreSheet .sd-form-close");
+          await page.waitForSelector("#schediDashMoreSheet[hidden]", { timeout: 2000 });
+          await page.evaluate(() => (window as unknown as { schediDashToggleMore: (force: boolean) => void }).schediDashToggleMore(true));
+          await page.click('#schediDashMoreSheet [data-dash-go="services"]');
+          await page.waitForSelector("#schediDashMoreSheet[hidden]", { timeout: 2000 });
+          const servicesOn = await page.evaluate(() => !document.getElementById("tenantSectionServices")?.classList.contains("hidden"));
+          expect(servicesOn, `${width} ${theme}`).toBe(true);
+          await page.evaluate(() => (window as unknown as { schediDashHelp: (force: boolean) => void }).schediDashHelp(true));
+          await page.waitForSelector("#schediDashHelp:not([hidden]) .sd-form-close", { timeout: 5000 });
+          expectChip(await readClose("#schediDashHelp .sd-form-close"), theme, `help ${width} ${theme}`);
+          await page.click("#schediDashHelp .sd-form-close");
+          await page.evaluate(() => (window as unknown as { openComparePlansModal: () => void }).openComparePlansModal());
+          await page.waitForSelector("#comparePlansModal:not(.hidden) .sd-form-close", { timeout: 5000 });
+          expectChip(await readClose("#comparePlansModal .sd-form-close"), theme, `plans ${width} ${theme}`);
+          await page.click("#comparePlansModal .sd-form-close");
+          await page.evaluate(() => (window as unknown as { openAddServiceModal: () => void }).openAddServiceModal());
+          await page.waitForSelector("#tenantServiceModal:not(.hidden) .sd-form-close", { timeout: 5000 });
+          expectChip(await readClose("#tenantServiceModal .sd-form-close"), theme, `service ${width} ${theme}`);
+          await page.click("#tenantServiceModal .sd-form-close");
+          await page.evaluate(() => (window as unknown as { openRosterApptModal: (id: string) => void }).openRosterApptModal("HB-1001"));
+          await page.waitForSelector("#rosterApptModal:not(.hidden) .sd-form-close", { timeout: 5000 });
+          expectChip(await readClose("#rosterApptModal .sd-form-close"), theme, `roster ${width} ${theme}`);
+          await page.click("#rosterApptModal .sd-form-close");
+          await page.evaluate(() => (window as unknown as { openTenantRescheduleModal: (id: string) => void }).openTenantRescheduleModal("HB-1001"));
+          await page.waitForSelector("#tenantRescheduleModal:not(.hidden) .sd-form-close", { timeout: 5000 });
+          expectChip(await readClose("#tenantRescheduleModal .sd-form-close"), theme, `reschedule ${width} ${theme}`);
+          await page.click("#tenantRescheduleModal .sd-form-close");
+          await page.evaluate(() => (window as unknown as { openAddBlockedTimeModal: () => void }).openAddBlockedTimeModal());
+          await page.waitForSelector("#addBlockedTimeModal:not(.hidden) .sd-form-close", { timeout: 5000 });
+          expectChip(await readClose("#addBlockedTimeModal .sd-form-close"), theme, `blocked ${width} ${theme}`);
+          await page.click("#addBlockedTimeModal .sd-form-close");
+          await page.evaluate(() => (window as unknown as { openClientDetail: (id: string) => void }).openClientDetail("CL-MAYA"));
+          await page.waitForSelector("#sdClientPanel:not([hidden]) .sd-form-close", { timeout: 5000 });
+          expectChip(await readClose("#sdClientPanel .sd-form-close"), theme, `client ${width} ${theme}`);
+          await page.click("#sdClientPanel .sd-form-close");
+          await page.evaluate(() => {
+            (window as unknown as { schediDashGo: (page: string) => void }).schediDashGo("emails");
+            (window as unknown as { openSeriesEmailPreview: () => void }).openSeriesEmailPreview();
+          });
+          await page.waitForSelector("#sdSeriesPreview:not([hidden]) .sd-form-close", { timeout: 5000 });
+          expectChip(await readClose("#sdSeriesPreview .sd-form-close"), theme, `series ${width} ${theme}`);
+          await page.click("#sdSeriesPreview .sd-form-close");
+        }
+      }
     } finally {
       await browser.close();
       await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));

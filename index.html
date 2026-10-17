@@ -1145,9 +1145,19 @@ html.schedi-light #tenantPortalSection.schedi-newdash #schediDashAddMenu button.
     padding: 8px;
     box-shadow: var(--sd-shadow);
 }
-#tenantPortalSection.schedi-newdash .sd-sheet-bar { display: flex; align-items: center; justify-content: space-between; padding: 8px 8px 4px; }
-#tenantPortalSection.schedi-newdash .sd-sheet-bar h3 { margin: 0; font-size: 16px; font-weight: 800; }
-#tenantPortalSection.schedi-newdash .sd-sheet-bar button,
+#tenantPortalSection.schedi-newdash .sd-sheet-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 8px 4px;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--sd-panel);
+}
+#tenantPortalSection.schedi-newdash .sd-sheet-bar h3 { margin: 0; min-width: 0; font-size: 16px; font-weight: 800; }
+#tenantPortalSection.schedi-newdash .sd-sheet-bar button:not(.sd-form-close),
 #tenantPortalSection.schedi-newdash .sd-sheet-card > button { color: var(--sd-text); }
 #tenantPortalSection.schedi-newdash .sd-sheet-rule { height: 1px; background: var(--sd-line); margin: 6px 8px; }
 #tenantPortalSection.schedi-newdash .sd-danger { color: var(--sd-rose) !important; }
@@ -1404,8 +1414,8 @@ body.schedi-newdash .sd-form-head {
 }
 html.schedi-light body.schedi-newdash .sd-form-head { background: #ffffff; border-bottom-color: #e2e8f0; }
 body.schedi-newdash .sd-form-head h3 { margin: 0; min-width: 0; overflow-wrap: break-word; }
-body.schedi-newdash #manualBookingModal .sd-form-close,
-body.schedi-newdash #ownerRecurringModal .sd-form-close {
+body.schedi-newdash .sd-form-close,
+#tenantPortalSection.schedi-newdash .sd-form-close {
     width: 48px;
     height: 48px;
     min-width: 48px;
@@ -1413,6 +1423,7 @@ body.schedi-newdash #ownerRecurringModal .sd-form-close {
     margin: 0;
     padding: 0;
     flex: none;
+    align-self: flex-start;
     box-sizing: border-box;
     display: inline-flex;
     align-items: center;
@@ -1422,14 +1433,21 @@ body.schedi-newdash #ownerRecurringModal .sd-form-close {
     background: #1e293b;
     color: #e2e8f0;
     cursor: pointer;
+    position: relative;
+    z-index: 1;
 }
-body.schedi-newdash #manualBookingModal .sd-form-close i,
-body.schedi-newdash #ownerRecurringModal .sd-form-close i { font-size: 22px; line-height: 1; }
-html.schedi-light body.schedi-newdash #manualBookingModal .sd-form-close,
-html.schedi-light body.schedi-newdash #ownerRecurringModal .sd-form-close {
+body.schedi-newdash .sd-form-close i { font-size: 22px; line-height: 1; pointer-events: none; }
+#tenantPortalSection.schedi-newdash .sd-form-close i { font-size: 22px; line-height: 1; pointer-events: none; }
+html.schedi-light body.schedi-newdash .sd-form-close,
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-form-close {
     background: #f1f5f9;
     color: #0f172a;
     border: 1px solid #cbd5e1;
+}
+body.schedi-newdash .sd-form-close:focus-visible,
+#tenantPortalSection.schedi-newdash .sd-form-close:focus-visible {
+    outline: 2px solid #10b981;
+    outline-offset: 2px;
 }
 body.schedi-newdash .sd-form-scroll {
     flex: 1 1 auto;
@@ -2986,7 +3004,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
         color: #f8fafc;
     }
     html.schedi-light #tenantPortalSection.schedi-newdash .sd-series-preview-bar h3 { color: #0f172a; }
-    #tenantPortalSection.schedi-newdash .sd-series-preview-bar button {
+    #tenantPortalSection.schedi-newdash .sd-series-preview-bar button:not(.sd-form-close) {
         min-height: 44px;
         min-width: 44px;
         padding: 8px 14px;
@@ -2996,7 +3014,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
         color: #f8fafc;
         font-weight: 700;
     }
-    html.schedi-light #tenantPortalSection.schedi-newdash .sd-series-preview-bar button {
+    html.schedi-light #tenantPortalSection.schedi-newdash .sd-series-preview-bar button:not(.sd-form-close) {
         background: #f8fafc;
         color: #0f172a;
         border-color: #cbd5e1;
@@ -3983,7 +4001,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-theme-seg { background
 @media (max-width: 859px) {
     #tenantPortalSection.schedi-newdash #schediDashMoreSheet .sd-sheet-card { max-height: min(88vh, 760px); }
     #tenantPortalSection.schedi-newdash #schediDashMoreSheet .sd-sheet-bar h3 { font-size: 22px; font-weight: 800; }
-    #tenantPortalSection.schedi-newdash #schediDashMoreSheet .sd-sheet-bar button {
+    #tenantPortalSection.schedi-newdash #schediDashMoreSheet .sd-sheet-bar button:not(.sd-form-close) {
         min-height: 48px;
         padding: 8px 14px;
         border-radius: 12px;
@@ -4024,7 +4042,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-theme-seg { background
         font-weight: 700;
     }
     body.schedi-newdash #tenantServiceModal .sd-svc-modal-title { font-size: 18px; font-weight: 700; }
-    body.schedi-newdash #tenantServiceModal .sd-svc-modal-close {
+    body.schedi-newdash #tenantServiceModal .sd-svc-modal-close:not(.sd-form-close) {
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -4036,8 +4054,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-theme-seg { background
     body.schedi-newdash #tenantServiceModal .sd-icon-cat { font-size: 16px; }
     body.schedi-newdash #tenantServiceModal input:not([type="hidden"]):not(#svcIconUpload),
     body.schedi-newdash #tenantServiceModal textarea,
-    body.schedi-newdash #tenantServiceModal button { font-size: 16px; }
-    body.schedi-newdash #tenantServiceModal button,
+    body.schedi-newdash #tenantServiceModal button:not(.sd-form-close) { font-size: 16px; }
+    body.schedi-newdash #tenantServiceModal button:not(.sd-form-close),
     body.schedi-newdash #tenantServiceModal input:not([type="hidden"]):not(#svcIconUpload),
     body.schedi-newdash #tenantServiceModal .sd-icon-cat { min-height: 48px; }
     body.schedi-newdash #tenantServiceModal textarea { min-height: 88px; }
@@ -4442,7 +4460,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
                     </div>
                     <div id="schediDashMoreSheet" class="sd-sheet" hidden>
                         <div class="sd-sheet-card" role="dialog" aria-label="More">
-                            <div class="sd-sheet-bar"><h3>More</h3><button type="button" onclick="schediDashToggleMore(false)" aria-label="Close">Close</button></div>
+                            <div class="sd-sheet-bar"><h3>More</h3><button type="button" class="sd-form-close" onclick="schediDashToggleMore(false)" aria-label="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></div>
                             <button type="button" data-dash-go="services"><i class="fa-solid fa-briefcase" aria-hidden="true"></i><span>Services</span></button>
                             <button type="button" data-dash-go="hours"><i class="fa-solid fa-clock" aria-hidden="true"></i><span>Hours</span></button>
                             <button type="button" data-dash-go="payments"><i class="fa-solid fa-credit-card" aria-hidden="true"></i><span>Payments</span></button>
@@ -4462,7 +4480,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
                     </div>
                     <div id="schediDashHelp" class="sd-sheet" hidden>
                         <div class="sd-sheet-card sd-help-card" role="dialog" aria-labelledby="schediDashHelpTitle">
-                            <div class="sd-sheet-bar"><h3 id="schediDashHelpTitle">Help</h3><button type="button" onclick="schediDashHelp(false)" aria-label="Close help">Close</button></div>
+                            <div class="sd-sheet-bar"><h3 id="schediDashHelpTitle">Help</h3><button type="button" class="sd-form-close" onclick="schediDashHelp(false)" aria-label="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></div>
                             <p class="sd-help-lead">Short videos for the business portal. The written steps live on the help page.</p>
                             <p class="sd-help-lead"><a id="schediDashHelpPageLink" href="/portal/help" onclick="this.href=ownerHelpHref()">Open the help page</a></p>
                             <div id="schediDashHelpBody"></div>
@@ -4473,7 +4491,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
                         <div class="sd-client-panel-card" role="dialog" aria-modal="true" aria-labelledby="sdClientPanelTitle" tabindex="-1">
                             <div class="sd-client-panel-head">
                                 <h2 id="sdClientPanelTitle">Client</h2>
-                                <button type="button" id="sdClientPanelClose" class="sd-client-panel-close" data-client-panel-close="1" aria-label="Close client details">Close</button>
+                                <button type="button" id="sdClientPanelClose" class="sd-client-panel-close sd-form-close" data-client-panel-close="1" aria-label="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
                             </div>
                             <div id="sdClientPanelBody" class="sd-client-panel-scroll"></div>
                             <div id="sdClientPanelActions" class="sd-client-panel-actions"></div>
@@ -5152,7 +5170,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
                         <div class="sd-series-preview-card">
                             <div class="sd-series-preview-bar">
                                 <h3 id="sdSeriesPreviewTitle">Recurring series email</h3>
-                                <button type="button" id="sdSeriesPreviewClose" onclick="closeSeriesEmailPreview()">Close</button>
+                                <button type="button" id="sdSeriesPreviewClose" class="sd-form-close" onclick="closeSeriesEmailPreview()" aria-label="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
                             </div>
                             <p class="sd-series-preview-note">A sample with this business's details. Nothing is sent.</p>
                             <iframe id="sdSeriesPreviewFrame" title="Sample recurring series email" sandbox=""></iframe>
@@ -5404,7 +5422,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
         <div class="max-w-md w-full glass-card rounded-2xl p-5 sm:p-6 space-y-4 fade-in my-4 min-w-0">
             <div class="flex justify-between items-center border-b border-slate-800 pb-3">
                 <h3 class="text-lg font-bold text-white">Subscription billing</h3>
-                <button type="button" onclick="closeSubPaymentModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+                <button type="button" onclick="closeSubPaymentModal()" class="sd-form-close" aria-label="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
             </div>
             <p class="text-xs text-slate-300 leading-relaxed">Schedi does not take card numbers in this screen. Business owners start Starter ($29/mo) or Pro ($49/mo) from their portal, then update the card in the Stripe billing portal. Cancel anytime. Cancellation takes effect at the end of the current paid billing period; you keep access until then and are not charged again.</p>
             <div class="pt-2 flex justify-end">
@@ -5418,7 +5436,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
         <div class="max-w-3xl w-full glass-card rounded-2xl p-5 sm:p-6 space-y-4 fade-in my-4 min-w-0">
             <div class="flex justify-between items-center border-b border-slate-800 pb-3 gap-3">
                 <h3 id="comparePlansTitle" class="text-lg font-bold text-white">Compare Plans</h3>
-                <button type="button" onclick="closeComparePlansModal()" class="text-slate-400 hover:text-white" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+                <button type="button" onclick="closeComparePlansModal()" class="sd-form-close" aria-label="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
             </div>
             <div id="comparePlansModalBody" class="overflow-x-auto"></div>
             <div class="pt-1 flex justify-end">
@@ -5432,7 +5450,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
         <div class="max-w-3xl w-full glass-card rounded-2xl p-4 sm:p-6 space-y-4 fade-in my-4 text-xs">
             <div class="flex justify-between items-center border-b border-slate-800 pb-3">
                 <h3 id="clientImportTitle" class="text-lg font-bold text-white">Import clients from CSV</h3>
-                <button type="button" onclick="closeClientImport()" class="text-slate-400 hover:text-white" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+                <button type="button" onclick="closeClientImport()" class="sd-form-close" aria-label="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
             </div>
             <div id="clientImportStep" class="space-y-4"></div>
         </div>
@@ -5442,7 +5460,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
         <div class="max-w-md w-full glass-card rounded-2xl p-5 sm:p-6 space-y-4 fade-in my-4 min-w-0">
             <div class="flex justify-between items-center border-b border-slate-800 pb-3">
                 <h3 class="text-lg font-bold text-white">Reschedule Appointment</h3>
-                <button type="button" onclick="closeTenantRescheduleModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+                <button type="button" onclick="closeTenantRescheduleModal()" class="sd-form-close" aria-label="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
             </div>
             <form onsubmit="handleTenantRescheduleSubmit(event)" class="space-y-3 text-xs">
                 <input type="hidden" id="rescheduleAppId">
@@ -5480,7 +5498,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
         <div class="max-w-md w-full glass-card rounded-2xl p-5 sm:p-6 space-y-4 fade-in my-4 min-w-0">
             <div class="flex justify-between items-center border-b border-slate-800 pb-3">
                 <h3 class="text-lg font-bold text-white">Change password</h3>
-                <button type="button" onclick="closeTenantChangePassModal()" class="text-slate-400 hover:text-white" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+                <button type="button" onclick="closeTenantChangePassModal()" class="sd-form-close" aria-label="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
             </div>
             <form onsubmit="submitTenantChangePass(event)" class="space-y-3 text-xs">
                 <div>
@@ -5507,7 +5525,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
         <div class="max-w-md w-full glass-card rounded-2xl p-5 sm:p-6 space-y-4 fade-in my-4 min-w-0">
             <div class="flex justify-between items-center border-b border-slate-800 pb-3">
                 <h3 class="text-lg font-bold text-white">Forgot password</h3>
-                <button type="button" onclick="closeTenantForgotModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+                <button type="button" onclick="closeTenantForgotModal()" class="sd-form-close" aria-label="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
             </div>
             <form id="tenantForgotStage1" class="space-y-3 text-xs" onsubmit="requestTenantResetCode(event)">
                 <p class="text-slate-400">Enter your business link (like <span class="font-mono text-slate-300">schedi.app/your-business</span>) or the owner email you sign in with. We will email a link to set a new password.</p>
@@ -5535,7 +5553,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
         <div class="max-w-md w-full glass-card rounded-2xl p-5 sm:p-6 space-y-4 fade-in my-4 min-w-0">
             <div class="flex justify-between items-center border-b border-slate-800 pb-3">
                 <h3 id="blockedTimeModalTitle" class="text-lg font-bold text-white">Add Recurring Blocked Outage</h3>
-                <button type="button" onclick="closeAddBlockedTimeModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+                <button type="button" onclick="closeAddBlockedTimeModal()" class="sd-form-close" aria-label="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
             </div>
             <form onsubmit="handleAddBlockedTimeSubmit(event)" class="space-y-3 text-xs">
                 <input type="hidden" id="blockRuleEditId" value="">
@@ -5591,7 +5609,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
         <div class="max-w-md w-full glass-card rounded-2xl p-5 sm:p-6 space-y-4 fade-in my-4 min-w-0">
             <div class="flex justify-between items-center border-b border-slate-800 pb-3">
                 <h3 id="dateBlockModalTitle" class="text-lg font-bold text-white">Add Vacation / Date Block</h3>
-                <button type="button" onclick="closeAddDateBlockModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+                <button type="button" onclick="closeAddDateBlockModal()" class="sd-form-close" aria-label="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
             </div>
             <form onsubmit="handleAddDateBlockSubmit(event)" class="space-y-3 text-xs">
                 <input type="hidden" id="dateBlockEditId" value="">
@@ -5648,7 +5666,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
         <div class="max-w-md w-full glass-card rounded-2xl p-5 sm:p-6 space-y-4 fade-in my-4 min-w-0">
             <div class="flex justify-between items-center border-b border-slate-800 pb-3">
                 <h3 id="specialHoursModalTitle" class="text-lg font-bold text-white">Add Special Hours</h3>
-                <button type="button" onclick="closeAddSpecialHoursModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+                <button type="button" onclick="closeAddSpecialHoursModal()" class="sd-form-close" aria-label="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
             </div>
             <form onsubmit="handleAddSpecialHoursSubmit(event)" class="space-y-3 text-xs">
                 <input type="hidden" id="specialHoursEditDate" value="">
@@ -5684,7 +5702,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
         <div class="max-w-md w-full glass-card rounded-2xl p-5 sm:p-6 space-y-4 fade-in my-4 min-w-0">
             <div class="flex justify-between items-center border-b border-slate-800 pb-3">
                 <h3 id="tenantServiceModalTitle" class="sd-svc-modal-title text-lg font-bold text-white">Add Offered Service</h3>
-                <button type="button" onclick="closeAddServiceModal()" class="sd-svc-modal-close text-slate-400 hover:text-white" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+                <button type="button" onclick="closeAddServiceModal()" class="sd-form-close sd-svc-modal-close" aria-label="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
             </div>
             <form onsubmit="handleAddServiceSubmit(event)" class="space-y-3 text-xs">
                 <input type="hidden" id="svcEditId">
@@ -5781,7 +5799,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
                     <p id="rosterApptKicker" class="text-[11px] font-bold uppercase tracking-wider text-slate-400"></p>
                     <h3 id="rosterApptTitle" class="text-lg font-bold text-white break-words"></h3>
                 </div>
-                <button type="button" onclick="closeRosterApptModal()" aria-label="Close" class="w-11 h-11 -mr-2 -mt-1 shrink-0 flex items-center justify-center rounded-xl text-slate-400 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-xmark"></i></button>
+                <button type="button" onclick="closeRosterApptModal()" aria-label="Close" class="sd-form-close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
             </div>
             <div id="rosterApptBody" class="space-y-4 text-xs"></div>
         </div>
