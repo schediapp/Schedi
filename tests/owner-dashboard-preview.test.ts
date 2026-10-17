@@ -912,6 +912,61 @@ describe("owner dashboard preview", () => {
     expect(extractFunction(html, "renderRosterSearchResults")).toContain("appointmentStatusChipsHtml");
     expect(extractFunction(html, "rosterStatusCellHtml").indexOf("appointmentStatusChipsHtml")).toBeLessThan(extractFunction(html, "rosterStatusCellHtml").indexOf("depositRosterLine"));
   });
+
+  it("uses one sliding pill for the phone tab bar", () => {
+    const css = dashCss(html);
+    const barStart = css.indexOf("#tenantPortalSection.schedi-newdash #schediDashTabbar {");
+    const bar = css.slice(barStart, css.indexOf("@media (min-width: 860px)", barStart));
+    expect(bar).toContain("left: 0;");
+    expect(bar).toContain("right: 0;");
+    expect(bar).toContain("bottom: 0;");
+    expect(bar).toContain("background: #0b1220;");
+    expect(bar).toContain("border-top: 1px solid rgba(148, 163, 184, 0.32);");
+    expect(bar).toContain("border-radius: 0;");
+    expect(bar).toContain("padding: 8px 0 calc(8px + env(safe-area-inset-bottom));");
+    expect(bar).not.toContain("left: max(10px");
+    expect(bar).not.toContain("border-radius: 12px");
+    expect(bar).not.toContain("border: 1px solid #64748b");
+    expect(bar).toContain("border-top-color: #e2e8f0;");
+    expect(bar).toContain("background: #ffffff;");
+    expect(bar).toContain("color: #a3b1c6;");
+    expect(bar).toContain("color: #3f4b5e;");
+    expect(bar).toContain("color: #34d399;");
+    expect(bar).toContain("color: #047857;");
+    expect(bar).toContain("font-family: Inter, sans-serif;");
+    expect(bar).toContain("font-size: 12px;");
+    expect(bar).toContain("font-weight: 700;");
+    expect(bar).toContain("font-size: 22px;");
+    expect(bar).toContain("background: rgba(16, 185, 129, 0.15);");
+    expect(bar).toContain("border-radius: 14px;");
+    expect(bar).toContain("width: 28px;");
+    expect(bar).toContain("height: 3px;");
+    expect(bar).toContain("transform: translateX(calc(var(--sd-tab-slot, 0) * 100%));");
+    expect(bar).toContain("transition: transform 200ms ease-out;");
+    expect(bar).toContain("transition: color 200ms ease-out;");
+    expect(bar).toContain("width: 52px;");
+    expect(bar).toContain("height: 52px;");
+    expect(bar).toContain("background: #10b981;");
+    expect(bar).toContain("prefers-reduced-motion: reduce");
+    expect(bar).toContain("transition: none;");
+    const nav = html.slice(html.indexOf('id="schediDashTabbar"'), html.indexOf('id="schediDashAccountMenu"'));
+    expect(nav).toContain('class="sd-tab-indicator"');
+    expect(nav).toContain('aria-label="Add appointment"');
+    expect(nav).not.toContain("<span>Add");
+    const setPage = extractFunction(html, "schediDashSetPage");
+    expect(setPage).toContain("setAttribute('aria-current', 'page')");
+    expect(setPage).toContain("'--sd-tab-slot'");
+    expect(setPage).toContain("schediDashTabSlot(current)");
+    const slot = new Function(`${extractFunction(html, "schediDashTabSlot")}; return schediDashTabSlot;`)() as (page: string) => number;
+    expect(slot("today")).toBe(0);
+    expect(slot("appointments")).toBe(1);
+    expect(slot("clients")).toBe(3);
+    expect(slot("hours")).toBe(4);
+    expect(slot("services")).toBe(4);
+    expect(slot("payments")).toBe(4);
+    expect(Object.values({ today: 0, appointments: 1, clients: 3, hours: 4 }).includes(2)).toBe(false);
+    expect([slot("today"), slot("appointments"), slot("clients"), slot("hours"), slot("reports")]).not.toContain(2);
+  });
 });
 
 const chrome = ["/usr/bin/google-chrome", "/usr/bin/google-chrome-stable", "/usr/bin/chromium", "/usr/bin/chromium-browser"].find((path) => existsSync(path));
@@ -2116,6 +2171,267 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
         }
       }
       expect(writes).toEqual([]);
+    } finally {
+      await browser.close();
+      await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+    }
+  }, 120000);
+
+  it("slides the H2 tab bar at 340, 390, and 420 in light and dark", async () => {
+    const types: Record<string, string> = {
+      ".html": "text/html; charset=utf-8",
+      ".js": "text/javascript; charset=utf-8",
+      ".svg": "image/svg+xml",
+      ".png": "image/png",
+      ".json": "application/json",
+      ".webmanifest": "application/manifest+json",
+    };
+    const server = createServer((req, res) => {
+      const path = new URL(req.url || "/", "http://127.0.0.1").pathname;
+      const file = path === "/" || path === "/portal-preview" ? "/index.html" : path;
+      const full = join(root, file);
+      if (!full.startsWith(root) || !existsSync(full)) {
+        res.writeHead(404);
+        res.end("missing");
+        return;
+      }
+      res.writeHead(200, { "content-type": types[extname(full)] || "application/octet-stream" });
+      res.end(readFileSync(full));
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const address = server.address();
+    const port = typeof address === "object" && address ? address.port : 0;
+    const puppeteer = await import("puppeteer-core");
+    const browser = await puppeteer.default.launch({
+      executablePath: chrome,
+      headless: true,
+      args: ["--no-sandbox", "--disable-dev-shm-usage"],
+    });
+    const page = await browser.newPage();
+    const readBar = () => page.evaluate(() => {
+      const bar = document.getElementById("schediDashTabbar") as HTMLElement;
+      const indicator = bar.querySelector(".sd-tab-indicator") as HTMLElement;
+      const buttons = Array.from(bar.querySelectorAll(":scope > button")) as HTMLButtonElement[];
+      const barStyle = getComputedStyle(bar);
+      const indStyle = getComputedStyle(indicator);
+      const pill = getComputedStyle(indicator, "::before");
+      const line = getComputedStyle(indicator, "::after");
+      const fab = bar.querySelector(".sd-fab") as HTMLButtonElement;
+      const fabStyle = getComputedStyle(fab);
+      const barBox = bar.getBoundingClientRect();
+      const fabBox = fab.getBoundingClientRect();
+      const widths = buttons.map((btn) => {
+        const box = btn.getBoundingClientRect();
+        return { width: box.width, center: box.left + box.width / 2 };
+      });
+      const active = buttons.find((btn) => btn.getAttribute("aria-current") === "page") || null;
+      const activeBox = active ? active.getBoundingClientRect() : null;
+      const indBox = indicator.getBoundingClientRect();
+      window.scrollTo(0, document.documentElement.scrollHeight);
+      const panelBottom = document.getElementById("schediTodayPanel")?.getBoundingClientRect().bottom ?? 0;
+      const barTop = bar.getBoundingClientRect().top;
+      return {
+        bg: barStyle.backgroundColor,
+        radius: barStyle.borderTopLeftRadius,
+        borderTop: barStyle.borderTopWidth,
+        borderLeft: barStyle.borderLeftWidth,
+        borderColor: barStyle.borderTopColor,
+        left: barBox.left,
+        right: barBox.right,
+        bottom: barBox.bottom,
+        width: document.documentElement.clientWidth,
+        height: window.innerHeight,
+        padBottom: getComputedStyle(document.getElementById("tenantPortalSection") as Element).paddingBottom,
+        barHeight: barBox.height,
+        panelBottom,
+        barTop,
+        labels: buttons.map((btn) => (btn.querySelector("span")?.textContent || "").trim()),
+        widths,
+        icon: getComputedStyle(buttons[0].querySelector("i") as Element).fontSize,
+        labelSize: getComputedStyle(buttons[0].querySelector("span") as Element).fontSize,
+        labelWeight: getComputedStyle(buttons[0].querySelector("span") as Element).fontWeight,
+        labelFont: getComputedStyle(buttons[0].querySelector("span") as Element).fontFamily,
+        inactive: getComputedStyle(buttons[1]).color,
+        activeColor: active ? getComputedStyle(active).color : "",
+        activeLabel: active ? (active.querySelector("span")?.textContent || "").trim() : "",
+        pill: pill.backgroundColor,
+        pillRadius: pill.borderTopLeftRadius,
+        lineW: line.width,
+        lineH: line.height,
+        lineShadow: line.boxShadow,
+        lineBg: line.backgroundColor,
+        transform: indStyle.transform,
+        duration: indStyle.transitionDuration,
+        timing: indStyle.transitionTimingFunction,
+        colorDuration: getComputedStyle(buttons[0]).transitionDuration,
+        fabW: fabBox.width,
+        fabH: fabBox.height,
+        fabTop: fabBox.top,
+        barOuterTop: barBox.top,
+        fabBg: fabStyle.backgroundColor,
+        fabFg: fabStyle.color,
+        fabBorder: fabStyle.borderTopWidth,
+        fabShadow: fabStyle.boxShadow,
+        fabCurrent: fab.getAttribute("aria-current"),
+        fabOn: fab.classList.contains("is-on"),
+        fabLabel: (fab.textContent || "").replace(/\s+/g, ""),
+        slot: bar.style.getPropertyValue("--sd-tab-slot"),
+        indLeft: indBox.left,
+        activeLeft: activeBox ? activeBox.left : -1,
+        activeWidth: activeBox ? activeBox.width : -1,
+        indWidth: indBox.width,
+        stacked: getComputedStyle(buttons[0]).flexDirection,
+        iconTop: (buttons[0].querySelector("i") as Element).getBoundingClientRect().top,
+        labelTop: (buttons[0].querySelector("span") as Element).getBoundingClientRect().top,
+      };
+    });
+    try {
+      await page.emulateMediaFeatures([{ name: "prefers-reduced-motion", value: "no-preference" }]);
+      await page.goto(`http://127.0.0.1:${port}/portal-preview`, { waitUntil: "domcontentloaded", timeout: 45000 });
+      await page.waitForFunction(() => document.body.classList.contains("schedi-newdash"), { timeout: 20000 });
+      await page.waitForSelector("#schediDashTabbar .sd-tab-indicator", { timeout: 10000 });
+      for (const width of [340, 390, 420]) {
+        await page.setViewport({ width, height: 900 });
+        for (const theme of ["dark", "light"] as const) {
+          await page.evaluate((mode) => {
+            (window as unknown as { setSchediTheme: (mode: string) => void }).setSchediTheme(mode);
+            (window as unknown as { schediDashGo: (tab: string) => void }).schediDashGo("today");
+          }, theme);
+          const inactive = theme === "dark" ? "rgb(163, 177, 198)" : "rgb(63, 75, 94)";
+          const active = theme === "dark" ? "rgb(52, 211, 153)" : "rgb(4, 120, 87)";
+          await page.waitForFunction((idle, on) => {
+            const bar = document.getElementById("schediDashTabbar");
+            const calendar = bar?.querySelector('[data-dash-go="appointments"]');
+            const today = bar?.querySelector('[data-dash-go="today"]');
+            return bar?.style.getPropertyValue("--sd-tab-slot") === "0"
+              && !!calendar && getComputedStyle(calendar).color === idle
+              && !!today && getComputedStyle(today).color === on;
+          }, { timeout: 5000 }, inactive, active);
+          const metrics = await readBar();
+          expect(metrics.left).toBe(0);
+          expect(metrics.right).toBeCloseTo(metrics.width, 0);
+          expect(metrics.bottom).toBeCloseTo(900, 0);
+          expect(metrics.radius).toBe("0px");
+          expect(metrics.borderTop).toBe("1px");
+          expect(metrics.borderLeft).toBe("0px");
+          expect(metrics.bg).toBe(theme === "dark" ? "rgb(11, 18, 32)" : "rgb(255, 255, 255)");
+          expect(metrics.borderColor).toBe(theme === "dark" ? "rgba(148, 163, 184, 0.32)" : "rgb(226, 232, 240)");
+          expect(metrics.labels).toEqual(["Today", "Calendar", "", "Clients", "More"]);
+          const slot = metrics.right / 5;
+          metrics.widths.forEach((box, index) => {
+            expect(Math.abs(box.center - (slot * index + slot / 2))).toBeLessThan(2);
+          });
+          expect(Math.abs(metrics.widths[0].width - metrics.widths[1].width)).toBeLessThan(1.5);
+          expect(Math.abs(metrics.widths[3].width - metrics.widths[4].width)).toBeLessThan(1.5);
+          expect(metrics.stacked).toBe("column");
+          expect(metrics.iconTop).toBeLessThan(metrics.labelTop);
+          expect(metrics.icon).toBe("22px");
+          expect(metrics.labelSize).toBe("12px");
+          expect(metrics.labelWeight).toBe("700");
+          expect(metrics.labelFont.toLowerCase()).toContain("inter");
+          expect(metrics.inactive).toBe(theme === "dark" ? "rgb(163, 177, 198)" : "rgb(63, 75, 94)");
+          expect(metrics.activeLabel).toBe("Today");
+          expect(metrics.activeColor).toBe(theme === "dark" ? "rgb(52, 211, 153)" : "rgb(4, 120, 87)");
+          expect(metrics.pill).toBe("rgba(16, 185, 129, 0.15)");
+          expect(metrics.pillRadius).toBe("14px");
+          expect(metrics.lineW).toBe("28px");
+          expect(metrics.lineH).toBe("3px");
+          expect(metrics.lineShadow).not.toBe("none");
+          expect(metrics.duration).toBe("0.2s");
+          expect(metrics.timing).toBe("ease-out");
+          expect(metrics.colorDuration).toBe("0.2s");
+          expect(metrics.fabW).toBeCloseTo(52, 0);
+          expect(metrics.fabH).toBeCloseTo(52, 0);
+          expect(metrics.fabTop).toBeLessThan(metrics.barOuterTop);
+          expect(metrics.fabBg).toBe("rgb(16, 185, 129)");
+          expect(metrics.fabFg).toBe("rgb(255, 255, 255)");
+          expect(metrics.fabBorder).toBe("0px");
+          expect(metrics.fabShadow).not.toBe("none");
+          expect(metrics.fabCurrent).toBeNull();
+          expect(metrics.fabOn).toBe(false);
+          expect(metrics.fabLabel).toBe("");
+          expect(metrics.slot).toBe("0");
+          expect(Math.abs(metrics.indLeft - metrics.activeLeft)).toBeLessThan(1.5);
+          expect(Math.abs(metrics.indWidth - metrics.activeWidth)).toBeLessThan(1.5);
+          expect(parseFloat(metrics.padBottom)).toBeGreaterThan(metrics.barHeight);
+          expect(metrics.panelBottom).toBeLessThanOrEqual(metrics.barTop + 1);
+        }
+      }
+      await page.setViewport({ width: 390, height: 900 });
+      await page.evaluate(() => {
+        (window as unknown as { setSchediTheme: (mode: string) => void }).setSchediTheme("dark");
+        (window as unknown as { schediDashGo: (tab: string) => void }).schediDashGo("today");
+      });
+      const motion = await page.evaluate(() => new Promise<{ start: number; end: number; mids: number[]; colors: string[] }>((resolve) => {
+        const bar = document.getElementById("schediDashTabbar") as HTMLElement;
+        const indicator = bar.querySelector(".sd-tab-indicator") as HTMLElement;
+        const today = bar.querySelector('[data-dash-go="today"]') as HTMLElement;
+        const clients = bar.querySelector('[data-dash-go="clients"]') as HTMLElement;
+        const samples: { left: number; color: string }[] = [];
+        const start = indicator.getBoundingClientRect().left;
+        const begun = performance.now();
+        clients.click();
+        const step = () => {
+          samples.push({ left: indicator.getBoundingClientRect().left, color: getComputedStyle(today).color });
+          if (performance.now() - begun < 360) requestAnimationFrame(step);
+          else {
+            const end = indicator.getBoundingClientRect().left;
+            const mids = samples.map((row) => row.left).filter((left) => left > start + 4 && left < end - 4);
+            const colors = samples.map((row) => row.color);
+            resolve({ start, end, mids, colors });
+          }
+        };
+        requestAnimationFrame(step);
+      }));
+      expect(motion.end).toBeGreaterThan(motion.start + 40);
+      expect(motion.mids.length).toBeGreaterThan(0);
+      const startColor = "rgb(52, 211, 153)";
+      const endColor = "rgb(163, 177, 198)";
+      expect(motion.colors.some((color) => color !== startColor && color !== endColor)).toBe(true);
+      await page.waitForFunction(() => document.getElementById("schediDashTabbar")?.style.getPropertyValue("--sd-tab-slot") === "3", { timeout: 2000 });
+      const settled = await page.evaluate(() => {
+        const bar = document.getElementById("schediDashTabbar") as HTMLElement;
+        const clients = bar.querySelector('[data-dash-go="clients"]') as HTMLElement;
+        const fab = bar.querySelector(".sd-fab") as HTMLElement;
+        return {
+          slot: bar.style.getPropertyValue("--sd-tab-slot"),
+          current: clients.getAttribute("aria-current"),
+          today: bar.querySelector('[data-dash-go="today"]')?.getAttribute("aria-current") || "",
+          fab: fab.getAttribute("aria-current") || "",
+          fabOn: fab.classList.contains("is-on"),
+        };
+      });
+      expect(settled).toEqual({ slot: "3", current: "page", today: "", fab: "", fabOn: false });
+      await page.emulateMediaFeatures([{ name: "prefers-reduced-motion", value: "reduce" }]);
+      await page.waitForFunction(() => getComputedStyle(document.querySelector("#schediDashTabbar .sd-tab-indicator") as Element).transitionDuration === "0s", { timeout: 2000 });
+      const reduced = await page.evaluate(() => new Promise<{ jumped: boolean; duration: string }>((resolve) => {
+        const bar = document.getElementById("schediDashTabbar") as HTMLElement;
+        const indicator = bar.querySelector(".sd-tab-indicator") as HTMLElement;
+        const today = bar.querySelector('[data-dash-go="today"]') as HTMLElement;
+        const before = indicator.getBoundingClientRect().left;
+        const target = today.getBoundingClientRect().left;
+        today.click();
+        requestAnimationFrame(() => {
+          const now = indicator.getBoundingClientRect().left;
+          resolve({
+            jumped: Math.abs(now - target) < 1.5 && Math.abs(before - target) > 40,
+            duration: getComputedStyle(indicator).transitionDuration,
+          });
+        });
+      }));
+      expect(reduced.duration).toBe("0s");
+      expect(reduced.jumped).toBe(true);
+      const more = await page.evaluate(() => {
+        (window as unknown as { schediDashGo: (tab: string) => void }).schediDashGo("hours");
+        const bar = document.getElementById("schediDashTabbar") as HTMLElement;
+        const moreBtn = document.getElementById("schediDashMoreBtn");
+        return {
+          slot: bar.style.getPropertyValue("--sd-tab-slot"),
+          current: moreBtn?.getAttribute("aria-current") || "",
+          on: moreBtn?.classList.contains("is-on") === true,
+        };
+      });
+      expect(more).toEqual({ slot: "4", current: "page", on: true });
     } finally {
       await browser.close();
       await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));

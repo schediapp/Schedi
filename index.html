@@ -1097,7 +1097,7 @@ html.schedi-light body.schedi-newdash .roster-sheet-actions > button.sd-act.sd-a
 #tenantPortalSection.schedi-newdash .sd-help-lead a { color: var(--sd-brand-2); font-weight: 800; }
 #tenantPortalSection.schedi-newdash .sd-help-card { width: min(880px, 100%); }
 @media (max-width: 859px) {
-    #tenantPortalSection.schedi-newdash { padding: 72px 14px 112px; }
+    #tenantPortalSection.schedi-newdash { padding: 72px 14px calc(112px + env(safe-area-inset-bottom)); }
     #tenantPortalSection.schedi-newdash #schediDashSidebar { display: none !important; }
     #tenantPortalSection.schedi-newdash #schediDashTop { left: 0; }
     #tenantPortalSection.schedi-newdash .sd-brand-mobile { display: inline-flex; }
@@ -1112,51 +1112,124 @@ html.schedi-light body.schedi-newdash .roster-sheet-actions > button.sd-act.sd-a
     #tenantPortalSection.schedi-newdash .sd-btn.sd-add-desktop { display: none; }
     #tenantPortalSection.schedi-newdash .sd-btn.sd-add-phone { display: flex; width: 100%; justify-content: center; margin: 0; }
     #tenantPortalSection.schedi-newdash #schediDashTabbar {
+        --sd-tab-slot: 0;
         display: grid;
         grid-template-columns: repeat(5, minmax(0, 1fr));
         position: fixed;
         z-index: 40;
-        left: max(10px, env(safe-area-inset-left));
-        right: max(10px, env(safe-area-inset-right));
-        bottom: calc(8px + env(safe-area-inset-bottom));
-        padding: 6px 4px;
-        background: #1e293b;
-        border: 1px solid #64748b;
-        border-radius: 12px;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        margin: 0;
+        padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
+        background: #0b1220;
+        border: 0;
+        border-top: 1px solid rgba(148, 163, 184, 0.32);
+        border-radius: 0;
+        box-shadow: none;
+        overflow: visible;
     }
     html.schedi-light #tenantPortalSection.schedi-newdash #schediDashTabbar {
         background: #ffffff;
-        border-color: #64748b;
+        border-top-color: #e2e8f0;
+    }
+    #tenantPortalSection.schedi-newdash #schediDashTabbar .sd-tab-indicator {
+        position: absolute;
+        z-index: 0;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        width: 20%;
+        pointer-events: none;
+        transform: translateX(calc(var(--sd-tab-slot, 0) * 100%));
+        transition: transform 200ms ease-out;
+    }
+    #tenantPortalSection.schedi-newdash #schediDashTabbar .sd-tab-indicator::before {
+        content: "";
+        position: absolute;
+        left: 8px;
+        right: 8px;
+        top: 6px;
+        bottom: calc(6px + env(safe-area-inset-bottom));
+        border-radius: 14px;
+        background: rgba(16, 185, 129, 0.15);
+    }
+    #tenantPortalSection.schedi-newdash #schediDashTabbar .sd-tab-indicator::after {
+        content: "";
+        position: absolute;
+        top: -2px;
+        left: 50%;
+        width: 28px;
+        height: 3px;
+        border-radius: 999px;
+        transform: translateX(-50%);
+        background: #34d399;
+        box-shadow: 0 0 8px rgba(52, 211, 153, 0.95), 0 0 2px rgba(16, 185, 129, 0.9);
+    }
+    html.schedi-light #tenantPortalSection.schedi-newdash #schediDashTabbar .sd-tab-indicator::after {
+        background: #10b981;
+        box-shadow: 0 0 8px rgba(16, 185, 129, 0.7), 0 0 2px rgba(5, 150, 105, 0.85);
     }
     #tenantPortalSection.schedi-newdash #schediDashTabbar > button {
+        position: relative;
+        z-index: 1;
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 3px;
+        justify-content: center;
+        gap: 2px;
+        min-width: 0;
         background: transparent;
         border: 0;
-        color: var(--sd-muted);
-        font-size: 10px;
-        font-weight: 800;
-        padding: 4px 0 2px;
+        box-shadow: none;
+        color: #a3b1c6;
+        font-family: Inter, sans-serif;
+        font-size: 12px;
+        font-weight: 700;
+        line-height: 1.15;
+        padding: 8px 0 6px;
         cursor: pointer;
+        transition: color 200ms ease-out;
     }
+    #tenantPortalSection.schedi-newdash #schediDashTabbar > button span { white-space: nowrap; }
+    html.schedi-light #tenantPortalSection.schedi-newdash #schediDashTabbar > button { color: #3f4b5e; }
     #tenantPortalSection.schedi-newdash #schediDashTabbar > button:not(.sd-fab) i {
-        font-size: 13px;
+        font-size: 22px;
         line-height: 1;
+        color: inherit;
     }
-    #tenantPortalSection.schedi-newdash #schediDashTabbar > button.is-on { color: var(--sd-brand-2); }
+    #tenantPortalSection.schedi-newdash #schediDashTabbar > button:not(.sd-fab).is-on { color: #34d399; }
+    html.schedi-light #tenantPortalSection.schedi-newdash #schediDashTabbar > button:not(.sd-fab).is-on { color: #047857; }
     #tenantPortalSection.schedi-newdash #schediDashTabbar .sd-fab {
+        z-index: 2;
+        align-self: start;
         width: 52px;
         height: 52px;
-        margin: -26px auto 0;
+        min-height: 52px;
+        margin: -20px auto 0;
+        padding: 0;
+        border: 0;
         border-radius: 999px;
-        background: var(--sd-brand);
-        color: var(--sd-ink);
-        border: 3px solid var(--sd-bg);
-        font-size: 20px;
+        background: #10b981;
+        color: #ffffff;
+        box-shadow: 0 6px 16px rgba(16, 185, 129, 0.5), 0 0 22px rgba(16, 185, 129, 0.35);
+        font-size: 22px;
         justify-content: center;
     }
+    #tenantPortalSection.schedi-newdash #schediDashTabbar .sd-fab i {
+        font-size: 22px;
+        line-height: 1;
+        color: #ffffff;
+    }
+    html.schedi-light #tenantPortalSection.schedi-newdash #schediDashTabbar .sd-fab {
+        background: #10b981;
+        color: #ffffff;
+        border: 0;
+    }
+}
+@media (max-width: 859px) and (prefers-reduced-motion: reduce) {
+    #tenantPortalSection.schedi-newdash #schediDashTabbar .sd-tab-indicator,
+    #tenantPortalSection.schedi-newdash #schediDashTabbar > button { transition: none; }
 }
 @media (min-width: 860px) {
     #tenantPortalSection.schedi-newdash #schediDashTabbar { display: none !important; }
@@ -2557,8 +2630,10 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
         padding-bottom: max(16px, env(safe-area-inset-bottom));
     }
     #tenantPortalSection.schedi-newdash #schediDashTabbar {
-        padding-left: max(6px, env(safe-area-inset-left));
-        padding-right: max(6px, env(safe-area-inset-right));
+        left: 0;
+        right: 0;
+        padding-left: 0;
+        padding-right: 0;
     }
     #tenantPortalSection.schedi-newdash .sd-pay-filters { display: none; }
     #tenantPortalSection.schedi-newdash .sd-pay-filter-select { display: block; }
@@ -4134,7 +4209,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
                         </div>
                     </section>
                     <nav id="schediDashTabbar" aria-label="Portal">
-                        <button type="button" data-dash-go="today"><i class="fa-solid fa-sun" aria-hidden="true"></i><span>Today</span></button>
+                        <span class="sd-tab-indicator" aria-hidden="true"></span>
+                        <button type="button" data-dash-go="today" aria-current="page"><i class="fa-solid fa-sun" aria-hidden="true"></i><span>Today</span></button>
                         <button type="button" data-dash-go="appointments"><i class="fa-solid fa-calendar-days" aria-hidden="true"></i><span>Calendar</span></button>
                         <button type="button" class="sd-fab" data-dash-add-open="1" onclick="schediDashToggleAdd(event)" aria-label="Add appointment"><i class="fa-solid fa-plus" aria-hidden="true"></i></button>
                         <button type="button" data-dash-go="clients"><i class="fa-solid fa-address-book" aria-hidden="true"></i><span>Clients</span></button>
@@ -11304,6 +11380,13 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
             return (section && section.getAttribute('data-dash')) || 'today';
         }
 
+        function schediDashTabSlot(page) {
+            if (page === 'appointments') return 1;
+            if (page === 'clients') return 3;
+            if (page === 'today') return 0;
+            return 4;
+        }
+
         function schediDashSetPage(page) {
             var section = document.getElementById('tenantPortalSection');
             if (section) section.setAttribute('data-dash', page || 'today');
@@ -11318,7 +11401,11 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
             if (moreBtn) {
                 var primary = current === 'today' || current === 'appointments' || current === 'clients';
                 moreBtn.classList.toggle('is-on', !primary);
+                if (!primary) moreBtn.setAttribute('aria-current', 'page');
+                else moreBtn.removeAttribute('aria-current');
             }
+            var tabbar = document.getElementById('schediDashTabbar');
+            if (tabbar) tabbar.style.setProperty('--sd-tab-slot', String(schediDashTabSlot(current)));
             try { paintOwnerHelpLinks(); } catch (errHelp) {}
         }
 
