@@ -7486,6 +7486,16 @@ html.schedi-light #tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-sv
                 legal.classList.remove('hidden');
                 var portalBack = '/';
                 try { portalBack = ownerPortalBackHref(); } catch (errBack) { portalBack = '/'; }
+                var fromPortal = false;
+                try {
+                    var backParams = new URLSearchParams(window.location.search || '');
+                    fromPortal = backParams.get('demo') === '1' || backParams.get('portal') === 'preview' || !!backParams.get('dash');
+                } catch (errFrom) { fromPortal = false; }
+                if (fromPortal) {
+                    legal.style.paddingTop = '16px';
+                    var siteHeader = document.querySelector('body > header');
+                    if (siteHeader) siteHeader.hidden = true;
+                }
                 legal.innerHTML = ''
                     + '<a class="inline-flex items-center justify-center w-full sm:w-auto min-h-[48px] px-4 mb-5 rounded-xl bg-emerald-600 text-slate-950 font-extrabold text-base" href="' + esc(portalBack) + '">Back to portal</a>'
                     + '<h1 class="text-2xl font-black text-white mb-2">Help</h1>'
