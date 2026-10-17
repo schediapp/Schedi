@@ -262,9 +262,14 @@ export function injectBookingMeta(
 
 function injectNoindex(html: string): string {
   const tag = `<meta name="robots" content="noindex, follow">`;
-  if (html.includes('name="robots"')) return html;
-  const head = html.indexOf("<head>");
-  if (head >= 0) return html.slice(0, head + 6) + tag + html.slice(head + 6);
+  const headOpen = html.search(/<head\b[^>]*>/i);
+  const headClose = html.search(/<\/head>/i);
+  const headHtml = headOpen >= 0 && headClose > headOpen ? html.slice(headOpen, headClose) : "";
+  if (headHtml.includes('name="robots"') || headHtml.includes("name='robots'")) return html;
+  if (headOpen >= 0) {
+    const insertAt = html.indexOf(">", headOpen) + 1;
+    return html.slice(0, insertAt) + tag + html.slice(insertAt);
+  }
   return tag + html;
 }
 
@@ -525,6 +530,12 @@ export async function handleRequest(request: Request, env: SchediEnv, ctx: Sched
     return redirect(dest.toString(), 302);
   }
   if (lower === "/" && wantsPortal(url)) {
+    return serveSpa(request, env, ctx, method, null, false);
+  }
+
+  // /portal and /portal/help stay on the app. A marketing canonical redirect
+  // must not run first: it would drop biz, tenant, dash, demo, and portal.
+  if (lower === "/portal" || lower.startsWith("/portal/")) {
     return serveSpa(request, env, ctx, method, null, false);
   }
 

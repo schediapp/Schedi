@@ -1283,6 +1283,9 @@ html.schedi-light #tenantPortalSection.schedi-newdash button.bg-indigo-400,
 html.schedi-light #tenantPortalSection.schedi-newdash button.bg-rose-600,
 html.schedi-light #tenantPortalSection.schedi-newdash button.bg-rose-500,
 html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !important; }
+@media (min-width: 640px) {
+    #tenantPortalSection.schedi-newdash #hoursWeekLayoutBtn { align-self: flex-end; }
+}
 #tenantPortalSection.schedi-newdash .sd-hours-summary {
     display: flex;
     flex-direction: column;
@@ -3279,7 +3282,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash #tenantBillingCard .sd-bil
         flex-direction: column !important;
         flex-wrap: nowrap !important;
         align-items: stretch;
-        gap: 12px;
+        gap: 14px;
         width: 100%;
     }
     #tenantPortalSection.schedi-newdash #tenantMoreCard .sd-more-actions > button:not(.hidden),
@@ -3290,10 +3293,10 @@ html.schedi-light #tenantPortalSection.schedi-newdash #tenantBillingCard .sd-bil
         align-items: center;
         justify-content: flex-start;
         gap: 12px;
-        flex: 1 1 60px;
+        flex: 0 0 auto;
         width: 100%;
         box-sizing: border-box;
-        min-height: 60px;
+        min-height: 68px;
         padding: 12px 16px;
         border-radius: 14px;
         font-size: 18px;
@@ -3302,14 +3305,18 @@ html.schedi-light #tenantPortalSection.schedi-newdash #tenantBillingCard .sd-bil
         text-decoration: none;
     }
     #tenantPortalSection.schedi-newdash #tenantMoreCard .sd-more-actions > .sd-theme {
+        align-items: stretch;
+        justify-content: center;
         padding: 4px;
-        gap: 0;
+        gap: 4px;
     }
     #tenantPortalSection.schedi-newdash #tenantMoreCard .sd-theme-seg .sd-theme-opt {
         flex: 1 1 0;
+        align-self: stretch;
         width: auto;
-        min-height: 52px;
+        min-height: 60px;
         justify-content: center;
+        align-items: center;
         gap: 8px;
         padding: 8px 12px;
         border-radius: 12px;
@@ -3327,14 +3334,6 @@ html.schedi-light #tenantPortalSection.schedi-newdash #tenantBillingCard .sd-bil
         min-height: 44px;
         font-size: 16px;
         padding: 6px 10px;
-    }
-    #tenantPortalSection.schedi-newdash[data-dash="account"] #tenantMoreCard {
-        display: flex !important;
-        flex-direction: column;
-        min-height: calc(100dvh - 72px - 112px - 8px);
-    }
-    #tenantPortalSection.schedi-newdash[data-dash="account"] #tenantMoreCard .sd-more-actions {
-        flex: 1 1 auto;
     }
 }
 
@@ -3594,7 +3593,11 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-theme-seg { background
         gap: 8px;
         width: 100%;
     }
-    #tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-svc-actions button { width: 100%; }
+    #tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-svc-actions > button {
+        width: 100%;
+        margin-left: 0;
+        margin-right: 0;
+    }
 }
 html.schedi-light #tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-svc-delete { color: #9f1239; }
 html.schedi-light #tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-svc-delete:hover { color: #be123c; }
@@ -3893,7 +3896,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-sv
                         <div class="sd-sheet-card sd-help-card" role="dialog" aria-labelledby="schediDashHelpTitle">
                             <div class="sd-sheet-bar"><h3 id="schediDashHelpTitle">Help</h3><button type="button" onclick="schediDashHelp(false)" aria-label="Close help">Close</button></div>
                             <p class="sd-help-lead">Short videos for the business portal. The written steps live on the help page.</p>
-                            <p class="sd-help-lead"><a id="schediDashHelpPageLink" href="/help" onclick="this.href=ownerHelpHref()">Open the help page</a></p>
+                            <p class="sd-help-lead"><a id="schediDashHelpPageLink" href="/portal/help" onclick="this.href=ownerHelpHref()">Open the help page</a></p>
                             <div id="schediDashHelpBody"></div>
                         </div>
                     </div>
@@ -4093,7 +4096,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-sv
                             <h3 class="text-lg font-bold text-white">Daily Shifts & Operating Hours</h3>
                             <p class="text-xs text-slate-400">Set individual day operating hours or create recurring outage time blocks.</p>
                         </div>
-                        <button type="button" id="hoursWeekLayoutBtn" onclick="toggleHoursWeekLayout()" aria-pressed="false" class="px-4 py-2 rounded-xl font-bold text-xs bg-slate-900 border border-slate-800 text-slate-400">Week layout</button>
+                        <button type="button" id="hoursWeekLayoutBtn" onclick="toggleHoursWeekLayout()" aria-pressed="false" class="px-4 py-2 rounded-xl font-bold text-xs bg-slate-900 border border-slate-800 text-slate-400 sm:self-end">Week layout</button>
                     </div>
                     <div id="hoursWeekSummary" class="sd-hours-summary" aria-live="polite"></div>
 
@@ -4642,7 +4645,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-sv
                                     <i class="fa-solid fa-mobile-screen-button" aria-hidden="true"></i>
                                     <span>Add to home screen</span>
                                 </button>
-                        <a id="tenantMoreHelpLink" href="/help" onclick="this.href=ownerHelpHref()" class="px-3.5 py-2 rounded-xl bg-brand-500/15 hover:bg-brand-500/25 text-brand-300 font-bold text-xs border border-brand-500/40 flex items-center space-x-1.5">
+                        <a id="tenantMoreHelpLink" href="/portal/help" onclick="this.href=ownerHelpHref()" class="px-3.5 py-2 rounded-xl bg-brand-500/15 hover:bg-brand-500/25 text-brand-300 font-bold text-xs border border-brand-500/40 flex items-center space-x-1.5">
                             <i class="fa-solid fa-circle-question" aria-hidden="true"></i>
                             <span>Help</span>
                         </a>
@@ -7331,12 +7334,19 @@ html.schedi-light #tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-sv
             }
         }
 
+        function isOwnerHelpPath(pathname) {
+            var path = String(pathname || '/').replace(/\/+/g, '/');
+            if (path.length > 1 && path.endsWith('/')) path = path.slice(0, -1);
+            var parts = path.split('/').filter(Boolean).map(function (part) { return String(part).toLowerCase(); });
+            if (parts.length === 2 && parts[0] === 'help' && parts[1] === 'booking') return false;
+            if (parts.length === 2 && parts[0] === 'portal' && parts[1] === 'help') return true;
+            return parts.length >= 1 && parts[0] === 'help';
+        }
+
         function isHelpRoute() {
             try {
                 if (isClientHelpRoute()) return false;
-                var path = (window.location.pathname || '/').replace(/\/+/g, '/');
-                var parts = path.split('/').filter(Boolean);
-                return parts.length >= 1 && String(parts[0]).toLowerCase() === 'help';
+                return isOwnerHelpPath(window.location.pathname || '/');
             } catch (err) {
                 return false;
             }
@@ -10940,7 +10950,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-sv
             var allowed = { today: 1, appointments: 1, services: 1, hours: 1, profile: 1, payments: 1, emails: 1, reports: 1, clients: 1, account: 1, billing: 1 };
             if (dash && allowed[dash]) params.set('dash', dash);
             var q = params.toString();
-            return '/help' + (q ? ('?' + q) : '');
+            return '/portal/help' + (q ? ('?' + q) : '');
         }
 
         function ownerPortalBackHrefFrom(search) {
@@ -10975,8 +10985,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-sv
         window.ownerPortalBackHref = ownerPortalBackHref;
 
         function paintOwnerHelpLinks() {
-            var href = '/help';
-            try { href = ownerHelpHref(); } catch (errHref) { href = '/help'; }
+            var href = '/portal/help';
+            try { href = ownerHelpHref(); } catch (errHref) { href = '/portal/help'; }
             ['tenantMoreHelpLink', 'schediDashHelpPageLink'].forEach(function (id) {
                 var el = document.getElementById(id);
                 if (el) el.setAttribute('href', href);
@@ -13064,7 +13074,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-sv
                     </div>
                     <div class="sd-svc-foot pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px]">
                         <span class="sd-svc-duration text-slate-500 font-semibold">${esc(formatServiceDuration(s.duration))}</span>
-                        <div class="sd-svc-actions space-x-2">
+                        <div class="sd-svc-actions flex gap-2">
                             <button type="button" onclick="openEditServiceModal(${s.id})" class="sd-svc-edit px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-brand-400 font-bold transition-all">
                                 <i class="fa-solid fa-pen-to-square mr-1"></i>Edit
                             </button>

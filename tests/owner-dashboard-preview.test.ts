@@ -686,11 +686,17 @@ describe("owner dashboard preview", () => {
     expect(back("?dash=services")).toBe("/?dash=services");
     const helpHref = new Function(`${extractFunction(html, "ownerHelpHrefFrom")}; return ownerHelpHrefFrom;`)() as (search: string, path: string, dash: string) => string;
     const previewHelp = helpHref("?biz=harbor-demo", "/portal-preview", "hours");
-    expect(previewHelp.startsWith("/help?")).toBe(true);
+    expect(previewHelp.startsWith("/portal/help?")).toBe(true);
     expect(previewHelp).toContain("demo=1");
     expect(previewHelp).toContain("portal=preview");
     expect(previewHelp).toContain("dash=hours");
     expect(previewHelp).toContain("biz=harbor-demo");
+    const helpPath = new Function(`${extractFunction(html, "isOwnerHelpPath")}; return isOwnerHelpPath;`)() as (pathname: string) => boolean;
+    expect(helpPath("/portal/help")).toBe(true);
+    expect(helpPath("/portal/help/")).toBe(true);
+    expect(helpPath("/help")).toBe(true);
+    expect(helpPath("/help/booking")).toBe(false);
+    expect(helpPath("/portal")).toBe(false);
     const plan = new Function(
       `${extractFunction(html, "isComplimentaryPro")}\n${extractFunction(html, "normalizePlan")}\n${extractFunction(html, "schediDashPlanLabel")}; return schediDashPlanLabel;`,
     )() as (tenant: Record<string, unknown>) => string;
@@ -701,9 +707,17 @@ describe("owner dashboard preview", () => {
     expect(plan({ plan: "pro", stripeSubscriptionId: "sub_1", subscriptionStatus: "paused" })).toBe("Paused");
     expect(plan({ plan: "free" })).toBe("Free");
     expect(css).toContain("flex-wrap: nowrap !important");
-    expect(css).toContain("min-height: 60px");
+    expect(css).toContain("flex: 0 0 auto");
+    expect(css).toContain("min-height: 68px");
+    expect(css).toContain("gap: 14px");
+    expect(css).not.toContain("min-height: calc(100dvh - 72px - 112px - 8px)");
+    expect(css).not.toContain("flex: 1 1 60px");
     expect(css).toContain("font-size: 22px");
     expect(css).toContain(".sd-svc-title { font-size: 18px; font-weight: 700;");
+    expect(html).toContain('class="sd-svc-actions flex gap-2"');
+    expect(css).toContain("#tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-svc-actions > button");
+    expect(html).toContain('id="hoursWeekLayoutBtn"');
+    expect(css).toContain("#tenantPortalSection.schedi-newdash #hoursWeekLayoutBtn { align-self: flex-end; }");
   });
 });
 
