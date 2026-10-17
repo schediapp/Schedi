@@ -801,6 +801,55 @@ describe("owner dashboard preview", () => {
     expect(css).toContain("body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.is-on.sd-pay-square");
     expect(css).toContain("body.schedi-newdash #rosterPaidMethodConfirmBtn:disabled");
   });
+
+  it("keeps card actions neutral until hover, focus, or press", () => {
+    const actions = extractFunction(html, "rosterActionsHtml");
+    expect(actions).toContain("btn('markAppointmentPaid', 'sd-act sd-act-ok', '<i class=\"fa-solid fa-circle-check mr-1\"></i>Mark paid')");
+    expect(actions).toContain("btn('openEditAppointment', 'sd-act', 'Edit')");
+    expect(actions).toContain("btn('openTenantRescheduleModal', 'sd-act sd-act-ok', '<i class=\"fa-solid fa-calendar-days mr-1\"></i>Reschedule')");
+    expect(actions).toContain("btn('markAppointmentNoShow', 'sd-act', 'Mark no-show')");
+    expect(actions).toContain("btn('deleteAppointment', 'sd-act sd-act-no', '<i class=\"fa-solid fa-xmark mr-1\"></i>Cancel')");
+    expect(actions).toContain("btn('openRosterDeleteModal', 'sd-act sd-act-no', '<i class=\"fa-solid fa-trash mr-1\"></i>Delete')");
+    expect(actions).toContain("btn('markAppointmentUnpaid', 'sd-act', 'Mark unpaid')");
+    const paid = actions.slice(actions.indexOf("markAppointmentPaid"), actions.indexOf("openEditAppointment"));
+    expect(paid).not.toContain("emerald");
+    const reschedule = actions.slice(actions.indexOf("openTenantRescheduleModal"), actions.indexOf("markAppointmentNoShow"));
+    expect(reschedule).not.toContain("brand");
+    const cancel = actions.slice(actions.indexOf("deleteAppointment"), actions.indexOf("out.push(btn('openRosterDeleteModal'"));
+    expect(cancel).not.toContain("rose");
+    const remove = actions.slice(actions.indexOf("openRosterDeleteModal"));
+    expect(remove).not.toContain("rose");
+    expect(actions).toContain("bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400");
+    const today = extractFunction(html, "renderSchediToday");
+    expect(today).toContain('class="sd-act-ok" role="menuitem" onclick="markAppointmentPaid(');
+    expect(today).toContain('class="sd-act-ok" role="menuitem" onclick="openTenantRescheduleModal(');
+    expect(today).toContain('class="sd-act-no" role="menuitem" onclick="deleteAppointment(');
+    expect(today).toContain('class="sd-act-no" role="menuitem" onclick="openRosterDeleteModal(');
+    expect(today).toContain('role="menuitem" onclick="markAppointmentNoShow(');
+    expect(today).toContain('role="menuitem" onclick="openEditAppointment(');
+    const css = dashCss(html);
+    const rest = css.slice(css.indexOf("body.schedi-newdash .roster-actions > button.sd-act,"));
+    expect(rest.slice(0, 280)).toContain("background: #1e293b");
+    expect(rest.slice(0, 280)).toContain("color: #e2e8f0");
+    expect(rest.slice(0, 280)).toContain("border: 1px solid #334155");
+    expect(css).toContain("html.schedi-light body.schedi-newdash .roster-actions > button.sd-act,");
+    expect(css).toContain("background: #ffffff");
+    expect(css).toContain("border-color: #cbd5e1");
+    expect(css).toContain("body.schedi-newdash .roster-actions > button.sd-act.sd-act-ok:hover");
+    expect(css).toContain("body.schedi-newdash .roster-actions > button.sd-act.sd-act-ok:focus-visible");
+    expect(css).toContain("body.schedi-newdash .roster-actions > button.sd-act.sd-act-ok:active");
+    expect(css).toContain("color: #34d399");
+    expect(css).toContain("body.schedi-newdash .roster-actions > button.sd-act.sd-act-no:hover");
+    expect(css).toContain("color: #fb7185");
+    expect(css).toContain("html.schedi-light body.schedi-newdash .roster-actions > button.sd-act.sd-act-ok:active");
+    expect(css).toContain("color: #047857");
+    expect(css).toContain("html.schedi-light body.schedi-newdash .roster-actions > button.sd-act.sd-act-no:active");
+    expect(css).toContain("color: #be123c");
+    expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-more-menu button.sd-act-ok:hover");
+    expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-more-menu button.sd-act-no:active");
+    expect(css).toContain("body.schedi-newdash .roster-sheet-actions > button.sd-act");
+    expect(unscopedSelectors(dashCss(html))).toEqual([]);
+  });
 });
 
 const chrome = ["/usr/bin/google-chrome", "/usr/bin/google-chrome-stable", "/usr/bin/chromium", "/usr/bin/chromium-browser"].find((path) => existsSync(path));
@@ -1573,4 +1622,330 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
     }
   }, 90000);
+
+  it("keeps card actions neutral at rest at 340 and 390 in light and dark", async () => {
+    const types: Record<string, string> = {
+      ".html": "text/html; charset=utf-8",
+      ".js": "text/javascript; charset=utf-8",
+      ".svg": "image/svg+xml",
+      ".png": "image/png",
+      ".json": "application/json",
+      ".webmanifest": "application/manifest+json",
+    };
+    const server = createServer((req, res) => {
+      const path = new URL(req.url || "/", "http://127.0.0.1").pathname;
+      const file = path === "/" || path === "/portal-preview" ? "/index.html" : path;
+      const full = join(root, file);
+      if (!full.startsWith(root) || !existsSync(full)) {
+        res.writeHead(404);
+        res.end("missing");
+        return;
+      }
+      res.writeHead(200, { "content-type": types[extname(full)] || "application/octet-stream" });
+      res.end(readFileSync(full));
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const address = server.address();
+    const port = typeof address === "object" && address ? address.port : 0;
+    const puppeteer = await import("puppeteer-core");
+    const browser = await puppeteer.default.launch({
+      executablePath: chrome,
+      headless: true,
+      args: ["--no-sandbox", "--disable-dev-shm-usage"],
+    });
+    const rest = {
+      dark: { bg: "rgb(30, 41, 59)", fg: "rgb(226, 232, 240)", border: "rgb(51, 65, 85)" },
+      light: { bg: "rgb(255, 255, 255)", fg: "rgb(15, 23, 42)", border: "rgb(203, 213, 225)" },
+    };
+    const green = {
+      dark: { bg: "rgba(16, 185, 129, 0.18)", fg: "rgb(52, 211, 153)", border: "rgb(52, 211, 153)" },
+      light: { bg: "rgb(236, 253, 245)", fg: "rgb(4, 120, 87)", border: "rgb(110, 231, 183)" },
+    };
+    const red = {
+      dark: { bg: "rgba(244, 63, 94, 0.16)", fg: "rgb(251, 113, 133)", border: "rgb(251, 113, 133)" },
+      light: { bg: "rgb(255, 241, 242)", fg: "rgb(190, 18, 60)", border: "rgb(253, 164, 175)" },
+    };
+    const neutralHover = {
+      dark: { bg: "rgb(51, 65, 85)", fg: "rgb(248, 250, 252)", border: "rgb(71, 85, 105)" },
+      light: { bg: "rgb(241, 245, 249)", fg: "rgb(15, 23, 42)", border: "rgb(203, 213, 225)" },
+    };
+    try {
+      const page = await browser.newPage();
+      const writes: string[] = [];
+      page.on("request", (req) => {
+        if (req.method() !== "GET" && req.method() !== "HEAD") writes.push(req.url());
+      });
+      await page.goto(`http://127.0.0.1:${port}/portal-preview`, { waitUntil: "domcontentloaded", timeout: 45000 });
+      await page.waitForFunction(() => document.body.classList.contains("schedi-newdash"), { timeout: 20000 });
+      await page.waitForFunction(() => {
+        const apps = (window as unknown as { getTenant?: () => { appointments?: { id?: string }[] } }).getTenant?.()?.appointments || [];
+        return apps.some((row) => row && row.id === "HB-1022");
+      }, { timeout: 20000 });
+      const read = (selector: string) => page.evaluate((sel) => {
+        const root = document.querySelector(sel);
+        return Array.from(root?.querySelectorAll(":scope > button") || []).map((node) => {
+          const el = node as HTMLButtonElement;
+          const style = getComputedStyle(el);
+          const icon = el.querySelector("i");
+          const box = el.getBoundingClientRect();
+          return {
+            label: (el.textContent || "").replace(/\s+/g, " ").trim(),
+            bg: style.backgroundColor,
+            fg: style.color,
+            border: style.borderTopColor,
+            icon: icon ? getComputedStyle(icon).color : "",
+            h: Math.round(box.height),
+            w: Math.round(box.width),
+          };
+        });
+      }, selector);
+      const mark = async (selector: string, label: string) => {
+        const found = await page.evaluate((sel, name) => {
+          document.querySelectorAll("[data-act-probe]").forEach((el) => el.removeAttribute("data-act-probe"));
+          const root = document.querySelector(sel);
+          const btn = Array.from(root?.querySelectorAll(":scope > button") || []).find((el) => (el.textContent || "").replace(/\s+/g, " ").trim() === name) as HTMLElement | undefined;
+          if (!btn) return false;
+          btn.setAttribute("data-act-probe", "1");
+          btn.scrollIntoView({ block: "center", inline: "center" });
+          return true;
+        }, selector, label);
+        expect(found).toBe(true);
+      };
+      const hover = async (selector: string, label: string, expected: { bg: string; fg: string; border?: string }) => {
+        await mark(selector, label);
+        await page.hover("[data-act-probe='1']");
+        await page.waitForFunction((bg, fg, border) => {
+          const el = document.querySelector("[data-act-probe='1']");
+          if (!el) return false;
+          const style = getComputedStyle(el);
+          if (style.backgroundColor !== bg || style.color !== fg) return false;
+          return !border || style.borderTopColor === border;
+        }, { timeout: 2000 }, expected.bg, expected.fg, expected.border || "");
+        return page.$eval("[data-act-probe='1']", (el) => {
+          const style = getComputedStyle(el);
+          const icon = el.querySelector("i");
+          return {
+            bg: style.backgroundColor,
+            fg: style.color,
+            border: style.borderTopColor,
+            icon: icon ? getComputedStyle(icon).color : "",
+          };
+        });
+      };
+      const list = '[data-booking-id="HB-1022"] .roster-actions';
+      const expectRest = (rows: { label: string; bg: string; fg: string; border: string; icon: string; h: number; w: number }[], theme: "dark" | "light") => {
+        expect(rows.map((row) => row.label)).toEqual(["Mark paid", "Edit", "Reschedule", "Mark no-show", "Cancel", "Delete"]);
+        for (const row of rows) {
+          expect(row.bg).toBe(rest[theme].bg);
+          expect(row.fg).toBe(rest[theme].fg);
+          expect(row.border).toBe(rest[theme].border);
+          expect(row.h).toBeGreaterThanOrEqual(44);
+          expect(row.w).toBeGreaterThan(40);
+          if (row.icon) expect(row.icon).toBe(rest[theme].fg);
+        }
+      };
+      for (const width of [340, 390]) {
+        await page.setViewport({ width, height: 900 });
+        await page.evaluate(() => (window as unknown as { schediDashGo: (tab: string) => void }).schediDashGo("appointments"));
+        await page.waitForSelector(list, { timeout: 10000 });
+        for (const theme of ["dark", "light"] as const) {
+          await page.evaluate((mode) => (window as unknown as { setSchediTheme: (mode: string) => void }).setSchediTheme(mode), theme);
+          await page.evaluate((sel) => document.querySelector(sel)?.scrollIntoView({ block: "center" }), list);
+          await page.waitForFunction((sel, bg) => {
+            const el = document.querySelector(sel + " > button");
+            return !!el && getComputedStyle(el).backgroundColor === bg;
+          }, { timeout: 2000 }, list, rest[theme].bg);
+          expectRest(await read(list), theme);
+          const paid = await hover(list, "Mark paid", green[theme]);
+          expect(paid).toMatchObject({ ...green[theme], icon: green[theme].fg });
+          const edit = await hover(list, "Edit", neutralHover[theme]);
+          expect(edit.bg).toBe(neutralHover[theme].bg);
+          expect(edit.fg).toBe(neutralHover[theme].fg);
+          expect(edit.border).toBe(neutralHover[theme].border);
+          const reschedule = await hover(list, "Reschedule", green[theme]);
+          expect(reschedule).toMatchObject({ ...green[theme], icon: green[theme].fg });
+          const noShow = await hover(list, "Mark no-show", neutralHover[theme]);
+          expect(noShow.fg).toBe(neutralHover[theme].fg);
+          expect(noShow.bg).toBe(neutralHover[theme].bg);
+          const cancel = await hover(list, "Cancel", red[theme]);
+          expect(cancel).toMatchObject({ ...red[theme], icon: red[theme].fg });
+          const remove = await hover(list, "Delete", red[theme]);
+          expect(remove).toMatchObject({ ...red[theme], icon: red[theme].fg });
+          await page.mouse.move(2, 2);
+          await page.waitForFunction((sel, color) => {
+            const el = document.querySelector(sel + " button");
+            return !!el && getComputedStyle(el).color === color;
+          }, { timeout: 2000 }, list, rest[theme].fg);
+        }
+      }
+      await page.setViewport({ width: 390, height: 900 });
+      await page.evaluate(() => (window as unknown as { setSchediTheme: (mode: string) => void }).setSchediTheme("dark"));
+      await page.evaluate(() => (window as unknown as { schediDashGo: (tab: string) => void }).schediDashGo("appointments"));
+      await page.waitForSelector(list, { timeout: 10000 });
+      await mark(list, "Mark paid");
+      const point = await page.$eval("[data-act-probe='1']", (el) => {
+        const box = el.getBoundingClientRect();
+        return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+      });
+      await page.evaluate(() => {
+        const block = (event: Event) => {
+          event.preventDefault();
+          event.stopPropagation();
+        };
+        document.addEventListener("click", block, true);
+        (window as unknown as { __schediUnblockClick?: () => void }).__schediUnblockClick = () => document.removeEventListener("click", block, true);
+      });
+      await page.mouse.move(point.x, point.y);
+      await page.mouse.down();
+      await page.waitForFunction(() => {
+        const el = document.querySelector("[data-act-probe='1']");
+        return !!el && el.matches(":active") && getComputedStyle(el).color === "rgb(52, 211, 153)";
+      }, { timeout: 2000 });
+      const pressed = await page.$eval("[data-act-probe='1']", (el) => {
+        const style = getComputedStyle(el);
+        return {
+          bg: style.backgroundColor,
+          fg: style.color,
+          border: style.borderTopColor,
+          active: el.matches(":active"),
+        };
+      });
+      expect(pressed.active).toBe(true);
+      expect(pressed.bg).toBe(green.dark.bg);
+      expect(pressed.fg).toBe(green.dark.fg);
+      expect(pressed.border).toBe(green.dark.border);
+      await page.mouse.up();
+      await page.evaluate(() => (window as unknown as { __schediUnblockClick?: () => void }).__schediUnblockClick?.());
+      await page.mouse.move(2, 2);
+      await page.waitForFunction(() => {
+        const el = document.querySelector("[data-act-probe='1']");
+        return !!el && getComputedStyle(el).color === "rgb(226, 232, 240)";
+      }, { timeout: 2000 });
+      await page.$eval("[data-act-probe='1']", (el) => (el as HTMLElement).focus());
+      await page.keyboard.press("Tab");
+      await page.keyboard.down("Shift");
+      await page.keyboard.press("Tab");
+      await page.keyboard.up("Shift");
+      await page.waitForFunction(() => {
+        const el = document.querySelector("[data-act-probe='1']");
+        return !!el && el.matches(":focus-visible") && getComputedStyle(el).color === "rgb(52, 211, 153)";
+      }, { timeout: 2000 });
+      const focused = await page.$eval("[data-act-probe='1']", (el) => el.matches(":focus-visible"));
+      expect(focused).toBe(true);
+      await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+      await page.evaluate(() => (window as unknown as { openRosterApptModal: (id: string) => void }).openRosterApptModal("HB-1022"));
+      await page.waitForSelector("#rosterApptModal:not(.hidden) .roster-sheet-actions", { timeout: 10000 });
+      expectRest(await read("#rosterApptModal .roster-sheet-actions"), "dark");
+      const sheetPaid = await hover("#rosterApptModal .roster-sheet-actions", "Mark paid", green.dark);
+      expect(sheetPaid.fg).toBe(green.dark.fg);
+      expect(sheetPaid.bg).toBe(green.dark.bg);
+      await page.mouse.move(2, 2);
+      await page.waitForFunction(() => {
+        const el = document.querySelector("#rosterApptModal .roster-sheet-actions button");
+        return !!el && getComputedStyle(el).color === "rgb(226, 232, 240)";
+      }, { timeout: 2000 });
+      await page.evaluate(() => (window as unknown as { setSchediTheme: (mode: string) => void }).setSchediTheme("light"));
+      await page.waitForFunction((bg, fg, border) => {
+        const buttons = Array.from(document.querySelectorAll("#rosterApptModal .roster-sheet-actions > button"));
+        return buttons.length === 6 && buttons.every((el) => {
+          const style = getComputedStyle(el);
+          return style.backgroundColor === bg && style.color === fg && style.borderTopColor === border;
+        });
+      }, { timeout: 2000 }, rest.light.bg, rest.light.fg, rest.light.border);
+      expectRest(await read("#rosterApptModal .roster-sheet-actions"), "light");
+      const sheetDelete = await hover("#rosterApptModal .roster-sheet-actions", "Delete", red.light);
+      expect(sheetDelete).toMatchObject({ ...red.light, icon: red.light.fg });
+      await page.mouse.move(2, 2);
+      await page.evaluate(() => {
+        const btn = Array.from(document.querySelectorAll("#rosterApptModal .roster-sheet-actions button")).find((el) => (el.textContent || "").includes("Reschedule")) as HTMLButtonElement | undefined;
+        btn?.click();
+      });
+      await page.waitForSelector("#tenantRescheduleModal:not(.hidden)", { timeout: 10000 });
+      expect(await page.$eval("#rescheduleAppId", (el) => (el as HTMLInputElement).value)).toBe("HB-1022");
+      await page.evaluate(() => (window as unknown as { closeTenantRescheduleModal: () => void }).closeTenantRescheduleModal());
+      await page.evaluate(() => (window as unknown as { schediDashGo: (tab: string) => void }).schediDashGo("appointments"));
+      await page.evaluate(() => (window as unknown as { setSchediTheme: (mode: string) => void }).setSchediTheme("dark"));
+      await page.waitForSelector(list, { timeout: 10000 });
+      await page.evaluate(() => {
+        const btn = Array.from(document.querySelectorAll('[data-booking-id="HB-1022"] .roster-actions button')).find((el) => (el.textContent || "").includes("Mark paid")) as HTMLButtonElement | undefined;
+        btn?.click();
+      });
+      await page.waitForSelector("#rosterPaidMethodModal:not(.hidden)", { timeout: 10000 });
+      const stillUnpaid = await page.evaluate(() => {
+        const apps = (window as unknown as { getTenant?: () => { appointments?: { id?: string; paymentStatus?: string }[] } }).getTenant?.()?.appointments || [];
+        return apps.find((row) => row && row.id === "HB-1022")?.paymentStatus || "";
+      });
+      expect(stillUnpaid).toBe("PAY AT APPOINTMENT");
+      await page.evaluate(() => (window as unknown as { closeRosterPaidMethodModal: () => void }).closeRosterPaidMethodModal());
+      const accept = await page.evaluate(() => {
+        const btn = Array.from(document.querySelectorAll('[data-booking-id="HB-1002"] .roster-actions button')).find((el) => (el.textContent || "").trim() === "Accept") as HTMLElement | undefined;
+        if (!btn) return null;
+        return { fg: getComputedStyle(btn).color, cls: btn.className };
+      });
+      expect(accept?.cls).toContain("text-emerald-400");
+      expect(accept?.fg).not.toBe(rest.dark.fg);
+      await page.evaluate(() => (window as unknown as { schediDashGo: (tab: string) => void }).schediDashGo("today"));
+      await page.waitForSelector('#schediTodaySchedule button[onclick*="HB-1003"]', { timeout: 10000 });
+      for (const theme of ["dark", "light"] as const) {
+        await page.setViewport({ width: theme === "dark" ? 340 : 390, height: 900 });
+        await page.evaluate(() => (window as unknown as { schediDashGo: (tab: string) => void }).schediDashGo("today"));
+        await page.evaluate((mode) => (window as unknown as { setSchediTheme: (mode: string) => void }).setSchediTheme(mode), theme);
+        await page.evaluate(() => {
+          const summary = document.querySelector('#schediTodaySchedule button[onclick*="HB-1003"]')?.closest("article")?.querySelector("summary");
+          summary?.scrollIntoView({ block: "center" });
+        });
+        await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())));
+        await page.evaluate(() => {
+          const summary = document.querySelector('#schediTodaySchedule button[onclick*="HB-1003"]')?.closest("article")?.querySelector("summary") as HTMLElement | undefined;
+          summary?.click();
+        });
+        await page.waitForFunction(() => {
+          const menu = document.querySelector('#schediTodaySchedule button[onclick*="HB-1003"]')?.closest(".sd-more-menu") as HTMLElement | null;
+          return !!menu && getComputedStyle(menu).visibility === "visible";
+        }, { timeout: 5000 });
+        const menu = await page.evaluate(() => {
+          const root = document.querySelector('#schediTodaySchedule button[onclick*="HB-1003"]')?.closest(".sd-more-menu");
+          return Array.from(root?.querySelectorAll("button") || []).map((node) => {
+            const el = node as HTMLButtonElement;
+            const style = getComputedStyle(el);
+            return {
+              label: (el.textContent || "").replace(/\s+/g, " ").trim(),
+              bg: style.backgroundColor,
+              fg: style.color,
+              border: style.borderTopWidth,
+            };
+          });
+        });
+        expect(menu.map((row) => row.label)).toEqual(["Mark paid", "Reschedule", "Mark no-show", "Cancel", "Edit", "Delete"]);
+        const menuRest = theme === "dark" ? "rgb(241, 245, 249)" : "rgb(15, 23, 42)";
+        for (const row of menu) {
+          expect(row.fg).toBe(menuRest);
+          expect(row.bg).toBe("rgba(0, 0, 0, 0)");
+          expect(row.border).toBe("0px");
+        }
+        const menuRoot = "#schediTodaySchedule details.sd-more[open] .sd-more-menu";
+        const menuPaid = await hover(menuRoot, "Mark paid", { bg: green[theme].bg, fg: green[theme].fg });
+        expect(menuPaid.fg).toBe(green[theme].fg);
+        expect(menuPaid.bg).toBe(green[theme].bg);
+        const menuCancel = await hover(menuRoot, "Cancel", { bg: red[theme].bg, fg: red[theme].fg });
+        expect(menuCancel.fg).toBe(red[theme].fg);
+        expect(menuCancel.bg).toBe(red[theme].bg);
+        await page.mouse.move(2, 2);
+      }
+      await page.evaluate(() => (window as unknown as { schediDashGo: (tab: string) => void }).schediDashGo("clients"));
+      await page.waitForFunction(() => !!document.querySelector('.sd-client-name[data-client-id="CL-JORDAN"]'), { timeout: 10000 });
+      await page.evaluate(() => (window as unknown as { openClientDetail: (id: string) => void }).openClientDetail("CL-JORDAN"));
+      await page.waitForSelector("#sdClientPanel:not([hidden]) .sd-client-visit", { timeout: 10000 });
+      const clientActions = await page.evaluate(() => {
+        const panel = document.getElementById("sdClientPanel");
+        return Array.from(panel?.querySelectorAll("button") || []).map((el) => (el.textContent || "").replace(/\s+/g, " ").trim());
+      });
+      expect(clientActions).toContain("Edit");
+      expect(clientActions.some((label) => label === "Mark paid" || label === "Reschedule" || label === "Cancel" || label === "Delete" || label === "Mark no-show")).toBe(false);
+      expect(writes).toEqual([]);
+    } finally {
+      await browser.close();
+      await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+    }
+  }, 120000);
 });
