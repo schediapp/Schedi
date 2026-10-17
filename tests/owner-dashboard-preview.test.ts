@@ -895,6 +895,19 @@ describe("owner dashboard preview", () => {
     expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-more-menu button.sd-act-ok:hover");
     expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-more-menu button.sd-act-no:active");
     expect(css).toContain("body.schedi-newdash .roster-sheet-actions > button.sd-act");
+    expect(today).toContain('role="button" tabindex="0" aria-expanded="false" aria-haspopup="menu"');
+    expect(today).toContain('aria-label="More actions"><i class="fa-solid fa-ellipsis-vertical" aria-hidden="true"></i></summary>');
+    expect(today).not.toContain(">…</summary>");
+    expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-card.sd-row { cursor: pointer; }");
+    expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-card.sd-row:focus-visible");
+    expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-card.sd-row:active { background: rgba(148, 163, 184, 0.14); }");
+    expect(css).toContain("html.schedi-light #tenantPortalSection.schedi-newdash .sd-card.sd-row:active { background: #f1f5f9; }");
+    expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-more > summary {");
+    expect(css).toContain("border: 0;");
+    expect(css).toContain("border-radius: 999px;");
+    expect(css).toContain("background: transparent;");
+    expect(css).toContain("width: 44px;");
+    expect(css).toContain("height: 44px;");
     expect(unscopedSelectors(dashCss(html))).toEqual([]);
   });
 
@@ -2412,6 +2425,118 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       expect(clientActions).toContain("Edit");
       expect(clientActions.some((label) => label === "Mark paid" || label === "Reschedule" || label === "Cancel" || label === "Delete" || label === "Mark no-show")).toBe(false);
       expect(writes).toEqual([]);
+    } finally {
+      await browser.close();
+      await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+    }
+  }, 120000);
+
+  it("opens today's schedule from a borderless kebab or the card at 340 and 390", async () => {
+    const types: Record<string, string> = {
+      ".html": "text/html; charset=utf-8",
+      ".js": "text/javascript; charset=utf-8",
+      ".svg": "image/svg+xml",
+      ".png": "image/png",
+      ".json": "application/json",
+      ".webmanifest": "application/manifest+json",
+    };
+    const server = createServer((req, res) => {
+      const path = new URL(req.url || "/", "http://127.0.0.1").pathname;
+      const file = path === "/" || path === "/portal-preview" ? "/index.html" : path;
+      const full = join(root, file);
+      if (!full.startsWith(root) || !existsSync(full)) {
+        res.writeHead(404);
+        res.end("missing");
+        return;
+      }
+      res.writeHead(200, { "content-type": types[extname(full)] || "application/octet-stream" });
+      res.end(readFileSync(full));
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const address = server.address();
+    const port = typeof address === "object" && address ? address.port : 0;
+    const puppeteer = await import("puppeteer-core");
+    const browser = await puppeteer.default.launch({
+      executablePath: chrome,
+      headless: true,
+      args: ["--no-sandbox", "--disable-dev-shm-usage"],
+    });
+    try {
+      const page = await browser.newPage();
+      await page.goto(`http://127.0.0.1:${port}/portal-preview`, { waitUntil: "domcontentloaded", timeout: 45000 });
+      await page.waitForFunction(() => document.body.classList.contains("schedi-newdash"), { timeout: 20000 });
+      const measure = () => page.evaluate(() => {
+        const card = document.querySelector("#schediTodaySchedule article.sd-row") as HTMLElement | null;
+        const summary = card?.querySelector("summary") as HTMLElement | null;
+        const icon = summary?.querySelector("i");
+        if (!card || !summary) return null;
+        const cardStyle = getComputedStyle(card);
+        const summaryStyle = getComputedStyle(summary);
+        const box = summary.getBoundingClientRect();
+        return {
+          role: card.getAttribute("role"),
+          tab: card.getAttribute("tabindex"),
+          popup: card.getAttribute("aria-haspopup"),
+          expanded: card.getAttribute("aria-expanded"),
+          cursor: cardStyle.cursor,
+          label: summary.getAttribute("aria-label"),
+          icon: icon?.className || "",
+          w: Math.round(box.width),
+          h: Math.round(box.height),
+          radius: summaryStyle.borderRadius,
+          border: summaryStyle.borderTopWidth,
+          bg: summaryStyle.backgroundColor,
+          fill: summaryStyle.backgroundImage,
+        };
+      });
+      for (const width of [340, 390]) {
+        await page.setViewport({ width, height: 900 });
+        for (const theme of ["dark", "light"] as const) {
+          await page.evaluate((mode) => (window as unknown as { setSchediTheme: (mode: string) => void }).setSchediTheme(mode), theme);
+          await page.evaluate(() => (window as unknown as { schediDashGo: (tab: string) => void }).schediDashGo("today"));
+          await page.waitForSelector("#schediTodaySchedule article.sd-row summary", { timeout: 10000 });
+          const view = await measure();
+          expect(view?.role).toBe("button");
+          expect(view?.tab).toBe("0");
+          expect(view?.popup).toBe("menu");
+          expect(view?.expanded).toBe("false");
+          expect(view?.cursor).toBe("pointer");
+          expect(view?.label).toBe("More actions");
+          expect(view?.icon).toContain("fa-ellipsis-vertical");
+          expect(view?.w).toBeGreaterThanOrEqual(44);
+          expect(view?.h).toBeGreaterThanOrEqual(44);
+          expect(view?.border).toBe("0px");
+          expect(view?.bg).toBe("rgba(0, 0, 0, 0)");
+          expect(view?.radius).toBe("999px");
+          await page.hover("#schediTodaySchedule article.sd-row summary");
+          const hovered = await page.$eval("#schediTodaySchedule article.sd-row summary", (el) => getComputedStyle(el).backgroundColor);
+          expect(hovered).not.toBe("rgba(0, 0, 0, 0)");
+          const name = await page.$("#schediTodaySchedule article.sd-row .sd-row-title");
+          const nameBox = await name!.boundingBox();
+          await page.mouse.move(nameBox!.x + 8, nameBox!.y + 8);
+          await page.mouse.down();
+          const pressed = await page.$eval("#schediTodaySchedule article.sd-row", (el) => getComputedStyle(el).backgroundColor);
+          await page.mouse.up();
+          expect(pressed).toBe(theme === "dark" ? "rgba(148, 163, 184, 0.14)" : "rgb(241, 245, 249)");
+          await page.waitForFunction(() => {
+            const card = document.querySelector("#schediTodaySchedule article.sd-row");
+            const menu = card?.querySelector(".sd-more-menu") as HTMLElement | null;
+            return card?.getAttribute("aria-expanded") === "true" && !!menu && getComputedStyle(menu).visibility === "visible" && document.querySelectorAll("details.sd-more[open]").length === 1;
+          }, { timeout: 5000 });
+          const labels = await page.$$eval("#schediTodaySchedule details.sd-more[open] .sd-more-menu button", (nodes) => nodes.map((el) => (el.textContent || "").trim()));
+          expect(labels).toContain("Reschedule");
+          expect(labels).toContain("Edit");
+          expect(labels).toContain("Delete");
+          expect(labels.some((label) => label === "Mark paid" || label === "Mark unpaid")).toBe(true);
+          await page.click("#schediTodaySchedule article.sd-row summary");
+          await page.waitForFunction(() => document.querySelector("#schediTodaySchedule article.sd-row")?.getAttribute("aria-expanded") === "false" && document.querySelectorAll("details.sd-more[open]").length === 0, { timeout: 5000 });
+          await page.focus("#schediTodaySchedule article.sd-row");
+          await page.keyboard.press("Enter");
+          await page.waitForFunction(() => document.querySelector("#schediTodaySchedule article.sd-row")?.getAttribute("aria-expanded") === "true", { timeout: 5000 });
+          await page.keyboard.press("Space");
+          await page.waitForFunction(() => document.querySelector("#schediTodaySchedule article.sd-row")?.getAttribute("aria-expanded") === "false", { timeout: 5000 });
+        }
+      }
     } finally {
       await browser.close();
       await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));

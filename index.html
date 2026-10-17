@@ -868,20 +868,38 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-chip.sd-pay-square {
 body.schedi-newdash.sd-client-panel-open { overflow: hidden; }
 #tenantPortalSection.schedi-newdash .roster-appt .sd-pay { margin-top: 4px; white-space: normal; }
 #tenantPortalSection.schedi-newdash .sd-more { position: relative; }
+#tenantPortalSection.schedi-newdash .sd-card.sd-row { cursor: pointer; }
+#tenantPortalSection.schedi-newdash .sd-card.sd-row:focus-visible {
+    outline: 2px solid #10b981;
+    outline-offset: 2px;
+}
+#tenantPortalSection.schedi-newdash .sd-card.sd-row:active { background: rgba(148, 163, 184, 0.14); }
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-card.sd-row:active { background: #f1f5f9; }
 #tenantPortalSection.schedi-newdash .sd-more > summary {
     list-style: none;
-    width: 36px;
-    height: 36px;
-    border-radius: 12px;
-    border: 1px solid var(--sd-line);
-    background: var(--sd-bg);
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
     color: var(--sd-text);
     display: inline-flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    font-weight: 800;
 }
+#tenantPortalSection.schedi-newdash .sd-more > summary i { font-size: 20px; line-height: 1; pointer-events: none; }
+#tenantPortalSection.schedi-newdash .sd-more > summary:hover,
+#tenantPortalSection.schedi-newdash .sd-more > summary:focus-visible,
+#tenantPortalSection.schedi-newdash .sd-more > summary:active { background: rgba(148, 163, 184, 0.18); }
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-more > summary:hover,
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-more > summary:focus-visible,
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-more > summary:active { background: rgba(15, 23, 42, 0.08); }
+#tenantPortalSection.schedi-newdash .sd-more > summary:focus-visible { outline: 2px solid #10b981; outline-offset: 2px; }
 #tenantPortalSection.schedi-newdash .sd-more > summary::-webkit-details-marker { display: none; }
 #tenantPortalSection.schedi-newdash .sd-more-menu {
     position: fixed;
@@ -11824,13 +11842,13 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
                     var noShowAction = appointmentIsNoShow(app)
                         ? ''
                         : '<button type="button" role="menuitem" onclick="markAppointmentNoShow(' + id + ')">Mark no-show</button>';
-                    return '<article class="sd-card sd-row">' +
+                    return '<article class="sd-card sd-row" role="button" tabindex="0" aria-expanded="false" aria-haspopup="menu" aria-label="More actions for ' + esc(app.clientName || 'appointment') + '">' +
                         '<div class="sd-time">' + esc(app.time || '') + '</div>' +
                         '<div class="sd-row-main"><div class="sd-row-head"><h4><span class="sd-row-title">' + esc(app.clientName || 'Client') + (app.walkIn ? ' · Walk-in' : '') + '</span></h4>' +
                         '<div class="sd-row-chips">' + appointmentStatusChipsHtml(app, { payment: false, price: false, pendingLabel: 'New request' }) + '</div></div>' +
                         '<p class="sd-meta"><span class="sd-svc-line">' + serviceMarkHtml(tenant, app.serviceName) + '<span>' + esc(app.serviceName || 'Appointment') + '</span></span></p></div>' +
                         '<div class="sd-row-side">' + appointmentPayMarkup(app, false) + '</div>' +
-                        '<details class="sd-more"><summary aria-label="Actions for ' + esc(app.clientName || 'appointment') + '">…</summary>' +
+                        '<details class="sd-more"><summary aria-label="More actions"><i class="fa-solid fa-ellipsis-vertical" aria-hidden="true"></i></summary>' +
                         '<div class="sd-more-menu" role="menu">' +
                         payAction +
                         '<button type="button" class="sd-act-ok" role="menuitem" onclick="openTenantRescheduleModal(' + id + ')">Reschedule</button>' +
@@ -11860,6 +11878,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
 
         window.placeSchediMoreMenu = function (details) {
             if (!details || !details.classList || !details.classList.contains('sd-more')) return;
+            var card = details.closest ? details.closest('.sd-row') : null;
+            if (card) card.setAttribute('aria-expanded', details.open ? 'true' : 'false');
             var menu = details.querySelector('.sd-more-menu');
             if (!menu) return;
             if (!details.open) {
@@ -12518,9 +12538,17 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
                     btn.setAttribute('aria-expanded', 'false');
                 });
             }
+            var todayCard = node.closest('#schediTodaySchedule article.sd-row');
+            var todayMenu = todayCard ? todayCard.querySelector('details.sd-more') : null;
+            var todayControl = node.closest('a, button, input, select, textarea, label, summary, .sd-more, [role="menuitem"]');
+            var todayWasOpen = !!(todayMenu && todayMenu.open);
             document.querySelectorAll('details.sd-more[open]').forEach(function (el) {
                 if (!el.contains(node)) el.open = false;
             });
+            if (todayCard && todayMenu && !todayControl) {
+                todayMenu.open = !todayWasOpen;
+                if (typeof window.placeSchediMoreMenu === 'function') window.placeSchediMoreMenu(todayMenu);
+            }
             var results = document.getElementById('rosterSearchResults');
             var hit = node.closest('[data-search-id]');
             if (hit) {
@@ -12532,6 +12560,15 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
 
         document.addEventListener('keydown', function (event) {
             if (!document.body.classList.contains('schedi-newdash')) return;
+            if ((event.key === 'Enter' || event.key === ' ') && event.target && event.target.classList && event.target.classList.contains('sd-row') && event.target.getAttribute('role') === 'button') {
+                event.preventDefault();
+                var rowMenu = event.target.querySelector('details.sd-more');
+                if (rowMenu) {
+                    rowMenu.open = !rowMenu.open;
+                    if (typeof window.placeSchediMoreMenu === 'function') window.placeSchediMoreMenu(rowMenu);
+                }
+                return;
+            }
             if (event.key === 'Escape') {
                 schediDashClosePopovers();
                 var results = document.getElementById('rosterSearchResults');
