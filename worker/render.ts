@@ -75,7 +75,7 @@ export function renderLlms(): string {
     "",
     "Schedi does not calculate drive time and does not manage multiple cleaners or crews.",
     "",
-    "Competitor prices on the comparison page are as of Oct 2026. They were copied from each vendor's pricing page on Oct 17, 2026.",
+    "Competitor prices on the comparison page are as of Oct 2026. Prices as listed on each vendor's site on Oct 17, 2026.",
     "",
     "Pages:",
     pages,

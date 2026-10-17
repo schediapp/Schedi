@@ -55,6 +55,18 @@ describe("answer pages and crawler files", () => {
       expect(html, page.path).not.toContain("Does Schedi send text message");
       expect(html, page.path).not.toContain("add-to-calendar");
       expect(html, page.path).not.toContain("not for publishing");
+      for (const note of [
+        "re-check before publishing",
+        "before publishing",
+        "Vendors change prices often",
+        "flagged as a key comparison",
+        "Chosen over Housecall",
+        "this copy",
+        "They were copied",
+      ]) {
+        expect(html, `${page.path} ${note}`).not.toContain(note);
+        expect(llms, `${note}`).not.toContain(note);
+      }
       if (html.includes("application/ld+json")) {
         expect(assertJsonLdDocuments(html), page.path).toEqual([]);
       }
@@ -105,6 +117,22 @@ describe("answer pages and crawler files", () => {
     const compare = renderMarketingPage(MARKETING_PAGES.find((page) => page.path === "/compare")!);
     const text = visible(compare);
     expect(text).toContain("Prices as of Oct 2026");
+    expect(text).toContain("Prices as listed on each vendor's site on Oct 17, 2026");
+    const internalNotes = [
+      "re-check before publishing",
+      "before publishing",
+      "Vendors change prices often",
+      "flagged as a key comparison",
+      "Chosen over Housecall",
+      "this copy",
+      "They were copied",
+    ];
+    const llmsNotes = renderLlms();
+    for (const note of internalNotes) {
+      expect(text, note).not.toContain(note);
+      expect(llmsNotes, note).not.toContain(note);
+      expect(compare, note).not.toContain(note);
+    }
     expect(text).toContain("https://getsquire.com/pricing");
     expect(text).toContain("$30 a month");
     expect(text).toContain("$50 a month");
