@@ -2847,6 +2847,128 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
         }
         #tenantPortalSection.schedi-newdash .roster-paid-figure { font-size: 1.375rem; font-weight: 800; line-height: 1.1; }
     }
+    #tenantPortalSection.schedi-newdash .sd-hours-week-head {
+        display: none;
+    }
+    #tenantPortalSection.schedi-newdash .sd-hours-week-scroll {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    #tenantPortalSection.schedi-newdash .sd-hours-week.roster-week-grid {
+        grid-template-columns: repeat(7, minmax(200px, 1fr));
+    }
+    #tenantPortalSection.schedi-newdash .sd-hours-week-head {
+        grid-template-columns: repeat(7, minmax(200px, 1fr));
+        gap: 8px;
+        margin-bottom: 4px;
+    }
+    #tenantPortalSection.schedi-newdash .sd-hours-week-day {
+        background: rgba(15, 23, 42, 0.6);
+        border-color: #1e293b;
+        color: #f8fafc;
+    }
+    #tenantPortalSection.schedi-newdash .sd-hours-week-day .sd-hours-times {
+        grid-template-columns: minmax(0, 1fr);
+    }
+    #tenantPortalSection.schedi-newdash .sd-hours-week-day.is-closed .sd-hours-times,
+    #tenantPortalSection.schedi-newdash .sd-hours-week-day.is-closed .sd-hours-week-split {
+        opacity: 0.55;
+    }
+    #tenantPortalSection.schedi-newdash .sd-hours-week-split {
+        margin: 0;
+        font-size: 12px;
+        font-weight: 700;
+        line-height: 1.35;
+        color: #34d399;
+    }
+    #tenantPortalSection.schedi-newdash .sd-hours-week-block {
+        display: block;
+        width: 100%;
+        min-height: 44px;
+        text-align: left;
+        border-radius: 8px;
+        border: 1px solid rgba(251, 113, 133, 0.45);
+        background: rgba(244, 63, 94, 0.1);
+        color: #ffe4e6;
+        padding: 6px 8px;
+        cursor: pointer;
+    }
+    #tenantPortalSection.schedi-newdash .sd-hours-week-block .sd-hours-week-when {
+        display: block;
+        font-size: 11px;
+        font-weight: 800;
+        color: #fecdd3;
+    }
+    #tenantPortalSection.schedi-newdash .sd-hours-week-block .sd-hours-week-title {
+        display: block;
+        font-size: 12px;
+        font-weight: 700;
+        color: #fff1f2;
+    }
+    #tenantPortalSection.schedi-newdash .sd-hours-week-block .sd-hours-week-meta {
+        display: block;
+        font-size: 10px;
+        font-weight: 700;
+        color: #fecdd3;
+    }
+    #tenantPortalSection.schedi-newdash .sd-hours-week-add,
+    #tenantPortalSection.schedi-newdash .sd-hours-week-copy {
+        display: block;
+        width: 100%;
+        min-height: 44px;
+        border-radius: 10px;
+        font-size: 12px;
+        font-weight: 800;
+        cursor: pointer;
+    }
+    #tenantPortalSection.schedi-newdash .sd-hours-week-add {
+        border: 1px solid rgba(52, 211, 153, 0.35);
+        background: rgba(16, 185, 129, 0.12);
+        color: #a7f3d0;
+    }
+    #tenantPortalSection.schedi-newdash .sd-hours-week-copy {
+        border: 1px solid #334155;
+        background: transparent;
+        color: #e2e8f0;
+    }
+    #tenantPortalSection.schedi-newdash .sd-hours-week-empty {
+        margin: 0;
+        font-size: 11px;
+        font-weight: 700;
+        color: #cbd5e1;
+    }
+    html.schedi-light #tenantPortalSection.schedi-newdash .sd-hours-week-day {
+        background: #f8fafc !important;
+        border-color: #e5e7eb !important;
+        color: #0f172a;
+    }
+    html.schedi-light #tenantPortalSection.schedi-newdash .sd-hours-week-split { color: #047857; }
+    html.schedi-light #tenantPortalSection.schedi-newdash .sd-hours-week-block {
+        background: #fff1f2;
+        border-color: #fecdd3;
+        color: #881337;
+    }
+    html.schedi-light #tenantPortalSection.schedi-newdash .sd-hours-week-block .sd-hours-week-when,
+    html.schedi-light #tenantPortalSection.schedi-newdash .sd-hours-week-block .sd-hours-week-meta { color: #9f1239; }
+    html.schedi-light #tenantPortalSection.schedi-newdash .sd-hours-week-block .sd-hours-week-title { color: #881337; }
+    html.schedi-light #tenantPortalSection.schedi-newdash .sd-hours-week-add {
+        background: #ecfdf5;
+        border-color: #a7f3d0;
+        color: #047857;
+    }
+    html.schedi-light #tenantPortalSection.schedi-newdash .sd-hours-week-copy {
+        background: #ffffff;
+        border-color: #cbd5e1;
+        color: #1f2937;
+    }
+    html.schedi-light #tenantPortalSection.schedi-newdash .sd-hours-week-empty { color: #334155; }
+    @media (min-width: 640px) {
+        #tenantPortalSection.schedi-newdash .sd-hours-week-head { display: grid; }
+    }
+    @media (max-width: 639px) {
+        #tenantPortalSection.schedi-newdash .sd-hours-week.roster-week-grid { grid-template-columns: 1fr; }
+        #tenantPortalSection.schedi-newdash .sd-hours-week-scroll { overflow-x: visible; }
+    }
 
 </style>
 <script>
@@ -3326,9 +3448,12 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
 
                 <!-- TENANT TAB 3: HOURS & SHIFTS + RECURRING BLOCK TIME -->
                 <div id="tenantSectionHours" class="glass-card rounded-2xl p-6 space-y-6 hidden">
-                    <div>
-                        <h3 class="text-lg font-bold text-white">Daily Shifts & Operating Hours</h3>
-                        <p class="text-xs text-slate-400">Set individual day operating hours or create recurring outage time blocks.</p>
+                    <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                        <div>
+                            <h3 class="text-lg font-bold text-white">Daily Shifts & Operating Hours</h3>
+                            <p class="text-xs text-slate-400">Set individual day operating hours or create recurring outage time blocks.</p>
+                        </div>
+                        <button type="button" id="hoursWeekLayoutBtn" onclick="toggleHoursWeekLayout()" aria-pressed="false" class="px-4 py-2 rounded-xl font-bold text-xs bg-slate-900 border border-slate-800 text-slate-400">Week layout</button>
                     </div>
 
                     <form onsubmit="handleUpdateShiftsSubmit(event)" class="space-y-4 border-b border-slate-800 pb-6">
@@ -10801,7 +10926,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                 },
                 operatingHours: {
                     Mon: { open: true, start: '09:00 AM', end: '06:00 PM' },
-                    Tue: { open: true, start: '09:00 AM', end: '06:00 PM' },
+                    Tue: { open: true, start: '11:00 AM', end: '07:00 PM' },
                     Wed: { open: true, start: '09:00 AM', end: '06:00 PM' },
                     Thu: { open: true, start: '09:00 AM', end: '06:00 PM' },
                     Fri: { open: true, start: '09:00 AM', end: '06:00 PM' },
@@ -10813,7 +10938,10 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                     map[tomorrow] = { closed: false, ranges: [{ start: '11:00 AM', end: '03:00 PM' }] };
                     return map;
                 })(),
-                blockedRules: [{ id: 'rule-lunch', title: 'Lunch', time: '12:00 PM', duration: '1 hour', frequency: 'Daily' }],
+                blockedRules: [
+                    { id: 'rule-lunch', title: 'Lunch', time: '12:00 PM', duration: '1 hour', frequency: 'Daily' },
+                    { id: 'rule-friday', title: 'Team meeting', time: '04:00 PM', duration: '1 hour', frequency: 'Weekly (Fridays)' }
+                ],
                 blockedTimes: [
                     { id: 'block-vacation', startDate: day(20), endDate: day(22), allDay: true, note: 'Out of studio' },
                     { id: 'block-errand', startDate: day(6), endDate: day(6), allDay: false, startTime: '12:00 PM', endTime: '01:00 PM', note: 'Vendor pickup' }
@@ -13159,6 +13287,169 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
             try { renderSchediToday(tenant); } catch (errApple) {}
         }
 
+        var hoursWeekLayoutChoice = null;
+
+        function hoursWeekStored() {
+            try { return localStorage.getItem('schediWeekHours'); } catch (errStore) { return null; }
+        }
+
+        function hoursWeekLayoutFromEnv(search, stored) {
+            var flag = '';
+            try { flag = new URLSearchParams(String(search || '')).get('weekhours') || ''; } catch (errFlag) { flag = ''; }
+            if (flag === '1') return true;
+            if (flag === '0') return false;
+            if (stored === '1') return true;
+            if (stored === '0') return false;
+            return false;
+        }
+
+        function hoursWeekLayoutOn() {
+            if (hoursWeekLayoutChoice === true || hoursWeekLayoutChoice === false) return hoursWeekLayoutChoice;
+            var search = '';
+            try { search = location.search || ''; } catch (errSearch) { search = ''; }
+            return hoursWeekLayoutFromEnv(search, hoursWeekStored());
+        }
+
+        function hoursRuleMatchesDay(rule, day) {
+            var freq = String((rule && rule.frequency) || 'Daily');
+            if (freq === 'Weekly (Mondays)') return day === 'Mon';
+            if (freq === 'Weekly (Fridays)') return day === 'Fri';
+            return true;
+        }
+
+        function hoursWeekSegments(startLabel, endLabel, rules) {
+            var open = toMinutes(startLabel);
+            var close = toMinutes(endLabel);
+            if (open == null || close == null || close <= open) return [];
+            var blocks = [];
+            (rules || []).forEach(function (rule) {
+                var start = toMinutes(rule && rule.time);
+                if (start == null) return;
+                var len = parseDurationMins(rule && rule.duration, 60);
+                var end = start + len;
+                if (end <= open || start >= close) return;
+                blocks.push({ start: Math.max(open, start), end: Math.min(close, end) });
+            });
+            blocks.sort(function (a, b) { return a.start - b.start; });
+            var merged = [];
+            blocks.forEach(function (block) {
+                var last = merged[merged.length - 1];
+                if (last && block.start <= last.end) last.end = Math.max(last.end, block.end);
+                else merged.push({ start: block.start, end: block.end });
+            });
+            var cursor = open;
+            var segments = [];
+            merged.forEach(function (block) {
+                if (block.start > cursor) segments.push({ start: fromMinutes(cursor), end: fromMinutes(block.start) });
+                cursor = Math.max(cursor, block.end);
+            });
+            if (cursor < close) segments.push({ start: fromMinutes(cursor), end: fromMinutes(close) });
+            return segments;
+        }
+
+        function hoursWeekBlockHtml(rule) {
+            var when = esc((rule && rule.time) || '');
+            var title = esc((rule && rule.title) || 'Blocked');
+            var meta = esc(((rule && rule.duration) || '1 hour') + ' · ' + ((rule && rule.frequency) || 'Daily'));
+            return '<button type="button" class="sd-hours-week-block" onclick="openEditBlockedTimeRule(' + jsArg(rule && rule.id) + ')" aria-label="' + esc('Edit ' + ((rule && rule.title) || 'blocked time')) + '">'
+                + '<span class="sd-hours-week-when">' + when + '</span>'
+                + '<span class="sd-hours-week-title">' + title + '</span>'
+                + '<span class="sd-hours-week-meta">' + meta + '</span>'
+                + '</button>';
+        }
+
+        function hoursWeekDayHtml(day, label, hours, rules) {
+            var h = hours || { open: true, start: '09:00 AM', end: '05:00 PM' };
+            var matched = (rules || []).filter(function (rule) { return hoursRuleMatchesDay(rule, day); });
+            var segments = h.open ? hoursWeekSegments(h.start, h.end, matched) : [];
+            var split = segments.length > 1
+                ? '<p class="sd-hours-week-split">' + segments.map(function (seg) { return esc(seg.start + '–' + seg.end); }).join(' · ') + '</p>'
+                : '';
+            var blocks = matched.length
+                ? matched.map(hoursWeekBlockHtml).join('')
+                : '<p class="sd-hours-week-empty">No blocked time</p>';
+            return '<div class="sd-hours-week-day rounded-xl border p-2 min-h-[7.5rem] space-y-1.5' + (h.open ? '' : ' is-closed') + '">'
+                + '<div class="flex items-baseline justify-between gap-2">'
+                + '<span class="text-xs font-bold text-slate-400">' + esc(day) + '</span>'
+                + '<span class="text-sm font-black text-white">' + (h.open ? 'Open' : 'Closed') + '</span></div>'
+                + '<label class="sd-hours-open"><input type="checkbox" id="shiftOpen_' + day + '"' + (h.open ? ' checked' : '') + ' onchange="hoursWeekOpenChanged(' + jsArg(day) + ')"><span>' + esc(label) + '</span></label>'
+                + '<div class="sd-hours-times">'
+                + ownerTimeComboHtml('shiftStart_' + day, h.start, 'Opens', 'Show open times', '', 'shiftError_' + day)
+                + ownerTimeComboHtml('shiftEnd_' + day, h.end, 'Closes', 'Show close times', '', 'shiftError_' + day)
+                + '</div>'
+                + '<p id="shiftError_' + day + '" class="sd-hours-error" role="alert"></p>'
+                + split
+                + '<div class="space-y-1.5">' + blocks + '</div>'
+                + '<button type="button" class="sd-hours-week-add" onclick="openAddBlockedTimeForDay(' + jsArg(day) + ')">Add blocked time</button>'
+                + '<button type="button" class="sd-hours-week-copy" onclick="copyHoursToOtherDays(' + jsArg(day) + ')">Copy to other days</button>'
+                + '</div>';
+        }
+
+        function hoursWeekGridHtml(tenant, days, dayLabels) {
+            var rules = (tenant && tenant.blockedRules) || [];
+            var head = days.map(function (day) {
+                return '<div class="text-[10px] font-bold uppercase tracking-wider text-slate-500 text-center">' + esc(dayLabels[day]) + '</div>';
+            }).join('');
+            var cells = days.map(function (day) {
+                var h = tenant.operatingHours[day] || { open: true, start: '09:00 AM', end: '05:00 PM' };
+                return hoursWeekDayHtml(day, dayLabels[day], h, rules);
+            }).join('');
+            return '<div class="sd-hours-week-scroll">'
+                + '<div class="sd-hours-week-head">' + head + '</div>'
+                + '<div class="roster-week-grid sd-hours-week">' + cells + '</div>'
+                + '</div>'
+                + '<p class="sd-hours-hint sd-hours-hint-gap">Week layout uses the same seven day columns as the appointments week. Weekly hours still save one open and one close. A recurring block in the middle splits the bookable day. Copy to other days fills the fields. Save operating hours keeps them.</p>';
+        }
+
+        function copyHoursToOtherDays(day) {
+            var days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+            var open = document.getElementById('shiftOpen_' + day);
+            var start = document.getElementById('shiftStart_' + day);
+            var end = document.getElementById('shiftEnd_' + day);
+            days.forEach(function (other) {
+                if (other === day) return;
+                var openEl = document.getElementById('shiftOpen_' + other);
+                var startEl = document.getElementById('shiftStart_' + other);
+                var endEl = document.getElementById('shiftEnd_' + other);
+                if (openEl && open) openEl.checked = open.checked;
+                if (startEl && start) startEl.value = start.value;
+                if (endEl && end) endEl.value = end.value;
+                hoursWeekOpenChanged(other);
+            });
+            showToast('Copied ' + day + ' to the other days. Save operating hours to keep them.', 'success');
+        }
+        window.copyHoursToOtherDays = copyHoursToOtherDays;
+
+        function hoursWeekOpenChanged(day) {
+            var openEl = document.getElementById('shiftOpen_' + day);
+            var card = openEl && openEl.closest ? openEl.closest('.sd-hours-week-day') : null;
+            if (!card) return;
+            var open = !!(openEl && openEl.checked);
+            card.classList.toggle('is-closed', !open);
+            var mark = card.querySelector('.text-sm.font-black');
+            if (mark) mark.textContent = open ? 'Open' : 'Closed';
+        }
+        window.hoursWeekOpenChanged = hoursWeekOpenChanged;
+
+        function openAddBlockedTimeForDay(day) {
+            if (typeof openAddBlockedTimeModal === 'function') openAddBlockedTimeModal();
+            var freq = document.getElementById('newBlockFrequency');
+            if (!freq) return;
+            if (day === 'Mon') freq.value = 'Weekly (Mondays)';
+            else if (day === 'Fri') freq.value = 'Weekly (Fridays)';
+            else freq.value = 'Daily';
+        }
+        window.openAddBlockedTimeForDay = openAddBlockedTimeForDay;
+
+        function toggleHoursWeekLayout() {
+            var next = !hoursWeekLayoutOn();
+            hoursWeekLayoutChoice = next;
+            try { localStorage.setItem('schediWeekHours', next ? '1' : '0'); } catch (errStore) {}
+            var tenant = (typeof getTenant === 'function') ? getTenant() : null;
+            if (tenant) renderTenantHours(tenant);
+        }
+        window.toggleHoursWeekLayout = toggleHoursWeekLayout;
+
         function renderTenantHours(tenant) {
             paintBusyCard(tenant);
             const shiftsGrid = document.getElementById('perDayShiftsGrid');
@@ -13180,12 +13471,25 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
             var coverEl = document.getElementById('tenantCoverUrl');
             if (coverEl) coverEl.value = tenant.coverUrl || tenant.coverPhoto || tenant.coverPhotoUrl || '';
 
+            var weekOn = hoursWeekLayoutOn();
+            var weekBtn = document.getElementById('hoursWeekLayoutBtn');
+            if (weekBtn) {
+                weekBtn.setAttribute('aria-pressed', weekOn ? 'true' : 'false');
+                weekBtn.className = weekOn
+                    ? 'px-4 py-2 rounded-xl font-bold text-xs bg-brand-500/20 border border-brand-500/30 text-brand-400'
+                    : 'px-4 py-2 rounded-xl font-bold text-xs bg-slate-900 border border-slate-800 text-slate-400';
+            }
             if (shiftsGrid) {
                 const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
                 const dayLabels = { Mon: 'Monday', Tue: 'Tuesday', Wed: 'Wednesday', Thu: 'Thursday', Fri: 'Friday', Sat: 'Saturday', Sun: 'Sunday' };
-                shiftsGrid.innerHTML = days.map(day => {
-                    const h = tenant.operatingHours[day] || { open: true, start: '09:00 AM', end: '05:00 PM' };
-                    return `
+                if (weekOn) {
+                    shiftsGrid.className = 'sd-hours-week-wrap';
+                    shiftsGrid.innerHTML = hoursWeekGridHtml(tenant, days, dayLabels);
+                } else {
+                    shiftsGrid.className = 'sd-hours-grid';
+                    shiftsGrid.innerHTML = days.map(day => {
+                        const h = tenant.operatingHours[day] || { open: true, start: '09:00 AM', end: '05:00 PM' };
+                        return `
                         <div class="sd-hours-day">
                             <div class="sd-hours-head">
                                 <span class="sd-hours-name">${dayLabels[day]}</span>
@@ -13201,7 +13505,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                             <p id="shiftError_${day}" class="sd-hours-error" role="alert"></p>
                         </div>
                     `;
-                }).join('');
+                    }).join('');
+                }
             }
             bindOwnerTimeCombos();
 

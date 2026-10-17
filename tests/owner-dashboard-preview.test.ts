@@ -554,6 +554,55 @@ describe("owner dashboard preview", () => {
     expect(css).toContain("color: #9a3412");
     expect(css).toContain("color: #3730a3");
   });
+
+  it("offers a week layout for hours without changing the saved hours shape", () => {
+    const css = dashCss(html);
+    expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-hours-week.roster-week-grid");
+    expect(css).toContain("grid-template-columns: 1fr");
+    expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-hours-week-day");
+    const fromEnv = new Function(
+      `${extractFunction(html, "hoursWeekLayoutFromEnv")}; return hoursWeekLayoutFromEnv;`,
+    )() as (search: string, stored: string | null) => boolean;
+    expect(fromEnv("", null)).toBe(false);
+    expect(fromEnv("?weekhours=1", "0")).toBe(true);
+    expect(fromEnv("?weekhours=0", "1")).toBe(false);
+    expect(fromEnv("", "1")).toBe(true);
+    const matches = new Function(
+      `${extractFunction(html, "hoursRuleMatchesDay")}; return hoursRuleMatchesDay;`,
+    )() as (rule: { frequency?: string }, day: string) => boolean;
+    expect(matches({ frequency: "Daily" }, "Sun")).toBe(true);
+    expect(matches({ frequency: "Weekly (Mondays)" }, "Mon")).toBe(true);
+    expect(matches({ frequency: "Weekly (Mondays)" }, "Fri")).toBe(false);
+    expect(matches({ frequency: "Weekly (Fridays)" }, "Fri")).toBe(true);
+    expect(matches({ frequency: "Monthly" }, "Wed")).toBe(true);
+    const segments = new Function(
+      `${extractFunction(html, "toMinutes")}\n${extractFunction(html, "fromMinutes")}\n${extractFunction(html, "parseDurationMins")}\n${extractFunction(html, "hoursWeekSegments")}; return hoursWeekSegments;`,
+    )() as (start: string, end: string, rules: { time: string; duration: string }[]) => { start: string; end: string }[];
+    expect(segments("11:00 AM", "07:00 PM", [{ time: "12:00 PM", duration: "1 hour" }])).toEqual([
+      { start: "11:00 AM", end: "12:00 PM" },
+      { start: "01:00 PM", end: "07:00 PM" },
+    ]);
+    expect(segments("09:00 AM", "05:00 PM", [])).toEqual([{ start: "09:00 AM", end: "05:00 PM" }]);
+    const render = extractFunction(html, "renderTenantHours");
+    expect(render).toContain("sd-hours-day");
+    expect(render).toContain("hoursWeekGridHtml");
+    expect(extractFunction(html, "hoursWeekGridHtml")).toContain("roster-week-grid");
+    expect(extractFunction(html, "hoursWeekDayHtml")).toContain("shiftOpen_");
+    expect(extractFunction(html, "hoursWeekDayHtml")).toContain("openAddBlockedTimeForDay");
+    expect(extractFunction(html, "hoursWeekDayHtml")).toContain("copyHoursToOtherDays");
+    expect(extractFunction(html, "copyHoursToOtherDays")).not.toContain("saveState");
+    const saveHours = html.slice(html.indexOf("window.handleUpdateShiftsSubmit"), html.indexOf("function canManageBlockedTimes"));
+    expect(saveHours).toContain("shiftOpen_${day}");
+    expect(saveHours).toContain("shiftStart_${day}");
+    expect(saveHours).toContain("shiftEnd_${day}");
+    expect(saveHours).toContain("nextHours[day] = { open, start, end }");
+    expect(html).toContain("Sun: { open: false, start: '10:00 AM', end: '02:00 PM' }");
+    expect(html).toContain("Tue: { open: true, start: '11:00 AM', end: '07:00 PM' }");
+    expect(html).toContain("id: 'rule-lunch'");
+    expect(html).toContain("id: 'rule-friday'");
+    expect(html).toContain("frequency: 'Weekly (Fridays)'");
+    expect(html).toContain('id="hoursWeekLayoutBtn"');
+  });
 });
 
 const chrome = ["/usr/bin/google-chrome", "/usr/bin/google-chrome-stable", "/usr/bin/chromium", "/usr/bin/chromium-browser"].find((path) => existsSync(path));
