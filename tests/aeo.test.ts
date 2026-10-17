@@ -162,6 +162,40 @@ describe("answer pages and crawler files", () => {
     expect(compare).not.toContain("card deposit");
     expect(compare).not.toContain("Schedi works with Square");
     expect(compare).toContain('"unitCode":"MON"');
+    const openings = [
+      "Schedi starts at $0, and Starter is $29 a month, a dollar under Squire's $30 a month Independent plan for one barber.",
+      "Schedi has a $0 Free plan, and Starter is $29 a month, just under Booksy's $29.99 a month price.",
+      "Schedi has a $0 Free plan, and Starter is $29 a month, under Vagaro's regular $30.00 a month price for one person.",
+      "Schedi has a $0 Free plan. Acuity Scheduling has no free plan.",
+      "Schedi has a $0 Free plan, and Starter is $29 a month, under Jobber's $49 a month Core plan with no commitment.",
+    ];
+    for (const line of openings) expect(text, line).toContain(line);
+    expect(text.toLowerCase()).not.toContain("cheaper than acuity");
+    expect(text).not.toContain("under Acuity");
+    for (const phrase of [
+      "does more",
+      "Best fit",
+      "choose Squire",
+      "choose Booksy",
+      "choose Vagaro",
+      "choose Acuity",
+      "choose Jobber",
+      "Choose Schedi",
+    ]) {
+      expect(text, phrase).not.toContain(phrase);
+    }
+    const squireAt = text.indexOf('id="squire"');
+    const booksyAt = text.indexOf('id="booksy"');
+    expect(text.indexOf(openings[0])).toBeGreaterThan(squireAt);
+    expect(text.indexOf(openings[0])).toBeLessThan(booksyAt);
+    const barbers = visible(renderMarketingPage(MARKETING_PAGES.find((page) => page.path === "/for/barbers")!));
+    expect(barbers).toContain("a dollar under Squire's $30 a month Independent plan");
+    expect(barbers).not.toContain("If you run a multi-chair shop");
+    const cleaningTone = visible(renderMarketingPage(MARKETING_PAGES.find((page) => page.path === "/for/cleaning-services")!));
+    expect(cleaningTone).toContain("under Jobber's $49 a month Core plan");
+    expect(cleaningTone.indexOf("Schedi has a $0 Free plan, and Starter is $29 a month, under Jobber")).toBeLessThan(
+      cleaningTone.indexOf("Jobber is field-service software"),
+    );
 
     for (const path of ["/for/barbers", "/for/cleaning-services", "/features"]) {
       const html = renderMarketingPage(MARKETING_PAGES.find((page) => page.path === path)!);
@@ -202,6 +236,25 @@ describe("answer pages and crawler files", () => {
       ctx(),
     );
     expect(await on.text()).toContain('<meta name="msvalidate.01" content="ABCDEF1234567890">');
+  });
+
+  it("centers the shared bottom CTA on every page that uses it", () => {
+    const users = MARKETING_PAGES.filter((page) =>
+      renderMarketingPage(page).includes("Ready to stop booking by text?"),
+    );
+    expect(users.map((page) => page.path)).toEqual(["/", "/pricing"]);
+    for (const page of users) {
+      const html = renderMarketingPage(page);
+      expect(html).toContain("Create your free booking page in a few minutes.");
+      expect(html).toContain(">Get started free</a>");
+      expect(html).toContain(">Log in</a>");
+      expect(html).toContain(
+        ".band{display:flex;flex-direction:column;align-items:center;text-align:center;",
+      );
+      expect(html).toContain(".band h2,.band p{width:100%;max-width:36rem;margin:0}");
+      expect(html).toContain(".band .ctas{width:100%;justify-content:center}");
+      expect(html).toContain(".band .ctas{flex-direction:column;align-items:stretch}.band .ctas .btn{width:100%}");
+    }
   });
 });
 
