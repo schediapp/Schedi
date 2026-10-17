@@ -2,6 +2,7 @@
 // Plan facts match the business portal: Free $0, Starter $29/mo, Pro $49/mo.
 
 import { OWNER_SUBSCRIPTION_POLICY_TERMS } from "../src/lib/subscription-policy";
+import { AEO_FAQS, barberPage, cleaningPage, comparePage, featuresPage } from "./aeo-pages";
 
 export const APEX_ORIGIN = "https://schedi.app";
 
@@ -24,6 +25,11 @@ export type MarketingPage = {
   faqs: Faq[];
   /** HTML placed inside <article id="copy"> after the H1. Already safe. */
   bodyHtml: string;
+  /**
+   * scaffold: served for review, noindex, omitted from the sitemap, llms.txt,
+   * and site navigation until published copy exists.
+   */
+  listing?: "public" | "scaffold";
 };
 
 const PLAN_FACTS =
@@ -180,7 +186,7 @@ export const MARKETING_PAGES: MarketingPage[] = [
       p(shareLink),
       p(reminders),
       p(noShow),
-      `<p>Read the pages for <a href="/for/barbers">barbers</a>, <a href="/for/hair-salons">hair salons</a>, <a href="/for/cleaning-services">cleaning services</a>, and the rest of the <a href="/pricing">pricing</a> comparison. <a href="/signup">Create your page</a> or open <a href="/help">help</a>.</p>`,
+      `<p>Read the pages for <a href="/for/barbers">barbers</a>, <a href="/for/hair-salons">hair salons</a>, <a href="/for/cleaning-services">cleaning services</a>, <a href="/features">features</a>, <a href="/compare">Schedi vs other booking tools</a>, and the rest of the <a href="/pricing">pricing</a> comparison. <a href="/signup">Create your page</a> or open <a href="/help">help</a>.</p>`,
     ].join("\n"),
   },
   {
@@ -193,6 +199,7 @@ export const MARKETING_PAGES: MarketingPage[] = [
     layout: "pricing",
     softwareJsonLd: true,
     faqs: [
+      ...AEO_FAQS,
       {
         question: "Can I start on Free?",
         answer:
@@ -232,6 +239,7 @@ export const MARKETING_PAGES: MarketingPage[] = [
       "Written steps for services, hours, payments, reminders, and the public booking link. Names match the buttons in the portal.",
     h1: "Help",
     faqs: [
+      ...AEO_FAQS,
       {
         question: "Where is the booking link?",
         answer:
@@ -261,6 +269,8 @@ export const MARKETING_PAGES: MarketingPage[] = [
       `<p><a href="/">Back to Schedi</a> · <a href="/pricing">Pricing</a> · <a href="/signup">Sign up</a></p>`,
     ].join("\n"),
   },
+  featuresPage(),
+  comparePage(),
   {
     path: "/terms",
     title: "Terms of Service | Schedi",
@@ -296,19 +306,7 @@ export const MARKETING_PAGES: MarketingPage[] = [
       `<p><a href="/">Back to Schedi</a></p>`,
     ].join("\n"),
   },
-  vertical({
-    path: "/for/barbers",
-    title: "Booking software for barbers | Schedi",
-    description:
-      "A booking link for the chair, morning reminder emails, and card deposits on Pro. Start free and upgrade when the week fills up.",
-    h1: "Online booking for barbershops",
-    related: ["/for/hair-salons", "/for/tattoo-artists"],
-    paragraphs: [
-      "A barbershop loses the chair when a fade is booked in a text and then nobody shows. The thread is a bad calendar: you scroll to find who wanted a beard trim at 4, and that time was never blocked. Schedi is a booking page for the chair. The client opens your link, picks the service you created, and takes an open time inside the hours you set. The visit shows up in the business portal instead of in your messages.",
-      "A missed lineup still costs a slot you could have given to someone already in the shop. Schedi emails a reminder the morning of the appointment, on by default, at the hour you pick. On Pro you can require a card deposit before the visit is confirmed. The deposit stays off until you turn it on. Free and Starter cannot collect a card deposit. If a client who already paid by card cancels inside the window you set, Pro can charge that fee. Free and Starter only show the rule.",
-      "The public page is one link, like schedi.app/your-shop. Put it in a text, a bio, or a QR code you print at the counter. Schedi does not draw the QR image. Free is $0: pay at the appointment, one service, and five bookings a week, confirmed as soon as the client reserves. Starter is $29 a month: more services, no weekly cap, and Cash App, Venmo, Zelle, or PayPal. Pro is $49 a month and adds card checkout on your Stripe account. Log a walk-in from the portal so the page stops offering that time.",
-    ],
-  }),
+  barberPage(),
   vertical({
     path: "/for/hair-salons",
     title: "Booking software for hair salons | Schedi",
@@ -335,19 +333,7 @@ export const MARKETING_PAGES: MarketingPage[] = [
       "Free keeps one service, which is a fair trial for a basic manicure, and caps the week at five bookings. Gel, acrylic, and a pedicure need Starter ($29 a month) or Pro ($49 a month) or the extra services will not be saved. Starter also adds Cash App, Venmo, Zelle, and PayPal. Pro adds card checkout on your Stripe account. Log a walk-in as a manual appointment so the public page is not offering a chair someone is already sitting in. The link can go in a bio or on a QR code you print.",
     ],
   }),
-  vertical({
-    path: "/for/cleaning-services",
-    title: "Booking software for cleaners | Schedi",
-    description:
-      "Share a link for cleaning visits. Clients pick a time inside your hours. Pro adds card payments, deposits, and repeating visits.",
-    h1: "Let cleaning clients book a visit from your link",
-    related: ["/for/personal-trainers", "/for/pet-groomers"],
-    paragraphs: [
-      "A cleaning business often schedules from texts while driving between houses. The client asks for Thursday, you say maybe, and the time is not blocked until you are parked. Schedi puts the open times on a page. You set the days and the hours. The client picks a service, such as a standard clean or a deep clean, and a slot that is still inside those hours.",
-      "A no-show on a deep clean wastes a morning you cannot refill from the driveway. The reminder email goes out the morning of the job. On Pro, a card deposit can be required before a first visit is confirmed, and repeating cleans can be weekly, biweekly, or monthly. Both switches stay off until you turn them on. Free and Starter do not show repeating visits and cannot collect a card deposit.",
-      "Free is $0, one service, five bookings a week, pay when you arrive. Starter is $29 a month: more than one service, no weekly cap, and Cash App, Venmo, Zelle, or PayPal. Pro is $49 a month and adds the card charge on your Stripe account. Share schedi.app/your-cleaning-business in a text, or print that URL as a QR code on a leave-behind card. Block a week you are out, and add a manual appointment when someone calls so the page and the roster agree.",
-    ],
-  }),
+  cleaningPage(),
   vertical({
     path: "/for/pet-groomers",
     title: "Booking software for pet groomers | Schedi",
@@ -478,7 +464,7 @@ export function marketingPage(path: string): MarketingPage | null {
 }
 
 export function publicPaths(): string[] {
-  return MARKETING_PAGES.map((page) => page.path);
+  return MARKETING_PAGES.filter((page) => page.listing !== "scaffold").map((page) => page.path);
 }
 
 for (const page of MARKETING_PAGES) {

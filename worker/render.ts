@@ -1,9 +1,10 @@
+import { OWNER_SUBSCRIPTION_POLICY_TERMS } from "../src/lib/subscription-policy";
 import {
   APEX_ORIGIN,
-  MARKETING_PAGES,
   PLAN_COMPARE_ROWS,
   VERTICALS,
   escapeHtml,
+  publicPaths,
   type MarketingPage,
 } from "./content";
 
@@ -29,9 +30,11 @@ export function canonicalUrl(path: string): string {
   return `${APEX_ORIGIN}${path}`;
 }
 
-export function renderRobots(): string {
+const ROBOT_AGENTS = ["*", "GPTBot", "PerplexityBot", "ClaudeBot", "Google-Extended", "Bingbot"];
+
+function robotGroup(agent: string): string {
   return [
-    "User-agent: *",
+    `User-agent: ${agent}`,
     "Allow: /",
     "Disallow: /portal",
     "Disallow: /admin",
@@ -40,14 +43,58 @@ export function renderRobots(): string {
     "Disallow: /billing",
     "Disallow: /api",
     "",
+  ].join("\n");
+}
+
+export function renderRobots(): string {
+  return [
+    ...ROBOT_AGENTS.map(robotGroup),
     `Sitemap: ${APEX_ORIGIN}/sitemap.xml`,
     "",
   ].join("\n");
 }
 
+export function renderLlms(): string {
+  const pages = publicPaths()
+    .map((path) => `- ${APEX_ORIGIN}${path === "/" ? "/" : path}`)
+    .join("\n");
+  return [
+    "# Schedi",
+    "",
+    "Schedi is booking software for a service business run by one owner. Clients book on a public page. The owner manages the roster, services, prices, durations, weekly hours, and time off from a back office. It is built around one owner's schedule, not a team's.",
+    "",
+    "Plans (USD, billed monthly):",
+    "- Free: $0. One service, up to 5 bookings a week (Monday through Sunday), pay at the appointment, instant confirmation, and a Schedi badge on the booking page. No repeating appointments and no accept or deny.",
+    "- Starter: $29 a month. Unlimited services and bookings. Cash App, Venmo, Zelle, PayPal, or pay at the appointment. Accept or deny each request. Starter does not include card checkout or repeating appointments.",
+    "- Pro: $49 a month. Everything in Starter, plus repeating appointments weekly, biweekly, or monthly.",
+    "",
+    "Billing:",
+    ...OWNER_SUBSCRIPTION_POLICY_TERMS.map((line) => `- ${line}`),
+    "",
+    "Schedi does not calculate drive time and does not manage multiple cleaners or crews.",
+    "",
+    "Competitor prices on the comparison page are as of Oct 2026. They were copied from each vendor's pricing page on Oct 17, 2026.",
+    "",
+    "Pages:",
+    pages,
+    "",
+    "Questions with a published answer on https://schedi.app/pricing and https://schedi.app/help:",
+    "- How much does Schedi cost?",
+    "- What do I get on the Free plan?",
+    "- What does the Starter plan add?",
+    "- What does the Pro plan add?",
+    "- What payment methods can my clients use?",
+    "- Can I approve or decline bookings before they're confirmed?",
+    "- Can clients book repeating appointments?",
+    "- Is there a contract, and what are the cancellation and refund terms?",
+    "- Who is Schedi for?",
+    "",
+  ].join("\n");
+}
+
 export function renderSitemap(): string {
-  const urls = MARKETING_PAGES.map((page) => {
-    const loc = escapeHtml(canonicalUrl(page.path));
+  const urls = publicPaths().map((path) => {
+    const loc = escapeHtml(canonicalUrl(path));
     return `  <url><loc>${loc}</loc></url>`;
   }).join("\n");
   return `<?xml version="1.0" encoding="UTF-8"?>
@@ -81,6 +128,31 @@ export function renderMarketingBoot(): string {
   return `/* no-op */\n`;
 }
 
+function monthlyOffer(name: string, price: string, description?: string): Record<string, unknown> {
+  const offer: Record<string, unknown> = {
+    "@type": "Offer",
+    name,
+    price,
+    priceCurrency: "USD",
+    priceSpecification: {
+      "@type": "UnitPriceSpecification",
+      price,
+      priceCurrency: "USD",
+      billingDuration: 1,
+      unitCode: "MON",
+      unitText: "month",
+    },
+  };
+  if (description) offer.description = description;
+  return offer;
+}
+
+export function bingVerificationMeta(token: string | undefined): string {
+  const value = String(token || "").trim();
+  if (!/^[A-Za-z0-9._-]{8,128}$/.test(value)) return "";
+  return `<meta name="msvalidate.01" content="${escapeHtml(value)}">`;
+}
+
 function jsonLd(page: MarketingPage): string {
   const graph: Record<string, unknown>[] = [];
   if (page.faqs.length) {
@@ -109,21 +181,9 @@ function jsonLd(page: MarketingPage): string {
       operatingSystem: "Web",
       url: `${APEX_ORIGIN}/`,
       offers: [
-        { "@type": "Offer", name: "Free", price: "0", priceCurrency: "USD" },
-        {
-          "@type": "Offer",
-          name: "Starter",
-          price: "29",
-          priceCurrency: "USD",
-          description: "Billed monthly",
-        },
-        {
-          "@type": "Offer",
-          name: "Pro",
-          price: "49",
-          priceCurrency: "USD",
-          description: "Billed monthly. Adds client card payments and deposits.",
-        },
+        monthlyOffer("Free", "0"),
+        monthlyOffer("Starter", "29", "Billed monthly"),
+        monthlyOffer("Pro", "49", "Billed monthly. Adds repeating appointments."),
       ],
     });
   }
@@ -160,7 +220,9 @@ function siteHeader(): string {
       <img class="logo-light" src="/assets/logo-light.svg" alt="Schedi" width="120" height="32" loading="lazy" decoding="async">
     </a>
     <nav class="nav" aria-label="Primary">
+      <a class="nav-link" href="/features">Features</a>
       <a class="nav-link" href="/pricing">Pricing</a>
+      <a class="nav-link" href="/compare">Compare</a>
       <a class="nav-link" href="/help">Help</a>
       <button type="button" class="theme-btn" title="Switch theme" aria-label="Switch theme"><svg class="ico i-sun" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg><svg class="ico i-moon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg><span class="theme-btn-label">Light</span></button>
       <a class="btn btn-ghost btn-sm login" href="${LOGIN_HREF}">${icon("login")}<span>Log in</span></a>
@@ -188,7 +250,9 @@ function footer(): string {
       <nav aria-label="Site">
         <p>Schedi</p>
         <a href="/">Home</a>
+        <a href="/features">Features</a>
         <a href="/pricing">Pricing</a>
+        <a href="/compare">Compare</a>
         <a href="/help">Help</a>
         <a href="/signup">Sign up</a>
         <a href="${LOGIN_HREF}">Log in</a>
@@ -478,7 +542,7 @@ figure img,figure video{max-width:100%;height:auto;border-radius:12px}
 @media (max-width:400px){.theme-btn{padding:.375rem .5rem}.theme-btn-label{display:none}.hide-xs{display:none}.show-xs{display:inline}.brand img{height:28px}.btn-sm{padding:.48rem .7rem;font-size:.86rem}.login .ico{display:none}.bar{gap:.4rem}}
 `;
 
-export function renderMarketingPage(page: MarketingPage): string {
+export function renderMarketingPage(page: MarketingPage, bingToken?: string): string {
   const canonical = canonicalUrl(page.path);
   const title = escapeHtml(page.title);
   const description = escapeHtml(page.description);
@@ -527,7 +591,8 @@ export function renderMarketingPage(page: MarketingPage): string {
 <title>${title}</title>
 <meta name="description" content="${description}">
 <link rel="canonical" href="${canonical}">
-<meta name="robots" content="index, follow">
+<meta name="robots" content="${page.listing === "scaffold" ? "noindex, follow" : "index, follow"}">
+${bingVerificationMeta(bingToken)}
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Schedi">
 <meta property="og:title" content="${title}">

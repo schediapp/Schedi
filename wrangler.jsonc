@@ -37,5 +37,12 @@
   "routes": [
     { "pattern": "schedi.app/*", "zone_name": "schedi.app" },
     { "pattern": "www.schedi.app/*", "zone_name": "schedi.app" }
-  ]
+  ],
+  "env": {
+    "preview": {
+      "name": "schedi-web-preview",
+      "workers_dev": true,
+      "routes": []
+    }
+  }
 }

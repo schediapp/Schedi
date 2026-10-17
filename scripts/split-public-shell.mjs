@@ -69,7 +69,7 @@ function transform(html) {
             var first = String(slug || '').toLowerCase();
             if (!first) return true;
             if (first === SCHEDI_AGENCY_HQ_SEGMENT) return true;
-            if (first === 'index.html' || first === 'agency' || first === 'admin' || first === 'hq' || first === 'signup' || first === 'terms' || first === 'privacy' || first === 'help' || first === 'auth' || first === 'reset' || first === 'billing' || first === 'api' || first === 'www' || first === 'schedi' || first === 'index' || first === 'login') return true;
+            if (first === 'index.html' || first === 'agency' || first === 'admin' || first === 'hq' || first === 'signup' || first === 'terms' || first === 'privacy' || first === 'help' || first === 'auth' || first === 'reset' || first === 'billing' || first === 'api' || first === 'www' || first === 'schedi' || first === 'index' || first === 'login' || first === 'features' || first === 'compare' || first === 'for' || first === 'pricing' || first === 'portal') return true;
             return false;
         }`,
     `        var SCHEDI_AGENCY_HQ_SEGMENT = 'hq';
@@ -100,7 +100,7 @@ function transform(html) {
         function isReservedBusinessSlug(slug) {
             var first = String(slug || '').toLowerCase();
             if (!first) return true;
-            if (first === 'index.html' || first === 'agency' || first === 'admin' || first === 'hq' || first === 'signup' || first === 'terms' || first === 'privacy' || first === 'help' || first === 'auth' || first === 'reset' || first === 'billing' || first === 'api' || first === 'www' || first === 'schedi' || first === 'index' || first === 'login') return true;
+            if (first === 'index.html' || first === 'agency' || first === 'admin' || first === 'hq' || first === 'signup' || first === 'terms' || first === 'privacy' || first === 'help' || first === 'auth' || first === 'reset' || first === 'billing' || first === 'api' || first === 'www' || first === 'schedi' || first === 'index' || first === 'login' || first === 'features' || first === 'compare' || first === 'for' || first === 'pricing' || first === 'portal') return true;
             // SCHEDI_HQ_START
             if (first === 'hq-9h7p52') return true;
             // SCHEDI_HQ_END
