@@ -1082,6 +1082,29 @@ html.schedi-light body.schedi-newdash .roster-sheet-actions > button.sd-act.sd-a
     background: var(--sd-panel);
     box-shadow: var(--sd-shadow);
 }
+#tenantPortalSection.schedi-newdash #schediDashAddMenu button {
+    transition: background 80ms ease, color 80ms ease, border-color 80ms ease, box-shadow 80ms ease, transform 80ms ease;
+}
+#tenantPortalSection.schedi-newdash #schediDashAddMenu button.is-picked {
+    background: rgba(16, 185, 129, 0.2);
+    color: #34d399;
+    border-color: #34d399;
+    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.45), 0 0 18px rgba(16, 185, 129, 0.55);
+    transform: scale(0.97);
+}
+html.schedi-light #tenantPortalSection.schedi-newdash #schediDashAddMenu button.is-picked {
+    background: #d1fae5;
+    color: #047857;
+    border-color: #059669;
+    box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.35), 0 0 18px rgba(5, 150, 105, 0.35);
+}
+@media (prefers-reduced-motion: reduce) {
+    #tenantPortalSection.schedi-newdash #schediDashAddMenu button,
+    #tenantPortalSection.schedi-newdash #schediDashAddMenu button.is-picked {
+        transition: none;
+        transform: none;
+    }
+}
 #tenantPortalSection.schedi-newdash #schediDashAddMenu button i { width: 1.1rem; text-align: center; }
 #tenantPortalSection.schedi-newdash .sd-sheet {
     position: fixed;
@@ -1336,6 +1359,137 @@ html.schedi-light body.schedi-newdash #ownerRecurringModal .sd-preview { backgro
 body.schedi-newdash #ownerRecurringModal .sd-field-note { margin: 0; font-size: 12px; font-weight: 700; }
 body.schedi-newdash #ownerRecurringModal .sd-field-note.is-warn { color: #fb7185; }
 html.schedi-light body.schedi-newdash #ownerRecurringModal .sd-field-note.is-warn { color: #be123c; }
+body.schedi-newdash #manualBookingModal,
+body.schedi-newdash #ownerRecurringModal { overflow: hidden; }
+body.schedi-newdash #manualBookingModal .sd-form-sheet,
+body.schedi-newdash #ownerRecurringModal .sd-form-sheet {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-height: min(92vh, 860px);
+    overflow: hidden;
+    padding: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+}
+body.schedi-newdash #manualBookingModal .sd-form-sheet > * + *,
+body.schedi-newdash #ownerRecurringModal .sd-form-sheet > * + * { margin-top: 0; }
+body.schedi-newdash .sd-form-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    flex: none;
+    padding: 14px 12px 10px 20px;
+    background: #0f172a;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+}
+html.schedi-light body.schedi-newdash .sd-form-head { background: #ffffff; border-bottom-color: #e2e8f0; }
+body.schedi-newdash .sd-form-head h3 { margin: 0; min-width: 0; overflow-wrap: break-word; }
+body.schedi-newdash #manualBookingModal .sd-form-close,
+body.schedi-newdash #ownerRecurringModal .sd-form-close {
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    min-height: 48px;
+    margin: 0;
+    padding: 0;
+    flex: none;
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    border: 0;
+    background: #1e293b;
+    color: #e2e8f0;
+    cursor: pointer;
+}
+body.schedi-newdash #manualBookingModal .sd-form-close i,
+body.schedi-newdash #ownerRecurringModal .sd-form-close i { font-size: 22px; line-height: 1; }
+html.schedi-light body.schedi-newdash #manualBookingModal .sd-form-close,
+html.schedi-light body.schedi-newdash #ownerRecurringModal .sd-form-close {
+    background: #f1f5f9;
+    color: #0f172a;
+    border: 1px solid #cbd5e1;
+}
+body.schedi-newdash .sd-form-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+    padding: 4px 20px 16px;
+}
+body.schedi-newdash .sd-form-extra { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 8px; }
+body.schedi-newdash .sd-form-extra > .hidden { display: none; }
+body.schedi-newdash .sd-form-bar {
+    display: flex;
+    flex: none;
+    gap: 12px;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+    background: #0f172a;
+    border-top: 1px solid rgba(148, 163, 184, 0.25);
+}
+html.schedi-light body.schedi-newdash .sd-form-bar { background: #ffffff; border-top-color: #e2e8f0; }
+body.schedi-newdash #manualBookingModal .sd-form-bar > button,
+body.schedi-newdash #ownerRecurringModal .sd-form-bar > button {
+    flex: 1 1 0;
+    min-width: 0;
+    box-sizing: border-box;
+    min-height: 54px;
+    margin: 0;
+    padding: 0 10px;
+    border-radius: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-size: 17px;
+    font-weight: 800;
+    line-height: 1.1;
+    cursor: pointer;
+}
+body.schedi-newdash #manualBookingModal .sd-form-cancel,
+body.schedi-newdash #ownerRecurringModal .sd-form-cancel {
+    background: #1e293b;
+    color: #e2e8f0;
+    border: 1px solid #334155;
+}
+html.schedi-light body.schedi-newdash #manualBookingModal .sd-form-cancel,
+html.schedi-light body.schedi-newdash #ownerRecurringModal .sd-form-cancel {
+    background: #ffffff;
+    color: #0f172a;
+    border: 1px solid #cbd5e1;
+}
+body.schedi-newdash #manualBookingModal .sd-form-save,
+body.schedi-newdash #ownerRecurringModal .sd-form-save {
+    background: #10b981;
+    color: #022c22;
+    border: 1px solid #10b981;
+}
+@media (max-width: 859px) {
+    body.schedi-newdash #manualBookingModal,
+    body.schedi-newdash #ownerRecurringModal {
+        flex-direction: column;
+        align-items: stretch !important;
+        justify-content: flex-end;
+        padding: 0 !important;
+    }
+    body.schedi-newdash #manualBookingModal > .sd-form-sheet,
+    body.schedi-newdash #ownerRecurringModal > .sd-form-sheet {
+        width: 100%;
+        max-width: none;
+        min-height: 0;
+        max-height: 94dvh;
+        margin: 0 !important;
+        border-radius: 20px 20px 0 0;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    body.schedi-newdash #manualBookingModal .sd-form-sheet,
+    body.schedi-newdash #ownerRecurringModal .sd-form-sheet {
+        animation: none;
+    }
+}
 body.schedi-newdash #svcIconGrid [role="option"] { min-height: 64px; }
 body.schedi-newdash #svcIconGrid [role="option"]:focus-visible { outline: 2px solid #38bdf8; outline-offset: 2px; }
 body.schedi-newdash #svcIconGrid [role="option"][aria-selected="true"] { border-color: #34d399; box-shadow: inset 0 0 0 1px #34d399; }
@@ -5618,13 +5772,13 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
         </div>
     </div>
 
-    <div id="manualBookingModal" role="dialog" aria-modal="true" tabindex="-1" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-start sm:items-center justify-center p-3 sm:p-4 overflow-y-auto overscroll-contain hidden">
-        <div class="max-w-md w-full glass-card rounded-2xl p-5 sm:p-6 space-y-4 fade-in my-4 min-w-0">
-            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+    <div id="manualBookingModal" role="dialog" aria-modal="true" aria-labelledby="manModalTitle" tabindex="-1" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-start sm:items-center justify-center p-3 sm:p-4 overflow-y-auto overscroll-contain hidden">
+        <div class="max-w-md w-full glass-card rounded-2xl p-5 sm:p-6 space-y-4 fade-in my-4 min-w-0 sd-form-sheet">
+            <div class="sd-form-head">
                 <h3 id="manModalTitle" class="text-lg font-bold text-white">Log Manual Walk-In / Phone Booking</h3>
-                <button type="button" onclick="closeManualBookingModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+                <button type="button" class="sd-form-close" onclick="closeManualBookingModal()" aria-label="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
             </div>
-            <form onsubmit="handleManualBookingSubmit(event)" class="space-y-3 text-xs">
+            <form id="manualBookingForm" onsubmit="handleManualBookingSubmit(event)" class="space-y-3 text-xs sd-form-scroll">
                 <input type="hidden" id="manEditId" value="">
                 <div class="flex flex-wrap items-center gap-2">
                     <button type="button" id="manWalkInBtn" aria-pressed="false" onclick="toggleManualWalkIn()" class="px-3 py-1.5 rounded-xl font-bold text-xs border transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 bg-slate-800 border-slate-700 text-slate-400"><i class="fa-solid fa-person-walking mr-1.5"></i>Walk-in</button>
@@ -5693,17 +5847,17 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
                     <p id="manDepositText"></p>
                 </div>
 
-                <div class="pt-2 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div class="sd-form-extra">
                     <button type="button" id="manUnpaidBtn" onclick="markAppointmentUnpaid(document.getElementById('manEditId').value)" class="hidden px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold border border-slate-700 transition-all">Mark unpaid</button>
                     <button type="button" id="manDeleteBtn" onclick="openRosterDeleteModal(document.getElementById('manEditId').value)" class="hidden px-4 py-2 rounded-xl bg-rose-600/15 hover:bg-rose-600/25 text-rose-300 font-bold border border-rose-500/40 transition-all">
                         <i class="fa-solid fa-trash mr-1"></i>Delete
                     </button>
-                    <div class="flex justify-end space-x-2">
-                        <button type="button" onclick="closeManualBookingModal()" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300">Cancel</button>
-                        <button type="submit" id="manSubmitBtn" class="px-5 py-2 rounded-xl bg-brand-500 hover:bg-brand-600 text-slate-950 font-bold glow-emerald">Log Appointment</button>
-                    </div>
                 </div>
             </form>
+            <div class="sd-form-bar">
+                <button type="button" class="sd-form-cancel" onclick="closeManualBookingModal()">Cancel</button>
+                <button type="submit" id="manSubmitBtn" class="sd-form-save" form="manualBookingForm">Log Appointment</button>
+            </div>
         </div>
     </div>
 
@@ -5746,15 +5900,15 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
     </div>
 
     <div id="ownerRecurringModal" role="dialog" aria-modal="true" aria-labelledby="ownerRecurringTitle" tabindex="-1" class="fixed inset-0 z-[60] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto overscroll-contain hidden" onclick="if (event.target === this) closeOwnerRecurringModal()">
-        <div class="max-w-md w-full glass-card rounded-2xl p-5 sm:p-6 space-y-4 fade-in my-4 min-w-0">
-            <div class="flex justify-between items-start gap-3 border-b border-slate-800 pb-3">
+        <div class="max-w-md w-full glass-card rounded-2xl p-5 sm:p-6 space-y-4 fade-in my-4 min-w-0 sd-form-sheet">
+            <div class="sd-form-head">
                 <div class="min-w-0">
                     <h3 id="ownerRecurringTitle" class="text-lg font-bold text-white">Recurring series</h3>
                     <p class="text-xs text-slate-400 mt-1">Same client and service, on a repeating schedule. Cancelling one visit does not cancel the others.</p>
                 </div>
-                <button type="button" onclick="closeOwnerRecurringModal()" aria-label="Close" class="w-11 h-11 -mr-2 -mt-1 shrink-0 flex items-center justify-center rounded-xl text-slate-400 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-xmark"></i></button>
+                <button type="button" class="sd-form-close" onclick="closeOwnerRecurringModal()" aria-label="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
             </div>
-            <form id="ownerRecurringForm" onsubmit="handleOwnerRecurringSubmit(event)" oninput="clearOwnerRecurHold(); refreshOwnerRecurPreview()" class="space-y-3 text-xs">
+            <form id="ownerRecurringForm" onsubmit="handleOwnerRecurringSubmit(event)" oninput="clearOwnerRecurHold(); refreshOwnerRecurPreview()" class="space-y-3 text-xs sd-form-scroll">
                 <input type="hidden" id="ownerRecurDuration" value="60">
                 <div>
                     <label class="block font-semibold text-slate-300 mb-1" for="ownerRecurClient">Client</label>
@@ -5803,11 +5957,11 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
                 </div>
                 <ul id="ownerRecurPreview" class="sd-preview"></ul>
                 <p id="ownerRecurNote" class="sd-field-note" role="status"></p>
-                <div class="pt-1 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
-                    <button type="button" onclick="closeOwnerRecurringModal()" class="px-4 py-2.5 rounded-xl bg-slate-800 text-slate-200 font-bold text-sm">Cancel</button>
-                    <button type="submit" id="ownerRecurSubmit" class="px-5 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-slate-950 font-bold text-sm">Save series</button>
-                </div>
             </form>
+            <div class="sd-form-bar">
+                <button type="button" class="sd-form-cancel" onclick="closeOwnerRecurringModal()">Cancel</button>
+                <button type="submit" id="ownerRecurSubmit" class="sd-form-save" form="ownerRecurringForm">Save series</button>
+            </div>
         </div>
     </div>
 
@@ -11437,7 +11591,22 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
             try { paintOwnerHelpLinks(); } catch (errHelp) {}
         }
 
+        function schediDashClearAddPick() {
+            if (schediDashAddPickTimer) {
+                clearTimeout(schediDashAddPickTimer);
+                schediDashAddPickTimer = 0;
+            }
+            if (schediDashAddPickFrame) {
+                cancelAnimationFrame(schediDashAddPickFrame);
+                schediDashAddPickFrame = 0;
+            }
+            document.querySelectorAll('#schediDashAddMenu button.is-picked').forEach(function (btn) {
+                btn.classList.remove('is-picked');
+            });
+        }
+
         function schediDashClosePopovers() {
+            schediDashClearAddPick();
             var add = document.getElementById('schediDashAddMenu');
             var more = document.getElementById('schediDashMoreSheet');
             var account = document.getElementById('schediDashAccountMenu');
@@ -11862,10 +12031,13 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
             }
         };
 
+        var schediDashAddPickTimer = 0;
+        var schediDashAddPickFrame = 0;
+
         window.schediDashToggleAdd = function (event) {
             var menu = document.getElementById('schediDashAddMenu');
             if (!menu) return;
-            if (!menu.hidden) { menu.hidden = true; return; }
+            if (!menu.hidden) { schediDashClearAddPick(); menu.hidden = true; return; }
             menu.hidden = false;
             var btn = event && event.currentTarget;
             var rect = btn && btn.getBoundingClientRect ? btn.getBoundingClientRect() : null;
@@ -11883,18 +12055,42 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
             }
         };
 
-        window.schediDashAddKind = function (kind) {
-            schediDashClosePopovers();
-            if (kind === 'walkin') {
+        window.schediDashAddKind = function (kind, source) {
+            var open = function () {
+                schediDashClosePopovers();
+                if (kind === 'walkin') {
+                    if (typeof openManualBookingModal === 'function') openManualBookingModal();
+                    if (typeof setManualWalkIn === 'function') setManualWalkIn(true, true);
+                    return;
+                }
+                if (kind === 'recurring') {
+                    if (typeof openOwnerRecurringModal === 'function') openOwnerRecurringModal();
+                    return;
+                }
                 if (typeof openManualBookingModal === 'function') openManualBookingModal();
-                if (typeof setManualWalkIn === 'function') setManualWalkIn(true, true);
+            };
+            var button = source && source.closest ? source.closest('[data-dash-add]') : null;
+            if (!button || !button.closest('#schediDashAddMenu')) {
+                open();
                 return;
             }
-            if (kind === 'recurring') {
-                if (typeof openOwnerRecurringModal === 'function') openOwnerRecurringModal();
+            schediDashClearAddPick();
+            button.classList.add('is-picked');
+            var reduced = false;
+            try { reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (errMotion) {}
+            if (reduced) {
+                schediDashAddPickFrame = requestAnimationFrame(function () {
+                    schediDashAddPickFrame = requestAnimationFrame(function () {
+                        schediDashAddPickFrame = 0;
+                        open();
+                    });
+                });
                 return;
             }
-            if (typeof openManualBookingModal === 'function') openManualBookingModal();
+            schediDashAddPickTimer = setTimeout(function () {
+                schediDashAddPickTimer = 0;
+                open();
+            }, 200);
         };
 
         var OWNER_SERIES_MAX = 12;
@@ -12118,6 +12314,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
             if (modal) {
                 modal.classList.remove('hidden');
                 modal.scrollTop = 0;
+                var sheetScroll = modal.querySelector('.sd-form-scroll');
+                if (sheetScroll) sheetScroll.scrollTop = 0;
             }
             setTimeout(function () { if (name && name.focus) name.focus(); }, 30);
         };
@@ -12271,9 +12469,12 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
                 window.schediDashGo(go.getAttribute('data-dash-go'));
             }
             var addKind = node.closest('[data-dash-add]');
-            if (addKind) window.schediDashAddKind(addKind.getAttribute('data-dash-add'));
+            if (addKind) window.schediDashAddKind(addKind.getAttribute('data-dash-add'), addKind);
             var menu = document.getElementById('schediDashAddMenu');
-            if (menu && !menu.hidden && !node.closest('#schediDashAddMenu') && !node.closest('[data-dash-add-open]')) menu.hidden = true;
+            if (menu && !menu.hidden && !node.closest('#schediDashAddMenu') && !node.closest('[data-dash-add-open]')) {
+                schediDashClearAddPick();
+                menu.hidden = true;
+            }
             var account = document.getElementById('schediDashAccountMenu');
             if (account && !account.hidden && !node.closest('#schediDashAccountMenu') && !node.closest('#schediDashUserBtn') && !node.closest('#schediDashUserBtnPhone')) {
                 account.hidden = true;
@@ -19254,6 +19455,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
             syncManualUnpaidButton(null);
             document.getElementById('manualBookingModal').classList.remove('hidden');
             document.getElementById('manualBookingModal').scrollTop = 0;
+            var freshScroll = document.querySelector('#manualBookingModal .sd-form-scroll');
+            if (freshScroll) freshScroll.scrollTop = 0;
         };
 
         window.openEditAppointment = function(appId) {
@@ -19297,6 +19500,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
             }
             document.getElementById('manualBookingModal').classList.remove('hidden');
             document.getElementById('manualBookingModal').scrollTop = 0;
+            var editScroll = document.querySelector('#manualBookingModal .sd-form-scroll');
+            if (editScroll) editScroll.scrollTop = 0;
         };
 
         window.closeManualBookingModal = function() {

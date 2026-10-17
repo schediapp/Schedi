@@ -1002,6 +1002,43 @@ describe("owner dashboard preview", () => {
     expect(Object.values({ today: 0, appointments: 1, clients: 3, hours: 4 }).includes(2)).toBe(false);
     expect([slot("today"), slot("appointments"), slot("clients"), slot("hours"), slot("reports")]).not.toContain(2);
   });
+
+  it("holds the add chooser highlight and pins the form close and actions", () => {
+    const css = dashCss(html);
+    expect(css).toContain("#schediDashAddMenu button.is-picked");
+    expect(css).toContain("transform: scale(0.97);");
+    expect(css).toContain("0 0 18px rgba(16, 185, 129, 0.55)");
+    expect(css).toContain("prefers-reduced-motion: reduce");
+    expect(css).toContain("transform: none;");
+    expect(css).toContain("min-height: 48px;");
+    expect(css).toContain(".sd-form-close i { font-size: 22px;");
+    expect(css).toContain("gap: 12px;");
+    expect(css).toContain("min-height: 54px;");
+    expect(css).toContain("font-size: 17px;");
+    expect(css).toContain("font-weight: 800;");
+    expect(css).toContain("env(safe-area-inset-bottom, 0px)");
+    expect(css).toContain("background: #10b981;");
+    expect(css).toContain("background: #1e293b;");
+    expect(css).toContain("background: #f1f5f9;");
+    expect(css).toContain("border: 1px solid #cbd5e1;");
+    const addKind = html.slice(html.indexOf("window.schediDashAddKind = function"), html.indexOf("var OWNER_SERIES_MAX"));
+    expect(addKind).toContain("is-picked");
+    expect(addKind).toContain("prefers-reduced-motion: reduce");
+    expect(addKind).toContain("setTimeout");
+    expect(addKind).toContain(", 200)");
+    expect(addKind).toContain("openOwnerRecurringModal()");
+    expect(addKind).toContain("setManualWalkIn(true, true)");
+    expect(addKind).toContain("requestAnimationFrame");
+    expect(html).toContain("schediDashAddKind(addKind.getAttribute('data-dash-add'), addKind)");
+    expect(html).toContain('class="sd-form-close" onclick="closeManualBookingModal()" aria-label="Close"');
+    expect(html).toContain('class="sd-form-close" onclick="closeOwnerRecurringModal()" aria-label="Close"');
+    expect(html).toContain('form="manualBookingForm"');
+    expect(html).toContain('form="ownerRecurringForm"');
+    expect(html).toContain('class="sd-form-bar"');
+    expect(html).toContain(">Log Appointment</button>");
+    expect(html).toContain(">Save series</button>");
+    expect(html).toContain(">Cancel</button>");
+  });
 });
 
 const chrome = ["/usr/bin/google-chrome", "/usr/bin/google-chrome-stable", "/usr/bin/chromium", "/usr/bin/chromium-browser"].find((path) => existsSync(path));
@@ -2651,6 +2688,340 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
         };
       });
       expect(more).toEqual({ slot: "4", current: "page", on: true });
+    } finally {
+      await browser.close();
+      await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+    }
+  }, 120000);
+
+  it("highlights an add choice before opening the sheet at 340 and 390", async () => {
+    const types: Record<string, string> = {
+      ".html": "text/html; charset=utf-8",
+      ".js": "text/javascript; charset=utf-8",
+      ".svg": "image/svg+xml",
+      ".png": "image/png",
+      ".json": "application/json",
+      ".webmanifest": "application/manifest+json",
+    };
+    const server = createServer((req, res) => {
+      const path = new URL(req.url || "/", "http://127.0.0.1").pathname;
+      const file = path === "/" || path === "/portal-preview" ? "/index.html" : path;
+      const full = join(root, file);
+      if (!full.startsWith(root) || !existsSync(full)) {
+        res.writeHead(404);
+        res.end("missing");
+        return;
+      }
+      res.writeHead(200, { "content-type": types[extname(full)] || "application/octet-stream" });
+      res.end(readFileSync(full));
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const address = server.address();
+    const port = typeof address === "object" && address ? address.port : 0;
+    const puppeteer = await import("puppeteer-core");
+    const browser = await puppeteer.default.launch({
+      executablePath: chrome,
+      headless: true,
+      args: ["--no-sandbox", "--disable-dev-shm-usage"],
+    });
+    const page = await browser.newPage();
+    const kinds = [
+      { kind: "appointment", modal: "manualBookingModal", submit: "Log Appointment", walkIn: false },
+      { kind: "walkin", modal: "manualBookingModal", submit: "Log Appointment", walkIn: true },
+      { kind: "recurring", modal: "ownerRecurringModal", submit: "Save series", walkIn: false },
+    ] as const;
+    try {
+      await page.emulateMediaFeatures([{ name: "prefers-reduced-motion", value: "no-preference" }]);
+      await page.goto(`http://127.0.0.1:${port}/portal-preview`, { waitUntil: "domcontentloaded", timeout: 45000 });
+      await page.waitForFunction(() => document.body.classList.contains("schedi-newdash"), { timeout: 20000 });
+      await page.waitForFunction(() => {
+        const apps = (window as unknown as { getTenant?: () => { appointments?: { id?: string }[] } }).getTenant?.()?.appointments || [];
+        return apps.some((row) => row && row.id === "HB-1005");
+      }, { timeout: 20000 });
+      for (const width of [340, 390]) {
+        await page.setViewport({ width, height: 780 });
+        for (const theme of ["dark", "light"] as const) {
+          await page.evaluate((mode) => {
+            (window as unknown as { setSchediTheme: (mode: string) => void }).setSchediTheme(mode);
+            (window as unknown as { closeManualBookingModal: () => void }).closeManualBookingModal();
+            (window as unknown as { closeOwnerRecurringModal: () => void }).closeOwnerRecurringModal();
+            const menu = document.getElementById("schediDashAddMenu");
+            if (menu) menu.hidden = true;
+          }, theme);
+          await page.waitForFunction((mode) => document.documentElement.classList.contains("schedi-light") === (mode === "light"), { timeout: 2000 }, theme);
+          for (const item of kinds) {
+            const sample = await page.evaluate((kind) => new Promise<{
+              picked: boolean;
+              menuOpen: boolean;
+              modalHidden: boolean;
+              border: string;
+              shadow: string;
+              scale: number;
+              bg: string;
+              visible: boolean;
+              started: number;
+            }>((resolve) => {
+              const menu = document.getElementById("schediDashAddMenu") as HTMLElement;
+              menu.hidden = true;
+              (document.querySelector("#schediDashTabbar .sd-fab") as HTMLButtonElement).click();
+              const button = menu.querySelector(`[data-dash-add="${kind}"]`) as HTMLButtonElement;
+              const started = performance.now();
+              button.click();
+              window.setTimeout(() => {
+                const style = getComputedStyle(button);
+                const matrix = style.transform.match(/matrix\(([^)]+)\)/);
+                const scale = matrix ? Number(matrix[1].split(",")[0]) : (style.transform === "none" ? 1 : 0);
+                const modalId = kind === "recurring" ? "ownerRecurringModal" : "manualBookingModal";
+                resolve({
+                  picked: button.classList.contains("is-picked"),
+                  menuOpen: !menu.hidden,
+                  modalHidden: document.getElementById(modalId)?.classList.contains("hidden") !== false,
+                  border: style.borderTopColor,
+                  shadow: style.boxShadow,
+                  scale,
+                  bg: style.backgroundColor,
+                  visible: button.getBoundingClientRect().height > 0,
+                  started,
+                });
+              }, 120);
+            }), item.kind);
+            expect(sample.picked, item.kind).toBe(true);
+            expect(sample.menuOpen, item.kind).toBe(true);
+            expect(sample.modalHidden, item.kind).toBe(true);
+            expect(sample.visible, item.kind).toBe(true);
+            expect(sample.border, item.kind).toBe(theme === "dark" ? "rgb(52, 211, 153)" : "rgb(5, 150, 105)");
+            expect(sample.bg, item.kind).toBe(theme === "dark" ? "rgba(16, 185, 129, 0.2)" : "rgb(209, 250, 229)");
+            expect(sample.shadow, item.kind).toContain("18px");
+            expect(sample.scale, item.kind).toBeGreaterThan(0.95);
+            expect(sample.scale, item.kind).toBeLessThan(0.99);
+            await page.waitForFunction((modalId) => !document.getElementById(modalId)?.classList.contains("hidden"), { timeout: 2000 }, item.modal);
+            const opened = await page.evaluate((started) => performance.now() - started, sample.started);
+            expect(opened, item.kind).toBeGreaterThanOrEqual(160);
+            expect(opened, item.kind).toBeLessThan(700);
+            await page.waitForFunction((modalId) => {
+              const sheet = document.getElementById(modalId)?.querySelector(".sd-form-sheet");
+              if (!sheet) return false;
+              const transform = getComputedStyle(sheet).transform;
+              if (transform === "none") return true;
+              const matrix = transform.match(/matrix\(([^)]+)\)/);
+              if (!matrix) return false;
+              const parts = matrix[1].split(",").map((part) => Number(part.trim()));
+              return Math.abs(parts[5] || 0) < 0.5;
+            }, { timeout: 2000 }, item.modal);
+            const chromeBox = await page.evaluate((spec) => {
+              const modal = document.getElementById(spec.modal) as HTMLElement;
+              const sheet = modal.querySelector(".sd-form-sheet") as HTMLElement;
+              const close = sheet.querySelector(".sd-form-close") as HTMLButtonElement;
+              const icon = close.querySelector("i") as HTMLElement;
+              const bar = sheet.querySelector(".sd-form-bar") as HTMLElement;
+              const buttons = Array.from(bar.querySelectorAll("button")) as HTMLButtonElement[];
+              const scroller = sheet.querySelector(".sd-form-scroll") as HTMLElement;
+              const spacer = document.createElement("div");
+              spacer.setAttribute("data-test-spacer", "1");
+              spacer.style.height = "900px";
+              scroller.appendChild(spacer);
+              scroller.scrollTop = scroller.scrollHeight;
+              const sheetBox = sheet.getBoundingClientRect();
+              const closeBox = close.getBoundingClientRect();
+              const barBox = bar.getBoundingClientRect();
+              const first = buttons[0].getBoundingClientRect();
+              const second = buttons[1].getBoundingClientRect();
+              const closeStyle = getComputedStyle(close);
+              const barStyle = getComputedStyle(bar);
+              const saveStyle = getComputedStyle(buttons[1]);
+              const cancelStyle = getComputedStyle(buttons[0]);
+              const iconStyle = getComputedStyle(icon);
+              const scrolled = {
+                closeTop: closeBox.top,
+                closeBottom: closeBox.bottom,
+                barTop: barBox.top,
+                barBottom: barBox.bottom,
+                scrollMoved: scroller.scrollTop > 40,
+              };
+              spacer.remove();
+              scroller.scrollTop = 0;
+              return {
+                sheetLeft: sheetBox.left,
+                sheetRight: sheetBox.right,
+                sheetTop: sheetBox.top,
+                sheetBottom: sheetBox.bottom,
+                radiusTop: getComputedStyle(sheet).borderTopLeftRadius,
+                radiusBottom: getComputedStyle(sheet).borderBottomLeftRadius,
+                closeW: closeBox.width,
+                closeH: closeBox.height,
+                closeTop: closeBox.top,
+                closeRight: closeBox.right,
+                closeLeft: closeBox.left,
+                closeLabel: close.getAttribute("aria-label"),
+                closeBg: closeStyle.backgroundColor,
+                closeBorder: closeStyle.borderTopColor,
+                closeBorderW: closeStyle.borderTopWidth,
+                closeRadius: closeStyle.borderRadius,
+                icon: iconStyle.fontSize,
+                labels: buttons.map((button) => (button.textContent || "").replace(/\s+/g, " ").trim()),
+                gap: second.left - first.right,
+                firstW: first.width,
+                secondW: second.width,
+                firstH: first.height,
+                secondH: second.height,
+                sameRow: Math.abs(first.top - second.top) < 2,
+                font: saveStyle.fontSize,
+                weight: saveStyle.fontWeight,
+                saveBg: saveStyle.backgroundColor,
+                saveFg: saveStyle.color,
+                cancelBg: cancelStyle.backgroundColor,
+                cancelFg: cancelStyle.color,
+                cancelBorder: cancelStyle.borderTopColor,
+                barPad: barStyle.paddingBottom,
+                barGap: barStyle.gap,
+                walkIn: (document.getElementById("manWalkInBtn") as HTMLButtonElement | null)?.getAttribute("aria-pressed") || "",
+                deleteHidden: document.getElementById("manDeleteBtn")?.classList.contains("hidden") !== false,
+                scrolled,
+                innerH: window.innerHeight,
+              };
+            }, { modal: item.modal });
+            expect(chromeBox.sheetLeft).toBeCloseTo(0, 0);
+            expect(chromeBox.sheetRight).toBeCloseTo(width, 0);
+            expect(chromeBox.sheetBottom).toBeCloseTo(780, 0);
+            expect(parseFloat(chromeBox.radiusTop)).toBeGreaterThan(0);
+            expect(chromeBox.radiusBottom).toBe("0px");
+            expect(chromeBox.closeW).toBeGreaterThanOrEqual(44);
+            expect(chromeBox.closeH).toBeGreaterThanOrEqual(44);
+            expect(chromeBox.closeW).toBeLessThanOrEqual(48.5);
+            expect(chromeBox.sheetRight - chromeBox.closeRight).toBeLessThan(20);
+            expect(chromeBox.closeTop - chromeBox.sheetTop).toBeLessThan(24);
+            expect(chromeBox.closeLeft).toBeGreaterThan(width / 2);
+            expect(chromeBox.closeLabel).toBe("Close");
+            expect(chromeBox.closeBg).toBe(theme === "dark" ? "rgb(30, 41, 59)" : "rgb(241, 245, 249)");
+            expect(chromeBox.closeBorderW).toBe(theme === "dark" ? "0px" : "1px");
+            if (theme === "light") expect(chromeBox.closeBorder).toBe("rgb(203, 213, 225)");
+            expect(parseFloat(chromeBox.closeRadius)).toBeGreaterThanOrEqual(24);
+            expect(chromeBox.icon).toBe("22px");
+            expect(chromeBox.labels).toEqual(["Cancel", item.submit]);
+            expect(chromeBox.gap).toBeGreaterThan(10);
+            expect(chromeBox.gap).toBeLessThan(14);
+            expect(Math.abs(chromeBox.firstW - chromeBox.secondW)).toBeLessThan(2);
+            expect(chromeBox.firstH).toBeGreaterThanOrEqual(52);
+            expect(chromeBox.secondH).toBeGreaterThanOrEqual(52);
+            expect(chromeBox.sameRow).toBe(true);
+            expect(chromeBox.font).toBe("17px");
+            expect(Number(chromeBox.weight)).toBeGreaterThanOrEqual(700);
+            expect(chromeBox.saveBg).toBe("rgb(16, 185, 129)");
+            expect(chromeBox.saveFg).toBe("rgb(2, 44, 34)");
+            expect(chromeBox.cancelBg).toBe(theme === "dark" ? "rgb(30, 41, 59)" : "rgb(255, 255, 255)");
+            expect(chromeBox.cancelFg).toBe(theme === "dark" ? "rgb(226, 232, 240)" : "rgb(15, 23, 42)");
+            expect(chromeBox.cancelBorder).toBe(theme === "dark" ? "rgb(51, 65, 85)" : "rgb(203, 213, 225)");
+            expect(chromeBox.barGap).toBe("12px");
+            expect(parseFloat(chromeBox.barPad)).toBeGreaterThanOrEqual(12);
+            expect(chromeBox.scrolled.scrollMoved).toBe(true);
+            expect(chromeBox.scrolled.closeTop).toBeGreaterThanOrEqual(0);
+            expect(chromeBox.scrolled.closeBottom).toBeLessThanOrEqual(chromeBox.innerH);
+            expect(chromeBox.scrolled.barBottom).toBeLessThanOrEqual(chromeBox.innerH + 1);
+            expect(chromeBox.scrolled.barTop).toBeLessThan(chromeBox.innerH);
+            expect(Math.abs(chromeBox.scrolled.closeTop - chromeBox.closeTop)).toBeLessThan(2);
+            if (item.walkIn) expect(chromeBox.walkIn).toBe("true");
+            if (!item.walkIn && item.modal === "manualBookingModal") expect(chromeBox.walkIn).toBe("false");
+            expect(chromeBox.deleteHidden).toBe(true);
+            await page.evaluate((modalId) => {
+              if (modalId === "ownerRecurringModal") (window as unknown as { closeOwnerRecurringModal: () => void }).closeOwnerRecurringModal();
+              else (window as unknown as { closeManualBookingModal: () => void }).closeManualBookingModal();
+            }, item.modal);
+          }
+          const edited = await page.evaluate(() => {
+            (window as unknown as { openEditAppointment: (id: string) => void }).openEditAppointment("HB-1005");
+            const bar = document.querySelector("#manualBookingModal .sd-form-bar");
+            const labels = Array.from(bar?.querySelectorAll("button") || []).map((button) => (button.textContent || "").replace(/\s+/g, " ").trim());
+            const del = document.getElementById("manDeleteBtn");
+            return {
+              open: !document.getElementById("manualBookingModal")?.classList.contains("hidden"),
+              title: document.getElementById("manModalTitle")?.textContent || "",
+              labels,
+              deleteShown: !!del && !del.classList.contains("hidden"),
+            };
+          });
+          expect(edited.open).toBe(true);
+          expect(edited.title).toBe("Edit appointment");
+          expect(edited.labels).toEqual(["Cancel", "Save appointment"]);
+          expect(edited.deleteShown).toBe(true);
+          await page.evaluate(() => (window as unknown as { closeManualBookingModal: () => void }).closeManualBookingModal());
+        }
+      }
+      const immediate = await page.evaluate(() => {
+        const started = performance.now();
+        (window as unknown as { schediDashAddKind: (kind: string) => void }).schediDashAddKind("recurring");
+        const modal = document.getElementById("ownerRecurringModal");
+        return {
+          elapsed: performance.now() - started,
+          open: !!modal && !modal.classList.contains("hidden"),
+        };
+      });
+      expect(immediate.open).toBe(true);
+      expect(immediate.elapsed).toBeLessThan(50);
+      await page.evaluate(() => (window as unknown as { closeOwnerRecurringModal: () => void }).closeOwnerRecurringModal());
+      const cancelled = await page.evaluate(() => new Promise<{ hidden: boolean; picked: boolean }>((resolve) => {
+        const menu = document.getElementById("schediDashAddMenu") as HTMLElement;
+        menu.hidden = true;
+        (document.querySelector("#schediDashTabbar .sd-fab") as HTMLButtonElement).click();
+        (menu.querySelector('[data-dash-add="appointment"]') as HTMLButtonElement).click();
+        document.body.click();
+        window.setTimeout(() => {
+          resolve({
+            hidden: document.getElementById("manualBookingModal")?.classList.contains("hidden") !== false,
+            picked: !!document.querySelector("#schediDashAddMenu button.is-picked"),
+          });
+        }, 360);
+      }));
+      expect(cancelled.hidden).toBe(true);
+      expect(cancelled.picked).toBe(false);
+      await page.emulateMediaFeatures([{ name: "prefers-reduced-motion", value: "reduce" }]);
+      const reduced = await page.evaluate(() => new Promise<{
+        immediate: { picked: boolean; hidden: boolean; transform: string; duration: string };
+        mid: { picked: boolean; hidden: boolean; transform: string };
+        after: { hidden: boolean; elapsed: number };
+      }>((resolve) => {
+        const menu = document.getElementById("schediDashAddMenu") as HTMLElement;
+        menu.hidden = true;
+        (document.querySelector("#schediDashTabbar .sd-fab") as HTMLButtonElement).click();
+        const button = menu.querySelector('[data-dash-add="walkin"]') as HTMLButtonElement;
+        const started = performance.now();
+        button.click();
+        const style = getComputedStyle(button);
+        const immediate = {
+          picked: button.classList.contains("is-picked"),
+          hidden: document.getElementById("manualBookingModal")?.classList.contains("hidden") !== false,
+          transform: style.transform,
+          duration: style.transitionDuration,
+        };
+        requestAnimationFrame(() => {
+          const midStyle = getComputedStyle(button);
+          const mid = {
+            picked: button.classList.contains("is-picked"),
+            hidden: document.getElementById("manualBookingModal")?.classList.contains("hidden") !== false,
+            transform: midStyle.transform,
+          };
+          requestAnimationFrame(() => {
+            resolve({
+              immediate,
+              mid,
+              after: {
+                hidden: document.getElementById("manualBookingModal")?.classList.contains("hidden") !== false,
+                elapsed: performance.now() - started,
+              },
+            });
+          });
+        });
+      }));
+      expect(reduced.immediate.picked).toBe(true);
+      expect(reduced.immediate.hidden).toBe(true);
+      expect(reduced.immediate.transform).toBe("none");
+      expect(reduced.immediate.duration).toBe("0s");
+      expect(reduced.mid.picked).toBe(true);
+      expect(reduced.mid.hidden).toBe(true);
+      expect(reduced.mid.transform).toBe("none");
+      expect(reduced.after.hidden).toBe(false);
+      expect(reduced.after.elapsed).toBeLessThan(160);
+      const reducedWalk = await page.evaluate(() => (document.getElementById("manWalkInBtn") as HTMLButtonElement | null)?.getAttribute("aria-pressed") || "");
+      expect(reducedWalk).toBe("true");
     } finally {
       await browser.close();
       await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
