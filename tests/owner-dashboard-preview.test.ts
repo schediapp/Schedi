@@ -779,6 +779,28 @@ describe("owner dashboard preview", () => {
     expect(extractFunction(html, "renderTenantPayments")).toContain("tenantDepositMethodCard");
     expect(extractFunction(html, "syncPaySwitchAria")).toContain('setAttribute(\'aria-checked\'');
   });
+
+  it("mutes unselected mark-paid methods and keeps a single radio choice", () => {
+    expect(html).toContain('id="rosterPaidMethodOptions" role="radiogroup" aria-labelledby="rosterPaidMethodTitle"');
+    const paint = extractFunction(html, "paintRosterPaidMethodOptions");
+    expect(paint).toContain('role="radio"');
+    expect(paint).toContain("aria-checked");
+    expect(paint).toContain("sd-paid-check");
+    expect(paint).toContain("on ? rosterBrandPayClass(row[0]) + ' is-on' : ''");
+    expect(paint).not.toContain("aria-pressed");
+    expect(paint).toContain("confirmBtn.disabled = !chosen");
+    const marked = html.slice(html.indexOf("window.confirmRosterMarkPaid"), html.indexOf("async function markAppointmentUnpaid"));
+    expect(marked).toContain("if (!method) return;");
+    expect(marked).not.toContain("|| 'cash'");
+    const css = dashCss(html);
+    expect(css).toContain("body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.is-on {");
+    expect(css).toContain("body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.is-on.sd-pay-cashapp");
+    expect(css).toContain("body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.is-on.sd-pay-zelle");
+    expect(css).toContain("body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.is-on.sd-pay-venmo");
+    expect(css).toContain("body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.is-on.sd-pay-paypal");
+    expect(css).toContain("body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.is-on.sd-pay-square");
+    expect(css).toContain("body.schedi-newdash #rosterPaidMethodConfirmBtn:disabled");
+  });
 });
 
 const chrome = ["/usr/bin/google-chrome", "/usr/bin/google-chrome-stable", "/usr/bin/chromium", "/usr/bin/chromium-browser"].find((path) => existsSync(path));
@@ -1398,6 +1420,154 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
         role: el.getAttribute("role"),
       }));
       expect(method).toEqual({ on: false, aria: "false", role: "switch" });
+    } finally {
+      await browser.close();
+      await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+    }
+  }, 90000);
+
+  it("mutes unselected mark-paid methods at 340 and 390 in light and dark", async () => {
+    const types: Record<string, string> = {
+      ".html": "text/html; charset=utf-8",
+      ".js": "text/javascript; charset=utf-8",
+      ".svg": "image/svg+xml",
+      ".png": "image/png",
+      ".json": "application/json",
+      ".webmanifest": "application/manifest+json",
+    };
+    const server = createServer((req, res) => {
+      const path = new URL(req.url || "/", "http://127.0.0.1").pathname;
+      const file = path === "/" || path === "/portal-preview" ? "/index.html" : path;
+      const full = join(root, file);
+      if (!full.startsWith(root) || !existsSync(full)) {
+        res.writeHead(404);
+        res.end("missing");
+        return;
+      }
+      res.writeHead(200, { "content-type": types[extname(full)] || "application/octet-stream" });
+      res.end(readFileSync(full));
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const address = server.address();
+    const port = typeof address === "object" && address ? address.port : 0;
+    const puppeteer = await import("puppeteer-core");
+    const browser = await puppeteer.default.launch({
+      executablePath: chrome,
+      headless: true,
+      args: ["--no-sandbox", "--disable-dev-shm-usage"],
+    });
+    const muted = {
+      dark: { bg: "rgb(15, 23, 42)", fg: "rgb(248, 250, 252)", border: "rgb(51, 65, 85)" },
+      light: { bg: "rgb(255, 255, 255)", fg: "rgb(15, 23, 42)", border: "rgb(203, 213, 225)" },
+    };
+    const brands: Record<string, { dark: string; light: string; fg: string; lightFg?: string }> = {
+      cashapp: { dark: "rgb(0, 214, 79)", light: "rgb(0, 214, 79)", fg: "rgb(11, 18, 32)" },
+      zelle: { dark: "rgb(109, 30, 212)", light: "rgb(109, 30, 212)", fg: "rgb(255, 255, 255)" },
+      venmo: { dark: "rgb(0, 140, 255)", light: "rgb(0, 140, 255)", fg: "rgb(11, 18, 32)" },
+      paypal: { dark: "rgb(0, 112, 224)", light: "rgb(0, 48, 135)", fg: "rgb(255, 255, 255)" },
+      square: { dark: "rgb(255, 255, 255)", light: "rgb(0, 0, 0)", fg: "rgb(0, 0, 0)", lightFg: "rgb(255, 255, 255)" },
+      card: { dark: "rgb(5, 150, 105)", light: "rgb(4, 120, 87)", fg: "rgb(255, 255, 255)" },
+      cash: { dark: "rgb(5, 150, 105)", light: "rgb(4, 120, 87)", fg: "rgb(255, 255, 255)" },
+    };
+    try {
+      const page = await browser.newPage();
+      const writes: string[] = [];
+      page.on("request", (req) => {
+        if (req.method() !== "GET" && req.method() !== "HEAD") writes.push(req.url());
+      });
+      await page.goto(`http://127.0.0.1:${port}/portal-preview`, { waitUntil: "domcontentloaded", timeout: 45000 });
+      await page.waitForFunction(() => document.body.classList.contains("schedi-newdash"), { timeout: 20000 });
+      await page.waitForFunction(() => {
+        const apps = (window as unknown as { getTenant?: () => { appointments?: { id?: string }[] } }).getTenant?.()?.appointments || [];
+        return apps.some((row) => row && row.id === "HB-1002");
+      }, { timeout: 20000 });
+      const read = () => page.evaluate(() => {
+        const group = document.getElementById("rosterPaidMethodOptions");
+        const buttons = Array.from(group?.querySelectorAll(".roster-paid-opt") || []) as HTMLButtonElement[];
+        const confirm = document.getElementById("rosterPaidMethodConfirmBtn") as HTMLButtonElement | null;
+        return {
+          role: group?.getAttribute("role") || "",
+          labelled: group?.getAttribute("aria-labelledby") || "",
+          enabled: confirm ? !confirm.disabled : false,
+          options: buttons.map((el) => {
+            const style = getComputedStyle(el);
+            const box = el.getBoundingClientRect();
+            return {
+              method: el.getAttribute("data-paid-method") || "",
+              radio: el.getAttribute("role"),
+              checked: el.getAttribute("aria-checked"),
+              bg: style.backgroundColor,
+              fg: style.color,
+              border: style.borderTopColor,
+              w: Math.round(box.width),
+              h: Math.round(box.height),
+              check: !!el.querySelector(".sd-paid-check"),
+            };
+          }),
+        };
+      });
+      for (const width of [340, 390]) {
+        await page.setViewport({ width, height: 900 });
+        await page.evaluate(() => (window as unknown as { openRosterPaidMethodModal: (id: string) => void }).openRosterPaidMethodModal("HB-1002"));
+        await page.waitForSelector("#rosterPaidMethodOptions .roster-paid-opt.is-on", { timeout: 10000 });
+        for (const theme of ["dark", "light"] as const) {
+          await page.evaluate((mode) => (window as unknown as { setSchediTheme: (mode: string) => void }).setSchediTheme(mode), theme);
+          const view = await read();
+          expect(view.role).toBe("radiogroup");
+          expect(view.labelled).toBe("rosterPaidMethodTitle");
+          expect(view.enabled).toBe(true);
+          expect(view.options).toHaveLength(7);
+          const on = view.options.filter((row) => row.checked === "true");
+          expect(on.map((row) => row.method)).toEqual(["cashapp"]);
+          for (const row of view.options) {
+            expect(row.radio).toBe("radio");
+            expect(row.h).toBeGreaterThanOrEqual(44);
+            expect(row.w).toBeGreaterThan(240);
+            const brand = brands[row.method];
+            if (row.checked === "true") {
+              expect(row.bg).toBe(brand[theme]);
+              expect(row.fg).toBe(theme === "light" && brand.lightFg ? brand.lightFg : brand.fg);
+              expect(row.check).toBe(true);
+            } else {
+              expect(row.bg).toBe(muted[theme].bg);
+              expect(row.fg).toBe(muted[theme].fg);
+              expect(row.border).toBe(muted[theme].border);
+              expect(row.check).toBe(false);
+            }
+          }
+        }
+      }
+      await page.evaluate(() => (window as unknown as { setSchediTheme: (mode: string) => void }).setSchediTheme("dark"));
+      await page.evaluate(() => {
+        const zelle = document.querySelector('#rosterPaidMethodOptions [data-paid-method="zelle"]') as HTMLButtonElement | null;
+        zelle?.click();
+      });
+      const zelle = await read();
+      expect(zelle.options.filter((row) => row.checked === "true").map((row) => row.method)).toEqual(["zelle"]);
+      expect(zelle.options.find((row) => row.method === "cashapp")?.bg).toBe(muted.dark.bg);
+      expect(zelle.options.find((row) => row.method === "zelle")?.bg).toBe(brands.zelle.dark);
+      expect(zelle.options.find((row) => row.method === "paypal")?.bg).toBe(muted.dark.bg);
+      expect(zelle.options.find((row) => row.method === "square")?.bg).toBe(muted.dark.bg);
+      await page.evaluate(() => {
+        const paypal = document.querySelector('#rosterPaidMethodOptions [data-paid-method="paypal"]') as HTMLButtonElement | null;
+        paypal?.click();
+      });
+      await page.click("#rosterPaidMethodConfirmBtn");
+      await page.waitForFunction(() => document.getElementById("rosterPaidMethodModal")?.classList.contains("hidden"), { timeout: 10000 });
+      const saved = await page.evaluate(() => {
+        const apps = (window as unknown as { getTenant?: () => { appointments?: { id?: string; paidMethod?: string; paymentStatus?: string }[] } }).getTenant?.()?.appointments || [];
+        const row = apps.find((app) => app && app.id === "HB-1002");
+        return { paidMethod: row?.paidMethod || "", paymentStatus: row?.paymentStatus || "" };
+      });
+      expect(saved).toEqual({ paidMethod: "paypal", paymentStatus: "PAID" });
+      await page.evaluate(() => (window as unknown as { openRosterPaidMethodModal: (id: string) => void }).openRosterPaidMethodModal("HB-1003"));
+      await page.waitForSelector('#rosterPaidMethodOptions [data-paid-method="cash"].is-on', { timeout: 10000 });
+      const cash = await read();
+      expect(cash.enabled).toBe(true);
+      expect(cash.options.filter((row) => row.checked === "true").map((row) => row.method)).toEqual(["cash"]);
+      expect(cash.options.find((row) => row.method === "cash")?.bg).toBe(brands.cash.dark);
+      expect(cash.options.find((row) => row.method === "card")?.bg).toBe(muted.dark.bg);
+      expect(writes).toEqual([]);
     } finally {
       await browser.close();
       await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));

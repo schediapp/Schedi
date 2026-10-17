@@ -1970,6 +1970,82 @@ html.schedi-light body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.
     background: #000000;
     border-color: #000000;
 }
+body.schedi-newdash #rosterPaidMethodConfirmBtn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt .sd-paid-check {
+    margin-left: auto;
+    width: 18px;
+    height: 18px;
+    flex: none;
+}
+body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt .sd-paid-check svg {
+    width: 18px;
+    height: 18px;
+    display: block;
+}
+body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt:focus-visible {
+    outline: 2px solid #10b981;
+    outline-offset: 2px;
+}
+body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.is-on {
+    background: #059669;
+    color: #ffffff;
+    border-color: #047857;
+    box-shadow: 0 0 0 2px #34d399;
+}
+html.schedi-light body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.is-on {
+    background: #047857;
+    color: #ffffff;
+    border-color: #065f46;
+    box-shadow: 0 0 0 2px #059669;
+}
+body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.is-on.sd-pay-cashapp,
+html.schedi-light body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.is-on.sd-pay-cashapp {
+    color: #0b1220;
+    background: #00D64F;
+    border-color: #00A83C;
+    box-shadow: 0 0 0 2px #00D64F;
+}
+body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.is-on.sd-pay-zelle,
+html.schedi-light body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.is-on.sd-pay-zelle {
+    color: #ffffff;
+    background: #6D1ED4;
+    border-color: #6D1ED4;
+    box-shadow: 0 0 0 2px #c4b5fd;
+}
+body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.is-on.sd-pay-venmo,
+html.schedi-light body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.is-on.sd-pay-venmo {
+    color: #0b1220;
+    background: #008CFF;
+    border-color: #008CFF;
+    box-shadow: 0 0 0 2px #7dd3fc;
+}
+body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.is-on.sd-pay-paypal {
+    color: #ffffff;
+    background: #0070E0;
+    border-color: #0070E0;
+    box-shadow: 0 0 0 2px #93c5fd;
+}
+html.schedi-light body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.is-on.sd-pay-paypal {
+    color: #ffffff;
+    background: #003087;
+    border-color: #003087;
+    box-shadow: 0 0 0 2px #0070E0;
+}
+body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.is-on.sd-pay-square {
+    color: #000000;
+    background: #ffffff;
+    border-color: #e2e8f0;
+    box-shadow: 0 0 0 2px #ffffff;
+}
+html.schedi-light body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.is-on.sd-pay-square {
+    color: #ffffff;
+    background: #000000;
+    border-color: #000000;
+    box-shadow: 0 0 0 2px #334155;
+}
 body.schedi-newdash select,
 body.schedi-newdash select option { color-scheme: dark; }
 html.schedi-light body.schedi-newdash select,
@@ -5279,7 +5355,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
             </div>
             <p id="rosterPaidMethodCode" class="hidden text-xs text-slate-300 rounded-xl bg-slate-900 border border-slate-800 px-3 py-2"></p>
             <input type="hidden" id="rosterPaidMethodAppId" value="">
-            <div class="grid grid-cols-1 gap-2" id="rosterPaidMethodOptions"></div>
+            <div class="grid grid-cols-1 gap-2" id="rosterPaidMethodOptions" role="radiogroup" aria-labelledby="rosterPaidMethodTitle"></div>
             <div class="pt-1 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
                 <button type="button" onclick="closeRosterPaidMethodModal()" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-sm transition-all">Cancel</button>
                 <button type="button" id="rosterPaidMethodConfirmBtn" onclick="confirmRosterMarkPaid()" class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm border border-emerald-400/40 transition-all">Mark paid</button>
@@ -20125,11 +20201,20 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
         function paintRosterPaidMethodOptions() {
             var box = document.getElementById('rosterPaidMethodOptions');
             if (!box) return;
+            box.setAttribute('role', 'radiogroup');
+            box.setAttribute('aria-labelledby', 'rosterPaidMethodTitle');
+            var chosen = String(_rosterPaidMethodSelected || '');
             box.innerHTML = OWNER_PAY_METHODS.map(function (row) {
-                var on = row[0] === _rosterPaidMethodSelected;
-                return '<button type="button" data-paid-method="' + row[0] + '" class="sd-pay-choice roster-paid-opt' + rosterBrandPayClass(row[0]) + (on ? ' is-on' : '') + '" aria-pressed="' + (on ? 'true' : 'false') + '">' +
-                    payKindSvg(row[0]) + '<span>' + esc(row[1]) + '</span></button>';
+                var on = row[0] === chosen;
+                return '<button type="button" data-paid-method="' + row[0] + '" class="sd-pay-choice roster-paid-opt' + (on ? rosterBrandPayClass(row[0]) + ' is-on' : '') + '" role="radio" aria-checked="' + (on ? 'true' : 'false') + '" tabindex="' + (on ? '0' : '-1') + '">' +
+                    payKindSvg(row[0]) + '<span>' + esc(row[1]) + '</span>' +
+                    (on ? '<span class="sd-paid-check" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M3.2 8.2 6.4 11.4 12.8 4.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>' : '') +
+                    '</button>';
             }).join('');
+            if (!chosen) {
+                var firstRadio = box.querySelector('.roster-paid-opt');
+                if (firstRadio) firstRadio.setAttribute('tabindex', '0');
+            }
             var opts = box.querySelectorAll('.roster-paid-opt');
             for (var i = 0; i < opts.length; i++) {
                 opts[i].onclick = (function (method) {
@@ -20138,7 +20223,24 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
                         paintRosterPaidMethodOptions();
                     };
                 })(opts[i].getAttribute('data-paid-method'));
+                opts[i].onkeydown = (function (method) {
+                    return function (event) {
+                        var key = event.key;
+                        if (key !== 'ArrowDown' && key !== 'ArrowRight' && key !== 'ArrowUp' && key !== 'ArrowLeft') return;
+                        event.preventDefault();
+                        var list = OWNER_PAY_METHODS.map(function (row) { return row[0]; });
+                        var idx = list.indexOf(method);
+                        if (idx < 0) idx = 0;
+                        var dir = (key === 'ArrowDown' || key === 'ArrowRight') ? 1 : -1;
+                        _rosterPaidMethodSelected = list[(idx + dir + list.length) % list.length];
+                        paintRosterPaidMethodOptions();
+                        var focus = box.querySelector('.roster-paid-opt.is-on');
+                        if (focus && focus.focus) focus.focus();
+                    };
+                })(opts[i].getAttribute('data-paid-method'));
             }
+            var confirmBtn = document.getElementById('rosterPaidMethodConfirmBtn');
+            if (confirmBtn) confirmBtn.disabled = !chosen;
         }
 
         window.closeRosterPaidMethodModal = function() {
@@ -20267,7 +20369,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
                 showToast('Appointment #' + appId + ' is already marked paid.', 'info');
                 return;
             }
-            var method = String(_rosterPaidMethodSelected || 'cash').toLowerCase();
+            var method = String(_rosterPaidMethodSelected || '').toLowerCase();
+            if (!method) return;
             app.paymentStatusBeforePaid = app.paymentStatus || 'PAY AT APPOINTMENT';
             app.paymentMethodBeforePaid = app.paymentMethod || '';
             app.paymentOptionBeforePaid = app.paymentOptionLabel || '';
