@@ -116,8 +116,8 @@ describe("answer pages and crawler files", () => {
   it("keeps cited competitor prices and omits unconfirmed Schedi claims", () => {
     const compare = renderMarketingPage(MARKETING_PAGES.find((page) => page.path === "/compare")!);
     const text = visible(compare);
-    expect(text).toContain("Prices as of Oct 2026");
     expect(text).toContain("Prices as listed on each vendor's site on Oct 17, 2026");
+    expect(text).not.toContain("Prices as of Oct 2026. Prices as listed");
     const internalNotes = [
       "re-check before publishing",
       "before publishing",
@@ -188,13 +188,26 @@ describe("answer pages and crawler files", () => {
     const booksyAt = text.indexOf('id="booksy"');
     expect(text.indexOf(openings[0])).toBeGreaterThan(squireAt);
     expect(text.indexOf(openings[0])).toBeLessThan(booksyAt);
+    const guide = text.slice(text.indexOf("Quick guide"));
+    expect(guide).toContain("$30.00 a month, or $23.99 a month for the first 6 months");
+    expect(guide).toContain("or $29 a month billed annually");
+    expect(guide.toLowerCase()).not.toContain("cheaper than jobber");
     const barbers = visible(renderMarketingPage(MARKETING_PAGES.find((page) => page.path === "/for/barbers")!));
     expect(barbers).toContain("a dollar under Squire's $30 a month Independent plan");
     expect(barbers).not.toContain("If you run a multi-chair shop");
+    expect(barbers.indexOf("How Schedi compares")).toBeLessThan(barbers.indexOf("a dollar under Squire"));
+    expect(barbers.indexOf("What Schedi doesn't do")).toBeLessThan(barbers.indexOf("not a multi-chair or team calendar"));
+    expect(barbers.indexOf("a dollar under Squire")).toBeLessThan(barbers.indexOf("What Schedi doesn't do"));
     const cleaningTone = visible(renderMarketingPage(MARKETING_PAGES.find((page) => page.path === "/for/cleaning-services")!));
     expect(cleaningTone).toContain("under Jobber's $49 a month Core plan");
-    expect(cleaningTone.indexOf("Schedi has a $0 Free plan, and Starter is $29 a month, under Jobber")).toBeLessThan(
-      cleaningTone.indexOf("Jobber is field-service software"),
+    expect(cleaningTone).toContain("Jobber Core is $29 a month when billed annually");
+    expect(cleaningTone.toLowerCase()).not.toContain("cheaper than jobber");
+    expect(cleaningTone.indexOf("How Schedi compares")).toBeLessThan(
+      cleaningTone.indexOf("Schedi has a $0 Free plan, and Starter is $29 a month, under Jobber"),
+    );
+    expect(cleaningTone.indexOf("What Schedi doesn't do")).toBeGreaterThan(cleaningTone.indexOf("How Schedi compares"));
+    expect(cleaningTone.indexOf("Schedi does not calculate drive time, and it does not manage multiple cleaners")).toBeGreaterThan(
+      cleaningTone.indexOf("What Schedi doesn't do"),
     );
 
     for (const path of ["/for/barbers", "/for/cleaning-services", "/features"]) {

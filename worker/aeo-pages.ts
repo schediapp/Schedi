@@ -103,8 +103,10 @@ export function barberPage(): MarketingPage {
       p("Free ($0): you want to try online booking with one service and up to 5 bookings a week. Bookings confirm instantly."),
       p("Starter ($29 a month): you offer more than one service, take more than 5 bookings a week, want to accept or deny each request, or get paid through Cash App, Venmo, Zelle, or PayPal."),
       p("Pro ($49 a month): you want standing appointments for regulars."),
+      h2("", "How Schedi compares"),
+      p(`Schedi is built for one barber, with a $0 Free plan and Starter at $29 a month, a dollar under Squire's $30 a month Independent plan. Squire is built for barbershops and lists multiple barber accounts and a waitlist on its shop plans (<a href="/compare#squire">Schedi vs Squire</a>).`),
       h2("", "What Schedi doesn't do"),
-      p(`Schedi is built for one barber, with a $0 Free plan and Starter at $29 a month, a dollar under Squire's $30 a month Independent plan. It is not a multi-chair or team calendar. Squire is built for barbershops and lists multiple barber accounts and a waitlist on its shop plans (<a href="/compare#squire">Schedi vs Squire</a>).`),
+      p("Schedi is not a multi-chair or team calendar."),
       p(`Related: <a href="/for/hair-salons">hair salons</a>, <a href="/for/tattoo-artists">tattoo artists</a>. See <a href="/pricing">pricing</a> or the <a href="/compare">comparison with other booking tools</a>.`),
       signupCta,
     ].join("\n"),
@@ -152,8 +154,10 @@ export function cleaningPage(): MarketingPage {
       p("Free ($0): one service, up to 5 bookings a week, bookings confirm instantly, and clients pay at the appointment."),
       p("Starter ($29 a month): unlimited services and bookings, approval of each request, and payment by Cash App, Venmo, Zelle, PayPal, or at the appointment. No recurring cleans."),
       p("Pro ($49 a month): everything in Starter plus recurring cleans (weekly, biweekly, monthly)."),
+      h2("", "How Schedi compares"),
+      p(`Schedi has a $0 Free plan, and Starter is $29 a month, under Jobber's $49 a month Core plan with no commitment. Jobber Core is $29 a month when billed annually. Schedi Starter stays month-to-month at $29. Pro at $49 a month adds repeating cleans for one owner. Jobber is field-service software built for quotes, invoices, and crews (<a href="/compare#jobber">Schedi vs Jobber</a>).`),
       h2("", "What Schedi doesn't do"),
-      p(`Schedi has a $0 Free plan, and Starter is $29 a month, under Jobber's $49 a month Core plan with no commitment. Pro at $49 a month adds repeating cleans for one owner. Schedi does not manage multiple cleaners or crews, and it does not calculate drive time. Jobber is field-service software built for quotes, invoices, and crews (<a href="/compare#jobber">Schedi vs Jobber</a>).`),
+      p("Schedi does not calculate drive time, and it does not manage multiple cleaners or crews."),
       p(`See <a href="/pricing">pricing</a> or the <a href="/">Schedi home page</a>.`),
       signupCta,
     ].join("\n"),
@@ -202,7 +206,7 @@ export function comparePage(): MarketingPage {
     faqs: [],
     bodyHtml: [
       p("Schedi is a booking page and back office for one owner. Free is $0. Starter is $29 a month. Pro is $49 a month and adds repeating appointments. Paid plans have no setup fee and no contract: they are month-to-month, you can cancel anytime, and the first payment is refundable within 15 days. Clients can pay with Cash App, Venmo, Zelle, PayPal, or at the appointment, with no card processing fees through Schedi. On Starter and Pro you accept or deny each request."),
-      p("Prices as of Oct 2026. Prices as listed on each vendor's site on Oct 17, 2026. The source URL is listed in each section."),
+      p("Prices as listed on each vendor's site on Oct 17, 2026. The source URL is listed in each section."),
       h2("", "Why these five tools"),
       p("Schedi is built for a solo owner. These five tools are built for other kinds of businesses, and each section below says what they add."),
       p("Squire is built for barbershops, with a plan for one barber and plans for a shop."),
@@ -249,9 +253,9 @@ export function comparePage(): MarketingPage {
       h2("", "Quick guide"),
       `<ul>
         <li>Barbers: Schedi has a $0 Free plan and Starter at $29 a month for one owner. Squire is built for barbershops. Booksy is a booking app and marketplace for barbers and beauty pros.</li>
-        <li>Salons and pet groomers: Schedi covers booking and the schedule for one owner, and Starter is $29 a month. Vagaro's regular one-person price is $30.00 a month. Vagaro is an all-in-one salon system.</li>
+        <li>Salons and pet groomers: Schedi covers booking and the schedule for one owner, and Starter is $29 a month. Vagaro's regular one-person price is $30.00 a month, or $23.99 a month for the first 6 months. Vagaro is an all-in-one salon system.</li>
         <li>Photographers, lesson teachers, and notaries: Schedi has a $0 Free plan. Acuity Scheduling is a general appointment scheduler. Its one-calendar plan is $20 a month ($16 billed annually), and Schedi Starter is $29 a month.</li>
-        <li>Cleaners, lawn care, and auto detailers: Schedi books one owner, with Starter at $29 a month and repeating appointments on Pro at $49 a month. Jobber is field-service software. Its Core plan is $49 a month with no commitment.</li>
+        <li>Cleaners, lawn care, and auto detailers: Schedi books one owner, with Starter at $29 a month and repeating appointments on Pro at $49 a month. Jobber is field-service software. Its Core plan is $49 a month with no commitment, or $29 a month billed annually.</li>
       </ul>`,
       p('Pages for specific businesses: <a href="/for/barbers">barbers</a> and <a href="/for/cleaning-services">cleaning businesses</a>. See <a href="/pricing">pricing</a>.'),
     ].join("\n"),
