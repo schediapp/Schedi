@@ -896,13 +896,18 @@ describe("owner dashboard preview", () => {
     expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-more-menu button.sd-act-ok:hover");
     expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-more-menu button.sd-act-no:active");
     expect(css).toContain("body.schedi-newdash .roster-sheet-actions > button.sd-act");
-    expect(today).toContain('role="button" tabindex="0" aria-expanded="false" aria-haspopup="menu"');
-    expect(today).toContain('aria-label="More actions"><i class="fa-solid fa-ellipsis-vertical" aria-hidden="true"></i></summary>');
+    expect(today).toContain('<article class="sd-card sd-row">');
+    expect(today).not.toContain('role="button"');
+    expect(today).not.toContain('tabindex="0"');
+    expect(today).not.toContain('aria-haspopup="menu"');
+    expect(today).not.toContain("More actions for ");
+    expect(today).toContain('aria-label="More actions" aria-expanded="false"><i class="fa-solid fa-ellipsis-vertical" aria-hidden="true"></i></summary>');
     expect(today).not.toContain(">…</summary>");
-    expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-card.sd-row { cursor: pointer; }");
-    expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-card.sd-row:focus-visible");
-    expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-card.sd-row:active { background: rgba(148, 163, 184, 0.14); }");
-    expect(css).toContain("html.schedi-light #tenantPortalSection.schedi-newdash .sd-card.sd-row:active { background: #f1f5f9; }");
+    expect(css).not.toContain("#tenantPortalSection.schedi-newdash .sd-card.sd-row { cursor: pointer; }");
+    expect(css).not.toContain("#tenantPortalSection.schedi-newdash .sd-card.sd-row:focus-visible");
+    expect(css).not.toContain("#tenantPortalSection.schedi-newdash .sd-card.sd-row:active");
+    expect(html).not.toContain("event.target.classList.contains('sd-row')");
+    expect(html).not.toContain("if (todayCard && todayMenu && !todayControl && !menuHit)");
     expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-more > summary {");
     expect(css).toContain("border: 0;");
     expect(css).toContain("border-radius: 999px;");
@@ -916,7 +921,9 @@ describe("owner dashboard preview", () => {
     const close = extractFunction(html, "closeSchediTodayMenus");
     expect(close).toContain("if (event && typeof event.stopPropagation === 'function') event.stopPropagation();");
     expect(close).toContain("el.open = false");
-    expect(close).toContain("card.setAttribute('aria-expanded', 'false')");
+    expect(close).toContain("summary.setAttribute('aria-expanded', 'false')");
+    expect(close).not.toContain("card.setAttribute");
+    expect(html).toContain("summary.setAttribute('aria-expanded', details.open ? 'true' : 'false')");
     expect(close).toContain("menu.style.visibility = 'hidden'");
     expect(html).toContain("window.closeSchediTodayMenus = closeSchediTodayMenus;");
     expect(html).toContain("if (menuHit) {\n                closeSchediTodayMenus();");
@@ -2569,7 +2576,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
     }
   }, 120000);
 
-  it("opens today's schedule from a borderless kebab or the card at 340 and 390", async () => {
+  it("opens today's schedule from the borderless kebab, and a card tap stays closed, at 340 and 390", async () => {
     const types: Record<string, string> = {
       ".html": "text/html; charset=utf-8",
       ".js": "text/javascript; charset=utf-8",
@@ -2615,9 +2622,11 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
           role: card.getAttribute("role"),
           tab: card.getAttribute("tabindex"),
           popup: card.getAttribute("aria-haspopup"),
-          expanded: card.getAttribute("aria-expanded"),
+          cardExpanded: card.getAttribute("aria-expanded"),
           cursor: cardStyle.cursor,
+          cardBg: cardStyle.backgroundColor,
           label: summary.getAttribute("aria-label"),
+          expanded: summary.getAttribute("aria-expanded"),
           icon: icon?.className || "",
           w: Math.round(box.width),
           h: Math.round(box.height),
@@ -2627,6 +2636,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
           fill: summaryStyle.backgroundImage,
         };
       });
+      const menuClosed = () => page.evaluate(() => document.querySelectorAll("details.sd-more[open]").length === 0);
       for (const width of [340, 390]) {
         await page.setViewport({ width, height: 900 });
         for (const theme of ["dark", "light"] as const) {
@@ -2634,45 +2644,74 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
           await page.evaluate(() => (window as unknown as { schediDashGo: (tab: string) => void }).schediDashGo("today"));
           await page.waitForSelector("#schediTodaySchedule article.sd-row summary", { timeout: 10000 });
           const view = await measure();
-          expect(view?.role).toBe("button");
-          expect(view?.tab).toBe("0");
-          expect(view?.popup).toBe("menu");
-          expect(view?.expanded).toBe("false");
-          expect(view?.cursor).toBe("pointer");
+          expect(view?.role).toBeNull();
+          expect(view?.tab).toBeNull();
+          expect(view?.popup).toBeNull();
+          expect(view?.cardExpanded).toBeNull();
+          expect(view?.cursor).toBe("auto");
           expect(view?.label).toBe("More actions");
+          expect(view?.expanded).toBe("false");
           expect(view?.icon).toContain("fa-ellipsis-vertical");
           expect(view?.w).toBeGreaterThanOrEqual(44);
           expect(view?.h).toBeGreaterThanOrEqual(44);
           expect(view?.border).toBe("0px");
           expect(view?.bg).toBe("rgba(0, 0, 0, 0)");
           expect(view?.radius).toBe("999px");
-          await page.hover("#schediTodaySchedule article.sd-row summary");
-          const hovered = await page.$eval("#schediTodaySchedule article.sd-row summary", (el) => getComputedStyle(el).backgroundColor);
-          expect(hovered).not.toBe("rgba(0, 0, 0, 0)");
-          const name = await page.$("#schediTodaySchedule article.sd-row .sd-row-title");
-          const nameBox = await name!.boundingBox();
-          await page.mouse.move(nameBox!.x + 8, nameBox!.y + 8);
+          await page.evaluate(() => document.querySelector("#schediTodaySchedule article.sd-row")?.scrollIntoView({ block: "center" }));
+          const pointOf = (selector: string) => page.$eval(selector, (el) => {
+            const box = el.getBoundingClientRect();
+            return { x: box.x + Math.min(12, box.width / 2), y: box.y + box.height / 2 };
+          });
+          const namePoint = await pointOf("#schediTodaySchedule article.sd-row .sd-row-title");
+          const restBg = view?.cardBg;
+          await page.mouse.move(namePoint.x, namePoint.y);
           await page.mouse.down();
           const pressed = await page.$eval("#schediTodaySchedule article.sd-row", (el) => getComputedStyle(el).backgroundColor);
           await page.mouse.up();
-          expect(pressed).toBe(theme === "dark" ? "rgba(148, 163, 184, 0.14)" : "rgb(241, 245, 249)");
-          await page.waitForFunction(() => {
+          expect(pressed).toBe(restBg);
+          expect(pressed).not.toBe("rgba(148, 163, 184, 0.14)");
+          expect(pressed).not.toBe("rgb(241, 245, 249)");
+          expect(await menuClosed()).toBe(true);
+          const cardKeys = await page.evaluate(() => {
             const card = document.querySelector("#schediTodaySchedule article.sd-row");
-            const menu = card?.querySelector(".sd-more-menu") as HTMLElement | null;
-            return card?.getAttribute("aria-expanded") === "true" && !!menu && getComputedStyle(menu).visibility === "visible" && document.querySelectorAll("details.sd-more[open]").length === 1;
+            const title = card?.querySelector(".sd-row-title");
+            const time = card?.querySelector(".sd-time");
+            if (title instanceof HTMLElement) title.click();
+            if (time instanceof HTMLElement) time.click();
+            if (card instanceof HTMLElement) card.click();
+            if (!(card instanceof HTMLElement)) return false;
+            card.focus();
+            for (const key of ["Enter", " "]) card.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true }));
+            return document.querySelectorAll("details.sd-more[open]").length === 0;
+          });
+          expect(cardKeys).toBe(true);
+          const summaryPoint = await pointOf("#schediTodaySchedule article.sd-row summary");
+          await page.mouse.move(summaryPoint.x, summaryPoint.y);
+          const hovered = await page.$eval("#schediTodaySchedule article.sd-row summary", (el) => getComputedStyle(el).backgroundColor);
+          expect(hovered).not.toBe("rgba(0, 0, 0, 0)");
+          await page.mouse.down();
+          const kebabPressed = await page.$eval("#schediTodaySchedule article.sd-row summary", (el) => ({
+            bg: getComputedStyle(el).backgroundColor,
+            active: el.matches(":active"),
+          }));
+          await page.mouse.up();
+          expect(kebabPressed.bg).not.toBe("rgba(0, 0, 0, 0)");
+          expect(kebabPressed.active).toBe(true);
+          await page.waitForFunction(() => {
+            const summary = document.querySelector("#schediTodaySchedule article.sd-row summary");
+            const menu = summary?.parentElement?.querySelector(".sd-more-menu") as HTMLElement | null;
+            return summary?.getAttribute("aria-expanded") === "true" && !!menu && getComputedStyle(menu).visibility === "visible" && document.querySelectorAll("details.sd-more[open]").length === 1;
           }, { timeout: 5000 });
           const labels = await page.$$eval("#schediTodaySchedule details.sd-more[open] .sd-more-menu button", (nodes) => nodes.map((el) => (el.textContent || "").trim()));
           expect(labels).toContain("Reschedule");
           expect(labels).toContain("Edit");
           expect(labels).toContain("Delete");
           expect(labels.some((label) => label === "Mark paid" || label === "Mark unpaid")).toBe(true);
-          await page.click("#schediTodaySchedule article.sd-row summary");
-          await page.waitForFunction(() => document.querySelector("#schediTodaySchedule article.sd-row")?.getAttribute("aria-expanded") === "false" && document.querySelectorAll("details.sd-more[open]").length === 0, { timeout: 5000 });
-          await page.focus("#schediTodaySchedule article.sd-row");
-          await page.keyboard.press("Enter");
-          await page.waitForFunction(() => document.querySelector("#schediTodaySchedule article.sd-row")?.getAttribute("aria-expanded") === "true", { timeout: 5000 });
-          await page.keyboard.press("Space");
-          await page.waitForFunction(() => document.querySelector("#schediTodaySchedule article.sd-row")?.getAttribute("aria-expanded") === "false", { timeout: 5000 });
+          await page.evaluate(() => {
+            const summary = document.querySelector("#schediTodaySchedule article.sd-row summary");
+            if (summary instanceof HTMLElement) summary.click();
+          });
+          await page.waitForFunction(() => document.querySelector("#schediTodaySchedule article.sd-row summary")?.getAttribute("aria-expanded") === "false" && document.querySelectorAll("details.sd-more[open]").length === 0, { timeout: 5000 });
         }
       }
     } finally {
@@ -2736,39 +2775,50 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
         const menus = Array.from(document.querySelectorAll("#schediTodaySchedule .sd-more-menu")) as HTMLElement[];
         return {
           open: document.querySelectorAll("details.sd-more[open]").length,
-          expanded: Array.from(document.querySelectorAll("#schediTodaySchedule article.sd-row")).filter((el) => el.getAttribute("aria-expanded") === "true").length,
+          expanded: Array.from(document.querySelectorAll("#schediTodaySchedule summary")).filter((el) => el.getAttribute("aria-expanded") === "true").length,
           visible: menus.filter((menu) => getComputedStyle(menu).visibility !== "hidden").length,
         };
       });
-      const openMenu = async (id: string, via: "kebab" | "card") => {
-        await page.evaluate((appointmentId, entry) => {
+      const openMenu = async (id: string) => {
+        await page.evaluate((appointmentId) => {
           const button = document.querySelector(`#schediTodaySchedule button[onclick*="${appointmentId}"]`);
-          const card = button?.closest("article.sd-row");
-          const target = entry === "kebab" ? card?.querySelector("summary") : card?.querySelector(".sd-row-title");
-          if (!(target instanceof HTMLElement)) throw new Error("missing menu opener for " + appointmentId);
-          target.click();
-        }, id, via);
+          const summary = button?.closest("article.sd-row")?.querySelector("summary");
+          if (!(summary instanceof HTMLElement)) throw new Error("missing menu opener for " + appointmentId);
+          summary.click();
+        }, id);
         await page.waitForFunction((appointmentId) => {
           const button = document.querySelector(`#schediTodaySchedule button[onclick*="${appointmentId}"]`);
           const details = button?.closest("details");
           const menu = details?.querySelector(".sd-more-menu") as HTMLElement | null;
-          const card = button?.closest("article.sd-row");
-          return !!details?.open && card?.getAttribute("aria-expanded") === "true" && !!menu && getComputedStyle(menu).visibility === "visible";
+          const summary = details?.querySelector("summary");
+          const openCount = document.querySelectorAll("details.sd-more[open]").length;
+          return openCount === 1 && !!details?.open && summary?.getAttribute("aria-expanded") === "true" && !!menu && getComputedStyle(menu).visibility === "visible";
         }, { timeout: 5000 }, id);
       };
-      const passes: Array<{ width: number; via: "kebab" | "card"; id: string; labels: string[] }> = [
-        { width: 390, via: "kebab", id: "HB-1004", labels: ["Mark paid", "Reschedule", "Mark no-show", "Cancel", "Edit", "Delete"] },
-        { width: 340, via: "card", id: "HB-1003", labels: ["Mark paid", "Reschedule", "Mark no-show", "Cancel", "Edit", "Delete"] },
-        { width: 390, via: "kebab", id: "HB-1001", labels: ["Mark unpaid"] },
-        { width: 340, via: "card", id: "HB-1001", labels: ["Mark unpaid"] },
+      const passes: Array<{ width: number; id: string; labels: string[] }> = [
+        { width: 390, id: "HB-1004", labels: ["Mark paid", "Reschedule", "Mark no-show", "Cancel", "Edit", "Delete"] },
+        { width: 340, id: "HB-1003", labels: ["Mark paid", "Reschedule", "Mark no-show", "Cancel", "Edit", "Delete"] },
+        { width: 390, id: "HB-1001", labels: ["Mark unpaid"] },
+        { width: 340, id: "HB-1001", labels: ["Mark unpaid"] },
       ];
       for (const pass of passes) {
         await page.setViewport({ width: pass.width, height: 900 });
         await page.evaluate(() => (window as unknown as { setSchediTheme: (mode: string) => void }).setSchediTheme("light"));
         await page.evaluate(() => (window as unknown as { schediDashGo: (tab: string) => void }).schediDashGo("today"));
         await page.waitForSelector(`#schediTodaySchedule button[onclick*="${pass.id}"]`, { timeout: 10000 });
+        const stayedClosed = await page.evaluate((appointmentId) => {
+          const button = document.querySelector(`#schediTodaySchedule button[onclick*="${appointmentId}"]`);
+          const card = button?.closest("article.sd-row");
+          const title = card?.querySelector(".sd-row-title");
+          const time = card?.querySelector(".sd-time");
+          if (title instanceof HTMLElement) title.click();
+          if (time instanceof HTMLElement) time.click();
+          if (card instanceof HTMLElement) card.click();
+          return document.querySelectorAll("details.sd-more[open]").length === 0;
+        }, pass.id);
+        expect(stayedClosed).toBe(true);
         for (const label of pass.labels) {
-          await openMenu(pass.id, pass.via);
+          await openMenu(pass.id);
           const stacked = await page.evaluate((appointmentId) => {
             const button = document.querySelector(`#schediTodaySchedule button[onclick*="${appointmentId}"]`);
             const menu = button?.closest(".sd-more-menu") as HTMLElement | null;
@@ -2815,11 +2865,11 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       }
       await page.setViewport({ width: 390, height: 900 });
       await page.evaluate(() => (window as unknown as { schediDashGo: (tab: string) => void }).schediDashGo("today"));
-      await openMenu("HB-1003", "kebab");
+      await openMenu("HB-1003");
       await page.keyboard.press("Escape");
       await page.waitForFunction(() => document.querySelectorAll("details.sd-more[open]").length === 0, { timeout: 5000 });
       expect(await menuState()).toEqual({ open: 0, expanded: 0, visible: 0 });
-      await openMenu("HB-1003", "card");
+      await openMenu("HB-1003");
       await page.evaluate(() => {
         const heading = document.getElementById("schediTodayHeading");
         if (!(heading instanceof HTMLElement)) throw new Error("missing today heading");
@@ -2827,7 +2877,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       });
       await page.waitForFunction(() => document.querySelectorAll("details.sd-more[open]").length === 0, { timeout: 5000 });
       expect(await menuState()).toEqual({ open: 0, expanded: 0, visible: 0 });
-      await openMenu("HB-1003", "kebab");
+      await openMenu("HB-1003");
       await page.evaluate(() => (window as unknown as { schediDashToggleMore: (force?: boolean) => void }).schediDashToggleMore(true));
       await page.waitForFunction(() => {
         const sheet = document.getElementById("schediDashMoreSheet");

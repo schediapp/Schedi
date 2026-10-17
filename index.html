@@ -868,13 +868,6 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-chip.sd-pay-square {
 body.schedi-newdash.sd-client-panel-open { overflow: hidden; }
 #tenantPortalSection.schedi-newdash .roster-appt .sd-pay { margin-top: 4px; white-space: normal; }
 #tenantPortalSection.schedi-newdash .sd-more { position: relative; }
-#tenantPortalSection.schedi-newdash .sd-card.sd-row { cursor: pointer; }
-#tenantPortalSection.schedi-newdash .sd-card.sd-row:focus-visible {
-    outline: 2px solid #10b981;
-    outline-offset: 2px;
-}
-#tenantPortalSection.schedi-newdash .sd-card.sd-row:active { background: rgba(148, 163, 184, 0.14); }
-html.schedi-light #tenantPortalSection.schedi-newdash .sd-card.sd-row:active { background: #f1f5f9; }
 #tenantPortalSection.schedi-newdash .sd-more > summary {
     list-style: none;
     width: 44px;
@@ -11871,8 +11864,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
             if (event && typeof event.stopPropagation === 'function') event.stopPropagation();
             document.querySelectorAll('details.sd-more').forEach(function (el) {
                 el.open = false;
-                var card = el.closest ? el.closest('.sd-row') : null;
-                if (card) card.setAttribute('aria-expanded', 'false');
+                var summary = el.querySelector('summary');
+                if (summary) summary.setAttribute('aria-expanded', 'false');
                 var menu = el.querySelector('.sd-more-menu');
                 if (menu) menu.style.visibility = 'hidden';
             });
@@ -12060,13 +12053,13 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
                     var noShowAction = appointmentIsNoShow(app)
                         ? ''
                         : '<button type="button" role="menuitem" onclick="closeSchediTodayMenus(event); markAppointmentNoShow(' + id + ')">Mark no-show</button>';
-                    return '<article class="sd-card sd-row" role="button" tabindex="0" aria-expanded="false" aria-haspopup="menu" aria-label="More actions for ' + esc(app.clientName || 'appointment') + '">' +
+                    return '<article class="sd-card sd-row">' +
                         '<div class="sd-time">' + esc(app.time || '') + '</div>' +
                         '<div class="sd-row-main"><div class="sd-row-head"><h4><span class="sd-row-title">' + esc(app.clientName || 'Client') + (app.walkIn ? ' · Walk-in' : '') + '</span></h4>' +
                         '<div class="sd-row-chips">' + appointmentStatusChipsHtml(app, { payment: false, price: false, pendingLabel: 'New request' }) + '</div></div>' +
                         '<p class="sd-meta"><span class="sd-svc-line">' + serviceMarkHtml(tenant, app.serviceName) + '<span>' + esc(app.serviceName || 'Appointment') + '</span></span></p></div>' +
                         '<div class="sd-row-side">' + appointmentPayMarkup(app, false) + '</div>' +
-                        '<details class="sd-more"><summary aria-label="More actions"><i class="fa-solid fa-ellipsis-vertical" aria-hidden="true"></i></summary>' +
+                        '<details class="sd-more"><summary aria-label="More actions" aria-expanded="false"><i class="fa-solid fa-ellipsis-vertical" aria-hidden="true"></i></summary>' +
                         '<div class="sd-more-menu" role="menu">' +
                         payAction +
                         '<button type="button" class="sd-act-ok" role="menuitem" onclick="closeSchediTodayMenus(event); openTenantRescheduleModal(' + id + ')">Reschedule</button>' +
@@ -12096,8 +12089,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
 
         window.placeSchediMoreMenu = function (details) {
             if (!details || !details.classList || !details.classList.contains('sd-more')) return;
-            var card = details.closest ? details.closest('.sd-row') : null;
-            if (card) card.setAttribute('aria-expanded', details.open ? 'true' : 'false');
+            var summary = details.querySelector('summary');
+            if (summary) summary.setAttribute('aria-expanded', details.open ? 'true' : 'false');
             var menu = details.querySelector('.sd-more-menu');
             if (!menu) return;
             if (!details.open) {
@@ -12107,7 +12100,6 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
             document.querySelectorAll('details.sd-more[open]').forEach(function (el) {
                 if (el !== details) el.open = false;
             });
-            var summary = details.querySelector('summary');
             if (!summary) return;
             menu.style.visibility = 'hidden';
             menu.style.position = 'fixed';
@@ -12756,10 +12748,6 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
                     btn.setAttribute('aria-expanded', 'false');
                 });
             }
-            var todayCard = node.closest('#schediTodaySchedule article.sd-row');
-            var todayMenu = todayCard ? todayCard.querySelector('details.sd-more') : null;
-            var todayControl = node.closest('a, button, input, select, textarea, label, summary, .sd-more, [role="menuitem"]');
-            var todayWasOpen = !!(todayMenu && todayMenu.open);
             var menuHit = node.closest('.sd-more-menu');
             if (menuHit) {
                 closeSchediTodayMenus();
@@ -12769,10 +12757,6 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
                     if (!el.contains(node)) outsideOpen = true;
                 });
                 if (outsideOpen) closeSchediTodayMenus();
-            }
-            if (todayCard && todayMenu && !todayControl && !menuHit) {
-                todayMenu.open = !todayWasOpen;
-                if (typeof window.placeSchediMoreMenu === 'function') window.placeSchediMoreMenu(todayMenu);
             }
             var results = document.getElementById('rosterSearchResults');
             var hit = node.closest('[data-search-id]');
@@ -12785,15 +12769,6 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
 
         document.addEventListener('keydown', function (event) {
             if (!document.body.classList.contains('schedi-newdash')) return;
-            if ((event.key === 'Enter' || event.key === ' ') && event.target && event.target.classList && event.target.classList.contains('sd-row') && event.target.getAttribute('role') === 'button') {
-                event.preventDefault();
-                var rowMenu = event.target.querySelector('details.sd-more');
-                if (rowMenu) {
-                    rowMenu.open = !rowMenu.open;
-                    if (typeof window.placeSchediMoreMenu === 'function') window.placeSchediMoreMenu(rowMenu);
-                }
-                return;
-            }
             if (event.key === 'Escape') {
                 schediDashClosePopovers();
                 var results = document.getElementById('rosterSearchResults');
