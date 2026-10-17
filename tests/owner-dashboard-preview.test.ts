@@ -932,6 +932,41 @@ describe("owner dashboard preview", () => {
     expect(unscopedSelectors(css)).toEqual([]);
   });
 
+  it("puts the round close chip and shared switch on every reschedule path", () => {
+    const modal = html.slice(html.indexOf('id="tenantRescheduleModal"'), html.indexOf('id="tenantChangePassModal"'));
+    expect(modal).toContain("sd-form-sheet");
+    expect(modal).toContain("sd-form-head");
+    expect(modal).toContain('id="tenantRescheduleTitle"');
+    expect(modal).toContain('class="sd-form-close" aria-label="Close"');
+    expect(modal).toContain("sd-form-scroll");
+    expect(modal).not.toContain("text-slate-400 hover:text-white");
+    expect(modal).not.toContain("w-3.5 h-3.5");
+    const today = extractFunction(html, "renderSchediToday");
+    const actions = extractFunction(html, "rosterActionsHtml");
+    expect(today).toContain("openTenantRescheduleModal(");
+    expect(actions).toContain("btn('openTenantRescheduleModal', 'sd-act sd-act-ok', '<i class=\"fa-solid fa-calendar-days mr-1\"></i>Reschedule')");
+    expect(html).toContain("'openTenantRescheduleModal'");
+    const extras = extractFunction(html, "ensureOwnerTimeExtras");
+    expect(extras).toContain('class="owner-time-showall sd-pay-switch" role="switch" aria-checked="false"');
+    expect(extras).toContain("sd-pay-switch-row");
+    expect(extras).toContain("sd-pay-switch-title");
+    expect(extras).toContain("Show all times");
+    expect(extras).toContain("syncPaySwitchAria(ev.target)");
+    expect(extras).not.toContain("w-3.5");
+    expect(extractFunction(html, "populateOwnerTimeSelect")).toContain("syncPaySwitchAria(extras.toggle)");
+    expect(extractFunction(html, "setManualWalkIn")).toContain("syncPaySwitchAria(showAll)");
+    const css = dashCss(html);
+    expect(css).toContain("body.schedi-newdash #tenantRescheduleModal { overflow: hidden; }");
+    expect(css).toContain("body.schedi-newdash #tenantRescheduleModal .sd-form-sheet {");
+    expect(css).toContain("body.schedi-newdash .owner-time-extras .sd-pay-switch {");
+    expect(css).toContain("body.schedi-newdash .owner-time-extras .sd-pay-switch-row {");
+    expect(css).toContain("body.schedi-newdash .owner-time-extras .sd-pay-switch-title {");
+    expect(css).toContain("html.schedi-light body.schedi-newdash .owner-time-extras .sd-pay-switch { background: #cbd5e1; }");
+    expect(css).toContain("html.schedi-light body.schedi-newdash .owner-time-extras .sd-pay-switch:checked { background: #059669; }");
+    expect(css).toContain("body.schedi-newdash .owner-time-extras .sd-pay-switch:checked { background: #10b981; }");
+    expect(unscopedSelectors(css)).toEqual([]);
+  });
+
   it("orders appointment status chips as booking, outcome, payment, then price", () => {
     const api = new Function(`
       ${extractFunction(html, "esc")}
@@ -1224,7 +1259,7 @@ describe("owner dashboard preview", () => {
     expect(html).toContain('id="rosterApptBody" class="space-y-4 text-xs sd-form-scroll"');
     expect(html).toContain("sheetBody.scrollTop = 0");
     expect(html).toContain("body.scrollTop = 0;\n            modal.classList.remove('hidden');\n            modal.scrollTop = 0;");
-    expect(css).toContain("body.schedi-newdash #comparePlansModal,\nbody.schedi-newdash #rosterApptModal { overflow: hidden; }");
+    expect(css).toContain("body.schedi-newdash #comparePlansModal,\nbody.schedi-newdash #rosterApptModal,\nbody.schedi-newdash #tenantRescheduleModal { overflow: hidden; }");
     expect(css).toContain("body.schedi-newdash #comparePlansModal .sd-plans-foot {");
     expect(css).toContain("body.schedi-newdash #rosterApptModal > .sd-form-sheet");
     expect(css).toContain("max-height: 94dvh;");
@@ -2806,6 +2841,139 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
     }
   }, 120000);
 
+  it("opens the round-close reschedule sheet from today, the roster row, and the details card", async () => {
+    const types: Record<string, string> = {
+      ".html": "text/html; charset=utf-8",
+      ".js": "text/javascript; charset=utf-8",
+      ".svg": "image/svg+xml",
+      ".png": "image/png",
+      ".json": "application/json",
+      ".webmanifest": "application/manifest+json",
+    };
+    const server = createServer((req, res) => {
+      const path = new URL(req.url || "/", "http://127.0.0.1").pathname;
+      const file = path === "/" || path === "/portal-preview" ? "/index.html" : path;
+      const full = join(root, file);
+      if (!full.startsWith(root) || !existsSync(full)) {
+        res.writeHead(404);
+        res.end("missing");
+        return;
+      }
+      res.writeHead(200, { "content-type": types[extname(full)] || "application/octet-stream" });
+      res.end(readFileSync(full));
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const address = server.address();
+    const port = typeof address === "object" && address ? address.port : 0;
+    const puppeteer = await import("puppeteer-core");
+    const browser = await puppeteer.default.launch({
+      executablePath: chrome,
+      headless: true,
+      args: ["--no-sandbox", "--disable-dev-shm-usage"],
+    });
+    try {
+      const page = await browser.newPage();
+      page.on("dialog", (dialog) => {
+        void dialog.dismiss();
+      });
+      await page.setViewport({ width: 390, height: 844 });
+      await page.goto(`http://127.0.0.1:${port}/portal-preview`, { waitUntil: "domcontentloaded", timeout: 45000 });
+      await page.waitForFunction(() => document.body.classList.contains("schedi-newdash"), { timeout: 20000 });
+      const assertSheet = async (theme: "dark" | "light", entry: string) => {
+        await page.waitForSelector("#tenantRescheduleModal:not(.hidden) .sd-form-head .sd-form-close", { timeout: 5000 });
+        const box = await page.evaluate(() => {
+          const close = document.querySelector("#tenantRescheduleModal .sd-form-close") as HTMLElement;
+          const input = document.querySelector("#rescheduleTimeInputExtras .sd-pay-switch") as HTMLInputElement;
+          const closeBox = close.getBoundingClientRect();
+          const inputBox = input.getBoundingClientRect();
+          const menus = document.querySelectorAll("details.sd-more[open]").length;
+          return {
+            closeW: closeBox.width,
+            closeH: closeBox.height,
+            radius: parseFloat(getComputedStyle(close).borderTopLeftRadius),
+            bg: getComputedStyle(close).backgroundColor,
+            inHead: !!close.closest(".sd-form-head"),
+            role: input.getAttribute("role"),
+            sw: inputBox.width,
+            sh: inputBox.height,
+            aria: input.getAttribute("aria-checked"),
+            menus,
+          };
+        });
+        expect(box.inHead, entry).toBe(true);
+        expect(box.closeW, entry).toBeGreaterThanOrEqual(47.5);
+        expect(box.closeW, entry).toBeLessThanOrEqual(48.5);
+        expect(box.closeH, entry).toBeGreaterThanOrEqual(47.5);
+        expect(box.closeH, entry).toBeLessThanOrEqual(48.5);
+        expect(box.radius, entry).toBeGreaterThanOrEqual(24);
+        expect(box.bg, entry).toBe(theme === "dark" ? "rgb(30, 41, 59)" : "rgb(241, 245, 249)");
+        expect(box.role, entry).toBe("switch");
+        expect(box.sw, entry).toBeGreaterThanOrEqual(51.5);
+        expect(box.sw, entry).toBeLessThanOrEqual(52.5);
+        expect(box.sh, entry).toBeGreaterThanOrEqual(29.5);
+        expect(box.sh, entry).toBeLessThanOrEqual(30.5);
+        expect(box.aria, entry).toBe("false");
+        expect(box.menus, entry).toBe(0);
+        await page.evaluate(() => (window as unknown as { closeTenantRescheduleModal: () => void }).closeTenantRescheduleModal());
+        await page.waitForSelector("#tenantRescheduleModal.hidden", { timeout: 5000 });
+      };
+      for (const theme of ["light", "dark"] as const) {
+        await page.evaluate((mode) => (window as unknown as { setSchediTheme: (mode: string) => void }).setSchediTheme(mode), theme);
+        await page.evaluate(() => (window as unknown as { schediDashGo: (tab: string) => void }).schediDashGo("today"));
+        const id = "HB-1004";
+        await page.waitForSelector(`#schediTodaySchedule button[onclick*="${id}"]`, { timeout: 10000 });
+        await page.evaluate((appointmentId) => {
+          const button = document.querySelector(`#schediTodaySchedule button[onclick*="${appointmentId}"]`);
+          const summary = button?.closest("article.sd-row")?.querySelector("summary");
+          if (!(summary instanceof HTMLElement)) throw new Error("missing today menu");
+          summary.click();
+        }, id);
+        await page.waitForFunction((appointmentId) => {
+          const button = document.querySelector(`#schediTodaySchedule button[onclick*="${appointmentId}"]`);
+          const details = button?.closest("details");
+          const menu = button?.closest(".sd-more-menu") as HTMLElement | null;
+          return !!details?.open && !!menu && getComputedStyle(menu).visibility === "visible";
+        }, { timeout: 5000 }, id);
+        const tapped = await page.evaluate((appointmentId) => {
+          const buttons = Array.from(document.querySelectorAll(`#schediTodaySchedule button[onclick*="${appointmentId}"]`));
+          const hit = buttons.find((el) => (el.textContent || "").trim() === "Reschedule");
+          if (!(hit instanceof HTMLElement)) return false;
+          hit.click();
+          return true;
+        }, id);
+        expect(tapped, `today ${theme}`).toBe(true);
+        await assertSheet(theme, `today ${theme}`);
+        await page.evaluate(() => (window as unknown as { schediDashGo: (tab: string) => void }).schediDashGo("appointments"));
+        await page.waitForSelector(`#tenantRosterTableBody button[onclick*="${id}"]`, { timeout: 10000 });
+        const rowTapped = await page.evaluate((appointmentId) => {
+          const buttons = Array.from(document.querySelectorAll(`#tenantRosterTableBody button[onclick*="${appointmentId}"]`));
+          const hit = buttons.find((el) => (el.textContent || "").includes("Reschedule"));
+          if (!(hit instanceof HTMLElement)) return false;
+          hit.click();
+          return true;
+        }, id);
+        expect(rowTapped, `row ${theme}`).toBe(true);
+        await assertSheet(theme, `row ${theme}`);
+        await page.evaluate((appointmentId) => {
+          (window as unknown as { openRosterApptModal: (id: string) => void }).openRosterApptModal(appointmentId);
+        }, id);
+        await page.waitForSelector("#rosterApptModal:not(.hidden) .roster-sheet-actions button", { timeout: 5000 });
+        const cardTapped = await page.evaluate(() => {
+          const buttons = Array.from(document.querySelectorAll("#rosterApptModal .roster-sheet-actions button"));
+          const hit = buttons.find((el) => (el.textContent || "").includes("Reschedule"));
+          if (!(hit instanceof HTMLElement)) return false;
+          hit.click();
+          return true;
+        });
+        expect(cardTapped, `card ${theme}`).toBe(true);
+        await assertSheet(theme, `card ${theme}`);
+      }
+    } finally {
+      await browser.close();
+      await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+    }
+  }, 120000);
+
   it("reads status chips as booking, outcome, payment, then price at 340 and 390", async () => {
     const types: Record<string, string> = {
       ".html": "text/html; charset=utf-8",
@@ -4174,6 +4342,58 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
           await page.evaluate(() => (window as unknown as { openTenantRescheduleModal: (id: string) => void }).openTenantRescheduleModal("HB-1001"));
           await page.waitForSelector("#tenantRescheduleModal:not(.hidden) .sd-form-close", { timeout: 5000 });
           expectChip(await readClose("#tenantRescheduleModal .sd-form-close"), theme, `reschedule ${width} ${theme}`);
+          const showAll = await page.evaluate(() => {
+            const modal = document.getElementById("tenantRescheduleModal") as HTMLElement;
+            const close = modal.querySelector(".sd-form-close") as HTMLElement;
+            const input = document.querySelector("#rescheduleTimeInputExtras .owner-time-showall") as HTMLInputElement;
+            const title = document.getElementById("rescheduleTimeInputShowAllLabel") as HTMLElement;
+            const row = input.closest(".sd-pay-switch-row") as HTMLElement;
+            const box = input.getBoundingClientRect();
+            const style = getComputedStyle(input);
+            return {
+              inHead: !!close.closest(".sd-form-head"),
+              role: input.getAttribute("role"),
+              aria: input.getAttribute("aria-checked"),
+              on: input.checked,
+              w: box.width,
+              h: box.height,
+              radius: parseFloat(style.borderTopLeftRadius),
+              bg: style.backgroundColor,
+              title: title.textContent,
+              titleSize: getComputedStyle(title).fontSize,
+              rowH: row.getBoundingClientRect().height,
+            };
+          });
+          expect(showAll.inHead, `reschedule head ${width} ${theme}`).toBe(true);
+          expect(showAll.role, `show all ${width} ${theme}`).toBe("switch");
+          expect(showAll.aria, `show all ${width} ${theme}`).toBe("false");
+          expect(showAll.on, `show all ${width} ${theme}`).toBe(false);
+          expect(showAll.w, `show all ${width} ${theme}`).toBeGreaterThanOrEqual(51.5);
+          expect(showAll.w, `show all ${width} ${theme}`).toBeLessThanOrEqual(52.5);
+          expect(showAll.h, `show all ${width} ${theme}`).toBeGreaterThanOrEqual(29.5);
+          expect(showAll.h, `show all ${width} ${theme}`).toBeLessThanOrEqual(30.5);
+          expect(showAll.radius, `show all ${width} ${theme}`).toBeGreaterThanOrEqual(15);
+          expect(showAll.bg, `show all ${width} ${theme}`).toBe(theme === "dark" ? "rgb(100, 116, 139)" : "rgb(203, 213, 225)");
+          expect(showAll.title, `show all ${width} ${theme}`).toBe("Show all times");
+          expect(showAll.titleSize, `show all ${width} ${theme}`).toBe("17px");
+          expect(showAll.rowH, `show all ${width} ${theme}`).toBeGreaterThanOrEqual(56);
+          await page.click("#rescheduleTimeInputExtras .owner-time-showall");
+          const toggled = await page.evaluate(() => {
+            const input = document.querySelector("#rescheduleTimeInputExtras .owner-time-showall") as HTMLInputElement;
+            const hint = document.querySelector("#rescheduleTimeInputExtras .owner-time-hint") as HTMLElement;
+            return {
+              aria: input.getAttribute("aria-checked"),
+              on: input.checked,
+              bg: getComputedStyle(input).backgroundColor,
+              hint: hint.textContent || "",
+              hidden: hint.classList.contains("hidden"),
+            };
+          });
+          expect(toggled.on, `show all on ${width} ${theme}`).toBe(true);
+          expect(toggled.aria, `show all on ${width} ${theme}`).toBe("true");
+          expect(toggled.bg, `show all on ${width} ${theme}`).toBe(theme === "dark" ? "rgb(16, 185, 129)" : "rgb(5, 150, 105)");
+          expect(toggled.hidden, `show all hint ${width} ${theme}`).toBe(false);
+          expect(toggled.hint, `show all hint ${width} ${theme}`).toContain("Showing every time");
           await page.click("#tenantRescheduleModal .sd-form-close");
           await page.evaluate(() => (window as unknown as { openAddBlockedTimeModal: () => void }).openAddBlockedTimeModal());
           await page.waitForSelector("#addBlockedTimeModal:not(.hidden) .sd-form-close", { timeout: 5000 });
