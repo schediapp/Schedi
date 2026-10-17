@@ -868,12 +868,13 @@ describe("owner dashboard preview", () => {
     expect(remove).not.toContain("rose");
     expect(actions).toContain("bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400");
     const today = extractFunction(html, "renderSchediToday");
-    expect(today).toContain('class="sd-act-ok" role="menuitem" onclick="markAppointmentPaid(');
-    expect(today).toContain('class="sd-act-ok" role="menuitem" onclick="openTenantRescheduleModal(');
-    expect(today).toContain('class="sd-act-no" role="menuitem" onclick="deleteAppointment(');
-    expect(today).toContain('class="sd-act-no" role="menuitem" onclick="openRosterDeleteModal(');
-    expect(today).toContain('role="menuitem" onclick="markAppointmentNoShow(');
-    expect(today).toContain('role="menuitem" onclick="openEditAppointment(');
+    expect(today).toContain('class="sd-act-ok" role="menuitem" onclick="closeSchediTodayMenus(event); markAppointmentPaid(');
+    expect(today).toContain('role="menuitem" onclick="closeSchediTodayMenus(event); markAppointmentUnpaid(');
+    expect(today).toContain('class="sd-act-ok" role="menuitem" onclick="closeSchediTodayMenus(event); openTenantRescheduleModal(');
+    expect(today).toContain('class="sd-act-no" role="menuitem" onclick="closeSchediTodayMenus(event); deleteAppointment(');
+    expect(today).toContain('class="sd-act-no" role="menuitem" onclick="closeSchediTodayMenus(event); openRosterDeleteModal(');
+    expect(today).toContain('role="menuitem" onclick="closeSchediTodayMenus(event); markAppointmentNoShow(');
+    expect(today).toContain('role="menuitem" onclick="closeSchediTodayMenus(event); openEditAppointment(');
     const css = dashCss(html);
     const rest = css.slice(css.indexOf("body.schedi-newdash .roster-actions > button.sd-act,"));
     expect(rest.slice(0, 280)).toContain("background: #1e293b");
@@ -909,6 +910,26 @@ describe("owner dashboard preview", () => {
     expect(css).toContain("width: 44px;");
     expect(css).toContain("height: 44px;");
     expect(unscopedSelectors(dashCss(html))).toEqual([]);
+  });
+
+  it("closes the today actions menu before a menu item and keeps it under modals", () => {
+    const close = extractFunction(html, "closeSchediTodayMenus");
+    expect(close).toContain("if (event && typeof event.stopPropagation === 'function') event.stopPropagation();");
+    expect(close).toContain("el.open = false");
+    expect(close).toContain("card.setAttribute('aria-expanded', 'false')");
+    expect(close).toContain("menu.style.visibility = 'hidden'");
+    expect(html).toContain("window.closeSchediTodayMenus = closeSchediTodayMenus;");
+    expect(html).toContain("if (menuHit) {\n                closeSchediTodayMenus();");
+    expect(html).toContain("menu.style.zIndex = '45';");
+    const css = dashCss(html);
+    expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-more-menu {\n    position: fixed;\n    z-index: 45;");
+    expect(html).toContain("var schediTodayMenuObserver = new MutationObserver");
+    expect(html).toContain("attributeFilter: ['class', 'hidden']");
+    expect(html).toContain("node.id === 'schediDashMoreSheet'");
+    expect(html).toContain("node.id === 'schediDashHelp'");
+    expect(html).toContain("node.id === 'sdClientPanel'");
+    expect(html).toContain("node.id === 'schediDashAddMenu'");
+    expect(unscopedSelectors(css)).toEqual([]);
   });
 
   it("orders appointment status chips as booking, outcome, payment, then price", () => {
@@ -2619,6 +2640,166 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
           await page.waitForFunction(() => document.querySelector("#schediTodaySchedule article.sd-row")?.getAttribute("aria-expanded") === "false", { timeout: 5000 });
         }
       }
+    } finally {
+      await browser.close();
+      await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+    }
+  }, 120000);
+
+  it("hides today's actions menu after every item, Escape, outside tap, and an opening sheet", async () => {
+    const types: Record<string, string> = {
+      ".html": "text/html; charset=utf-8",
+      ".js": "text/javascript; charset=utf-8",
+      ".svg": "image/svg+xml",
+      ".png": "image/png",
+      ".json": "application/json",
+      ".webmanifest": "application/manifest+json",
+    };
+    const server = createServer((req, res) => {
+      const path = new URL(req.url || "/", "http://127.0.0.1").pathname;
+      const file = path === "/" || path === "/portal-preview" ? "/index.html" : path;
+      const full = join(root, file);
+      if (!full.startsWith(root) || !existsSync(full)) {
+        res.writeHead(404);
+        res.end("missing");
+        return;
+      }
+      res.writeHead(200, { "content-type": types[extname(full)] || "application/octet-stream" });
+      res.end(readFileSync(full));
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const address = server.address();
+    const port = typeof address === "object" && address ? address.port : 0;
+    const puppeteer = await import("puppeteer-core");
+    const browser = await puppeteer.default.launch({
+      executablePath: chrome,
+      headless: true,
+      args: ["--no-sandbox", "--disable-dev-shm-usage"],
+    });
+    const modalFor: Record<string, string> = {
+      "Mark paid": "rosterPaidMethodModal",
+      "Reschedule": "tenantRescheduleModal",
+      Edit: "manualBookingModal",
+      Delete: "rosterDeleteModal",
+      "Mark unpaid": "unpaidStripeModal",
+    };
+    const closeFor: Record<string, string> = {
+      "Mark paid": "closeRosterPaidMethodModal",
+      Reschedule: "closeTenantRescheduleModal",
+      Edit: "closeManualBookingModal",
+      Delete: "closeRosterDeleteModal",
+      "Mark unpaid": "closeUnpaidStripeModal",
+    };
+    try {
+      const page = await browser.newPage();
+      page.on("dialog", (dialog) => {
+        void dialog.dismiss();
+      });
+      await page.goto(`http://127.0.0.1:${port}/portal-preview`, { waitUntil: "domcontentloaded", timeout: 45000 });
+      await page.waitForFunction(() => document.body.classList.contains("schedi-newdash"), { timeout: 20000 });
+      const menuState = () => page.evaluate(() => {
+        const menus = Array.from(document.querySelectorAll("#schediTodaySchedule .sd-more-menu")) as HTMLElement[];
+        return {
+          open: document.querySelectorAll("details.sd-more[open]").length,
+          expanded: Array.from(document.querySelectorAll("#schediTodaySchedule article.sd-row")).filter((el) => el.getAttribute("aria-expanded") === "true").length,
+          visible: menus.filter((menu) => getComputedStyle(menu).visibility !== "hidden").length,
+        };
+      });
+      const openMenu = async (id: string, via: "kebab" | "card") => {
+        await page.evaluate((appointmentId, entry) => {
+          const button = document.querySelector(`#schediTodaySchedule button[onclick*="${appointmentId}"]`);
+          const card = button?.closest("article.sd-row");
+          const target = entry === "kebab" ? card?.querySelector("summary") : card?.querySelector(".sd-row-title");
+          if (!(target instanceof HTMLElement)) throw new Error("missing menu opener for " + appointmentId);
+          target.click();
+        }, id, via);
+        await page.waitForFunction((appointmentId) => {
+          const button = document.querySelector(`#schediTodaySchedule button[onclick*="${appointmentId}"]`);
+          const details = button?.closest("details");
+          const menu = details?.querySelector(".sd-more-menu") as HTMLElement | null;
+          const card = button?.closest("article.sd-row");
+          return !!details?.open && card?.getAttribute("aria-expanded") === "true" && !!menu && getComputedStyle(menu).visibility === "visible";
+        }, { timeout: 5000 }, id);
+      };
+      const passes: Array<{ width: number; via: "kebab" | "card"; id: string; labels: string[] }> = [
+        { width: 390, via: "kebab", id: "HB-1004", labels: ["Mark paid", "Reschedule", "Mark no-show", "Cancel", "Edit", "Delete"] },
+        { width: 340, via: "card", id: "HB-1003", labels: ["Mark paid", "Reschedule", "Mark no-show", "Cancel", "Edit", "Delete"] },
+        { width: 390, via: "kebab", id: "HB-1001", labels: ["Mark unpaid"] },
+        { width: 340, via: "card", id: "HB-1001", labels: ["Mark unpaid"] },
+      ];
+      for (const pass of passes) {
+        await page.setViewport({ width: pass.width, height: 900 });
+        await page.evaluate(() => (window as unknown as { setSchediTheme: (mode: string) => void }).setSchediTheme("light"));
+        await page.evaluate(() => (window as unknown as { schediDashGo: (tab: string) => void }).schediDashGo("today"));
+        await page.waitForSelector(`#schediTodaySchedule button[onclick*="${pass.id}"]`, { timeout: 10000 });
+        for (const label of pass.labels) {
+          await openMenu(pass.id, pass.via);
+          const stacked = await page.evaluate((appointmentId) => {
+            const button = document.querySelector(`#schediTodaySchedule button[onclick*="${appointmentId}"]`);
+            const menu = button?.closest(".sd-more-menu") as HTMLElement | null;
+            return menu ? Number.parseInt(getComputedStyle(menu).zIndex, 10) : 0;
+          }, pass.id);
+          expect(stacked).toBe(45);
+          const tapped = await page.evaluate((appointmentId, item) => {
+            const buttons = Array.from(document.querySelectorAll(`#schediTodaySchedule button[onclick*="${appointmentId}"]`));
+            const hit = buttons.find((el) => (el.textContent || "").trim() === item);
+            if (!(hit instanceof HTMLElement)) return false;
+            hit.click();
+            return true;
+          }, pass.id, label);
+          expect(tapped).toBe(true);
+          await page.waitForFunction(() => document.querySelectorAll("details.sd-more[open]").length === 0, { timeout: 5000 });
+          expect(await menuState()).toEqual({ open: 0, expanded: 0, visible: 0 });
+          const modalId = modalFor[label];
+          if (modalId) {
+            const stack = await page.evaluate((id, appointmentId) => {
+              const dialog = document.getElementById(id) as HTMLElement | null;
+              const menu = document.querySelector(`#schediTodaySchedule button[onclick*="${appointmentId}"]`)?.closest(".sd-more-menu") as HTMLElement | null;
+              const title = dialog?.querySelector("h3") as HTMLElement | null;
+              const box = title?.getBoundingClientRect();
+              const hit = box ? document.elementFromPoint(box.x + 12, box.y + Math.min(8, box.height / 2)) : null;
+              return {
+                open: !!dialog && !dialog.classList.contains("hidden"),
+                menuZ: menu ? Number.parseInt(getComputedStyle(menu).zIndex, 10) : 0,
+                dialogZ: dialog ? Number.parseInt(getComputedStyle(dialog).zIndex, 10) : 0,
+                inMenu: !!hit?.closest(".sd-more-menu"),
+                inDialog: !!hit?.closest(`#${id}`),
+              };
+            }, modalId, pass.id);
+            expect(stack.open).toBe(true);
+            expect(stack.menuZ).toBeLessThan(stack.dialogZ);
+            expect(stack.inMenu).toBe(false);
+            expect(stack.inDialog).toBe(true);
+            await page.evaluate((name) => {
+              const api = window as unknown as Record<string, () => void>;
+              api[name]();
+            }, closeFor[label]);
+            expect(await menuState()).toEqual({ open: 0, expanded: 0, visible: 0 });
+          }
+        }
+      }
+      await page.setViewport({ width: 390, height: 900 });
+      await page.evaluate(() => (window as unknown as { schediDashGo: (tab: string) => void }).schediDashGo("today"));
+      await openMenu("HB-1003", "kebab");
+      await page.keyboard.press("Escape");
+      await page.waitForFunction(() => document.querySelectorAll("details.sd-more[open]").length === 0, { timeout: 5000 });
+      expect(await menuState()).toEqual({ open: 0, expanded: 0, visible: 0 });
+      await openMenu("HB-1003", "card");
+      await page.evaluate(() => {
+        const heading = document.getElementById("schediTodayHeading");
+        if (!(heading instanceof HTMLElement)) throw new Error("missing today heading");
+        heading.click();
+      });
+      await page.waitForFunction(() => document.querySelectorAll("details.sd-more[open]").length === 0, { timeout: 5000 });
+      expect(await menuState()).toEqual({ open: 0, expanded: 0, visible: 0 });
+      await openMenu("HB-1003", "kebab");
+      await page.evaluate(() => (window as unknown as { schediDashToggleMore: (force?: boolean) => void }).schediDashToggleMore(true));
+      await page.waitForFunction(() => {
+        const sheet = document.getElementById("schediDashMoreSheet");
+        return !!sheet && !sheet.hidden && document.querySelectorAll("details.sd-more[open]").length === 0;
+      }, { timeout: 5000 });
+      expect(await menuState()).toEqual({ open: 0, expanded: 0, visible: 0 });
+      await page.evaluate(() => (window as unknown as { schediDashToggleMore: (force?: boolean) => void }).schediDashToggleMore(false));
     } finally {
       await browser.close();
       await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));

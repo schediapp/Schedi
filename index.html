@@ -903,7 +903,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-more > summary:active 
 #tenantPortalSection.schedi-newdash .sd-more > summary::-webkit-details-marker { display: none; }
 #tenantPortalSection.schedi-newdash .sd-more-menu {
     position: fixed;
-    z-index: 60;
+    z-index: 45;
     left: 0;
     top: 0;
     visibility: hidden;
@@ -11805,8 +11805,20 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
             document.querySelectorAll('#schediDashUserBtn, #schediDashUserBtnPhone').forEach(function (btn) {
                 btn.setAttribute('aria-expanded', 'false');
             });
-            document.querySelectorAll('details.sd-more[open]').forEach(function (el) { el.open = false; });
+            closeSchediTodayMenus();
         }
+
+        function closeSchediTodayMenus(event) {
+            if (event && typeof event.stopPropagation === 'function') event.stopPropagation();
+            document.querySelectorAll('details.sd-more').forEach(function (el) {
+                el.open = false;
+                var card = el.closest ? el.closest('.sd-row') : null;
+                if (card) card.setAttribute('aria-expanded', 'false');
+                var menu = el.querySelector('.sd-more-menu');
+                if (menu) menu.style.visibility = 'hidden';
+            });
+        }
+        window.closeSchediTodayMenus = closeSchediTodayMenus;
 
         function calendarSyncProviders() {
             return [
@@ -11984,11 +11996,11 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
                 schedule.innerHTML = todayApps.length ? todayApps.map(function (app) {
                     var id = esc(jsArg(app.id));
                     var payAction = rosterPayMenuLabel(app) === 'Mark unpaid'
-                        ? '<button type="button" role="menuitem" onclick="markAppointmentUnpaid(' + id + ')">Mark unpaid</button>'
-                        : '<button type="button" class="sd-act-ok" role="menuitem" onclick="markAppointmentPaid(' + id + ')">Mark paid</button>';
+                        ? '<button type="button" role="menuitem" onclick="closeSchediTodayMenus(event); markAppointmentUnpaid(' + id + ')">Mark unpaid</button>'
+                        : '<button type="button" class="sd-act-ok" role="menuitem" onclick="closeSchediTodayMenus(event); markAppointmentPaid(' + id + ')">Mark paid</button>';
                     var noShowAction = appointmentIsNoShow(app)
                         ? ''
-                        : '<button type="button" role="menuitem" onclick="markAppointmentNoShow(' + id + ')">Mark no-show</button>';
+                        : '<button type="button" role="menuitem" onclick="closeSchediTodayMenus(event); markAppointmentNoShow(' + id + ')">Mark no-show</button>';
                     return '<article class="sd-card sd-row" role="button" tabindex="0" aria-expanded="false" aria-haspopup="menu" aria-label="More actions for ' + esc(app.clientName || 'appointment') + '">' +
                         '<div class="sd-time">' + esc(app.time || '') + '</div>' +
                         '<div class="sd-row-main"><div class="sd-row-head"><h4><span class="sd-row-title">' + esc(app.clientName || 'Client') + (app.walkIn ? ' · Walk-in' : '') + '</span></h4>' +
@@ -11998,11 +12010,11 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
                         '<details class="sd-more"><summary aria-label="More actions"><i class="fa-solid fa-ellipsis-vertical" aria-hidden="true"></i></summary>' +
                         '<div class="sd-more-menu" role="menu">' +
                         payAction +
-                        '<button type="button" class="sd-act-ok" role="menuitem" onclick="openTenantRescheduleModal(' + id + ')">Reschedule</button>' +
+                        '<button type="button" class="sd-act-ok" role="menuitem" onclick="closeSchediTodayMenus(event); openTenantRescheduleModal(' + id + ')">Reschedule</button>' +
                         noShowAction +
-                        '<button type="button" class="sd-act-no" role="menuitem" onclick="deleteAppointment(' + id + ')">Cancel</button>' +
-                        '<button type="button" role="menuitem" onclick="openEditAppointment(' + id + ')">Edit</button>' +
-                        '<button type="button" class="sd-act-no" role="menuitem" onclick="openRosterDeleteModal(' + id + ')">Delete</button>' +
+                        '<button type="button" class="sd-act-no" role="menuitem" onclick="closeSchediTodayMenus(event); deleteAppointment(' + id + ')">Cancel</button>' +
+                        '<button type="button" role="menuitem" onclick="closeSchediTodayMenus(event); openEditAppointment(' + id + ')">Edit</button>' +
+                        '<button type="button" class="sd-act-no" role="menuitem" onclick="closeSchediTodayMenus(event); openRosterDeleteModal(' + id + ')">Delete</button>' +
                         '</div></details></article>';
                 }).join('') : '<p class="sd-empty">Nothing on the book today.</p>';
             }
@@ -12043,7 +12055,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
             menu.style.right = 'auto';
             menu.style.bottom = 'auto';
             menu.style.maxHeight = '';
-            menu.style.zIndex = '60';
+            menu.style.zIndex = '45';
             var rect = summary.getBoundingClientRect();
             var width = Math.max(menu.offsetWidth || 0, 180);
             var sidebar = window.innerWidth >= 860 ? 244 : 0;
@@ -12689,10 +12701,17 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
             var todayMenu = todayCard ? todayCard.querySelector('details.sd-more') : null;
             var todayControl = node.closest('a, button, input, select, textarea, label, summary, .sd-more, [role="menuitem"]');
             var todayWasOpen = !!(todayMenu && todayMenu.open);
-            document.querySelectorAll('details.sd-more[open]').forEach(function (el) {
-                if (!el.contains(node)) el.open = false;
-            });
-            if (todayCard && todayMenu && !todayControl) {
+            var menuHit = node.closest('.sd-more-menu');
+            if (menuHit) {
+                closeSchediTodayMenus();
+            } else if (!node.closest('details.sd-more > summary')) {
+                var outsideOpen = false;
+                document.querySelectorAll('details.sd-more[open]').forEach(function (el) {
+                    if (!el.contains(node)) outsideOpen = true;
+                });
+                if (outsideOpen) closeSchediTodayMenus();
+            }
+            if (todayCard && todayMenu && !todayControl && !menuHit) {
                 todayMenu.open = !todayWasOpen;
                 if (typeof window.placeSchediMoreMenu === 'function') window.placeSchediMoreMenu(todayMenu);
             }
@@ -12759,7 +12778,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
             if (!document.body.classList.contains('schedi-newdash')) return;
             var target = event.target;
             if (target && target.closest && (target.closest('.sd-more-menu') || target.closest('#schediDashAccountMenu') || target.closest('.sd-roster-results'))) return;
-            document.querySelectorAll('details.sd-more[open]').forEach(function (el) { el.open = false; });
+            if (document.querySelector('details.sd-more[open]')) closeSchediTodayMenus();
             var account = document.getElementById('schediDashAccountMenu');
             if (account && !account.hidden) {
                 account.hidden = true;
@@ -12768,6 +12787,21 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
                 });
             }
         }, true);
+
+        if (window.MutationObserver) {
+            var schediTodayMenuObserver = new MutationObserver(function (records) {
+                records.forEach(function (record) {
+                    var node = record.target;
+                    if (!node || node.nodeType !== 1) return;
+                    var overlay = node.getAttribute('role') === 'dialog' || node.id === 'schediDashMoreSheet' || node.id === 'schediDashHelp' || node.id === 'sdClientPanel' || node.id === 'schediDashAddMenu' || node.id === 'sdSeriesPreview';
+                    if (!overlay) return;
+                    if (node.closest && node.closest('[hidden]')) return;
+                    if (node.hasAttribute('hidden') || node.classList.contains('hidden')) return;
+                    closeSchediTodayMenus();
+                });
+            });
+            schediTodayMenuObserver.observe(document.body, { attributes: true, attributeFilter: ['class', 'hidden'], subtree: true });
+        }
 
         function schediDemoTodayIso() {
             try {
