@@ -1954,8 +1954,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-busy-soon:disabled {
     font-weight: 800;
     color: var(--sd-text);
 }
-#tenantPortalSection.schedi-newdash .sd-busy-cal,
-#tenantPortalSection.schedi-newdash .sd-busy-toggle {
+#tenantPortalSection.schedi-newdash .sd-busy-cal {
     display: flex;
     align-items: center;
     gap: 10px;
@@ -1966,8 +1965,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-busy-soon:disabled {
     font-weight: 700;
     cursor: pointer;
 }
-#tenantPortalSection.schedi-newdash .sd-busy-cal input,
-#tenantPortalSection.schedi-newdash .sd-busy-toggle input {
+#tenantPortalSection.schedi-newdash .sd-busy-cal input {
     width: 20px;
     height: 20px;
     flex: none;
@@ -5043,15 +5041,17 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
                     </div>
 
                     <form onsubmit="handleSaveTenantNotifications(event)" class="space-y-4 max-w-xl text-xs">
-                        <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center justify-between">
-                            <div class="flex items-center space-x-3">
-                                <i class="fa-solid fa-envelope-circle-check text-brand-400 text-lg"></i>
-                                <div>
-                                    <div class="font-bold text-white">Send confirmation emails</div>
-                                    <div class="text-[11px] text-slate-400">Email the client after each successful booking</div>
-                                </div>
-                            </div>
-                            <input type="checkbox" id="tenantEmailConfirmCheck" class="w-4 h-4 accent-brand-500 rounded cursor-pointer">
+                        <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800">
+                            <label class="sd-pay-switch-row">
+                                <span class="sd-pay-switch-copy">
+                                    <i class="fa-solid fa-envelope-circle-check text-brand-400" aria-hidden="true"></i>
+                                    <span>
+                                        <span class="sd-pay-switch-title font-bold text-white" id="tenantEmailConfirmLabel">Send confirmation emails</span>
+                                        <span class="sd-pay-switch-note text-slate-400">Email the client after each successful booking</span>
+                                    </span>
+                                </span>
+                                <input type="checkbox" id="tenantEmailConfirmCheck" class="sd-pay-switch" role="switch" aria-checked="false" aria-labelledby="tenantEmailConfirmLabel">
+                            </label>
                         </div>
 
                         <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-3">
@@ -5065,28 +5065,30 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
                             </div>
                         </div>
 
-                        <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center justify-between">
-                            <div class="flex items-center space-x-3">
-                                <i class="fa-solid fa-arrows-rotate text-brand-400 text-lg"></i>
-                                <div>
-                                    <div class="font-bold text-white">Allow recurring appointments</div>
-                                    <div id="tenantRecurringNote" class="text-[11px] text-slate-400">Let clients book weekly, biweekly, or monthly series on your public page. Pro only.</div>
-                                </div>
-                            </div>
-                            <input type="checkbox" id="tenantAllowRecurringCheck" class="w-4 h-4 accent-brand-500 rounded cursor-pointer">
+                        <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800">
+                            <label class="sd-pay-switch-row">
+                                <span class="sd-pay-switch-copy">
+                                    <i class="fa-solid fa-arrows-rotate text-brand-400" aria-hidden="true"></i>
+                                    <span>
+                                        <span class="sd-pay-switch-title font-bold text-white" id="tenantAllowRecurringLabel">Allow recurring appointments</span>
+                                        <span id="tenantRecurringNote" class="sd-pay-switch-note text-slate-400">Let clients book weekly, biweekly, or monthly series on your public page. Pro only.</span>
+                                    </span>
+                                </span>
+                                <input type="checkbox" id="tenantAllowRecurringCheck" class="sd-pay-switch" role="switch" aria-checked="false" aria-labelledby="tenantAllowRecurringLabel">
+                            </label>
                         </div>
 
                         <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-3">
-                            <div class="flex items-center justify-between gap-3">
-                                <div class="flex items-center space-x-3">
-                                    <i class="fa-solid fa-bell text-brand-400 text-lg"></i>
-                                    <div>
-                                        <div class="font-bold text-white">Send same-day reminder emails to clients</div>
-                                        <div class="text-[11px] text-slate-400">Sent the morning of the appointment. On by default.</div>
-                                    </div>
-                                </div>
-                                <input type="checkbox" id="tenantRemindersEnabledCheck" class="w-4 h-4 accent-brand-500 rounded cursor-pointer" checked>
-                            </div>
+                            <label class="sd-pay-switch-row">
+                                <span class="sd-pay-switch-copy">
+                                    <i class="fa-solid fa-bell text-brand-400" aria-hidden="true"></i>
+                                    <span>
+                                        <span class="sd-pay-switch-title font-bold text-white" id="tenantRemindersLabel">Send same-day reminder emails to clients</span>
+                                        <span class="sd-pay-switch-note text-slate-400">Sent the morning of the appointment. On by default.</span>
+                                    </span>
+                                </span>
+                                <input type="checkbox" id="tenantRemindersEnabledCheck" class="sd-pay-switch" role="switch" aria-checked="true" aria-labelledby="tenantRemindersLabel" checked>
+                            </label>
                             <div>
                                 <label class="block text-[11px] text-slate-400 mb-1" for="tenantReminderHourSelect">Reminder time</label>
                                 <select id="tenantReminderHourSelect" class="w-full px-3 py-2 rounded-lg glass-input">
@@ -5102,15 +5104,17 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
                             </div>
                         </div>
 
-                        <div id="tenantSmsRow" class="hidden p-4 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center justify-between gap-3">
-                            <div class="flex items-center space-x-3">
-                                <i class="fa-solid fa-comment-sms text-brand-400 text-lg"></i>
-                                <div>
-                                    <div class="font-bold text-white">Send SMS confirmations and reminders</div>
-                                    <div class="text-[11px] text-slate-400">Texts go to the client phone on the booking. Requires Schedi SMS to be set up.</div>
-                                </div>
-                            </div>
-                            <input type="checkbox" id="tenantSmsEnabledCheck" class="w-4 h-4 accent-brand-500 rounded cursor-pointer">
+                        <div id="tenantSmsRow" class="hidden p-4 rounded-xl bg-slate-900/80 border border-slate-800">
+                            <label class="sd-pay-switch-row">
+                                <span class="sd-pay-switch-copy">
+                                    <i class="fa-solid fa-comment-sms text-brand-400" aria-hidden="true"></i>
+                                    <span>
+                                        <span class="sd-pay-switch-title font-bold text-white" id="tenantSmsLabel">Send SMS confirmations and reminders</span>
+                                        <span class="sd-pay-switch-note text-slate-400">Texts go to the client phone on the booking. Requires Schedi SMS to be set up.</span>
+                                    </span>
+                                </span>
+                                <input type="checkbox" id="tenantSmsEnabledCheck" class="sd-pay-switch" role="switch" aria-checked="false" aria-labelledby="tenantSmsLabel">
+                            </label>
                         </div>
 
                         <div class="flex flex-wrap gap-2">
@@ -15041,8 +15045,13 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
                 '<button type="button" class="sd-busy-disconnect" data-busy-disconnect="' + id + '">Disconnect</button></div>' +
                 '<fieldset class="sd-busy-cals"><legend>Calendars to check for busy times</legend>' + cals + '</fieldset>' +
                 warn +
-                '<label class="sd-busy-toggle"><input type="checkbox" data-busy-write="' + id + '"' + (row.writeBookings ? ' checked' : '') + '><span>Add Schedi bookings to my calendar</span></label>' +
-                '<p class="sd-busy-hint">On means new, changed, and cancelled bookings can be written to this calendar. Off means Schedi only reads busy times.</p></article>';
+                '<label class="sd-pay-switch-row">' +
+                '<span class="sd-pay-switch-copy"><span>' +
+                '<span class="sd-pay-switch-title text-white" id="sdBusyWriteLabel_' + id + '">Add Schedi bookings to my calendar</span>' +
+                '<span class="sd-pay-switch-note text-slate-400">On means new, changed, and cancelled bookings can be written to this calendar. Off means Schedi only reads busy times.</span>' +
+                '</span></span>' +
+                '<input type="checkbox" class="sd-pay-switch" role="switch" data-busy-write="' + id + '" aria-checked="' + (row.writeBookings ? 'true' : 'false') + '" aria-labelledby="sdBusyWriteLabel_' + id + '"' + (row.writeBookings ? ' checked' : '') + '>' +
+                '</label></article>';
         }
 
         function paintBusyCard(tenant) {
@@ -15057,6 +15066,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
                 return busyAccountHtml(provider, sync[provider.id], demo);
             }).join('');
             card.innerHTML = '<div class="sd-busy-top"><h3 id="sdBusyTitle">Avoid double-booking</h3><p class="sd-busy-lead">' + esc(lead) + '</p></div>' + accounts;
+            syncPaySwitchAriaAll();
             if (card.getAttribute('data-bound') === '1') return;
             card.setAttribute('data-bound', '1');
             card.addEventListener('click', onBusyCardClick);
@@ -16907,8 +16917,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
                     syncPaySwitchAria(ev && ev.target);
                 });
             }
-            var root = document.getElementById('tenantSectionPayments');
-            if (!root) return;
+            var root = document.getElementById('tenantPortalSection') || document;
             var nodes = root.querySelectorAll('.sd-pay-switch');
             for (var i = 0; i < nodes.length; i++) syncPaySwitchAria(nodes[i]);
         }
@@ -18392,6 +18401,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
                 }
                 hourSel.value = hv;
             }
+            syncPaySwitchAriaAll();
         }
 
         // Sample of the recurring-series email. Same card as the worker's series confirmation
@@ -18530,7 +18540,10 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
             var wantRecurring = recEl ? !!recEl.checked : true;
             if (normalizePlan(tenant) !== 'pro' && wantRecurring) {
                 wantRecurring = false;
-                if (recEl) recEl.checked = false;
+                if (recEl) {
+                    recEl.checked = false;
+                    syncPaySwitchAria(recEl);
+                }
                 showToast(normalizePlan(tenant) === 'free' ? 'Free plan does not include recurring appointments. That setting was not saved.' : 'Repeating appointments are on Pro only. That setting was not saved.', 'error');
             }
             tenant.allowRecurringBookings = wantRecurring;

@@ -783,6 +783,41 @@ describe("owner dashboard preview", () => {
     expect(html).toContain("depSettings.methods[key] = !!(box && box.checked && tenant.paymentGateways[key])");
     expect(extractFunction(html, "renderTenantPayments")).toContain("tenantDepositMethodCard");
     expect(extractFunction(html, "syncPaySwitchAria")).toContain('setAttribute(\'aria-checked\'');
+    expect(extractFunction(html, "syncPaySwitchAriaAll")).toContain("tenantPortalSection");
+  });
+
+  it("replaces email and calendar write checkboxes with the shared switch", () => {
+    const section = html.slice(html.indexOf('id="tenantSectionNotifications"'), html.indexOf('id="tenantSectionClients"'));
+    expect(section).not.toContain("w-4 h-4");
+    for (const id of [
+      "tenantEmailConfirmCheck",
+      "tenantAllowRecurringCheck",
+      "tenantRemindersEnabledCheck",
+      "tenantSmsEnabledCheck",
+    ]) {
+      expect(section).toContain(`id="${id}" class="sd-pay-switch" role="switch"`);
+      expect(section).toContain("sd-pay-switch-title");
+      expect(section).toContain("sd-pay-switch-note");
+      expect(section).toContain("sd-pay-switch-row");
+    }
+    expect(section).toContain('id="tenantRemindersEnabledCheck" class="sd-pay-switch" role="switch" aria-checked="true" aria-labelledby="tenantRemindersLabel" checked');
+    expect(section).toContain('id="tenantRecurringNote" class="sd-pay-switch-note text-slate-400"');
+    expect(section).toContain('id="webPushSwitch" role="switch"');
+    expect(extractFunction(html, "renderTenantNotifications")).toContain("syncPaySwitchAriaAll()");
+    expect(html).toContain("tenant.notifications.emailConfirmations = document.getElementById('tenantEmailConfirmCheck').checked");
+    expect(html).toContain("tenant.allowRecurringBookings = wantRecurring");
+    expect(html).toContain("tenant.remindersEnabled = remEl ? !!remEl.checked : true");
+    expect(html).toContain("tenant.smsEnabled = smsEl ? !!smsEl.checked : false");
+    const busy = extractFunction(html, "busyAccountHtml");
+    expect(busy).toContain('class="sd-pay-switch" role="switch"');
+    expect(busy).toContain("data-busy-write=");
+    expect(busy).toContain("sd-pay-switch-row");
+    expect(busy).toContain("sd-pay-switch-title");
+    expect(busy).toContain("sd-pay-switch-note");
+    expect(busy).toContain("Add Schedi bookings to my calendar");
+    expect(busy).not.toContain("sd-busy-toggle");
+    expect(busy).toContain('data-busy-cal="');
+    expect(extractFunction(html, "paintBusyCard")).toContain("syncPaySwitchAriaAll()");
   });
 
   it("mutes unselected mark-paid methods and keeps a single radio choice", () => {
@@ -1703,6 +1738,200 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
     }
   }, 90000);
+
+  it("sizes email and calendar write switches at 340 and 390 in light and dark", async () => {
+    const types: Record<string, string> = {
+      ".html": "text/html; charset=utf-8",
+      ".js": "text/javascript; charset=utf-8",
+      ".svg": "image/svg+xml",
+      ".png": "image/png",
+      ".json": "application/json",
+      ".webmanifest": "application/manifest+json",
+    };
+    const server = createServer((req, res) => {
+      const path = new URL(req.url || "/", "http://127.0.0.1").pathname;
+      const file = path === "/" || path === "/portal-preview" ? "/index.html" : path;
+      const full = join(root, file);
+      if (!full.startsWith(root) || !existsSync(full)) {
+        res.writeHead(404);
+        res.end("missing");
+        return;
+      }
+      res.writeHead(200, { "content-type": types[extname(full)] || "application/octet-stream" });
+      res.end(readFileSync(full));
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const address = server.address();
+    const port = typeof address === "object" && address ? address.port : 0;
+    const puppeteer = await import("puppeteer-core");
+    const browser = await puppeteer.default.launch({
+      executablePath: chrome,
+      headless: true,
+      args: ["--no-sandbox", "--disable-dev-shm-usage"],
+    });
+    try {
+      const page = await browser.newPage();
+      await page.goto(`http://127.0.0.1:${port}/portal-preview`, { waitUntil: "domcontentloaded", timeout: 45000 });
+      await page.waitForFunction(() => document.body.classList.contains("schedi-newdash"), { timeout: 20000 });
+      await page.waitForFunction(() => {
+        const tenant = (window as unknown as { getTenant?: () => { notifications?: { emailConfirmations?: boolean } } }).getTenant?.();
+        return !!(tenant && tenant.notifications && tenant.notifications.emailConfirmations === true);
+      }, { timeout: 20000 });
+      const measure = () => page.evaluate(() => {
+        const boxOf = (id: string) => {
+          const el = document.getElementById(id) as HTMLInputElement | null;
+          if (!el) return null;
+          const style = getComputedStyle(el);
+          const box = el.getBoundingClientRect();
+          const row = el.closest(".sd-pay-switch-row") as HTMLElement | null;
+          const rowBox = row?.getBoundingClientRect();
+          const parent = row?.parentElement?.getBoundingClientRect();
+          const titleEl = row?.querySelector(".sd-pay-switch-title") as HTMLElement | null;
+          const noteEl = row?.querySelector(".sd-pay-switch-note") as HTMLElement | null;
+          return {
+            role: el.getAttribute("role"),
+            checked: el.getAttribute("aria-checked"),
+            on: el.checked,
+            w: Math.round(box.width),
+            h: Math.round(box.height),
+            bg: style.backgroundColor,
+            rowH: rowBox ? Math.round(rowBox.height) : 0,
+            rowW: rowBox ? Math.round(rowBox.width) : 0,
+            full: !!(rowBox && parent && rowBox.width >= parent.width - 40 && rowBox.width <= parent.width + 1),
+            right: !!(rowBox && box.left > rowBox.left + 40),
+            title: titleEl ? getComputedStyle(titleEl).fontSize : "",
+            note: noteEl ? getComputedStyle(noteEl).fontSize : "",
+          };
+        };
+        const smsRow = document.getElementById("tenantSmsRow");
+        const smsHidden = !!smsRow?.classList.contains("hidden");
+        if (smsRow && smsHidden) smsRow.classList.remove("hidden");
+        const sms = boxOf("tenantSmsEnabledCheck");
+        if (smsRow && smsHidden) smsRow.classList.add("hidden");
+        const write = document.querySelector('[data-busy-write="google"]') as HTMLInputElement | null;
+        const writeBox = write ? (() => {
+          const style = getComputedStyle(write);
+          const box = write.getBoundingClientRect();
+          const row = write.closest(".sd-pay-switch-row") as HTMLElement | null;
+          const rowBox = row?.getBoundingClientRect();
+          const parent = row?.parentElement?.getBoundingClientRect();
+          const titleEl = row?.querySelector(".sd-pay-switch-title") as HTMLElement | null;
+          const noteEl = row?.querySelector(".sd-pay-switch-note") as HTMLElement | null;
+          return {
+            role: write.getAttribute("role"),
+            checked: write.getAttribute("aria-checked"),
+            on: write.checked,
+            w: Math.round(box.width),
+            h: Math.round(box.height),
+            bg: style.backgroundColor,
+            rowH: rowBox ? Math.round(rowBox.height) : 0,
+            full: !!(rowBox && parent && rowBox.width >= parent.width - 40 && rowBox.width <= parent.width + 1),
+            title: titleEl ? getComputedStyle(titleEl).fontSize : "",
+            note: noteEl ? getComputedStyle(noteEl).fontSize : "",
+          };
+        })() : null;
+        return {
+          email: boxOf("tenantEmailConfirmCheck"),
+          recurring: boxOf("tenantAllowRecurringCheck"),
+          reminders: boxOf("tenantRemindersEnabledCheck"),
+          sms,
+          smsHidden,
+          write: writeBox,
+        };
+      });
+      for (const width of [340, 390]) {
+        await page.setViewport({ width, height: 900 });
+        for (const theme of ["dark", "light"] as const) {
+          await page.evaluate((mode) => (window as unknown as { setSchediTheme: (mode: string) => void }).setSchediTheme(mode), theme);
+          await page.evaluate(() => (window as unknown as { schediDashGo: (tab: string) => void }).schediDashGo("emails"));
+          await page.waitForFunction(() => {
+            const email = document.getElementById("tenantEmailConfirmCheck") as HTMLInputElement | null;
+            return !!(email && email.checked && email.getAttribute("aria-checked") === "true" && email.getAttribute("role") === "switch");
+          }, { timeout: 10000 });
+          const emails = await measure();
+          for (const row of [emails.email, emails.recurring, emails.reminders, emails.sms]) {
+            expect(row?.role).toBe("switch");
+            expect(row?.w).toBe(52);
+            expect(row?.h).toBe(30);
+            expect(row?.rowH).toBeGreaterThanOrEqual(56);
+            expect(row?.full).toBe(true);
+            expect(row?.right).toBe(true);
+            expect(row?.title).toBe("17px");
+            expect(row?.note).toBe("16px");
+          }
+          expect(emails.smsHidden).toBe(true);
+          expect(emails.email?.on).toBe(true);
+          expect(emails.email?.checked).toBe("true");
+          expect(emails.email?.bg).toBe(theme === "dark" ? "rgb(16, 185, 129)" : "rgb(5, 150, 105)");
+          expect(emails.reminders?.on).toBe(true);
+          expect(emails.reminders?.checked).toBe("true");
+          await page.evaluate(() => (window as unknown as { schediDashGo: (tab: string) => void }).schediDashGo("hours"));
+          await page.waitForFunction(() => {
+            const write = document.querySelector('[data-busy-write="google"]') as HTMLInputElement | null;
+            return !!(write && write.checked && write.getAttribute("role") === "switch");
+          }, { timeout: 10000 });
+          const hours = await measure();
+          expect(hours.write?.role).toBe("switch");
+          expect(hours.write?.on).toBe(true);
+          expect(hours.write?.checked).toBe("true");
+          expect(hours.write?.w).toBe(52);
+          expect(hours.write?.h).toBe(30);
+          expect(hours.write?.rowH).toBeGreaterThanOrEqual(56);
+          expect(hours.write?.full).toBe(true);
+          expect(hours.write?.title).toBe("17px");
+          expect(hours.write?.note).toBe("16px");
+          expect(hours.write?.bg).toBe(theme === "dark" ? "rgb(16, 185, 129)" : "rgb(5, 150, 105)");
+        }
+      }
+      await page.evaluate(() => (window as unknown as { schediDashGo: (tab: string) => void }).schediDashGo("emails"));
+      await page.evaluate(() => {
+        const row = document.getElementById("tenantEmailConfirmCheck")?.closest("label") as HTMLElement | null;
+        row?.click();
+        const reminders = document.getElementById("tenantRemindersEnabledCheck")?.closest("label") as HTMLElement | null;
+        reminders?.click();
+      });
+      const saved = await page.evaluate(() => {
+        const email = document.getElementById("tenantEmailConfirmCheck") as HTMLInputElement;
+        const reminders = document.getElementById("tenantRemindersEnabledCheck") as HTMLInputElement;
+        (window as unknown as { handleSaveTenantNotifications: (event: { preventDefault: () => void }) => void }).handleSaveTenantNotifications({ preventDefault() {} });
+        const tenant = (window as unknown as { getTenant: () => { notifications: { emailConfirmations: boolean }; remindersEnabled: boolean } }).getTenant();
+        return {
+          emailOn: email.checked,
+          emailAria: email.getAttribute("aria-checked"),
+          emailSaved: tenant.notifications.emailConfirmations,
+          remindersOn: reminders.checked,
+          remindersAria: reminders.getAttribute("aria-checked"),
+          remindersSaved: tenant.remindersEnabled,
+        };
+      });
+      expect(saved).toEqual({
+        emailOn: false,
+        emailAria: "false",
+        emailSaved: false,
+        remindersOn: false,
+        remindersAria: "false",
+        remindersSaved: false,
+      });
+      await page.evaluate(() => (window as unknown as { schediDashGo: (tab: string) => void }).schediDashGo("hours"));
+      await page.evaluate(() => {
+        const write = document.querySelector('[data-busy-write="google"]') as HTMLInputElement | null;
+        write?.closest("label")?.click();
+      });
+      const written = await page.evaluate(() => {
+        const write = document.querySelector('[data-busy-write="google"]') as HTMLInputElement;
+        const tenant = (window as unknown as { getTenant: () => { calendarSync: { google: { writeBookings: boolean } } } }).getTenant();
+        return {
+          on: write.checked,
+          aria: write.getAttribute("aria-checked"),
+          saved: tenant.calendarSync.google.writeBookings,
+        };
+      });
+      expect(written).toEqual({ on: false, aria: "false", saved: false });
+    } finally {
+      await browser.close();
+      await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+    }
+  }, 120000);
 
   it("mutes unselected mark-paid methods at 340 and 390 in light and dark", async () => {
     const types: Record<string, string> = {
