@@ -10467,7 +10467,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
                 var when = esc((app.date || '') + (app.time ? (' · ' + app.time) : ''));
                 return '<div class="sd-visit"><p><span class="sd-svc-line text-[11px] font-bold text-white">' + serviceMarkHtml(tenant, app.serviceName) + '<span>' + esc(app.serviceName || 'Appointment') + '</span></span>' +
                     '<span class="block text-[10px] text-slate-400">' + when + '</span></p>' +
-                    appointmentPayMarkup(app, false) + '</div>';
+                    appointmentStatusChipsHtml(app, { price: false }) + '</div>';
             }).join('') + '</div>';
         }
 
@@ -10492,13 +10492,12 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
                 var when = rosterPrettyDate(app && app.date) || String((app && app.date) || '');
                 if (app && app.time) when = when ? (when + ' · ' + app.time) : String(app.time);
                 var price = clientHistoryPrice(app);
-                var statusLabel = clientHistoryStatus(app);
-                var statusHtml = statusLabel === 'No-show' ? noShowPillHtml() : esc(statusLabel);
+                var chips = appointmentStatusChipsHtml(app, { priceHtml: '<span>' + esc(price || '—') + '</span>' });
                 return '<article class="sd-client-visit"><div class="sd-client-visit-main">'
                     + '<p class="sd-client-visit-when">' + esc(when || 'Date not set') + '</p>'
                     + '<p class="sd-client-visit-svc"><span class="sd-svc-line">' + serviceMarkHtml(tenant, app && app.serviceName) + '<span>' + esc((app && app.serviceName) || 'Appointment') + '</span></span></p>'
-                    + '<p class="sd-client-visit-meta"><span>' + statusHtml + '</span><span>' + esc(price || '—') + '</span></p>'
-                    + '</div>' + appointmentPayMarkup(app, false) + '</article>';
+                    + '<p class="sd-client-visit-meta">' + chips + '</p>'
+                    + '</div></article>';
             }).join('');
             var empty = title === 'Upcoming' ? 'No upcoming visits.' : 'No past visits.';
             return '<section class="sd-client-history-group"><h3>' + esc(title) + '</h3>' + (rows || ('<p class="sd-client-empty">' + empty + '</p>')) + '</section>';
@@ -11511,7 +11510,6 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
             if (schedule) {
                 schedule.innerHTML = todayApps.length ? todayApps.map(function (app) {
                     var id = esc(jsArg(app.id));
-                    var pendingRow = String(app.status || '').toLowerCase() === 'pending';
                     var payAction = rosterPayMenuLabel(app) === 'Mark unpaid'
                         ? '<button type="button" role="menuitem" onclick="markAppointmentUnpaid(' + id + ')">Mark unpaid</button>'
                         : '<button type="button" class="sd-act-ok" role="menuitem" onclick="markAppointmentPaid(' + id + ')">Mark paid</button>';
@@ -11521,8 +11519,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
                     return '<article class="sd-card sd-row">' +
                         '<div class="sd-time">' + esc(app.time || '') + '</div>' +
                         '<div class="sd-row-main"><h4><span class="sd-row-title">' + esc(app.clientName || 'Client') + (app.walkIn ? ' · Walk-in' : '') + '</span>' +
-                        (appointmentIsNoShow(app) ? noShowPillHtml() : '') +
-                        (pendingRow ? '<span class="sd-pill sd-pill-amber">New request</span>' : '') +
+                        appointmentStatusChipsHtml(app, { payment: false, price: false, pendingLabel: 'New request' }) +
                         '</h4>' +
                         '<p class="sd-meta"><span class="sd-svc-line">' + serviceMarkHtml(tenant, app.serviceName) + '<span>' + esc(app.serviceName || 'Appointment') + '</span></span></p></div>' +
                         '<div class="sd-row-side">' + appointmentPayMarkup(app, false) + '</div>' +
@@ -12604,17 +12601,13 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
             var time = esc((app && app.time) || 'Time not set');
             var name = esc((app && app.clientName) || 'Client');
             var service = esc((app && app.serviceName) || 'Appointment');
-            var paid = !closed && bookingPaymentState(app) === 'paid';
-            var noShow = appointmentIsNoShow(app);
-            var badge = noShow ? 'No-show' : (paid ? 'Paid' : (cancelled ? 'Cancelled' : (denied ? 'Denied' : (pending ? 'Pending' : ''))));
             var strike = closed ? 'line-through text-rose-300' : 'text-white';
             var label = esc('Open appointment: ' + ((app && app.time) || '') + ' ' + ((app && app.clientName) || 'Client'));
             return '<button type="button" onclick="event.stopPropagation(); openRosterApptModal(' + esc(jsArg(app && app.id)) + ')" aria-label="' + label + '" class="roster-appt block w-full text-left min-h-[44px] rounded-lg border px-2 py-1.5 cursor-pointer hover:border-brand-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 ' + box + '">' +
                 '<span class="block font-bold text-[11px] ' + strike + '">' + time + '</span>' +
                 '<span class="block text-[11px] ' + strike + '">' + name + '</span>' +
                 '<span class="sd-svc-line block text-[10px] text-slate-400 ' + (closed ? 'line-through' : '') + '">' + serviceMarkHtml(getTenant(), app && app.serviceName) + '<span>' + service + '</span></span>' +
-                (badge ? '<span class="sd-pill ' + (noShow ? 'sd-pill-rose' : (paid ? 'sd-pill-ok' : '')) + ' block text-[10px] font-bold mt-1 ' + (noShow || paid ? '' : (closed ? 'text-rose-300' : 'text-amber-300')) + '">' + badge + '</span>' : '') +
-                appointmentPayMarkup(app, !!iconOnly) +
+                appointmentStatusChipsHtml(app, { price: false, iconOnly: !!iconOnly }) +
                 '</button>';
         }
 
@@ -12623,10 +12616,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
             var denied = String((app && app.status) || '').toLowerCase() === 'denied';
             var closed = cancelled || denied;
             var label = esc((app && app.time) || '') + ' ' + esc((app && app.clientName) || 'Client');
-            if (appointmentIsNoShow(app)) label += ' · <span class="sd-pill sd-pill-rose">No-show</span>';
-            else if (cancelled) label += ' · Cancelled';
-            else if (denied) label += ' · Denied';
-            return '<div class="truncate text-[10px] ' + (closed ? 'line-through text-rose-300' : 'text-slate-300') + '">' + appointmentPayMarkup(app, true) + ' ' + label + '</div>';
+            return '<div class="truncate text-[10px] ' + (closed ? 'line-through text-rose-300' : 'text-slate-300') + '">' + label + ' ' + appointmentStatusChipsHtml(app, { price: false, iconOnly: true }) + '</div>';
         }
 
         function syncRosterCalendarChrome(tenant) {
@@ -12753,22 +12743,124 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
             if (tenant) renderTenantRoster(tenant);
         };
 
+        // Chronological chip order for one appointment: booking status, outcome, payment, price.
+        function appointmentPaymentSlot(app) {
+            var status = String((app && app.paymentStatus) || '').toUpperCase();
+            var refundMarked = !!(app && (app.refunded === true || status.indexOf('REFUND') !== -1));
+            if (!refundMarked && app) {
+                if (hasPricedAmount(app.refundAmount) && Number(app.refundAmount) > 0) refundMarked = true;
+                if (hasPricedAmount(app.amountRefunded) && Number(app.amountRefunded) > 0) refundMarked = true;
+            }
+            if (refundMarked) return 'refunded';
+            if (bookingPaymentState(app) === 'paid' && status.indexOf('DEPOSIT') !== -1) return 'deposit';
+            if (bookingPaymentState(app) === 'paid') return 'paid';
+            return 'unpaid';
+        }
+
+        function appointmentStatusParts(app) {
+            var st = String((app && app.status) || '').toLowerCase().replace(/[\s-]+/g, '_');
+            var cancelled = appointmentIsCancelled(app);
+            var denied = st === 'denied';
+            var declined = st === 'declined';
+            var pending = !cancelled && !denied && !declined && st === 'pending';
+            var requested = !cancelled && !denied && !declined && st === 'requested';
+            var noShow = appointmentIsNoShow(app);
+            var done = st === 'completed' || st === 'complete' || st === 'checked_in' || st === 'checkedin' || st === 'done' || st === 'marked_done';
+            var rescheduled = st === 'rescheduled' || !!(app && app.rescheduled === true);
+            var bareNoShow = st === 'no_show' || st === 'noshow';
+            var request = '';
+            if (pending) request = 'pending';
+            else if (requested) request = 'requested';
+            else if (denied) request = 'denied';
+            else if (declined) request = 'declined';
+            else if (!cancelled && !done && !rescheduled && !bareNoShow) {
+                if (st === 'accepted') request = 'accepted';
+                else if (st === 'confirmed' || st === 'booked' || st === '') request = 'confirmed';
+            }
+            if ((request === 'accepted' || request === 'confirmed') && bookingPaymentState(app) === 'paid') request = '';
+            var outcomes = [];
+            if (noShow) outcomes.push('noshow');
+            if (cancelled) outcomes.push('cancelled');
+            else if (!noShow && done) outcomes.push(st === 'done' || st === 'marked_done' || st === 'checked_in' || st === 'checkedin' ? 'done' : 'completed');
+            else if (!noShow && rescheduled) outcomes.push('rescheduled');
+            var showPayment = !cancelled && !denied && !declined;
+            var showPrice = showPayment && !pending && !requested && hasPricedAmount(app && app.amount);
+            return {
+                request: request,
+                outcomes: outcomes,
+                payment: showPayment ? appointmentPaymentSlot(app) : '',
+                showPayment: showPayment,
+                showPrice: showPrice
+            };
+        }
+
+        function appointmentRequestChipHtml(app, kind, opts) {
+            if (kind === 'pending' || kind === 'requested') {
+                var pendingText = kind === 'requested' ? 'Requested' : ((opts && opts.pendingLabel) || 'Pending');
+                if (pendingText === 'New request') return '<span class="sd-pill sd-pill-amber">New request</span>';
+                return '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">' + esc(pendingText) + '</span>';
+            }
+            if (kind === 'denied' || kind === 'declined') {
+                return '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">' + (kind === 'declined' ? 'Declined' : 'Denied') + '</span>';
+            }
+            if (kind === 'accepted' || kind === 'confirmed') return rosterAcceptedBadge(app);
+            return '';
+        }
+
+        function appointmentOutcomeChipHtml(kind) {
+            if (kind === 'noshow') return noShowPillHtml();
+            if (kind === 'cancelled') return '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">Cancelled</span>';
+            if (kind === 'completed') return '<span class="sd-pill sd-pill-ok">Completed</span>';
+            if (kind === 'done') return '<span class="sd-pill sd-pill-ok">Done</span>';
+            if (kind === 'rescheduled') return '<span class="sd-pill sd-pill-grey">Rescheduled</span>';
+            return '';
+        }
+
+        function appointmentStatusPriceHtml(app) {
+            if (!hasPricedAmount(app && app.amount)) return '';
+            return '<span class="text-[10px] font-bold text-slate-300">$' + (Number(app.amount) || 0) + '</span>';
+        }
+
+        function appointmentStatusLabels(app, opts) {
+            opts = opts || {};
+            var parts = appointmentStatusParts(app);
+            var requestWords = { pending: (opts.pendingLabel || 'Pending'), requested: 'Requested', accepted: 'Accepted', confirmed: 'Confirmed', denied: 'Denied', declined: 'Declined' };
+            var outcomeWords = { noshow: 'No-show', cancelled: 'Cancelled', completed: 'Completed', done: 'Done', rescheduled: 'Rescheduled' };
+            var paymentWords = { unpaid: 'Unpaid', paid: 'Paid', deposit: 'Deposit paid', refunded: 'Refunded' };
+            var order = [];
+            if (parts.request && requestWords[parts.request]) order.push(requestWords[parts.request]);
+            (parts.outcomes || []).forEach(function (kind) { if (outcomeWords[kind]) order.push(outcomeWords[kind]); });
+            if (opts.payment !== false && parts.showPayment && paymentWords[parts.payment]) order.push(paymentWords[parts.payment]);
+            if (opts.priceHtml) order.push(String(opts.priceText || ''));
+            else if (opts.price !== false && parts.showPrice) {
+                var price = appointmentStatusPriceHtml(app);
+                if (price) order.push('$' + (Number(app.amount) || 0));
+            }
+            return order;
+        }
+
+        function appointmentStatusChipsHtml(app, opts) {
+            opts = opts || {};
+            var parts = appointmentStatusParts(app);
+            var bits = [];
+            var requestHtml = appointmentRequestChipHtml(app, parts.request, opts);
+            if (requestHtml) bits.push(requestHtml);
+            (parts.outcomes || []).forEach(function (kind) {
+                var chip = appointmentOutcomeChipHtml(kind);
+                if (chip) bits.push(chip);
+            });
+            if (opts.payment !== false && parts.showPayment) bits.push(appointmentPayMarkup(app, !!opts.iconOnly));
+            if (opts.priceHtml) bits.push(opts.priceHtml);
+            else if (opts.price !== false && parts.showPrice) {
+                var price = appointmentStatusPriceHtml(app);
+                if (price) bits.push(price);
+            }
+            return bits.join(' ');
+        }
+
         // Status/payment badges for one appointment (list Payment column and the details pop-up).
         function rosterStatusCellHtml(app) {
-            var st = String((app && app.status) || '').toLowerCase();
-            var h;
-            var noShowPill = appointmentIsNoShow(app) ? (noShowPillHtml() + ' ') : '';
-            if (appointmentIsCancelled(app)) {
-                h = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">Cancelled</span>';
-            } else if (st === 'denied') {
-                h = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">Denied</span>';
-            } else if (st === 'pending') {
-                h = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">Pending</span> ' + appointmentPayMarkup(app, false);
-            } else {
-                h = rosterAcceptedBadge(app) + appointmentPayMarkup(app, false) +
-                    (hasPricedAmount(app.amount) ? (' <span class="text-[10px] font-bold text-slate-300">$' + (Number(app.amount) || 0) + '</span>') : '');
-            }
-            return noShowPill + h + depositRosterLine(app) + cancellationFeeRosterLine(app);
+            return appointmentStatusChipsHtml(app) + depositRosterLine(app) + cancellationFeeRosterLine(app);
         }
 
         // Action buttons for one appointment's state. big = details pop-up (44px buttons that close the pop-up first).
@@ -12878,15 +12970,11 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
                 var cancelled = appointmentIsCancelled(a);
                 var st = String(a.status || '').toLowerCase();
                 var closed = cancelled || st === 'denied';
-                var paid = !closed && bookingPaymentState(a) === 'paid';
-                var noShow = appointmentIsNoShow(a);
-                var badge = noShow ? 'No-show' : (paid ? 'Paid' : (cancelled ? 'Cancelled' : (st === 'denied' ? 'Denied' : (st === 'pending' ? 'Pending' : ''))));
                 return '<button type="button" onclick="openRosterApptModal(' + esc(jsArg(a.id)) + ', ' + esc(jsArg(iso)) + ')" class="w-full text-left min-h-[44px] rounded-xl border px-3 py-2.5 flex items-center justify-between gap-3 ' +
                     (closed ? 'border-rose-500/40 bg-rose-500/10' : (st === 'pending' ? 'border-amber-500/40 bg-amber-500/10' : 'border-slate-700 bg-slate-950/40 hover:border-brand-400')) + '">' +
                     '<span class="min-w-0"><span class="block text-sm font-bold ' + (closed ? 'line-through text-rose-300' : 'text-white') + '">' + esc(a.time || 'Time not set') + ' · ' + esc(a.clientName || 'Client') + '</span>' +
                     '<span class="sd-svc-line block text-xs text-slate-400 truncate">' + serviceMarkHtml(tenant, a.serviceName) + '<span>' + esc(a.serviceName || 'Appointment') + '</span></span>' +
-                    (badge ? ('<span class="sd-pill ' + (noShow ? 'sd-pill-rose' : (paid ? 'sd-pill-ok' : '')) + ' block text-xs font-bold ' + (noShow || paid ? '' : (closed ? 'text-rose-300' : 'text-amber-300')) + '">' + badge + '</span>') : '') +
-                    appointmentPayMarkup(a, false) + '</span>' +
+                    appointmentStatusChipsHtml(a, { price: false }) + '</span>' +
                     '<i class="fa-solid fa-chevron-right text-slate-400 shrink-0"></i></button>';
             }).join('');
             showRosterApptModal(apps.length + ' appointments', rosterPrettyDate(iso), '<div class="space-y-2">' + list + '</div>');
@@ -13064,6 +13152,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
                 html += '<button type="button" class="sd-roster-hit" role="option" data-search-id="' + esc(app.id) + '">' +
                     '<span class="sd-roster-hit-main"><strong>' + esc(app.clientName || 'Client') + '</strong>' +
                     '<span>' + esc(app.time || '') + ' · ' + esc(app.serviceName || 'Appointment') + ' · ' + esc(app.id || '') + '</span></span>' +
+                    appointmentStatusChipsHtml(app, { price: false, payment: false }) +
                     appointmentPayMarkup(app, false) + '</button>';
             });
             if (hits.length > limit) html += '<p class="sd-roster-empty">Showing ' + limit + ' of ' + hits.length + '.</p>';

@@ -218,7 +218,8 @@ describe("owner dashboard preview", () => {
     expect(marked).toContain("sendOwnerPaymentReceivedEmail");
     expect(html).toContain("Visit history");
     expect(html).toContain("markAppointmentUnpaid");
-    expect(extractFunction(html, "rosterStatusCellHtml")).toContain("appointmentPayMarkup");
+    expect(extractFunction(html, "rosterStatusCellHtml")).toContain("appointmentStatusChipsHtml");
+    expect(extractFunction(html, "appointmentStatusChipsHtml")).toContain("appointmentPayMarkup");
     expect(extractFunction(html, "appointmentPayKind")).toContain("bookingPaymentState");
     const kind = new Function(`${extractFunction(html, "bookingPaymentState")}\n${extractFunction(html, "inferPaidMethodFromBooking")}\n${extractFunction(html, "appointmentPayKind")}; return appointmentPayKind;`)() as (
       value: Record<string, unknown>,
@@ -511,7 +512,8 @@ describe("owner dashboard preview", () => {
     expect(css).toContain("background: #ffffff");
     expect(css).toContain("rgba(0, 140, 255, 0.16)");
     expect(extractFunction(html, "noShowPillHtml")).toContain("sd-pill-rose");
-    expect(extractFunction(html, "rosterApptChip")).toContain("sd-pill-rose");
+    expect(extractFunction(html, "rosterApptChip")).toContain("appointmentStatusChipsHtml");
+    expect(extractFunction(html, "appointmentOutcomeChipHtml")).toContain("noShowPillHtml");
     expect(extractFunction(html, "appointmentPayMarkup")).toContain("sd-pay-");
     expect(extractFunction(html, "renderRosterPayFilter")).toContain("rosterBrandPayClass");
     expect(html).toContain('colspan="8"');
@@ -849,6 +851,66 @@ describe("owner dashboard preview", () => {
     expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-more-menu button.sd-act-no:active");
     expect(css).toContain("body.schedi-newdash .roster-sheet-actions > button.sd-act");
     expect(unscopedSelectors(dashCss(html))).toEqual([]);
+  });
+
+  it("orders appointment status chips as booking, outcome, payment, then price", () => {
+    const api = new Function(`
+      ${extractFunction(html, "esc")}
+      ${extractFunction(html, "hasPricedAmount")}
+      ${extractFunction(html, "appointmentIsCancelled")}
+      ${extractFunction(html, "appointmentIsNoShow")}
+      ${extractFunction(html, "bookingPaymentState")}
+      ${extractFunction(html, "inferPaidMethodFromBooking")}
+      ${extractFunction(html, "appointmentPayKind")}
+      ${extractFunction(html, "payKindSvg")}
+      var ROSTER_PAY_WORDS = { unpaid: "Unpaid", card: "Card (Stripe)", cashapp: "Cash App", zelle: "Zelle", venmo: "Venmo", paypal: "PayPal", square: "Square", cash: "In person / Cash" };
+      ${extractFunction(html, "appointmentPayMarkup")}
+      ${extractFunction(html, "noShowPillHtml")}
+      ${extractFunction(html, "rosterAcceptedBadge")}
+      ${extractFunction(html, "appointmentPaymentSlot")}
+      ${extractFunction(html, "appointmentStatusParts")}
+      ${extractFunction(html, "appointmentRequestChipHtml")}
+      ${extractFunction(html, "appointmentOutcomeChipHtml")}
+      ${extractFunction(html, "appointmentStatusPriceHtml")}
+      ${extractFunction(html, "appointmentStatusLabels")}
+      ${extractFunction(html, "appointmentStatusChipsHtml")}
+      return { appointmentStatusLabels, appointmentStatusChipsHtml, appointmentStatusParts };
+    `)() as {
+      appointmentStatusLabels: (app: Record<string, unknown>, opts?: Record<string, unknown>) => string[];
+      appointmentStatusChipsHtml: (app: Record<string, unknown>, opts?: Record<string, unknown>) => string;
+      appointmentStatusParts: (app: Record<string, unknown>) => { request: string; outcomes: string[]; payment: string; showPayment: boolean; showPrice: boolean };
+    };
+    const elena = { status: "accepted", noShow: true, paymentStatus: "PAY AT APPOINTMENT", amount: 120 };
+    expect(api.appointmentStatusLabels(elena)).toEqual(["Accepted", "No-show", "Unpaid", "$120"]);
+    const chips = api.appointmentStatusChipsHtml(elena);
+    expect(chips.indexOf("Accepted")).toBeGreaterThan(-1);
+    expect(chips.indexOf("Accepted")).toBeLessThan(chips.indexOf("No-show"));
+    expect(chips.indexOf("No-show")).toBeLessThan(chips.indexOf("Unpaid"));
+    expect(chips.indexOf("Unpaid")).toBeLessThan(chips.indexOf("$120"));
+    expect(chips.indexOf("sd-pill-rose")).toBeGreaterThan(chips.indexOf("Accepted"));
+    expect(api.appointmentStatusLabels({ status: "pending", paymentStatus: "PENDING CASH APP", amount: 28 }, { pendingLabel: "New request" })).toEqual(["New request", "Unpaid"]);
+    expect(api.appointmentStatusLabels({ status: "requested", paymentStatus: "PAY AT APPOINTMENT" })).toEqual(["Requested", "Unpaid"]);
+    expect(api.appointmentStatusLabels({ status: "denied", noShow: true, paymentStatus: "PAY AT APPOINTMENT", amount: 80 })).toEqual(["Denied", "No-show"]);
+    expect(api.appointmentStatusLabels({ status: "declined", paymentStatus: "PAY AT APPOINTMENT" })).toEqual(["Declined"]);
+    expect(api.appointmentStatusLabels({ status: "cancelled", paymentStatus: "PAID", amount: 65 })).toEqual(["Cancelled"]);
+    expect(api.appointmentStatusLabels({ status: "accepted", noShow: true, paymentStatus: "PAID IN CASH", paidMethod: "cash", amount: 65 })).toEqual(["No-show", "Paid", "$65"]);
+    expect(api.appointmentStatusLabels({ status: "completed", paymentStatus: "PAID", paidMethod: "cash", amount: 65 })).toEqual(["Completed", "Paid", "$65"]);
+    expect(api.appointmentStatusLabels({ status: "done", paymentStatus: "PAID", amount: 40 })).toEqual(["Done", "Paid", "$40"]);
+    expect(api.appointmentStatusLabels({ status: "rescheduled", paymentStatus: "PAY AT APPOINTMENT", amount: 28 })).toEqual(["Rescheduled", "Unpaid", "$28"]);
+    expect(api.appointmentStatusParts({ status: "accepted", paymentStatus: "DEPOSIT PAID", depositPaid: true, amount: 120 }).payment).toBe("deposit");
+    expect(api.appointmentStatusLabels({ status: "accepted", paymentStatus: "DEPOSIT PAID", depositPaid: true, amount: 120 })).toEqual(["Deposit paid", "$120"]);
+    expect(api.appointmentStatusLabels({ status: "accepted", paymentStatus: "PAID", refundAmount: 20, amount: 65 })).toEqual(["Refunded", "$65"]);
+    const deposit = api.appointmentStatusChipsHtml({ status: "accepted", paymentStatus: "DEPOSIT PAID", paidMethod: "card", depositPaid: true, amount: 120 });
+    expect(deposit.indexOf("sd-pay-card")).toBeLessThan(deposit.indexOf("$120"));
+    expect(deposit).not.toContain("Accepted");
+    const source = extractFunction(html, "appointmentStatusChipsHtml");
+    expect(source.indexOf("appointmentRequestChipHtml")).toBeLessThan(source.indexOf("appointmentOutcomeChipHtml"));
+    expect(source.indexOf("appointmentOutcomeChipHtml")).toBeLessThan(source.indexOf("appointmentPayMarkup"));
+    expect(source.indexOf("appointmentPayMarkup")).toBeLessThan(source.indexOf("appointmentStatusPriceHtml"));
+    expect(extractFunction(html, "renderSchediToday")).toContain("pendingLabel: 'New request'");
+    expect(extractFunction(html, "clientHistoryGroupHtml")).toContain("appointmentStatusChipsHtml");
+    expect(extractFunction(html, "renderRosterSearchResults")).toContain("appointmentStatusChipsHtml");
+    expect(extractFunction(html, "rosterStatusCellHtml").indexOf("appointmentStatusChipsHtml")).toBeLessThan(extractFunction(html, "rosterStatusCellHtml").indexOf("depositRosterLine"));
   });
 });
 
@@ -1942,6 +2004,117 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       });
       expect(clientActions).toContain("Edit");
       expect(clientActions.some((label) => label === "Mark paid" || label === "Reschedule" || label === "Cancel" || label === "Delete" || label === "Mark no-show")).toBe(false);
+      expect(writes).toEqual([]);
+    } finally {
+      await browser.close();
+      await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+    }
+  }, 120000);
+
+  it("reads status chips as booking, outcome, payment, then price at 340 and 390", async () => {
+    const types: Record<string, string> = {
+      ".html": "text/html; charset=utf-8",
+      ".js": "text/javascript; charset=utf-8",
+      ".svg": "image/svg+xml",
+      ".png": "image/png",
+      ".json": "application/json",
+      ".webmanifest": "application/manifest+json",
+    };
+    const server = createServer((req, res) => {
+      const path = new URL(req.url || "/", "http://127.0.0.1").pathname;
+      const file = path === "/" || path === "/portal-preview" ? "/index.html" : path;
+      const full = join(root, file);
+      if (!full.startsWith(root) || !existsSync(full)) {
+        res.writeHead(404);
+        res.end("missing");
+        return;
+      }
+      res.writeHead(200, { "content-type": types[extname(full)] || "application/octet-stream" });
+      res.end(readFileSync(full));
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const address = server.address();
+    const port = typeof address === "object" && address ? address.port : 0;
+    const puppeteer = await import("puppeteer-core");
+    const browser = await puppeteer.default.launch({
+      executablePath: chrome,
+      headless: true,
+      args: ["--no-sandbox", "--disable-dev-shm-usage"],
+    });
+    const orderOf = (text: string, words: string[]) => {
+      const indexes = words.map((word) => text.indexOf(word));
+      expect(indexes.every((index) => index >= 0)).toBe(true);
+      for (let i = 1; i < indexes.length; i++) expect(indexes[i - 1]).toBeLessThan(indexes[i]);
+    };
+    try {
+      const page = await browser.newPage();
+      const writes: string[] = [];
+      page.on("request", (req) => {
+        if (req.method() !== "GET" && req.method() !== "HEAD") writes.push(req.url());
+      });
+      await page.goto(`http://127.0.0.1:${port}/portal-preview`, { waitUntil: "domcontentloaded", timeout: 45000 });
+      await page.waitForFunction(() => document.body.classList.contains("schedi-newdash"), { timeout: 20000 });
+      await page.waitForFunction(() => {
+        const apps = (window as unknown as { getTenant?: () => { appointments?: { id?: string }[] } }).getTenant?.()?.appointments || [];
+        return apps.some((row) => row && row.id === "HB-1005");
+      }, { timeout: 20000 });
+      for (const width of [340, 390]) {
+        await page.setViewport({ width, height: 900 });
+        for (const theme of ["dark", "light"] as const) {
+          await page.evaluate((mode) => {
+            const tenant = (window as unknown as { getTenant: () => { appointments: { id?: string; noShow?: boolean }[] } }).getTenant();
+            const row = tenant.appointments.find((app) => app && app.id === "HB-1026");
+            if (row) row.noShow = true;
+            (window as unknown as { setSchediTheme: (mode: string) => void }).setSchediTheme(mode);
+            (window as unknown as { schediDashGo: (tab: string) => void }).schediDashGo("appointments");
+          }, theme);
+          await page.waitForSelector('[data-booking-id="HB-1005"] .roster-cell-pay', { timeout: 10000 });
+          const list = await page.evaluate(() => {
+            const text = (selector: string) => (document.querySelector(selector)?.textContent || "").replace(/\s+/g, " ").trim();
+            return {
+              avery: text('[data-booking-id="HB-1005"] .roster-cell-pay'),
+              elena: text('[data-booking-id="HB-1026"] .roster-cell-pay'),
+              denied: text('[data-booking-id="HB-1021"] .roster-cell-pay'),
+            };
+          });
+          orderOf(list.avery, ["Accepted", "No-show", "Unpaid", "$55"]);
+          orderOf(list.elena, ["Accepted", "No-show", "Unpaid", "$120"]);
+          expect(list.denied).toContain("Denied");
+          expect(list.denied).not.toContain("Unpaid");
+          expect(list.denied.indexOf("No-show")).toBe(-1);
+          await page.evaluate(() => (window as unknown as { openRosterApptModal: (id: string) => void }).openRosterApptModal("HB-1026"));
+          await page.waitForSelector("#rosterApptModal:not(.hidden)", { timeout: 10000 });
+          const sheet = await page.evaluate(() => (document.getElementById("rosterApptBody")?.textContent || "").replace(/\s+/g, " ").trim());
+          orderOf(sheet, ["Accepted", "No-show", "Unpaid", "$120"]);
+          await page.evaluate(() => (window as unknown as { closeRosterApptModal: () => void }).closeRosterApptModal());
+          await page.evaluate(() => (window as unknown as { schediDashGo: (tab: string) => void }).schediDashGo("today"));
+          await page.waitForSelector("#schediTodaySchedule .sd-row", { timeout: 10000 });
+          const today = await page.evaluate(() => {
+            const text = (id: string) => {
+              const button = document.querySelector(`#schediTodaySchedule button[onclick*="${id}"]`);
+              return (button?.closest("article")?.textContent || "").replace(/\s+/g, " ").trim();
+            };
+            return { request: text("HB-1002"), accepted: text("HB-1003") };
+          });
+          orderOf(today.request, ["New request", "Unpaid"]);
+          expect(today.request.indexOf("No-show")).toBe(-1);
+          orderOf(today.accepted, ["Accepted", "Unpaid"]);
+          await page.evaluate(() => (window as unknown as { schediDashGo: (tab: string) => void }).schediDashGo("clients"));
+          await page.waitForFunction(() => {
+            const view = window as unknown as { openClientDetail?: (id: string) => void };
+            if (!document.querySelector('.sd-client-name[data-client-id="CL-ELENA"]')) return false;
+            if (document.querySelector("#sdClientPanel:not([hidden]) .sd-client-visit")) return true;
+            view.openClientDetail?.("CL-ELENA");
+            return !!document.querySelector("#sdClientPanel:not([hidden]) .sd-client-visit");
+          }, { timeout: 10000 });
+          const visit = await page.evaluate(() => {
+            const rows = Array.from(document.querySelectorAll("#sdClientPanel .sd-client-visit"));
+            const hit = rows.find((row) => (row.textContent || "").includes("No-show"));
+            return (hit?.textContent || "").replace(/\s+/g, " ").trim();
+          });
+          orderOf(visit, ["Accepted", "No-show", "Unpaid", "$120.00"]);
+        }
+      }
       expect(writes).toEqual([]);
     } finally {
       await browser.close();
