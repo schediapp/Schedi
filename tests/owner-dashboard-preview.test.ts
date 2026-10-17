@@ -722,6 +722,63 @@ describe("owner dashboard preview", () => {
     expect(html).toContain('id="hoursWeekLayoutBtn"');
     expect(css).toContain("#tenantPortalSection.schedi-newdash #hoursWeekLayoutBtn { align-self: flex-end; }");
   });
+
+  it("replaces payment checkboxes with large switches and keeps deposit method bindings", () => {
+    const pay = html.slice(html.indexOf('id="tenantSectionPayments"'), html.indexOf('id="tenantSectionNotifications"'));
+    expect(pay).not.toContain("w-4 h-4");
+    for (const id of [
+      "tenantPayCardCheck",
+      "tenantPayCashAppCheck",
+      "tenantPayZelleCheck",
+      "tenantPayVenmoCheck",
+      "tenantPayPaypalCheck",
+      "tenantPayLaterCheck",
+      "tenantDepositEnabled",
+      "tenantCancelFeeEnabled",
+      "tenantDepositMethodCard",
+      "tenantDepositMethodCashapp",
+      "tenantDepositMethodZelle",
+      "tenantDepositMethodVenmo",
+      "tenantDepositMethodPaypal",
+    ]) {
+      expect(pay).toContain(`id="${id}" class="sd-pay-switch" role="switch" aria-checked="false"`);
+    }
+    expect(pay).toContain("Accept this deposit on");
+    expect(pay).toContain('class="sd-pay-radio"');
+    expect(pay).toContain('id="tenantDepositTypePercent"');
+    expect(pay).toContain('id="tenantCancelFeeTypeFixed"');
+    const css = dashCss(html);
+    const sw = css.slice(css.indexOf("#tenantPortalSection.schedi-newdash .sd-pay-switch {"));
+    expect(sw.slice(0, 500)).toContain("width: 52px");
+    expect(sw.slice(0, 500)).toContain("height: 30px");
+    expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-pay-switch-row {");
+    expect(css).toContain("min-height: 56px");
+    expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-pay-switch-title {");
+    expect(css).toContain("font-size: 17px");
+    expect(css).toContain("background: #64748b");
+    expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-pay-switch:checked { background: #10b981; }");
+    expect(css).toContain("html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-switch { background: #cbd5e1; }");
+    expect(css).toContain("html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-switch:checked { background: #059669; }");
+    expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-pay-radio {");
+    expect(css).toContain("min-height: 48px");
+    expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-pay-radio input {");
+    expect(css).toContain("width: 22px");
+    expect(css).toContain("height: 22px");
+    const read = new Function(
+      `${extractFunction(html, "roundMoney")}\n${extractFunction(html, "depositMethodMapFor")}\n${extractFunction(html, "readDepositSettings")}; return depositMethodMapFor;`,
+    )() as (tenant: { paymentGateways?: Record<string, boolean>; deposit?: { methods?: Record<string, boolean> } }) => Record<string, boolean>;
+    expect(read({
+      paymentGateways: { card: false, cashapp: true, zelle: true, venmo: true, paypal: false },
+      deposit: { enabled: true } as { methods?: Record<string, boolean> },
+    })).toEqual({ card: false, cashapp: true, zelle: true, venmo: true, paypal: false });
+    expect(read({
+      paymentGateways: { card: true, cashapp: true, zelle: false, venmo: false, paypal: true },
+      deposit: { methods: { card: false, cashapp: false, zelle: true, venmo: true, paypal: true } },
+    })).toEqual({ card: false, cashapp: false, zelle: false, venmo: false, paypal: true });
+    expect(html).toContain("depSettings.methods[key] = !!(box && box.checked && tenant.paymentGateways[key])");
+    expect(extractFunction(html, "renderTenantPayments")).toContain("tenantDepositMethodCard");
+    expect(extractFunction(html, "syncPaySwitchAria")).toContain('setAttribute(\'aria-checked\'');
+  });
 });
 
 const chrome = ["/usr/bin/google-chrome", "/usr/bin/google-chrome-stable", "/usr/bin/chromium", "/usr/bin/chromium-browser"].find((path) => existsSync(path));
@@ -1203,6 +1260,144 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       expect(profileDays.shown).toBe(7);
       expect(profileDays.blockH).toBeGreaterThan(0);
       expect(errors).toEqual([]);
+    } finally {
+      await browser.close();
+      await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+    }
+  }, 90000);
+
+  it("sizes payment switches at 340, 390, and 1280 in light and dark", async () => {
+    const types: Record<string, string> = {
+      ".html": "text/html; charset=utf-8",
+      ".js": "text/javascript; charset=utf-8",
+      ".svg": "image/svg+xml",
+      ".png": "image/png",
+      ".json": "application/json",
+      ".webmanifest": "application/manifest+json",
+    };
+    const server = createServer((req, res) => {
+      const path = new URL(req.url || "/", "http://127.0.0.1").pathname;
+      const file = path === "/" || path === "/portal-preview" ? "/index.html" : path;
+      const full = join(root, file);
+      if (!full.startsWith(root) || !existsSync(full)) {
+        res.writeHead(404);
+        res.end("missing");
+        return;
+      }
+      res.writeHead(200, { "content-type": types[extname(full)] || "application/octet-stream" });
+      res.end(readFileSync(full));
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const address = server.address();
+    const port = typeof address === "object" && address ? address.port : 0;
+    const puppeteer = await import("puppeteer-core");
+    const browser = await puppeteer.default.launch({
+      executablePath: chrome,
+      headless: true,
+      args: ["--no-sandbox", "--disable-dev-shm-usage"],
+    });
+    try {
+      const page = await browser.newPage();
+      await page.goto(`http://127.0.0.1:${port}/portal-preview`, { waitUntil: "domcontentloaded", timeout: 45000 });
+      await page.waitForFunction(() => document.body.classList.contains("schedi-newdash"), { timeout: 20000 });
+      await page.waitForFunction(() => {
+        const tenant = (window as unknown as { getTenant?: () => { paymentGateways?: { later?: boolean } } }).getTenant?.();
+        return !!(tenant && tenant.paymentGateways && tenant.paymentGateways.later === true);
+      }, { timeout: 20000 });
+      await page.evaluate(() => (window as unknown as { schediDashGo: (tab: string) => void }).schediDashGo("payments"));
+      await page.waitForFunction(() => {
+        const later = document.getElementById("tenantPayLaterCheck") as HTMLInputElement | null;
+        const tag = document.getElementById("tenantCashAppTagInput") as HTMLInputElement | null;
+        return !!(later && later.checked && tag && tag.value === "$HarborStudio");
+      }, { timeout: 10000 });
+      const measure = () => page.evaluate(() => {
+        const boxOf = (id: string) => {
+          const el = document.getElementById(id) as HTMLInputElement | null;
+          if (!el) return null;
+          const style = getComputedStyle(el);
+          const box = el.getBoundingClientRect();
+          const row = el.closest(".sd-pay-switch-row, .sd-pay-radio") as HTMLElement | null;
+          const rowBox = row?.getBoundingClientRect();
+          const titleEl = row?.querySelector(".sd-pay-switch-title") as HTMLElement | null;
+          return {
+            role: el.getAttribute("role"),
+            checked: el.getAttribute("aria-checked"),
+            on: el.checked,
+            w: Math.round(box.width),
+            h: Math.round(box.height),
+            bg: style.backgroundColor,
+            rowH: rowBox ? Math.round(rowBox.height) : 0,
+            rowW: rowBox ? Math.round(rowBox.width) : 0,
+            inside: !!(rowBox && box.right <= rowBox.right + 1 && box.left >= rowBox.left - 1),
+            right: !!(rowBox && box.left > rowBox.left + 40),
+            font: titleEl ? getComputedStyle(titleEl).fontSize : (row ? getComputedStyle(row).fontSize : ""),
+          };
+        };
+        return {
+          later: boxOf("tenantPayLaterCheck"),
+          card: boxOf("tenantPayCardCheck"),
+          deposit: boxOf("tenantDepositEnabled"),
+          fee: boxOf("tenantCancelFeeEnabled"),
+          cash: boxOf("tenantDepositMethodCashapp"),
+          paypal: boxOf("tenantDepositMethodPaypal"),
+          radio: boxOf("tenantDepositTypeFixed"),
+        };
+      });
+      for (const width of [340, 390, 1280]) {
+        await page.setViewport({ width, height: 900 });
+        await page.evaluate(() => (window as unknown as { schediDashGo: (tab: string) => void }).schediDashGo("payments"));
+        for (const theme of ["dark", "light"] as const) {
+          await page.evaluate((mode) => (window as unknown as { setSchediTheme: (mode: string) => void }).setSchediTheme(mode), theme);
+          const view = await measure();
+          expect(view.later?.role).toBe("switch");
+          expect(view.later?.on).toBe(true);
+          expect(view.later?.checked).toBe("true");
+          expect(view.later?.w).toBe(52);
+          expect(view.later?.h).toBe(30);
+          expect(view.later?.rowH).toBeGreaterThanOrEqual(56);
+          expect(view.later?.inside).toBe(true);
+          expect(view.later?.right).toBe(true);
+          expect(view.later?.font).toBe("17px");
+          expect(view.later?.bg).toBe(theme === "dark" ? "rgb(16, 185, 129)" : "rgb(5, 150, 105)");
+          expect(view.card?.on).toBe(false);
+          expect(view.card?.checked).toBe("false");
+          expect(view.card?.bg).toBe(theme === "dark" ? "rgb(100, 116, 139)" : "rgb(203, 213, 225)");
+          expect(view.deposit?.w).toBe(52);
+          expect(view.deposit?.rowH).toBeGreaterThanOrEqual(56);
+          expect(view.fee?.role).toBe("switch");
+          expect(view.fee?.rowH).toBeGreaterThanOrEqual(56);
+          expect(view.cash?.on).toBe(true);
+          expect(view.cash?.checked).toBe("true");
+          expect(view.cash?.w).toBe(52);
+          expect(view.cash?.rowH).toBeGreaterThanOrEqual(56);
+          expect(view.paypal?.on).toBe(false);
+          expect(view.paypal?.w).toBe(52);
+          expect(view.radio?.w).toBe(22);
+          expect(view.radio?.h).toBe(22);
+          expect(view.radio?.rowH).toBeGreaterThanOrEqual(48);
+          expect(view.radio?.font).toBe("16px");
+          expect(view.radio?.inside).toBe(true);
+        }
+      }
+      await page.evaluate(() => {
+        const row = document.getElementById("tenantPayLaterCheck")?.closest("label") as HTMLElement | null;
+        row?.click();
+      });
+      const toggled = await page.$eval("#tenantPayLaterCheck", (el) => ({
+        on: (el as HTMLInputElement).checked,
+        aria: el.getAttribute("aria-checked"),
+      }));
+      expect(toggled).toEqual({ on: false, aria: "false" });
+      await page.evaluate(() => {
+        const row = document.getElementById("tenantDepositMethodCashapp")?.closest("label") as HTMLElement | null;
+        row?.click();
+      });
+      const method = await page.$eval("#tenantDepositMethodCashapp", (el) => ({
+        on: (el as HTMLInputElement).checked,
+        aria: el.getAttribute("aria-checked"),
+        role: el.getAttribute("role"),
+      }));
+      expect(method).toEqual({ on: false, aria: "false", role: "switch" });
     } finally {
       await browser.close();
       await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));

@@ -3615,6 +3615,107 @@ html.schedi-light #tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-sv
     }
     #tenantPortalSection.schedi-newdash #tenantMoreCard .sd-theme-seg { width: auto; min-width: 220px; }
 }
+#tenantPortalSection.schedi-newdash .sd-pay-switch-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+    min-height: 56px;
+    margin: 0;
+    cursor: pointer;
+}
+#tenantPortalSection.schedi-newdash .sd-pay-switch-row:has(.sd-pay-switch:disabled) { cursor: not-allowed; }
+#tenantPortalSection.schedi-newdash .sd-pay-switch-copy {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    min-width: 0;
+    flex: 1 1 auto;
+}
+#tenantPortalSection.schedi-newdash .sd-pay-switch-copy > i {
+    flex: 0 0 auto;
+    width: 22px;
+    margin-top: 2px;
+    font-size: 18px;
+    text-align: center;
+}
+#tenantPortalSection.schedi-newdash .sd-pay-switch-title {
+    display: block;
+    font-size: 17px;
+    font-weight: 700;
+    line-height: 1.3;
+}
+#tenantPortalSection.schedi-newdash .sd-pay-switch-note {
+    display: block;
+    margin-top: 2px;
+    font-size: 16px;
+    line-height: 1.4;
+}
+#tenantPortalSection.schedi-newdash .sd-pay-switch {
+    appearance: none;
+    -webkit-appearance: none;
+    flex: 0 0 auto;
+    width: 52px;
+    height: 30px;
+    margin: 0;
+    border: 0;
+    border-radius: 999px;
+    background: #64748b;
+    position: relative;
+    cursor: pointer;
+}
+#tenantPortalSection.schedi-newdash .sd-pay-switch::after {
+    content: "";
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 24px;
+    height: 24px;
+    border-radius: 999px;
+    background: #ffffff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+    transition: transform 0.15s ease;
+}
+#tenantPortalSection.schedi-newdash .sd-pay-switch:checked { background: #10b981; }
+#tenantPortalSection.schedi-newdash .sd-pay-switch:checked::after { transform: translateX(22px); }
+#tenantPortalSection.schedi-newdash .sd-pay-switch:disabled { opacity: 0.45; cursor: not-allowed; }
+#tenantPortalSection.schedi-newdash .sd-pay-switch:focus-visible { outline: 2px solid #10b981; outline-offset: 2px; }
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-switch { background: #cbd5e1; }
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-switch:checked { background: #059669; }
+#tenantPortalSection.schedi-newdash .sd-pay-deposit-methods {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding-top: 8px;
+    border-top: 1px solid rgba(51, 65, 85, 0.8);
+}
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { border-top-color: #e2e8f0; }
+#tenantPortalSection.schedi-newdash .sd-pay-deposit-methods > .sd-pay-switch-note { margin: 4px 0 8px; }
+#tenantPortalSection.schedi-newdash .sd-pay-radios {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+#tenantPortalSection.schedi-newdash .sd-pay-radio {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-height: 48px;
+    margin: 0;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.3;
+}
+#tenantPortalSection.schedi-newdash .sd-pay-radio input {
+    width: 22px;
+    height: 22px;
+    flex: 0 0 auto;
+    margin: 0;
+    accent-color: #10b981;
+}
 
 </style>
 <script>
@@ -4293,28 +4394,30 @@ html.schedi-light #tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-sv
                     <form onsubmit="handleSaveTenantPayments(event)" class="space-y-4 text-xs">
                         <div class="sd-pay-settings">
                         <div class="sd-pay-methods space-y-4">
-                        <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center justify-between">
-                            <div class="flex items-center space-x-3">
-                                <i class="fa-solid fa-credit-card text-indigo-400 text-lg"></i>
-                                <div>
-                                    <div class="font-bold text-white">Credit / Debit Card (Stripe)</div>
-                                    <div id="tenantPayCardNote" class="text-[11px] text-slate-400">Accept card as one option. Clients still choose how to pay. Pro only.</div>
-                                </div>
-                            </div>
-                            <input type="checkbox" id="tenantPayCardCheck" class="w-4 h-4 accent-brand-500 rounded cursor-pointer">
+                        <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800">
+                            <label class="sd-pay-switch-row">
+                                <span class="sd-pay-switch-copy">
+                                    <i class="fa-solid fa-credit-card text-indigo-400 text-lg" aria-hidden="true"></i>
+                                    <span>
+                                        <span class="sd-pay-switch-title font-bold text-white" id="tenantPayCardLabel">Credit / Debit Card (Stripe)</span>
+                                        <span id="tenantPayCardNote" class="sd-pay-switch-note text-slate-400">Accept card as one option. Clients still choose how to pay. Pro only.</span>
+                                    </span>
+                                </span>
+                                <input type="checkbox" id="tenantPayCardCheck" class="sd-pay-switch" role="switch" aria-checked="false" aria-labelledby="tenantPayCardLabel">
+                            </label>
                         </div>
 
                         <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-3">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center space-x-3">
-                                    <i class="fa-solid fa-dollar-sign text-emerald-400 text-lg"></i>
-                                    <div>
-                                        <div class="font-bold text-white">Cash App Direct</div>
-                                        <div class="text-[11px] text-slate-400">Direct clients to your Cash App $Cashtag</div>
-                                    </div>
-                                </div>
-                                <input type="checkbox" id="tenantPayCashAppCheck" class="w-4 h-4 accent-brand-500 rounded cursor-pointer">
-                            </div>
+                            <label class="sd-pay-switch-row">
+                                <span class="sd-pay-switch-copy">
+                                    <i class="fa-solid fa-dollar-sign text-emerald-400 text-lg" aria-hidden="true"></i>
+                                    <span>
+                                        <span class="sd-pay-switch-title font-bold text-white" id="tenantPayCashAppLabel">Cash App Direct</span>
+                                        <span class="sd-pay-switch-note text-slate-400">Direct clients to your Cash App $Cashtag</span>
+                                    </span>
+                                </span>
+                                <input type="checkbox" id="tenantPayCashAppCheck" class="sd-pay-switch" role="switch" aria-checked="false" aria-labelledby="tenantPayCashAppLabel">
+                            </label>
                             <div class="pt-2 border-t border-slate-800">
                                 <label class="block text-[11px] text-slate-400 mb-1">Business Cash App $Cashtag</label>
                                 <input type="text" id="tenantCashAppTagInput" class="w-full px-3 py-2 rounded-lg glass-input font-mono">
@@ -4322,16 +4425,16 @@ html.schedi-light #tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-sv
                         </div>
 
                         <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-3">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center space-x-3">
-                                    <i class="fa-solid fa-building-columns text-violet-400 text-lg"></i>
-                                    <div>
-                                        <div class="font-bold text-white">Zelle</div>
-                                        <div class="text-[11px] text-slate-400">Clients send via their bank’s Zelle using your email or phone</div>
-                                    </div>
-                                </div>
-                                <input type="checkbox" id="tenantPayZelleCheck" class="w-4 h-4 accent-brand-500 rounded cursor-pointer">
-                            </div>
+                            <label class="sd-pay-switch-row">
+                                <span class="sd-pay-switch-copy">
+                                    <i class="fa-solid fa-building-columns text-violet-400 text-lg" aria-hidden="true"></i>
+                                    <span>
+                                        <span class="sd-pay-switch-title font-bold text-white" id="tenantPayZelleLabel">Zelle</span>
+                                        <span class="sd-pay-switch-note text-slate-400">Clients send via their bank’s Zelle using your email or phone</span>
+                                    </span>
+                                </span>
+                                <input type="checkbox" id="tenantPayZelleCheck" class="sd-pay-switch" role="switch" aria-checked="false" aria-labelledby="tenantPayZelleLabel">
+                            </label>
                             <div class="pt-2 border-t border-slate-800 space-y-2">
                                 <div>
                                     <label class="block text-[11px] text-slate-400 mb-1">Zelle handle (email or US phone)</label>
@@ -4345,16 +4448,16 @@ html.schedi-light #tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-sv
                         </div>
 
                         <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-3">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center space-x-3">
-                                    <i class="fa-solid fa-mobile-screen text-sky-400 text-lg"></i>
-                                    <div>
-                                        <div class="font-bold text-white">Venmo</div>
-                                        <div class="text-[11px] text-slate-400">Direct clients to your Venmo username</div>
-                                    </div>
-                                </div>
-                                <input type="checkbox" id="tenantPayVenmoCheck" class="w-4 h-4 accent-brand-500 rounded cursor-pointer">
-                            </div>
+                            <label class="sd-pay-switch-row">
+                                <span class="sd-pay-switch-copy">
+                                    <i class="fa-solid fa-mobile-screen text-sky-400 text-lg" aria-hidden="true"></i>
+                                    <span>
+                                        <span class="sd-pay-switch-title font-bold text-white" id="tenantPayVenmoLabel">Venmo</span>
+                                        <span class="sd-pay-switch-note text-slate-400">Direct clients to your Venmo username</span>
+                                    </span>
+                                </span>
+                                <input type="checkbox" id="tenantPayVenmoCheck" class="sd-pay-switch" role="switch" aria-checked="false" aria-labelledby="tenantPayVenmoLabel">
+                            </label>
                             <div class="pt-2 border-t border-slate-800 space-y-2">
                                 <div>
                                     <label class="block text-[11px] text-slate-400 mb-1">Venmo username</label>
@@ -4368,16 +4471,16 @@ html.schedi-light #tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-sv
                         </div>
 
                         <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-3">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center space-x-3">
-                                    <i class="fa-brands fa-paypal text-blue-400 text-lg"></i>
-                                    <div>
-                                        <div class="font-bold text-white">PayPal</div>
-                                        <div class="text-[11px] text-slate-400">PayPal.me slug, URL, or email for clients to pay</div>
-                                    </div>
-                                </div>
-                                <input type="checkbox" id="tenantPayPaypalCheck" class="w-4 h-4 accent-brand-500 rounded cursor-pointer">
-                            </div>
+                            <label class="sd-pay-switch-row">
+                                <span class="sd-pay-switch-copy">
+                                    <i class="fa-brands fa-paypal text-blue-400 text-lg" aria-hidden="true"></i>
+                                    <span>
+                                        <span class="sd-pay-switch-title font-bold text-white" id="tenantPayPaypalLabel">PayPal</span>
+                                        <span class="sd-pay-switch-note text-slate-400">PayPal.me slug, URL, or email for clients to pay</span>
+                                    </span>
+                                </span>
+                                <input type="checkbox" id="tenantPayPaypalCheck" class="sd-pay-switch" role="switch" aria-checked="false" aria-labelledby="tenantPayPaypalLabel">
+                            </label>
                             <div class="pt-2 border-t border-slate-800 space-y-2">
                                 <div>
                                     <label class="block text-[11px] text-slate-400 mb-1">PayPal handle (paypal.me slug, URL, or email)</label>
@@ -4390,53 +4493,64 @@ html.schedi-light #tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-sv
                             </div>
                         </div>
 
-                        <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center justify-between">
-                            <div class="flex items-center space-x-3">
-                                <i class="fa-solid fa-handshake text-amber-400 text-lg"></i>
-                                <div>
-                                    <div class="font-bold text-white">Pay at Appointment</div>
-                                    <div class="text-[11px] text-slate-400">Allow in-person payment on arrival</div>
-                                </div>
-                            </div>
-                            <input type="checkbox" id="tenantPayLaterCheck" class="w-4 h-4 accent-brand-500 rounded cursor-pointer">
+                        <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800">
+                            <label class="sd-pay-switch-row">
+                                <span class="sd-pay-switch-copy">
+                                    <i class="fa-solid fa-handshake text-amber-400 text-lg" aria-hidden="true"></i>
+                                    <span>
+                                        <span class="sd-pay-switch-title font-bold text-white" id="tenantPayLaterLabel">Pay at Appointment</span>
+                                        <span class="sd-pay-switch-note text-slate-400">Allow in-person payment on arrival. The public page still says Pay at Appt.</span>
+                                    </span>
+                                </span>
+                                <input type="checkbox" id="tenantPayLaterCheck" class="sd-pay-switch" role="switch" aria-checked="false" aria-labelledby="tenantPayLaterLabel">
+                            </label>
                         </div>
                         </div>
 
                         <div class="sd-pay-rules space-y-4">
                         <div id="tenantDepositBox" class="p-4 rounded-xl bg-slate-900/80 border border-indigo-500/30 space-y-3">
-                            <div class="flex items-center justify-between gap-3">
-                                <div>
-                                    <div class="font-bold text-white">Appointment deposit</div>
-                                    <div id="tenantDepositNote" class="text-[11px] text-slate-400">Pro only. Off unless you turn it on. If a client chooses card, they pay this deposit before the appointment is confirmed. Card is not required — Cash App, Zelle, Venmo, PayPal, and pay at the appointment stay available. The rest is due at the appointment. Percent deposits skip services with no price set.</div>
-                                </div>
-                                <input type="checkbox" id="tenantDepositEnabled" class="w-4 h-4 accent-brand-500 rounded cursor-pointer">
-                            </div>
-                            <div class="flex flex-wrap gap-3 text-[11px] text-slate-300">
-                                <label class="inline-flex items-center gap-1.5"><input type="radio" name="tenantDepositType" id="tenantDepositTypePercent" value="percent" class="accent-brand-500" checked> Percent of the service price</label>
-                                <label class="inline-flex items-center gap-1.5"><input type="radio" name="tenantDepositType" id="tenantDepositTypeFixed" value="fixed" class="accent-brand-500"> Fixed dollar amount</label>
+                            <label class="sd-pay-switch-row">
+                                <span>
+                                    <span class="sd-pay-switch-title font-bold text-white" id="tenantDepositLabel">Appointment deposit</span>
+                                    <span id="tenantDepositNote" class="sd-pay-switch-note text-slate-400">Pro only. Off unless you turn it on. If a client chooses card, they pay this deposit before the appointment is confirmed. Card is not required — Cash App, Zelle, Venmo, PayPal, and pay at the appointment stay available. The rest is due at the appointment. Percent deposits skip services with no price set.</span>
+                                </span>
+                                <input type="checkbox" id="tenantDepositEnabled" class="sd-pay-switch" role="switch" aria-checked="false" aria-labelledby="tenantDepositLabel">
+                            </label>
+                            <div class="sd-pay-radios" role="radiogroup" aria-label="Deposit amount">
+                                <label class="sd-pay-radio" for="tenantDepositTypePercent"><input type="radio" name="tenantDepositType" id="tenantDepositTypePercent" value="percent" checked> Percent of the service price</label>
+                                <label class="sd-pay-radio" for="tenantDepositTypeFixed"><input type="radio" name="tenantDepositType" id="tenantDepositTypeFixed" value="fixed"> Fixed dollar amount</label>
                             </div>
                             <div>
                                 <label id="tenantDepositValueLabel" class="block text-[11px] text-slate-400 mb-1" for="tenantDepositValue">Percent</label>
                                 <input type="number" id="tenantDepositValue" min="0" max="100" step="1" value="0" class="w-full px-3 py-2 rounded-lg glass-input font-mono">
                             </div>
+                            <div id="tenantDepositMethods" class="sd-pay-deposit-methods">
+                                <div class="sd-pay-switch-title font-bold text-white">Accept this deposit on</div>
+                                <p class="sd-pay-switch-note text-slate-400">Checked methods collect the deposit. Unchecked methods stay available without one. If you have not saved this yet, it starts as the methods you already turned on. Pay at Appt does not take a deposit.</p>
+                                <label class="sd-pay-switch-row" for="tenantDepositMethodCard"><span class="sd-pay-switch-title font-bold text-white" id="tenantDepositMethodCardLabel">Card</span><input type="checkbox" id="tenantDepositMethodCard" class="sd-pay-switch" role="switch" aria-checked="false" aria-labelledby="tenantDepositMethodCardLabel"></label>
+                                <label class="sd-pay-switch-row" for="tenantDepositMethodCashapp"><span class="sd-pay-switch-title font-bold text-white" id="tenantDepositMethodCashappLabel">Cash App</span><input type="checkbox" id="tenantDepositMethodCashapp" class="sd-pay-switch" role="switch" aria-checked="false" aria-labelledby="tenantDepositMethodCashappLabel"></label>
+                                <label class="sd-pay-switch-row" for="tenantDepositMethodZelle"><span class="sd-pay-switch-title font-bold text-white" id="tenantDepositMethodZelleLabel">Zelle</span><input type="checkbox" id="tenantDepositMethodZelle" class="sd-pay-switch" role="switch" aria-checked="false" aria-labelledby="tenantDepositMethodZelleLabel"></label>
+                                <label class="sd-pay-switch-row" for="tenantDepositMethodVenmo"><span class="sd-pay-switch-title font-bold text-white" id="tenantDepositMethodVenmoLabel">Venmo</span><input type="checkbox" id="tenantDepositMethodVenmo" class="sd-pay-switch" role="switch" aria-checked="false" aria-labelledby="tenantDepositMethodVenmoLabel"></label>
+                                <label class="sd-pay-switch-row" for="tenantDepositMethodPaypal"><span class="sd-pay-switch-title font-bold text-white" id="tenantDepositMethodPaypalLabel">PayPal</span><input type="checkbox" id="tenantDepositMethodPaypal" class="sd-pay-switch" role="switch" aria-checked="false" aria-labelledby="tenantDepositMethodPaypalLabel"></label>
+                            </div>
                         </div>
 
                         <div id="tenantCancelFeeBox" class="p-4 rounded-xl bg-slate-900/80 border border-amber-500/30 space-y-3">
-                            <div class="flex items-center justify-between gap-3">
-                                <div>
-                                    <div class="font-bold text-white">Cancellation fee</div>
-                                    <div id="tenantCancelFeeNote" class="text-[11px] text-slate-400">Off unless you turn it on. A cancellation fee does not make card the only way to pay. When a client who paid by card cancels inside this window, Pro charges the fee on that card. Other methods stay available. Free and Starter only show the rule and do not charge a card. Cancelling still frees the time if the fee is not collected.</div>
-                                </div>
-                                <input type="checkbox" id="tenantCancelFeeEnabled" class="w-4 h-4 accent-brand-500 rounded cursor-pointer">
-                            </div>
+                            <label class="sd-pay-switch-row">
+                                <span>
+                                    <span class="sd-pay-switch-title font-bold text-white" id="tenantCancelFeeLabel">Cancellation fee</span>
+                                    <span id="tenantCancelFeeNote" class="sd-pay-switch-note text-slate-400">Off unless you turn it on. A cancellation fee does not make card the only way to pay. When a client who paid by card cancels inside this window, Pro charges the fee on that card. Other methods stay available. Free and Starter only show the rule and do not charge a card. Cancelling still frees the time if the fee is not collected.</span>
+                                </span>
+                                <input type="checkbox" id="tenantCancelFeeEnabled" class="sd-pay-switch" role="switch" aria-checked="false" aria-labelledby="tenantCancelFeeLabel">
+                            </label>
                             <div>
                                 <label class="block text-[11px] text-slate-400 mb-1" for="tenantCancelFeeHours">Hours before the appointment</label>
                                 <input type="number" id="tenantCancelFeeHours" min="0" max="720" step="1" value="24" class="w-full px-3 py-2 rounded-lg glass-input font-mono">
                                 <p class="text-[11px] text-slate-500 mt-1">Clients can cancel earlier than this without a fee. The default is 24 hours.</p>
                             </div>
-                            <div class="flex flex-wrap gap-3 text-[11px] text-slate-300">
-                                <label class="inline-flex items-center gap-1.5"><input type="radio" name="tenantCancelFeeType" id="tenantCancelFeeTypePercent" value="percent" class="accent-brand-500" checked onchange="syncCancelFeeValueField()"> Percent of the service price</label>
-                                <label class="inline-flex items-center gap-1.5"><input type="radio" name="tenantCancelFeeType" id="tenantCancelFeeTypeFixed" value="fixed" class="accent-brand-500" onchange="syncCancelFeeValueField()"> Fixed dollar amount</label>
+                            <div class="sd-pay-radios" role="radiogroup" aria-label="Cancellation fee amount">
+                                <label class="sd-pay-radio" for="tenantCancelFeeTypePercent"><input type="radio" name="tenantCancelFeeType" id="tenantCancelFeeTypePercent" value="percent" checked onchange="syncCancelFeeValueField()"> Percent of the service price</label>
+                                <label class="sd-pay-radio" for="tenantCancelFeeTypeFixed"><input type="radio" name="tenantCancelFeeType" id="tenantCancelFeeTypeFixed" value="fixed" onchange="syncCancelFeeValueField()"> Fixed dollar amount</label>
                             </div>
                             <div>
                                 <label id="tenantCancelFeeValueLabel" class="block text-[11px] text-slate-400 mb-1" for="tenantCancelFeeValue">Percent</label>
@@ -6709,19 +6823,34 @@ html.schedi-light #tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-sv
             return '$' + (Number.isInteger(p) ? String(p) : p.toFixed(2));
         }
 
+        function depositMethodMapFor(tenant) {
+            var keys = ['card', 'cashapp', 'zelle', 'venmo', 'paypal'];
+            var stored = tenant && tenant.deposit && tenant.deposit.methods;
+            var explicit = !!(stored && typeof stored === 'object' && !Array.isArray(stored));
+            var pg = (tenant && tenant.paymentGateways) || {};
+            var out = {};
+            keys.forEach(function (key) {
+                var on = pg[key] === true;
+                if (explicit && typeof stored[key] === 'boolean') out[key] = stored[key] === true && on;
+                else out[key] = on;
+            });
+            return out;
+        }
+
         function readDepositSettings(tenant) {
             var d = tenant && tenant.deposit;
-            if (!d || typeof d !== 'object') return { enabled: false, type: 'percent', percent: 0, amount: 0 };
+            if (!d || typeof d !== 'object') d = {};
             return {
                 enabled: !!d.enabled,
                 type: d.type === 'fixed' ? 'fixed' : 'percent',
                 percent: Math.min(100, Math.max(0, Number(d.percent) || 0)),
-                amount: Math.max(0, roundMoney(d.amount))
+                amount: Math.max(0, roundMoney(d.amount)),
+                methods: depositMethodMapFor(tenant)
             };
         }
 
         function ensureDepositSettings(tenant) {
-            if (!tenant || typeof tenant !== 'object') return { enabled: false, type: 'percent', percent: 0, amount: 0 };
+            if (!tenant || typeof tenant !== 'object') return { enabled: false, type: 'percent', percent: 0, amount: 0, methods: {} };
             var d = readDepositSettings(tenant);
             tenant.deposit = d;
             return d;
@@ -16110,6 +16239,20 @@ html.schedi-light #tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-sv
             if (depNote) depNote.textContent = proPlan
                 ? 'Off unless you turn it on. If a client chooses card, they pay this deposit before the appointment is confirmed. Card is not required. The rest is due at the appointment.'
                 : 'Card deposits are on Pro only. Free and Starter cannot turn this on.';
+            var depMethods = dep.methods || depositMethodMapFor(tenant);
+            var depMethodIds = {
+                card: 'tenantDepositMethodCard',
+                cashapp: 'tenantDepositMethodCashapp',
+                zelle: 'tenantDepositMethodZelle',
+                venmo: 'tenantDepositMethodVenmo',
+                paypal: 'tenantDepositMethodPaypal'
+            };
+            Object.keys(depMethodIds).forEach(function (key) {
+                var box = document.getElementById(depMethodIds[key]);
+                if (!box) return;
+                box.checked = !!depMethods[key];
+                box.disabled = !proPlan || !tenant.paymentGateways[key];
+            });
             var fee = ensureCancellationFeeSettings(tenant);
             var feeOn = document.getElementById('tenantCancelFeeEnabled');
             var feePercent = document.getElementById('tenantCancelFeeTypePercent');
@@ -16139,6 +16282,25 @@ html.schedi-light #tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-sv
             if (venmoLinkInput) venmoLinkInput.value = tenant.venmoLink || '';
             if (paypalHandleInput) paypalHandleInput.value = tenant.paypalHandle || '';
             if (paypalLinkInput) paypalLinkInput.value = tenant.paypalLink || '';
+            syncPaySwitchAriaAll();
+        }
+
+        function syncPaySwitchAria(el) {
+            if (!el || !el.classList || !el.classList.contains('sd-pay-switch')) return;
+            el.setAttribute('aria-checked', el.checked ? 'true' : 'false');
+        }
+
+        function syncPaySwitchAriaAll() {
+            if (!window.__schediPaySwitchBound) {
+                window.__schediPaySwitchBound = true;
+                document.addEventListener('change', function (ev) {
+                    syncPaySwitchAria(ev && ev.target);
+                });
+            }
+            var root = document.getElementById('tenantSectionPayments');
+            if (!root) return;
+            var nodes = root.querySelectorAll('.sd-pay-switch');
+            for (var i = 0; i < nodes.length; i++) syncPaySwitchAria(nodes[i]);
         }
 
 
@@ -17850,6 +18012,18 @@ html.schedi-light #tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-sv
             }
             depSettings.enabled = wantDeposit;
             depSettings.type = depType;
+            var depMethodIds = {
+                card: 'tenantDepositMethodCard',
+                cashapp: 'tenantDepositMethodCashapp',
+                zelle: 'tenantDepositMethodZelle',
+                venmo: 'tenantDepositMethodVenmo',
+                paypal: 'tenantDepositMethodPaypal'
+            };
+            depSettings.methods = {};
+            Object.keys(depMethodIds).forEach(function (key) {
+                var box = document.getElementById(depMethodIds[key]);
+                depSettings.methods[key] = !!(box && box.checked && tenant.paymentGateways[key]);
+            });
             if (depType === 'fixed') {
                 depSettings.amount = roundMoney(depRaw);
                 depSettings.percent = 0;
