@@ -33,7 +33,7 @@ export type MarketingPage = {
 };
 
 const PLAN_FACTS =
-  "Free is $0: pay at the appointment, one service, and five bookings a week. Those bookings confirm as soon as the client reserves. Starter is $29 a month: more than one service, no weekly booking cap, and Cash App, Venmo, Zelle, PayPal, plus pay at the appointment. Starter and Pro bookings stay pending until you accept or deny them. Pro is $49 a month and includes Starter. Card checkout and an appointment deposit are Pro settings. Both stay off until you turn them on. A card charge, including a deposit, is created on the business's Stripe account. Schedi does not take a cut of that charge. Repeating visits (weekly, biweekly, or monthly) are Pro only and stay off until you turn them on.";
+  "Free is $0: pay at the appointment, one service, and five bookings a week. Those bookings confirm as soon as the client reserves. Starter is $29 a month: more than one service, no weekly booking cap, and Cash App, Venmo, Zelle, PayPal, plus pay at the appointment. Starter and Pro bookings stay pending until you accept or deny them. Pro is $49 a month and includes Starter. Card checkout and appointment deposits stay hidden until Stripe card payments and payouts are active. Repeating visits (weekly, biweekly, or monthly) are Pro only and stay off until you turn them on.";
 
 export type PlanRow = { label: string; free: string; starter: string; pro: string };
 
@@ -105,7 +105,7 @@ const reminders =
   "Same-day reminder emails go to the client the morning of the appointment. They are on by default, and you pick the hour in the business's time zone. This is email, not a text message.";
 
 const noShow =
-  "A no-show still costs the time you held. The reminder email is the nudge the morning of the visit. On Pro, a card deposit can be required before the appointment is confirmed, and it stays off until you turn it on. Free and Starter cannot collect a card deposit. If a client who already paid by card cancels inside the window you set, Pro can charge that cancellation fee. Free and Starter can show the rule and do not charge a card.";
+  "A no-show still costs the time you held. The reminder email is the nudge the morning of the visit. Card checkout and appointment deposits stay hidden until Stripe card payments and payouts are active. A cancellation rule can be shown on the page. Charging that fee to a card stays hidden until those Stripe payments and payouts are active.";
 
 const HELP_VIDEOS: { slug: string; title: string; desc: string; dur: string; v: number }[] = [
   { slug: "owner-01-create-your-page", title: "Create your booking page", desc: "Sign up and get your booking page ready in a few minutes.", dur: "0:24", v: 8 },
@@ -135,7 +135,7 @@ export const MARKETING_PAGES: MarketingPage[] = [
     path: "/",
     title: "Schedi | Booking pages for service businesses",
     description:
-      "Clients book on your link instead of texts and paper forms. Free, Starter $29/mo, or Pro $49/mo with card payments and deposits.",
+      "Clients book on your link instead of texts and paper forms. Free, Starter $29/mo, or Pro $49/mo.",
     h1: "Your clients book online. You get your time back.",
     lede: "Schedi gives your business one simple booking link. Clients pick a service and a time, and the appointment lands in your portal. No more back-and-forth texts or paper forms.",
     layout: "home",
@@ -151,7 +151,7 @@ export const MARKETING_PAGES: MarketingPage[] = [
       {
         question: "Can clients pay by card?",
         answer:
-          "Card checkout and card deposits are Pro settings. They stay off until the owner turns them on. The charge is created on that business's Stripe account. Cash App, Venmo, Zelle, PayPal, and pay at the appointment never touch that account. Free only allows pay at the appointment.",
+          "Card checkout and appointment deposits stay hidden until Stripe card payments and payouts are active. They are not available to clients today. Cash App, Venmo, Zelle, PayPal, and pay at the appointment are separate. Free only allows pay at the appointment.",
       },
       {
         question: "How do reminders work?",
@@ -193,7 +193,7 @@ export const MARKETING_PAGES: MarketingPage[] = [
     path: "/pricing",
     title: "Schedi pricing | Free, Starter, and Pro",
     description:
-      "Compare Free at $0, Starter at $29/mo, and Pro at $49/mo. Pro adds client card payments and deposits through Stripe.",
+      "Compare Free at $0, Starter at $29/mo, and Pro at $49/mo. Paid plans are month-to-month.",
     h1: "Simple pricing that grows with you",
     lede: "Start free and upgrade when you're ready. Prices are monthly, and nothing is charged until checkout finishes.",
     layout: "pricing",
@@ -213,7 +213,7 @@ export const MARKETING_PAGES: MarketingPage[] = [
       {
         question: "What does Pro add for client payments?",
         answer:
-          "Pro can turn on card checkout and an optional appointment deposit. Both stay off until you turn them on. The client's card payment is a charge on the business's Stripe account.",
+          "Card checkout and an optional appointment deposit stay hidden until Stripe card payments and payouts are active. They are not available to clients today.",
       },
       {
         question: "Can I get a refund?",
@@ -225,9 +225,9 @@ export const MARKETING_PAGES: MarketingPage[] = [
       ...OWNER_SUBSCRIPTION_POLICY_TERMS.map((paragraph) => p(paragraph)),
       planCompareTableHtml(),
       p(PLAN_FACTS),
-      p("Owner subscriptions bill on the Schedi platform account. Client card payments are separate: they are direct charges on the connected account the business finishes in Stripe. Cash App, Zelle, Venmo, PayPal, and pay at the appointment do not create a Stripe charge."),
+      p("Owner subscriptions bill on the Schedi platform account. Cash App, Zelle, Venmo, PayPal, and pay at the appointment do not create a Stripe charge. Card checkout and appointment deposits stay hidden until Stripe card payments and payouts are active."),
       p(reminders + " " + shareLink),
-      p("A failed payment, or a subscription that has ended, pauses the public booking page. Canceling keeps access until the paid period ends and does not pause the page. Complimentary plans are unaffected. A failed client card does not, by itself, pause the page."),
+      p("A failed payment, or a subscription that has ended, pauses the public booking page. Canceling keeps access until the paid period ends and does not pause the page. Complimentary plans are unaffected."),
       `<p>Pages for specific businesses: <a href="/for/barbers">barbers</a>, <a href="/for/hair-salons">hair salons</a>, <a href="/for/nail-salons">nail salons</a>, <a href="/for/cleaning-services">cleaners</a>, <a href="/for/pet-groomers">pet groomers</a>, <a href="/for/personal-trainers">trainers</a>, <a href="/for/tattoo-artists">tattoo artists</a>, and <a href="/for/massage-therapists">massage therapists</a>.</p>`,
       signupCta,
     ].join("\n"),
@@ -252,7 +252,7 @@ export const MARKETING_PAGES: MarketingPage[] = [
       {
         question: "Which plan can take a card?",
         answer:
-          "Pro can turn on credit or debit card checkout through Stripe. Card checkout and deposits stay off until you turn them on. Starter can use Cash App, Venmo, Zelle, PayPal, and pay at the appointment. Free only allows pay at the appointment.",
+          "Card checkout and appointment deposits stay hidden until Stripe card payments and payouts are active. They are not available to clients today. Starter can use Cash App, Venmo, Zelle, PayPal, and pay at the appointment. Starter doesn't include card checkout. Free only allows pay at the appointment.",
       },
     ],
     bodyHtml: [
@@ -261,7 +261,7 @@ export const MARKETING_PAGES: MarketingPage[] = [
       `<section><h2>Sign in</h2><ol><li>Open Schedi and sign in to the Business Portal.</li><li>Enter the owner email and password.</li></ol></section>`,
       `<section><h2>Add a service</h2><ol><li>Open Manage Services.</li><li>Click Add New Service.</li><li>Enter the name, duration, optional price, and description, then save. Leave price blank if you do not want a price shown.</li><li>Use Edit or Delete on a service you already added.</li><li>Free keeps one service. A second service is not saved.</li></ol></section>`,
       `<section><h2>Set hours</h2><ol><li>Open Hours &amp; Blocked Times.</li><li>Check Open for a day, then set Start and End.</li><li>Choose Start times every 15 minutes, 30 minutes, or 1 hour.</li><li>Click Save Operating Hours.</li><li>Use Add Special Hours to open or change one date without editing the weekly schedule.</li><li>Use Add Recurring Outage or Add Date Block when you need time off.</li></ol></section>`,
-      `<section><h2>Payments</h2><ol><li>Open Payment Options.</li><li>Free only allows Pay at Appointment.</li><li>Starter can use Cash App, Venmo, Zelle, PayPal, and Pay at Appointment. Card checkout is not offered.</li><li>Pro can also turn on Credit / Debit Card (Stripe).</li><li>On Pro, Appointment deposit can be a percent of the service price or a fixed amount. It stays off until you turn it on. Percent deposits skip services with no price; card checkout also needs a price. Free and Starter cannot collect a card deposit.</li><li>Cancellation fee stays off until you turn it on. Set the hours (default 24) and a percent or a fixed amount. Pro charges a card already used for that visit. Free and Starter only show the rule.</li><li>Click Save Payment Gateways.</li></ol></section>`,
+      `<section><h2>Payments</h2><ol><li>Open Payment Options.</li><li>Free only allows Pay at Appointment.</li><li>Starter can use Cash App, Venmo, Zelle, PayPal, and Pay at Appointment. Starter doesn't include card checkout.</li><li>Credit / debit card checkout stays hidden until Stripe card payments and payouts are active. It is not offered to clients today.</li><li>Appointment deposits stay hidden until Stripe card payments and payouts are active.</li><li>Cancellation fee stays off until you turn it on. Set the hours (default 24) and a percent or a fixed amount. Charging that fee to a card stays hidden until Stripe card payments and payouts are active. Free and Starter only show the rule.</li><li>Click Save Payment Gateways.</li></ol></section>`,
       `<section><h2>Appointments</h2><ol><li>Open Appointments Roster.</li><li>Free bookings are confirmed as soon as the client reserves.</li><li>Starter and Pro bookings stay pending. Click Accept or Deny. Deny frees that time.</li><li>Mark paid, Reschedule, and Cancel are on the same row.</li><li>Add Manual Appointment records a visit you took in person.</li></ol></section>`,
       `<section><h2>Repeating visits</h2><ol><li>Open Email Confirmations.</li><li>On Pro, turn on Allow recurring appointments and click Save Email Settings.</li><li>Free and Starter do not show repeating visits on the booking page.</li></ol></section>`,
       `<section><h2>Your Schedi plan</h2>${OWNER_SUBSCRIPTION_POLICY_TERMS.map((paragraph) => p(paragraph)).join("")}<p>Use Cancel subscription to stop renewal at the end of the paid period. Resume subscription if you change your mind before then. Card updates stay in Manage billing.</p></section>`,
@@ -311,12 +311,12 @@ export const MARKETING_PAGES: MarketingPage[] = [
     path: "/for/hair-salons",
     title: "Booking software for hair salons | Schedi",
     description:
-      "Let cut and color clients pick an open time from your link. Morning reminders, and card deposits on Pro for the long appointments.",
+      "Let cut and color clients pick an open time from your link. A reminder email goes out the morning of the appointment.",
     h1: "Booking pages built for hair salons",
     related: ["/for/barbers", "/for/nail-salons"],
     paragraphs: [
       "A salon day falls apart when color appointments live in Instagram messages. A partial highlight takes a long block, and a double-booked afternoon cannot be fixed by scrolling. Schedi gives the salon one booking page. You add each service with its own duration and an optional price. The client picks the service and a start time that still fits before you close.",
-      "The visits that hurt are the ones that vanish the morning of a three-hour color. A same-day reminder email goes out at the hour you choose. On Pro, a card deposit can be required before that appointment is confirmed, and it stays off until you turn it on. Card charges are created on the salon's Stripe account. Cash App, Venmo, Zelle, PayPal, and pay at the appointment stay available when you turn them on.",
+      "The visits that hurt are the ones that vanish the morning of a three-hour color. A same-day reminder email goes out at the hour you choose. Card checkout and appointment deposits stay hidden until Stripe card payments and payouts are active. Cash App, Venmo, Zelle, PayPal, and pay at the appointment stay available when you turn them on.",
       "Free holds one service and five bookings a week, enough to try a single cut. A menu with a cut, a blowout, and a color needs Starter at $29 a month or Pro at $49 a month, or the extra services are not saved. Starter and Pro bookings wait for Accept or Deny, which matters when you need to check a color correction first. Special hours cover a late open. A date block covers a class week. Share schedi.app/your-salon, or print that link as a QR code at the desk.",
     ],
   }),
@@ -324,13 +324,13 @@ export const MARKETING_PAGES: MarketingPage[] = [
     path: "/for/nail-salons",
     title: "Booking software for nail salons | Schedi",
     description:
-      "One booking link for manicures, pedicures, and fills. Starter saves more than one service. Pro can take a card deposit.",
+      "One booking link for manicures, pedicures, and fills. Starter saves more than one service.",
     h1: "Nail salon booking without the DM thread",
     related: ["/for/hair-salons", "/for/massage-therapists"],
     paragraphs: [
       "Nail appointments get booked in comment threads and then forgotten. A fill and a full set do not take the same amount of time, so a single message does not tell you whether the chair is open. On Schedi the client chooses the service you named and a start time that fits the duration you saved.",
-      "A no-show costs the next set that could have taken that chair. Schedi sends a reminder email the morning of the visit. On Pro you can ask for a card deposit before the appointment is confirmed. Leave it off until you want it, and leave it off entirely on Free and Starter. If someone who paid by card cancels inside your window, Pro can charge the cancellation fee you set. The other plans only display the rule.",
-      "Free keeps one service, which is a fair trial for a basic manicure, and caps the week at five bookings. Gel, acrylic, and a pedicure need Starter ($29 a month) or Pro ($49 a month) or the extra services will not be saved. Starter also adds Cash App, Venmo, Zelle, and PayPal. Pro adds card checkout on your Stripe account. Log a walk-in as a manual appointment so the public page is not offering a chair someone is already sitting in. The link can go in a bio or on a QR code you print.",
+      "A no-show costs the next set that could have taken that chair. Schedi sends a reminder email the morning of the visit. Card checkout and appointment deposits stay hidden until Stripe card payments and payouts are active. A cancellation rule can be shown on the page. Charging that fee to a card stays hidden until those Stripe payments and payouts are active. Free and Starter only display the rule.",
+      "Free keeps one service, which is a fair trial for a basic manicure, and caps the week at five bookings. Gel, acrylic, and a pedicure need Starter ($29 a month) or Pro ($49 a month) or the extra services will not be saved. Starter also adds Cash App, Venmo, Zelle, and PayPal. Starter doesn't include card checkout. Log a walk-in as a manual appointment so the public page is not offering a chair someone is already sitting in. The link can go in a bio or on a QR code you print.",
     ],
   }),
   cleaningPage(),
@@ -338,52 +338,52 @@ export const MARKETING_PAGES: MarketingPage[] = [
     path: "/for/pet-groomers",
     title: "Booking software for pet groomers | Schedi",
     description:
-      "Put baths and full grooms on one booking page. Reminder emails go out the morning of the appointment. Pro can take a deposit.",
+      "Put baths and full grooms on one booking page. Reminder emails go out the morning of the appointment.",
     h1: "Pet grooming appointments without the phone tag",
     related: ["/for/barbers", "/for/cleaning-services"],
     paragraphs: [
       "Grooming days are a stack of baths, haircuts, and nails, and the phone is a bad way to stack them. A full groom is not the same length as a bath. Schedi lets you name each service, set how long it takes, and optionally set a price. The client picks one and an open start time. The form asks for the client's name, phone, and email. It does not collect a pet profile or medical notes.",
-      "Keep health details off the page. Schedi is not HIPAA compliant and is not a place for protected health information. Put the kind of visit in the service name, for example bath or full groom. A no-show still burns the tub time. The morning reminder email is on by default. On Pro, a card deposit can be required before a full groom is confirmed. It stays off until you turn it on.",
-      "Free saves one service and five bookings a week, paid at pickup. Starter at $29 a month is where a bath, a haircut, and nails can all exist, with Cash App, Venmo, Zelle, or PayPal if you want them. Pro at $49 a month adds the card deposit on your Stripe account. Use date blocks when the shop is closed and special hours when Saturday is short baths only. The booking link can sit in a text or on a QR code at the counter. Schedi does not generate that QR image.",
+      "Keep health details off the page. Schedi is not HIPAA compliant and is not a place for protected health information. Put the kind of visit in the service name, for example bath or full groom. A no-show still burns the tub time. The morning reminder email is on by default. Card checkout and appointment deposits stay hidden until Stripe card payments and payouts are active.",
+      "Free saves one service and five bookings a week, paid at pickup. Starter at $29 a month is where a bath, a haircut, and nails can all exist, with Cash App, Venmo, Zelle, or PayPal if you want them. Pro is $49 a month. Card checkout stays hidden until Stripe card payments and payouts are active. Use date blocks when the shop is closed and special hours when Saturday is short baths only. The booking link can sit in a text or on a QR code at the counter. Schedi does not generate that QR image.",
     ],
   }),
   vertical({
     path: "/for/personal-trainers",
     title: "Booking software for trainers | Schedi",
     description:
-      "Clients reserve a session from your link instead of a text. Pro adds card payments, deposits, and repeating weekly sessions.",
+      "Clients reserve a session from your link instead of a text. Pro adds repeating weekly sessions.",
     h1: "Session booking for personal trainers",
     related: ["/for/massage-therapists", "/for/cleaning-services"],
     paragraphs: [
       "Trainers lose sessions between a text that says 'you around after work?' and a calendar that never got updated. Schedi is a booking page for the sessions you actually teach. Add a service for the length you sell, set the hours you are on the floor, and send the link. The client chooses a time that is still open.",
-      "A missed session is an empty hour. Schedi emails a reminder the morning of the session. On Pro you can require a card deposit before the hour is confirmed, and a client can book a weekly, biweekly, or monthly series. Those controls stay off until you turn them on. Free and Starter sell one visit at a time and do not take a card deposit. Schedi does not add a waitlist or a second trainer's calendar. It is one page and the hours you set.",
-      "Free is $0: one session type, five bookings a week, pay at the session, confirmed immediately. Starter is $29 a month and removes the cap, lets you list more than one session, and adds Cash App, Venmo, Zelle, and PayPal. Pro is $49 a month and adds card checkout on your Stripe account. Accept or deny, on Starter and Pro, lets you talk to a new client before the hour locks. Put schedi.app/your-name in a bio or on a QR code at the desk.",
+      "A missed session is an empty hour. Schedi emails a reminder the morning of the session. On Pro a client can book a weekly, biweekly, or monthly series, and that control stays off until you turn it on. Card checkout and appointment deposits stay hidden until Stripe card payments and payouts are active. Free and Starter sell one visit at a time. Schedi does not add a waitlist or a second trainer's calendar. It is one page and the hours you set.",
+      "Free is $0: one session type, five bookings a week, pay at the session, confirmed immediately. Starter is $29 a month and removes the cap, lets you list more than one session, and adds Cash App, Venmo, Zelle, and PayPal. Pro is $49 a month. Starter doesn't include card checkout. Accept or deny, on Starter and Pro, lets you talk to a new client before the hour locks. Put schedi.app/your-name in a bio or on a QR code at the desk.",
     ],
   }),
   vertical({
     path: "/for/tattoo-artists",
     title: "Booking software for tattoo artists | Schedi",
     description:
-      "Hold a tattoo session on your booking page. On Pro, a card deposit can be required before the visit is confirmed.",
-    h1: "Tattoo booking with a deposit you control",
+      "Hold a tattoo session on your booking page. A reminder email goes out the morning of the visit.",
+    h1: "Tattoo session booking on your own page",
     related: ["/for/barbers", "/for/hair-salons"],
     paragraphs: [
       "A tattoo session is a long block, and a no-show is not a ten-minute gap. Artists already ask for a deposit for that reason. Schedi is the page where the client picks the service you created, such as a consultation or a session, and a start time inside your hours. The request lands in the portal for you to accept or deny on Starter and Pro.",
-      "On Pro the deposit can be a percent of the price or a fixed amount. It applies when the client chooses card, and it stays off until you turn it on. A percent deposit skips a service with no price, and card checkout needs a price too. The client can still choose Cash App, Zelle, Venmo, PayPal, or pay at the appointment when those are on. The card charge is created on the artist's Stripe account. Schedi does not add an application fee. Card checkout stays hidden until Stripe card payments and payouts are active.",
-      "Free is a poor fit for custom work: one service, five bookings a week, and the visit confirms immediately. Starter is $29 a month and keeps new bookings pending so you can accept a design you have seen. Pro is $49 a month and is the plan that can take the card deposit. A reminder email goes out the morning of the session. Share schedi.app/your-studio, or print that link as a QR code in the shop. Use a date block when you are on a guest spot and the books are closed.",
+      "Card checkout and appointment deposits stay hidden until Stripe card payments and payouts are active. The client can still choose Cash App, Zelle, Venmo, PayPal, or pay at the appointment when those are on. Schedi does not add an application fee.",
+      "Free is a poor fit for custom work: one service, five bookings a week, and the visit confirms immediately. Starter is $29 a month and keeps new bookings pending so you can accept a design you have seen. Pro is $49 a month. A reminder email goes out the morning of the session. Share schedi.app/your-studio, or print that link as a QR code in the shop. Use a date block when you are on a guest spot and the books are closed.",
     ],
   }),
   vertical({
     path: "/for/massage-therapists",
     title: "Booking software for massage | Schedi",
     description:
-      "A booking page for massage appointments, with morning reminders and Pro card deposits. Schedi is not HIPAA compliant.",
+      "A booking page for massage appointments, with morning reminder emails. Schedi is not HIPAA compliant.",
     h1: "Massage booking that stays off medical charts",
     related: ["/for/personal-trainers", "/for/nail-salons"],
     paragraphs: [
       "Massage appointments get scattered across texts, and a 90-minute block that disappears the same day is hard to fill. Schedi gives you a page where the client picks the service, for example a 60-minute or 90-minute session, and an open time. You set the duration when you add the service. The portal shows the booking with the client's name, phone, and email.",
       "Schedi is not HIPAA compliant and must not be used to collect protected health information. Do not ask clients to put injuries, diagnoses, medications, or treatment notes in the booking. The form collects contact details and the service you defined. Intake that belongs in a medical record belongs somewhere else. That is the same limit shown to businesses on the Medical preset.",
-      "A no-show still leaves an empty table. The reminder email goes out the morning of the appointment. On Pro, a card deposit can cover the longer sessions and stays off until you turn it on. Repeating visits on Pro can hold the same weekday, and they stay hidden until you enable them. Free is one service and five bookings a week. Starter at $29 a month adds more services and Cash App, Venmo, Zelle, or PayPal. Pro at $49 a month adds the card charge on your Stripe account. Share the link, or print it as a QR code. Schedi does not draw the QR image.",
+      "A no-show still leaves an empty table. The reminder email goes out the morning of the appointment. Card checkout and appointment deposits stay hidden until Stripe card payments and payouts are active. Repeating visits on Pro can hold the same weekday, and they stay hidden until you enable them. Free is one service and five bookings a week. Starter at $29 a month adds more services and Cash App, Venmo, Zelle, or PayPal. Pro is $49 a month. Share the link, or print it as a QR code. Schedi does not draw the QR image.",
     ],
   }),
 ];
@@ -411,12 +411,12 @@ function vertical(input: {
       {
         question: "What helps with no-shows?",
         answer:
-          "Schedi emails a reminder the morning of the appointment. On Pro you can require a card deposit before the visit is confirmed. The deposit stays off until you turn it on.",
+          "Schedi emails a reminder the morning of the appointment. Card checkout and appointment deposits stay hidden until Stripe card payments and payouts are active.",
       },
       {
         question: "Which plan do I need for card payments?",
         answer:
-          "Client card payments and deposits are on Pro at $49 a month. Starter at $29 a month adds Cash App, Venmo, Zelle, and PayPal. Free is pay at the appointment.",
+          "Card checkout and appointment deposits stay hidden until Stripe card payments and payouts are active. They are not available to clients today. Starter at $29 a month adds Cash App, Venmo, Zelle, and PayPal. Free is pay at the appointment.",
       },
     ],
     bodyHtml: [...input.paragraphs.map(p), related(input.related), signupCta].join("\n"),

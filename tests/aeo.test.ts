@@ -191,6 +191,13 @@ describe("canonical redirects", () => {
       ["https://www.schedi.app/?portal=login", 301, "https://schedi.app/?portal=login"],
       ["https://schedi-web-preview.example.workers.dev/pricing/", 301, "https://schedi-web-preview.example.workers.dev/pricing"],
       ["https://schedi-web-preview.example.workers.dev/pricing?utm=1", 301, "https://schedi-web-preview.example.workers.dev/pricing"],
+      ["https://schedi.app//pricing", 301, "https://schedi.app/pricing"],
+      ["https://schedi.app/faq", 301, "https://schedi.app/help"],
+      ["https://schedi.app/faq/", 301, "https://schedi.app/help"],
+      ["https://schedi.app/faq?utm_source=ad&demo=1", 301, "https://schedi.app/help?demo=1"],
+      ["https://schedi.app/bright-cuts?utm_source=ad&gclid=1", 301, "https://schedi.app/bright-cuts"],
+      ["https://schedi.app/bright-cuts?utm_campaign=spring&demo=1", 301, "https://schedi.app/bright-cuts?demo=1"],
+      ["https://schedi.app/llms.txt?fbclid=abc&ref=ig", 301, "https://schedi.app/llms.txt"],
     ];
     for (const [input, status, location] of cases) {
       const response = await handleRequest(new Request(input), env, ctx());
@@ -220,6 +227,59 @@ describe("canonical redirects", () => {
 
     const upper = await handleRequest(new Request("https://schedi.app/LOGIN"), env, ctx());
     expect(upper.status).toBe(200);
+
+    const tenantDemo = await handleRequest(
+      new Request("https://schedi.app/bright-cuts?demo=1"),
+      envWith(shellAssets(), { FIREBASE_PROJECT_ID: "" }),
+      ctx(),
+    );
+    expect(tenantDemo.status).toBe(200);
+  });
+});
+
+describe("copy corrections", () => {
+  it("does not present card checkout or deposits as available today", () => {
+    const banned = [
+      "Card checkout and card deposits are Pro settings",
+      "Pro can turn on card checkout",
+      "Pro can also turn on Credit",
+      "Pro adds card checkout",
+      "On Pro you can require a card deposit",
+      "On Pro, a card deposit can be required",
+      "with card payments and deposits",
+      "Card checkout is not offered",
+      "Take cards and deposits",
+      "cards on Pro",
+      "small team",
+    ];
+    for (const page of MARKETING_PAGES) {
+      const html = renderMarketingPage(page);
+      for (const phrase of banned) {
+        expect(html, `${page.path} ${phrase}`).not.toContain(phrase);
+      }
+    }
+    const help = renderMarketingPage(MARKETING_PAGES.find((page) => page.path === "/help")!);
+    expect(help).toContain("Starter doesn't include card checkout.");
+    const pricing = visible(renderMarketingPage(MARKETING_PAGES.find((page) => page.path === "/pricing")!));
+    const refundAt = pricing.indexOf("Is there a contract, and what are the cancellation and refund terms?");
+    const refund = pricing.slice(refundAt, pricing.indexOf("</p>", refundAt));
+    expect(refund.match(/month-to-month/g)?.length).toBe(1);
+    expect(pricing).toContain("admin@schedi.app");
+    const footer = renderMarketingPage(MARKETING_PAGES[0]);
+    expect(footer).toContain("run by one owner");
+  });
+
+  it("links competitor sources with nofollow", () => {
+    const compare = renderMarketingPage(MARKETING_PAGES.find((page) => page.path === "/compare")!);
+    for (const href of [
+      "https://getsquire.com/pricing",
+      "https://biz.booksy.com/en-us/pricing",
+      "https://www.vagaro.com/pro/pricing",
+      "https://acuityscheduling.com/pricing",
+      "https://www.getjobber.com/pricing/",
+    ]) {
+      expect(compare).toContain(`<a href="${href}" rel="nofollow noopener noreferrer">`);
+    }
   });
 });
 
@@ -340,6 +400,9 @@ describe("LocalBusiness JSON-LD", () => {
     vi.stubGlobal("fetch", fetchMock);
     const response = await handleRequest(new Request("https://schedi.app/bright-cuts"), envWith(shellAssets()), ctx());
     const html = await response.text();
+    expect(html).toContain("Book an appointment with Bright Cuts. Barber appointments with live online scheduling.");
+    expect(html).not.toContain("instant confirmation");
+    expect(html).not.toContain("Services services");
     expect(html).toContain('"streetAddress":"10 Main St"');
     expect(html).toContain('"addressLocality":"Austin"');
     expect(html).toContain('"price":"35"');

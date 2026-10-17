@@ -81,6 +81,7 @@ const RESERVED = new Set([
   "login",
   "features",
   "compare",
+  "faq",
   "marketing-boot.js",
   "marketing-theme.js",
 ]);
@@ -237,8 +238,11 @@ function escapeHtml(value: string): string {
 
 function bookingDescription(name: string, industry: string): string {
   const who = name.replace(/\s+/g, " ").trim() || "this business";
-  const what = industry.replace(/\s+/g, " ").trim() || "Local";
-  return `Book an appointment with ${who}. ${what} services with live online scheduling and instant confirmation.`;
+  const trade = industry.replace(/\s+/g, " ").trim();
+  if (!trade || /^services?$/i.test(trade)) {
+    return `Book an appointment with ${who}. Live online scheduling.`;
+  }
+  return `Book an appointment with ${who}. ${trade} appointments with live online scheduling.`;
 }
 
 function bookingTitle(name: string): string {

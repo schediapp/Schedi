@@ -39,12 +39,24 @@ function rootFunctional(search: string): boolean {
 }
 
 function sameUrl(url: URL, dest: URL): boolean {
-  return (
-    url.protocol === dest.protocol &&
-    url.host === dest.host &&
-    collapse(url.pathname) === dest.pathname &&
-    url.search === dest.search
-  );
+  return url.protocol === dest.protocol && url.host === dest.host && url.pathname === dest.pathname && url.search === dest.search;
+}
+
+/** Drop utm_*, gclid, fbclid, and ref. Leave every other parameter as it arrived. */
+function withoutTracking(search: string): string {
+  if (!search) return "";
+  const params = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search);
+  let changed = false;
+  for (const key of [...params.keys()]) {
+    const lower = key.toLowerCase();
+    if (lower.startsWith("utm_") || lower === "gclid" || lower === "fbclid" || lower === "ref") {
+      params.delete(key);
+      changed = true;
+    }
+  }
+  if (!changed) return search.startsWith("?") || search === "" ? search : `?${search}`;
+  const next = params.toString();
+  return next ? `?${next}` : "";
 }
 
 function destination(url: URL, origin: string, pathname: string, search: string): string | null {
@@ -88,9 +100,14 @@ export function publicDuplicateRedirect(url: URL): string | null {
     return destination(url, origin, page.path, search);
   }
 
+  if (lookup === "/faq") {
+    const search = url.searchParams.get("demo") === "1" ? "?demo=1" : "";
+    return destination(url, origin, "/help", search);
+  }
+
   if (isStaticFile(collapsed) || isApiOrBilling(collapsed)) {
     return destination(url, origin, collapsed, url.search);
   }
 
-  return destination(url, origin, noSlash === "" ? "/" : noSlash, url.search);
+  return destination(url, origin, noSlash === "" ? "/" : noSlash, withoutTracking(url.search));
 }

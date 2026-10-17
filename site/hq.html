@@ -3667,7 +3667,7 @@
         function isReservedBusinessSlug(slug) {
             var first = String(slug || '').toLowerCase();
             if (!first) return true;
-            if (first === 'index.html' || first === 'agency' || first === 'admin' || first === 'hq' || first === 'signup' || first === 'terms' || first === 'privacy' || first === 'help' || first === 'auth' || first === 'reset' || first === 'billing' || first === 'api' || first === 'www' || first === 'schedi' || first === 'index' || first === 'login' || first === 'features' || first === 'compare' || first === 'for' || first === 'pricing' || first === 'portal') return true;
+            if (first === 'index.html' || first === 'agency' || first === 'admin' || first === 'hq' || first === 'signup' || first === 'terms' || first === 'privacy' || first === 'help' || first === 'auth' || first === 'reset' || first === 'billing' || first === 'api' || first === 'www' || first === 'schedi' || first === 'index' || first === 'login' || first === 'features' || first === 'compare' || first === 'for' || first === 'pricing' || first === 'portal' || first === 'faq') return true;
             // SCHEDI_HQ_START
             if (first === 'hq-9h7p52') return true;
             // SCHEDI_HQ_END
@@ -11726,10 +11726,11 @@
             const clientHelpHref = bookingHelpSlug
                 ? ('https://schedi.app/help/booking?from=' + encodeURIComponent(bookingHelpSlug))
                 : 'https://schedi.app/help/booking';
-            const metaDesc = esc(
-                'Book an appointment with ' + tenant.name + '. ' + tenant.industry +
-                ' services with live online scheduling and instant confirmation.'
-            );
+            var tradeLabel = String(tenant.industry || '').replace(/\s+/g, ' ').trim();
+            var metaPlain = (!tradeLabel || /^services?$/i.test(tradeLabel))
+                ? ('Book an appointment with ' + tenant.name + '. Live online scheduling.')
+                : ('Book an appointment with ' + tenant.name + '. ' + tradeLabel + ' appointments with live online scheduling.');
+            const metaDesc = esc(metaPlain);
 
             const bookingCanonical = bookingHelpSlug ? ('https://schedi.app/' + bookingHelpSlug) : '';
             const canonicalTag = bookingCanonical ? ('<link rel="canonical" href="' + bookingCanonical + '">') : '';

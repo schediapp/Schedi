@@ -261,7 +261,7 @@ function footer(): string {
         <a href="https://www.instagram.com/schediapp/" rel="noopener noreferrer">Instagram</a>
       </nav>
     </div>
-    <p class="muted small">&copy; Schedi. Made for barbers, salons, cleaners, trainers, and every small team that runs on appointments.</p>
+    <p class="muted small">&copy; Schedi. Made for barbers, salons, cleaners, and other service businesses run by one owner.</p>
   </div>
 </footer>`;
 }
@@ -281,7 +281,7 @@ type PlanKey = "free" | "starter" | "pro";
 const PLANS: { key: PlanKey; name: string; blurb: string; cta: string; popular?: boolean }[] = [
   { key: "free", name: "Free", blurb: "Try Schedi with one service and get your link today.", cta: "Start free" },
   { key: "starter", name: "Starter", blurb: "For growing businesses that take Cash App, Venmo, Zelle, or PayPal.", cta: "Choose Starter" },
-  { key: "pro", name: "Pro", blurb: "Take cards and deposits, and set up repeating visits.", cta: "Choose Pro", popular: true },
+  { key: "pro", name: "Pro", blurb: "Repeating visits for one owner. Card checkout stays hidden until Stripe card payments and payouts are active.", cta: "Choose Pro", popular: true },
 ];
 
 export function planCardsHtml(): string {
@@ -308,14 +308,14 @@ export function planCardsHtml(): string {
     </article>`;
   }).join("\n");
   return `<div class="plans">${cards}</div>
-  <p class="muted center small">Monthly prices. Upgrade, switch, or stay on Free anytime from your Business Portal. Nothing is charged until checkout finishes.</p>`;
+  <p class="muted center small">Monthly prices. Upgrade, switch, or stay on Free anytime from your Business Portal. Nothing is charged until checkout finishes. Card checkout and appointment deposits stay hidden until Stripe card payments and payouts are active.</p>`;
 }
 
 const FEATURES: { icon: string; title: string; text: string }[] = [
   { icon: "link", title: "One link for everything", text: "Share schedi.app/your-business in your bio, a text, or on a printed QR code." },
   { icon: "calendar", title: "Open times, always current", text: "Set your hours once. Clients only see times you're actually free." },
   { icon: "bell", title: "Reminder emails", text: "Clients get a friendly reminder the morning of their visit, so fewer no-shows." },
-  { icon: "wallet", title: "Get paid your way", text: "Pay at the appointment, Cash App, Venmo, Zelle, PayPal, or cards on Pro." },
+  { icon: "wallet", title: "Get paid your way", text: "Pay at the appointment, or with Cash App, Venmo, Zelle, or PayPal." },
   { icon: "repeat", title: "Repeating visits", text: "Weekly, biweekly, or monthly regulars book once on Pro." },
   { icon: "shield", title: "You stay in control", text: "Accept or decline new requests, and keep every booking in one place." },
 ];

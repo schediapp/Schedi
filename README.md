@@ -68,7 +68,9 @@ npx wrangler deploy --config wrangler.jsonc --env preview
 
 The preview hostname stays on `*.workers.dev`. It does not 301 to `https://schedi.app`. Canonical link tags on marketing and tenant pages still point at `https://schedi.app`.
 
-Do not set `INDEXNOW_ENABLED=true` together with `INDEXNOW_HOST=schedi.app` on the preview Worker. Preview deploys must not ping IndexNow.
+`env.preview.vars.FIREBASE_PROJECT_ID` is `siteforge-97699`, so tenant booking pages can still read public Firestore fields. `env.preview` sets `"kv_namespaces": []` and does not bind `AUTH_KV`. The production id `d53378ec0cfb4d089d73add2ff01c62d` holds live agency sessions, and there is no separate preview namespace. Without `AUTH_KV`, `/hq` cannot save or check an agency session, so the preview shows only the HQ login screen.
+
+Do not set `INDEXNOW_KEY`, `INDEXNOW_ENABLED`, `INDEXNOW_HOST`, or `BING_SITE_VERIFICATION` on the preview Worker. Preview deploys must not ping IndexNow.
 
 ## IndexNow and Bing
 

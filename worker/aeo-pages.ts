@@ -53,7 +53,7 @@ export const AEO_FAQS: Faq[] = [
   },
   {
     question: "Is there a contract, and what are the cancellation and refund terms?",
-    answer: `There is no contract. Paid plans are month-to-month, and you can cancel anytime. Your cancellation takes effect at the end of the period you've already paid for, and you keep access until then. ${POLICY}`,
+    answer: POLICY,
   },
   {
     question: "Who is Schedi for?",
@@ -212,7 +212,7 @@ export function comparePage(): MarketingPage {
 
       h2("squire", "Schedi vs Squire"),
       p("Squire does more than Schedi for barbers: its Independent plan for solo barbers costs $30 a month and includes automated email and text reminders, no-show protection, and a branded app, and its shop plans add multiple barber accounts and a waitlist. Schedi is a simpler booking page and back office, with a $0 Free plan and Starter at $29 a month."),
-      p('Source: <a href="https://getsquire.com/pricing">https://getsquire.com/pricing</a> (checked Oct 17, 2026).'),
+      p('Source: <a href="https://getsquire.com/pricing" rel="nofollow noopener noreferrer">https://getsquire.com/pricing</a> (checked Oct 17, 2026).'),
       p('Squire pricing as listed: Independent (individual barbers) $30 a month with a 14-day free trial. Pro (single-location shops) $50 a month. Executive $150 a month per shop. Titan $250 a month per shop. Prices are published, but the Pro, Executive, and Titan plans start with a "Get a demo" request instead of a self-serve trial.'),
       p("Where Squire does more: automated email and SMS reminders on the Independent plan, online booking with no-show protection, a Flex branded app, Tap to Pay on iPhone and Android, and group appointments. Pro adds multiple barber accounts, Google and Instagram booking, and a waitlist. Executive adds unlimited email and SMS marketing. Titan adds multi-location support, a loyalty program, and gift cards."),
       p("Where Schedi is different: a $0 Free plan (one service, up to 5 bookings a week). Starter at $29 a month lets clients pay with Cash App, Venmo, Zelle, PayPal, or at the appointment, and lets you accept or deny each request. Pro adds repeating appointments. Billing is month-to-month, and a new subscriber's first payment is fully refundable within 15 days."),
@@ -220,7 +220,7 @@ export function comparePage(): MarketingPage {
 
       h2("booksy", "Schedi vs Booksy"),
       p("Booksy includes more features than Schedi for one flat price: $29.99 a month plus tax covers reminders, text marketing, waitlists, no-show protection, and a client marketplace. Schedi has a $0 Free plan and a $29 Starter plan, and focuses on a simple booking page, manual payment apps, and request approval."),
-      p('Source: <a href="https://biz.booksy.com/en-us/pricing">https://biz.booksy.com/en-us/pricing</a> (checked Oct 17, 2026).'),
+      p('Source: <a href="https://biz.booksy.com/en-us/pricing" rel="nofollow noopener noreferrer">https://biz.booksy.com/en-us/pricing</a> (checked Oct 17, 2026).'),
       p("Booksy pricing as listed: $29.99 a month plus tax, with all features included. Each additional team member is $20 a month. 14-day free trial with no credit card. No commitment; cancel anytime. Card processing: 2.69% + $0.30 for mobile payments and keyed-in entry, 2.49% + $0.10 on the Booksy Card Reader, 2.49% + $0.20 for Tap to Pay. Boost (optional marketplace visibility) charges a one-time 30% fee on a Boost client's first visit, up to $100."),
       p("Where Booksy does more: appointment confirmations and reminders, email marketing, text message marketing (2,000 free SMS marketing messages a month), custom forms and liability waivers, Reserve with Google, waitlists, no-show protection, online gift cards, memberships and packages, team members, card readers, and a client marketplace."),
       p("Where Schedi is different: a $0 Free plan, Cash App, Venmo, Zelle, and PayPal as manual payment options on Starter, accept or deny for each request on Starter and Pro, and repeating appointments on Pro."),
@@ -228,7 +228,7 @@ export function comparePage(): MarketingPage {
 
       h2("vagaro", "Schedi vs Vagaro"),
       p("Vagaro is a fuller business system than Schedi, with reminders, a waitlist, a marketplace listing, payments, and memberships included. For one person, Vagaro's pricing page showed $30.00 a month, with an introductory $23.99 a month for the first 6 months (exclusions apply); Schedi's plans are $0, $29, and $49 a month."),
-      p('Source: <a href="https://www.vagaro.com/pro/pricing">https://www.vagaro.com/pro/pricing</a> (checked Oct 17, 2026).'),
+      p('Source: <a href="https://www.vagaro.com/pro/pricing" rel="nofollow noopener noreferrer">https://www.vagaro.com/pro/pricing</a> (checked Oct 17, 2026).'),
       p('Vagaro pricing as listed: "Just Me" (one person) $30.00 a month, or $23.99 a month for the first 6 months as an exclusive rate (exclusions apply). Each bookable calendar license costs $10, up to seven licenses; after seven, more employees can be added at no extra cost. 30-day free trial. Cancel anytime with no cancellation fees. A free card reader is offered when you sign up for Vagaro Merchant Services.'),
       p("Where Vagaro does more: included features listed on every plan are AI-powered business tools and marketing, payments, calendar and resource management, customer waitlist options, memberships, packages, and gift certificates, 1,000 free emails monthly, advanced reporting, customer loyalty programs, SOAP notes, inventory tracking, invoices, a free listing on the Vagaro Marketplace, unlimited notifications and appointment reminders, and online booking on Vagaro, Instagram, Facebook, and Apple Maps."),
       p("Where Schedi is different: fewer moving parts (a booking page plus a back office with a roster, services, weekly hours, and blocks), a $0 Free plan, manual payment options (Cash App, Venmo, Zelle, PayPal, pay at the appointment) on Starter, and accept or deny for each request."),
@@ -236,7 +236,7 @@ export function comparePage(): MarketingPage {
 
       h2("acuity", "Schedi vs Acuity Scheduling"),
       p("Acuity Scheduling has no free plan but offers more scheduling tools than Schedi, such as intake forms, an online-meeting integration, and text reminders on its Standard plan. Acuity's one-calendar Starter plan is $20 a month billed monthly ($16 a month billed annually); Schedi has a $0 Free plan and Starter at $29 a month."),
-      p('Source: <a href="https://acuityscheduling.com/pricing">https://acuityscheduling.com/pricing</a> (checked Oct 17, 2026).'),
+      p('Source: <a href="https://acuityscheduling.com/pricing" rel="nofollow noopener noreferrer">https://acuityscheduling.com/pricing</a> (checked Oct 17, 2026).'),
       p("Acuity pricing as listed (annual price / monthly price): Starter $16 / $20 a month, 1 calendar. Standard $27 / $34 a month, up to 6 calendars. Premium $55 / $69 a month, up to 36 calendars. 7-day free trial with no credit card. No free plan. No setup or cancellation fees; cancel anytime. Prices exclude taxes."),
       p("Where Acuity does more: every plan includes client self-scheduling, unlimited services and appointments, payments and deposits through providers including Stripe, PayPal, and Venmo, email confirmations and reminders, custom intake forms, automatic time zone conversion, Google Meet, Zoom, and GoToMeeting integrations, and a mobile admin app. Standard adds text message reminders, an appointment waitlist, packages and memberships, and gift certificates. Premium adds removal of the Acuity logo, a HIPAA BAA, and custom API and CSS."),
       p("Where Schedi is different: a $0 Free plan, pay-at-the-appointment and manual payment apps including Cash App and Zelle on Starter, accept or deny for each request, repeating appointments on Pro, and a branded confirmation email. Billing is month-to-month, and a new subscriber's first payment is fully refundable within 15 days."),
@@ -244,7 +244,7 @@ export function comparePage(): MarketingPage {
 
       h2("jobber", "Schedi vs Jobber"),
       p("Jobber is a full field-service system with quotes, invoicing, and team tools, and it costs more: the Core plan for one user is $49 a month with no commitment ($29 a month billed annually). Schedi is a simpler booking page and back office for one owner, with recurring cleans and other repeating appointments on Pro at $49 a month."),
-      p('Source: <a href="https://www.getjobber.com/pricing/">https://www.getjobber.com/pricing/</a> (checked Oct 17, 2026).'),
+      p('Source: <a href="https://www.getjobber.com/pricing/" rel="nofollow noopener noreferrer">https://www.getjobber.com/pricing/</a> (checked Oct 17, 2026).'),
       p("Jobber pricing as listed for one user: Core $49 a month with no commitment, $39 a month with a 1-year commitment, or $29 a month billed annually. Connect $139 / $119 / $99 a month. Grow $199 / $169 / $149 a month. Extra users are $29 a month each. 14-day free trial with full access to Grow features and no credit card. Card processing: 2.9% + 30 cents online, 2.7% + 30 cents for Tap to Pay, 1% for bank (ACH) payments."),
       p('Where Jobber does more: Core includes online job booking and scheduling, quotes, invoices and online payments, a website, reporting, and an app marketplace with 100+ tools. Connect adds automated client reminders, automatic payments, checklists, QuickBooks Online sync, and time and expense tracking. Grow adds two-way SMS, job costing, and custom automations. Jobber also lists route optimization, GPS tracking, a "Find a Time" tool that recommends slots based on travel times, crew scheduling, and iOS and Android mobile apps (plan availability for these is not shown clearly on the pricing page, so this copy doesn\'t assign them to a plan).'),
       p("Where Schedi is different: a $0 Free plan, Starter at $29 a month billed monthly, accept or deny for each request, manual payment apps (Cash App, Venmo, Zelle, PayPal, pay at the appointment), and repeating appointments every week, two weeks, or month on Pro. Schedi does not calculate drive time or manage multiple cleaners or crews."),
