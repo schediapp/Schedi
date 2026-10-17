@@ -715,6 +715,9 @@ describe("owner dashboard preview", () => {
     expect(css).toContain("font-size: 22px");
     expect(css).toContain(".sd-svc-title { font-size: 18px; font-weight: 700;");
     expect(html).toContain('class="sd-svc-actions flex gap-2"');
+    expect(css).toContain("html.schedi-light #tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-svc-edit");
+    expect(css).toContain("background-color: #ffffff !important");
+    expect(css).toContain("border: 1px solid #cbd5e1");
     expect(css).toContain("#tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-svc-actions > button");
     expect(html).toContain('id="hoursWeekLayoutBtn"');
     expect(css).toContain("#tenantPortalSection.schedi-newdash #hoursWeekLayoutBtn { align-self: flex-end; }");
