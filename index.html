@@ -2327,72 +2327,87 @@ body.schedi-newdash #rosterPaidMethodConfirmBtn:disabled {
     opacity: 0.45;
     cursor: not-allowed;
 }
+body.schedi-newdash .sd-pay-choice .sd-paid-check,
 body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt .sd-paid-check {
     margin-left: auto;
     width: 18px;
     height: 18px;
     flex: none;
 }
+body.schedi-newdash .sd-pay-choice .sd-paid-check svg,
 body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt .sd-paid-check svg {
     width: 18px;
     height: 18px;
     display: block;
 }
+body.schedi-newdash .sd-pay-choice:focus-visible,
 body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt:focus-visible {
     outline: 2px solid #10b981;
     outline-offset: 2px;
 }
+body.schedi-newdash .sd-pay-choice.is-on,
 body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.is-on {
     background: #059669;
     color: #ffffff;
     border-color: #047857;
     box-shadow: 0 0 0 2px #34d399;
 }
+html.schedi-light body.schedi-newdash .sd-pay-choice.is-on,
 html.schedi-light body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.is-on {
     background: #047857;
     color: #ffffff;
     border-color: #065f46;
     box-shadow: 0 0 0 2px #059669;
 }
+body.schedi-newdash .sd-pay-choice.is-on.sd-pay-cashapp,
 body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.is-on.sd-pay-cashapp,
+html.schedi-light body.schedi-newdash .sd-pay-choice.is-on.sd-pay-cashapp,
 html.schedi-light body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.is-on.sd-pay-cashapp {
     color: #0b1220;
     background: #00D64F;
     border-color: #00A83C;
     box-shadow: 0 0 0 2px #00D64F;
 }
+body.schedi-newdash .sd-pay-choice.is-on.sd-pay-zelle,
 body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.is-on.sd-pay-zelle,
+html.schedi-light body.schedi-newdash .sd-pay-choice.is-on.sd-pay-zelle,
 html.schedi-light body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.is-on.sd-pay-zelle {
     color: #ffffff;
     background: #6D1ED4;
     border-color: #6D1ED4;
     box-shadow: 0 0 0 2px #c4b5fd;
 }
+body.schedi-newdash .sd-pay-choice.is-on.sd-pay-venmo,
 body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.is-on.sd-pay-venmo,
+html.schedi-light body.schedi-newdash .sd-pay-choice.is-on.sd-pay-venmo,
 html.schedi-light body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.is-on.sd-pay-venmo {
     color: #0b1220;
     background: #008CFF;
     border-color: #008CFF;
     box-shadow: 0 0 0 2px #7dd3fc;
 }
+body.schedi-newdash .sd-pay-choice.is-on.sd-pay-paypal,
 body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.is-on.sd-pay-paypal {
     color: #ffffff;
     background: #0070E0;
     border-color: #0070E0;
     box-shadow: 0 0 0 2px #93c5fd;
 }
+html.schedi-light body.schedi-newdash .sd-pay-choice.is-on.sd-pay-paypal,
 html.schedi-light body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.is-on.sd-pay-paypal {
     color: #ffffff;
     background: #003087;
     border-color: #003087;
     box-shadow: 0 0 0 2px #0070E0;
 }
+body.schedi-newdash .sd-pay-choice.is-on.sd-pay-square,
 body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.is-on.sd-pay-square {
     color: #000000;
     background: #ffffff;
     border-color: #e2e8f0;
     box-shadow: 0 0 0 2px #ffffff;
 }
+html.schedi-light body.schedi-newdash .sd-pay-choice.is-on.sd-pay-square,
 html.schedi-light body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.is-on.sd-pay-square {
     color: #ffffff;
     background: #000000;
@@ -5840,7 +5855,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
                 <div>
                     <label class="block font-semibold text-slate-300 mb-1" id="manPaymentLabel">Payment Method / Status</label>
                     <input type="hidden" id="manPaymentStatus" value="PAY AT APPOINTMENT">
-                    <div id="manPaymentChoices" class="sd-pay-choices" role="listbox" aria-labelledby="manPaymentLabel"></div>
+                    <div id="manPaymentChoices" class="sd-pay-choices" role="radiogroup" aria-labelledby="manPaymentLabel"></div>
                 </div>
                 <div id="manDepositBox" class="hidden p-3 rounded-xl bg-slate-900 border border-slate-800 text-[11px] text-slate-300 space-y-1">
                     <div class="font-bold text-white">Deposit</div>
@@ -5954,6 +5969,11 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
                     <p class="text-slate-400">Your first visit is the start date above. Add the other days. Up to 12 visits.</p>
                     <div id="ownerRecurCustomList" class="space-y-2"></div>
                     <button type="button" onclick="addOwnerRecurCustomDate()" class="px-3 py-2 rounded-xl bg-slate-800 text-slate-100 font-bold">Add a date</button>
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-300 mb-1" id="ownerRecurPaymentLabel">Payment Method / Status</label>
+                    <input type="hidden" id="ownerRecurPayment" value="PAY AT APPOINTMENT">
+                    <div id="ownerRecurPaymentChoices" class="sd-pay-choices" role="radiogroup" aria-labelledby="ownerRecurPaymentLabel"></div>
                 </div>
                 <ul id="ownerRecurPreview" class="sd-preview"></ul>
                 <p id="ownerRecurNote" class="sd-field-note" role="status"></p>
@@ -12307,6 +12327,9 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
             ownerRecurExtras = [];
             var count = document.getElementById('ownerRecurCount');
             if (count) count.value = '4';
+            var recurPay = document.getElementById('ownerRecurPayment');
+            if (recurPay) recurPay.value = 'PAY AT APPOINTMENT';
+            paintOwnerRecurPayChoices();
             clearOwnerRecurHold();
             if (typeof onOwnerRecurFreqChange === 'function') onOwnerRecurFreqChange();
             onOwnerRecurServiceChange();
@@ -12362,6 +12385,14 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
                 warn(((typeof rosterPrettyDate === 'function' && rosterPrettyDate(conflict.date)) || conflict.date) + ' at ' + conflict.time + ' is already booked. Nothing was saved.');
                 return;
             }
+            var paymentStatus = String((document.getElementById('ownerRecurPayment') || {}).value || 'PAY AT APPOINTMENT');
+            var payChoice = manualPayFromStatus(paymentStatus);
+            if (!payChoice) {
+                paymentStatus = 'PAY AT APPOINTMENT';
+                payChoice = manualPayFromStatus(paymentStatus);
+            }
+            var payBlock = freePaymentMessage(tenant, paymentStatus);
+            if (payBlock) { warn(payBlock); return; }
             if (window.__SCHEDI_DEMO) {
                 var demoMsg = 'This demo does not save a recurring series. Nothing was booked, and no email was sent.';
                 if (note) {
@@ -12385,9 +12416,9 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
                     durationMins: dur,
                     date: row.date,
                     time: row.time,
-                    paymentStatus: 'PAY AT APPOINTMENT',
-                    paymentMethod: 'later',
-                    paymentOptionLabel: 'Pay at Appointment',
+                    paymentStatus: payChoice.value,
+                    paymentMethod: payChoice.method,
+                    paymentOptionLabel: payChoice.label,
                     manageToken: newManageToken(),
                     createdAt: created,
                     seriesId: seriesId,
@@ -12401,6 +12432,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
                     }
                 };
                 if (amount !== null && amount !== undefined) booking.amount = amount;
+                if (payChoice && !payChoice.unpaid) booking.paidMethod = payChoice.method;
                 return booking;
             });
             if (!Array.isArray(tenant.appointments)) tenant.appointments = [];
@@ -17700,6 +17732,17 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
             return status || 'PAY AT APPOINTMENT';
         }
 
+        function ownerLogPayChoices(tenant, currentStatus) {
+            var enabled = {};
+            ownerMarkPaidMethods(tenant).forEach(function (row) { enabled[row[0]] = true; });
+            var current = manualPayFromStatus(currentStatus);
+            return MANUAL_PAY_CHOICES.filter(function (row) {
+                if (row.unpaid) return true;
+                if (enabled[row.method]) return true;
+                return !!(current && current.method === row.method);
+            });
+        }
+
         function paidByPhrase(booking, opts) {
             opts = opts || {};
             var label = paidMethodLabel(booking && booking.paidMethod) || paidMethodLabel(inferPaidMethodFromBooking(booking)) || 'Other';
@@ -20712,10 +20755,52 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
             });
         }
 
+        function paintOwnerPayRadios(box, spec) {
+            if (!box || !spec) return;
+            var choices = spec.choices || [];
+            var selected = String(spec.selected || '');
+            var attr = spec.attr || 'data-pay-id';
+            var extra = spec.extraClass ? (' ' + spec.extraClass) : '';
+            var onPick = spec.onPick || function () {};
+            box.setAttribute('role', 'radiogroup');
+            var ids = choices.map(function (row) { return row.id; });
+            var chosen = ids.indexOf(selected) >= 0 ? selected : '';
+            box.innerHTML = choices.map(function (row) {
+                var on = row.id === chosen;
+                var brand = on ? rosterBrandPayClass(row.kind) : '';
+                return '<button type="button" ' + attr + '="' + esc(row.id) + '" class="sd-pay-choice' + extra + brand + (on ? ' is-on' : '') + '" role="radio" aria-checked="' + (on ? 'true' : 'false') + '" tabindex="' + (on ? '0' : '-1') + '">' +
+                    payKindSvg(row.kind) + '<span>' + esc(row.label) + '</span>' +
+                    (on ? '<span class="sd-paid-check" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M3.2 8.2 6.4 11.4 12.8 4.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>' : '') +
+                    '</button>';
+            }).join('');
+            if (!chosen) {
+                var firstRadio = box.querySelector('.sd-pay-choice');
+                if (firstRadio) firstRadio.setAttribute('tabindex', '0');
+            }
+            var opts = box.querySelectorAll('.sd-pay-choice');
+            for (var i = 0; i < opts.length; i++) {
+                opts[i].onclick = (function (id) {
+                    return function () { onPick(id); };
+                })(opts[i].getAttribute(attr));
+                opts[i].onkeydown = (function (id) {
+                    return function (event) {
+                        var key = event.key;
+                        if (key !== 'ArrowDown' && key !== 'ArrowRight' && key !== 'ArrowUp' && key !== 'ArrowLeft') return;
+                        event.preventDefault();
+                        var idx = ids.indexOf(id);
+                        if (idx < 0) idx = 0;
+                        var dir = (key === 'ArrowDown' || key === 'ArrowRight') ? 1 : -1;
+                        onPick(ids[(idx + dir + ids.length) % ids.length]);
+                        var focus = box.querySelector('.sd-pay-choice.is-on');
+                        if (focus && focus.focus) focus.focus();
+                    };
+                })(opts[i].getAttribute(attr));
+            }
+        }
+
         function paintRosterPaidMethodOptions() {
             var box = document.getElementById('rosterPaidMethodOptions');
             if (!box) return;
-            box.setAttribute('role', 'radiogroup');
             box.setAttribute('aria-labelledby', 'rosterPaidMethodTitle');
             var methods = ownerMarkPaidMethods(typeof getTenant === 'function' ? getTenant() : null);
             var chosen = String(_rosterPaidMethodSelected || '');
@@ -20723,41 +20808,16 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
                 chosen = '';
                 _rosterPaidMethodSelected = '';
             }
-            box.innerHTML = methods.map(function (row) {
-                var on = row[0] === chosen;
-                return '<button type="button" data-paid-method="' + row[0] + '" class="sd-pay-choice roster-paid-opt' + (on ? rosterBrandPayClass(row[0]) + ' is-on' : '') + '" role="radio" aria-checked="' + (on ? 'true' : 'false') + '" tabindex="' + (on ? '0' : '-1') + '">' +
-                    payKindSvg(row[0]) + '<span>' + esc(row[1]) + '</span>' +
-                    (on ? '<span class="sd-paid-check" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M3.2 8.2 6.4 11.4 12.8 4.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>' : '') +
-                    '</button>';
-            }).join('');
-            if (!chosen) {
-                var firstRadio = box.querySelector('.roster-paid-opt');
-                if (firstRadio) firstRadio.setAttribute('tabindex', '0');
-            }
-            var opts = box.querySelectorAll('.roster-paid-opt');
-            for (var i = 0; i < opts.length; i++) {
-                opts[i].onclick = (function (method) {
-                    return function () {
-                        _rosterPaidMethodSelected = method;
-                        paintRosterPaidMethodOptions();
-                    };
-                })(opts[i].getAttribute('data-paid-method'));
-                opts[i].onkeydown = (function (method) {
-                    return function (event) {
-                        var key = event.key;
-                        if (key !== 'ArrowDown' && key !== 'ArrowRight' && key !== 'ArrowUp' && key !== 'ArrowLeft') return;
-                        event.preventDefault();
-                        var list = methods.map(function (row) { return row[0]; });
-                        var idx = list.indexOf(method);
-                        if (idx < 0) idx = 0;
-                        var dir = (key === 'ArrowDown' || key === 'ArrowRight') ? 1 : -1;
-                        _rosterPaidMethodSelected = list[(idx + dir + list.length) % list.length];
-                        paintRosterPaidMethodOptions();
-                        var focus = box.querySelector('.roster-paid-opt.is-on');
-                        if (focus && focus.focus) focus.focus();
-                    };
-                })(opts[i].getAttribute('data-paid-method'));
-            }
+            paintOwnerPayRadios(box, {
+                choices: methods.map(function (row) { return { id: row[0], label: row[1], kind: row[0] }; }),
+                selected: chosen,
+                attr: 'data-paid-method',
+                extraClass: 'roster-paid-opt',
+                onPick: function (id) {
+                    _rosterPaidMethodSelected = id;
+                    paintRosterPaidMethodOptions();
+                }
+            });
             var confirmBtn = document.getElementById('rosterPaidMethodConfirmBtn');
             if (confirmBtn) confirmBtn.disabled = !chosen;
         }
@@ -20936,26 +20996,32 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
             await finishMarkUnpaid(app);
         };
 
-        function paintManualPayChoices() {
-            var box = document.getElementById('manPaymentChoices');
-            var input = document.getElementById('manPaymentStatus');
+        function paintStatusPayChoices(boxId, inputId, labelId) {
+            var box = document.getElementById(boxId);
+            var input = document.getElementById(inputId);
             if (!box || !input) return;
-            var current = input.value || 'PAY AT APPOINTMENT';
-            box.innerHTML = MANUAL_PAY_CHOICES.map(function (row) {
-                var on = row.value === current;
-                var kind = row.unpaid ? 'unpaid' : row.method;
-                return '<button type="button" class="sd-pay-choice' + rosterBrandPayClass(kind) + (on ? ' is-on' : '') + '" role="option" aria-selected="' + (on ? 'true' : 'false') + '" data-pay-status="' + esc(row.value) + '">' +
-                    payKindSvg(kind) + '<span>' + esc(row.label) + '</span></button>';
-            }).join('');
-            var opts = box.querySelectorAll('[data-pay-status]');
-            for (var i = 0; i < opts.length; i++) {
-                opts[i].onclick = (function (status) {
-                    return function () {
-                        input.value = status;
-                        paintManualPayChoices();
-                    };
-                })(opts[i].getAttribute('data-pay-status'));
-            }
+            if (labelId) box.setAttribute('aria-labelledby', labelId);
+            var tenant = typeof getTenant === 'function' ? getTenant() : null;
+            var rows = ownerLogPayChoices(tenant, input.value);
+            paintOwnerPayRadios(box, {
+                choices: rows.map(function (row) {
+                    return { id: row.value, label: row.label, kind: row.unpaid ? 'unpaid' : row.method };
+                }),
+                selected: input.value,
+                attr: 'data-pay-status',
+                onPick: function (id) {
+                    input.value = id;
+                    paintStatusPayChoices(boxId, inputId, labelId);
+                }
+            });
+        }
+
+        function paintManualPayChoices() {
+            paintStatusPayChoices('manPaymentChoices', 'manPaymentStatus', 'manPaymentLabel');
+        }
+
+        function paintOwnerRecurPayChoices() {
+            paintStatusPayChoices('ownerRecurPaymentChoices', 'ownerRecurPayment', 'ownerRecurPaymentLabel');
         }
 
         function syncManualUnpaidButton(app) {

@@ -788,17 +788,24 @@ describe("owner dashboard preview", () => {
   it("mutes unselected mark-paid methods and keeps a single radio choice", () => {
     expect(html).toContain('id="rosterPaidMethodOptions" role="radiogroup" aria-labelledby="rosterPaidMethodTitle"');
     const paint = extractFunction(html, "paintRosterPaidMethodOptions");
-    expect(paint).toContain('role="radio"');
-    expect(paint).toContain("aria-checked");
-    expect(paint).toContain("sd-paid-check");
-    expect(paint).toContain("on ? rosterBrandPayClass(row[0]) + ' is-on' : ''");
+    const radios = extractFunction(html, "paintOwnerPayRadios");
+    expect(paint).toContain("paintOwnerPayRadios");
+    expect(paint).toContain("extraClass: 'roster-paid-opt'");
+    expect(radios).toContain('role="radio"');
+    expect(radios).toContain("aria-checked");
+    expect(radios).toContain("sd-paid-check");
+    expect(radios).toContain("on ? rosterBrandPayClass(row.kind) : ''");
+    expect(radios).toContain("is-on");
+    expect(radios).not.toContain("aria-pressed");
     expect(paint).not.toContain("aria-pressed");
     expect(paint).toContain("confirmBtn.disabled = !chosen");
     const marked = html.slice(html.indexOf("window.confirmRosterMarkPaid"), html.indexOf("async function markAppointmentUnpaid"));
     expect(marked).toContain("if (!method || !allowed) return;");
     expect(marked).not.toContain("|| 'cash'");
     const css = dashCss(html);
+    expect(css).toContain("body.schedi-newdash .sd-pay-choice.is-on,");
     expect(css).toContain("body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.is-on {");
+    expect(css).toContain("body.schedi-newdash .sd-pay-choice.is-on.sd-pay-cashapp");
     expect(css).toContain("body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.is-on.sd-pay-cashapp");
     expect(css).toContain("body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.is-on.sd-pay-zelle");
     expect(css).toContain("body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.is-on.sd-pay-venmo");
@@ -944,6 +951,39 @@ describe("owner dashboard preview", () => {
     expect(paint).toContain("ownerMarkPaidMethods");
     expect(paint).not.toContain("OWNER_PAY_METHODS.map");
     expect(html).toContain("if (!method || !allowed) return;");
+    const logChoices = new Function(`
+      var OWNER_PAY_METHODS = [
+        ["card", "Card"], ["cashapp", "Cash App"], ["zelle", "Zelle"], ["venmo", "Venmo"],
+        ["paypal", "PayPal"], ["square", "Square"], ["cash", "In person / Cash"]
+      ];
+      var MANUAL_PAY_CHOICES = [
+        { value: "PAID VIA CARD", method: "card", label: "Card" },
+        { value: "PAID CASH APP", method: "cashapp", label: "Cash App" },
+        { value: "PAID ZELLE", method: "zelle", label: "Zelle" },
+        { value: "PAID VENMO", method: "venmo", label: "Venmo" },
+        { value: "PAID PAYPAL", method: "paypal", label: "PayPal" },
+        { value: "PAID SQUARE", method: "square", label: "Square" },
+        { value: "PAID IN CASH", method: "cash", label: "In person / Cash" },
+        { value: "PAY AT APPOINTMENT", method: "later", label: "Unpaid", unpaid: true }
+      ];
+      ${extractFunction(html, "ownerMarkPaidMethods")}
+      ${extractFunction(html, "manualPayFromStatus")}
+      ${extractFunction(html, "ownerLogPayChoices")}
+      return ownerLogPayChoices;
+    `)() as (tenant: { paymentGateways?: Record<string, boolean> }, status: string) => { method: string }[];
+    expect(logChoices({ paymentGateways: { card: false, cashapp: true, zelle: true, venmo: true, paypal: false } }, "PAY AT APPOINTMENT").map((row) => row.method)).toEqual(["cashapp", "zelle", "venmo", "cash", "later"]);
+    expect(logChoices({ paymentGateways: { card: true, square: true } }, "PAY AT APPOINTMENT").map((row) => row.method)).toEqual(["card", "square", "cash", "later"]);
+    expect(logChoices({ paymentGateways: {} }, "PAID SQUARE").map((row) => row.method)).toEqual(["square", "cash", "later"]);
+    expect(logChoices({ paymentGateways: { card: false } }, "PAID VIA CARD").map((row) => row.method)).toEqual(["card", "cash", "later"]);
+    expect(extractFunction(html, "paintManualPayChoices")).toContain("paintStatusPayChoices('manPaymentChoices'");
+    expect(extractFunction(html, "paintOwnerRecurPayChoices")).toContain("paintStatusPayChoices('ownerRecurPaymentChoices'");
+    expect(extractFunction(html, "paintStatusPayChoices")).toContain("ownerLogPayChoices");
+    expect(extractFunction(html, "paintStatusPayChoices")).toContain("paintOwnerPayRadios");
+    expect(html).toContain('id="manPaymentChoices" class="sd-pay-choices" role="radiogroup"');
+    expect(html).toContain('id="ownerRecurPaymentChoices" class="sd-pay-choices" role="radiogroup"');
+    const recur = html.slice(html.indexOf("window.handleOwnerRecurringSubmit"), html.indexOf("window.schediDashToggleMore"));
+    expect(recur).toContain("ownerRecurPayment");
+    expect(recur).toContain("booking.paidMethod = payChoice.method");
   });
 
   it("uses one sliding pill for the phone tab bar", () => {
@@ -3022,6 +3062,173 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       expect(reduced.after.elapsed).toBeLessThan(160);
       const reducedWalk = await page.evaluate(() => (document.getElementById("manWalkInBtn") as HTMLButtonElement | null)?.getAttribute("aria-pressed") || "");
       expect(reducedWalk).toBe("true");
+    } finally {
+      await browser.close();
+      await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+    }
+  }, 120000);
+
+  it("mutes add, edit, and recurring payment choices until one is selected", async () => {
+    const types: Record<string, string> = {
+      ".html": "text/html; charset=utf-8",
+      ".js": "text/javascript; charset=utf-8",
+      ".svg": "image/svg+xml",
+      ".png": "image/png",
+      ".json": "application/json",
+      ".webmanifest": "application/manifest+json",
+    };
+    const server = createServer((req, res) => {
+      const path = new URL(req.url || "/", "http://127.0.0.1").pathname;
+      const file = path === "/" || path === "/portal-preview" ? "/index.html" : path;
+      const full = join(root, file);
+      if (!full.startsWith(root) || !existsSync(full)) {
+        res.writeHead(404);
+        res.end("missing");
+        return;
+      }
+      res.writeHead(200, { "content-type": types[extname(full)] || "application/octet-stream" });
+      res.end(readFileSync(full));
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const address = server.address();
+    const port = typeof address === "object" && address ? address.port : 0;
+    const puppeteer = await import("puppeteer-core");
+    const browser = await puppeteer.default.launch({
+      executablePath: chrome,
+      headless: true,
+      args: ["--no-sandbox", "--disable-dev-shm-usage"],
+    });
+    const muted = {
+      dark: { bg: "rgb(15, 23, 42)", fg: "rgb(248, 250, 252)", border: "rgb(51, 65, 85)" },
+      light: { bg: "rgb(255, 255, 255)", fg: "rgb(15, 23, 42)", border: "rgb(203, 213, 225)" },
+    };
+    const brands: Record<string, { dark: string; light: string; fg: string; lightFg?: string }> = {
+      cashapp: { dark: "rgb(0, 214, 79)", light: "rgb(0, 214, 79)", fg: "rgb(11, 18, 32)" },
+      zelle: { dark: "rgb(109, 30, 212)", light: "rgb(109, 30, 212)", fg: "rgb(255, 255, 255)" },
+      venmo: { dark: "rgb(0, 140, 255)", light: "rgb(0, 140, 255)", fg: "rgb(11, 18, 32)" },
+      paypal: { dark: "rgb(0, 112, 224)", light: "rgb(0, 48, 135)", fg: "rgb(255, 255, 255)" },
+      square: { dark: "rgb(255, 255, 255)", light: "rgb(0, 0, 0)", fg: "rgb(0, 0, 0)", lightFg: "rgb(255, 255, 255)" },
+      card: { dark: "rgb(5, 150, 105)", light: "rgb(4, 120, 87)", fg: "rgb(255, 255, 255)" },
+      cash: { dark: "rgb(5, 150, 105)", light: "rgb(4, 120, 87)", fg: "rgb(255, 255, 255)" },
+      later: { dark: "rgb(5, 150, 105)", light: "rgb(4, 120, 87)", fg: "rgb(255, 255, 255)" },
+    };
+    try {
+      const page = await browser.newPage();
+      await page.goto(`http://127.0.0.1:${port}/portal-preview`, { waitUntil: "domcontentloaded", timeout: 45000 });
+      await page.waitForFunction(() => document.body.classList.contains("schedi-newdash"), { timeout: 20000 });
+      await page.waitForFunction(() => {
+        const apps = (window as unknown as { getTenant?: () => { appointments?: { id?: string }[] } }).getTenant?.()?.appointments || [];
+        return apps.some((row) => row && row.id === "HB-1001");
+      }, { timeout: 20000 });
+      const read = (boxId: string) => page.evaluate((id) => {
+        const group = document.getElementById(id);
+        const buttons = Array.from(group?.querySelectorAll(".sd-pay-choice") || []) as HTMLButtonElement[];
+        return {
+          role: group?.getAttribute("role") || "",
+          options: buttons.map((el) => {
+            const style = getComputedStyle(el);
+            const box = el.getBoundingClientRect();
+            return {
+              status: el.getAttribute("data-pay-status") || "",
+              radio: el.getAttribute("role"),
+              checked: el.getAttribute("aria-checked"),
+              bg: style.backgroundColor,
+              fg: style.color,
+              border: style.borderTopColor,
+              shadow: style.boxShadow,
+              h: Math.round(box.height),
+              w: Math.round(box.width),
+              check: !!el.querySelector(".sd-paid-check"),
+            };
+          }),
+        };
+      }, boxId);
+      const methodOf = (status: string) => {
+        if (status === "PAID VIA CARD") return "card";
+        if (status === "PAID CASH APP") return "cashapp";
+        if (status === "PAID ZELLE") return "zelle";
+        if (status === "PAID VENMO") return "venmo";
+        if (status === "PAID PAYPAL") return "paypal";
+        if (status === "PAID SQUARE") return "square";
+        if (status === "PAID IN CASH") return "cash";
+        return "later";
+      };
+      const expectMutedPicker = async (boxId: string, theme: "dark" | "light", methods: string[], selected: string) => {
+        const view = await read(boxId);
+        expect(view.role).toBe("radiogroup");
+        expect(view.options.map((row) => methodOf(row.status))).toEqual(methods);
+        const on = view.options.filter((row) => row.checked === "true");
+        expect(on.map((row) => methodOf(row.status))).toEqual([selected]);
+        for (const row of view.options) {
+          expect(row.radio).toBe("radio");
+          expect(row.h).toBeGreaterThanOrEqual(44);
+          expect(row.w).toBeGreaterThan(240);
+          const method = methodOf(row.status);
+          const brand = brands[method];
+          if (row.checked === "true") {
+            expect(row.bg).toBe(brand[theme]);
+            expect(row.fg).toBe(theme === "light" && brand.lightFg ? brand.lightFg : brand.fg);
+            expect(row.check).toBe(true);
+            expect(row.shadow).not.toBe("none");
+          } else {
+            expect(row.bg).toBe(muted[theme].bg);
+            expect(row.fg).toBe(muted[theme].fg);
+            expect(row.border).toBe(muted[theme].border);
+            expect(row.check).toBe(false);
+          }
+        }
+      };
+      for (const width of [340, 390]) {
+        await page.setViewport({ width, height: 900 });
+        for (const theme of ["dark", "light"] as const) {
+          await page.evaluate((mode) => (window as unknown as { setSchediTheme: (mode: string) => void }).setSchediTheme(mode), theme);
+          await page.evaluate(() => (window as unknown as { openManualBookingModal: () => void }).openManualBookingModal());
+          await page.waitForSelector("#manPaymentChoices .sd-pay-choice.is-on", { timeout: 10000 });
+          await expectMutedPicker("manPaymentChoices", theme, ["cashapp", "zelle", "venmo", "cash", "later"], "later");
+          await page.evaluate(() => (window as unknown as { closeManualBookingModal: () => void }).closeManualBookingModal());
+          await page.evaluate(() => (window as unknown as { schediDashAddKind: (kind: string) => void }).schediDashAddKind("walkin"));
+          await page.waitForSelector("#manPaymentChoices .sd-pay-choice.is-on", { timeout: 10000 });
+          const walk = await page.evaluate(() => (document.getElementById("manWalkInBtn") as HTMLButtonElement | null)?.getAttribute("aria-pressed") || "");
+          expect(walk).toBe("true");
+          await expectMutedPicker("manPaymentChoices", theme, ["cashapp", "zelle", "venmo", "cash", "later"], "later");
+          await page.evaluate(() => (window as unknown as { closeManualBookingModal: () => void }).closeManualBookingModal());
+          await page.evaluate(() => (window as unknown as { openEditAppointment: (id: string) => void }).openEditAppointment("HB-1001"));
+          await page.waitForSelector('#manPaymentChoices [data-pay-status="PAID VIA CARD"].is-on', { timeout: 10000 });
+          await expectMutedPicker("manPaymentChoices", theme, ["card", "cashapp", "zelle", "venmo", "cash", "later"], "card");
+          await page.evaluate(() => (window as unknown as { closeManualBookingModal: () => void }).closeManualBookingModal());
+          await page.evaluate(() => (window as unknown as { openEditAppointment: (id: string) => void }).openEditAppointment("HB-1012"));
+          await page.waitForSelector('#manPaymentChoices [data-pay-status="PAID SQUARE"].is-on', { timeout: 10000 });
+          await expectMutedPicker("manPaymentChoices", theme, ["cashapp", "zelle", "venmo", "square", "cash", "later"], "square");
+          await page.evaluate(() => (window as unknown as { closeManualBookingModal: () => void }).closeManualBookingModal());
+          await page.evaluate(() => (window as unknown as { openOwnerRecurringModal: () => void }).openOwnerRecurringModal());
+          await page.waitForSelector("#ownerRecurPaymentChoices .sd-pay-choice.is-on", { timeout: 10000 });
+          await expectMutedPicker("ownerRecurPaymentChoices", theme, ["cashapp", "zelle", "venmo", "cash", "later"], "later");
+          await page.evaluate(() => (window as unknown as { closeOwnerRecurringModal: () => void }).closeOwnerRecurringModal());
+        }
+      }
+      await page.setViewport({ width: 390, height: 900 });
+      await page.evaluate(() => (window as unknown as { setSchediTheme: (mode: string) => void }).setSchediTheme("dark"));
+      await page.evaluate(() => (window as unknown as { openManualBookingModal: () => void }).openManualBookingModal());
+      await page.waitForSelector("#manPaymentChoices .sd-pay-choice", { timeout: 10000 });
+      await page.evaluate(() => {
+        const venmo = document.querySelector('#manPaymentChoices [data-pay-status="PAID VENMO"]') as HTMLButtonElement | null;
+        venmo?.click();
+      });
+      await expectMutedPicker("manPaymentChoices", "dark", ["cashapp", "zelle", "venmo", "cash", "later"], "venmo");
+      const stored = await page.evaluate(() => (document.getElementById("manPaymentStatus") as HTMLInputElement).value);
+      expect(stored).toBe("PAID VENMO");
+      const checkedCount = await page.evaluate(() => document.querySelectorAll('#manPaymentChoices [aria-checked="true"]').length);
+      expect(checkedCount).toBe(1);
+      await page.evaluate(() => (window as unknown as { closeManualBookingModal: () => void }).closeManualBookingModal());
+      await page.evaluate(() => (window as unknown as { openOwnerRecurringModal: () => void }).openOwnerRecurringModal());
+      await page.waitForSelector("#ownerRecurPaymentChoices .sd-pay-choice", { timeout: 10000 });
+      await page.evaluate(() => {
+        const cash = document.querySelector('#ownerRecurPaymentChoices [data-pay-status="PAID IN CASH"]') as HTMLButtonElement | null;
+        cash?.click();
+      });
+      await expectMutedPicker("ownerRecurPaymentChoices", "dark", ["cashapp", "zelle", "venmo", "cash", "later"], "cash");
+      const seriesPay = await page.evaluate(() => (document.getElementById("ownerRecurPayment") as HTMLInputElement).value);
+      expect(seriesPay).toBe("PAID IN CASH");
     } finally {
       await browser.close();
       await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
