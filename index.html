@@ -2847,32 +2847,98 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
         }
         #tenantPortalSection.schedi-newdash .roster-paid-figure { font-size: 1.375rem; font-weight: 800; line-height: 1.1; }
     }
-    #tenantPortalSection.schedi-newdash .sd-hours-week-head {
-        display: none;
-    }
+    #tenantPortalSection.schedi-newdash .sd-hours-week-wrap { min-width: 0; }
+    #tenantPortalSection.schedi-newdash .sd-hours-week-head { display: none; }
     #tenantPortalSection.schedi-newdash .sd-hours-week-scroll {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
+        min-width: 0;
+        overflow-x: visible;
     }
-    #tenantPortalSection.schedi-newdash .sd-hours-week.roster-week-grid {
-        grid-template-columns: repeat(7, minmax(200px, 1fr));
-    }
+    #tenantPortalSection.schedi-newdash .sd-hours-week.roster-week-grid,
     #tenantPortalSection.schedi-newdash .sd-hours-week-head {
-        grid-template-columns: repeat(7, minmax(200px, 1fr));
+        grid-template-columns: repeat(7, minmax(0, 1fr));
         gap: 8px;
-        margin-bottom: 4px;
     }
+    #tenantPortalSection.schedi-newdash .sd-hours-week-head { margin-bottom: 4px; }
     #tenantPortalSection.schedi-newdash .sd-hours-week-day {
+        min-width: 0;
+        padding: 6px 4px;
         background: rgba(15, 23, 42, 0.6);
         border-color: #1e293b;
         color: #f8fafc;
     }
+    #tenantPortalSection.schedi-newdash .sd-hours-week-top {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 4px;
+        min-width: 0;
+    }
+    #tenantPortalSection.schedi-newdash .sd-hours-week-dow {
+        min-width: 0;
+        font-size: 11px;
+        font-weight: 800;
+        color: #cbd5e1;
+    }
+    #tenantPortalSection.schedi-newdash .sd-hours-week-long { display: none; }
+    #tenantPortalSection.schedi-newdash .sd-hours-week-state {
+        font-size: 11px;
+        font-weight: 800;
+        color: #f8fafc;
+    }
+    #tenantPortalSection.schedi-newdash .sd-hours-week-day .sd-hours-open {
+        min-height: 32px;
+        gap: 6px;
+        font-size: 11px;
+    }
+    #tenantPortalSection.schedi-newdash .sd-hours-week-day .sd-hours-open input { width: 16px; height: 16px; }
     #tenantPortalSection.schedi-newdash .sd-hours-week-day .sd-hours-times {
         grid-template-columns: minmax(0, 1fr);
+        gap: 6px;
     }
-    #tenantPortalSection.schedi-newdash .sd-hours-week-day.is-closed .sd-hours-times,
-    #tenantPortalSection.schedi-newdash .sd-hours-week-day.is-closed .sd-hours-week-split {
-        opacity: 0.55;
+    #tenantPortalSection.schedi-newdash .sd-hours-week-day .sd-time,
+    #tenantPortalSection.schedi-newdash .sd-hours-week-day .sd-time-field,
+    #tenantPortalSection.schedi-newdash .sd-hours-week-day .sd-time-input { min-width: 0; }
+    #tenantPortalSection.schedi-newdash .sd-hours-week-day .sd-time-label,
+    #tenantPortalSection.schedi-newdash .sd-hours-week-day .sd-time-input,
+    #tenantPortalSection.schedi-newdash .sd-hours-week-day .sd-time-open,
+    #tenantPortalSection.schedi-newdash .sd-hours-week-day .sd-time-list [role="option"] {
+        font-size: 11px;
+    }
+    #tenantPortalSection.schedi-newdash .sd-hours-week-day .sd-time-input {
+        min-height: 32px;
+        padding: 4px 16px 4px 4px;
+        border-radius: 8px;
+    }
+    #tenantPortalSection.schedi-newdash .sd-hours-week-day .sd-time-open {
+        width: 16px;
+        height: 32px;
+        border-radius: 8px;
+    }
+    #tenantPortalSection.schedi-newdash .sd-hours-week-day .sd-time-list [role="option"] {
+        min-height: 28px;
+        padding: 0 8px;
+    }
+    #tenantPortalSection.schedi-newdash .sd-hours-week-day.is-closed .sd-hours-times { opacity: 0.55; }
+    #tenantPortalSection.schedi-newdash .sd-hours-week-day.is-closed .sd-hours-week-split { display: none; }
+    #tenantPortalSection.schedi-newdash .sd-hours-week-closed-note { display: none; }
+    #tenantPortalSection.schedi-newdash .sd-hours-week-day.is-closed .sd-hours-week-closed-note {
+        display: block;
+        margin: 0;
+        font-size: 10px;
+        font-weight: 700;
+        line-height: 1.3;
+        color: #cbd5e1;
+    }
+    #tenantPortalSection.schedi-newdash .sd-hours-week-day.is-closed .sd-hours-week-block {
+        background: transparent;
+        border-style: dashed;
+        border-color: #64748b;
+        color: #cbd5e1;
+    }
+    #tenantPortalSection.schedi-newdash .sd-hours-week-day.is-closed .sd-hours-week-block .sd-hours-week-when,
+    #tenantPortalSection.schedi-newdash .sd-hours-week-day.is-closed .sd-hours-week-block .sd-hours-week-title,
+    #tenantPortalSection.schedi-newdash .sd-hours-week-day.is-closed .sd-hours-week-block .sd-hours-week-meta {
+        color: #cbd5e1;
     }
     #tenantPortalSection.schedi-newdash .sd-hours-week-split {
         margin: 0;
@@ -2915,10 +2981,14 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
     #tenantPortalSection.schedi-newdash .sd-hours-week-copy {
         display: block;
         width: 100%;
-        min-height: 44px;
+        min-width: 0;
+        min-height: 36px;
+        padding: 6px 4px;
         border-radius: 10px;
-        font-size: 12px;
+        font-size: 11px;
         font-weight: 800;
+        line-height: 1.25;
+        white-space: normal;
         cursor: pointer;
     }
     #tenantPortalSection.schedi-newdash .sd-hours-week-add {
@@ -2941,6 +3011,19 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
         background: #f8fafc !important;
         border-color: #e5e7eb !important;
         color: #0f172a;
+    }
+    html.schedi-light #tenantPortalSection.schedi-newdash .sd-hours-week-dow,
+    html.schedi-light #tenantPortalSection.schedi-newdash .sd-hours-week-state,
+    html.schedi-light #tenantPortalSection.schedi-newdash .sd-hours-week-day.is-closed .sd-hours-week-closed-note,
+    html.schedi-light #tenantPortalSection.schedi-newdash .sd-hours-week-day.is-closed .sd-hours-week-block,
+    html.schedi-light #tenantPortalSection.schedi-newdash .sd-hours-week-day.is-closed .sd-hours-week-block .sd-hours-week-when,
+    html.schedi-light #tenantPortalSection.schedi-newdash .sd-hours-week-day.is-closed .sd-hours-week-block .sd-hours-week-title,
+    html.schedi-light #tenantPortalSection.schedi-newdash .sd-hours-week-day.is-closed .sd-hours-week-block .sd-hours-week-meta {
+        color: #334155;
+    }
+    html.schedi-light #tenantPortalSection.schedi-newdash .sd-hours-week-day.is-closed .sd-hours-week-block {
+        background: #f8fafc;
+        border-color: #cbd5e1;
     }
     html.schedi-light #tenantPortalSection.schedi-newdash .sd-hours-week-split { color: #047857; }
     html.schedi-light #tenantPortalSection.schedi-newdash .sd-hours-week-block {
@@ -2968,6 +3051,36 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
     @media (max-width: 639px) {
         #tenantPortalSection.schedi-newdash .sd-hours-week.roster-week-grid { grid-template-columns: 1fr; }
         #tenantPortalSection.schedi-newdash .sd-hours-week-scroll { overflow-x: visible; }
+        #tenantPortalSection.schedi-newdash .sd-hours-week-short { display: none; }
+        #tenantPortalSection.schedi-newdash .sd-hours-week-long { display: inline; }
+        #tenantPortalSection.schedi-newdash .sd-hours-week-day .sd-hours-open { font-size: 16px; min-height: 44px; }
+        #tenantPortalSection.schedi-newdash .sd-hours-week-day .sd-hours-open input { width: 20px; height: 20px; }
+        #tenantPortalSection.schedi-newdash .sd-hours-week-day .sd-time-label,
+        #tenantPortalSection.schedi-newdash .sd-hours-week-day .sd-time-input,
+        #tenantPortalSection.schedi-newdash .sd-hours-week-day .sd-time-open,
+        #tenantPortalSection.schedi-newdash .sd-hours-week-day .sd-time-list [role="option"] { font-size: 16px; }
+        #tenantPortalSection.schedi-newdash .sd-hours-week-day .sd-time-input { min-height: 44px; padding: 8px 48px 8px 12px; }
+        #tenantPortalSection.schedi-newdash .sd-hours-week-day .sd-time-open { width: 44px; height: 44px; }
+        #tenantPortalSection.schedi-newdash .sd-hours-week-day .sd-time-list [role="option"] { min-height: 44px; }
+        #tenantPortalSection.schedi-newdash .sd-hours-week-add,
+        #tenantPortalSection.schedi-newdash .sd-hours-week-copy { min-height: 44px; font-size: 14px; }
+    }
+    @media (min-width: 640px) and (max-width: 1023px) {
+        #tenantPortalSection.schedi-newdash .sd-hours-week-scroll {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        #tenantPortalSection.schedi-newdash .sd-hours-week.roster-week-grid,
+        #tenantPortalSection.schedi-newdash .sd-hours-week-head {
+            grid-template-columns: repeat(7, minmax(148px, 1fr));
+        }
+    }
+    @media (min-width: 1024px) {
+        #tenantPortalSection.schedi-newdash .sd-hours-week-scroll { overflow-x: visible; }
+        #tenantPortalSection.schedi-newdash .sd-hours-week.roster-week-grid,
+        #tenantPortalSection.schedi-newdash .sd-hours-week-head {
+            grid-template-columns: repeat(7, minmax(0, 1fr));
+        }
     }
 
 </style>
@@ -13366,13 +13479,13 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                 ? '<p class="sd-hours-week-split">' + segments.map(function (seg) { return esc(seg.start + '–' + seg.end); }).join(' · ') + '</p>'
                 : '';
             var blocks = matched.length
-                ? matched.map(hoursWeekBlockHtml).join('')
+                ? '<p class="sd-hours-week-closed-note">Not applied while closed</p>' + matched.map(hoursWeekBlockHtml).join('')
                 : '<p class="sd-hours-week-empty">No blocked time</p>';
-            return '<div class="sd-hours-week-day rounded-xl border p-2 min-h-[7.5rem] space-y-1.5' + (h.open ? '' : ' is-closed') + '">'
-                + '<div class="flex items-baseline justify-between gap-2">'
-                + '<span class="text-xs font-bold text-slate-400">' + esc(day) + '</span>'
-                + '<span class="text-sm font-black text-white">' + (h.open ? 'Open' : 'Closed') + '</span></div>'
-                + '<label class="sd-hours-open"><input type="checkbox" id="shiftOpen_' + day + '"' + (h.open ? ' checked' : '') + ' onchange="hoursWeekOpenChanged(' + jsArg(day) + ')"><span>' + esc(label) + '</span></label>'
+            return '<div class="sd-hours-week-day rounded-xl border min-h-[7.5rem] space-y-1.5' + (h.open ? '' : ' is-closed') + '">'
+                + '<div class="sd-hours-week-top">'
+                + '<span class="sd-hours-week-dow"><span class="sd-hours-week-short">' + esc(day) + '</span><span class="sd-hours-week-long">' + esc(label) + '</span></span>'
+                + '<span class="sd-hours-week-state">' + (h.open ? 'Open' : 'Closed') + '</span></div>'
+                + '<label class="sd-hours-open"><input type="checkbox" id="shiftOpen_' + day + '"' + (h.open ? ' checked' : '') + ' onchange="hoursWeekOpenChanged(' + jsArg(day) + ')"><span>Open</span></label>'
                 + '<div class="sd-hours-times">'
                 + ownerTimeComboHtml('shiftStart_' + day, h.start, 'Opens', 'Show open times', '', 'shiftError_' + day)
                 + ownerTimeComboHtml('shiftEnd_' + day, h.end, 'Closes', 'Show close times', '', 'shiftError_' + day)
@@ -13426,7 +13539,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
             if (!card) return;
             var open = !!(openEl && openEl.checked);
             card.classList.toggle('is-closed', !open);
-            var mark = card.querySelector('.text-sm.font-black');
+            var mark = card.querySelector('.sd-hours-week-state');
             if (mark) mark.textContent = open ? 'Open' : 'Closed';
         }
         window.hoursWeekOpenChanged = hoursWeekOpenChanged;

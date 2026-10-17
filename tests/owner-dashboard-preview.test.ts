@@ -560,6 +560,15 @@ describe("owner dashboard preview", () => {
     expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-hours-week.roster-week-grid");
     expect(css).toContain("grid-template-columns: 1fr");
     expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-hours-week-day");
+    expect(css).not.toContain("minmax(200px");
+    const desktopWeek = css.slice(css.indexOf("@media (min-width: 1024px)"));
+    expect(desktopWeek).toContain("repeat(7, minmax(0, 1fr))");
+    expect(desktopWeek).toContain("overflow-x: visible");
+    expect(css).toContain("repeat(7, minmax(148px, 1fr))");
+    expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-hours-week-day .sd-time-input");
+    expect(css).toContain("font-size: 11px");
+    expect(extractFunction(html, "hoursWeekDayHtml")).toContain("Not applied while closed");
+    expect(extractFunction(html, "hoursWeekDayHtml")).toContain("hoursWeekBlockHtml");
     const fromEnv = new Function(
       `${extractFunction(html, "hoursWeekLayoutFromEnv")}; return hoursWeekLayoutFromEnv;`,
     )() as (search: string, stored: string | null) => boolean;
@@ -832,6 +841,111 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       expect(writes).toEqual([]);
       expect(privateHosts).toEqual([]);
       expect(errors).toEqual([]);
+    } finally {
+      await browser.close();
+      await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+    }
+  }, 60000);
+
+  it("fits seven hours columns in the card at 1280 and mutes blocks on a closed day", async () => {
+    const types: Record<string, string> = {
+      ".html": "text/html; charset=utf-8",
+      ".js": "text/javascript; charset=utf-8",
+      ".svg": "image/svg+xml",
+      ".png": "image/png",
+      ".json": "application/json",
+      ".webmanifest": "application/manifest+json",
+    };
+    const server = createServer((req, res) => {
+      const path = new URL(req.url || "/", "http://127.0.0.1").pathname;
+      const file = path === "/" || path === "/portal-preview" ? "/index.html" : path;
+      const full = join(root, file);
+      if (!full.startsWith(root) || !existsSync(full)) {
+        res.writeHead(404);
+        res.end("missing");
+        return;
+      }
+      res.writeHead(200, { "content-type": types[extname(full)] || "application/octet-stream" });
+      res.end(readFileSync(full));
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const address = server.address();
+    const port = typeof address === "object" && address ? address.port : 0;
+    const puppeteer = await import("puppeteer-core");
+    const browser = await puppeteer.default.launch({
+      executablePath: chrome,
+      headless: true,
+      args: ["--no-sandbox", "--disable-dev-shm-usage"],
+    });
+    try {
+      const page = await browser.newPage();
+      const measure = async (width: number) => {
+        await page.setViewport({ width, height: 900 });
+        return page.evaluate(() => {
+          const card = document.getElementById("tenantSectionHours");
+          const scroll = document.querySelector(".sd-hours-week-scroll") as HTMLElement | null;
+          const grid = document.querySelector(".sd-hours-week") as HTMLElement | null;
+          const days = [...document.querySelectorAll(".sd-hours-week-day")];
+          const input = document.getElementById("shiftStart_Mon") as HTMLInputElement | null;
+          const sunday = document.getElementById("shiftOpen_Sun")?.closest(".sd-hours-week-day") as HTMLElement | null;
+          const note = sunday?.querySelector(".sd-hours-week-closed-note") as HTMLElement | null;
+          const lunch = sunday?.querySelector(".sd-hours-week-block") as HTMLElement | null;
+          const cardBox = card?.getBoundingClientRect();
+          const dayBoxes = days.map((day) => {
+            const box = day.getBoundingClientRect();
+            return { right: box.right, left: box.left, width: box.width };
+          });
+          const rules = (window as unknown as { getTenant: () => { blockedRules: { id: string }[] } }).getTenant().blockedRules.map((rule) => rule.id);
+          return {
+            columns: getComputedStyle(grid as Element).gridTemplateColumns,
+            scrollWidth: scroll?.scrollWidth || 0,
+            clientWidth: scroll?.clientWidth || 0,
+            fontSize: input ? getComputedStyle(input).fontSize : "",
+            inputClip: input ? input.scrollWidth - input.clientWidth : 0,
+            cardRight: cardBox?.right || 0,
+            cardLeft: cardBox?.left || 0,
+            dayBoxes,
+            sundayClosed: sunday?.classList.contains("is-closed") || false,
+            note: note?.textContent || "",
+            noteDisplay: note ? getComputedStyle(note).display : "",
+            lunch: lunch?.textContent || "",
+            rules,
+          };
+        });
+      };
+      await page.setViewport({ width: 1280, height: 900 });
+      await page.goto(`http://127.0.0.1:${port}/portal-preview?weekhours=1`, { waitUntil: "domcontentloaded", timeout: 45000 });
+      await page.waitForFunction(() => document.body.classList.contains("schedi-newdash"), { timeout: 20000 });
+      await page.evaluate(() => (window as unknown as { schediDashGo: (tab: string) => void }).schediDashGo("hours"));
+      await page.waitForSelector(".sd-hours-week-day", { timeout: 10000 });
+      const desktop = await measure(1280);
+      expect(desktop.dayBoxes).toHaveLength(7);
+      expect(desktop.scrollWidth).toBeLessThanOrEqual(desktop.clientWidth + 1);
+      expect(desktop.fontSize).toBe("11px");
+      expect(desktop.inputClip).toBeLessThanOrEqual(0);
+      expect(desktop.columns.split(" ").length).toBe(7);
+      const cardRight = desktop.cardRight + 1;
+      const cardLeft = desktop.cardLeft - 1;
+      desktop.dayBoxes.forEach((box) => {
+        expect(box.left).toBeGreaterThanOrEqual(cardLeft);
+        expect(box.right).toBeLessThanOrEqual(cardRight);
+        expect(box.width).toBeGreaterThan(40);
+      });
+      expect(desktop.sundayClosed).toBe(true);
+      expect(desktop.note).toBe("Not applied while closed");
+      expect(desktop.noteDisplay).not.toBe("none");
+      expect(desktop.lunch).toContain("Lunch");
+      expect(desktop.rules).toContain("rule-lunch");
+      const wide = await measure(1024);
+      expect(wide.scrollWidth).toBeLessThanOrEqual(wide.clientWidth + 1);
+      expect(wide.inputClip).toBeLessThanOrEqual(0);
+      expect(wide.dayBoxes).toHaveLength(7);
+      const fittedRight = wide.cardRight + 1;
+      wide.dayBoxes.forEach((box) => expect(box.right).toBeLessThanOrEqual(fittedRight));
+      const phone = await measure(390);
+      expect(phone.columns.split(" ").length).toBe(1);
+      expect(phone.scrollWidth).toBeLessThanOrEqual(phone.clientWidth + 1);
+      expect(phone.fontSize).toBe("16px");
     } finally {
       await browser.close();
       await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
