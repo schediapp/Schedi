@@ -1195,6 +1195,20 @@ describe("owner dashboard preview", () => {
     expect(css).toContain("z-index: 90;");
     expect(unscopedSelectors(css)).toEqual([]);
   });
+
+  it("pins the compare plans and roster appointment headers", () => {
+    const css = dashCss(html);
+    expect(html).toContain('id="comparePlansModalBody" class="sd-form-scroll overflow-x-auto"');
+    expect(html).toContain('class="sd-plans-foot"');
+    expect(html).toContain('id="rosterApptBody" class="space-y-4 text-xs sd-form-scroll"');
+    expect(html).toContain("sheetBody.scrollTop = 0");
+    expect(html).toContain("body.scrollTop = 0;\n            modal.classList.remove('hidden');\n            modal.scrollTop = 0;");
+    expect(css).toContain("body.schedi-newdash #comparePlansModal,\nbody.schedi-newdash #rosterApptModal { overflow: hidden; }");
+    expect(css).toContain("body.schedi-newdash #comparePlansModal .sd-plans-foot {");
+    expect(css).toContain("body.schedi-newdash #rosterApptModal > .sd-form-sheet");
+    expect(css).toContain("max-height: 94dvh;");
+    expect(unscopedSelectors(css)).toEqual([]);
+  });
 });
 
 const chrome = ["/usr/bin/google-chrome", "/usr/bin/google-chrome-stable", "/usr/bin/chromium", "/usr/bin/chromium-browser"].find((path) => existsSync(path));
@@ -3801,6 +3815,42 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
           await page.evaluate(() => (window as unknown as { openComparePlansModal: () => void }).openComparePlansModal());
           await page.waitForSelector("#comparePlansModal:not(.hidden) .sd-form-close", { timeout: 5000 });
           expectChip(await readClose("#comparePlansModal .sd-form-close"), theme, `plans ${width} ${theme}`);
+          const plansPin = await page.evaluate(() => {
+            const modal = document.getElementById("comparePlansModal") as HTMLElement;
+            const sheet = modal.querySelector(".sd-form-sheet") as HTMLElement;
+            const body = document.getElementById("comparePlansModalBody") as HTMLElement;
+            const close = modal.querySelector(".sd-form-close") as HTMLElement;
+            const foot = modal.querySelector(".sd-plans-foot button") as HTMLElement;
+            if (body.scrollHeight <= body.clientHeight + 40) sheet.style.maxHeight = "320px";
+            const before = close.getBoundingClientRect().top;
+            const footBefore = foot.getBoundingClientRect().top;
+            body.scrollTop = 480;
+            const closeBox = close.getBoundingClientRect();
+            const footBox = foot.getBoundingClientRect();
+            const hit = document.elementFromPoint(closeBox.left + closeBox.width / 2, closeBox.top + closeBox.height / 2);
+            const inside = (box: DOMRect) => box.top >= -0.5 && box.left >= -0.5 && box.bottom <= window.innerHeight + 0.5 && box.right <= window.innerWidth + 0.5;
+            const result = {
+              scrolled: body.scrollTop > 40,
+              overlayHidden: getComputedStyle(modal).overflowY === "hidden",
+              stayed: Math.abs(closeBox.top - before) < 1,
+              footStayed: Math.abs(footBox.top - footBefore) < 1,
+              closeInView: inside(closeBox),
+              footInView: inside(footBox),
+              hitClose: !!hit && (hit === close || close.contains(hit)),
+              wordClose: (foot.textContent || "").trim() === "Close",
+            };
+            sheet.style.maxHeight = "";
+            body.scrollTop = 0;
+            return result;
+          });
+          expect(plansPin.scrolled, `plans scroll ${width} ${theme}`).toBe(true);
+          expect(plansPin.overlayHidden, `plans overflow ${width} ${theme}`).toBe(true);
+          expect(plansPin.stayed, `plans close ${width} ${theme}`).toBe(true);
+          expect(plansPin.footStayed, `plans foot ${width} ${theme}`).toBe(true);
+          expect(plansPin.closeInView, `plans close view ${width} ${theme}`).toBe(true);
+          expect(plansPin.footInView, `plans foot view ${width} ${theme}`).toBe(true);
+          expect(plansPin.hitClose, `plans hit ${width} ${theme}`).toBe(true);
+          expect(plansPin.wordClose, `plans word ${width} ${theme}`).toBe(true);
           await page.click("#comparePlansModal .sd-form-close");
           await page.evaluate(() => (window as unknown as { openAddServiceModal: () => void }).openAddServiceModal());
           await page.waitForSelector("#tenantServiceModal:not(.hidden) .sd-form-close", { timeout: 5000 });
@@ -3909,6 +3959,36 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
           await page.evaluate(() => (window as unknown as { openRosterApptModal: (id: string) => void }).openRosterApptModal("HB-1001"));
           await page.waitForSelector("#rosterApptModal:not(.hidden) .sd-form-close", { timeout: 5000 });
           expectChip(await readClose("#rosterApptModal .sd-form-close"), theme, `roster ${width} ${theme}`);
+          const rosterPin = await page.evaluate(() => {
+            const modal = document.getElementById("rosterApptModal") as HTMLElement;
+            const sheet = modal.querySelector(".sd-form-sheet") as HTMLElement;
+            const body = document.getElementById("rosterApptBody") as HTMLElement;
+            const close = modal.querySelector(".sd-form-close") as HTMLElement;
+            if (body.scrollHeight <= body.clientHeight + 40) sheet.style.maxHeight = "320px";
+            const before = close.getBoundingClientRect().top;
+            body.scrollTop = 480;
+            const closeBox = close.getBoundingClientRect();
+            const hit = document.elementFromPoint(closeBox.left + closeBox.width / 2, closeBox.top + closeBox.height / 2);
+            const inside = (box: DOMRect) => box.top >= -0.5 && box.left >= -0.5 && box.bottom <= window.innerHeight + 0.5 && box.right <= window.innerWidth + 0.5;
+            const actions = body.querySelector(".roster-sheet-actions");
+            const result = {
+              scrolled: body.scrollTop > 40,
+              overlayHidden: getComputedStyle(modal).overflowY === "hidden",
+              stayed: Math.abs(closeBox.top - before) < 1,
+              closeInView: inside(closeBox),
+              hitClose: !!hit && (hit === close || close.contains(hit)),
+              actions: !!actions,
+            };
+            sheet.style.maxHeight = "";
+            body.scrollTop = 0;
+            return result;
+          });
+          expect(rosterPin.scrolled, `roster scroll ${width} ${theme}`).toBe(true);
+          expect(rosterPin.overlayHidden, `roster overflow ${width} ${theme}`).toBe(true);
+          expect(rosterPin.stayed, `roster close ${width} ${theme}`).toBe(true);
+          expect(rosterPin.closeInView, `roster close view ${width} ${theme}`).toBe(true);
+          expect(rosterPin.hitClose, `roster hit ${width} ${theme}`).toBe(true);
+          expect(rosterPin.actions, `roster actions ${width} ${theme}`).toBe(true);
           await page.click("#rosterApptModal .sd-form-close");
           await page.evaluate(() => (window as unknown as { openTenantRescheduleModal: (id: string) => void }).openTenantRescheduleModal("HB-1001"));
           await page.waitForSelector("#tenantRescheduleModal:not(.hidden) .sd-form-close", { timeout: 5000 });
