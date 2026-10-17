@@ -1172,6 +1172,25 @@ describe("owner dashboard preview", () => {
     expect(html).not.toContain('aria-label="Close help"');
     expect(unscopedSelectors(css)).toEqual([]);
   });
+
+  it("fits service icon labels and pins the service close", () => {
+    const css = dashCss(html);
+    expect(html).toContain('class="sd-icon-name');
+    expect(html).toContain("is-long");
+    expect(html).toContain('label.trim().length > 5');
+    expect(html).not.toContain('class="truncate w-full text-center"');
+    expect(html).toContain('class="sd-svc-sheet');
+    expect(html).toContain('class="sd-form-head"');
+    expect(css).toContain("body.schedi-newdash #svcIconGrid .sd-icon-name.is-long {");
+    expect(css).toContain("font-size: 13px;");
+    expect(css).toContain("letter-spacing: -0.03em;");
+    expect(css).toContain("overflow-wrap: break-word;");
+    expect(css).toContain("text-overflow: clip;");
+    expect(css).toContain("height: 100svh;");
+    expect(css).toContain("body.schedi-newdash #tenantServiceModal > .sd-svc-sheet {");
+    expect(css).toContain("z-index: 90;");
+    expect(unscopedSelectors(css)).toEqual([]);
+  });
 });
 
 const chrome = ["/usr/bin/google-chrome", "/usr/bin/google-chrome-stable", "/usr/bin/chromium", "/usr/bin/chromium-browser"].find((path) => existsSync(path));
@@ -3782,6 +3801,63 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
           await page.evaluate(() => (window as unknown as { openAddServiceModal: () => void }).openAddServiceModal());
           await page.waitForSelector("#tenantServiceModal:not(.hidden) .sd-form-close", { timeout: 5000 });
           expectChip(await readClose("#tenantServiceModal .sd-form-close"), theme, `service ${width} ${theme}`);
+          const servicePin = await page.evaluate(() => {
+            const modal = document.getElementById("tenantServiceModal") as HTMLElement;
+            const sheet = modal.querySelector(".sd-svc-sheet") as HTMLElement;
+            const body = modal.querySelector(".sd-svc-body") as HTMLElement;
+            const close = modal.querySelector(".sd-form-close") as HTMLElement;
+            const title = document.getElementById("tenantServiceModalTitle") as HTMLElement;
+            const before = close.getBoundingClientRect().top;
+            body.scrollTop = 480;
+            const closeBox = close.getBoundingClientRect();
+            const titleBox = title.getBoundingClientRect();
+            const sheetBox = sheet.getBoundingClientRect();
+            const hit = document.elementFromPoint(closeBox.left + closeBox.width / 2, closeBox.top + closeBox.height / 2);
+            const inside = (box: DOMRect) => box.top >= -0.5 && box.left >= -0.5 && box.bottom <= window.innerHeight + 0.5 && box.right <= window.innerWidth + 0.5;
+            return {
+              title: title.textContent,
+              scrolled: body.scrollTop > 40,
+              stayed: Math.abs(closeBox.top - before) < 1,
+              topGap: closeBox.top - sheetBox.top,
+              closeInView: inside(closeBox),
+              titleInView: inside(titleBox),
+              hitClose: !!hit && (hit === close || close.contains(hit)),
+            };
+          });
+          expect(servicePin.title, `${width} ${theme}`).toBe("Add Offered Service");
+          expect(servicePin.scrolled, `${width} ${theme}`).toBe(true);
+          expect(servicePin.stayed, `${width} ${theme}`).toBe(true);
+          expect(servicePin.topGap, `${width} ${theme}`).toBeGreaterThanOrEqual(0);
+          expect(servicePin.topGap, `${width} ${theme}`).toBeLessThan(28);
+          expect(servicePin.closeInView, `${width} ${theme}`).toBe(true);
+          expect(servicePin.titleInView, `${width} ${theme}`).toBe(true);
+          expect(servicePin.hitClose, `${width} ${theme}`).toBe(true);
+          const clipped = await page.evaluate(() => {
+            const missed: string[] = [];
+            const sizes: Record<string, string> = {};
+            const tabs = Array.prototype.slice.call(document.querySelectorAll("#svcIconCats [role='tab']")) as HTMLButtonElement[];
+            tabs.forEach((tab) => {
+              tab.click();
+              Array.prototype.forEach.call(document.querySelectorAll("#svcIconGrid .sd-icon-name"), (label: HTMLElement) => {
+                const name = label.textContent || "";
+                const style = getComputedStyle(label);
+                sizes[name] = style.fontSize;
+                const overflow = label.scrollWidth > label.clientWidth + 1 || label.scrollHeight > label.clientHeight + 1 || style.textOverflow === "ellipsis";
+                if (overflow && missed.indexOf(name) < 0) missed.push(name);
+              });
+            });
+            return { missed, star: sizes.Star || "", calendar: sizes.Calendar || "", kettlebell: sizes.Kettlebell || "" };
+          });
+          expect(clipped.missed, `${width} ${theme} ${clipped.missed.join(", ")}`).toEqual([]);
+          expect(clipped.star, `${width} ${theme}`).toBe("16px");
+          expect(clipped.calendar, `${width} ${theme}`).toBe("13px");
+          expect(clipped.kettlebell, `${width} ${theme}`).toBe("13px");
+          await page.click("#tenantServiceModal .sd-form-close");
+          await page.evaluate(() => (window as unknown as { openEditServiceModal: (id: number) => void }).openEditServiceModal(1));
+          await page.waitForSelector("#tenantServiceModal:not(.hidden) .sd-form-close", { timeout: 5000 });
+          const editTitle = await page.evaluate(() => document.getElementById("tenantServiceModalTitle")?.textContent);
+          expect(editTitle, `${width} ${theme}`).toBe("Edit Offered Service");
+          expectChip(await readClose("#tenantServiceModal .sd-form-close"), theme, `edit service ${width} ${theme}`);
           await page.click("#tenantServiceModal .sd-form-close");
           await page.evaluate(() => (window as unknown as { openRosterApptModal: (id: string) => void }).openRosterApptModal("HB-1001"));
           await page.waitForSelector("#rosterApptModal:not(.hidden) .sd-form-close", { timeout: 5000 });

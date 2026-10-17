@@ -1553,6 +1553,43 @@ body.schedi-newdash .sd-svc-mark img { width: 16px; height: 16px; display: block
 body.schedi-newdash #tenantServicesGrid svg,
 body.schedi-newdash #svcIconGrid svg,
 body.schedi-newdash #svcIconGrid .fa-solid { width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; font-size: 18px; }
+body.schedi-newdash #tenantServiceModal { z-index: 90; }
+body.schedi-newdash #tenantServiceModal .sd-svc-sheet {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-height: min(92dvh, 860px);
+    overflow: hidden;
+    padding: 0;
+    margin: 0;
+}
+body.schedi-newdash #tenantServiceModal .sd-svc-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+    padding: 16px 20px 20px;
+}
+body.schedi-newdash #svcIconGrid [role="option"] {
+    min-width: 0;
+    height: auto;
+    overflow: visible;
+}
+body.schedi-newdash #svcIconGrid .sd-icon-name {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    margin: 0;
+    text-align: center;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: 0;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    overflow-wrap: break-word;
+}
 #tenantPortalSection.schedi-newdash .sd-svc-mark .fa-solid,
 body.schedi-newdash .sd-svc-mark .fa-solid { font-size: 14px; line-height: 1; }
 body.schedi-newdash #tenantServicesGrid .sd-svc-img { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -2882,7 +2919,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
     #tenantPortalSection.schedi-newdash .sd-client-panel-backdrop { display: none; }
     #tenantPortalSection.schedi-newdash .sd-client-panel-card { width: 100%; border-left: 0; }
     #tenantPortalSection.schedi-newdash .sd-client-panel-actions button { flex: 1 1 9rem; }
-    body.schedi-newdash #tenantServiceModal button,
+    body.schedi-newdash #tenantServiceModal button:not(.sd-form-close):not([role="option"]),
     body.schedi-newdash #tenantServiceModal input,
     body.schedi-newdash #logoCropPanel.is-overlay button { min-height: 44px; }
 }
@@ -4054,10 +4091,41 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-theme-seg { background
     body.schedi-newdash #tenantServiceModal .sd-icon-cat { font-size: 16px; }
     body.schedi-newdash #tenantServiceModal input:not([type="hidden"]):not(#svcIconUpload),
     body.schedi-newdash #tenantServiceModal textarea,
-    body.schedi-newdash #tenantServiceModal button:not(.sd-form-close) { font-size: 16px; }
-    body.schedi-newdash #tenantServiceModal button:not(.sd-form-close),
+    body.schedi-newdash #tenantServiceModal button:not(.sd-form-close):not([role="option"]) { font-size: 16px; }
+    body.schedi-newdash #tenantServiceModal button:not(.sd-form-close):not([role="option"]),
     body.schedi-newdash #tenantServiceModal input:not([type="hidden"]):not(#svcIconUpload),
     body.schedi-newdash #tenantServiceModal .sd-icon-cat { min-height: 48px; }
+    body.schedi-newdash #tenantServiceModal {
+        top: auto;
+        bottom: 0;
+        height: 100svh;
+        max-height: 100svh;
+        box-sizing: border-box;
+        align-items: stretch !important;
+        justify-content: flex-end;
+        padding: max(12px, env(safe-area-inset-top, 0px)) 0 0 !important;
+        overflow: hidden;
+    }
+    body.schedi-newdash #tenantServiceModal > .sd-svc-sheet {
+        max-width: none;
+        flex: 1 1 auto;
+        min-height: 0;
+        max-height: 100%;
+        margin: 0 !important;
+        border-radius: 20px 20px 0 0;
+    }
+    body.schedi-newdash #svcIconGrid .sd-icon-name {
+        font-size: 16px;
+        letter-spacing: 0;
+        white-space: nowrap;
+    }
+    body.schedi-newdash #svcIconGrid .sd-icon-name.is-long {
+        font-size: 13px;
+        letter-spacing: -0.03em;
+        line-height: 1.1;
+        white-space: normal;
+        overflow-wrap: break-word;
+    }
     body.schedi-newdash #tenantServiceModal textarea { min-height: 88px; }
     body.schedi-newdash #tenantServiceModal #svcIconUpload { min-height: 0; width: 1px; height: 1px; }
 }
@@ -5699,12 +5767,12 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
 
     <!-- ADD / EDIT SERVICE -->
     <div id="tenantServiceModal" role="dialog" aria-modal="true" tabindex="-1" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-start sm:items-center justify-center p-3 sm:p-4 overflow-y-auto overscroll-contain hidden">
-        <div class="max-w-md w-full glass-card rounded-2xl p-5 sm:p-6 space-y-4 fade-in my-4 min-w-0">
-            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+        <div class="sd-svc-sheet max-w-md w-full glass-card rounded-2xl fade-in min-w-0">
+            <div class="sd-form-head">
                 <h3 id="tenantServiceModalTitle" class="sd-svc-modal-title text-lg font-bold text-white">Add Offered Service</h3>
                 <button type="button" onclick="closeAddServiceModal()" class="sd-form-close sd-svc-modal-close" aria-label="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
             </div>
-            <form onsubmit="handleAddServiceSubmit(event)" class="space-y-3 text-xs">
+            <form onsubmit="handleAddServiceSubmit(event)" class="sd-svc-body space-y-3 text-xs">
                 <input type="hidden" id="svcEditId">
                 <div>
                     <label class="block font-semibold text-slate-300 mb-1">Service Name *</label>
@@ -19168,11 +19236,13 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
             grid.innerHTML = choices.map(function (row) {
                 var on = row.id === selected;
                 var auto = !explicit && row.id === suggestion;
+                var label = String(row.name || '');
+                var longName = label.trim().length > 5;
                 return '<button type="button" role="option" aria-selected="' + (on ? 'true' : 'false') + '" data-icon="' + esc(row.id) + '" onclick="selectServiceIcon(' + jsArg(row.id) + ')" class="relative flex flex-col items-center justify-center gap-1 rounded-xl border px-1 py-2 text-[10px] font-bold '
                     + (on ? 'border-brand-400 bg-brand-500/20 text-white' : 'border-slate-700 bg-slate-900 text-slate-300') + '">'
                     + (auto ? '<span class="svc-icon-auto">Auto</span>' : '')
                     + serviceSvgMarkup(row.id)
-                    + '<span class="truncate w-full text-center">' + esc(row.name) + '</span>'
+                    + '<span class="sd-icon-name' + (longName ? ' is-long' : '') + '">' + esc(label) + '</span>'
                     + '</button>';
             }).join('');
         };
