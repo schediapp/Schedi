@@ -3298,6 +3298,161 @@ html.schedi-light #tenantPortalSection.schedi-newdash #tenantBillingCard .sd-bil
     }
 }
 
+#tenantPortalSection.schedi-newdash .sd-client-sortbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+#tenantPortalSection.schedi-newdash .sd-client-sort,
+#tenantPortalSection.schedi-newdash .sd-client-method {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    color: var(--sd-muted);
+    font-size: 12px;
+    font-weight: 700;
+}
+#tenantPortalSection.schedi-newdash .sd-client-sort select,
+#tenantPortalSection.schedi-newdash .sd-client-method select {
+    min-height: 40px;
+    max-width: 100%;
+    border-radius: 10px;
+    border: 1px solid var(--sd-line);
+    background: var(--sd-panel);
+    color: var(--sd-text);
+    font-size: 13px;
+    font-weight: 700;
+    padding: 6px 8px;
+}
+#tenantPortalSection.schedi-newdash #clientSortDir,
+#tenantPortalSection.schedi-newdash #clientWalkFilter,
+#tenantPortalSection.schedi-newdash .sd-client-export {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 40px;
+    padding: 8px 12px;
+    border-radius: 12px;
+    border: 1px solid #64748b;
+    background: #1e293b;
+    color: #f8fafc;
+    font-size: 13px;
+    font-weight: 800;
+    line-height: 1.1;
+    cursor: pointer;
+}
+html.schedi-light #tenantPortalSection.schedi-newdash #clientSortDir,
+html.schedi-light #tenantPortalSection.schedi-newdash #clientWalkFilter,
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-export {
+    background: #ffffff;
+    color: #0f172a;
+    border-color: #64748b;
+}
+#tenantPortalSection.schedi-newdash #clientWalkFilter.is-on,
+#tenantPortalSection.schedi-newdash #clientSortDir[aria-pressed="true"] {
+    background: rgba(16, 185, 129, 0.16);
+    color: var(--sd-brand-2);
+    border-color: rgba(16, 185, 129, 0.45);
+}
+#tenantPortalSection.schedi-newdash .sd-client-export i { font-size: 13px; }
+#tenantPortalSection.schedi-newdash .sd-client-sort-note {
+    margin: 0;
+    color: var(--sd-muted);
+    font-size: 11px;
+    line-height: 1.45;
+}
+#tenantPortalSection.schedi-newdash .sd-client-metrics {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+    margin-top: 6px;
+}
+#tenantPortalSection.schedi-newdash .sd-client-visits {
+    color: var(--sd-muted);
+    font-size: 12px;
+    font-weight: 700;
+}
+#tenantPortalSection.schedi-newdash .sd-client-visits strong {
+    color: var(--sd-text);
+    font-size: 15px;
+    font-weight: 800;
+    margin-right: 2px;
+}
+#tenantPortalSection.schedi-newdash .sd-client-paid {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
+}
+#tenantPortalSection.schedi-newdash .sd-client-paid-kicker {
+    color: var(--sd-muted);
+    font-size: 11px;
+    font-weight: 700;
+}
+#tenantPortalSection.schedi-newdash .sd-client-paid-figure {
+    color: var(--sd-text);
+    font-size: 16px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+}
+#tenantPortalSection.schedi-newdash .sd-client-paid-figure.is-muted {
+    color: var(--sd-muted);
+    font-weight: 600;
+}
+#tenantPortalSection.schedi-newdash .sd-client-walk {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border-radius: 999px;
+    padding: 2px 8px;
+    border: 1px solid #64748b;
+    background: #1e293b;
+    color: #e2e8f0;
+    font-size: 11px;
+    font-weight: 800;
+}
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-walk {
+    background: #ffffff;
+    color: #0f172a;
+    border-color: #64748b;
+}
+#tenantPortalSection.schedi-newdash .sd-pay-payat {
+    color: var(--sd-text);
+    background: rgba(148, 163, 184, 0.16);
+    border-color: #64748b;
+}
+@media (max-width: 859px) {
+    #tenantPortalSection.schedi-newdash .sd-client-sortbar {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: stretch;
+        gap: 8px;
+    }
+    #tenantPortalSection.schedi-newdash .sd-client-sort,
+    #tenantPortalSection.schedi-newdash .sd-client-method { grid-column: 1; }
+    #tenantPortalSection.schedi-newdash .sd-client-sort select,
+    #tenantPortalSection.schedi-newdash .sd-client-method select {
+        width: 100%;
+        min-width: 0;
+        font-size: 14px;
+    }
+    #tenantPortalSection.schedi-newdash #clientSortDir,
+    #tenantPortalSection.schedi-newdash #clientWalkFilter { grid-column: 2; }
+    #tenantPortalSection.schedi-newdash .sd-client-export {
+        grid-column: 1 / -1;
+        width: 100%;
+        min-height: 48px;
+    }
+    #tenantPortalSection.schedi-newdash .sd-client-paid-figure {
+        font-size: 1.375rem;
+        font-weight: 800;
+    }
+}
+
 </style>
 <script>
 (function () {
@@ -4287,6 +4442,34 @@ html.schedi-light #tenantPortalSection.schedi-newdash #tenantBillingCard .sd-bil
                         <div class="relative flex-1"><i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i><input id="clientSearch" type="search" oninput="renderClientList()" placeholder="Search by name, email, phone, notes, or tags" class="w-full pl-8 pr-3 py-2 rounded-xl glass-input text-xs"></div>
                         <span id="clientCount" class="text-[11px] text-slate-400"></span>
                     </div>
+                    <div class="sd-client-sortbar">
+                        <label class="sd-client-sort" for="clientSort">Sort
+                            <select id="clientSort" onchange="setClientListSort(this.value)">
+                                <option value="name">Name</option>
+                                <option value="visits">Visits (done)</option>
+                                <option value="paid">Amount paid</option>
+                                <option value="method">Payment method</option>
+                                <option value="walkin">Walk-in</option>
+                            </select>
+                        </label>
+                        <button type="button" id="clientSortDir" onclick="toggleClientListDir()" aria-pressed="false">A–Z</button>
+                        <label class="sd-client-method" for="clientMethodFilter">Method
+                            <select id="clientMethodFilter" onchange="setClientListMethod(this.value)">
+                                <option value="all">All</option>
+                                <option value="venmo">Venmo</option>
+                                <option value="cashapp">Cash App</option>
+                                <option value="zelle">Zelle</option>
+                                <option value="paypal">PayPal</option>
+                                <option value="square">Square</option>
+                                <option value="card">Card</option>
+                                <option value="cash">Cash</option>
+                                <option value="payat">Pay at appt</option>
+                            </select>
+                        </label>
+                        <button type="button" id="clientWalkFilter" onclick="toggleClientWalkFilter()" aria-pressed="false">Walk-ins</button>
+                        <button type="button" id="clientExportCsv" class="sd-client-export" onclick="exportClientListCsv()"><i class="fa-solid fa-file-export" aria-hidden="true"></i><span>Export clients CSV</span></button>
+                    </div>
+                    <p class="sd-client-sort-note">Done visits are completed, or confirmed and already started. Pending, denied, no-shows, and cancellations are left out. Paid is what was collected, after refunds. Method uses the most-used paid method, or Pay at appt. A walk-in is saved as a walk-in, or has a visit added as a walk-in.</p>
                     <div id="clientListBody" class="text-xs"></div>
                 </div>
 
@@ -9212,37 +9395,355 @@ html.schedi-light #tenantPortalSection.schedi-newdash #tenantBillingCard .sd-bil
             return ' <span class="ml-1 align-middle inline-block px-1.5 py-0.5 rounded-md bg-slate-800 border border-slate-700 text-slate-400 text-[10px] font-semibold whitespace-nowrap" title="Added automatically from a confirmed booking">From booking' + since + '</span>';
         }
 
+        var clientListSort = 'name';
+        var clientListDir = 'asc';
+        var clientListMethod = 'all';
+        var clientListWalkOnly = false;
+
+        function clientListMethods() {
+            return [
+                ['venmo', 'Venmo'],
+                ['cashapp', 'Cash App'],
+                ['zelle', 'Zelle'],
+                ['paypal', 'PayPal'],
+                ['square', 'Square'],
+                ['card', 'Card (Stripe)'],
+                ['cash', 'In person / Cash'],
+                ['payat', 'Pay at appt']
+            ];
+        }
+
+        function clientListMethodLabel(kind) {
+            var label = '';
+            clientListMethods().forEach(function (row) {
+                if (row[0] === kind) label = row[1];
+            });
+            return label;
+        }
+
+        function clientListMethodRank(kind) {
+            var methods = clientListMethods();
+            for (var i = 0; i < methods.length; i++) {
+                if (methods[i][0] === kind) return i;
+            }
+            return methods.length;
+        }
+
+        function clientListMethodAllowed(value) {
+            if (value === 'all') return true;
+            return clientListMethodRank(value) < clientListMethods().length;
+        }
+
+        function clientListDirLabel(sort, dir) {
+            var desc = dir === 'desc';
+            if (sort === 'walkin') return desc ? 'Walk-ins last' : 'Walk-ins first';
+            if (sort === 'visits' || sort === 'paid') return desc ? 'High\u2013low' : 'Low\u2013high';
+            return desc ? 'Z\u2013A' : 'A\u2013Z';
+        }
+
+        function clientVisitMethod(app, payKind) {
+            if (!app || app.deleted === true) return '';
+            var status = String(app.status || '').toLowerCase();
+            if (status === 'deleted' || status === 'removed') return '';
+            var kind = typeof payKind === 'function' ? payKind(app) : '';
+            if (kind === 'cash-app' || kind === 'cash app') kind = 'cashapp';
+            if (kind && kind !== 'unpaid' && kind !== 'later' && clientListMethodRank(kind) < clientListMethods().length && kind !== 'payat') return kind;
+            if (status === 'pending' || status === 'denied' || status === 'cancelled' || status === 'canceled' || app.cancelled === true) return '';
+            var pay = String(app.paymentStatus || '').toUpperCase();
+            if (pay.indexOf('AT APPOINTMENT') !== -1 || pay.indexOf('AT APPT') !== -1) return 'payat';
+            return '';
+        }
+
+        function clientIsWalkIn(client, appointments) {
+            if (!client) return false;
+            if (client.walkIn === true) return true;
+            var source = String(client.source || '').toLowerCase().replace(/[\s_-]+/g, '');
+            if (source === 'walkin') return true;
+            var yes = false;
+            (appointments || []).forEach(function (app) {
+                if (app && app.walkIn === true && clientBookingMatches(client, app)) yes = true;
+            });
+            return yes;
+        }
+
+        function clientListStats(client, appointments, options) {
+            options = options || {};
+            var doneOf = typeof options.doneOf === 'function' ? options.doneOf : function () { return ''; };
+            var collectedOf = typeof options.collectedOf === 'function' ? options.collectedOf : function () { return { net: 0, empty: true }; };
+            var payKind = options.payKind;
+            var visits = 0;
+            var paid = 0;
+            var paidKnown = false;
+            var counts = {};
+            var recent = {};
+            var firstVisit = '';
+            var lastVisit = '';
+            (appointments || []).forEach(function (app) {
+                if (!clientBookingMatches(client, app)) return;
+                if (doneOf(app) === 'done') visits += 1;
+                var money = collectedOf(app) || {};
+                if (!money.empty) {
+                    paidKnown = true;
+                    paid += Number(money.net) || 0;
+                }
+                var method = clientVisitMethod(app, payKind);
+                if (method) {
+                    counts[method] = (counts[method] || 0) + 1;
+                    var key = clientHistorySortKey(app);
+                    if (!recent[method] || key > recent[method]) recent[method] = key;
+                }
+                if (app && app.deleted !== true) {
+                    var status = String(app.status || '').toLowerCase();
+                    if (status !== 'deleted' && status !== 'removed') {
+                        var date = clientHistoryIso(app.date);
+                        if (date) {
+                            if (!firstVisit || date < firstVisit) firstVisit = date;
+                            if (!lastVisit || date > lastVisit) lastVisit = date;
+                        }
+                    }
+                }
+            });
+            paid = Math.round(paid * 100) / 100;
+            var best = '';
+            var bestN = 0;
+            clientListMethods().forEach(function (row) {
+                var method = row[0];
+                var n = counts[method] || 0;
+                if (!n) return;
+                if (n > bestN) {
+                    bestN = n;
+                    best = method;
+                } else if (n === bestN) {
+                    var bestPaid = best && best !== 'payat';
+                    var nextPaid = method !== 'payat';
+                    if (nextPaid && !bestPaid) best = method;
+                    else if (nextPaid === bestPaid && String(recent[method] || '') > String(recent[best] || '')) best = method;
+                }
+            });
+            var used = [];
+            clientListMethods().forEach(function (row) {
+                if (counts[row[0]]) used.push(row[0]);
+            });
+            return {
+                visits: visits,
+                paid: paid,
+                paidKnown: paidKnown,
+                method: best,
+                methodLabel: clientListMethodLabel(best),
+                methods: used,
+                methodLabels: used.map(function (method) { return clientListMethodLabel(method); }),
+                walkIn: clientIsWalkIn(client, appointments),
+                firstVisit: firstVisit,
+                lastVisit: lastVisit
+            };
+        }
+
+        function clientListCompare(a, b, sort, dir) {
+            var sign = dir === 'desc' ? -1 : 1;
+            var name = String((a && a.name) || '').localeCompare(String((b && b.name) || ''), undefined, { sensitivity: 'base' });
+            var as = (a && a.stats) || {};
+            var bs = (b && b.stats) || {};
+            if (sort === 'visits') return ((Number(as.visits) || 0) - (Number(bs.visits) || 0)) * sign || name;
+            if (sort === 'paid') {
+                var ap = as.paidKnown ? Number(as.paid) || 0 : 0;
+                var bp = bs.paidKnown ? Number(bs.paid) || 0 : 0;
+                return (ap - bp) * sign || name;
+            }
+            if (sort === 'method') return (clientListMethodRank(as.method) - clientListMethodRank(bs.method)) * sign || name;
+            if (sort === 'walkin') {
+                var aw = as.walkIn ? 0 : 1;
+                var bw = bs.walkIn ? 0 : 1;
+                if (dir === 'desc') {
+                    aw = aw ? 0 : 1;
+                    bw = bw ? 0 : 1;
+                }
+                return (aw - bw) || name;
+            }
+            return name * sign;
+        }
+
+        function clientListArrange(clients, appointments, options) {
+            options = options || {};
+            var sort = options.sort || 'name';
+            var dir = options.dir === 'desc' ? 'desc' : 'asc';
+            var method = options.method || 'all';
+            var walkOnly = options.walkOnly === true;
+            var q = String(options.query || '').trim().toLowerCase();
+            var qDigits = q.replace(/[^0-9]/g, '');
+            var rows = (clients || []).map(function (client) {
+                return {
+                    id: client && client.id,
+                    name: (client && client.name) || '',
+                    email: (client && client.email) || '',
+                    phone: (client && client.phone) || '',
+                    notes: (client && client.notes) || '',
+                    tags: client && client.tags,
+                    stats: clientListStats(client, appointments, options),
+                    client: client
+                };
+            }).filter(function (row) {
+                if (walkOnly && !row.stats.walkIn) return false;
+                if (method && method !== 'all' && row.stats.method !== method) return false;
+                if (!q) return true;
+                var hay = (row.name + ' ' + row.email + ' ' + row.notes + ' ' + clientTagList(row.tags).join(' ')).toLowerCase();
+                if (hay.indexOf(q) !== -1) return true;
+                return qDigits.length >= 3 && clientPhoneKey(row.phone).indexOf(qDigits) !== -1;
+            });
+            rows.sort(function (a, b) { return clientListCompare(a, b, sort, dir); });
+            return rows;
+        }
+
+        function clientListCsv(rows) {
+            function cell(v) {
+                var s = String(v == null ? '' : v);
+                if (/[",\n\r]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+                return s;
+            }
+            var lines = [['name', 'email', 'phone', 'visits', 'total_paid', 'payment_methods', 'most_used_method', 'walk_in', 'first_visit', 'last_visit'].join(',')];
+            (rows || []).forEach(function (row) {
+                var stats = (row && row.stats) || {};
+                lines.push([
+                    row && row.name,
+                    row && row.email,
+                    row && row.phone,
+                    stats.visits || 0,
+                    stats.paidKnown ? Number(stats.paid || 0).toFixed(2) : '',
+                    (stats.methodLabels || []).join('; '),
+                    stats.methodLabel || '',
+                    stats.walkIn ? 'yes' : 'no',
+                    stats.firstVisit || '',
+                    stats.lastVisit || ''
+                ].map(cell).join(','));
+            });
+            return lines.join('\n');
+        }
+
+        function clientListLiveOptions(tenant) {
+            var asOf = null;
+            try { asOf = reportNowParts(getTenantTimezone(tenant), new Date()); } catch (errAsOf) { asOf = null; }
+            var search = document.getElementById('clientSearch');
+            return {
+                sort: clientListSort,
+                dir: clientListDir,
+                method: clientListMethod,
+                walkOnly: clientListWalkOnly,
+                query: search ? search.value : '',
+                doneOf: function (app) { return appointmentCompletionOf(app, asOf); },
+                collectedOf: function (app) { return rosterAmountCollected(app, tenant); },
+                payKind: appointmentPayKind
+            };
+        }
+
+        function clientListRowsForTenant(tenant) {
+            var cache = tenant && ownerClientCache[tenant.id];
+            if (!cache || !cache.loaded) return [];
+            return clientListArrange(cache.clients || [], (tenant && tenant.appointments) || [], clientListLiveOptions(tenant));
+        }
+
+        function clientMethodChipHtml(kind) {
+            var label = clientListMethodLabel(kind);
+            if (!label) return '';
+            var iconKind = kind === 'payat' ? 'cash' : kind;
+            return '<span class="sd-pay sd-pay-' + kind + '" title="' + esc(label) + '">' + payKindSvg(iconKind) + '<span class="sd-pay-word">' + esc(label) + '</span></span>';
+        }
+
+        function clientMetricsHtml(stats) {
+            stats = stats || {};
+            var visits = '<span class="sd-client-visits" title="Completed visits, or confirmed visits whose start has passed. Pending, denied, no-shows, and cancellations are not counted."><strong>' + String(stats.visits || 0) + '</strong> done</span>';
+            var figure = stats.paidKnown ? ('$' + Number(stats.paid || 0).toFixed(2)) : '\u2014';
+            var muted = !stats.paidKnown || Number(stats.paid) === 0;
+            var paid = '<span class="sd-client-paid"><span class="sd-client-paid-kicker">Paid</span><span class="sd-client-paid-figure' + (muted ? ' is-muted' : '') + '">' + figure + '</span></span>';
+            var chip = stats.method ? clientMethodChipHtml(stats.method) : '';
+            var walk = stats.walkIn ? '<span class="sd-client-walk"><i class="fa-solid fa-person-walking" aria-hidden="true"></i>Walk-in</span>' : '';
+            return '<div class="sd-client-metrics">' + visits + paid + chip + walk + '</div>';
+        }
+
+        function paintClientListControls() {
+            var sort = document.getElementById('clientSort');
+            if (sort && sort.value !== clientListSort) sort.value = clientListSort;
+            var method = document.getElementById('clientMethodFilter');
+            if (method && method.value !== clientListMethod) method.value = clientListMethod;
+            var dir = document.getElementById('clientSortDir');
+            if (dir) {
+                dir.textContent = clientListDirLabel(clientListSort, clientListDir);
+                dir.setAttribute('aria-pressed', clientListDir === 'desc' ? 'true' : 'false');
+                dir.setAttribute('aria-label', clientListDirLabel(clientListSort, clientListDir));
+            }
+            var walk = document.getElementById('clientWalkFilter');
+            if (walk) {
+                walk.setAttribute('aria-pressed', clientListWalkOnly ? 'true' : 'false');
+                walk.classList.toggle('is-on', clientListWalkOnly);
+            }
+        }
+
+        function setClientListSort(value) {
+            clientListSort = (value === 'visits' || value === 'paid' || value === 'method' || value === 'walkin') ? value : 'name';
+            renderClientList();
+        }
+        window.setClientListSort = setClientListSort;
+
+        function toggleClientListDir() {
+            clientListDir = clientListDir === 'desc' ? 'asc' : 'desc';
+            renderClientList();
+        }
+        window.toggleClientListDir = toggleClientListDir;
+
+        function setClientListMethod(value) {
+            clientListMethod = clientListMethodAllowed(value) ? value : 'all';
+            renderClientList();
+        }
+        window.setClientListMethod = setClientListMethod;
+
+        function toggleClientWalkFilter() {
+            clientListWalkOnly = !clientListWalkOnly;
+            renderClientList();
+        }
+        window.toggleClientWalkFilter = toggleClientWalkFilter;
+
+        window.exportClientListCsv = function () {
+            var t = getTenant();
+            if (!t) return;
+            var csv = clientListCsv(clientListRowsForTenant(t));
+            var blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = (t.slug || 'schedi') + '-clients.csv';
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(function () { URL.revokeObjectURL(url); a.remove(); }, 400);
+        };
+
         window.renderClientList = function () {
             var t = getTenant();
             var body = document.getElementById('clientListBody');
             var countEl = document.getElementById('clientCount');
+            paintClientListControls();
             if (!t || !body) return;
             var c = ownerClientCache[t.id];
             if (!c || !c.loaded) return;
-            var q = String((document.getElementById('clientSearch') || {}).value || '').trim().toLowerCase();
-            var qDigits = q.replace(/[^0-9]/g, '');
-            var list = c.clients.slice().sort(function (a, b) { return String(a.name || '').localeCompare(String(b.name || ''), undefined, { sensitivity: 'base' }); });
-            var shown = q ? list.filter(function (x) {
-                var hay = (String(x.name || '') + ' ' + String(x.email || '') + ' ' + String(x.notes || '') + ' ' + clientTagList(x.tags).join(' ')).toLowerCase();
-                if (hay.indexOf(q) !== -1) return true;
-                return qDigits.length >= 3 && clientPhoneKey(x.phone).indexOf(qDigits) !== -1;
-            }) : list;
-            if (countEl) countEl.textContent = list.length ? (q ? (shown.length + ' of ' + list.length + ' clients') : (list.length + (list.length === 1 ? ' client' : ' clients'))) : '';
+            var list = c.clients || [];
+            var shown = clientListRowsForTenant(t);
+            var q = String((document.getElementById('clientSearch') || {}).value || '').trim();
+            var narrowed = !!(q || clientListWalkOnly || (clientListMethod && clientListMethod !== 'all'));
+            if (countEl) countEl.textContent = list.length ? (narrowed ? (shown.length + ' of ' + list.length + ' clients') : (list.length + (list.length === 1 ? ' client' : ' clients'))) : '';
             if (!list.length) {
                 body.innerHTML = '<div class="py-8 text-center space-y-2"><p class="text-sm font-bold text-white">No clients yet</p><p class="text-xs text-slate-400">Import a CSV from Square, Vagaro, Booksy, Google Contacts, or Excel, or add clients one at a time.</p></div>';
                 return;
             }
             if (!shown.length) {
-                body.innerHTML = '<p class="text-xs text-slate-500 py-6 text-center">No clients match “' + esc(q) + '”.</p>';
+                body.innerHTML = '<p class="text-xs text-slate-500 py-6 text-center">' + (q ? ('No clients match \u201c' + esc(q) + '\u201d.') : 'No clients match this view.') + '</p>';
                 return;
             }
             var cap = 300;
-            body.innerHTML = '<div class="sd-client-list">' + shown.slice(0, cap).map(function (x) {
+            body.innerHTML = '<div class="sd-client-list">' + shown.slice(0, cap).map(function (row) {
+                var x = row.client || {};
                 var contact = [x.phone ? ('<span><i class="fa-solid fa-phone mr-1 text-slate-500"></i>' + esc(x.phone) + '</span>') : '', x.email ? ('<span class="break-all"><i class="fa-solid fa-envelope mr-1 text-slate-500"></i>' + esc(x.email) + '</span>') : ''].filter(Boolean).join('');
                 var editing = ownerClientEditId === x.id;
                 var open = ownerClientPanelId === x.id && !editing;
                 var tags = clientTagsHtml(x);
                 var editor = editing ? clientEditFormHtml(x) : '';
+                var metrics = editing ? '' : clientMetricsHtml(row.stats);
                 var summary = editing ? '' : ('<div class="sd-client-contact text-[11px] text-slate-400 flex flex-wrap gap-x-4 gap-y-0.5 mt-0.5">' + contact + '</div>'
                     + (x.notes ? ('<div class="sd-client-notes text-[11px] text-slate-500 mt-1 break-words">' + esc(x.notes) + '</div>') : '')
                     + tags);
@@ -9252,6 +9753,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash #tenantBillingCard .sd-bil
                     + (editing ? '' : ('<button type="button" class="sd-client-edit-btn px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold text-[11px] border border-slate-700" onclick="startOwnerClientEdit(' + jsArg(x.id) + ')" aria-label="Edit ' + esc(x.name) + '">Edit</button>'))
                     + '<button type="button" class="sd-client-remove px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-bold text-[11px] border border-rose-500/30" onclick="deleteOwnerClient(' + jsArg(x.id) + ')">Remove</button>'
                     + '</div></div>'
+                    + metrics
                     + summary
                     + editor
                     + '</div>';
