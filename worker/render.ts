@@ -4,6 +4,7 @@ import {
   PLAN_COMPARE_ROWS,
   VERTICALS,
   escapeHtml,
+  marketingPlanValue,
   publicPaths,
   type MarketingPage,
 } from "./content";
@@ -67,6 +68,7 @@ export function renderLlms(): string {
     "- Free: $0. One service, up to 5 bookings a week (Monday through Sunday), pay at the appointment, instant confirmation, and a Schedi badge on the booking page. No repeating appointments and no accept or deny.",
     "- Starter: $29 a month. Unlimited services and bookings. Cash App, Venmo, Zelle, PayPal, or pay at the appointment. Accept or deny each request. Starter does not include card checkout or repeating appointments.",
     "- Pro: $49 a month. Everything in Starter, plus repeating appointments weekly, biweekly, or monthly.",
+    "- Card checkout (Stripe), appointment deposits, and a cancellation fee on a card are coming soon. They are not available to clients today.",
     "",
     "Billing:",
     ...OWNER_SUBSCRIPTION_POLICY_TERMS.map((line) => `- ${line}`),
@@ -183,7 +185,11 @@ function jsonLd(page: MarketingPage): string {
       offers: [
         monthlyOffer("Free", "0"),
         monthlyOffer("Starter", "29", "Billed monthly"),
-        monthlyOffer("Pro", "49", "Billed monthly. Adds repeating appointments."),
+        monthlyOffer(
+          "Pro",
+          "49",
+          "Billed monthly. Adds repeating appointments. Card checkout (Stripe), appointment deposits, and a cancellation fee on a card are coming soon.",
+        ),
       ],
     });
   }
@@ -290,8 +296,16 @@ export function planCardsHtml(): string {
   const cards = PLANS.map((plan) => {
     const items = rows
       .map((row) => {
-        const v = row[plan.key];
+        const raw = row[plan.key];
+        const v = marketingPlanValue(row, raw);
         const label = escapeHtml(row.label);
+        if (row.comingSoon && v === "Coming soon") {
+          return `<li class="soon"><span>${label}: <strong>Coming soon</strong></span></li>`;
+        }
+        if (row.comingSoon) {
+          if (v === "No") return `<li class="off">${icon("minus")}<span>${label}</span></li>`;
+          return `<li><span>${label}: <strong>${escapeHtml(v)}</strong></span></li>`;
+        }
         if (v === "No") return `<li class="off">${icon("minus")}<span>${label}</span></li>`;
         if (v === "Yes") return `<li>${icon("check")}<span>${label}</span></li>`;
         return `<li>${icon("check")}<span>${label}: <strong>${escapeHtml(v)}</strong></span></li>`;

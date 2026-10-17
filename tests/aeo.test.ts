@@ -260,11 +260,50 @@ describe("copy corrections", () => {
     }
     const help = renderMarketingPage(MARKETING_PAGES.find((page) => page.path === "/help")!);
     expect(help).toContain("Starter doesn't include card checkout.");
-    const pricing = visible(renderMarketingPage(MARKETING_PAGES.find((page) => page.path === "/pricing")!));
+    const pricingPage = MARKETING_PAGES.find((page) => page.path === "/pricing")!;
+    const pricingHtml = renderMarketingPage(pricingPage);
+    const pricing = visible(pricingHtml);
     const refundAt = pricing.indexOf("Is there a contract, and what are the cancellation and refund terms?");
     const refund = pricing.slice(refundAt, pricing.indexOf("</p>", refundAt));
     expect(refund.match(/month-to-month/g)?.length).toBe(1);
+    expect(pricing.match(/Is there a contract, and what are the cancellation and refund terms\?/g)?.length).toBe(1);
+    expect(pricing).not.toContain("Can I get a refund?");
     expect(pricing).toContain("admin@schedi.app");
+    const pricingLd = JSON.parse(pricingHtml.match(/application\/ld\+json">([\s\S]*?)<\/script>/)![1]);
+    const faqNames = pricingLd["@graph"]
+      .find((node: { "@type"?: string }) => node["@type"] === "FAQPage")
+      .mainEntity.map((item: { name: string }) => item.name);
+    expect(faqNames.filter((name: string) => name.startsWith("Is there a contract"))).toEqual([
+      "Is there a contract, and what are the cancellation and refund terms?",
+    ]);
+    expect(faqNames).not.toContain("Can I get a refund?");
+    const proOffer = pricingLd["@graph"]
+      .find((node: { "@type"?: string }) => node["@type"] === "SoftwareApplication")
+      .offers.find((offer: { name?: string }) => offer.name === "Pro");
+    expect(proOffer.description).toContain("coming soon");
+    expect(proOffer.description).not.toMatch(/Can charge/);
+
+    const soonItem = (label: string) => `<li class="soon"><span>${label}: <strong>Coming soon</strong></span></li>`;
+    const home = renderMarketingPage(MARKETING_PAGES.find((page) => page.path === "/")!);
+    for (const label of ["Card checkout (Stripe)", "Appointment deposits", "Cancellation fee on card"]) {
+      expect(home, label).toContain(soonItem(label));
+      expect(pricingHtml, label).toContain(soonItem(label));
+      expect(home.match(new RegExp(soonItem(label).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g"))?.length, label).toBe(1);
+    }
+    expect(pricingHtml).toContain(
+      "<th scope=\"row\">Card checkout (Stripe)</th><td>No</td><td>No</td><td>Coming soon</td>",
+    );
+    expect(pricingHtml).toContain(
+      "<th scope=\"row\">Appointment deposits</th><td>No</td><td>No</td><td>Coming soon</td>",
+    );
+    expect(pricingHtml).toContain(
+      "<th scope=\"row\">Cancellation fee on card</th><td>Rule only</td><td>Rule only</td><td>Coming soon</td>",
+    );
+    expect(visible(home)).not.toContain("Can charge");
+    expect(pricing).not.toContain("Can charge");
+    expect(renderLlms()).toContain(
+      "Card checkout (Stripe), appointment deposits, and a cancellation fee on a card are coming soon.",
+    );
     const footer = renderMarketingPage(MARKETING_PAGES[0]);
     expect(footer).toContain("run by one owner");
   });

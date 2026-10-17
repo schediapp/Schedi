@@ -35,11 +35,23 @@ export type MarketingPage = {
 const PLAN_FACTS =
   "Free is $0: pay at the appointment, one service, and five bookings a week. Those bookings confirm as soon as the client reserves. Starter is $29 a month: more than one service, no weekly booking cap, and Cash App, Venmo, Zelle, PayPal, plus pay at the appointment. Starter and Pro bookings stay pending until you accept or deny them. Pro is $49 a month and includes Starter. Card checkout and appointment deposits stay hidden until Stripe card payments and payouts are active. Repeating visits (weekly, biweekly, or monthly) are Pro only and stay off until you turn them on.";
 
-export type PlanRow = { label: string; free: string; starter: string; pro: string };
+export type PlanRow = {
+  label: string;
+  free: string;
+  starter: string;
+  pro: string;
+  /**
+   * Marketing-only. The portal cells stay Yes / Can charge.
+   * Public pages show "Coming soon" for those affirmative cells, and never a checkmark.
+   */
+  comingSoon?: boolean;
+};
 
 /**
  * Mirror of schediPlanCompareRows() in site/index.html (signup Compare Plans).
- * tests/plan-rows-sync.test.ts fails if the two drift apart.
+ * Cell strings must match the portal. comingSoon is ignored by that comparison
+ * and honored only by the marketing renderer.
+ * tests/plan-rows-sync.test.ts fails if the row set drifts apart.
  */
 export const PLAN_COMPARE_ROWS: PlanRow[] = [
   { label: "Monthly price", free: "$0", starter: "$29", pro: "$49" },
@@ -47,18 +59,27 @@ export const PLAN_COMPARE_ROWS: PlanRow[] = [
   { label: "Bookings per week", free: "5", starter: "Unlimited", pro: "Unlimited" },
   { label: "Pay at appointment", free: "Yes", starter: "Yes", pro: "Yes" },
   { label: "Manual pay (Cash App, Venmo, Zelle, PayPal)", free: "No", starter: "Yes", pro: "Yes" },
-  { label: "Card checkout (Stripe)", free: "No", starter: "No", pro: "Yes" },
-  { label: "Appointment deposits", free: "No", starter: "No", pro: "Yes" },
-  { label: "Cancellation fee on card", free: "Rule only", starter: "Rule only", pro: "Can charge" },
+  { label: "Card checkout (Stripe)", free: "No", starter: "No", pro: "Yes", comingSoon: true },
+  { label: "Appointment deposits", free: "No", starter: "No", pro: "Yes", comingSoon: true },
+  { label: "Cancellation fee on card", free: "Rule only", starter: "Rule only", pro: "Can charge", comingSoon: true },
   { label: "Booking approval", free: "Auto-confirm", starter: "Accept / Deny", pro: "Accept / Deny" },
   { label: "Repeating appointments", free: "No", starter: "No", pro: "Yes" },
   { label: "Agency Management", free: "No", starter: "No", pro: "Yes" },
 ];
 
+/** Portal values that read as "this is available" on the marketing plan table and cards. */
+const COMING_SOON_PORTAL_VALUES = new Set(["Yes", "Can charge"]);
+
+export function marketingPlanValue(row: PlanRow, value: string): string {
+  if (row.comingSoon && COMING_SOON_PORTAL_VALUES.has(value)) return "Coming soon";
+  return value;
+}
+
 export function planCompareTableHtml(): string {
-  const body = PLAN_COMPARE_ROWS.map(
-    (r) => `<tr><th scope="row">${escapeHtml(r.label)}</th><td>${escapeHtml(r.free)}</td><td>${escapeHtml(r.starter)}</td><td>${escapeHtml(r.pro)}</td></tr>`,
-  ).join("\n          ");
+  const body = PLAN_COMPARE_ROWS.map((r) => {
+    const cells = [r.free, r.starter, r.pro].map((value) => escapeHtml(marketingPlanValue(r, value)));
+    return `<tr><th scope="row">${escapeHtml(r.label)}</th><td>${cells[0]}</td><td>${cells[1]}</td><td>${cells[2]}</td></tr>`;
+  }).join("\n          ");
   return `<div class="table-wrap"><table>
         <caption>Compare every plan</caption>
         <thead>
@@ -214,10 +235,6 @@ export const MARKETING_PAGES: MarketingPage[] = [
         question: "What does Pro add for client payments?",
         answer:
           "Card checkout and an optional appointment deposit stay hidden until Stripe card payments and payouts are active. They are not available to clients today.",
-      },
-      {
-        question: "Can I get a refund?",
-        answer: OWNER_SUBSCRIPTION_POLICY_TERMS.join(" "),
       },
     ],
     bodyHtml: [

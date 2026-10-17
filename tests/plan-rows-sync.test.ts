@@ -8,6 +8,12 @@ describe("plan compare rows", () => {
     const m = html.match(/function schediPlanCompareRows\(\) \{[\s\S]*?return (\[[\s\S]*?\]);\s*\}/);
     expect(m).not.toBeNull();
     const rows = new Function(`return ${m![1]};`)();
-    expect(rows).toEqual(PLAN_COMPARE_ROWS);
+    const published = PLAN_COMPARE_ROWS.map(({ label, free, starter, pro }) => ({ label, free, starter, pro }));
+    expect(rows).toEqual(published);
+    expect(PLAN_COMPARE_ROWS.filter((row) => row.comingSoon).map((row) => row.label)).toEqual([
+      "Card checkout (Stripe)",
+      "Appointment deposits",
+      "Cancellation fee on card",
+    ]);
   });
 });
