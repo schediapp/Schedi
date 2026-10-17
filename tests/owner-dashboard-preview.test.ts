@@ -912,8 +912,13 @@ describe("owner dashboard preview", () => {
     expect(css).toContain("border: 0;");
     expect(css).toContain("border-radius: 999px;");
     expect(css).toContain("background: transparent;");
-    expect(css).toContain("width: 44px;");
-    expect(css).toContain("height: 44px;");
+    const kebab = css.slice(css.indexOf("#tenantPortalSection.schedi-newdash .sd-more > summary {"), css.indexOf("#tenantPortalSection.schedi-newdash .sd-more > summary i {"));
+    expect(kebab).toContain("width: 48px;");
+    expect(kebab).toContain("height: 48px;");
+    expect(kebab).toContain("min-width: 48px;");
+    expect(kebab).toContain("min-height: 48px;");
+    expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-more > summary i {\n    font-size: 26px;\n    font-weight: 900;\n    line-height: 1;\n    pointer-events: none;\n    -webkit-text-stroke: 0.5px currentColor;\n    paint-order: stroke fill;\n}");
+    expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-more > summary { width: 48px; height: 48px; }");
     expect(unscopedSelectors(dashCss(html))).toEqual([]);
   });
 
@@ -2618,6 +2623,46 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
         const cardStyle = getComputedStyle(card);
         const summaryStyle = getComputedStyle(summary);
         const box = summary.getBoundingClientRect();
+        const iconStyle = icon ? getComputedStyle(icon) : null;
+        const before = icon ? getComputedStyle(icon, "::before") : null;
+        let inkH = 0;
+        let inkW = 0;
+        if (icon && before) {
+          const content = JSON.parse(before.content);
+          const canvas = document.createElement("canvas");
+          const scale = 8;
+          canvas.width = 120 * scale;
+          canvas.height = 120 * scale;
+          const ctx = canvas.getContext("2d");
+          if (ctx) {
+            ctx.scale(scale, scale);
+            ctx.font = before.font;
+            ctx.textBaseline = "top";
+            ctx.lineJoin = "round";
+            ctx.lineWidth = (iconStyle ? parseFloat(iconStyle.webkitTextStrokeWidth) : 0) * 2;
+            ctx.strokeStyle = "#fff";
+            ctx.fillStyle = "#fff";
+            if (ctx.lineWidth) ctx.strokeText(content, 24, 24);
+            ctx.fillText(content, 24, 24);
+            const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+            let minY = canvas.height;
+            let maxY = 0;
+            let minX = canvas.width;
+            let maxX = 0;
+            for (let y = 0; y < canvas.height; y++) {
+              for (let x = 0; x < canvas.width; x++) {
+                if (pixels[(y * canvas.width + x) * 4 + 3] > 40) {
+                  if (y < minY) minY = y;
+                  if (y > maxY) maxY = y;
+                  if (x < minX) minX = x;
+                  if (x > maxX) maxX = x;
+                }
+              }
+            }
+            inkH = (maxY - minY + 1) / scale;
+            inkW = (maxX - minX + 1) / scale;
+          }
+        }
         return {
           role: card.getAttribute("role"),
           tab: card.getAttribute("tabindex"),
@@ -2634,6 +2679,11 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
           border: summaryStyle.borderTopWidth,
           bg: summaryStyle.backgroundColor,
           fill: summaryStyle.backgroundImage,
+          glyph: iconStyle?.fontSize || "",
+          stroke: iconStyle?.webkitTextStrokeWidth || "",
+          inkH,
+          inkW,
+          color: summaryStyle.color,
         };
       });
       const menuClosed = () => page.evaluate(() => document.querySelectorAll("details.sd-more[open]").length === 0);
@@ -2652,8 +2702,14 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
           expect(view?.label).toBe("More actions");
           expect(view?.expanded).toBe("false");
           expect(view?.icon).toContain("fa-ellipsis-vertical");
-          expect(view?.w).toBeGreaterThanOrEqual(44);
-          expect(view?.h).toBeGreaterThanOrEqual(44);
+          expect(view?.w).toBeGreaterThanOrEqual(48);
+          expect(view?.h).toBeGreaterThanOrEqual(48);
+          expect(view?.glyph).toBe("26px");
+          expect(view?.stroke).toBe("0.5px");
+          expect(view?.inkH).toBeGreaterThanOrEqual(22);
+          expect(view?.inkH).toBeLessThanOrEqual(24);
+          expect(view?.inkW).toBeGreaterThanOrEqual(6);
+          expect(view?.color).toBe(theme === "dark" ? "rgb(241, 245, 249)" : "rgb(15, 23, 42)");
           expect(view?.border).toBe("0px");
           expect(view?.bg).toBe("rgba(0, 0, 0, 0)");
           expect(view?.radius).toBe("999px");

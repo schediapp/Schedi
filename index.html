@@ -870,10 +870,10 @@ body.schedi-newdash.sd-client-panel-open { overflow: hidden; }
 #tenantPortalSection.schedi-newdash .sd-more { position: relative; }
 #tenantPortalSection.schedi-newdash .sd-more > summary {
     list-style: none;
-    width: 44px;
-    height: 44px;
-    min-width: 44px;
-    min-height: 44px;
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    min-height: 48px;
     margin: 0;
     padding: 0;
     border: 0;
@@ -885,7 +885,14 @@ body.schedi-newdash.sd-client-panel-open { overflow: hidden; }
     justify-content: center;
     cursor: pointer;
 }
-#tenantPortalSection.schedi-newdash .sd-more > summary i { font-size: 20px; line-height: 1; pointer-events: none; }
+#tenantPortalSection.schedi-newdash .sd-more > summary i {
+    font-size: 26px;
+    font-weight: 900;
+    line-height: 1;
+    pointer-events: none;
+    -webkit-text-stroke: 0.5px currentColor;
+    paint-order: stroke fill;
+}
 #tenantPortalSection.schedi-newdash .sd-more > summary:hover,
 #tenantPortalSection.schedi-newdash .sd-more > summary:focus-visible,
 #tenantPortalSection.schedi-newdash .sd-more > summary:active { background: rgba(148, 163, 184, 0.18); }
@@ -2919,7 +2926,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
     #tenantPortalSection.schedi-newdash #schediDashAddMenu button,
     #tenantPortalSection.schedi-newdash .sd-check,
     #tenantPortalSection.schedi-newdash #schediDashTabbar > button { min-height: 44px; }
-    #tenantPortalSection.schedi-newdash .sd-more > summary { width: 44px; height: 44px; }
+    #tenantPortalSection.schedi-newdash .sd-more > summary { width: 48px; height: 48px; }
     #tenantPortalSection.schedi-newdash .sd-request .sd-actions { width: 100%; }
     #tenantPortalSection.schedi-newdash .sd-request .sd-actions .sd-btn { flex: 1 1 8rem; justify-content: center; }
     #tenantPortalSection.schedi-newdash .sd-sheet {
