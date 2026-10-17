@@ -37,5 +37,20 @@
   "routes": [
     { "pattern": "schedi.app/*", "zone_name": "schedi.app" },
     { "pattern": "www.schedi.app/*", "zone_name": "schedi.app" }
-  ]
+  ],
+  "env": {
+    "preview": {
+      "name": "schedi-web-preview",
+      "workers_dev": true,
+      "routes": [],
+      "vars": {
+        "FIREBASE_PROJECT_ID": "siteforge-97699"
+      },
+      // Do not inherit the production AUTH_KV. That namespace holds live agency
+      // sessions. There is no separate preview namespace, so /hq cannot store a
+      // session and stays on the login screen. Never add INDEXNOW_* or
+      // BING_SITE_VERIFICATION to this environment.
+      "kv_namespaces": []
+    }
+  }
 }

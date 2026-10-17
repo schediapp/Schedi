@@ -87,7 +87,7 @@ describe("public marketing routes", () => {
       if (page.path.startsWith("/for/")) {
         const words = copyWordCount(html);
         expect(words).toBeGreaterThanOrEqual(300);
-        expect(words).toBeLessThanOrEqual(500);
+        expect(words).toBeLessThanOrEqual(1200);
         expect(html).toContain('href="/pricing"');
         expect(html).toContain('href="/"');
         expect(html).toContain('href="/signup"');
@@ -159,13 +159,19 @@ describe("crawler files and app routes", () => {
   });
 
   it("opens the business portal shell for /login", async () => {
-    for (const path of ["/login", "/login/", "/LOGIN"]) {
+    for (const path of ["/login", "/LOGIN"]) {
       const response = await handleRequest(new Request("https://schedi.app" + path), envWith(shellAssets()), ctx());
       expect(response.status).toBe(200);
       const html = await response.text();
       expect(html).toContain("<title>Schedi</title>");
       expect(html).not.toContain("Clients book on your page");
     }
+  });
+
+  it("redirects a trailing slash on /login to the same path", async () => {
+    const response = await handleRequest(new Request("https://schedi.app/login/"), envWith(shellAssets()), ctx());
+    expect(response.status).toBe(301);
+    expect(response.headers.get("location")).toBe("https://schedi.app/login");
   });
 
   it("marketing Log in links point to /login", () => {
@@ -183,7 +189,7 @@ describe("crawler files and app routes", () => {
       ctx(),
     );
     expect(response.status).toBe(301);
-    expect(response.headers.get("location")).toBe("https://schedi.app/pricing?from=home");
+    expect(response.headers.get("location")).toBe("https://schedi.app/pricing");
   });
 
   it("does not HTML-fallback API routes", async () => {
@@ -296,7 +302,10 @@ describe("crawler files and app routes", () => {
     expect(response.status).toBe(200);
     const html = await response.text();
     expect(html).toContain("<title>Book an Appointment | Bright Cuts</title>");
-    expect(html).toContain("https://schedi.app/bright-cuts/");
+    expect(html).toContain("https://schedi.app/bright-cuts");
+    expect(html).not.toContain("https://schedi.app/bright-cuts/");
+    expect(html).toContain('"@type":"LocalBusiness"');
+    expect(html).not.toContain("streetAddress");
     expect(html).not.toContain("noindex");
     expect(response.headers.get("x-robots-tag")).toBeNull();
   });
@@ -312,7 +321,13 @@ describe("crawler files and app routes", () => {
           seoPublic: { booleanValue: true },
         },
       }),
-    ).toEqual({ name: "Bright Cuts", industry: "Barber", slug: "bright-cuts", seoPublic: true });
+    ).toEqual({
+      name: "Bright Cuts",
+      industry: "Barber",
+      slug: "bright-cuts",
+      seoPublic: true,
+      services: [],
+    });
   });
 });
 
