@@ -1287,13 +1287,21 @@ html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !importan
     display: flex;
     flex-direction: column;
     gap: 4px;
-    margin: 0;
+    margin: 16px 0 0;
+    padding: 12px 14px;
+    border-radius: 14px;
+    border: 1px solid rgba(148, 163, 184, 0.28);
+    background: rgba(15, 23, 42, 0.45);
     color: #e2e8f0;
     font-size: 14px;
     font-weight: 700;
     line-height: 1.35;
 }
-html.schedi-light #tenantPortalSection.schedi-newdash .sd-hours-summary { color: #0f172a; }
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-hours-summary {
+    color: #0f172a;
+    background: #f8fafc;
+    border-color: #d7dee8;
+}
 #tenantPortalSection.schedi-newdash .sd-hours-summary-lines {
     display: flex;
     flex-wrap: wrap;
@@ -2607,22 +2615,45 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
         border-color: #059669;
     }
     #tenantPortalSection.schedi-newdash .sd-report-dates {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        display: flex;
+        flex-direction: column;
         gap: 12px;
-        align-items: start;
+        align-items: stretch;
+        min-width: 0;
     }
-    #tenantPortalSection.schedi-newdash .sd-report-custom { display: contents; }
+    #tenantPortalSection.schedi-newdash .sd-report-rangebar {
+        display: flex;
+        flex-wrap: nowrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        min-width: 0;
+    }
+    #tenantPortalSection.schedi-newdash .sd-report-rangebar .sd-report-note {
+        flex: 1 1 auto;
+        min-width: 0;
+        margin: 0;
+    }
+    #tenantPortalSection.schedi-newdash .sd-report-custom {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 12px;
+    }
+    @media (min-width: 860px) {
+        #tenantPortalSection.schedi-newdash .sd-report-custom { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+    }
     #tenantPortalSection.schedi-newdash .sd-report-custom[hidden] { display: none !important; }
     #tenantPortalSection.schedi-newdash #tenantReportRangeCustom {
-        grid-column: 2;
-        width: 100%;
-        min-width: 0;
+        flex: 0 0 auto;
+        width: auto;
+        min-height: 38px;
+        height: auto;
+        padding: 6px 12px;
+        white-space: nowrap;
         background: #0f172a;
         color: #e2e8f0;
         border: 1px solid #334155;
     }
-    #tenantPortalSection.schedi-newdash .sd-report-dates:has(#tenantReportCustom:not([hidden])) #tenantReportRangeCustom { grid-row: 2; }
     #tenantPortalSection.schedi-newdash .sd-report-date {
         display: flex;
         flex-direction: column;
@@ -3177,6 +3208,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
     }
 #tenantPortalSection.schedi-newdash #tenantBillingCard .sd-bill-tools {
     display: flex;
+    flex: 0 0 auto;
     flex-wrap: wrap;
     align-items: center;
     gap: 10px;
@@ -3186,6 +3218,9 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
     align-items: center;
     justify-content: center;
     gap: 8px;
+    flex: 0 0 auto;
+    width: max-content;
+    max-width: 100%;
     min-height: 44px;
     padding: 10px 16px;
     border-radius: 12px;
@@ -3195,6 +3230,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
     font-size: 15px;
     font-weight: 700;
     line-height: 1.2;
+    white-space: nowrap;
     cursor: pointer;
 }
 html.schedi-light #tenantPortalSection.schedi-newdash #tenantBillingCard .sd-bill-compare {
@@ -3239,10 +3275,12 @@ html.schedi-light #tenantPortalSection.schedi-newdash #tenantBillingCard .sd-bil
     #tenantPortalSection.schedi-newdash #tenantBillingCard .sd-bill-badge { align-self: flex-start; }
     #tenantPortalSection.schedi-newdash #tenantBillingCard .sd-bill-actions { max-width: none; }
     #tenantPortalSection.schedi-newdash #tenantMoreCard .sd-more-actions {
-        display: flex;
-        flex-direction: column;
+        display: flex !important;
+        flex-direction: column !important;
+        flex-wrap: nowrap !important;
         align-items: stretch;
         gap: 12px;
+        width: 100%;
     }
     #tenantPortalSection.schedi-newdash #tenantMoreCard .sd-more-actions > button:not(.hidden),
     #tenantPortalSection.schedi-newdash #tenantMoreCard .sd-more-actions > a,
@@ -3252,49 +3290,51 @@ html.schedi-light #tenantPortalSection.schedi-newdash #tenantBillingCard .sd-bil
         align-items: center;
         justify-content: flex-start;
         gap: 12px;
+        flex: 1 1 60px;
         width: 100%;
         box-sizing: border-box;
-        min-height: 56px;
+        min-height: 60px;
         padding: 12px 16px;
         border-radius: 14px;
-        font-size: 16px;
-        font-weight: 600;
+        font-size: 18px;
+        font-weight: 700;
         line-height: 1.2;
+        text-decoration: none;
     }
     #tenantPortalSection.schedi-newdash #tenantMoreCard .sd-more-actions > .sd-theme {
-        padding: 0;
-        border: 0;
-        background: transparent;
+        padding: 4px;
+        gap: 0;
     }
-    #tenantPortalSection.schedi-newdash #tenantMoreCard .sd-theme-opt {
-        width: 100%;
-        min-height: 56px;
-        justify-content: flex-start;
-        gap: 12px;
-        padding: 12px 16px;
-        border-radius: 14px;
-        font-size: 16px;
-        font-weight: 600;
-    }
-    #tenantPortalSection.schedi-newdash #tenantMoreCard .sd-theme-opt span {
-        position: static;
+    #tenantPortalSection.schedi-newdash #tenantMoreCard .sd-theme-seg .sd-theme-opt {
+        flex: 1 1 0;
         width: auto;
-        height: auto;
-        padding: 0;
-        margin: 0;
-        overflow: visible;
-        clip: auto;
+        min-height: 52px;
+        justify-content: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: 12px;
+        font-size: 18px;
+        font-weight: 700;
     }
     #tenantPortalSection.schedi-newdash #tenantMoreCard .sd-more-actions i {
-        font-size: 1.15rem;
-        width: 1.25rem;
+        font-size: 22px;
+        width: 22px;
         text-align: center;
+        flex: 0 0 auto;
     }
     #tenantPortalSection.schedi-newdash #tenantMoreCard #tenantAutoLogoffSelect {
         margin-left: auto;
-        min-height: 40px;
+        min-height: 44px;
         font-size: 16px;
         padding: 6px 10px;
+    }
+    #tenantPortalSection.schedi-newdash[data-dash="account"] #tenantMoreCard {
+        display: flex !important;
+        flex-direction: column;
+        min-height: calc(100dvh - 72px - 112px - 8px);
+    }
+    #tenantPortalSection.schedi-newdash[data-dash="account"] #tenantMoreCard .sd-more-actions {
+        flex: 1 1 auto;
     }
 }
 
@@ -3451,6 +3491,122 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-walk {
         font-size: 1.375rem;
         font-weight: 800;
     }
+}
+
+#tenantPortalSection.schedi-newdash #schediTodayLink { display: none !important; }
+#tenantPortalSection.schedi-newdash .sd-theme-seg {
+    display: flex;
+    align-items: stretch;
+    width: 100%;
+    box-sizing: border-box;
+    gap: 4px;
+    padding: 4px;
+    border-radius: 14px;
+    border: 1px solid var(--sd-line);
+    background: rgba(15, 23, 42, 0.45);
+}
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-theme-seg { background: #f8fafc; }
+#tenantPortalSection.schedi-newdash .sd-theme-seg .sd-theme-opt { flex: 1 1 0; min-height: 48px; justify-content: center; font-size: 16px; font-weight: 700; }
+#tenantPortalSection.schedi-newdash .sd-theme-seg .sd-theme-opt span {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+    clip: auto;
+    border: 0;
+}
+#tenantPortalSection.schedi-newdash .sd-theme-seg .sd-theme-opt i { font-size: 22px; width: 22px; text-align: center; }
+#tenantPortalSection.schedi-newdash #schediDashMoreSheet .sd-theme-seg { width: calc(100% - 16px); margin: 8px; }
+@media (max-width: 859px) {
+    #tenantPortalSection.schedi-newdash #schediDashMoreSheet .sd-sheet-card { max-height: min(88vh, 760px); }
+    #tenantPortalSection.schedi-newdash #schediDashMoreSheet .sd-sheet-bar h3 { font-size: 22px; font-weight: 800; }
+    #tenantPortalSection.schedi-newdash #schediDashMoreSheet .sd-sheet-bar button {
+        min-height: 48px;
+        padding: 8px 14px;
+        border-radius: 12px;
+        font-size: 16px;
+        font-weight: 700;
+    }
+    #tenantPortalSection.schedi-newdash #schediDashMoreSheet .sd-sheet-card > button {
+        min-height: 52px;
+        font-size: 18px;
+        font-weight: 700;
+        gap: 12px;
+        padding: 12px 14px;
+    }
+    #tenantPortalSection.schedi-newdash #schediDashMoreSheet .sd-sheet-card > button i {
+        font-size: 22px;
+        width: 22px;
+        text-align: center;
+        flex: 0 0 auto;
+    }
+    #tenantPortalSection.schedi-newdash #schediDashMoreSheet .sd-theme-seg .sd-theme-opt { min-height: 52px; font-size: 18px; }
+    #tenantPortalSection.schedi-newdash #tenantSectionServices .sd-svc-heading { font-size: 18px; font-weight: 700; line-height: 1.3; }
+    #tenantPortalSection.schedi-newdash #tenantSectionServices .sd-svc-lead { font-size: 16px; line-height: 1.4; }
+    #tenantPortalSection.schedi-newdash #tenantSectionServices .sd-svc-add {
+        min-height: 48px;
+        font-size: 16px;
+        font-weight: 700;
+        justify-content: center;
+    }
+    #tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-svc-title { font-size: 18px; font-weight: 700; line-height: 1.3; }
+    #tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-svc-price,
+    #tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-svc-desc,
+    #tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-svc-duration { font-size: 16px; line-height: 1.4; }
+    #tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-svc-edit,
+    #tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-svc-delete {
+        min-height: 48px;
+        padding: 8px 14px;
+        font-size: 16px;
+        font-weight: 700;
+    }
+    body.schedi-newdash #tenantServiceModal .sd-svc-modal-title { font-size: 18px; font-weight: 700; }
+    body.schedi-newdash #tenantServiceModal .sd-svc-modal-close {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 48px;
+        min-height: 48px;
+        font-size: 18px;
+    }
+    body.schedi-newdash #tenantServiceModal label,
+    body.schedi-newdash #tenantServiceModal .sd-icon-cat { font-size: 16px; }
+    body.schedi-newdash #tenantServiceModal input:not([type="hidden"]):not(#svcIconUpload),
+    body.schedi-newdash #tenantServiceModal textarea,
+    body.schedi-newdash #tenantServiceModal button { font-size: 16px; }
+    body.schedi-newdash #tenantServiceModal button,
+    body.schedi-newdash #tenantServiceModal input:not([type="hidden"]):not(#svcIconUpload),
+    body.schedi-newdash #tenantServiceModal .sd-icon-cat { min-height: 48px; }
+    body.schedi-newdash #tenantServiceModal textarea { min-height: 88px; }
+    body.schedi-newdash #tenantServiceModal #svcIconUpload { min-height: 0; width: 1px; height: 1px; }
+}
+@media (max-width: 420px) {
+    #tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-svc-foot {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+    }
+    #tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-svc-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        width: 100%;
+    }
+    #tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-svc-actions button { width: 100%; }
+}
+html.schedi-light #tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-svc-delete { color: #9f1239; }
+html.schedi-light #tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-svc-delete:hover { color: #be123c; }
+@media (min-width: 860px) {
+    #tenantPortalSection.schedi-newdash #tenantMoreCard .sd-more-actions {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+    }
+    #tenantPortalSection.schedi-newdash #tenantMoreCard .sd-theme-seg { width: auto; min-width: 220px; }
 }
 
 </style>
@@ -3650,7 +3806,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-walk {
                             <span class="sd-wordmark" hidden>Schedi</span>
                         </a>
                         <div class="sd-top-spacer"></div>
-                        <button type="button" class="sd-text-btn" onclick="schediDashHelp(true)"><i class="fa-solid fa-circle-question" aria-hidden="true"></i><span>Help</span></button>
+                        <button type="button" class="sd-text-btn" onclick="location.assign(ownerHelpHref())"><i class="fa-solid fa-circle-question" aria-hidden="true"></i><span>Help</span></button>
                         <div class="sd-theme">
                             <button type="button" class="sd-theme-opt sd-theme-light" data-theme-toggle="1" onclick="toggleSchediTheme()" title="Switch to light theme" aria-label="Switch to light theme"><i class="fa-solid fa-sun" aria-hidden="true"></i><span>Light</span></button>
                         </div>
@@ -3665,7 +3821,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-walk {
                                 <p class="sd-kicker">Your day</p>
                                 <h2 id="schediTodayHeading">Today</h2>
                                 <p id="schediTodayDate" class="sd-date"></p>
-                                <p id="schediTodayLink" class="sd-linkline"></p>
+                                <p id="schediTodayLink" class="sd-linkline" hidden></p>
                             </div>
                             <div class="sd-today-actions">
                                 <button type="button" class="sd-btn sd-btn-ghost" onclick="copyTenantPublicBookingLink()"><i class="fa-solid fa-link" aria-hidden="true"></i><span>Copy booking link</span></button>
@@ -3725,9 +3881,10 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-walk {
                             <div class="sd-sheet-rule"></div>
                             <button type="button" data-dash-go="account"><i class="fa-solid fa-key" aria-hidden="true"></i><span>Account &amp; password</span></button>
                             <button type="button" data-dash-go="billing"><i class="fa-solid fa-receipt" aria-hidden="true"></i><span>Plan &amp; billing</span></button>
-                            <button type="button" onclick="schediDashHelp(true)"><i class="fa-solid fa-circle-question" aria-hidden="true"></i><span>Help</span></button>
-                            <div class="sd-theme">
-                                <button type="button" class="sd-theme-opt sd-theme-light" data-theme-toggle="1" onclick="toggleSchediTheme()" title="Switch to light theme" aria-label="Switch to light theme"><i class="fa-solid fa-sun" aria-hidden="true"></i><span>Light</span></button>
+                            <button type="button" onclick="location.assign(ownerHelpHref())"><i class="fa-solid fa-circle-question" aria-hidden="true"></i><span>Help</span></button>
+                            <div class="sd-theme sd-theme-seg" role="group" aria-label="Theme">
+                                <button type="button" class="sd-theme-opt sd-theme-light" data-theme-set="light" onclick="setSchediTheme('light')" aria-pressed="false"><i class="fa-solid fa-sun" aria-hidden="true"></i><span>Light</span></button>
+                                <button type="button" class="sd-theme-opt sd-theme-dark" data-theme-set="dark" onclick="setSchediTheme('dark')" aria-pressed="true"><i class="fa-solid fa-moon" aria-hidden="true"></i><span>Dark</span></button>
                             </div>
                             <button type="button" class="sd-danger" onclick="handleTenantLogout()"><i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i><span>Sign out</span></button>
                         </div>
@@ -3736,7 +3893,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-walk {
                         <div class="sd-sheet-card sd-help-card" role="dialog" aria-labelledby="schediDashHelpTitle">
                             <div class="sd-sheet-bar"><h3 id="schediDashHelpTitle">Help</h3><button type="button" onclick="schediDashHelp(false)" aria-label="Close help">Close</button></div>
                             <p class="sd-help-lead">Short videos for the business portal. The written steps live on the help page.</p>
-                            <p class="sd-help-lead"><a href="https://schedi.app/help">Open the help page</a></p>
+                            <p class="sd-help-lead"><a id="schediDashHelpPageLink" href="/help" onclick="this.href=ownerHelpHref()">Open the help page</a></p>
                             <div id="schediDashHelpBody"></div>
                         </div>
                     </div>
@@ -3915,10 +4072,10 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-walk {
                 <div id="tenantSectionServices" class="glass-card rounded-2xl p-6 space-y-4 hidden">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div>
-                            <h3 class="text-lg font-bold text-white">Manage Offered Services</h3>
-                            <p class="text-xs text-slate-400">Create, edit, or set durations and optional prices for services shown on your public booking page. Price can be left blank.</p>
+                            <h3 class="sd-svc-heading text-lg font-bold text-white">Manage Offered Services</h3>
+                            <p class="sd-svc-lead text-xs text-slate-400">Create, edit, or set durations and optional prices for services shown on your public booking page. Price can be left blank.</p>
                         </div>
-                        <button type="button" onclick="openAddServiceModal()" class="px-4 py-2 rounded-xl bg-brand-500 hover:bg-brand-600 text-slate-950 font-bold text-xs shadow-md glow-emerald flex items-center space-x-1.5">
+                        <button type="button" onclick="openAddServiceModal()" class="sd-svc-add px-4 py-2 rounded-xl bg-brand-500 hover:bg-brand-600 text-slate-950 font-bold text-xs shadow-md glow-emerald flex items-center space-x-1.5">
                             <i class="fa-solid fa-plus"></i>
                             <span>Add New Service</span>
                         </button>
@@ -4476,7 +4633,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-walk {
                 <!-- ROSTER-FIRST: account & settings moved below the roster/tabs -->
                 <div id="tenantMoreCard" class="glass-card rounded-2xl p-5 space-y-3 min-w-0">
                     <h3 class="text-sm font-extrabold text-white"><i class="fa-solid fa-sliders mr-1.5 text-brand-400" aria-hidden="true"></i>More &amp; settings</h3>
-                    <div class="sd-more-actions flex flex-wrap items-center gap-2">
+                    <div class="sd-more-actions">
                         <button type="button" onclick="openTenantPublicBookingLink()" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs flex items-center space-x-1.5 transition-all" title="Open Public Page">
                                     <i class="fa-solid fa-arrow-up-right-from-square"></i>
                                     <span>Open Public Page</span>
@@ -4485,12 +4642,13 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-walk {
                                     <i class="fa-solid fa-mobile-screen-button" aria-hidden="true"></i>
                                     <span>Add to home screen</span>
                                 </button>
-                        <a href="https://schedi.app/help" class="px-3.5 py-2 rounded-xl bg-brand-500/15 hover:bg-brand-500/25 text-brand-300 font-bold text-xs border border-brand-500/40 flex items-center space-x-1.5">
+                        <a id="tenantMoreHelpLink" href="/help" onclick="this.href=ownerHelpHref()" class="px-3.5 py-2 rounded-xl bg-brand-500/15 hover:bg-brand-500/25 text-brand-300 font-bold text-xs border border-brand-500/40 flex items-center space-x-1.5">
                             <i class="fa-solid fa-circle-question" aria-hidden="true"></i>
                             <span>Help</span>
                         </a>
-                        <div class="sd-theme">
-                            <button type="button" class="sd-theme-opt sd-theme-light" data-theme-toggle="1" onclick="toggleSchediTheme()" title="Switch to light theme" aria-label="Switch to light theme"><i class="fa-solid fa-sun" aria-hidden="true"></i><span>Light</span></button>
+                        <div class="sd-theme sd-theme-seg" role="group" aria-label="Theme">
+                            <button type="button" class="sd-theme-opt sd-theme-light" data-theme-set="light" onclick="setSchediTheme('light')" aria-pressed="false"><i class="fa-solid fa-sun" aria-hidden="true"></i><span>Light</span></button>
+                            <button type="button" class="sd-theme-opt sd-theme-dark" data-theme-set="dark" onclick="setSchediTheme('dark')" aria-pressed="true"><i class="fa-solid fa-moon" aria-hidden="true"></i><span>Dark</span></button>
                         </div>
                         <button type="button" id="tenantChangePassBtn" onclick="openTenantChangePassModal()" class="hidden px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white font-semibold text-xs transition-all border border-slate-800">
                             <i class="fa-solid fa-key mr-1" aria-hidden="true"></i>
@@ -4547,6 +4705,10 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-walk {
                         <button type="button" id="tenantReportRange90" onclick="setAppointmentReportRange('90')">Last 90 days</button>
                     </div>
                     <div class="sd-report-dates">
+                        <div class="sd-report-rangebar">
+                            <p id="tenantReportRangeLabel" class="sd-report-note"></p>
+                            <button type="button" id="tenantReportRangeCustom" onclick="setAppointmentReportRange('custom')">Custom</button>
+                        </div>
                         <div id="tenantReportCustom" class="sd-report-custom" hidden>
                             <label class="sd-report-date" for="tenantReportFrom">From
                                 <input type="date" id="tenantReportFrom" onchange="setAppointmentReportCustom()">
@@ -4555,7 +4717,6 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-walk {
                                 <input type="date" id="tenantReportTo" onchange="setAppointmentReportCustom()">
                             </label>
                         </div>
-                        <button type="button" id="tenantReportRangeCustom" onclick="setAppointmentReportRange('custom')">Custom</button>
                     </div>
                     <div id="tenantReportBody" class="space-y-4 text-xs text-slate-300"></div>
                 </div>
@@ -4932,8 +5093,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-walk {
     <div id="tenantServiceModal" role="dialog" aria-modal="true" tabindex="-1" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-start sm:items-center justify-center p-3 sm:p-4 overflow-y-auto overscroll-contain hidden">
         <div class="max-w-md w-full glass-card rounded-2xl p-5 sm:p-6 space-y-4 fade-in my-4 min-w-0">
             <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-                <h3 id="tenantServiceModalTitle" class="text-lg font-bold text-white">Add Offered Service</h3>
-                <button type="button" onclick="closeAddServiceModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+                <h3 id="tenantServiceModalTitle" class="sd-svc-modal-title text-lg font-bold text-white">Add Offered Service</h3>
+                <button type="button" onclick="closeAddServiceModal()" class="sd-svc-modal-close text-slate-400 hover:text-white" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <form onsubmit="handleAddServiceSubmit(event)" class="space-y-3 text-xs">
                 <input type="hidden" id="svcEditId">
@@ -4979,8 +5140,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-walk {
                     <textarea id="svcDesc" rows="2" placeholder="Brief service overview..." oninput="refreshServiceIconSuggestion()" class="w-full px-3 py-2 rounded-xl glass-input resize-none"></textarea>
                 </div>
                 <div class="pt-2 flex justify-end space-x-2">
-                    <button type="button" onclick="closeAddServiceModal()" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300">Cancel</button>
-                    <button type="submit" class="px-5 py-2 rounded-xl bg-brand-500 hover:bg-brand-600 text-slate-950 font-bold glow-emerald">Save Service</button>
+                    <button type="button" onclick="closeAddServiceModal()" class="sd-svc-cancel px-4 py-2 rounded-xl bg-slate-800 text-slate-300">Cancel</button>
+                    <button type="submit" class="sd-svc-save px-5 py-2 rounded-xl bg-brand-500 hover:bg-brand-600 text-slate-950 font-bold glow-emerald">Save Service</button>
                 </div>
             </form>
         </div>
@@ -6158,6 +6319,15 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-walk {
         window.addEventListener('db_ready', attachCloudDbSync);
 
         window.addEventListener('DOMContentLoaded', function () {
+            try { applySchediTheme(localStorage.getItem('schedi.theme') === 'light' ? 'light' : 'dark'); } catch (errThemeBoot) { try { applySchediTheme('dark'); } catch (errThemeBoot2) {} }
+            if (isClientHelpRoute()) {
+                showClientHelpPage();
+                return;
+            }
+            if (isHelpRoute()) {
+                showHelpPage();
+                return;
+            }
             if (window.__SCHEDI_DEMO) {
                 try { bootSchediDemoPortal(); } catch (errDemo) { console.error(errDemo); }
                 return;
@@ -7314,7 +7484,10 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-walk {
             if (main) main.classList.add('hidden');
             if (legal) {
                 legal.classList.remove('hidden');
+                var portalBack = '/';
+                try { portalBack = ownerPortalBackHref(); } catch (errBack) { portalBack = '/'; }
                 legal.innerHTML = ''
+                    + '<a class="inline-flex items-center justify-center w-full sm:w-auto min-h-[48px] px-4 mb-5 rounded-xl bg-emerald-600 text-slate-950 font-extrabold text-base" href="' + esc(portalBack) + '">Back to portal</a>'
                     + '<h1 class="text-2xl font-black text-white mb-2">Help</h1>'
                     + '<p class="text-sm text-slate-400 mb-6">Short steps for the business portal. Names match the buttons on the screen.</p>'
                     + schediHelpVideosHtml('owner')
@@ -9434,6 +9607,10 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-walk {
             return clientListMethodRank(value) < clientListMethods().length;
         }
 
+        function clientListDefaultDir(sort) {
+            return (sort === 'visits' || sort === 'paid') ? 'desc' : 'asc';
+        }
+
         function clientListDirLabel(sort, dir) {
             var desc = dir === 'desc';
             if (sort === 'walkin') return desc ? 'Walk-ins last' : 'Walk-ins first';
@@ -9549,7 +9726,14 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-walk {
                 var bp = bs.paidKnown ? Number(bs.paid) || 0 : 0;
                 return (ap - bp) * sign || name;
             }
-            if (sort === 'method') return (clientListMethodRank(as.method) - clientListMethodRank(bs.method)) * sign || name;
+            if (sort === 'method') {
+                var al = String(as.methodLabel || '');
+                var bl = String(bs.methodLabel || '');
+                if (!al && !bl) return name;
+                if (!al) return 1;
+                if (!bl) return -1;
+                return al.localeCompare(bl, undefined, { sensitivity: 'base' }) * sign || name;
+            }
             if (sort === 'walkin') {
                 var aw = as.walkIn ? 0 : 1;
                 var bw = bs.walkIn ? 0 : 1;
@@ -9596,6 +9780,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-walk {
         function clientListCsv(rows) {
             function cell(v) {
                 var s = String(v == null ? '' : v);
+                if (/^[=+\-@]/.test(s)) s = "'" + s;
                 if (/[",\n\r]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
                 return s;
             }
@@ -9678,6 +9863,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-walk {
 
         function setClientListSort(value) {
             clientListSort = (value === 'visits' || value === 'paid' || value === 'method' || value === 'walkin') ? value : 'name';
+            clientListDir = clientListDefaultDir(clientListSort);
             renderClientList();
         }
         window.setClientListSort = setClientListSort;
@@ -10724,6 +10910,69 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-walk {
             if (tenant && typeof renderTenantRoster === 'function') renderTenantRoster(tenant);
         };
 
+        function ownerDashQueryPage() {
+            var allowed = { today: 1, appointments: 1, services: 1, hours: 1, profile: 1, payments: 1, emails: 1, reports: 1, clients: 1, account: 1, billing: 1 };
+            try {
+                var page = new URLSearchParams(window.location.search || '').get('dash') || '';
+                if (allowed[page]) return page;
+            } catch (errDash) {}
+            return '';
+        }
+
+        function ownerHelpHrefFrom(search, pathname, dash) {
+            var params = new URLSearchParams(String(search || '').replace(/^\?/, ''));
+            var path = String(pathname || '/');
+            var preview = path === '/portal-preview' || params.get('portal') === 'preview' || params.get('demo') === '1';
+            if (preview) {
+                params.set('demo', '1');
+                params.set('portal', 'preview');
+            }
+            var allowed = { today: 1, appointments: 1, services: 1, hours: 1, profile: 1, payments: 1, emails: 1, reports: 1, clients: 1, account: 1, billing: 1 };
+            if (dash && allowed[dash]) params.set('dash', dash);
+            var q = params.toString();
+            return '/help' + (q ? ('?' + q) : '');
+        }
+
+        function ownerPortalBackHrefFrom(search) {
+            var params = new URLSearchParams(String(search || '').replace(/^\?/, ''));
+            var preview = params.get('demo') === '1' || params.get('portal') === 'preview';
+            if (preview) {
+                params.set('demo', '1');
+                params.set('portal', 'preview');
+            }
+            var path = preview ? '/portal-preview' : '/';
+            var q = params.toString();
+            return path + (q ? ('?' + q) : '');
+        }
+
+        function ownerHelpHref() {
+            var search = '';
+            var path = '/';
+            var dash = 'today';
+            try { search = window.location.search || ''; } catch (errSearch) { search = ''; }
+            try { path = window.location.pathname || '/'; } catch (errPath) { path = '/'; }
+            try { dash = (typeof schediDashPage === 'function' && schediDashPage()) || ownerDashQueryPage() || 'today'; } catch (errDash) { dash = 'today'; }
+            if (window.__SCHEDI_DEMO === true && search.indexOf('demo=1') === -1) search += (search ? '&' : '?') + 'demo=1';
+            return ownerHelpHrefFrom(search, path, dash);
+        }
+        window.ownerHelpHref = ownerHelpHref;
+
+        function ownerPortalBackHref() {
+            var search = '';
+            try { search = window.location.search || ''; } catch (errSearch) { search = ''; }
+            return ownerPortalBackHrefFrom(search);
+        }
+        window.ownerPortalBackHref = ownerPortalBackHref;
+
+        function paintOwnerHelpLinks() {
+            var href = '/help';
+            try { href = ownerHelpHref(); } catch (errHref) { href = '/help'; }
+            ['tenantMoreHelpLink', 'schediDashHelpPageLink'].forEach(function (id) {
+                var el = document.getElementById(id);
+                if (el) el.setAttribute('href', href);
+            });
+        }
+
         function schediDashPage() {
             var section = document.getElementById('tenantPortalSection');
             return (section && section.getAttribute('data-dash')) || 'today';
@@ -10744,6 +10993,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-walk {
                 var primary = current === 'today' || current === 'appointments' || current === 'clients';
                 moreBtn.classList.toggle('is-on', !primary);
             }
+            try { paintOwnerHelpLinks(); } catch (errHelp) {}
         }
 
         function schediDashClosePopovers() {
@@ -10891,9 +11141,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-walk {
             }
             var linkEl = document.getElementById('schediTodayLink');
             if (linkEl) {
-                var url = '';
-                try { url = getTenantPublicBookingUrl(tenant) || ''; } catch (errUrl) { url = ''; }
-                linkEl.textContent = url;
+                linkEl.textContent = '';
+                linkEl.hidden = true;
             }
             var apps = (tenant.appointments || []).filter(function (app) { return app && !appointmentIsCancelled(app) && String(app.status || '').toLowerCase() !== 'denied'; });
             var todayApps = apps.filter(function (app) { return app.date === today; }).sort(function (a, b) { return rosterApptSortKey(a) - rosterApptSortKey(b); });
@@ -11026,6 +11275,21 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-walk {
             menu.style.visibility = 'visible';
         };
 
+        function schediDashPlanLabel(tenant) {
+            if (!tenant) return 'Free';
+            try { if (isComplimentaryPro(tenant)) return 'Complimentary Pro'; } catch (errComp) {}
+            if (tenant.subscriptionStatus === 'paused') return 'Paused';
+            var plan = 'free';
+            try { plan = normalizePlan(tenant); } catch (errPlan) { plan = 'free'; }
+            if (plan === 'free' || plan === 'starter' || plan === 'pro') {
+                if (plan === 'free') return 'Free';
+                if (!String(tenant.stripeSubscriptionId || '').trim()) return 'Not subscribed';
+                if (plan === 'starter') return 'Starter';
+                return 'Pro';
+            }
+            return 'Free';
+        }
+
         function schediDashPaint() {
             var tenant = (typeof getTenant === 'function') ? getTenant() : null;
             var note = document.getElementById('schediDemoNote');
@@ -11035,10 +11299,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-walk {
             if (biz) biz.textContent = tenant.name || 'Business';
             var who = tenant.ownerName || tenant.ownerEmail || 'Owner';
             var bizName = tenant.name || 'Business';
-            var planWord = 'Free';
-            try {
-                planWord = { free: 'Free', starter: 'Starter', pro: 'Pro' }[normalizePlan(tenant)] || 'Free';
-            } catch (errPlan) { planWord = 'Free'; }
+            var planWord = schediDashPlanLabel(tenant);
             var nameEl = document.getElementById('schediDashUserName');
             var initials = document.getElementById('schediDashUserInitials');
             var phoneInitials = document.getElementById('schediDashUserInitialsPhone');
@@ -11078,13 +11339,21 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-walk {
             var section = document.getElementById('tenantPortalSection');
             if (section) {
                 section.classList.add('schedi-newdash');
-                if (!section.getAttribute('data-dash')) section.setAttribute('data-dash', 'today');
+                var fromQuery = '';
+                try { fromQuery = ownerDashQueryPage(); } catch (errQuery) { fromQuery = ''; }
+                if (fromQuery) section.setAttribute('data-dash', fromQuery);
+                else if (!section.getAttribute('data-dash')) section.setAttribute('data-dash', 'today');
             }
             var chrome = document.getElementById('schediDashChrome');
             if (chrome) chrome.hidden = false;
             document.documentElement.classList.add('schedi-newdash-ready');
             window.__schediDashReady = true;
             schediDashPaint();
+            var restoreDash = '';
+            try { restoreDash = ownerDashQueryPage(); } catch (errRestore) { restoreDash = ''; }
+            if (restoreDash) {
+                try { schediDashGo(restoreDash); } catch (errGo) {}
+            }
         }
 
         var SCHEDI_DASH_TABS = {
@@ -11845,7 +12114,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-walk {
             if (typeof openTenantOwnerPortal === 'function') openTenantOwnerPortal(tenant);
             else if (typeof switchPlatformMode === 'function') switchPlatformMode('tenant');
             try { schediMountNewDash(); } catch (errMount) {}
-            try { schediDashGo('today'); } catch (errGo) {}
+            try { schediDashGo(ownerDashQueryPage() || 'today'); } catch (errGo) {}
         }
 
         window.switchTenantTab = function(tab) {
@@ -12772,24 +13041,24 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-walk {
             if (!grid) return;
 
             grid.innerHTML = tenant.services.map(s => `
-                <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-3 flex flex-col justify-between">
+                <div class="sd-svc-card p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-3 flex flex-col justify-between">
                     <div>
                         <div class="flex items-center justify-between mb-2">
                             <div class="w-9 h-9 rounded-xl bg-slate-800 text-brand-400 flex items-center justify-center overflow-hidden">
                                 ${serviceIconMarkup(s)}
                             </div>
-                            <span class="text-xs font-bold text-white">${esc(formatServicePriceLabel(s) || 'No price')}</span>
+                            <span class="sd-svc-price text-xs font-bold text-white">${esc(formatServicePriceLabel(s) || 'No price')}</span>
                         </div>
                         <h4 class="sd-svc-title text-xs font-bold text-white" title="${esc(s.name)}">${esc(s.name)}${s.icon || serviceImageSrc(s) ? '' : ' <span class="ml-1 text-[10px] uppercase tracking-wide text-brand-400">Auto</span>'}</h4>
-                        <p class="text-[11px] text-slate-400 mt-1 line-clamp-2">${esc(s.desc)}</p>
+                        <p class="sd-svc-desc text-[11px] text-slate-400 mt-1 line-clamp-2">${esc(s.desc)}</p>
                     </div>
-                    <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px]">
-                        <span class="text-slate-500 font-semibold">${esc(formatServiceDuration(s.duration))}</span>
-                        <div class="space-x-2">
-                            <button type="button" onclick="openEditServiceModal(${s.id})" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-brand-400 font-bold transition-all">
+                    <div class="sd-svc-foot pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px]">
+                        <span class="sd-svc-duration text-slate-500 font-semibold">${esc(formatServiceDuration(s.duration))}</span>
+                        <div class="sd-svc-actions space-x-2">
+                            <button type="button" onclick="openEditServiceModal(${s.id})" class="sd-svc-edit px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-brand-400 font-bold transition-all">
                                 <i class="fa-solid fa-pen-to-square mr-1"></i>Edit
                             </button>
-                            <button type="button" onclick="deleteService(${s.id})" class="px-2 py-1 rounded bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-bold transition-all">
+                            <button type="button" onclick="deleteService(${s.id})" class="sd-svc-delete px-2 py-1 rounded bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-bold transition-all">
                                 Delete
                             </button>
                         </div>
@@ -14190,6 +14459,15 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-walk {
             return segments;
         }
 
+        function hoursDaySplitLabel(day, hours, rules) {
+            var h = hours || {};
+            if (!h.open) return '';
+            var matched = (rules || []).filter(function (rule) { return hoursRuleMatchesDay(rule, day); });
+            var segments = hoursWeekSegments(h.start, h.end, matched);
+            if (segments.length < 2) return '';
+            return segments.map(function (seg) { return seg.start + '\u2013' + seg.end; }).join(' \u00b7 ');
+        }
+
         function hoursWeekBlockHtml(rule) {
             var when = esc((rule && rule.time) || '');
             var title = esc((rule && rule.title) || 'Blocked');
@@ -14204,10 +14482,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-walk {
         function hoursWeekDayHtml(day, label, hours, rules) {
             var h = hours || { open: true, start: '09:00 AM', end: '05:00 PM' };
             var matched = (rules || []).filter(function (rule) { return hoursRuleMatchesDay(rule, day); });
-            var segments = h.open ? hoursWeekSegments(h.start, h.end, matched) : [];
-            var split = segments.length > 1
-                ? '<p class="sd-hours-week-split">' + segments.map(function (seg) { return esc(seg.start + '–' + seg.end); }).join(' · ') + '</p>'
-                : '';
+            var splitLabel = hoursDaySplitLabel(day, h, rules);
+            var split = '<p id="shiftSplit_' + day + '" class="sd-hours-week-split"' + (splitLabel ? '' : ' hidden') + '>' + esc(splitLabel) + '</p>';
             var blocks = matched.length
                 ? '<p class="sd-hours-week-closed-note">Not applied while closed</p>' + matched.map(hoursWeekBlockHtml).join('')
                 : '<p class="sd-hours-week-empty">No blocked time</p>';
@@ -14347,6 +14623,13 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-walk {
             }).join('');
             box.innerHTML = '<p class="sd-hours-summary-lines">' + lines + '</p>'
                 + (summary.breakNote ? '<p class="sd-hours-summary-break">' + esc(summary.breakNote) + '</p>' : '');
+            ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].forEach(function (day) {
+                var splitEl = document.getElementById('shiftSplit_' + day);
+                if (!splitEl) return;
+                var label = hoursDaySplitLabel(day, hours[day], (tenant && tenant.blockedRules) || []);
+                splitEl.textContent = label;
+                splitEl.hidden = !label;
+            });
         }
         window.paintHoursWeekSummary = paintHoursWeekSummary;
 
@@ -18979,6 +19262,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-walk {
             var fromEl = document.getElementById('tenantReportFrom');
             var toEl = document.getElementById('tenantReportTo');
             var range = appointmentReportRange(reportRangePreset, today, fromEl && fromEl.value, toEl && toEl.value);
+            var rangeLabel = document.getElementById('tenantReportRangeLabel');
+            if (rangeLabel) rangeLabel.textContent = range.label || 'Pick a date range.';
             var asOf = reportNowParts(getTenantTimezone(tenant), new Date());
             var model = appointmentReportModel(appointmentReportRows(tenant), range, bookingPaymentState, asOf);
             var sample = window.__SCHEDI_DEMO === true;
@@ -19021,7 +19306,6 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-walk {
             var revenueChart = appointmentReportChartSvg(model.weeks, 'revenue', reportMoney, 'Revenue by week');
             body.setAttribute('data-report-range', range.label || '');
             body.innerHTML = ''
-                + '<p class="sd-report-note">' + esc(range.label || 'Pick a date range.') + '</p>'
                 + '<div class="sd-report-stats grid grid-cols-2 sm:grid-cols-4 gap-2">'
                 + visitCard
                 + card('Total bookings', String(model.total), 'Every appointment in this range.')

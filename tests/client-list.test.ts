@@ -38,6 +38,7 @@ const names = [
   "clientListMethodLabel",
   "clientListMethodRank",
   "clientListMethodAllowed",
+  "clientListDefaultDir",
   "clientListDirLabel",
   "clientVisitMethod",
   "clientIsWalkIn",
@@ -68,7 +69,7 @@ const names = [
 const lib = names.map((name) => extractFunction(html, name)).join("\n");
 const api = new Function(`${lib}
   return {
-    clientListArrange, clientListStats, clientListCsv, clientListDirLabel, clientIsWalkIn, clientVisitMethod,
+    clientListArrange, clientListStats, clientListCsv, clientListDirLabel, clientListDefaultDir, clientIsWalkIn, clientVisitMethod,
     rosterAmountCollected, appointmentPayKind, appointmentCompletionOf
   };
 `)() as {
@@ -80,6 +81,7 @@ const api = new Function(`${lib}
   clientListStats: (client: Record<string, unknown>, appointments: Record<string, unknown>[], options: Record<string, unknown>) => Stats;
   clientListCsv: (rows: Array<{ name?: string; email?: string; phone?: string; stats?: Stats }>) => string;
   clientListDirLabel: (sort: string, dir: string) => string;
+  clientListDefaultDir: (sort: string) => string;
   clientIsWalkIn: (client: Record<string, unknown> | null, appointments: Record<string, unknown>[]) => boolean;
   clientVisitMethod: (app: Record<string, unknown>, payKind: (app: Record<string, unknown>) => string) => string;
   rosterAmountCollected: (app: Record<string, unknown>, tenant: { services?: { name: string; price: number | null }[] }) => { net: number; empty: boolean };
@@ -138,8 +140,12 @@ describe("client list sorting and totals", () => {
     expect(namesOf("visits", "asc")).toEqual(['dee, "quoted"', "Ada", "Eve", "Bea", "Cy"]);
     expect(namesOf("paid", "desc")).toEqual(["Cy", "Ada", "Bea", 'dee, "quoted"', "Eve"]);
     expect(namesOf("paid", "asc")).toEqual(['dee, "quoted"', "Eve", "Bea", "Ada", "Cy"]);
-    expect(namesOf("method", "asc")).toEqual(["Bea", "Cy", "Ada", "Eve", 'dee, "quoted"']);
-    expect(namesOf("method", "desc")).toEqual(['dee, "quoted"', "Eve", "Ada", "Bea", "Cy"]);
+    expect(namesOf("method", "asc")).toEqual(["Ada", "Eve", "Bea", "Cy", 'dee, "quoted"']);
+    expect(namesOf("method", "desc")).toEqual(["Bea", "Cy", "Eve", "Ada", 'dee, "quoted"']);
+    expect(api.clientListDefaultDir("visits")).toBe("desc");
+    expect(api.clientListDefaultDir("paid")).toBe("desc");
+    expect(api.clientListDefaultDir("method")).toBe("asc");
+    expect(api.clientListDefaultDir("name")).toBe("asc");
     expect(namesOf("walkin", "asc")).toEqual(["Bea", "Eve", "Ada", "Cy", 'dee, "quoted"']);
     expect(namesOf("walkin", "desc")).toEqual(["Ada", "Cy", 'dee, "quoted"', "Bea", "Eve"]);
     expect(api.clientListDirLabel("name", "asc")).toBe("A–Z");
@@ -207,6 +213,10 @@ describe("client list sorting and totals", () => {
     const quoted = api.clientListCsv(api.clientListArrange([dee], [], { ...stubOptions, sort: "name", dir: "asc" }));
     expect(quoted).toContain('"dee, ""quoted""",dee@example.com,5554444444,0,,');
     expect(quoted).toContain(",no,,");
+    const injected = api.clientListCsv([
+      { name: "=cmd", email: "+ada@example.com", phone: "+15551212", stats: { visits: 1, paid: 0, paidKnown: true, method: "venmo", methodLabel: "@venmo", methods: ["cash"], methodLabels: ["-cash"], walkIn: false, firstVisit: "", lastVisit: "" } },
+    ]);
+    expect(injected).toContain("'=cmd,'+ada@example.com,'+15551212,1,0.00,'-cash,'@venmo,no,,");
   });
 
   it("uses the reports done rule and the roster net-paid total", () => {

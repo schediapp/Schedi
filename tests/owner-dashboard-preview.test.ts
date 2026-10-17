@@ -247,8 +247,9 @@ describe("owner dashboard preview", () => {
     expect(html).toContain("does not refund");
     expect(html).toContain('id="unpaidStripeModal"');
     expect(html).toContain('data-theme-toggle="1"');
-    expect(html.split('data-theme-toggle="1"').length - 1).toBe(4);
-    expect(html).not.toContain('data-theme-set="light"');
+    expect(html.split('data-theme-toggle="1"').length - 1).toBe(2);
+    expect(html.split('data-theme-set="light"').length - 1).toBe(2);
+    expect(html.split('data-theme-set="dark"').length - 1).toBe(2);
     expect(html).toContain("window.setSchediTheme");
     expect(html).toContain("toggleSchediTheme");
     expect(html).toContain('id="schediDashAccountMenu"');
@@ -667,6 +668,42 @@ describe("owner dashboard preview", () => {
     }, []).lines).toEqual(["Mon–Sun Closed"]);
     expect(extractFunction(html, "renderTenantHours")).toContain("paintHoursWeekSummary(tenant)");
     expect(extractFunction(html, "paintHoursWeekSummary")).toContain("hoursWeekSummary");
+    expect(extractFunction(html, "paintHoursWeekSummary")).toContain("hoursDaySplitLabel");
+    expect(extractFunction(html, "hoursWeekDayHtml")).toContain("shiftSplit_");
+    expect(css).toContain("margin: 16px 0 0");
+    expect(css).toContain("white-space: nowrap");
+    expect(html).toContain('id="tenantReportRangeLabel"');
+    expect(html).toContain("Back to portal");
+    expect(extractFunction(html, "showHelpPage")).toContain("ownerPortalBackHref");
+    expect(extractFunction(html, "renderSchediToday")).toContain("linkEl.hidden = true");
+    expect(extractFunction(html, "renderSchediToday")).not.toContain("getTenantPublicBookingUrl");
+    const back = new Function(`${extractFunction(html, "ownerPortalBackHrefFrom")}; return ownerPortalBackHrefFrom;`)() as (search: string) => string;
+    expect(back("?demo=1&dash=hours&biz=harbor-demo&tenant=harbor")).toContain("/portal-preview?");
+    expect(back("?demo=1&dash=hours&biz=harbor-demo&tenant=harbor")).toContain("demo=1");
+    expect(back("?demo=1&dash=hours&biz=harbor-demo&tenant=harbor")).toContain("dash=hours");
+    expect(back("?demo=1&dash=hours&biz=harbor-demo&tenant=harbor")).toContain("biz=harbor-demo");
+    expect(back("?demo=1&dash=hours&biz=harbor-demo&tenant=harbor")).toContain("tenant=harbor");
+    expect(back("?dash=services")).toBe("/?dash=services");
+    const helpHref = new Function(`${extractFunction(html, "ownerHelpHrefFrom")}; return ownerHelpHrefFrom;`)() as (search: string, path: string, dash: string) => string;
+    const previewHelp = helpHref("?biz=harbor-demo", "/portal-preview", "hours");
+    expect(previewHelp.startsWith("/help?")).toBe(true);
+    expect(previewHelp).toContain("demo=1");
+    expect(previewHelp).toContain("portal=preview");
+    expect(previewHelp).toContain("dash=hours");
+    expect(previewHelp).toContain("biz=harbor-demo");
+    const plan = new Function(
+      `${extractFunction(html, "isComplimentaryPro")}\n${extractFunction(html, "normalizePlan")}\n${extractFunction(html, "schediDashPlanLabel")}; return schediDashPlanLabel;`,
+    )() as (tenant: Record<string, unknown>) => string;
+    expect(plan({ plan: "pro", subscriptionStatus: "active" })).toBe("Not subscribed");
+    expect(plan({ plan: "pro", stripeSubscriptionId: "sub_1", subscriptionStatus: "active" })).toBe("Pro");
+    expect(plan({ plan: "starter", stripeSubscriptionId: "sub_1" })).toBe("Starter");
+    expect(plan({ plan: "pro", complimentaryPro: true })).toBe("Complimentary Pro");
+    expect(plan({ plan: "pro", stripeSubscriptionId: "sub_1", subscriptionStatus: "paused" })).toBe("Paused");
+    expect(plan({ plan: "free" })).toBe("Free");
+    expect(css).toContain("flex-wrap: nowrap !important");
+    expect(css).toContain("min-height: 60px");
+    expect(css).toContain("font-size: 22px");
+    expect(css).toContain(".sd-svc-title { font-size: 18px; font-weight: 700;");
   });
 });
 
