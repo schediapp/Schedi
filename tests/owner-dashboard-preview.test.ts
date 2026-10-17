@@ -601,7 +601,18 @@ describe("owner dashboard preview", () => {
     expect(extractFunction(html, "hoursWeekGridHtml")).toContain("roster-week-grid");
     expect(extractFunction(html, "hoursWeekDayHtml")).toContain("shiftOpen_");
     expect(extractFunction(html, "hoursWeekDayHtml")).toContain('class="sd-pay-switch" role="switch"');
+    expect(extractFunction(html, "hoursWeekDayHtml")).not.toContain("sd-hours-week-state");
+    expect(extractFunction(html, "hoursWeekDayHtml")).toContain("(h.open ? 'Open' : 'Closed')");
+    expect(css).not.toContain(".sd-hours-week-state");
     expect(render).toContain('class="sd-pay-switch" role="switch"');
+    expect(render).toContain("is-closed");
+    expect(render).toContain("Not applied while closed");
+    expect(render).toContain("hoursWeekOpenChanged('${day}')");
+    expect(render).toContain("hoursApplyOpenState");
+    expect(extractFunction(html, "hoursApplyOpenState")).toContain("input.disabled = !open");
+    expect(extractFunction(html, "hoursWeekOpenChanged")).toContain("hoursApplyOpenState");
+    expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-hours-day.is-closed .sd-hours-times");
+    expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-hours-day.is-closed .sd-hours-week-closed-note");
     expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-row > .sd-time { grid-area: time; }");
     expect(css).not.toContain("#tenantPortalSection.schedi-newdash .sd-time { grid-area: time; }");
     expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-hours-times > .sd-time");
@@ -1917,12 +1928,26 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
             return { top: rect.top, right: rect.right, bottom: rect.bottom, left: rect.left, width: rect.width, height: rect.height };
           };
           const openStyle = getComputedStyle(open);
+          const cardEl = open.closest(".sd-hours-day, .sd-hours-week-day") as HTMLElement;
+          const times = cardEl.querySelector(".sd-hours-times") as HTMLElement;
+          const note = cardEl.querySelector(".sd-hours-week-closed-note") as HTMLElement | null;
+          const startBtn = startCombo.querySelector(".sd-time-open") as HTMLButtonElement;
           return {
             day,
             startValue: start.value,
             endValue: end.value,
             startLabel: startLabel.textContent,
             endLabel: endLabel.textContent,
+            openLabel: document.getElementById("shiftOpenLabel_" + day)?.textContent || "",
+            duplicateState: !!cardEl.querySelector(".sd-hours-week-state"),
+            closed: cardEl.classList.contains("is-closed"),
+            timesOpacity: getComputedStyle(times).opacity,
+            startDisabled: start.disabled,
+            endDisabled: end.disabled,
+            startBtnDisabled: startBtn.disabled,
+            note: note?.textContent || "",
+            noteDisplay: note ? getComputedStyle(note).display : "",
+            startColor: getComputedStyle(start).color,
             startCombo: box(startCombo),
             endCombo: box(endCombo),
             startLabelBox: box(startLabel),
@@ -1994,12 +2019,28 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
               expect(row.openBox.right).toBeLessThanOrEqual(row.card.right + 1);
               expect(row.openBox.width).toBeGreaterThanOrEqual(51);
               expect(row.openBox.height).toBeGreaterThanOrEqual(29);
+              expect(row.duplicateState).toBe(false);
+              expect(row.openLabel).toBe(row.day === "Sun" ? "Closed" : "Open");
               if (row.day === "Sun") {
                 expect(row.checked).toBe(false);
                 expect(row.switchBg).toBe(theme === "dark" ? "rgb(100, 116, 139)" : "rgb(203, 213, 225)");
+                expect(row.closed).toBe(true);
+                expect(row.timesOpacity).toBe("0.55");
+                expect(row.startDisabled).toBe(true);
+                expect(row.endDisabled).toBe(true);
+                expect(row.startBtnDisabled).toBe(true);
+                expect(row.note).toBe("Not applied while closed");
+                expect(row.noteDisplay).toBe("block");
+                expect(row.startColor).toBe(theme === "dark" ? "rgb(248, 250, 252)" : "rgb(15, 23, 42)");
               } else {
                 expect(row.checked).toBe(true);
                 expect(row.switchBg).toBe(theme === "dark" ? "rgb(16, 185, 129)" : "rgb(5, 150, 105)");
+                expect(row.closed).toBe(false);
+                expect(row.timesOpacity).toBe("1");
+                expect(row.startDisabled).toBe(false);
+                expect(row.endDisabled).toBe(false);
+                expect(row.startBtnDisabled).toBe(false);
+                expect(row.noteDisplay).toBe("none");
               }
             }
             const monday = rows.find((row) => row.day === "Mon");
@@ -2014,33 +2055,83 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
         await page.$eval("#hoursWeekLayoutBtn", (el) => (el as HTMLButtonElement).click());
       }
       await page.$eval("#shiftOpen_Mon", (el) => (el as HTMLInputElement).click());
-      const closedList = await page.evaluate(() => ({
-        aria: document.getElementById("shiftOpen_Mon")?.getAttribute("aria-checked"),
-        checked: (document.getElementById("shiftOpen_Mon") as HTMLInputElement).checked,
-        summary: document.getElementById("hoursWeekSummary")?.textContent || "",
-      }));
+      const closedList = await page.evaluate(() => {
+        const card = document.getElementById("shiftOpen_Mon")?.closest(".sd-hours-day");
+        const times = card?.querySelector(".sd-hours-times") as HTMLElement | null;
+        const note = card?.querySelector(".sd-hours-week-closed-note") as HTMLElement | null;
+        const start = document.getElementById("shiftStart_Mon") as HTMLInputElement;
+        return {
+          aria: document.getElementById("shiftOpen_Mon")?.getAttribute("aria-checked"),
+          checked: (document.getElementById("shiftOpen_Mon") as HTMLInputElement).checked,
+          summary: document.getElementById("hoursWeekSummary")?.textContent || "",
+          label: document.getElementById("shiftOpenLabel_Mon")?.textContent || "",
+          closed: card?.classList.contains("is-closed") || false,
+          opacity: times ? getComputedStyle(times).opacity : "",
+          disabled: start.disabled,
+          note: note?.textContent || "",
+          noteDisplay: note ? getComputedStyle(note).display : "",
+        };
+      });
       expect(closedList.checked).toBe(false);
       expect(closedList.aria).toBe("false");
       expect(closedList.summary).toContain("Mon, Sun Closed");
       expect(closedList.summary).toContain("Wed–Fri 9 AM–6 PM");
       expect(closedList.summary).not.toContain("Mon, Wed–Fri");
+      expect(closedList.label).toBe("Closed");
+      expect(closedList.closed).toBe(true);
+      expect(closedList.opacity).toBe("0.55");
+      expect(closedList.disabled).toBe(true);
+      expect(closedList.note).toBe("Not applied while closed");
+      expect(closedList.noteDisplay).toBe("block");
       await page.$eval("#shiftOpen_Mon", (el) => (el as HTMLInputElement).click());
-      const reopened = await page.evaluate(() => document.getElementById("hoursWeekSummary")?.textContent || "");
-      expect(reopened).toContain("Mon, Wed–Fri 9 AM–6 PM");
+      const reopened = await page.evaluate(() => {
+        const card = document.getElementById("shiftOpen_Mon")?.closest(".sd-hours-day");
+        const times = card?.querySelector(".sd-hours-times") as HTMLElement | null;
+        const note = card?.querySelector(".sd-hours-week-closed-note") as HTMLElement | null;
+        return {
+          summary: document.getElementById("hoursWeekSummary")?.textContent || "",
+          label: document.getElementById("shiftOpenLabel_Mon")?.textContent || "",
+          closed: card?.classList.contains("is-closed") || false,
+          opacity: times ? getComputedStyle(times).opacity : "",
+          disabled: (document.getElementById("shiftStart_Mon") as HTMLInputElement).disabled,
+          noteDisplay: note ? getComputedStyle(note).display : "",
+        };
+      });
+      expect(reopened.summary).toContain("Mon, Wed–Fri 9 AM–6 PM");
+      expect(reopened.label).toBe("Open");
+      expect(reopened.closed).toBe(false);
+      expect(reopened.opacity).toBe("1");
+      expect(reopened.disabled).toBe(false);
+      expect(reopened.noteDisplay).toBe("none");
       await page.$eval("#hoursWeekLayoutBtn", (el) => (el as HTMLButtonElement).click());
       await page.waitForSelector(".sd-hours-week-day");
       await page.$eval("#shiftOpen_Mon", (el) => (el as HTMLInputElement).click());
       const closedWeek = await page.evaluate(() => {
         const card = document.getElementById("shiftOpen_Mon")?.closest(".sd-hours-week-day");
+        const times = card?.querySelector(".sd-hours-times") as HTMLElement | null;
+        const note = card?.querySelector(".sd-hours-week-closed-note") as HTMLElement | null;
+        const opens = [...(card?.querySelectorAll(".sd-hours-open span") || [])].map((el) => el.textContent);
         return {
           aria: document.getElementById("shiftOpen_Mon")?.getAttribute("aria-checked"),
-          state: card?.querySelector(".sd-hours-week-state")?.textContent || "",
+          label: document.getElementById("shiftOpenLabel_Mon")?.textContent || "",
+          opens,
+          duplicate: document.querySelectorAll(".sd-hours-week-state").length,
           closed: card?.classList.contains("is-closed") || false,
+          opacity: times ? getComputedStyle(times).opacity : "",
+          disabled: (document.getElementById("shiftStart_Mon") as HTMLInputElement).disabled,
+          note: note?.textContent || "",
+          noteDisplay: note ? getComputedStyle(note).display : "",
         };
       });
       expect(closedWeek.aria).toBe("false");
-      expect(closedWeek.state).toBe("Closed");
+      expect(closedWeek.label).toBe("Closed");
+      expect(closedWeek.opens).toEqual(["Closed"]);
+      expect(closedWeek.duplicate).toBe(0);
       expect(closedWeek.closed).toBe(true);
+      expect(closedWeek.opacity).toBe("0.55");
+      expect(closedWeek.disabled).toBe(true);
+      expect(closedWeek.note).toBe("Not applied while closed");
+      expect(closedWeek.noteDisplay).toBe("block");
     } finally {
       await browser.close();
       await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));

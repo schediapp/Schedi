@@ -3577,11 +3577,6 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
         color: #cbd5e1;
     }
     #tenantPortalSection.schedi-newdash .sd-hours-week-long { display: none; }
-    #tenantPortalSection.schedi-newdash .sd-hours-week-state {
-        font-size: 11px;
-        font-weight: 800;
-        color: #f8fafc;
-    }
     #tenantPortalSection.schedi-newdash .sd-hours-week-day .sd-hours-open {
         display: flex;
         width: 100%;
@@ -3619,17 +3614,29 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
         min-height: 28px;
         padding: 0 8px;
     }
-    #tenantPortalSection.schedi-newdash .sd-hours-week-day.is-closed .sd-hours-times { opacity: 0.55; }
+    #tenantPortalSection.schedi-newdash .sd-hours-week-day.is-closed .sd-hours-times,
+    #tenantPortalSection.schedi-newdash .sd-hours-day.is-closed .sd-hours-times {
+        opacity: 0.55;
+        pointer-events: none;
+    }
+    #tenantPortalSection.schedi-newdash .sd-hours-day.is-closed .sd-time-input:disabled,
+    #tenantPortalSection.schedi-newdash .sd-hours-week-day.is-closed .sd-time-input:disabled {
+        opacity: 1;
+        color: #f8fafc;
+        -webkit-text-fill-color: #f8fafc;
+    }
     #tenantPortalSection.schedi-newdash .sd-hours-week-day.is-closed .sd-hours-week-split { display: none; }
     #tenantPortalSection.schedi-newdash .sd-hours-week-closed-note { display: none; }
-    #tenantPortalSection.schedi-newdash .sd-hours-week-day.is-closed .sd-hours-week-closed-note {
+    #tenantPortalSection.schedi-newdash .sd-hours-week-day.is-closed .sd-hours-week-closed-note,
+    #tenantPortalSection.schedi-newdash .sd-hours-day.is-closed .sd-hours-week-closed-note {
         display: block;
         margin: 0;
-        font-size: 10px;
         font-weight: 700;
         line-height: 1.3;
         color: #cbd5e1;
     }
+    #tenantPortalSection.schedi-newdash .sd-hours-week-day.is-closed .sd-hours-week-closed-note { font-size: 10px; }
+    #tenantPortalSection.schedi-newdash .sd-hours-day.is-closed .sd-hours-week-closed-note { font-size: 16px; }
     #tenantPortalSection.schedi-newdash .sd-hours-week-day.is-closed .sd-hours-week-block {
         background: transparent;
         border-style: dashed;
@@ -3713,9 +3720,14 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
         border-color: #e5e7eb !important;
         color: #0f172a;
     }
+    html.schedi-light #tenantPortalSection.schedi-newdash .sd-hours-day.is-closed .sd-time-input:disabled,
+    html.schedi-light #tenantPortalSection.schedi-newdash .sd-hours-week-day.is-closed .sd-time-input:disabled {
+        color: #0f172a;
+        -webkit-text-fill-color: #0f172a;
+    }
     html.schedi-light #tenantPortalSection.schedi-newdash .sd-hours-week-dow,
-    html.schedi-light #tenantPortalSection.schedi-newdash .sd-hours-week-state,
     html.schedi-light #tenantPortalSection.schedi-newdash .sd-hours-week-day.is-closed .sd-hours-week-closed-note,
+    html.schedi-light #tenantPortalSection.schedi-newdash .sd-hours-day.is-closed .sd-hours-week-closed-note,
     html.schedi-light #tenantPortalSection.schedi-newdash .sd-hours-week-day.is-closed .sd-hours-week-block,
     html.schedi-light #tenantPortalSection.schedi-newdash .sd-hours-week-day.is-closed .sd-hours-week-block .sd-hours-week-when,
     html.schedi-light #tenantPortalSection.schedi-newdash .sd-hours-week-day.is-closed .sd-hours-week-block .sd-hours-week-title,
@@ -15543,9 +15555,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
                 : '<p class="sd-hours-week-empty">No blocked time</p>';
             return '<div class="sd-hours-week-day rounded-xl border min-h-[7.5rem] space-y-1.5' + (h.open ? '' : ' is-closed') + '">'
                 + '<div class="sd-hours-week-top">'
-                + '<span class="sd-hours-week-dow"><span class="sd-hours-week-short">' + esc(day) + '</span><span class="sd-hours-week-long">' + esc(label) + '</span></span>'
-                + '<span class="sd-hours-week-state">' + (h.open ? 'Open' : 'Closed') + '</span></div>'
-                + '<label class="sd-hours-open"><span id="shiftOpenLabel_' + day + '">Open</span><input type="checkbox" id="shiftOpen_' + day + '" class="sd-pay-switch" role="switch" aria-checked="' + (h.open ? 'true' : 'false') + '" aria-labelledby="shiftOpenLabel_' + day + '"' + (h.open ? ' checked' : '') + ' onchange="hoursWeekOpenChanged(' + jsArg(day) + ')"></label>'
+                + '<span class="sd-hours-week-dow"><span class="sd-hours-week-short">' + esc(day) + '</span><span class="sd-hours-week-long">' + esc(label) + '</span></span></div>'
+                + '<label class="sd-hours-open"><span id="shiftOpenLabel_' + day + '">' + (h.open ? 'Open' : 'Closed') + '</span><input type="checkbox" id="shiftOpen_' + day + '" class="sd-pay-switch" role="switch" aria-checked="' + (h.open ? 'true' : 'false') + '" aria-labelledby="shiftOpenLabel_' + day + '"' + (h.open ? ' checked' : '') + ' onchange="hoursWeekOpenChanged(' + jsArg(day) + ')"></label>'
                 + '<div class="sd-hours-times">'
                 + ownerTimeComboHtml('shiftStart_' + day, h.start, 'Opens', 'Show open times', '', 'shiftError_' + day)
                 + ownerTimeComboHtml('shiftEnd_' + day, h.end, 'Closes', 'Show close times', '', 'shiftError_' + day)
@@ -15710,15 +15721,27 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
         }
         window.copyHoursToOtherDays = copyHoursToOtherDays;
 
-        function hoursWeekOpenChanged(day) {
+        function hoursApplyOpenState(day) {
             var openEl = document.getElementById('shiftOpen_' + day);
-            var card = openEl && openEl.closest ? openEl.closest('.sd-hours-week-day') : null;
-            if (card) {
-                var open = !!(openEl && openEl.checked);
-                card.classList.toggle('is-closed', !open);
-                var mark = card.querySelector('.sd-hours-week-state');
-                if (mark) mark.textContent = open ? 'Open' : 'Closed';
-            }
+            if (!openEl) return;
+            var open = !!openEl.checked;
+            var card = openEl.closest ? (openEl.closest('.sd-hours-week-day') || openEl.closest('.sd-hours-day')) : null;
+            if (card) card.classList.toggle('is-closed', !open);
+            var label = document.getElementById('shiftOpenLabel_' + day);
+            if (label) label.textContent = open ? 'Open' : 'Closed';
+            ['shiftStart_', 'shiftEnd_'].forEach(function (prefix) {
+                var input = document.getElementById(prefix + day);
+                if (!input) return;
+                input.disabled = !open;
+                var root = input.closest ? input.closest('[data-time-combo]') : null;
+                var btn = root ? root.querySelector('.sd-time-open') : null;
+                if (btn) btn.disabled = !open;
+                if (!open && root && root.classList.contains('is-open')) closeOwnerTimeList(root);
+            });
+        }
+
+        function hoursWeekOpenChanged(day) {
+            hoursApplyOpenState(day);
             paintHoursWeekSummary();
         }
         window.hoursWeekOpenChanged = hoursWeekOpenChanged;
@@ -15782,12 +15805,12 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
                     shiftsGrid.innerHTML = days.map(day => {
                         const h = tenant.operatingHours[day] || { open: true, start: '09:00 AM', end: '05:00 PM' };
                         return `
-                        <div class="sd-hours-day">
+                        <div class="sd-hours-day${h.open ? '' : ' is-closed'}">
                             <div class="sd-hours-head">
                                 <span class="sd-hours-name">${dayLabels[day]}</span>
                                 <label class="sd-hours-open">
-                                    <span id="shiftOpenLabel_${day}">Open</span>
-                                    <input type="checkbox" id="shiftOpen_${day}" class="sd-pay-switch" role="switch" aria-checked="${h.open ? 'true' : 'false'}" aria-labelledby="shiftOpenLabel_${day}" ${h.open ? 'checked' : ''} onchange="paintHoursWeekSummary()">
+                                    <span id="shiftOpenLabel_${day}">${h.open ? 'Open' : 'Closed'}</span>
+                                    <input type="checkbox" id="shiftOpen_${day}" class="sd-pay-switch" role="switch" aria-checked="${h.open ? 'true' : 'false'}" aria-labelledby="shiftOpenLabel_${day}" ${h.open ? 'checked' : ''} onchange="hoursWeekOpenChanged('${day}')">
                                 </label>
                             </div>
                             <div class="sd-hours-times">
@@ -15795,6 +15818,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
                                 ${ownerTimeComboHtml('shiftEnd_' + day, h.end, 'Closes', 'Show close times', '', 'shiftError_' + day)}
                             </div>
                             <p id="shiftError_${day}" class="sd-hours-error" role="alert"></p>
+                            <p class="sd-hours-week-closed-note">Not applied while closed</p>
                         </div>
                     `;
                     }).join('');
@@ -15802,6 +15826,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
             }
             bindOwnerTimeCombos();
             if (typeof syncPaySwitchAriaAll === 'function') syncPaySwitchAriaAll();
+            ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].forEach(hoursApplyOpenState);
 
             if (rulesList) {
                 ensureBlockedArrays(tenant);
