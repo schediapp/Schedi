@@ -1175,17 +1175,21 @@ describe("owner dashboard preview", () => {
 
   it("fits service icon labels and pins the service close", () => {
     const css = dashCss(html);
-    expect(html).toContain('class="sd-icon-name');
+    expect(html).toContain("var nameClass = 'sd-icon-name'");
     expect(html).toContain("is-long");
-    expect(html).toContain('label.trim().length > 5');
+    expect(html).toContain("is-wrap");
+    expect(html).toContain("trimmed.length > 5");
+    expect(html).toContain("/\\s/.test(trimmed)");
     expect(html).not.toContain('class="truncate w-full text-center"');
     expect(html).toContain('class="sd-svc-sheet');
     expect(html).toContain('class="sd-form-head"');
     expect(css).toContain("body.schedi-newdash #svcIconGrid .sd-icon-name.is-long {");
-    expect(css).toContain("font-size: 13px;");
-    expect(css).toContain("letter-spacing: -0.03em;");
-    expect(css).toContain("overflow-wrap: break-word;");
+    expect(css).toContain("body.schedi-newdash #svcIconGrid .sd-icon-name.is-wrap {");
+    expect(css).toContain("font-size: clamp(11px, 20cqi, 13px);");
+    expect(css).toContain("letter-spacing: -0.04em;");
+    expect(css).toContain("overflow-wrap: normal;");
     expect(css).toContain("text-overflow: clip;");
+    expect(css).toContain("container-type: inline-size;");
     expect(css).toContain("height: 100svh;");
     expect(css).toContain("body.schedi-newdash #tenantServiceModal > .sd-svc-sheet {");
     expect(css).toContain("z-index: 90;");
@@ -3835,23 +3839,66 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
           const clipped = await page.evaluate(() => {
             const missed: string[] = [];
             const sizes: Record<string, string> = {};
+            const lines: Record<string, number> = {};
+            const ellipsis: string[] = [];
+            const fit = (label: HTMLElement, state: string) => {
+              const name = label.textContent || "";
+              const style = getComputedStyle(label);
+              sizes[name] = style.fontSize;
+              const range = document.createRange();
+              range.selectNodeContents(label);
+              lines[name] = range.getClientRects().length;
+              const overflow = label.scrollWidth > label.clientWidth + 1 || label.scrollHeight > label.clientHeight + 1 || style.textOverflow === "ellipsis";
+              if (style.textOverflow === "ellipsis" && ellipsis.indexOf(name) < 0) ellipsis.push(name);
+              const key = `${state}:${name}`;
+              if (overflow && missed.indexOf(key) < 0) missed.push(key);
+              if (label.classList.contains("is-long") && lines[name] !== 1 && missed.indexOf(`lines:${name}`) < 0) missed.push(`lines:${name}`);
+            };
             const tabs = Array.prototype.slice.call(document.querySelectorAll("#svcIconCats [role='tab']")) as HTMLButtonElement[];
+            const ids: string[] = [];
             tabs.forEach((tab) => {
               tab.click();
-              Array.prototype.forEach.call(document.querySelectorAll("#svcIconGrid .sd-icon-name"), (label: HTMLElement) => {
-                const name = label.textContent || "";
-                const style = getComputedStyle(label);
-                sizes[name] = style.fontSize;
-                const overflow = label.scrollWidth > label.clientWidth + 1 || label.scrollHeight > label.clientHeight + 1 || style.textOverflow === "ellipsis";
-                if (overflow && missed.indexOf(name) < 0) missed.push(name);
+              Array.prototype.forEach.call(document.querySelectorAll("#svcIconGrid [role='option']"), (button: HTMLElement) => {
+                const id = button.getAttribute("data-icon") || "";
+                if (id && ids.indexOf(id) < 0) ids.push(id);
+                const label = button.querySelector(".sd-icon-name") as HTMLElement | null;
+                if (label && button.getAttribute("aria-selected") !== "true") fit(label, "rest");
               });
             });
-            return { missed, star: sizes.Star || "", calendar: sizes.Calendar || "", kettlebell: sizes.Kettlebell || "" };
+            const api = window as unknown as { setServiceIconCategory: (id: string) => void; selectServiceIcon: (id: string) => void };
+            api.setServiceIconCategory("all");
+            ids.forEach((id) => {
+              api.selectServiceIcon(id);
+              const label = document.querySelector("#svcIconGrid [role='option'][aria-selected='true'] .sd-icon-name") as HTMLElement | null;
+              if (!label) missed.push(`missing:${id}`);
+              else fit(label, "selected");
+            });
+            return {
+              missed,
+              ellipsis,
+              star: sizes.Star || "",
+              calendar: sizes.Calendar || "",
+              kettlebell: sizes.Kettlebell || "",
+              shampoo: sizes.Shampoo || "",
+              detergent: sizes.Detergent || "",
+              language: sizes.Language || "",
+              realEstate: lines["Real estate"] || 0,
+              homeRepair: lines["Home repair"] || 0,
+            };
           });
+          expect(clipped.ellipsis, `${width} ${theme}`).toEqual([]);
           expect(clipped.missed, `${width} ${theme} ${clipped.missed.join(", ")}`).toEqual([]);
           expect(clipped.star, `${width} ${theme}`).toBe("16px");
-          expect(clipped.calendar, `${width} ${theme}`).toBe("13px");
-          expect(clipped.kettlebell, `${width} ${theme}`).toBe("13px");
+          expect(parseFloat(clipped.calendar), `${width} ${theme}`).toBeLessThanOrEqual(13);
+          expect(parseFloat(clipped.calendar), `${width} ${theme}`).toBeGreaterThanOrEqual(11);
+          expect(parseFloat(clipped.kettlebell), `${width} ${theme}`).toBeLessThanOrEqual(13);
+          expect(parseFloat(clipped.shampoo), `${width} ${theme}`).toBeLessThanOrEqual(13);
+          expect(parseFloat(clipped.detergent), `${width} ${theme}`).toBeLessThanOrEqual(13);
+          expect(parseFloat(clipped.language), `${width} ${theme}`).toBeLessThanOrEqual(13);
+          expect(clipped.realEstate, `${width} ${theme}`).toBeGreaterThanOrEqual(1);
+          expect(clipped.realEstate, `${width} ${theme}`).toBeLessThanOrEqual(2);
+          expect(clipped.homeRepair, `${width} ${theme}`).toBeGreaterThanOrEqual(1);
+          expect(clipped.homeRepair, `${width} ${theme}`).toBeLessThanOrEqual(2);
           await page.click("#tenantServiceModal .sd-form-close");
           await page.evaluate(() => (window as unknown as { openEditServiceModal: (id: number) => void }).openEditServiceModal(1));
           await page.waitForSelector("#tenantServiceModal:not(.hidden) .sd-form-close", { timeout: 5000 });

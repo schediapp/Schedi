@@ -1588,7 +1588,20 @@ body.schedi-newdash #svcIconGrid .sd-icon-name {
     white-space: normal;
     overflow: visible;
     text-overflow: clip;
-    overflow-wrap: break-word;
+    overflow-wrap: normal;
+    word-break: normal;
+}
+body.schedi-newdash #svcIconGrid .sd-icon-name.is-long {
+    white-space: nowrap;
+    text-overflow: clip;
+    overflow: visible;
+}
+body.schedi-newdash #svcIconGrid .sd-icon-name.is-wrap {
+    white-space: normal;
+    overflow-wrap: normal;
+    word-break: normal;
+    text-overflow: clip;
+    overflow: visible;
 }
 #tenantPortalSection.schedi-newdash .sd-svc-mark .fa-solid,
 body.schedi-newdash .sd-svc-mark .fa-solid { font-size: 14px; line-height: 1; }
@@ -4114,17 +4127,43 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-theme-seg { background
         margin: 0 !important;
         border-radius: 20px 20px 0 0;
     }
+    body.schedi-newdash #svcIconGrid [role="option"] {
+        container-type: inline-size;
+        box-sizing: border-box;
+        border-width: 1px;
+        padding: 8px 2px;
+        height: auto;
+        overflow: visible;
+    }
+    body.schedi-newdash #svcIconGrid [role="option"][aria-selected="true"] {
+        border-width: 1px;
+        padding: 8px 2px;
+    }
     body.schedi-newdash #svcIconGrid .sd-icon-name {
         font-size: 16px;
         letter-spacing: 0;
         white-space: nowrap;
+        text-overflow: clip;
+        overflow: visible;
     }
     body.schedi-newdash #svcIconGrid .sd-icon-name.is-long {
-        font-size: 13px;
-        letter-spacing: -0.03em;
+        font-size: 12px;
+        font-size: clamp(11px, 20cqi, 13px);
+        letter-spacing: -0.04em;
         line-height: 1.1;
+        white-space: nowrap;
+        text-overflow: clip;
+        overflow: visible;
+    }
+    body.schedi-newdash #svcIconGrid .sd-icon-name.is-wrap {
+        font-size: 13px;
+        letter-spacing: -0.02em;
+        line-height: 1.15;
         white-space: normal;
-        overflow-wrap: break-word;
+        overflow-wrap: normal;
+        word-break: normal;
+        text-overflow: clip;
+        overflow: visible;
     }
     body.schedi-newdash #tenantServiceModal textarea { min-height: 88px; }
     body.schedi-newdash #tenantServiceModal #svcIconUpload { min-height: 0; width: 1px; height: 1px; }
@@ -19237,12 +19276,15 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
                 var on = row.id === selected;
                 var auto = !explicit && row.id === suggestion;
                 var label = String(row.name || '');
-                var longName = label.trim().length > 5;
+                var trimmed = label.trim();
+                var wrapName = /\s/.test(trimmed);
+                var longName = !wrapName && trimmed.length > 5;
+                var nameClass = 'sd-icon-name' + (wrapName ? ' is-wrap' : (longName ? ' is-long' : ''));
                 return '<button type="button" role="option" aria-selected="' + (on ? 'true' : 'false') + '" data-icon="' + esc(row.id) + '" onclick="selectServiceIcon(' + jsArg(row.id) + ')" class="relative flex flex-col items-center justify-center gap-1 rounded-xl border px-1 py-2 text-[10px] font-bold '
                     + (on ? 'border-brand-400 bg-brand-500/20 text-white' : 'border-slate-700 bg-slate-900 text-slate-300') + '">'
                     + (auto ? '<span class="svc-icon-auto">Auto</span>' : '')
                     + serviceSvgMarkup(row.id)
-                    + '<span class="sd-icon-name' + (longName ? ' is-long' : '') + '">' + esc(label) + '</span>'
+                    + '<span class="' + nameClass + '">' + esc(label) + '</span>'
                     + '</button>';
             }).join('');
         };
