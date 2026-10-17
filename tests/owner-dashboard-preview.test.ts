@@ -600,6 +600,15 @@ describe("owner dashboard preview", () => {
     expect(render).toContain("hoursWeekGridHtml");
     expect(extractFunction(html, "hoursWeekGridHtml")).toContain("roster-week-grid");
     expect(extractFunction(html, "hoursWeekDayHtml")).toContain("shiftOpen_");
+    expect(extractFunction(html, "hoursWeekDayHtml")).toContain('class="sd-pay-switch" role="switch"');
+    expect(render).toContain('class="sd-pay-switch" role="switch"');
+    expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-row > .sd-time { grid-area: time; }");
+    expect(css).not.toContain("#tenantPortalSection.schedi-newdash .sd-time { grid-area: time; }");
+    expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-hours-times > .sd-time");
+    expect(css).toContain("grid-area: auto");
+    expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-hours-day .sd-hours-times {\n        grid-template-columns: minmax(0, 1fr);");
+    expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-hours-open .sd-pay-switch,");
+    expect(css).toContain("width: 52px;\n    height: 30px;");
     expect(extractFunction(html, "hoursWeekDayHtml")).toContain("openAddBlockedTimeForDay");
     expect(extractFunction(html, "hoursWeekDayHtml")).toContain("copyHoursToOtherDays");
     expect(extractFunction(html, "copyHoursToOtherDays")).not.toContain("saveState");
@@ -1850,6 +1859,193 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
     }
   }, 90000);
+
+  it("keeps Opens and Closes on their own fields and uses the open switch", async () => {
+    const types: Record<string, string> = {
+      ".html": "text/html; charset=utf-8",
+      ".js": "text/javascript; charset=utf-8",
+      ".svg": "image/svg+xml",
+      ".png": "image/png",
+      ".json": "application/json",
+      ".webmanifest": "application/manifest+json",
+    };
+    const server = createServer((req, res) => {
+      const path = new URL(req.url || "/", "http://127.0.0.1").pathname;
+      const file = path === "/" || path === "/portal-preview" ? "/index.html" : path;
+      const full = join(root, file);
+      if (!full.startsWith(root) || !existsSync(full)) {
+        res.writeHead(404);
+        res.end("missing");
+        return;
+      }
+      res.writeHead(200, { "content-type": types[extname(full)] || "application/octet-stream" });
+      res.end(readFileSync(full));
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const address = server.address();
+    const port = typeof address === "object" && address ? address.port : 0;
+    const puppeteer = await import("puppeteer-core");
+    const browser = await puppeteer.default.launch({
+      executablePath: chrome,
+      headless: true,
+      args: ["--no-sandbox", "--disable-dev-shm-usage"],
+    });
+    const overlaps = (a: { left: number; right: number; top: number; bottom: number }, b: { left: number; right: number; top: number; bottom: number }) => {
+      const width = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+      const height = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+      return width > 1 && height > 1;
+    };
+    try {
+      const page = await browser.newPage();
+      await page.goto(`http://127.0.0.1:${port}/portal-preview`, { waitUntil: "domcontentloaded", timeout: 45000 });
+      await page.waitForFunction(() => document.body.classList.contains("schedi-newdash"), { timeout: 20000 });
+      await page.evaluate(() => (window as unknown as { schediDashGo: (tab: string) => void }).schediDashGo("hours"));
+      await page.waitForSelector("#shiftOpen_Mon", { timeout: 10000 });
+      const measure = () => page.evaluate(() => {
+        const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+        const card = document.getElementById("tenantSectionHours")!.getBoundingClientRect();
+        return days.map((day) => {
+          const open = document.getElementById("shiftOpen_" + day) as HTMLInputElement;
+          const start = document.getElementById("shiftStart_" + day) as HTMLInputElement;
+          const end = document.getElementById("shiftEnd_" + day) as HTMLInputElement;
+          const startCombo = start.closest("[data-time-combo]") as HTMLElement;
+          const endCombo = end.closest("[data-time-combo]") as HTMLElement;
+          const startLabel = startCombo.querySelector(".sd-time-label") as HTMLElement;
+          const endLabel = endCombo.querySelector(".sd-time-label") as HTMLElement;
+          const box = (el: Element) => {
+            const rect = el.getBoundingClientRect();
+            return { top: rect.top, right: rect.right, bottom: rect.bottom, left: rect.left, width: rect.width, height: rect.height };
+          };
+          const openStyle = getComputedStyle(open);
+          return {
+            day,
+            startValue: start.value,
+            endValue: end.value,
+            startLabel: startLabel.textContent,
+            endLabel: endLabel.textContent,
+            startCombo: box(startCombo),
+            endCombo: box(endCombo),
+            startLabelBox: box(startLabel),
+            endLabelBox: box(endLabel),
+            startBox: box(start),
+            endBox: box(end),
+            startClip: start.scrollWidth - start.clientWidth,
+            endClip: end.scrollWidth - end.clientWidth,
+            labelColor: getComputedStyle(startLabel).color,
+            position: getComputedStyle(startCombo).position,
+            openRole: open.getAttribute("role"),
+            aria: open.getAttribute("aria-checked"),
+            checked: open.checked,
+            switchW: openStyle.width,
+            switchH: openStyle.height,
+            switchBg: openStyle.backgroundColor,
+            appearance: openStyle.appearance,
+            openBox: box(open),
+            card: { left: card.left, right: card.right },
+          };
+        });
+      });
+      for (const width of [340, 390, 1280]) {
+        await page.setViewport({ width, height: 900 });
+        for (const theme of ["dark", "light"] as const) {
+          await page.evaluate((mode) => {
+            (window as unknown as { setSchediTheme: (mode: string) => void }).setSchediTheme(mode);
+          }, theme);
+          await page.waitForFunction((mode) => document.documentElement.classList.contains("schedi-light") === (mode === "light"), { timeout: 2000 }, theme);
+          for (const layout of ["list", "week"] as const) {
+            const pressed = await page.$eval("#hoursWeekLayoutBtn", (el) => el.getAttribute("aria-pressed"));
+            if ((layout === "week") !== (pressed === "true")) {
+              await page.$eval("#hoursWeekLayoutBtn", (el) => (el as HTMLButtonElement).click());
+              await page.waitForSelector(layout === "week" ? ".sd-hours-week-day" : ".sd-hours-day", { timeout: 5000 });
+            }
+            const rows = await measure();
+            expect(rows).toHaveLength(7);
+            for (const row of rows) {
+              expect(row.startLabel).toBe("Opens");
+              expect(row.endLabel).toBe("Closes");
+              expect(row.position).toBe("relative");
+              expect(row.startCombo.height).toBeGreaterThan(40);
+              expect(row.endCombo.height).toBeGreaterThan(40);
+              expect(row.startCombo.width).toBeGreaterThan(80);
+              expect(row.endCombo.width).toBeGreaterThan(80);
+              expect(overlaps(row.startCombo, row.endCombo)).toBe(false);
+              expect(overlaps(row.startLabelBox, row.endLabelBox)).toBe(false);
+              expect(overlaps(row.startBox, row.endBox)).toBe(false);
+              expect(row.startLabelBox.bottom).toBeLessThanOrEqual(row.startBox.top + 2);
+              expect(row.endLabelBox.bottom).toBeLessThanOrEqual(row.endBox.top + 2);
+              expect(row.startLabelBox.left).toBeLessThan(row.startBox.right);
+              expect(row.startLabelBox.right).toBeGreaterThan(row.startBox.left);
+              expect(row.endLabelBox.left).toBeLessThan(row.endBox.right);
+              expect(row.endLabelBox.right).toBeGreaterThan(row.endBox.left);
+              expect(row.startClip).toBeLessThanOrEqual(1);
+              expect(row.endClip).toBeLessThanOrEqual(1);
+              expect(row.labelColor).toBe(theme === "dark" ? "rgb(203, 213, 225)" : "rgb(51, 65, 85)");
+              const stacked = row.startCombo.bottom <= row.endCombo.top + 1;
+              const beside = row.startCombo.right <= row.endCombo.left + 1;
+              expect(stacked || beside).toBe(true);
+              if (width < 860 || layout === "week") expect(stacked).toBe(true);
+              else expect(beside).toBe(true);
+              expect(row.openRole).toBe("switch");
+              expect(row.appearance).toBe("none");
+              expect(row.aria).toBe(row.checked ? "true" : "false");
+              expect(row.switchW).toBe("52px");
+              expect(row.switchH).toBe("30px");
+              expect(row.openBox.left).toBeGreaterThanOrEqual(row.card.left - 1);
+              expect(row.openBox.right).toBeLessThanOrEqual(row.card.right + 1);
+              expect(row.openBox.width).toBeGreaterThanOrEqual(51);
+              expect(row.openBox.height).toBeGreaterThanOrEqual(29);
+              if (row.day === "Sun") {
+                expect(row.checked).toBe(false);
+                expect(row.switchBg).toBe(theme === "dark" ? "rgb(100, 116, 139)" : "rgb(203, 213, 225)");
+              } else {
+                expect(row.checked).toBe(true);
+                expect(row.switchBg).toBe(theme === "dark" ? "rgb(16, 185, 129)" : "rgb(5, 150, 105)");
+              }
+            }
+            const monday = rows.find((row) => row.day === "Mon");
+            expect(monday?.startValue).toBe("09:00 AM");
+            expect(monday?.endValue).toBe("06:00 PM");
+          }
+        }
+      }
+      await page.setViewport({ width: 390, height: 900 });
+      await page.evaluate(() => (window as unknown as { setSchediTheme: (mode: string) => void }).setSchediTheme("dark"));
+      if (await page.$eval("#hoursWeekLayoutBtn", (el) => el.getAttribute("aria-pressed")) === "true") {
+        await page.$eval("#hoursWeekLayoutBtn", (el) => (el as HTMLButtonElement).click());
+      }
+      await page.$eval("#shiftOpen_Mon", (el) => (el as HTMLInputElement).click());
+      const closedList = await page.evaluate(() => ({
+        aria: document.getElementById("shiftOpen_Mon")?.getAttribute("aria-checked"),
+        checked: (document.getElementById("shiftOpen_Mon") as HTMLInputElement).checked,
+        summary: document.getElementById("hoursWeekSummary")?.textContent || "",
+      }));
+      expect(closedList.checked).toBe(false);
+      expect(closedList.aria).toBe("false");
+      expect(closedList.summary).toContain("Mon, Sun Closed");
+      expect(closedList.summary).toContain("Wed–Fri 9 AM–6 PM");
+      expect(closedList.summary).not.toContain("Mon, Wed–Fri");
+      await page.$eval("#shiftOpen_Mon", (el) => (el as HTMLInputElement).click());
+      const reopened = await page.evaluate(() => document.getElementById("hoursWeekSummary")?.textContent || "");
+      expect(reopened).toContain("Mon, Wed–Fri 9 AM–6 PM");
+      await page.$eval("#hoursWeekLayoutBtn", (el) => (el as HTMLButtonElement).click());
+      await page.waitForSelector(".sd-hours-week-day");
+      await page.$eval("#shiftOpen_Mon", (el) => (el as HTMLInputElement).click());
+      const closedWeek = await page.evaluate(() => {
+        const card = document.getElementById("shiftOpen_Mon")?.closest(".sd-hours-week-day");
+        return {
+          aria: document.getElementById("shiftOpen_Mon")?.getAttribute("aria-checked"),
+          state: card?.querySelector(".sd-hours-week-state")?.textContent || "",
+          closed: card?.classList.contains("is-closed") || false,
+        };
+      });
+      expect(closedWeek.aria).toBe("false");
+      expect(closedWeek.state).toBe("Closed");
+      expect(closedWeek.closed).toBe(true);
+    } finally {
+      await browser.close();
+      await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+    }
+  }, 120000);
 
   it("sizes payment switches at 340, 390, and 1280 in light and dark", async () => {
     const types: Record<string, string> = {
