@@ -605,8 +605,6 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pill-grey { color: #33
 #tenantPortalSection.schedi-newdash .sd-pay { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; border-radius: 999px; padding: 2px 8px; font-size: 11px; font-weight: 800; line-height: 1.3; border: 1px solid var(--sd-line); color: var(--sd-text); background: rgba(148, 163, 184, 0.14); }
 #tenantPortalSection.schedi-newdash .sd-pay svg { width: 14px; height: 14px; display: block; flex: none; }
 #tenantPortalSection.schedi-newdash .sd-pay-card { color: var(--sd-brand-2); border-color: rgba(16, 185, 129, 0.4); background: rgba(16, 185, 129, 0.14); }
-#tenantPortalSection.schedi-newdash .sd-pay-square { color: #a5b4fc; border-color: rgba(129, 140, 248, 0.45); background: rgba(129, 140, 248, 0.16); }
-html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-square { color: #3730a3; border-color: rgba(67, 56, 202, 0.35); background: rgba(99, 102, 241, 0.12); }
 #tenantPortalSection.schedi-newdash .sd-pay-unpaid { color: var(--sd-rose); border-color: rgba(244, 63, 94, 0.35); background: rgba(244, 63, 94, 0.1); }
 #tenantPortalSection.schedi-newdash .sd-pay.is-icon { padding: 3px; }
 #tenantPortalSection.schedi-newdash .sd-pay.is-icon .sd-pay-word { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); border: 0; }
@@ -614,8 +612,71 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-square { color: #3
 #tenantPortalSection.schedi-newdash .sd-chip { min-height: 36px; border-radius: 999px; border: 1px solid var(--sd-line); background: transparent; color: var(--sd-text); font-weight: 800; font-size: 12px; padding: 4px 10px; display: inline-flex; align-items: center; }
 #tenantPortalSection.schedi-newdash .sd-chip svg { width: 14px; height: 14px; display: block; flex: none; margin-right: 4px; }
 #tenantPortalSection.schedi-newdash .sd-chip.is-on { background: rgba(16, 185, 129, 0.16); color: var(--sd-brand-2); border-color: rgba(16, 185, 129, 0.45); }
+/* Paid-method brand colors. Venmo is a tinted pill; PayPal is a solid fill so the blues stay apart.
+   Venmo #008CFF — Venmo blue, PayPal Brand Identity Quick Guide (2022).
+   Cash App #00D64F — Cash App green. Press kits have also used #00D632; #00D64F is the mark used here.
+   Zelle #6D1ED4 — Zelle style guide (brand.zelle.com).
+   PayPal #003087 light / #0070E0 dark — Left Blue / Right Blue, PayPal Brand Identity Quick Guide.
+   Square — black and white, like the Square logo (Square brand guidelines). */
+#tenantPortalSection.schedi-newdash .sd-pay-venmo,
+#tenantPortalSection.schedi-newdash .sd-chip.sd-pay-venmo {
+    color: #b9ddff;
+    background: rgba(0, 140, 255, 0.16);
+    border-color: #008CFF;
+}
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-venmo,
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-chip.sd-pay-venmo {
+    color: #0057B8;
+    background: rgba(0, 140, 255, 0.12);
+    border-color: #008CFF;
+}
+#tenantPortalSection.schedi-newdash .sd-pay-cashapp,
+#tenantPortalSection.schedi-newdash .sd-chip.sd-pay-cashapp,
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-cashapp,
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-chip.sd-pay-cashapp {
+    color: #0b1220;
+    background: #00D64F;
+    border-color: #00A83C;
+}
+#tenantPortalSection.schedi-newdash .sd-pay-zelle,
+#tenantPortalSection.schedi-newdash .sd-chip.sd-pay-zelle,
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-zelle,
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-chip.sd-pay-zelle {
+    color: #ffffff;
+    background: #6D1ED4;
+    border-color: #6D1ED4;
+}
+#tenantPortalSection.schedi-newdash .sd-pay-paypal,
+#tenantPortalSection.schedi-newdash .sd-chip.sd-pay-paypal {
+    color: #ffffff;
+    background: #0070E0;
+    border-color: #0070E0;
+}
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-paypal,
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-chip.sd-pay-paypal {
+    color: #ffffff;
+    background: #003087;
+    border-color: #003087;
+}
+#tenantPortalSection.schedi-newdash .sd-pay-square,
+#tenantPortalSection.schedi-newdash .sd-chip.sd-pay-square {
+    color: #000000;
+    background: #ffffff;
+    border-color: #ffffff;
+}
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-square,
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-chip.sd-pay-square {
+    color: #ffffff;
+    background: #000000;
+    border-color: #000000;
+}
 #tenantPortalSection.schedi-newdash .sd-chip-count { margin-left: 4px; color: var(--sd-muted); font-weight: 700; }
-#tenantPortalSection.schedi-newdash .sd-chip.is-on .sd-chip-count { color: inherit; }
+#tenantPortalSection.schedi-newdash .sd-chip.is-on .sd-chip-count,
+#tenantPortalSection.schedi-newdash .sd-chip.sd-pay-venmo .sd-chip-count,
+#tenantPortalSection.schedi-newdash .sd-chip.sd-pay-cashapp .sd-chip-count,
+#tenantPortalSection.schedi-newdash .sd-chip.sd-pay-zelle .sd-chip-count,
+#tenantPortalSection.schedi-newdash .sd-chip.sd-pay-paypal .sd-chip-count,
+#tenantPortalSection.schedi-newdash .sd-chip.sd-pay-square .sd-chip-count { color: inherit; }
 #tenantPortalSection.schedi-newdash .sd-pay-filter-select { display: none; }
 #tenantPortalSection.schedi-newdash .sd-client-list { display: flex; flex-direction: column; }
 #tenantPortalSection.schedi-newdash .sd-client { display: block; padding: 12px 0; border-top: 1px solid var(--sd-line); }
@@ -1096,6 +1157,18 @@ body.schedi-newdash #svcIconGrid .fa-solid { width: 22px; height: 22px; display:
 #tenantPortalSection.schedi-newdash .sd-svc-mark .fa-solid,
 body.schedi-newdash .sd-svc-mark .fa-solid { font-size: 14px; line-height: 1; }
 body.schedi-newdash #tenantServicesGrid .sd-svc-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+#tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-svc-title { min-width: 0; margin: 0; overflow-wrap: anywhere; }
+@media (min-width: 768px) {
+    #tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-svc-title {
+        font-size: 15px;
+        font-weight: 600;
+        line-height: 1.35;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+}
 body.schedi-newdash #svcIconUploadDrop {
     position: relative;
     border: 1.5px dashed rgba(148, 163, 184, 0.75);
@@ -1794,6 +1867,58 @@ html.schedi-light body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.
     color: #064e3b;
     border-color: #047857;
     box-shadow: inset 0 0 0 1px #047857;
+}
+body.schedi-newdash .sd-pay-choice.sd-pay-venmo,
+body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.sd-pay-venmo {
+    color: #b9ddff;
+    background: rgba(0, 140, 255, 0.16);
+    border-color: #008CFF;
+}
+html.schedi-light body.schedi-newdash .sd-pay-choice.sd-pay-venmo,
+html.schedi-light body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.sd-pay-venmo {
+    color: #0057B8;
+    background: rgba(0, 140, 255, 0.12);
+    border-color: #008CFF;
+}
+body.schedi-newdash .sd-pay-choice.sd-pay-cashapp,
+body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.sd-pay-cashapp,
+html.schedi-light body.schedi-newdash .sd-pay-choice.sd-pay-cashapp,
+html.schedi-light body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.sd-pay-cashapp {
+    color: #0b1220;
+    background: #00D64F;
+    border-color: #00A83C;
+}
+body.schedi-newdash .sd-pay-choice.sd-pay-zelle,
+body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.sd-pay-zelle,
+html.schedi-light body.schedi-newdash .sd-pay-choice.sd-pay-zelle,
+html.schedi-light body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.sd-pay-zelle {
+    color: #ffffff;
+    background: #6D1ED4;
+    border-color: #6D1ED4;
+}
+body.schedi-newdash .sd-pay-choice.sd-pay-paypal,
+body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.sd-pay-paypal {
+    color: #ffffff;
+    background: #0070E0;
+    border-color: #0070E0;
+}
+html.schedi-light body.schedi-newdash .sd-pay-choice.sd-pay-paypal,
+html.schedi-light body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.sd-pay-paypal {
+    color: #ffffff;
+    background: #003087;
+    border-color: #003087;
+}
+body.schedi-newdash .sd-pay-choice.sd-pay-square,
+body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.sd-pay-square {
+    color: #000000;
+    background: #ffffff;
+    border-color: #ffffff;
+}
+html.schedi-light body.schedi-newdash .sd-pay-choice.sd-pay-square,
+html.schedi-light body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.sd-pay-square {
+    color: #ffffff;
+    background: #000000;
+    border-color: #000000;
 }
 body.schedi-newdash select,
 body.schedi-newdash select option { color-scheme: dark; }
@@ -2650,6 +2775,35 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
         }
         #tenantPortalSection.schedi-newdash #rosterListWrap.has-bulk { padding-bottom: 76px; }
     }
+    #tenantPortalSection.schedi-newdash .roster-cell-collected { text-align: right; vertical-align: middle; white-space: nowrap; }
+    #tenantPortalSection.schedi-newdash .roster-paid-amt { display: flex; flex-direction: column; align-items: flex-end; justify-content: center; line-height: 1.15; }
+    #tenantPortalSection.schedi-newdash .roster-paid-kicker { display: none; }
+    #tenantPortalSection.schedi-newdash .roster-paid-figure {
+        font-size: 16px;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: -0.02em;
+        color: var(--sd-text);
+        line-height: 1.15;
+    }
+    #tenantPortalSection.schedi-newdash .roster-paid-figure.is-muted { font-weight: 600; color: var(--sd-muted); }
+    #tenantPortalSection.schedi-newdash .roster-paid-note { font-size: 10px; font-weight: 700; color: var(--sd-muted); line-height: 1.2; }
+    /* Compare Plans modal. Light stripes stay pale; positive values use the same green as $0/mo. */
+    body.schedi-newdash #comparePlansModal .schedi-compare-table td:first-child { color: #e2e8f0; }
+    body.schedi-newdash #comparePlansModal .text-emerald-400,
+    body.schedi-newdash #comparePlansModal .text-brand-400 { color: #34d399; }
+    body.schedi-newdash #comparePlansModal .text-amber-300 { color: #fbbf24; }
+    body.schedi-newdash #comparePlansModal .text-slate-500 { color: #cbd5e1; }
+    body.schedi-newdash #comparePlansModal .text-indigo-400 { color: #a5b4fc; }
+    html.schedi-light body.schedi-newdash #comparePlansModal .schedi-compare-table .bg-slate-900\/40 { background-color: #f1f5f9 !important; }
+    html.schedi-light body.schedi-newdash #comparePlansModal .schedi-compare-table tr { border-color: #e5e7eb; }
+    html.schedi-light body.schedi-newdash #comparePlansModal .schedi-compare-table td:first-child { color: #1f2937 !important; }
+    html.schedi-light body.schedi-newdash #comparePlansModal .text-emerald-400,
+    html.schedi-light body.schedi-newdash #comparePlansModal .text-brand-400 { color: #047857 !important; }
+    html.schedi-light body.schedi-newdash #comparePlansModal .text-amber-300 { color: #9a3412 !important; }
+    html.schedi-light body.schedi-newdash #comparePlansModal .text-slate-500 { color: #334155 !important; }
+    html.schedi-light body.schedi-newdash #comparePlansModal .text-indigo-400 { color: #3730a3 !important; }
+    html.schedi-light body.schedi-newdash #comparePlansModal .schedi-compare-cards li { color: #1f2937; }
     @media (max-width: 639px) {
         #tenantPortalSection.schedi-newdash .sd-roster-all {
             display: flex;
@@ -2675,6 +2829,23 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
             max-width: calc(100% - 52px);
             min-width: 0;
         }
+        #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-collected {
+            width: 100%;
+            flex: 1 0 100%;
+            text-align: left;
+            white-space: normal;
+        }
+        #tenantPortalSection.schedi-newdash .roster-paid-amt { align-items: flex-start; }
+        #tenantPortalSection.schedi-newdash .roster-paid-kicker {
+            display: block;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: var(--sd-muted);
+            line-height: 1.2;
+        }
+        #tenantPortalSection.schedi-newdash .roster-paid-figure { font-size: 1.375rem; font-weight: 800; line-height: 1.1; }
     }
 
 </style>
@@ -3090,6 +3261,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                                     <th class="p-3">Service</th>
                                     <th class="p-3">Date & Time</th>
                                     <th class="p-3">Payment</th>
+                                    <th class="roster-cell-collected p-3 text-right">Paid</th>
                                     <th class="p-3 text-right">Actions</th>
                                 </tr>
                             </thead>
@@ -5822,6 +5994,52 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
             return roundMoney(svc.price);
         }
 
+        // Net dollars the client has paid the owner. A deposit that is still the only payment counts the deposit.
+        // Paid in full uses the recorded amount. A manual mark-paid with no amount uses the catalog service price,
+        // or $0 when that service has no price. refundAmount / amountRefunded reduce the total. refunded, or a
+        // status that says refunded, with no refund amount, nets to $0 and is marked refunded.
+        function rosterAmountCollected(app, tenant) {
+            var status = String((app && app.paymentStatus) || '').toUpperCase();
+            var refundMarked = !!(app && (app.refunded === true || status.indexOf('REFUND') !== -1));
+            var refundRaw = app && (hasPricedAmount(app.refundAmount) ? app.refundAmount : app.amountRefunded);
+            var deposit = app ? Number(app.depositAmount) : NaN;
+            var depositPaid = !!(app && app.depositPaid === true && isFinite(deposit) && deposit > 0);
+            var depositOnly = depositPaid && status.indexOf('DEPOSIT') !== -1;
+            var gross = 0;
+            var known = false;
+            if (depositOnly) {
+                gross = roundMoney(deposit);
+                known = true;
+            } else if (bookingPaymentState(app) === 'paid') {
+                if (app && hasPricedAmount(app.amount)) {
+                    gross = roundMoney(app.amount);
+                    known = true;
+                } else {
+                    var catalog = catalogServicePrice(tenant, app && app.serviceName);
+                    gross = catalog === null ? 0 : catalog;
+                    known = true;
+                }
+            } else if (depositPaid) {
+                gross = roundMoney(deposit);
+                known = true;
+            }
+            var refund = hasPricedAmount(refundRaw) ? roundMoney(refundRaw) : (refundMarked ? gross : 0);
+            var net = roundMoney(Math.max(0, gross - refund));
+            return { net: net, refund: refund, refunded: refundMarked || refund > 0, empty: !known && !refundMarked };
+        }
+
+        function rosterAmountCollectedHtml(app, tenant) {
+            var row = rosterAmountCollected(app, tenant);
+            if (row.empty) {
+                return '<div class="roster-paid-amt"><span class="roster-paid-kicker">Paid</span><span class="roster-paid-figure is-muted">—</span></div>';
+            }
+            var note = '';
+            if (row.refunded && row.net === 0) note = 'Refunded';
+            else if (row.refund > 0) note = 'Refund $' + row.refund.toFixed(2);
+            return '<div class="roster-paid-amt"><span class="roster-paid-kicker">Paid</span><span class="roster-paid-figure' + (row.net === 0 ? ' is-muted' : '') + '">$' + row.net.toFixed(2) + '</span>' +
+                (note ? '<span class="roster-paid-note">' + esc(note) + '</span>' : '') + '</div>';
+        }
+
         function rosterPaymentLabel(app) {
             // Display only: same short wording for online and owner-added bookings.
             var raw = String((app && app.paymentStatus) || '').trim();
@@ -6000,7 +6218,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
         }
 
         function noShowPillHtml() {
-            return '<span class="sd-pill sd-pill-grey">No-show</span>';
+            return '<span class="sd-pill sd-pill-rose">No-show</span>';
         }
 
         function appointmentReleasesSlot(app) {
@@ -9478,6 +9696,11 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
             return '<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">' + (body[kind] || body.unpaid) + '</svg>';
         }
 
+        function rosterBrandPayClass(kind) {
+            if (kind === 'venmo' || kind === 'cashapp' || kind === 'zelle' || kind === 'paypal' || kind === 'square') return ' sd-pay-' + kind;
+            return '';
+        }
+
         function appointmentPayMarkup(app, iconOnly) {
             var kind = appointmentPayKind(app);
             var label = ROSTER_PAY_WORDS[kind] || ROSTER_PAY_WORDS.unpaid;
@@ -9505,7 +9728,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                 box.innerHTML = ROSTER_PAY_FILTERS.map(function (row) {
                     var on = rosterPayFilter === row[0];
                     var icon = row[0] === 'all' ? '' : payKindSvg(row[0]);
-                    return '<button type="button" class="sd-chip' + (on ? ' is-on' : '') + '" data-pay-filter="' + row[0] + '" aria-pressed="' + (on ? 'true' : 'false') + '">' +
+                    return '<button type="button" class="sd-chip' + rosterBrandPayClass(row[0]) + (on ? ' is-on' : '') + '" data-pay-filter="' + row[0] + '" aria-pressed="' + (on ? 'true' : 'false') + '">' +
                         icon + esc(row[1]) + '<span class="sd-chip-count">' + counts[row[0]] + '</span></button>';
                 }).join('');
                 if (!box._payBound) {
@@ -10610,7 +10833,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                     { id: 'HB-1003', clientName: 'Jordan Lee', clientPhone: '(555) 201-7730', clientEmail: '', serviceName: 'Gloss', date: today, time: '01:30 PM', status: 'accepted', paymentStatus: 'PAY AT APPOINTMENT', amount: 80, durationMins: 75, walkIn: true },
                     { id: 'HB-1004', clientName: 'Priya Shah', clientPhone: '(555) 201-9094', clientEmail: 'priya@example.com', serviceName: 'Consultation', date: today, time: '04:00 PM', status: 'pending', paymentStatus: 'PENDING ZELLE', paymentMethod: 'zelle', durationMins: 30 },
                     { id: 'HB-1005', clientName: 'Avery Kim', clientPhone: '(555) 201-6621', clientEmail: 'avery@example.com', serviceName: 'Cut & style', date: day(-1), time: '02:00 PM', status: 'accepted', paymentStatus: 'PENDING VENMO', paymentMethod: 'venmo', amount: 55, durationMins: 45, noShow: true },
-                    { id: 'HB-1006', clientName: 'Noah Brooks', clientPhone: '(555) 201-1180', clientEmail: 'noah@example.com', serviceName: 'Cut & style', date: tomorrow, time: '10:00 AM', status: 'accepted', paymentStatus: 'PAID', paidMethod: 'cash', amount: 65, durationMins: 45 },
+                    { id: 'HB-1006', clientName: 'Noah Brooks', clientPhone: '(555) 201-1180', clientEmail: 'noah@example.com', serviceName: 'Cut & style', date: tomorrow, time: '10:00 AM', status: 'accepted', paymentStatus: 'PAID', paidMethod: 'cash', amount: 65, refundAmount: 20, durationMins: 45 },
                     { id: 'HB-1007', clientName: 'Elena Vasquez', clientPhone: '(555) 201-4419', clientEmail: 'elena@example.com', serviceName: 'Color', date: day(2), time: '01:00 PM', status: 'accepted', paymentStatus: 'PAY AT APPOINTMENT', amount: 120, durationMins: 90, seriesId: 'series-harbor-elena', recurrence: { frequency: 'weekly', count: 4, index: 2, total: 4, dates: [day(-5), day(2), day(9), day(16)] } },
                     { id: 'HB-1008', clientName: 'Sam Okonkwo', clientPhone: '(555) 201-3304', clientEmail: 'sam@example.com', serviceName: 'Cut & style', date: day(-4), time: '11:00 AM', status: 'accepted', paymentStatus: 'PAID IN CASH', paidMethod: 'cash', amount: 65, durationMins: 45, noShow: true },
                     { id: 'HB-1009', clientName: 'Casey Ng', clientPhone: '(555) 201-4410', clientEmail: 'casey@example.com', serviceName: 'Beard trim', date: day(-2), time: '03:00 PM', status: 'accepted', paymentStatus: 'PAID', paidMethod: 'cashapp', paymentMethod: 'cashapp', durationMins: 20 },
@@ -10630,7 +10853,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                     { id: 'HB-1023', clientName: 'Elena Vasquez', clientPhone: '(555) 201-4419', clientEmail: 'elena@example.com', serviceName: 'Color', date: day(-12), time: '01:00 PM', status: 'accepted', paymentStatus: 'PAID VIA CARD', paidMethod: 'card', amount: 120, durationMins: 90 },
                     { id: 'HB-1024', clientName: 'Elena Vasquez', clientPhone: '(555) 201-4419', clientEmail: 'elena@example.com', serviceName: 'Gloss', date: day(-18), time: '02:30 PM', status: 'accepted', paymentStatus: 'PAID', paidMethod: 'paypal', paymentMethod: 'paypal', amount: 80, durationMins: 75 },
                     { id: 'HB-1025', clientName: 'Elena Vasquez', clientPhone: '(555) 201-4419', clientEmail: 'ELENA@example.com', serviceName: 'Color', date: day(-35), time: '10:00 AM', status: 'accepted', paymentStatus: 'PAID VIA CARD', paidMethod: 'card', amount: 120, durationMins: 90 },
-                    { id: 'HB-1026', clientName: 'Elena Vasquez', clientPhone: '(555) 201-4419', clientEmail: 'elena@example.com', serviceName: 'Color', date: day(16), time: '01:00 PM', status: 'accepted', paymentStatus: 'PAY AT APPOINTMENT', amount: 120, durationMins: 90 }
+                    { id: 'HB-1026', clientName: 'Elena Vasquez', clientPhone: '(555) 201-4419', clientEmail: 'elena@example.com', serviceName: 'Color', date: day(16), time: '01:00 PM', status: 'accepted', paymentStatus: 'PAY AT APPOINTMENT', amount: 120, durationMins: 90 },
+                    { id: 'HB-1027', clientName: 'Riley Cho', clientPhone: '(555) 201-5520', clientEmail: 'riley@example.com', serviceName: 'Color', date: day(3), time: '11:00 AM', status: 'accepted', paymentStatus: 'DEPOSIT PAID', paymentMethod: 'card', paidMethod: 'card', paymentOptionLabel: 'Card deposit', amount: 120, depositAmount: 36, depositPaid: true, balanceDue: 84, durationMins: 90 }
                 ]
             };
         }
@@ -10825,7 +11049,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                 '<span class="block font-bold text-[11px] ' + strike + '">' + time + '</span>' +
                 '<span class="block text-[11px] ' + strike + '">' + name + '</span>' +
                 '<span class="sd-svc-line block text-[10px] text-slate-400 ' + (closed ? 'line-through' : '') + '">' + serviceMarkHtml(getTenant(), app && app.serviceName) + '<span>' + service + '</span></span>' +
-                (badge ? '<span class="sd-pill ' + (noShow ? 'sd-pill-grey' : (paid ? 'sd-pill-ok' : '')) + ' block text-[10px] font-bold mt-1 ' + (noShow || paid ? '' : (closed ? 'text-rose-300' : 'text-amber-300')) + '">' + badge + '</span>' : '') +
+                (badge ? '<span class="sd-pill ' + (noShow ? 'sd-pill-rose' : (paid ? 'sd-pill-ok' : '')) + ' block text-[10px] font-bold mt-1 ' + (noShow || paid ? '' : (closed ? 'text-rose-300' : 'text-amber-300')) + '">' + badge + '</span>' : '') +
                 appointmentPayMarkup(app, !!iconOnly) +
                 '</button>';
         }
@@ -10835,7 +11059,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
             var denied = String((app && app.status) || '').toLowerCase() === 'denied';
             var closed = cancelled || denied;
             var label = esc((app && app.time) || '') + ' ' + esc((app && app.clientName) || 'Client');
-            if (appointmentIsNoShow(app)) label += ' · No-show';
+            if (appointmentIsNoShow(app)) label += ' · <span class="sd-pill sd-pill-rose">No-show</span>';
             else if (cancelled) label += ' · Cancelled';
             else if (denied) label += ' · Denied';
             return '<div class="truncate text-[10px] ' + (closed ? 'line-through text-rose-300' : 'text-slate-300') + '">' + appointmentPayMarkup(app, true) + ' ' + label + '</div>';
@@ -11097,7 +11321,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                     (closed ? 'border-rose-500/40 bg-rose-500/10' : (st === 'pending' ? 'border-amber-500/40 bg-amber-500/10' : 'border-slate-700 bg-slate-950/40 hover:border-brand-400')) + '">' +
                     '<span class="min-w-0"><span class="block text-sm font-bold ' + (closed ? 'line-through text-rose-300' : 'text-white') + '">' + esc(a.time || 'Time not set') + ' · ' + esc(a.clientName || 'Client') + '</span>' +
                     '<span class="sd-svc-line block text-xs text-slate-400 truncate">' + serviceMarkHtml(tenant, a.serviceName) + '<span>' + esc(a.serviceName || 'Appointment') + '</span></span>' +
-                    (badge ? ('<span class="sd-pill ' + (noShow ? 'sd-pill-grey' : (paid ? 'sd-pill-ok' : '')) + ' block text-xs font-bold ' + (noShow || paid ? '' : (closed ? 'text-rose-300' : 'text-amber-300')) + '">' + badge + '</span>') : '') +
+                    (badge ? ('<span class="sd-pill ' + (noShow ? 'sd-pill-rose' : (paid ? 'sd-pill-ok' : '')) + ' block text-xs font-bold ' + (noShow || paid ? '' : (closed ? 'text-rose-300' : 'text-amber-300')) + '">' + badge + '</span>') : '') +
                     appointmentPayMarkup(a, false) + '</span>' +
                     '<i class="fa-solid fa-chevron-right text-slate-400 shrink-0"></i></button>';
             }).join('');
@@ -11460,7 +11684,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
 
             try { renderRosterPayFilter(tenant); } catch (errFilter) {}
             if (!tenant || !tenant.appointments || tenant.appointments.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-500">No client appointments logged yet.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-500">No client appointments logged yet.</td></tr>`;
                 renderRosterCalendar(tenant);
                 try { if (window.renderSchediToday) window.renderSchediToday(tenant); } catch (errToday) {}
                 try { renderRosterSearchResults(tenant && tenant.appointments); } catch (errSearch) {}
@@ -11471,7 +11695,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
             var payRows = tenant.appointments.filter(rosterPassesPayFilter);
             var rosterRows = rosterListRows(tenant);
             if (!payRows.length) {
-                tbody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-slate-500">No appointments use this payment method.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" class="p-4 text-center text-slate-500">No appointments use this payment method.</td></tr>';
                 renderRosterCalendar(tenant);
                 try { if (window.renderSchediToday) window.renderSchediToday(tenant); } catch (errToday) {}
                 try { renderRosterSearchResults(tenant && tenant.appointments); } catch (errSearch) {}
@@ -11479,7 +11703,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                 return;
             }
             if (!rosterRows.length) {
-                tbody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-slate-500">No appointments match this search.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" class="p-4 text-center text-slate-500">No appointments match this search.</td></tr>';
                 renderRosterCalendar(tenant);
                 try { if (window.renderSchediToday) window.renderSchediToday(tenant); } catch (errToday) {}
                 try { renderRosterSearchResults(tenant && tenant.appointments); } catch (errSearch) {}
@@ -11505,6 +11729,9 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                     </td>
                     <td class="roster-cell-pay p-3">
                         ${rosterStatusCellHtml(app)}
+                    </td>
+                    <td class="roster-cell-collected p-3">
+                        ${rosterAmountCollectedHtml(app, tenant)}
                     </td>
                     <td class="roster-cell-actions p-3 text-right">
                         <div class="roster-actions inline-flex flex-wrap justify-end gap-2">
@@ -11585,7 +11812,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                             </div>
                             <span class="text-xs font-bold text-white">${esc(formatServicePriceLabel(s) || 'No price')}</span>
                         </div>
-                        <h4 class="text-xs font-bold text-white">${esc(s.name)}${s.icon || serviceImageSrc(s) ? '' : ' <span class="ml-1 text-[10px] uppercase tracking-wide text-brand-400">Auto</span>'}</h4>
+                        <h4 class="sd-svc-title text-xs font-bold text-white" title="${esc(s.name)}">${esc(s.name)}${s.icon || serviceImageSrc(s) ? '' : ' <span class="ml-1 text-[10px] uppercase tracking-wide text-brand-400">Auto</span>'}</h4>
                         <p class="text-[11px] text-slate-400 mt-1 line-clamp-2">${esc(s.desc)}</p>
                     </div>
                     <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px]">
@@ -18032,7 +18259,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
             if (!box) return;
             box.innerHTML = OWNER_PAY_METHODS.map(function (row) {
                 var on = row[0] === _rosterPaidMethodSelected;
-                return '<button type="button" data-paid-method="' + row[0] + '" class="sd-pay-choice roster-paid-opt' + (on ? ' is-on' : '') + '" aria-pressed="' + (on ? 'true' : 'false') + '">' +
+                return '<button type="button" data-paid-method="' + row[0] + '" class="sd-pay-choice roster-paid-opt' + rosterBrandPayClass(row[0]) + (on ? ' is-on' : '') + '" aria-pressed="' + (on ? 'true' : 'false') + '">' +
                     payKindSvg(row[0]) + '<span>' + esc(row[1]) + '</span></button>';
             }).join('');
             var opts = box.querySelectorAll('.roster-paid-opt');
@@ -18226,7 +18453,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
             box.innerHTML = MANUAL_PAY_CHOICES.map(function (row) {
                 var on = row.value === current;
                 var kind = row.unpaid ? 'unpaid' : row.method;
-                return '<button type="button" class="sd-pay-choice' + (on ? ' is-on' : '') + '" role="option" aria-selected="' + (on ? 'true' : 'false') + '" data-pay-status="' + esc(row.value) + '">' +
+                return '<button type="button" class="sd-pay-choice' + rosterBrandPayClass(kind) + (on ? ' is-on' : '') + '" role="option" aria-selected="' + (on ? 'true' : 'false') + '" data-pay-status="' + esc(row.value) + '">' +
                     payKindSvg(kind) + '<span>' + esc(row.label) + '</span></button>';
             }).join('');
             var opts = box.querySelectorAll('[data-pay-status]');

@@ -498,6 +498,62 @@ describe("owner dashboard preview", () => {
     expect(phone).toContain("#tenantPortalSection.schedi-newdash .sd-btn.sd-add-phone { display: flex; width: 100%; justify-content: center; margin: 0; }");
     expect(css.slice(0, css.indexOf("@media (max-width: 859px)"))).not.toContain(".sd-add-desktop { display: none");
   });
+
+  it("colors paid methods, no-shows, collected amounts, service titles, and plan compare text", () => {
+    const css = dashCss(html);
+    expect(css).toContain("#008CFF");
+    expect(css).toContain("#00D64F");
+    expect(css).toContain("#6D1ED4");
+    expect(css).toContain("#003087");
+    expect(css).toContain("#0070E0");
+    expect(css).toContain("background: #000000");
+    expect(css).toContain("background: #ffffff");
+    expect(css).toContain("rgba(0, 140, 255, 0.16)");
+    expect(extractFunction(html, "noShowPillHtml")).toContain("sd-pill-rose");
+    expect(extractFunction(html, "rosterApptChip")).toContain("sd-pill-rose");
+    expect(extractFunction(html, "appointmentPayMarkup")).toContain("sd-pay-");
+    expect(extractFunction(html, "renderRosterPayFilter")).toContain("rosterBrandPayClass");
+    expect(html).toContain('colspan="8"');
+    expect(html).not.toContain('colspan="7"');
+    expect(html).toContain(">Paid</th>");
+    expect(css).toContain("font-variant-numeric: tabular-nums");
+    expect(css).toContain("font-size: 16px");
+    expect(css).toContain("font-size: 1.375rem");
+    const desktopServices = css.slice(css.indexOf("@media (min-width: 768px)"));
+    expect(desktopServices).toContain(".sd-svc-title");
+    expect(desktopServices).toContain("font-size: 15px");
+    expect(desktopServices).toContain("font-weight: 600");
+    const collected = new Function(
+      `${extractFunction(html, "roundMoney")}\n${extractFunction(html, "hasPricedAmount")}\n${extractFunction(html, "catalogServicePrice")}\n${extractFunction(html, "bookingPaymentState")}\n${extractFunction(html, "rosterAmountCollected")}; return rosterAmountCollected;`,
+    )() as (app: Record<string, unknown>, tenant?: { services: { name: string; price: number | null }[] }) => {
+      net: number;
+      refund: number;
+      refunded: boolean;
+      empty: boolean;
+    };
+    const tenant = { services: [{ name: "Beard trim", price: 28 }, { name: "Consultation", price: null }] };
+    expect(collected({ paymentStatus: "PAID", amount: 65 }, tenant)).toMatchObject({ net: 65, empty: false, refunded: false });
+    expect(collected({ paymentStatus: "PAID", paidMethod: "cashapp", serviceName: "Beard trim" }, tenant)).toMatchObject({ net: 28, empty: false });
+    expect(collected({ paymentStatus: "PAID", paidMethod: "zelle", serviceName: "Consultation" }, tenant)).toMatchObject({ net: 0, empty: false });
+    expect(collected({ paymentStatus: "PAY AT APPOINTMENT", amount: 80 }, tenant)).toMatchObject({ empty: true, net: 0 });
+    expect(collected({ paymentStatus: "PENDING VENMO", paymentMethod: "venmo", amount: 55 }, tenant)).toMatchObject({ empty: true });
+    expect(collected({
+      paymentStatus: "DEPOSIT PAID",
+      depositPaid: true,
+      depositAmount: 36,
+      amount: 120,
+    }, tenant)).toMatchObject({ net: 36, empty: false });
+    expect(collected({ paymentStatus: "PAID", amount: 65, refundAmount: 20 }, tenant)).toMatchObject({ net: 45, refund: 20, refunded: true });
+    expect(collected({ paymentStatus: "PAID", amount: 65, refunded: true }, tenant)).toMatchObject({ net: 0, refunded: true });
+    expect(html).toContain("depositAmount: 36");
+    expect(html).toContain("refundAmount: 20");
+    expect(css).toContain("#comparePlansModal .schedi-compare-table .bg-slate-900\\/40");
+    expect(css).toContain("background-color: #f1f5f9");
+    expect(css).toContain("color: #1f2937");
+    expect(css).toContain("color: #047857");
+    expect(css).toContain("color: #9a3412");
+    expect(css).toContain("color: #3730a3");
+  });
 });
 
 const chrome = ["/usr/bin/google-chrome", "/usr/bin/google-chrome-stable", "/usr/bin/chromium", "/usr/bin/chromium-browser"].find((path) => existsSync(path));
