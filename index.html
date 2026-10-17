@@ -12058,7 +12058,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
                         ? '<button type="button" role="menuitem" onclick="closeSchediTodayMenus(event); markAppointmentUnpaid(' + id + ')">Mark unpaid</button>'
                         : '<button type="button" class="sd-act-ok" role="menuitem" onclick="closeSchediTodayMenus(event); markAppointmentPaid(' + id + ')">Mark paid</button>';
                     var noShowAction = appointmentIsNoShow(app)
-                        ? ''
+                        ? '<button type="button" role="menuitem" onclick="closeSchediTodayMenus(event); undoAppointmentNoShow(' + id + ')"><i class="fa-solid fa-rotate-left mr-1" aria-hidden="true"></i>Undo no-show</button>'
                         : '<button type="button" role="menuitem" onclick="closeSchediTodayMenus(event); markAppointmentNoShow(' + id + ')">Mark no-show</button>';
                     return '<article class="sd-card sd-row">' +
                         '<div class="sd-time">' + esc(app.time || '') + '</div>' +
@@ -13499,14 +13499,15 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
                 }
                 out.push(btn('openEditAppointment', 'sd-act', 'Edit'));
                 out.push(btn('openTenantRescheduleModal', 'sd-act sd-act-ok', '<i class="fa-solid fa-calendar-days mr-1"></i>Reschedule'));
-                if (!appointmentIsNoShow(app)) out.push(btn('markAppointmentNoShow', 'sd-act', 'Mark no-show'));
+                if (appointmentIsNoShow(app)) out.push(btn('undoAppointmentNoShow', 'sd-act', '<i class="fa-solid fa-rotate-left mr-1" aria-hidden="true"></i>Undo no-show'));
+                else out.push(btn('markAppointmentNoShow', 'sd-act', 'Mark no-show'));
                 out.push(btn('deleteAppointment', 'sd-act sd-act-no', '<i class="fa-solid fa-xmark mr-1"></i>Cancel'));
             }
             out.push(btn('openRosterDeleteModal', 'sd-act sd-act-no', '<i class="fa-solid fa-trash mr-1"></i>Delete'));
             return out.join('\n');
         }
 
-        var ROSTER_SHEET_ACTIONS = ['acceptAppointment', 'denyAppointment', 'markAppointmentPaid', 'markAppointmentUnpaid', 'openEditAppointment', 'openTenantRescheduleModal', 'markAppointmentNoShow', 'deleteAppointment', 'openRosterDeleteModal'];
+        var ROSTER_SHEET_ACTIONS = ['acceptAppointment', 'denyAppointment', 'markAppointmentPaid', 'markAppointmentUnpaid', 'openEditAppointment', 'openTenantRescheduleModal', 'markAppointmentNoShow', 'undoAppointmentNoShow', 'deleteAppointment', 'openRosterDeleteModal'];
 
         // Pop-up action: close the details first, then run the same function the list button runs.
         window.rosterApptDo = function (fn, appId) {
@@ -21339,6 +21340,20 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
             renderTenantRoster(tenant);
             try { if (ownerClientPanelId) paintClientPanel(); } catch (errNoShow) {}
             showToast('Marked #' + appId + ' as a no-show.', 'info');
+        };
+
+        window.undoAppointmentNoShow = function(appId) {
+            var tenant = getTenant();
+            if (!tenant) return;
+            var app = (tenant.appointments || []).find(function (a) { return a && a.id === appId; });
+            if (!app || !appointmentIsNoShow(app) || appointmentIsCancelled(app)) return;
+            if (String(app.status || '').toLowerCase() === 'denied') return;
+            var status = String(app.status || '').toLowerCase().replace(/[\s-]+/g, '_');
+            app.noShow = false;
+            if (status === 'no_show' || status === 'noshow') app.status = 'accepted';
+            saveState();
+            refreshOwnerPaymentSurfaces(tenant);
+            showToast('No-show cleared', 'info');
         };
 
         window.deleteAppointment = function(appId) {

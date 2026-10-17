@@ -308,6 +308,8 @@ describe("reports tab markup", () => {
     expect(owner).toContain(">Custom<");
     expect(owner).toContain("Sample data");
     expect(owner).toContain("Mark no-show");
+    expect(owner).toContain("Undo no-show");
+    expect(owner).toContain("undoAppointmentNoShow");
     expect(owner).toContain("sd-pill-grey");
     expect(owner).toContain("Appointments marked no-show in this range.");
     expect(owner).not.toContain("Appointments do not have a no-show field");

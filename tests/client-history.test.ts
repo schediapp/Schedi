@@ -162,6 +162,7 @@ describe("client history matching", () => {
     expect(owner).toContain("No-shows: ");
     expect(owner).toContain("sd-pill-grey");
     expect(owner).toContain("markAppointmentNoShow");
+    expect(owner).toContain("undoAppointmentNoShow");
     expect(owner).not.toContain("Appointments do not have a no-show field");
     const modal = owner.slice(owner.indexOf("window.openManualBookingModal = function"), owner.indexOf("window.openEditAppointment"));
     expect(modal).toContain("clientName ? 'Add appointment'");

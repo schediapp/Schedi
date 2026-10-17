@@ -855,6 +855,7 @@ describe("owner dashboard preview", () => {
     expect(actions).toContain("btn('openEditAppointment', 'sd-act', 'Edit')");
     expect(actions).toContain("btn('openTenantRescheduleModal', 'sd-act sd-act-ok', '<i class=\"fa-solid fa-calendar-days mr-1\"></i>Reschedule')");
     expect(actions).toContain("btn('markAppointmentNoShow', 'sd-act', 'Mark no-show')");
+    expect(actions).toContain("btn('undoAppointmentNoShow', 'sd-act', '<i class=\"fa-solid fa-rotate-left mr-1\" aria-hidden=\"true\"></i>Undo no-show')");
     expect(actions).toContain("btn('deleteAppointment', 'sd-act sd-act-no', '<i class=\"fa-solid fa-xmark mr-1\"></i>Cancel')");
     expect(actions).toContain("btn('openRosterDeleteModal', 'sd-act sd-act-no', '<i class=\"fa-solid fa-trash mr-1\"></i>Delete')");
     expect(actions).toContain("btn('markAppointmentUnpaid', 'sd-act', 'Mark unpaid')");
@@ -874,6 +875,12 @@ describe("owner dashboard preview", () => {
     expect(today).toContain('class="sd-act-no" role="menuitem" onclick="closeSchediTodayMenus(event); deleteAppointment(');
     expect(today).toContain('class="sd-act-no" role="menuitem" onclick="closeSchediTodayMenus(event); openRosterDeleteModal(');
     expect(today).toContain('role="menuitem" onclick="closeSchediTodayMenus(event); markAppointmentNoShow(');
+    expect(today).toContain('role="menuitem" onclick="closeSchediTodayMenus(event); undoAppointmentNoShow(');
+    expect(today).toContain('fa-rotate-left');
+    expect(today).toContain('>Undo no-show</button>');
+    const undoItem = today.slice(today.indexOf("undoAppointmentNoShow"), today.indexOf(">Undo no-show</button>"));
+    expect(undoItem).not.toContain("sd-act-ok");
+    expect(undoItem).not.toContain("sd-act-no");
     expect(today).toContain('role="menuitem" onclick="closeSchediTodayMenus(event); openEditAppointment(');
     const css = dashCss(html);
     const rest = css.slice(css.indexOf("body.schedi-newdash .roster-actions > button.sd-act,"));
@@ -920,6 +927,86 @@ describe("owner dashboard preview", () => {
     expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-more > summary i {\n    font-size: 26px;\n    font-weight: 900;\n    line-height: 1;\n    pointer-events: none;\n    -webkit-text-stroke: 0.5px currentColor;\n    paint-order: stroke fill;\n}");
     expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-more > summary { width: 48px; height: 48px; }");
     expect(unscopedSelectors(dashCss(html))).toEqual([]);
+  });
+
+  it("clears a no-show and restores a no-show status without charging", () => {
+    const start = html.indexOf("window.undoAppointmentNoShow = function");
+    const end = html.indexOf("window.deleteAppointment = function");
+    expect(start).toBeGreaterThan(0);
+    expect(end).toBeGreaterThan(start);
+    const src = html.slice(start, end);
+    expect(src).toContain("app.noShow = false");
+    expect(src).toContain("app.status = 'accepted'");
+    expect(src).toContain("saveState()");
+    expect(src).toContain("refreshOwnerPaymentSurfaces(tenant)");
+    expect(src).toContain("showToast('No-show cleared', 'info')");
+    expect(src).not.toMatch(/refund|stripe|sendClient|sendMail|email/i);
+    expect(html).toContain("'undoAppointmentNoShow'");
+    type Visit = { id: string; status?: string; noShow?: boolean; paymentStatus?: string; refundAmount?: number };
+    const undo = new Function(
+      "window",
+      "getTenant",
+      "saveState",
+      "refreshOwnerPaymentSurfaces",
+      "showToast",
+      `${extractFunction(html, "appointmentIsCancelled")}\n${extractFunction(html, "appointmentIsNoShow")}\n${src}\nreturn window.undoAppointmentNoShow;`,
+    ) as (
+      window: object,
+      getTenant: () => { appointments: Visit[] },
+      saveState: () => void,
+      refreshOwnerPaymentSurfaces: () => void,
+      showToast: (message: string) => void,
+    ) => (id: string) => void;
+    const run = (row: Visit) => {
+      const state = { saved: 0, refreshed: 0, toasted: "" };
+      const fn = undo(
+        {},
+        () => ({ appointments: [row] }),
+        () => { state.saved += 1; },
+        () => { state.refreshed += 1; },
+        (message: string) => { state.toasted = message; },
+      );
+      fn(row.id);
+      return { row, ...state };
+    };
+    const kept = run({ id: "HB-1", status: "accepted", noShow: true, paymentStatus: "PAID IN CASH", refundAmount: 0 });
+    expect(kept.row).toMatchObject({ status: "accepted", noShow: false, paymentStatus: "PAID IN CASH", refundAmount: 0 });
+    expect(kept).toMatchObject({ saved: 1, refreshed: 1, toasted: "No-show cleared" });
+    const fromStatus = run({ id: "HB-2", status: "no_show", noShow: true, paymentStatus: "PAY AT APPOINTMENT" });
+    expect(fromStatus.row).toMatchObject({ status: "accepted", noShow: false, paymentStatus: "PAY AT APPOINTMENT" });
+    expect(run({ id: "HB-3", status: "no-show" }).row.status).toBe("accepted");
+    expect(run({ id: "HB-4", status: "NoShow" }).row).toMatchObject({ status: "accepted", noShow: false });
+    const completed = run({ id: "HB-5", status: "completed", noShow: true });
+    expect(completed.row).toMatchObject({ status: "completed", noShow: false });
+    const pending = run({ id: "HB-6", status: "pending", noShow: true });
+    expect(pending.row).toMatchObject({ status: "pending", noShow: false });
+    const absent = run({ id: "HB-7", status: "accepted" });
+    expect(absent).toMatchObject({ saved: 0, refreshed: 0, toasted: "" });
+    expect(absent.row.noShow).toBeUndefined();
+    const cancelled = run({ id: "HB-8", status: "cancelled", noShow: true });
+    expect(cancelled.row.noShow).toBe(true);
+    expect(cancelled.saved).toBe(0);
+    const denied = run({ id: "HB-9", status: "denied", noShow: true });
+    expect(denied.row).toMatchObject({ status: "denied", noShow: true });
+    expect(denied.saved).toBe(0);
+    const actions = new Function(
+      `${extractFunction(html, "esc")}\n${extractFunction(html, "jsArg")}\n${extractFunction(html, "appointmentIsCancelled")}\n${extractFunction(html, "appointmentIsNoShow")}\n${extractFunction(html, "bookingPaymentState")}\n${extractFunction(html, "rosterActionsHtml")}\nreturn rosterActionsHtml;`,
+    )() as (app: Visit, big: boolean) => string;
+    const marked = actions({ id: "HB-1005", status: "accepted", noShow: true, paymentStatus: "PAY AT APPOINTMENT" }, false);
+    expect(marked).toContain("undoAppointmentNoShow");
+    expect(marked).toContain("Undo no-show");
+    expect(marked).toContain("fa-rotate-left");
+    expect(marked).not.toContain("markAppointmentNoShow");
+    const undoButton = marked.slice(marked.lastIndexOf("<button", marked.indexOf("undoAppointmentNoShow")), marked.indexOf("</button>", marked.indexOf("Undo no-show")));
+    expect(undoButton).toContain("sd-act");
+    expect(undoButton).not.toContain("sd-act-ok");
+    expect(undoButton).not.toContain("sd-act-no");
+    const clear = actions({ id: "HB-1003", status: "accepted", paymentStatus: "PAY AT APPOINTMENT" }, true);
+    expect(clear).toContain("markAppointmentNoShow");
+    expect(clear).not.toContain("undoAppointmentNoShow");
+    const sheet = actions({ id: "HB-1008", status: "accepted", noShow: true, paymentStatus: "PAID IN CASH" }, true);
+    expect(sheet).toContain("rosterApptDo(");
+    expect(sheet).toContain("undoAppointmentNoShow");
   });
 
   it("closes the today actions menu before a menu item and keeps it under modals", () => {
@@ -2941,6 +3028,302 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       }, { timeout: 5000 });
       expect(await menuState()).toEqual({ open: 0, expanded: 0, visible: 0 });
       await page.evaluate(() => (window as unknown as { schediDashToggleMore: (force?: boolean) => void }).schediDashToggleMore(false));
+    } finally {
+      await browser.close();
+      await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+    }
+  }, 120000);
+
+  it("clears a no-show from the today menu, roster actions, and details card at 340 and 390", async () => {
+    const types: Record<string, string> = {
+      ".html": "text/html; charset=utf-8",
+      ".js": "text/javascript; charset=utf-8",
+      ".svg": "image/svg+xml",
+      ".png": "image/png",
+      ".json": "application/json",
+      ".webmanifest": "application/manifest+json",
+    };
+    const server = createServer((req, res) => {
+      const path = new URL(req.url || "/", "http://127.0.0.1").pathname;
+      const file = path === "/" || path === "/portal-preview" ? "/index.html" : path;
+      const full = join(root, file);
+      if (!full.startsWith(root) || !existsSync(full)) {
+        res.writeHead(404);
+        res.end("missing");
+        return;
+      }
+      res.writeHead(200, { "content-type": types[extname(full)] || "application/octet-stream" });
+      res.end(readFileSync(full));
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const address = server.address();
+    const port = typeof address === "object" && address ? address.port : 0;
+    const puppeteer = await import("puppeteer-core");
+    const browser = await puppeteer.default.launch({
+      executablePath: chrome,
+      headless: true,
+      args: ["--no-sandbox", "--disable-dev-shm-usage"],
+    });
+    const rest = {
+      dark: { bg: "rgb(30, 41, 59)", fg: "rgb(226, 232, 240)", border: "rgb(51, 65, 85)" },
+      light: { bg: "rgb(255, 255, 255)", fg: "rgb(15, 23, 42)", border: "rgb(203, 213, 225)" },
+    };
+    const menuFg = { dark: "rgb(241, 245, 249)", light: "rgb(15, 23, 42)" };
+    try {
+      const page = await browser.newPage();
+      const writes: string[] = [];
+      page.on("request", (req) => {
+        if (req.method() !== "GET" && req.method() !== "HEAD") writes.push(req.url());
+      });
+      page.on("dialog", (dialog) => { void dialog.dismiss(); });
+      await page.goto(`http://127.0.0.1:${port}/portal-preview`, { waitUntil: "domcontentloaded", timeout: 45000 });
+      await page.waitForFunction(() => document.body.classList.contains("schedi-newdash"), { timeout: 20000 });
+      await page.waitForFunction(() => {
+        const apps = (window as unknown as { getTenant?: () => { appointments?: { id?: string }[] } }).getTenant?.()?.appointments || [];
+        return apps.some((row) => row && row.id === "HB-1005");
+      }, { timeout: 20000 });
+      const openMenu = async (id: string) => {
+        await page.evaluate((appointmentId) => {
+          const button = document.querySelector(`#schediTodaySchedule button[onclick*="${appointmentId}"]`);
+          const summary = button?.closest("article.sd-row")?.querySelector("summary");
+          if (!(summary instanceof HTMLElement)) throw new Error("missing menu opener for " + appointmentId);
+          summary.scrollIntoView({ block: "center" });
+        }, id);
+        await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())));
+        await page.evaluate((appointmentId) => {
+          const button = document.querySelector(`#schediTodaySchedule button[onclick*="${appointmentId}"]`);
+          const summary = button?.closest("article.sd-row")?.querySelector("summary");
+          if (!(summary instanceof HTMLElement)) throw new Error("missing menu opener for " + appointmentId);
+          summary.click();
+        }, id);
+        await page.waitForFunction((appointmentId) => {
+          const button = document.querySelector(`#schediTodaySchedule button[onclick*="${appointmentId}"]`);
+          const details = button?.closest("details");
+          const menu = details?.querySelector(".sd-more-menu") as HTMLElement | null;
+          return !!details?.open && !!menu && getComputedStyle(menu).visibility === "visible";
+        }, { timeout: 5000 }, id);
+      };
+      const visitOf = (id: string) => page.evaluate((appointmentId) => {
+        const apps = (window as unknown as { getTenant: () => { appointments: { id?: string; status?: string; noShow?: boolean; paymentStatus?: string; refundAmount?: number }[] } }).getTenant().appointments;
+        const row = apps.find((app) => app && app.id === appointmentId);
+        return row ? { status: row.status || "", noShow: row.noShow === true, paymentStatus: row.paymentStatus || "", refundAmount: row.refundAmount } : null;
+      }, id);
+      for (const width of [340, 390]) {
+        for (const theme of ["dark", "light"] as const) {
+          await page.setViewport({ width, height: 900 });
+          await page.evaluate((mode) => {
+            (window as unknown as { setSchediTheme: (mode: string) => void }).setSchediTheme(mode);
+            (window as unknown as { schediDashGo: (tab: string) => void }).schediDashGo("today");
+            (window as unknown as { markAppointmentNoShow: (id: string) => void }).markAppointmentNoShow("HB-1003");
+          }, theme);
+          await page.waitForFunction(() => (document.getElementById("toastContainer")?.textContent || "").includes("Marked #HB-1003 as a no-show."), { timeout: 5000 });
+          const marked = await visitOf("HB-1003");
+          expect(marked).toMatchObject({ status: "accepted", noShow: true, paymentStatus: "PAY AT APPOINTMENT" });
+          await openMenu("HB-1003");
+          const menu = await page.evaluate(() => {
+            const root = document.querySelector('#schediTodaySchedule button[onclick*="HB-1003"]')?.closest(".sd-more-menu");
+            return Array.from(root?.querySelectorAll("button") || []).map((node) => {
+              const el = node as HTMLButtonElement;
+              const style = getComputedStyle(el);
+              const icon = el.querySelector("i");
+              return {
+                label: (el.textContent || "").replace(/\s+/g, " ").trim(),
+                cls: el.className,
+                fg: style.color,
+                bg: style.backgroundColor,
+                icon: icon ? icon.className : "",
+              };
+            });
+          });
+          expect(menu.map((row) => row.label)).toEqual(["Mark paid", "Reschedule", "Undo no-show", "Cancel", "Edit", "Delete"]);
+          const undo = menu.find((row) => row.label === "Undo no-show");
+          expect(undo?.icon).toContain("fa-rotate-left");
+          expect(undo?.cls).not.toContain("sd-act-ok");
+          expect(undo?.cls).not.toContain("sd-act-no");
+          expect(undo?.fg).toBe(menuFg[theme]);
+          expect(undo?.bg).toBe("rgba(0, 0, 0, 0)");
+          const chips = await page.evaluate(() => (document.querySelector('#schediTodaySchedule button[onclick*="HB-1003"]')?.closest("article")?.querySelector(".sd-row-chips")?.textContent || "").replace(/\s+/g, " ").trim());
+          expect(chips).toContain("No-show");
+          await page.evaluate(() => {
+            const hit = Array.from(document.querySelectorAll('#schediTodaySchedule button[onclick*="HB-1003"]')).find((el) => (el.textContent || "").includes("Undo no-show"));
+            if (!(hit instanceof HTMLElement)) throw new Error("missing undo");
+            hit.click();
+          });
+          await page.waitForFunction(() => document.querySelectorAll("details.sd-more[open]").length === 0, { timeout: 5000 });
+          await page.waitForFunction(() => (document.getElementById("toastContainer")?.textContent || "").includes("No-show cleared"), { timeout: 5000 });
+          const cleared = await visitOf("HB-1003");
+          expect(cleared).toMatchObject({ status: "accepted", noShow: false, paymentStatus: "PAY AT APPOINTMENT" });
+          const after = await page.evaluate(() => (document.querySelector('#schediTodaySchedule button[onclick*="HB-1003"]')?.closest("article")?.querySelector(".sd-row-chips")?.textContent || "").replace(/\s+/g, " ").trim());
+          expect(after).toContain("Accepted");
+          expect(after).not.toContain("No-show");
+          await openMenu("HB-1003");
+          const restored = await page.evaluate(() => Array.from(document.querySelectorAll('#schediTodaySchedule button[onclick*="HB-1003"]')).map((el) => (el.textContent || "").replace(/\s+/g, " ").trim()));
+          expect(restored).toContain("Mark no-show");
+          expect(restored).not.toContain("Undo no-show");
+          await page.evaluate(() => {
+            const hit = Array.from(document.querySelectorAll('#schediTodaySchedule button[onclick*="HB-1003"]')).find((el) => (el.textContent || "").trim() === "Mark paid");
+            if (!(hit instanceof HTMLElement)) throw new Error("missing mark paid");
+            hit.click();
+          });
+          await page.waitForSelector("#rosterPaidMethodModal:not(.hidden)", { timeout: 5000 });
+          expect(await visitOf("HB-1003")).toMatchObject({ paymentStatus: "PAY AT APPOINTMENT", noShow: false });
+          await page.evaluate(() => (window as unknown as { closeRosterPaidMethodModal: () => void }).closeRosterPaidMethodModal());
+          await page.waitForSelector("#rosterPaidMethodModal.hidden", { timeout: 5000 });
+        }
+      }
+      for (const width of [340, 390]) {
+        await page.setViewport({ width, height: 900 });
+        await page.evaluate(() => {
+          const tenant = (window as unknown as { getTenant: () => { appointments: { id?: string; status?: string; noShow?: boolean }[] } }).getTenant();
+          const row = tenant.appointments.find((app) => app && app.id === "HB-1004");
+          if (!row) throw new Error("missing HB-1004");
+          row.status = "no_show";
+          row.noShow = true;
+          (window as unknown as { schediDashGo: (tab: string) => void }).schediDashGo("today");
+        });
+        await openMenu("HB-1004");
+        const label = await page.evaluate(() => {
+          const hit = Array.from(document.querySelectorAll('#schediTodaySchedule button[onclick*="HB-1004"]')).find((el) => (el.textContent || "").includes("Undo no-show")) as HTMLButtonElement | undefined;
+          const icon = hit?.querySelector("i");
+          return { text: (hit?.textContent || "").replace(/\s+/g, " ").trim(), icon: icon ? icon.className : "", cls: hit?.className || "" };
+        });
+        expect(label.text).toBe("Undo no-show");
+        expect(label.icon).toContain("fa-rotate-left");
+        expect(label.cls).not.toContain("sd-act-no");
+        if (width === 390) {
+          await page.evaluate(() => {
+            const hit = Array.from(document.querySelectorAll('#schediTodaySchedule button[onclick*="HB-1004"]')).find((el) => (el.textContent || "").includes("Undo no-show"));
+            if (!(hit instanceof HTMLElement)) throw new Error("missing status undo");
+            hit.click();
+          });
+          await page.waitForFunction(() => (document.getElementById("toastContainer")?.textContent || "").includes("No-show cleared"), { timeout: 5000 });
+          expect(await visitOf("HB-1004")).toMatchObject({ status: "accepted", noShow: false, paymentStatus: "PENDING ZELLE" });
+        } else {
+          await page.keyboard.press("Escape");
+          await page.waitForFunction(() => document.querySelectorAll("details.sd-more[open]").length === 0, { timeout: 5000 });
+        }
+      }
+      const reportOf = () => page.evaluate(() => {
+        const cards = Array.from(document.querySelectorAll("#tenantReportBody .sd-report-card"));
+        const read = (name: string) => {
+          const card = cards.find((el) => (el.querySelector(".sd-report-kicker")?.textContent || "").includes(name));
+          return {
+            value: (card?.querySelector(".sd-report-value")?.textContent || "").trim(),
+            aria: card?.querySelector(".sd-report-split")?.getAttribute("aria-label") || "",
+          };
+        };
+        return { noShow: read("No-shows"), completion: read("Completion") };
+      });
+      await page.evaluate(() => (window as unknown as { schediDashGo: (tab: string) => void }).schediDashGo("report"));
+      await page.waitForSelector("#tenantReportBody .sd-report-card", { timeout: 10000 });
+      const beforeReport = await reportOf();
+      const beforeNoShow = Number(beforeReport.noShow.value);
+      const beforeDone = Number((beforeReport.completion.aria.match(/(\d+) done/) || [])[1]);
+      expect(beforeNoShow).toBeGreaterThan(0);
+      expect(beforeDone).toBeGreaterThan(0);
+      for (const width of [340, 390]) {
+        for (const theme of ["dark", "light"] as const) {
+          await page.setViewport({ width, height: 900 });
+          await page.evaluate((mode) => {
+            (window as unknown as { setSchediTheme: (mode: string) => void }).setSchediTheme(mode);
+            (window as unknown as { schediDashGo: (tab: string) => void }).schediDashGo("appointments");
+          }, theme);
+          await page.waitForSelector('[data-booking-id="HB-1005"] .roster-actions', { timeout: 10000 });
+          const button = await page.evaluate((bg, fg, border) => {
+            const root = document.querySelector('[data-booking-id="HB-1005"] .roster-actions');
+            const hit = Array.from(root?.querySelectorAll(":scope > button") || []).find((el) => (el.textContent || "").includes("Undo no-show")) as HTMLButtonElement | undefined;
+            if (!hit) return null;
+            hit.scrollIntoView({ block: "center" });
+            const style = getComputedStyle(hit);
+            const icon = hit.querySelector("i");
+            const box = hit.getBoundingClientRect();
+            return {
+              cls: hit.className,
+              icon: icon ? icon.className : "",
+              bg: style.backgroundColor,
+              fg: style.color,
+              border: style.borderTopColor,
+              h: Math.round(box.height),
+              matches: style.backgroundColor === bg && style.color === fg && style.borderTopColor === border,
+            };
+          }, rest[theme].bg, rest[theme].fg, rest[theme].border);
+          expect(button?.cls).toContain("sd-act");
+          expect(button?.cls).not.toContain("sd-act-ok");
+          expect(button?.cls).not.toContain("sd-act-no");
+          expect(button?.icon).toContain("fa-rotate-left");
+          expect(button?.h).toBeGreaterThanOrEqual(44);
+          expect(button?.matches).toBe(true);
+          expect(button?.bg).toBe(rest[theme].bg);
+          expect(button?.fg).toBe(rest[theme].fg);
+        }
+      }
+      await page.setViewport({ width: 390, height: 900 });
+      await page.evaluate(() => (window as unknown as { openRosterApptModal: (id: string) => void }).openRosterApptModal("HB-1005"));
+      await page.waitForSelector("#rosterApptModal:not(.hidden) .roster-sheet-actions", { timeout: 10000 });
+      const sheet = await page.evaluate(() => {
+        const hit = Array.from(document.querySelectorAll("#rosterApptModal .roster-sheet-actions button")).find((el) => (el.textContent || "").includes("Undo no-show")) as HTMLButtonElement | undefined;
+        const icon = hit?.querySelector("i");
+        const box = hit?.getBoundingClientRect();
+        return {
+          cls: hit?.className || "",
+          icon: icon ? icon.className : "",
+          h: box ? Math.round(box.height) : 0,
+          chips: (document.getElementById("rosterApptBody")?.textContent || "").replace(/\s+/g, " ").trim(),
+        };
+      });
+      expect(sheet.cls).toContain("sd-act");
+      expect(sheet.cls).not.toContain("sd-act-ok");
+      expect(sheet.cls).not.toContain("sd-act-no");
+      expect(sheet.icon).toContain("fa-rotate-left");
+      expect(sheet.h).toBeGreaterThanOrEqual(44);
+      expect(sheet.chips).toContain("No-show");
+      await page.evaluate(() => {
+        const hit = Array.from(document.querySelectorAll("#rosterApptModal .roster-sheet-actions button")).find((el) => (el.textContent || "").includes("Undo no-show"));
+        if (!(hit instanceof HTMLElement)) throw new Error("missing sheet undo");
+        hit.click();
+      });
+      await page.waitForSelector("#rosterApptModal.hidden", { timeout: 5000 });
+      await page.waitForFunction(() => (document.getElementById("toastContainer")?.textContent || "").includes("No-show cleared"), { timeout: 5000 });
+      expect(await visitOf("HB-1005")).toMatchObject({ status: "accepted", noShow: false, paymentStatus: "PENDING VENMO" });
+      const rowAfter = await page.evaluate(() => (document.querySelector('[data-booking-id="HB-1005"] .roster-cell-pay')?.textContent || "").replace(/\s+/g, " ").trim());
+      expect(rowAfter).toContain("Accepted");
+      expect(rowAfter).not.toContain("No-show");
+      const relabeled = await page.evaluate(() => Array.from(document.querySelectorAll('[data-booking-id="HB-1005"] .roster-actions button')).map((el) => (el.textContent || "").replace(/\s+/g, " ").trim()));
+      expect(relabeled).toContain("Mark no-show");
+      expect(relabeled.some((label) => label.includes("Undo no-show"))).toBe(false);
+      await page.evaluate(() => (window as unknown as { schediDashGo: (tab: string) => void }).schediDashGo("report"));
+      await page.waitForFunction((previous) => {
+        const cards = Array.from(document.querySelectorAll("#tenantReportBody .sd-report-card"));
+        const card = cards.find((el) => (el.querySelector(".sd-report-kicker")?.textContent || "").includes("No-shows"));
+        return (card?.querySelector(".sd-report-value")?.textContent || "").trim() === String(previous - 1);
+      }, { timeout: 5000 }, beforeNoShow);
+      const afterReport = await reportOf();
+      const afterDone = Number((afterReport.completion.aria.match(/(\d+) done/) || [])[1]);
+      expect(afterDone).toBe(beforeDone + 1);
+      await page.evaluate(() => (window as unknown as { schediDashGo: (tab: string) => void }).schediDashGo("clients"));
+      await page.waitForFunction(() => !!document.querySelector('.sd-client-name[data-client-id="CL-MAYA"]'), { timeout: 10000 });
+      const mayaBefore = await page.evaluate(() => {
+        const name = document.querySelector('.sd-client-name[data-client-id="CL-MAYA"]');
+        return (name?.closest(".sd-client")?.querySelector(".sd-client-visits strong")?.textContent || "").trim();
+      });
+      await page.evaluate(() => (window as unknown as { openClientDetail: (id: string) => void }).openClientDetail("CL-MAYA"));
+      await page.waitForSelector("#sdClientPanel:not([hidden]) .sd-client-noshow", { timeout: 10000 });
+      const panelBefore = await page.evaluate(() => (document.querySelector("#sdClientPanel .sd-client-noshow")?.textContent || "").replace(/\s+/g, " ").trim());
+      expect(panelBefore).toMatch(/No-shows: [1-9]/);
+      await page.evaluate(() => (window as unknown as { undoAppointmentNoShow: (id: string) => void }).undoAppointmentNoShow("HB-1014"));
+      await page.waitForFunction((previous) => {
+        const text = (document.querySelector("#sdClientPanel .sd-client-noshow")?.textContent || "").replace(/\s+/g, " ").trim();
+        return text.length > 0 && text !== previous;
+      }, { timeout: 5000 }, panelBefore);
+      const panelAfter = await page.evaluate(() => (document.querySelector("#sdClientPanel .sd-client-noshow")?.textContent || "").replace(/\s+/g, " ").trim());
+      expect(Number(panelAfter.replace(/[^0-9]/g, ""))).toBe(Number(panelBefore.replace(/[^0-9]/g, "")) - 1);
+      expect(await visitOf("HB-1014")).toMatchObject({ status: "accepted", noShow: false, paymentStatus: "PAID IN CASH" });
+      const mayaAfter = await page.evaluate(() => {
+        const name = document.querySelector('.sd-client-name[data-client-id="CL-MAYA"]');
+        return (name?.closest(".sd-client")?.querySelector(".sd-client-visits strong")?.textContent || "").trim();
+      });
+      expect(Number(mayaAfter)).toBe(Number(mayaBefore) + 1);
+      expect(writes).toEqual([]);
     } finally {
       await browser.close();
       await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
