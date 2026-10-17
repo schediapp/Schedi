@@ -938,8 +938,9 @@ body.schedi-newdash.sd-client-panel-open { overflow: hidden; }
 #tenantPortalSection.schedi-newdash[data-dash="account"] #tenantMoreCard,
 #tenantPortalSection.schedi-newdash[data-dash="billing"] #tenantBillingCard { display: block !important; }
 #tenantPortalSection.schedi-newdash[data-dash="hours"] #tenantProfileFields,
-#tenantPortalSection.schedi-newdash[data-dash="profile"] #tenantHoursShiftBlock,
 #tenantPortalSection.schedi-newdash[data-dash="profile"] #tenantHoursTimeOff { display: none !important; }
+#tenantPortalSection.schedi-newdash[data-dash="hours"] #tenantHoursShiftBlock,
+#tenantPortalSection.schedi-newdash[data-dash="profile"] #tenantHoursShiftBlock { display: block !important; }
 #tenantPortalSection.schedi-newdash #tenantSectionRoster,
 #tenantPortalSection.schedi-newdash #tenantSectionServices,
 #tenantPortalSection.schedi-newdash #tenantSectionHours,
@@ -1017,12 +1018,17 @@ body.schedi-newdash.sd-client-panel-open { overflow: hidden; }
         grid-template-columns: repeat(5, minmax(0, 1fr));
         position: fixed;
         z-index: 40;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        padding: 8px 6px calc(8px + env(safe-area-inset-bottom));
-        background: var(--sd-panel);
-        border-top: 1px solid var(--sd-line);
+        left: max(10px, env(safe-area-inset-left));
+        right: max(10px, env(safe-area-inset-right));
+        bottom: calc(8px + env(safe-area-inset-bottom));
+        padding: 6px 4px;
+        background: #1e293b;
+        border: 1px solid #64748b;
+        border-radius: 12px;
+    }
+    html.schedi-light #tenantPortalSection.schedi-newdash #schediDashTabbar {
+        background: #ffffff;
+        border-color: #64748b;
     }
     #tenantPortalSection.schedi-newdash #schediDashTabbar > button {
         display: flex;
@@ -1036,6 +1042,10 @@ body.schedi-newdash.sd-client-panel-open { overflow: hidden; }
         font-weight: 800;
         padding: 4px 0 2px;
         cursor: pointer;
+    }
+    #tenantPortalSection.schedi-newdash #schediDashTabbar > button:not(.sd-fab) i {
+        font-size: 13px;
+        line-height: 1;
     }
     #tenantPortalSection.schedi-newdash #schediDashTabbar > button.is-on { color: var(--sd-brand-2); }
     #tenantPortalSection.schedi-newdash #schediDashTabbar .sd-fab {
@@ -1273,6 +1283,35 @@ html.schedi-light #tenantPortalSection.schedi-newdash button.bg-indigo-400,
 html.schedi-light #tenantPortalSection.schedi-newdash button.bg-rose-600,
 html.schedi-light #tenantPortalSection.schedi-newdash button.bg-rose-500,
 html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !important; }
+#tenantPortalSection.schedi-newdash .sd-hours-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 0;
+    color: #e2e8f0;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.35;
+}
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-hours-summary { color: #0f172a; }
+#tenantPortalSection.schedi-newdash .sd-hours-summary-lines {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0;
+    margin: 0;
+}
+#tenantPortalSection.schedi-newdash .sd-hours-summary-line:not(:last-child)::after { content: " · "; font-weight: 700; }
+#tenantPortalSection.schedi-newdash .sd-hours-summary-break {
+    margin: 0;
+    color: #94a3b8;
+    font-size: 13px;
+    font-weight: 700;
+}
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-hours-summary-break { color: #475569; }
+@media (max-width: 859px) {
+    #tenantPortalSection.schedi-newdash .sd-hours-summary-lines { flex-direction: column; gap: 2px; }
+    #tenantPortalSection.schedi-newdash .sd-hours-summary-line:not(:last-child)::after { content: none; }
+}
 #tenantPortalSection.schedi-newdash .sd-hours-grid {
     display: grid;
     grid-template-columns: 1fr;
@@ -2510,7 +2549,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
     html.schedi-light #tenantPortalSection.schedi-newdash .sd-report-note { color: #334155; }
     #tenantPortalSection.schedi-newdash .sd-report-actions { display: flex; flex-wrap: wrap; gap: 8px; }
     #tenantPortalSection.schedi-newdash .sd-report-actions button,
-    #tenantPortalSection.schedi-newdash .sd-report-range button {
+    #tenantPortalSection.schedi-newdash .sd-report-range button,
+    #tenantPortalSection.schedi-newdash #tenantReportRangeCustom {
         min-height: 44px;
         padding: 8px 14px;
         border-radius: 12px;
@@ -2530,41 +2570,59 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
     }
     #tenantPortalSection.schedi-newdash .sd-report-range {
         display: flex;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
         gap: 8px;
     }
     #tenantPortalSection.schedi-newdash .sd-report-range button {
+        flex: 1 1 0;
+        min-width: 0;
+        white-space: nowrap;
         background: #0f172a;
         color: #e2e8f0;
         border: 1px solid #334155;
     }
-    #tenantPortalSection.schedi-newdash .sd-report-range button[aria-pressed="true"] {
+    #tenantPortalSection.schedi-newdash .sd-report-range button[aria-pressed="true"],
+    #tenantPortalSection.schedi-newdash #tenantReportRangeCustom[aria-pressed="true"] {
         background: #065f46;
         color: #ecfdf5;
         border-color: #059669;
     }
     #tenantPortalSection.schedi-newdash .sd-report-range button:focus-visible,
+    #tenantPortalSection.schedi-newdash #tenantReportRangeCustom:focus-visible,
     #tenantPortalSection.schedi-newdash .sd-report-actions button:focus-visible,
     #tenantPortalSection.schedi-newdash .sd-report-date input:focus-visible {
         outline: 2px solid #34d399;
         outline-offset: 2px;
     }
-    html.schedi-light #tenantPortalSection.schedi-newdash .sd-report-range button {
+    html.schedi-light #tenantPortalSection.schedi-newdash .sd-report-range button,
+    html.schedi-light #tenantPortalSection.schedi-newdash #tenantReportRangeCustom {
         background: #ffffff;
         color: #0f172a;
         border-color: #cbd5e1;
     }
-    html.schedi-light #tenantPortalSection.schedi-newdash .sd-report-range button[aria-pressed="true"] {
+    html.schedi-light #tenantPortalSection.schedi-newdash .sd-report-range button[aria-pressed="true"],
+    html.schedi-light #tenantPortalSection.schedi-newdash #tenantReportRangeCustom[aria-pressed="true"] {
         background: #d1fae5;
         color: #064e3b;
         border-color: #059669;
     }
-    #tenantPortalSection.schedi-newdash .sd-report-custom {
-        display: flex;
-        flex-wrap: wrap;
+    #tenantPortalSection.schedi-newdash .sd-report-dates {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
         gap: 12px;
+        align-items: start;
     }
+    #tenantPortalSection.schedi-newdash .sd-report-custom { display: contents; }
     #tenantPortalSection.schedi-newdash .sd-report-custom[hidden] { display: none !important; }
+    #tenantPortalSection.schedi-newdash #tenantReportRangeCustom {
+        grid-column: 2;
+        width: 100%;
+        min-width: 0;
+        background: #0f172a;
+        color: #e2e8f0;
+        border: 1px solid #334155;
+    }
+    #tenantPortalSection.schedi-newdash .sd-report-dates:has(#tenantReportCustom:not([hidden])) #tenantReportRangeCustom { grid-row: 2; }
     #tenantPortalSection.schedi-newdash .sd-report-date {
         display: flex;
         flex-direction: column;
@@ -2573,12 +2631,14 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
         font-weight: 700;
         color: #e2e8f0;
         min-width: 0;
-        flex: 1 1 140px;
+        width: 100%;
     }
     html.schedi-light #tenantPortalSection.schedi-newdash .sd-report-date { color: #0f172a; }
     #tenantPortalSection.schedi-newdash .sd-report-date input {
         min-height: 44px;
         width: 100%;
+        min-width: 0;
+        max-width: 100%;
         box-sizing: border-box;
         border-radius: 12px;
         border: 1px solid #334155;
@@ -2587,6 +2647,25 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
         font-size: 16px;
         padding: 8px 10px;
         color-scheme: dark;
+    }
+    @media (min-width: 860px) {
+        #tenantPortalSection.schedi-newdash .sd-report-range button { flex: 0 0 auto; }
+    }
+    @media (max-width: 430px) {
+        #tenantPortalSection.schedi-newdash .sd-report-range button {
+            padding-left: 4px;
+            padding-right: 4px;
+            font-size: 0;
+        }
+        #tenantPortalSection.schedi-newdash #tenantReportRange7::after,
+        #tenantPortalSection.schedi-newdash #tenantReportRange30::after,
+        #tenantPortalSection.schedi-newdash #tenantReportRange90::after {
+            font-size: 13px;
+            font-weight: 700;
+        }
+        #tenantPortalSection.schedi-newdash #tenantReportRange7::after { content: "7 days"; }
+        #tenantPortalSection.schedi-newdash #tenantReportRange30::after { content: "30 days"; }
+        #tenantPortalSection.schedi-newdash #tenantReportRange90::after { content: "90 days"; }
     }
     html.schedi-light #tenantPortalSection.schedi-newdash .sd-report-date input {
         background: #ffffff;
@@ -2632,6 +2711,20 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
         line-height: 1.2;
     }
     html.schedi-light #tenantPortalSection.schedi-newdash .sd-report-value { color: #0f172a; }
+    #tenantPortalSection.schedi-newdash .sd-report-split {
+        display: flex;
+        width: 100%;
+        height: 8px;
+        margin-top: 8px;
+        border-radius: 999px;
+        overflow: hidden;
+        background: #334155;
+    }
+    #tenantPortalSection.schedi-newdash .sd-report-split-done { display: block; height: 100%; background: #10b981; }
+    #tenantPortalSection.schedi-newdash .sd-report-split-miss { display: block; height: 100%; background: #fb7185; }
+    html.schedi-light #tenantPortalSection.schedi-newdash .sd-report-split { background: #e2e8f0; }
+    html.schedi-light #tenantPortalSection.schedi-newdash .sd-report-split-done { background: #059669; }
+    html.schedi-light #tenantPortalSection.schedi-newdash .sd-report-split-miss { background: #be123c; }
     #tenantPortalSection.schedi-newdash .sd-sample-badge {
         display: inline-flex;
         align-items: center;
@@ -3082,6 +3175,128 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
             grid-template-columns: repeat(7, minmax(0, 1fr));
         }
     }
+#tenantPortalSection.schedi-newdash #tenantBillingCard .sd-bill-tools {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
+#tenantPortalSection.schedi-newdash #tenantBillingCard .sd-bill-compare {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 10px 16px;
+    border-radius: 12px;
+    border: 1px solid rgba(52, 211, 153, 0.45);
+    background: #0f172a;
+    color: #34d399;
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.2;
+    cursor: pointer;
+}
+html.schedi-light #tenantPortalSection.schedi-newdash #tenantBillingCard .sd-bill-compare {
+    background: #ecfdf5;
+    color: #047857;
+    border-color: #6ee7b7;
+}
+#tenantPortalSection.schedi-newdash #tenantBillingCard .sd-bill-badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+}
+#tenantPortalSection.schedi-newdash #tenantBillingCard .sd-bill-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    margin-top: 22px;
+    width: 100%;
+    max-width: 40rem;
+}
+#tenantPortalSection.schedi-newdash #tenantBillingCard .sd-bill-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 50px;
+    padding: 12px 16px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.2;
+    cursor: pointer;
+}
+@media (max-width: 859px) {
+    #tenantPortalSection.schedi-newdash #tenantBillingCard .sd-bill-tools {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    #tenantPortalSection.schedi-newdash #tenantBillingCard .sd-bill-compare { width: 100%; }
+    #tenantPortalSection.schedi-newdash #tenantBillingCard .sd-bill-badge { align-self: flex-start; }
+    #tenantPortalSection.schedi-newdash #tenantBillingCard .sd-bill-actions { max-width: none; }
+    #tenantPortalSection.schedi-newdash #tenantMoreCard .sd-more-actions {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+    }
+    #tenantPortalSection.schedi-newdash #tenantMoreCard .sd-more-actions > button:not(.hidden),
+    #tenantPortalSection.schedi-newdash #tenantMoreCard .sd-more-actions > a,
+    #tenantPortalSection.schedi-newdash #tenantMoreCard .sd-more-actions > .sd-theme,
+    #tenantPortalSection.schedi-newdash #tenantMoreCard .sd-more-actions > label:not(.hidden) {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 12px;
+        width: 100%;
+        box-sizing: border-box;
+        min-height: 56px;
+        padding: 12px 16px;
+        border-radius: 14px;
+        font-size: 16px;
+        font-weight: 600;
+        line-height: 1.2;
+    }
+    #tenantPortalSection.schedi-newdash #tenantMoreCard .sd-more-actions > .sd-theme {
+        padding: 0;
+        border: 0;
+        background: transparent;
+    }
+    #tenantPortalSection.schedi-newdash #tenantMoreCard .sd-theme-opt {
+        width: 100%;
+        min-height: 56px;
+        justify-content: flex-start;
+        gap: 12px;
+        padding: 12px 16px;
+        border-radius: 14px;
+        font-size: 16px;
+        font-weight: 600;
+    }
+    #tenantPortalSection.schedi-newdash #tenantMoreCard .sd-theme-opt span {
+        position: static;
+        width: auto;
+        height: auto;
+        padding: 0;
+        margin: 0;
+        overflow: visible;
+        clip: auto;
+    }
+    #tenantPortalSection.schedi-newdash #tenantMoreCard .sd-more-actions i {
+        font-size: 1.15rem;
+        width: 1.25rem;
+        text-align: center;
+    }
+    #tenantPortalSection.schedi-newdash #tenantMoreCard #tenantAutoLogoffSelect {
+        margin-left: auto;
+        min-height: 40px;
+        font-size: 16px;
+        padding: 6px 10px;
+    }
+}
 
 </style>
 <script>
@@ -3568,6 +3783,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                         </div>
                         <button type="button" id="hoursWeekLayoutBtn" onclick="toggleHoursWeekLayout()" aria-pressed="false" class="px-4 py-2 rounded-xl font-bold text-xs bg-slate-900 border border-slate-800 text-slate-400">Week layout</button>
                     </div>
+                    <div id="hoursWeekSummary" class="sd-hours-summary" aria-live="polite"></div>
 
                     <form onsubmit="handleUpdateShiftsSubmit(event)" class="space-y-4 border-b border-slate-800 pb-6">
                         <div id="tenantHoursShiftBlock">
@@ -4077,7 +4293,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                 <!-- ROSTER-FIRST: account & settings moved below the roster/tabs -->
                 <div id="tenantMoreCard" class="glass-card rounded-2xl p-5 space-y-3 min-w-0">
                     <h3 class="text-sm font-extrabold text-white"><i class="fa-solid fa-sliders mr-1.5 text-brand-400" aria-hidden="true"></i>More &amp; settings</h3>
-                    <div class="flex flex-wrap items-center gap-2">
+                    <div class="sd-more-actions flex flex-wrap items-center gap-2">
                         <button type="button" onclick="openTenantPublicBookingLink()" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs flex items-center space-x-1.5 transition-all" title="Open Public Page">
                                     <i class="fa-solid fa-arrow-up-right-from-square"></i>
                                     <span>Open Public Page</span>
@@ -4119,14 +4335,14 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                             <p id="tenantBillingUntil" class="hidden text-xs font-semibold text-emerald-300 mt-1"></p>
                             <p id="tenantBillingPolicy" class="text-[11px] text-slate-400 leading-relaxed mt-2">Cancel anytime. Cancellation takes effect at the end of the current paid billing period; you keep access until then and are not charged again. New subscribers may request a full refund of the first payment within 15 days. Renewal payments are not refunded or prorated, except at Schedi's discretion for billing errors or service outages. Complimentary plans are unaffected.</p>
                         </div>
-                        <div class="flex flex-wrap items-center gap-2 self-start">
-                            <button type="button" onclick="openComparePlansModal()" class="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide bg-slate-800 hover:bg-slate-700 text-brand-400 border border-brand-500/30">
-                                <i class="fa-solid fa-table-columns mr-1" aria-hidden="true"></i>Compare Plans
+                        <div class="sd-bill-tools">
+                            <button type="button" onclick="openComparePlansModal()" class="sd-bill-compare">
+                                <i class="fa-solid fa-table-columns" aria-hidden="true"></i><span>Compare Plans</span>
                             </button>
-                            <span id="tenantBillingBadge" class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">Billing</span>
+                            <span id="tenantBillingBadge" class="sd-bill-badge text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">Billing</span>
                         </div>
                     </div>
-                    <div id="tenantBillingActions" class="flex flex-wrap gap-2"></div>
+                    <div id="tenantBillingActions" class="sd-bill-actions flex flex-wrap gap-2"></div>
                 </div>
 
 
@@ -4146,15 +4362,17 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                         <button type="button" id="tenantReportRange7" onclick="setAppointmentReportRange('7')">Last 7 days</button>
                         <button type="button" id="tenantReportRange30" onclick="setAppointmentReportRange('30')" aria-pressed="true">Last 30 days</button>
                         <button type="button" id="tenantReportRange90" onclick="setAppointmentReportRange('90')">Last 90 days</button>
-                        <button type="button" id="tenantReportRangeCustom" onclick="setAppointmentReportRange('custom')">Custom</button>
                     </div>
-                    <div id="tenantReportCustom" class="sd-report-custom" hidden>
-                        <label class="sd-report-date" for="tenantReportFrom">From
-                            <input type="date" id="tenantReportFrom" onchange="setAppointmentReportCustom()">
-                        </label>
-                        <label class="sd-report-date" for="tenantReportTo">To
-                            <input type="date" id="tenantReportTo" onchange="setAppointmentReportCustom()">
-                        </label>
+                    <div class="sd-report-dates">
+                        <div id="tenantReportCustom" class="sd-report-custom" hidden>
+                            <label class="sd-report-date" for="tenantReportFrom">From
+                                <input type="date" id="tenantReportFrom" onchange="setAppointmentReportCustom()">
+                            </label>
+                            <label class="sd-report-date" for="tenantReportTo">To
+                                <input type="date" id="tenantReportTo" onchange="setAppointmentReportCustom()">
+                            </label>
+                        </div>
+                        <button type="button" id="tenantReportRangeCustom" onclick="setAppointmentReportRange('custom')">Custom</button>
                     </div>
                     <div id="tenantReportBody" class="space-y-4 text-xs text-slate-300"></div>
                 </div>
@@ -8287,7 +8505,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
             if (isComplimentaryPro(tenant)) {
                 if (badge) {
                     badge.textContent = 'COMPLIMENTARY PRO';
-                    badge.className = 'self-start text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border bg-brand-500/10 text-brand-400 border-brand-500/20';
+                    badge.className = 'sd-bill-badge self-start text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border bg-brand-500/10 text-brand-400 border-brand-500/20';
                 }
                 if (summary) summary.textContent = 'Complimentary Pro. Monthly fee is $0. There is no Stripe checkout and no charge. Complimentary plans are unaffected.';
                 if (actions) actions.innerHTML = '';
@@ -8297,15 +8515,15 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
             var subscribed = !!String(tenant.stripeSubscriptionId || '').trim() && !paused;
             if (badge) {
                 badge.textContent = paused ? 'PAUSED' : (subscribed ? 'AUTOPAY ON' : (plan === 'free' ? 'FREE' : 'NOT SUBSCRIBED'));
-                badge.className = 'self-start text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ' + (paused ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' : 'bg-brand-500/10 text-brand-400 border-brand-500/20');
+                badge.className = 'sd-bill-badge self-start text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ' + (paused ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' : 'bg-brand-500/10 text-brand-400 border-brand-500/20');
             }
             // Plan is read-only here. It only changes after Stripe confirms payment (webhook), or by the agency.
             var planName = plan === 'starter' ? 'Starter ($29/mo)' : plan === 'pro' ? 'Pro ($49/mo)' : 'Free ($0)';
-            var starterBtn = '<button type="button" id="subscribeStarterBtn" onclick="startSchediCheckout(\'starter\')" class="px-4 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-slate-950 font-bold text-xs">LABEL</button>';
-            var proBtn = '<button type="button" id="subscribeProBtn" onclick="startSchediCheckout(\'pro\')" class="px-4 py-2.5 rounded-xl bg-indigo-500 hover:bg-indigo-400 text-white font-bold text-xs">LABEL</button>';
-            var manageBtn = '<button type="button" id="manageBillingBtn" onclick="openSchediBillingPortal()" class="px-4 py-2.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs">Manage billing</button>';
-            var cancelBtn = '<button type="button" id="cancelBillingBtn" onclick="cancelSchediSubscription()" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs border border-slate-700">Cancel subscription</button>';
-            var resumeBtn = '<button type="button" id="resumeBillingBtn" onclick="resumeSchediSubscription()" class="px-4 py-2.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs">Resume subscription</button>';
+            var starterBtn = '<button type="button" id="subscribeStarterBtn" onclick="startSchediCheckout(\'starter\')" class="sd-bill-btn px-4 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-slate-950 font-bold text-xs">LABEL</button>';
+            var proBtn = '<button type="button" id="subscribeProBtn" onclick="startSchediCheckout(\'pro\')" class="sd-bill-btn px-4 py-2.5 rounded-xl bg-indigo-500 hover:bg-indigo-400 text-white font-bold text-xs">LABEL</button>';
+            var manageBtn = '<button type="button" id="manageBillingBtn" onclick="openSchediBillingPortal()" class="sd-bill-btn px-4 py-2.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs">Manage billing</button>';
+            var cancelBtn = '<button type="button" id="cancelBillingBtn" onclick="cancelSchediSubscription()" class="sd-bill-btn px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs border border-slate-700">Cancel subscription</button>';
+            var resumeBtn = '<button type="button" id="resumeBillingBtn" onclick="resumeSchediSubscription()" class="sd-bill-btn px-4 py-2.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs">Resume subscription</button>';
             var buttons = '';
             if (subscribed && tenant.cancelAtPeriodEnd) {
                 var untilText = ownerPlanActiveUntilText(tenant.currentPeriodEnd) || 'Your plan stays active until the end of the current paid billing period.';
@@ -8319,7 +8537,10 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                 else if (plan === 'pro') buttons += starterBtn.replace('LABEL', 'Switch to Starter · $29/mo');
                 buttons += cancelBtn + manageBtn;
             } else {
-                if (summary) summary.textContent = 'Current plan: ' + planName + (paused ? ' (paused)' : '') + '. Upgrade to start monthly autopay. Stripe hosts the card form. Nothing changes and nothing is charged until checkout is finished.';
+                var unsubscribedLead = plan === 'free'
+                    ? ('Current plan: Free ($0)' + (paused ? ' (paused)' : '') + '. Upgrade to start monthly autopay.')
+                    : ('Not subscribed. The selected plan is ' + planName + (paused ? ' (paused)' : '') + '. Subscribe to start monthly autopay.');
+                if (summary) summary.textContent = unsubscribedLead + ' Stripe hosts the card form. Nothing changes and nothing is charged until checkout is finished.';
                 buttons += starterBtn.replace('LABEL', (plan === 'free' ? 'Upgrade to Starter' : 'Subscribe Starter') + ' · $29/mo');
                 buttons += proBtn.replace('LABEL', (plan === 'pro' ? 'Subscribe Pro' : 'Upgrade to Pro') + ' · $49/mo');
                 if (tenant.stripeCustomerId) buttons += manageBtn;
@@ -11095,7 +11316,11 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                     { id: 'HB-1024', clientName: 'Elena Vasquez', clientPhone: '(555) 201-4419', clientEmail: 'elena@example.com', serviceName: 'Gloss', date: day(-18), time: '02:30 PM', status: 'accepted', paymentStatus: 'PAID', paidMethod: 'paypal', paymentMethod: 'paypal', amount: 80, durationMins: 75 },
                     { id: 'HB-1025', clientName: 'Elena Vasquez', clientPhone: '(555) 201-4419', clientEmail: 'ELENA@example.com', serviceName: 'Color', date: day(-35), time: '10:00 AM', status: 'accepted', paymentStatus: 'PAID VIA CARD', paidMethod: 'card', amount: 120, durationMins: 90 },
                     { id: 'HB-1026', clientName: 'Elena Vasquez', clientPhone: '(555) 201-4419', clientEmail: 'elena@example.com', serviceName: 'Color', date: day(16), time: '01:00 PM', status: 'accepted', paymentStatus: 'PAY AT APPOINTMENT', amount: 120, durationMins: 90 },
-                    { id: 'HB-1027', clientName: 'Riley Cho', clientPhone: '(555) 201-5520', clientEmail: 'riley@example.com', serviceName: 'Color', date: day(3), time: '11:00 AM', status: 'accepted', paymentStatus: 'DEPOSIT PAID', paymentMethod: 'card', paidMethod: 'card', paymentOptionLabel: 'Card deposit', amount: 120, depositAmount: 36, depositPaid: true, balanceDue: 84, durationMins: 90 }
+                    { id: 'HB-1027', clientName: 'Riley Cho', clientPhone: '(555) 201-5520', clientEmail: 'riley@example.com', serviceName: 'Color', date: day(3), time: '11:00 AM', status: 'accepted', paymentStatus: 'DEPOSIT PAID', paymentMethod: 'card', paidMethod: 'card', paymentOptionLabel: 'Card deposit', amount: 120, depositAmount: 36, depositPaid: true, balanceDue: 84, durationMins: 90 },
+                    { id: 'HB-1028', clientName: 'Nina Park', clientPhone: '(555) 201-6601', clientEmail: 'nina@example.com', serviceName: 'Cut & style', date: day(-6), time: '10:00 AM', status: 'completed', paymentStatus: 'PAID', paidMethod: 'cash', amount: 65, durationMins: 45 },
+                    { id: 'HB-1029', clientName: 'Nina Park', clientPhone: '(555) 201-6601', clientEmail: 'nina@example.com', serviceName: 'Beard trim', date: day(-8), time: '09:00 AM', status: 'cancelled', cancelled: true, cancelledBy: 'client', paymentStatus: 'PAID', paidMethod: 'card', amount: 28, durationMins: 20 },
+                    { id: 'HB-1030', clientName: 'Nina Park', clientPhone: '(555) 201-6601', clientEmail: 'nina@example.com', serviceName: 'Color', date: day(5), time: '09:00 AM', status: 'completed', paymentStatus: 'PAID', paidMethod: 'card', amount: 120, durationMins: 90 },
+                    { id: 'HB-1031', clientName: 'Owen Blake', clientPhone: '(555) 201-6602', clientEmail: 'owen@example.com', serviceName: 'Consultation', date: day(-1), time: '09:00 AM', status: 'pending', paymentStatus: 'PENDING ZELLE', paymentMethod: 'zelle', durationMins: 30 }
                 ]
             };
         }
@@ -12243,6 +12468,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
             input.value = label;
             input.setAttribute('aria-invalid', 'false');
             closeOwnerTimeList(root);
+            if (String(input.id || '').indexOf('shift') === 0) paintHoursWeekSummary();
             var pair = ownerTimePairFromInput(input);
             if (pair && pair.err && pair.kind === 'pair' && pair.start && pair.end && !ownerHoursOrderError(pair.start.value, pair.end.value)) {
                 pair.err.textContent = '';
@@ -12322,6 +12548,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                 var input = event.target;
                 if (!input || !input.classList || !input.classList.contains('sd-time-input')) return;
                 openOwnerTimeList(ownerTimeRoot(input), input.value);
+                if (String(input.id || '').indexOf('shift') === 0) paintHoursWeekSummary();
             });
             document.addEventListener('focusin', function (event) {
                 var input = event.target;
@@ -12336,6 +12563,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                     if (root && root.contains(document.activeElement)) return;
                     syncOwnerTimePair(input);
                     closeOwnerTimeList(root);
+                    if (String(input.id || '').indexOf('shift') === 0) paintHoursWeekSummary();
                 }, 0);
             });
             document.addEventListener('keydown', function (event) {
@@ -13514,6 +13742,112 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                 + '<p class="sd-hours-hint sd-hours-hint-gap">Week layout uses the same seven day columns as the appointments week. Weekly hours still save one open and one close. A recurring block in the middle splits the bookable day. Copy to other days fills the fields. Save operating hours keeps them.</p>';
         }
 
+        function hoursSummaryParts(label) {
+            var mins = toMinutes(label);
+            if (mins == null) return null;
+            var h = Math.floor(mins / 60);
+            var m = mins % 60;
+            var mer = h >= 12 ? 'PM' : 'AM';
+            var h12 = h % 12 === 0 ? 12 : h % 12;
+            return { clock: m === 0 ? String(h12) : (h12 + ':' + String(m).padStart(2, '0')), mer: mer };
+        }
+
+        function hoursSummaryRange(start, end) {
+            var a = hoursSummaryParts(start);
+            var b = hoursSummaryParts(end);
+            if (!a || !b) {
+                var left = String(start || '').trim();
+                var right = String(end || '').trim();
+                return (left || right) ? (left + '\u2013' + right) : 'Open';
+            }
+            var left = a.mer === b.mer ? a.clock : (a.clock + ' ' + a.mer);
+            return left + '\u2013' + b.clock + ' ' + b.mer;
+        }
+
+        function hoursSummaryDayList(indexes) {
+            var names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+            var list = (indexes || []).slice().sort(function (a, b) { return a - b; });
+            var parts = [];
+            var i = 0;
+            while (i < list.length) {
+                var start = list[i];
+                var end = start;
+                while (i + 1 < list.length && list[i + 1] === end + 1) {
+                    i += 1;
+                    end = list[i];
+                }
+                parts.push(end > start ? (names[start] + '\u2013' + names[end]) : names[start]);
+                i += 1;
+            }
+            return parts.join(', ');
+        }
+
+        function hoursDailyBreakSummary(rules) {
+            var notes = [];
+            (rules || []).forEach(function (rule) {
+                if (!hoursRuleMatchesDay(rule, 'Mon') || !hoursRuleMatchesDay(rule, 'Fri') || !hoursRuleMatchesDay(rule, 'Sun')) return;
+                var start = toMinutes(rule && rule.time);
+                if (start == null) return;
+                var len = parseDurationMins(rule && rule.duration, 60);
+                if (!(len > 0)) return;
+                var range = hoursSummaryRange(rule.time, fromMinutes(start + len));
+                var title = String((rule && rule.title) || '');
+                notes.push((/lunch|break/i.test(title) ? 'Daily break ' : ('Daily ' + (title || 'break') + ' ')) + range);
+            });
+            return notes.join(' \u00b7 ');
+        }
+
+        function hoursWeekSummary(hours, rules) {
+            var order = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+            var runs = [];
+            order.forEach(function (day, index) {
+                var h = hours && hours[day] ? hours[day] : {};
+                var open = !!h.open;
+                var label = open ? hoursSummaryRange(h.start, h.end) : 'Closed';
+                var key = (open ? 'open' : 'closed') + '|' + label;
+                var last = runs[runs.length - 1];
+                if (last && last.key === key) last.indexes.push(index);
+                else runs.push({ key: key, label: label, indexes: [index] });
+            });
+            var groups = [];
+            runs.forEach(function (run) {
+                var found = null;
+                groups.forEach(function (group) { if (!found && group.key === run.key) found = group; });
+                if (found) found.indexes = found.indexes.concat(run.indexes);
+                else groups.push({ key: run.key, label: run.label, indexes: run.indexes.slice() });
+            });
+            return {
+                lines: groups.map(function (group) { return hoursSummaryDayList(group.indexes) + ' ' + group.label; }),
+                breakNote: hoursDailyBreakSummary(rules)
+            };
+        }
+
+        function paintHoursWeekSummary(tenant) {
+            var box = document.getElementById('hoursWeekSummary');
+            if (!box) return;
+            if (!tenant && typeof getTenant === 'function') tenant = getTenant();
+            var saved = (tenant && tenant.operatingHours) || {};
+            var hours = {};
+            ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].forEach(function (day) {
+                var openEl = document.getElementById('shiftOpen_' + day);
+                var startEl = document.getElementById('shiftStart_' + day);
+                var endEl = document.getElementById('shiftEnd_' + day);
+                var fallback = saved[day] || { open: false, start: '', end: '' };
+                hours[day] = {
+                    open: openEl ? !!openEl.checked : !!fallback.open,
+                    start: startEl ? startEl.value : (fallback.start || ''),
+                    end: endEl ? endEl.value : (fallback.end || '')
+                };
+            });
+            var summary = hoursWeekSummary(hours, (tenant && tenant.blockedRules) || []);
+            var lines = summary.lines.map(function (line) {
+                return '<span class="sd-hours-summary-line">' + esc(line) + '</span>';
+            }).join('');
+            box.innerHTML = '<p class="sd-hours-summary-lines">' + lines + '</p>'
+                + (summary.breakNote ? '<p class="sd-hours-summary-break">' + esc(summary.breakNote) + '</p>' : '');
+        }
+        window.paintHoursWeekSummary = paintHoursWeekSummary;
+
         function copyHoursToOtherDays(day) {
             var days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
             var open = document.getElementById('shiftOpen_' + day);
@@ -13530,17 +13864,20 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                 hoursWeekOpenChanged(other);
             });
             showToast('Copied ' + day + ' to the other days. Save operating hours to keep them.', 'success');
+            paintHoursWeekSummary();
         }
         window.copyHoursToOtherDays = copyHoursToOtherDays;
 
         function hoursWeekOpenChanged(day) {
             var openEl = document.getElementById('shiftOpen_' + day);
             var card = openEl && openEl.closest ? openEl.closest('.sd-hours-week-day') : null;
-            if (!card) return;
-            var open = !!(openEl && openEl.checked);
-            card.classList.toggle('is-closed', !open);
-            var mark = card.querySelector('.sd-hours-week-state');
-            if (mark) mark.textContent = open ? 'Open' : 'Closed';
+            if (card) {
+                var open = !!(openEl && openEl.checked);
+                card.classList.toggle('is-closed', !open);
+                var mark = card.querySelector('.sd-hours-week-state');
+                if (mark) mark.textContent = open ? 'Open' : 'Closed';
+            }
+            paintHoursWeekSummary();
         }
         window.hoursWeekOpenChanged = hoursWeekOpenChanged;
 
@@ -13607,7 +13944,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                             <div class="sd-hours-head">
                                 <span class="sd-hours-name">${dayLabels[day]}</span>
                                 <label class="sd-hours-open">
-                                    <input type="checkbox" id="shiftOpen_${day}" ${h.open ? 'checked' : ''}>
+                                    <input type="checkbox" id="shiftOpen_${day}" ${h.open ? 'checked' : ''} onchange="paintHoursWeekSummary()">
                                     <span>Open</span>
                                 </label>
                             </div>
@@ -13682,6 +14019,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
             }
             ensureSpecialHours(tenant);
             hoursCalPaint(tenant);
+            paintHoursWeekSummary(tenant);
 
         }
 
@@ -17862,10 +18200,124 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
             return { total: total, days: days, sample: true };
         }
 
-        function appointmentReportModel(appointments, range, paymentState) {
+        function reportClockMinutes(time) {
+            var raw = String(time || '').trim().toUpperCase();
+            if (!raw) return 0;
+            var parts = raw.split(':');
+            if (parts.length < 2) return 0;
+            var hour = parseInt(parts[0], 10);
+            var rest = String(parts[1] || '').trim().split(/\s+/);
+            var minute = parseInt(rest[0], 10);
+            var ap = rest.length > 1 ? rest[rest.length - 1] : '';
+            if (!isFinite(hour) || !isFinite(minute)) return 0;
+            if (ap === 'PM' && hour < 12) hour += 12;
+            if (ap === 'AM' && hour === 12) hour = 0;
+            if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return 0;
+            return hour * 60 + minute;
+        }
+
+        function reportNowParts(timeZone, now) {
+            var tz = String(timeZone || 'America/New_York');
+            var date = now instanceof Date ? now : new Date();
+            try {
+                var fmt = new Intl.DateTimeFormat('en-US', {
+                    timeZone: tz,
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hourCycle: 'h23'
+                });
+                var map = {};
+                fmt.formatToParts(date).forEach(function (part) {
+                    if (part.type !== 'literal') map[part.type] = part.value;
+                });
+                var hour = parseInt(map.hour, 10);
+                var minute = parseInt(map.minute, 10);
+                if (hour === 24) hour = 0;
+                if (map.year && map.month && map.day && isFinite(hour) && isFinite(minute)) {
+                    return { date: map.year + '-' + map.month + '-' + map.day, minutes: hour * 60 + minute };
+                }
+            } catch (errNow) {}
+            return { date: date.toISOString().slice(0, 10), minutes: date.getUTCHours() * 60 + date.getUTCMinutes() };
+        }
+
+        function reportAppointmentStarted(app, asOf) {
+            if (!asOf || !/^\d{4}-\d{2}-\d{2}$/.test(String(asOf.date || ''))) return true;
+            var date = String(app && app.date || '').slice(0, 10);
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return false;
+            if (date < asOf.date) return true;
+            if (date > asOf.date) return false;
+            var minutes = isFinite(Number(asOf.minutes)) ? Number(asOf.minutes) : 0;
+            return reportClockMinutes(app && app.time) <= minutes;
+        }
+
+        function reportIsDeleted(app) {
+            if (!app) return true;
+            if (app.deleted === true) return true;
+            var status = String(app.status || '').toLowerCase();
+            return status === 'deleted' || status === 'removed';
+        }
+
+        function reportIsPending(app) {
+            return String((app && app.status) || '').toLowerCase() === 'pending';
+        }
+
+        function reportIsDoneStatus(app) {
+            var status = String((app && app.status) || '').toLowerCase().replace(/[\s-]+/g, '_');
+            return status === 'completed' || status === 'complete' || status === 'checked_in' || status === 'checkedin' || status === 'done' || status === 'marked_done';
+        }
+
+        function reportIsConfirmedStatus(app) {
+            var status = String((app && app.status) || '').toLowerCase();
+            return status === 'accepted' || status === 'confirmed' || status === 'booked' || status === '';
+        }
+
+        function reportCancelledAfterConfirm(app) {
+            if (!reportIsCancelled(app)) return false;
+            if (reportIsPending(app) || reportIsDenied(app)) return false;
+            return true;
+        }
+
+        // Done: completed, checked in, or marked done, or a confirmed visit whose start has passed
+        // and is not a no-show or cancellation. Not done: no-show, or cancelled after confirm
+        // (this app cancels accepted visits; pending requests are denied instead). Pending, denied,
+        // deleted, and visits that have not started are left out of both counts.
+        function appointmentCompletionOf(app, asOf) {
+            if (!app || reportIsDeleted(app)) return '';
+            if (!reportAppointmentStarted(app, asOf)) return '';
+            if (reportIsPending(app) || reportIsDenied(app)) return '';
+            if (appointmentIsNoShow(app) || reportCancelledAfterConfirm(app)) return 'not_done';
+            if (reportIsDoneStatus(app) || reportIsConfirmedStatus(app)) return 'done';
+            return '';
+        }
+
+        function appointmentCompletionSummary(rows, asOf) {
+            var done = 0;
+            var notDone = 0;
+            (rows || []).forEach(function (app) {
+                var kind = appointmentCompletionOf(app, asOf);
+                if (kind === 'done') done += 1;
+                else if (kind === 'not_done') notDone += 1;
+            });
+            var total = done + notDone;
+            var percent = total ? Math.round((done / total) * 100) : null;
+            return {
+                done: done,
+                notDone: notDone,
+                total: total,
+                percent: percent,
+                label: total ? (percent + '%') : '—',
+                detail: total ? (done + ' done · ' + notDone + ' not done') : 'No past appointments in this range.'
+            };
+        }
+
+        function appointmentReportModel(appointments, range, paymentState, asOf) {
             var from = range && range.from;
             var to = range && range.to;
             var payOf = typeof paymentState === 'function' ? paymentState : function () { return 'unpaid'; };
+            var clock = (asOf && /^\d{4}-\d{2}-\d{2}$/.test(String(asOf.date || ''))) ? asOf : null;
             var rows = [];
             (appointments || []).forEach(function (app) {
                 if (!app) return;
@@ -17929,7 +18381,9 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                 weeks: weeks,
                 avgBookings: weekCount ? total / weekCount : 0,
                 avgRevenue: weekCount ? revenue / weekCount : 0,
-                noShow: appointmentReportNoShow(rows)
+                noShow: appointmentReportNoShow(rows),
+                asOf: clock,
+                completion: appointmentCompletionSummary(rows, clock)
             };
         }
 
@@ -17942,7 +18396,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
             }
             var lines = [[
                 'id', 'client', 'phone', 'email', 'service', 'date', 'time', 'status', 'payment',
-                'payment_state', 'amount', 'counts_toward_revenue', 'confirmed', 'cancelled', 'unpaid', 'no_show', 'walk_in'
+                'payment_state', 'amount', 'counts_toward_revenue', 'confirmed', 'cancelled', 'unpaid', 'no_show', 'walk_in', 'completion'
             ].join(',')];
             (model && model.rows ? model.rows : []).forEach(function (app) {
                 var cancelled = reportIsCancelled(app);
@@ -17957,7 +18411,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                     app.date, app.time, app.status || '', app.paymentStatus || '',
                     pay, reportAmount(app), toward ? 'yes' : 'no', confirmed ? 'yes' : 'no',
                     cancelled ? 'yes' : 'no', unpaid ? 'yes' : 'no', appointmentIsNoShow(app) ? 'yes' : 'no',
-                    app.walkIn === true ? 'yes' : ''
+                    app.walkIn === true ? 'yes' : '',
+                    appointmentCompletionOf(app, model && model.asOf)
                 ].map(cell).join(','));
             });
             return lines.join('\n');
@@ -18022,7 +18477,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
             var fromEl = document.getElementById('tenantReportFrom');
             var toEl = document.getElementById('tenantReportTo');
             var range = appointmentReportRange(reportRangePreset, today, fromEl && fromEl.value, toEl && toEl.value);
-            var model = appointmentReportModel(appointmentReportRows(tenant), range, bookingPaymentState);
+            var asOf = reportNowParts(getTenantTimezone(tenant), new Date());
+            var model = appointmentReportModel(appointmentReportRows(tenant), range, bookingPaymentState, asOf);
             var sample = window.__SCHEDI_DEMO === true;
             var visits = sample ? appointmentReportSampleVisits(range.from, range.to) : null;
             var byClient = {};
@@ -18047,6 +18503,15 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                 : card('Page visits', 'Unavailable', 'The booking page does not send visit counts yet.');
             var noShow = model.noShow;
             var noShowCard = card('No-shows', esc(noShow.label), esc(noShow.reason));
+            var completion = model.completion || appointmentCompletionSummary([], asOf);
+            var completionBar = '';
+            if (completion.total) {
+                var doneWidth = (completion.done / completion.total) * 100;
+                var missWidth = (completion.notDone / completion.total) * 100;
+                completionBar = '<div class="sd-report-split" role="img" aria-label="' + completion.done + ' done, ' + completion.notDone + ' not done"><span class="sd-report-split-done" style="width:' + doneWidth.toFixed(2) + '%"></span><span class="sd-report-split-miss" style="width:' + missWidth.toFixed(2) + '%"></span></div>'
+                    + '<p class="sd-report-note">Only visits that have already started. Done means it happened. Not done is a no-show or cancelled after it was confirmed.</p>';
+            }
+            var completionCard = '<div class="sd-report-card p-3 rounded-xl bg-slate-900 border border-slate-800"><div class="sd-report-kicker text-slate-500">Completion rate</div><div class="sd-report-value text-lg font-black text-white">' + esc(completion.label) + '</div><p class="sd-report-note text-slate-500 mt-1">' + esc(completion.detail) + '</p>' + completionBar + '</div>';
             var countLabel = function (n) { return String(n); };
             var bookingAvgChart = appointmentReportChartSvg(model.weeks, 'bookings', countLabel, 'Average appointments per week');
             var revenueAvgChart = appointmentReportChartSvg(model.weeks, 'revenue', reportMoney, 'Average revenue per week');
@@ -18058,6 +18523,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
                 + '<div class="sd-report-stats grid grid-cols-2 sm:grid-cols-4 gap-2">'
                 + visitCard
                 + card('Total bookings', String(model.total), 'Every appointment in this range.')
+                + completionCard
                 + card('Revenue', reportMoney(model.revenue), 'Booked prices, excluding cancelled and denied.')
                 + card('Confirmed', String(model.confirmed), 'Accepted or already confirmed. Pending stays out.')
                 + card('Cancelled', String(model.cancelled), '')
@@ -18155,7 +18621,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
             var fromEl = document.getElementById('tenantReportFrom');
             var toEl = document.getElementById('tenantReportTo');
             var range = appointmentReportRange(reportRangePreset, today, fromEl && fromEl.value, toEl && toEl.value);
-            var model = appointmentReportModel(appointmentReportRows(tenant), range, bookingPaymentState);
+            var model = appointmentReportModel(appointmentReportRows(tenant), range, bookingPaymentState, reportNowParts(getTenantTimezone(tenant), new Date()));
             var csv = appointmentReportCsv(model, bookingPaymentState);
             var blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
             var url = URL.createObjectURL(blob);

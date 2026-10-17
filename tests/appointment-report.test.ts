@@ -79,6 +79,16 @@ const names = [
   "appointmentReportNoShow",
   "appointmentReportRange",
   "appointmentReportSampleVisits",
+  "reportClockMinutes",
+  "reportNowParts",
+  "reportAppointmentStarted",
+  "reportIsDeleted",
+  "reportIsPending",
+  "reportIsDoneStatus",
+  "reportIsConfirmedStatus",
+  "reportCancelledAfterConfirm",
+  "appointmentCompletionOf",
+  "appointmentCompletionSummary",
   "appointmentReportModel",
   "appointmentReportCsv",
   "appointmentReportChartSvg",
@@ -87,12 +97,14 @@ const names = [
 ];
 
 const lib = names.map((name) => extractFunction(html, name)).join("\n");
-const api = new Function(`${lib}; return { reportTodayIso, reportShiftIso, appointmentReportRange, appointmentReportSampleVisits, appointmentReportModel, appointmentReportCsv, appointmentReportChartSvg, appointmentReportNoShow, bookingPaymentState };`)() as {
+const api = new Function(`${lib}; return { reportTodayIso, reportShiftIso, appointmentReportRange, appointmentReportSampleVisits, appointmentReportModel, appointmentReportCsv, appointmentReportChartSvg, appointmentReportNoShow, bookingPaymentState, appointmentCompletionOf, appointmentCompletionSummary };`)() as {
   reportTodayIso: (tz: string, now: Date) => string;
   reportShiftIso: (iso: string, days: number) => string;
   appointmentReportRange: (preset: string, today: string, from?: string, to?: string) => { from: string; to: string; label: string; clamped?: boolean };
   appointmentReportSampleVisits: (from: string, to: string) => { total: number; days: number; sample: boolean };
-  appointmentReportModel: (rows: unknown[], range: { from: string; to: string }, pay: (row: unknown) => string) => {
+  appointmentCompletionOf: (row: unknown, asOf?: { date: string; minutes: number }) => string;
+  appointmentCompletionSummary: (rows: unknown[], asOf?: { date: string; minutes: number }) => { done: number; notDone: number; percent: number | null; label: string; detail: string };
+  appointmentReportModel: (rows: unknown[], range: { from: string; to: string }, pay: (row: unknown) => string, asOf?: { date: string; minutes: number }) => {
     total: number;
     revenue: number;
     confirmed: number;
@@ -105,6 +117,7 @@ const api = new Function(`${lib}; return { reportTodayIso, reportShiftIso, appoi
     avgRevenue: number;
     noShow: { available: boolean; count: number; label: string; reason: string };
     rows: unknown[];
+    completion: { done: number; notDone: number; percent: number | null; label: string; detail: string };
   };
   appointmentReportCsv: (model: { rows: unknown[] }, pay: (row: unknown) => string) => string;
   appointmentReportChartSvg: (weeks: { start: string; bookings: number; revenue: number }[], field: string, format: (n: number) => string, label: string) => string;
@@ -222,6 +235,61 @@ describe("appointment report math", () => {
     expect(api.appointmentReportSampleVisits("2026-10-10", "2026-10-16").total).toBe(sample.total);
     expect(api.appointmentReportNoShow().available).toBe(true);
     expect(api.appointmentReportNoShow().count).toBe(0);
+  });
+
+  it("counts completion only for visits that have already started", () => {
+    const asOf = { date: "2026-10-16", minutes: 12 * 60 };
+    const rows = [
+      { id: "done", date: "2026-10-15", time: "9:00 AM", status: "completed" },
+      { id: "confirmed", date: "2026-10-16", time: "9:00 AM", status: "accepted" },
+      { id: "later", date: "2026-10-16", time: "3:00 PM", status: "accepted" },
+      { id: "future", date: "2026-10-17", time: "9:00 AM", status: "completed" },
+      { id: "noshow", date: "2026-10-14", time: "9:00 AM", status: "accepted", noShow: true },
+      { id: "cancelled", date: "2026-10-14", time: "10:00 AM", status: "cancelled" },
+      { id: "pending", date: "2026-10-14", time: "11:00 AM", status: "pending", noShow: true },
+      { id: "denied", date: "2026-10-14", time: "12:00 PM", status: "denied" },
+      { id: "deleted", date: "2026-10-14", time: "1:00 PM", status: "accepted", deleted: true },
+    ];
+    expect(api.appointmentCompletionOf(rows[0], asOf)).toBe("done");
+    expect(api.appointmentCompletionOf(rows[1], asOf)).toBe("done");
+    expect(api.appointmentCompletionOf(rows[2], asOf)).toBe("");
+    expect(api.appointmentCompletionOf(rows[3], asOf)).toBe("");
+    expect(api.appointmentCompletionOf(rows[4], asOf)).toBe("not_done");
+    expect(api.appointmentCompletionOf(rows[5], asOf)).toBe("not_done");
+    expect(api.appointmentCompletionOf(rows[6], asOf)).toBe("");
+    expect(api.appointmentCompletionOf(rows[7], asOf)).toBe("");
+    expect(api.appointmentCompletionOf(rows[8], asOf)).toBe("");
+    const model = api.appointmentReportModel(rows, { from: "2026-10-01", to: "2026-10-20" }, pay, asOf);
+    expect(model.completion).toMatchObject({
+      done: 2,
+      notDone: 2,
+      percent: 50,
+      label: "50%",
+      detail: "2 done · 2 not done",
+    });
+    const empty = api.appointmentReportModel(
+      [{ id: "future", date: "2026-10-17", time: "9:00 AM", status: "accepted" }],
+      { from: "2026-10-17", to: "2026-10-17" },
+      pay,
+      asOf,
+    );
+    expect(empty.completion).toMatchObject({
+      done: 0,
+      notDone: 0,
+      percent: null,
+      label: "—",
+      detail: "No past appointments in this range.",
+    });
+    const csv = api.appointmentReportCsv(model, pay);
+    expect(csv.split("\n")[0].endsWith("completion")).toBe(true);
+    expect(csv).toContain(",done");
+    expect(csv).toContain(",not_done");
+    const unchecked = api.appointmentReportModel(
+      [{ id: "kept", date: "2026-10-14", time: "11:00 PM", status: "accepted" }],
+      range,
+      pay,
+    );
+    expect(unchecked.completion.done).toBe(1);
   });
 });
 

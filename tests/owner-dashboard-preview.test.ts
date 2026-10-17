@@ -611,6 +611,62 @@ describe("owner dashboard preview", () => {
     expect(html).toContain("id: 'rule-friday'");
     expect(html).toContain("frequency: 'Weekly (Fridays)'");
     expect(html).toContain('id="hoursWeekLayoutBtn"');
+    expect(html).toContain('id="hoursWeekSummary"');
+    expect(css).toContain("#tenantPortalSection.schedi-newdash[data-dash=\"hours\"] #tenantHoursShiftBlock");
+    expect(css).toContain("#tenantPortalSection.schedi-newdash[data-dash=\"profile\"] #tenantHoursShiftBlock { display: block !important; }");
+    expect(css).not.toContain("#tenantHoursShiftBlock { display: none");
+    expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-hours-summary-line:not(:last-child)::after { content: \" · \"; font-weight: 700; }");
+    expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-hours-summary-line:not(:last-child)::after { content: none; }");
+    const summary = new Function(
+      `${extractFunction(html, "toMinutes")}\n${extractFunction(html, "fromMinutes")}\n${extractFunction(html, "parseDurationMins")}\n${extractFunction(html, "hoursRuleMatchesDay")}\n${extractFunction(html, "hoursSummaryParts")}\n${extractFunction(html, "hoursSummaryRange")}\n${extractFunction(html, "hoursSummaryDayList")}\n${extractFunction(html, "hoursDailyBreakSummary")}\n${extractFunction(html, "hoursWeekSummary")}; return { hoursWeekSummary, hoursSummaryRange };`,
+    )() as {
+      hoursWeekSummary: (hours: Record<string, { open?: boolean; start?: string; end?: string }>, rules?: { title?: string; time?: string; duration?: string; frequency?: string }[]) => { lines: string[]; breakNote: string };
+      hoursSummaryRange: (start: string, end: string) => string;
+    };
+    const open = (start: string, end: string) => ({ open: true, start, end });
+    const closed = { open: false, start: "09:00 AM", end: "05:00 PM" };
+    expect(summary.hoursSummaryRange("09:00 AM", "09:00 PM")).toBe("9 AM–9 PM");
+    expect(summary.hoursSummaryRange("12:00 PM", "01:00 PM")).toBe("12–1 PM");
+    expect(summary.hoursSummaryRange("09:30 AM", "10:30 AM")).toBe("9:30–10:30 AM");
+    expect(summary.hoursSummaryRange("09:30 AM", "05:30 PM")).toBe("9:30 AM–5:30 PM");
+    expect(summary.hoursWeekSummary({
+      Mon: open("09:00 AM", "09:00 PM"),
+      Tue: open("09:00 AM", "09:00 PM"),
+      Wed: open("09:00 AM", "09:00 PM"),
+      Thu: open("09:00 AM", "09:00 PM"),
+      Fri: open("09:00 AM", "09:00 PM"),
+      Sat: open("09:00 AM", "05:00 PM"),
+      Sun: closed,
+    }, []).lines).toEqual(["Mon–Fri 9 AM–9 PM", "Sat 9 AM–5 PM", "Sun Closed"]);
+    expect(summary.hoursWeekSummary({
+      Mon: open("09:00 AM", "05:00 PM"),
+      Tue: open("11:00 AM", "03:00 PM"),
+      Wed: open("09:00 AM", "05:00 PM"),
+      Thu: closed,
+      Fri: closed,
+      Sat: closed,
+      Sun: closed,
+    }, []).lines).toEqual(["Mon, Wed 9 AM–5 PM", "Tue 11 AM–3 PM", "Thu–Sun Closed"]);
+    expect(summary.hoursWeekSummary({
+      Mon: open("09:00 AM", "06:00 PM"),
+      Tue: open("11:00 AM", "07:00 PM"),
+      Wed: open("09:00 AM", "06:00 PM"),
+      Thu: open("09:00 AM", "06:00 PM"),
+      Fri: open("09:00 AM", "06:00 PM"),
+      Sat: open("10:00 AM", "04:00 PM"),
+      Sun: closed,
+    }, [
+      { title: "Lunch", time: "12:00 PM", duration: "1 hour", frequency: "Daily" },
+      { title: "Team meeting", time: "04:00 PM", duration: "1 hour", frequency: "Weekly (Fridays)" },
+    ])).toEqual({
+      lines: ["Mon, Wed–Fri 9 AM–6 PM", "Tue 11 AM–7 PM", "Sat 10 AM–4 PM", "Sun Closed"],
+      breakNote: "Daily break 12–1 PM",
+    });
+    expect(summary.hoursWeekSummary({
+      Mon: closed, Tue: closed, Wed: closed, Thu: closed, Fri: closed, Sat: closed, Sun: closed,
+    }, []).lines).toEqual(["Mon–Sun Closed"]);
+    expect(extractFunction(html, "renderTenantHours")).toContain("paintHoursWeekSummary(tenant)");
+    expect(extractFunction(html, "paintHoursWeekSummary")).toContain("hoursWeekSummary");
   });
 });
 
@@ -657,7 +713,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       await page.waitForFunction(() => {
         const today = document.getElementById("schediStatToday");
         const review = document.getElementById("schediStatReview");
-        return today?.textContent === "4" && review?.textContent === "2" && document.body.textContent?.includes("Maya Chen");
+        return today?.textContent === "4" && review?.textContent === "3" && document.body.textContent?.includes("Maya Chen");
       }, { timeout: 20000 });
       const stats = await page.evaluate(() => {
         const tenant = (window as unknown as { getTenant: () => { appointments: { id: string; date?: string; status?: string; amount?: number }[] } }).getTenant();
@@ -698,7 +754,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
         (button as HTMLButtonElement).click();
         return document.getElementById("schediStatReview")?.textContent || "";
       });
-      expect(accept).toBe("1");
+      expect(accept).toBe("2");
       const decline = await page.evaluate(() => {
         window.confirm = () => { throw new Error("browser confirm"); };
         const button = [...document.querySelectorAll("#schediTodayRequests button")].find((node) => node.textContent === "Decline");
@@ -720,14 +776,14 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
           review: document.getElementById("schediStatReview")?.textContent || "",
         };
       });
-      expect(kept).toEqual({ hidden: true, review: "1" });
+      expect(kept).toEqual({ hidden: true, review: "2" });
       const declined = await page.evaluate(() => {
         const button = [...document.querySelectorAll("#schediTodayRequests button")].find((node) => node.textContent === "Decline");
         (button as HTMLButtonElement).click();
         (document.getElementById("denyConfirmBtn") as HTMLButtonElement).click();
         return document.getElementById("schediStatReview")?.textContent || "";
       });
-      expect(declined).toBe("0");
+      expect(declined).toBe("1");
       const paidFlip = await page.evaluate(async () => {
         const w = window as unknown as {
           markAppointmentPaid: (id: string) => void;
@@ -951,4 +1007,151 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
     }
   }, 60000);
+
+  it("keeps seven hour controls visible when week layout is toggled", async () => {
+    const types: Record<string, string> = {
+      ".html": "text/html; charset=utf-8",
+      ".js": "text/javascript; charset=utf-8",
+      ".svg": "image/svg+xml",
+      ".png": "image/png",
+      ".json": "application/json",
+      ".webmanifest": "application/manifest+json",
+    };
+    const server = createServer((req, res) => {
+      const path = new URL(req.url || "/", "http://127.0.0.1").pathname;
+      const file = path === "/" || path === "/portal-preview" ? "/index.html" : path;
+      const full = join(root, file);
+      if (!full.startsWith(root) || !existsSync(full)) {
+        res.writeHead(404);
+        res.end("missing");
+        return;
+      }
+      res.writeHead(200, { "content-type": types[extname(full)] || "application/octet-stream" });
+      res.end(readFileSync(full));
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const address = server.address();
+    const port = typeof address === "object" && address ? address.port : 0;
+    const puppeteer = await import("puppeteer-core");
+    const browser = await puppeteer.default.launch({
+      executablePath: chrome,
+      headless: true,
+      args: ["--no-sandbox", "--disable-dev-shm-usage"],
+    });
+    const errors: string[] = [];
+    try {
+      const page = await browser.newPage();
+      page.on("pageerror", (error) => errors.push(String(error)));
+      const visible = (selector: string) => page.evaluate((sel) => {
+        const block = document.getElementById("tenantHoursShiftBlock");
+        const blockStyle = block ? getComputedStyle(block) : null;
+        const nodes = [...document.querySelectorAll(sel)];
+        const shown = nodes.filter((el) => {
+          const style = getComputedStyle(el);
+          const box = el.getBoundingClientRect();
+          return style.display !== "none" && style.visibility !== "hidden" && box.height > 0 && box.width > 0;
+        });
+        const summary = document.querySelector(".sd-hours-summary-lines");
+        const line = document.querySelector(".sd-hours-summary-line");
+        const summaryBox = document.getElementById("hoursWeekSummary");
+        const grid = document.getElementById("perDayShiftsGrid");
+        return {
+          total: nodes.length,
+          shown: shown.length,
+          block: blockStyle ? blockStyle.display : "",
+          blockH: block ? block.getBoundingClientRect().height : 0,
+          summary: summaryBox?.textContent || "",
+          beforeGrid: !!(summaryBox && grid && (summaryBox.compareDocumentPosition(grid) & Node.DOCUMENT_POSITION_FOLLOWING)),
+          dir: summary ? getComputedStyle(summary).flexDirection : "",
+          after: line ? getComputedStyle(line, "::after").content : "",
+          tabbar: getComputedStyle(document.getElementById("schediDashTabbar") as Element).display,
+          dash: document.body.classList.contains("schedi-newdash"),
+          pressed: document.getElementById("hoursWeekLayoutBtn")?.getAttribute("aria-pressed"),
+        };
+      }, selector);
+      const ready = async (search = "") => {
+        await page.goto(`http://127.0.0.1:${port}/portal-preview${search}`, { waitUntil: "domcontentloaded", timeout: 45000 });
+        await page.waitForFunction(() => document.body.classList.contains("schedi-newdash"), { timeout: 20000 });
+        await page.evaluate(() => (window as unknown as { schediDashGo: (tab: string) => void }).schediDashGo("hours"));
+        await page.waitForSelector("#shiftOpen_Mon", { timeout: 10000 });
+      };
+      await page.setViewport({ width: 390, height: 900 });
+      await ready();
+      for (const width of [390, 1280]) {
+        await page.setViewport({ width, height: 900 });
+        const pressed = await page.$eval("#hoursWeekLayoutBtn", (el) => el.getAttribute("aria-pressed"));
+        if (pressed === "true") await page.$eval("#hoursWeekLayoutBtn", (el) => (el as HTMLButtonElement).click());
+        const day = await visible(".sd-hours-day");
+        expect(day.shown).toBe(7);
+        expect(day.block).toBe("block");
+        expect(day.blockH).toBeGreaterThan(0);
+        expect(day.dash).toBe(true);
+        expect(day.beforeGrid).toBe(true);
+        expect(day.summary).toContain("Mon, Wed–Fri 9 AM–6 PM");
+        expect(day.summary).toContain("Sun Closed");
+        expect(day.summary).toContain("Daily break 12–1 PM");
+        expect(day.tabbar).toBe(width < 860 ? "grid" : "none");
+        expect(day.dir).toBe(width < 860 ? "column" : "row");
+        if (width < 860) expect(day.after).toBe("none");
+        else expect(day.after).toContain("·");
+        await page.$eval("#hoursWeekLayoutBtn", (el) => (el as HTMLButtonElement).click());
+        const week = await visible(".sd-hours-week-day");
+        expect(week.shown).toBe(7);
+        expect(week.pressed).toBe("true");
+        expect(week.block).toBe("block");
+        await page.$eval("#hoursWeekLayoutBtn", (el) => (el as HTMLButtonElement).click());
+        const again = await visible(".sd-hours-day");
+        expect(again.shown).toBe(7);
+        expect(again.pressed).toBe("false");
+        expect(again.blockH).toBeGreaterThan(0);
+        await page.$eval("#hoursWeekLayoutBtn", (el) => (el as HTMLButtonElement).click());
+        const back = await visible(".sd-hours-week-day");
+        expect(back.shown).toBe(7);
+        expect(back.block).toBe("block");
+      }
+      await page.evaluate(() => {
+        const input = document.getElementById("shiftEnd_Mon") as HTMLInputElement;
+        input.value = "09:00 PM";
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+      const edited = await page.$eval("#hoursWeekSummary", (el) => el.textContent || "");
+      expect(edited).toContain("Mon 9 AM–9 PM");
+      expect(edited).toContain("Wed–Fri 9 AM–6 PM");
+      await page.reload({ waitUntil: "domcontentloaded", timeout: 45000 });
+      await page.waitForFunction(() => document.body.classList.contains("schedi-newdash"), { timeout: 20000 });
+      await page.evaluate(() => (window as unknown as { schediDashGo: (tab: string) => void }).schediDashGo("hours"));
+      await page.waitForSelector(".sd-hours-week-day", { timeout: 10000 });
+      const remembered = await visible(".sd-hours-week-day");
+      expect(await page.evaluate(() => localStorage.getItem("schediWeekHours"))).toBe("1");
+      expect(remembered.shown).toBe(7);
+      expect(remembered.block).toBe("block");
+      await page.evaluate(() => localStorage.setItem("schediWeekHours", "0"));
+      await page.setViewport({ width: 390, height: 900 });
+      await ready("?weekhours=1");
+      const flagged = await visible(".sd-hours-week-day");
+      expect(flagged.shown).toBe(7);
+      expect(flagged.pressed).toBe("true");
+      expect(flagged.tabbar).toBe("grid");
+      await page.evaluate(() => (window as unknown as { schediDashGo: (tab: string) => void }).schediDashGo("profile"));
+      const profile = await visible(".sd-hours-week-day");
+      expect(profile.shown).toBe(7);
+      expect(profile.block).toBe("block");
+      const profileFields = await page.evaluate(() => ({
+        dash: document.getElementById("tenantPortalSection")?.getAttribute("data-dash"),
+        booking: getComputedStyle(document.getElementById("tenantProfileFields") as Element).display,
+        timeOff: getComputedStyle(document.getElementById("tenantHoursTimeOff") as Element).display,
+      }));
+      expect(profileFields.dash).toBe("profile");
+      expect(profileFields.booking).not.toBe("none");
+      expect(profileFields.timeOff).toBe("none");
+      await page.$eval("#hoursWeekLayoutBtn", (el) => (el as HTMLButtonElement).click());
+      const profileDays = await visible(".sd-hours-day");
+      expect(profileDays.shown).toBe(7);
+      expect(profileDays.blockH).toBeGreaterThan(0);
+      expect(errors).toEqual([]);
+    } finally {
+      await browser.close();
+      await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+    }
+  }, 90000);
 });
