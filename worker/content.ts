@@ -444,14 +444,13 @@ function helpVideosHtml(): string {
     const title = escapeHtml(video.title);
     const desc = escapeHtml(video.desc);
     return `<figure>
-      <img src="${poster}" alt="${title}" width="480" height="270" loading="lazy" decoding="async">
-      <video class="schedi-help-video" controls preload="none" poster="${poster}" width="480" height="270">
+      <video class="schedi-help-video" controls preload="none" poster="${poster}" width="720" height="1280">
         <source src="${file}" type="video/mp4">
       </video>
       <figcaption><strong>${title}</strong> (${escapeHtml(video.dur)}). ${desc}</figcaption>
     </figure>`;
   }).join("\n");
-  return `<section><h2>Video tutorials</h2><p>Short videos, about 20 seconds each. They load when you press play.</p>${cards}</section>`;
+  return `<section class="help-clips"><h2>Video tutorials</h2><p>Short videos, about 20 seconds each. They load when you press play.</p><div class="help-clip-grid">${cards}</div></section>`;
 }
 
 export function escapeHtml(value: string): string {

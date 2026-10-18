@@ -4,7 +4,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { extname, join } from "node:path";
 import { runInNewContext } from "node:vm";
 import { describe, expect, it } from "vitest";
-import { handleRequest, type SchediEnv } from "../worker/handler";
+import { contentSecurityPolicy, handleRequest, type SchediEnv } from "../worker/handler";
 import { renderRobots, renderSitemap } from "../worker/render";
 
 const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
@@ -685,6 +685,8 @@ describe("owner dashboard preview", () => {
     expect(extractFunction(html, "hoursWeekDayHtml")).toContain("openAddBlockedTimeForDay");
     expect(extractFunction(html, "hoursWeekDayHtml")).toContain("openHoursCopySheet");
     expect(extractFunction(html, "hoursWeekDayHtml")).toContain("Copy to…");
+    expect(extractFunction(html, "renderTenantHours")).toContain("openHoursCopySheet");
+    expect(extractFunction(html, "renderTenantHours")).toContain(">Copy to…</button>");
     expect(extractFunction(html, "hoursWeekDayHtml")).not.toContain("copyHoursToOtherDays");
     expect(extractFunction(html, "copyHoursToOtherDays")).not.toContain("saveState");
     expect(extractFunction(html, "copyHoursToOtherDays")).toContain("hoursCopyTargets");
@@ -1206,19 +1208,19 @@ describe("owner dashboard preview", () => {
     expect(api.appointmentStatusLabels({ status: "denied", noShow: true, paymentStatus: "PAY AT APPOINTMENT", amount: 80 })).toEqual(["Denied", "No-show"]);
     expect(api.appointmentStatusLabels({ status: "declined", paymentStatus: "PAY AT APPOINTMENT" })).toEqual(["Declined"]);
     expect(api.appointmentStatusLabels({ status: "cancelled", paymentStatus: "PAID", amount: 65 })).toEqual(["Cancelled"]);
-    expect(api.appointmentStatusLabels({ status: "accepted", noShow: true, paymentStatus: "PAID IN CASH", paidMethod: "cash", amount: 65 })).toEqual(["No-show", "Paid · $65"]);
+    expect(api.appointmentStatusLabels({ status: "accepted", noShow: true, paymentStatus: "PAID IN CASH", paidMethod: "cash", amount: 65 })).toEqual(["Accepted", "No-show", "Paid · $65"]);
     expect(api.appointmentStatusLabels({ status: "completed", paymentStatus: "PAID", paidMethod: "cash", amount: 65 })).toEqual(["Completed", "Paid · $65"]);
     expect(api.appointmentStatusLabels({ status: "done", paymentStatus: "PAID", amount: 40 })).toEqual(["Done", "Paid · $40"]);
     expect(api.appointmentStatusLabels({ status: "rescheduled", paymentStatus: "PAY AT APPOINTMENT", amount: 28 })).toEqual(["Rescheduled", "Unpaid", "$28"]);
     expect(api.appointmentStatusParts({ status: "accepted", paymentStatus: "DEPOSIT PAID", depositPaid: true, amount: 120 }).payment).toBe("deposit");
-    expect(api.appointmentStatusLabels({ status: "accepted", paymentStatus: "DEPOSIT PAID", depositPaid: true, amount: 120 })).toEqual(["Deposit paid · $120"]);
-    expect(api.appointmentStatusLabels({ status: "accepted", paymentStatus: "DEPOSIT PAID", depositPaid: true, depositAmount: 36, amount: 120 })).toEqual(["Deposit paid · $36"]);
-    expect(api.appointmentStatusLabels({ status: "accepted", paymentStatus: "PAID", refundAmount: 20, amount: 65 })).toEqual(["Refunded · $45"]);
+    expect(api.appointmentStatusLabels({ status: "accepted", paymentStatus: "DEPOSIT PAID", depositPaid: true, amount: 120 })).toEqual(["Accepted", "Deposit paid · $120"]);
+    expect(api.appointmentStatusLabels({ status: "accepted", paymentStatus: "DEPOSIT PAID", depositPaid: true, depositAmount: 36, amount: 120 })).toEqual(["Accepted", "Deposit paid · $36"]);
+    expect(api.appointmentStatusLabels({ status: "accepted", paymentStatus: "PAID", refundAmount: 20, amount: 65 })).toEqual(["Accepted", "Refunded · $45"]);
     const deposit = api.appointmentStatusChipsHtml({ status: "accepted", paymentStatus: "DEPOSIT PAID", paidMethod: "card", depositPaid: true, amount: 120 });
     expect(deposit).toContain("Card (Stripe) · $120");
+    expect(deposit.indexOf("Accepted")).toBeLessThan(deposit.indexOf("sd-pay-card"));
     expect(deposit.indexOf("sd-pay-card")).toBeLessThan(deposit.indexOf("$120"));
     expect(deposit).not.toContain("text-slate-300");
-    expect(deposit).not.toContain("Accepted");
     const depositRecorded = api.appointmentStatusChipsHtml({ status: "accepted", paymentStatus: "DEPOSIT PAID", paidMethod: "card", depositPaid: true, depositAmount: 36, amount: 120 });
     expect(depositRecorded).toContain('aria-label="Card (Stripe) · $36"');
     expect(depositRecorded).not.toContain("$120");
@@ -1506,6 +1508,22 @@ describe("owner dashboard preview", () => {
     expect(paint).not.toContain("schediDashInitials(who)");
     expect(paint).toContain("schediDashUserLogoPhone");
     expect(paint).toContain("schediDashApplyLogo(phoneLogo, phoneInitials)");
+  });
+
+  it("gives classic roster icons an intrinsic size outside the new dashboard stylesheet", () => {
+    expect(extractFunction(html, "payKindSvg")).toContain('width="16" height="16"');
+    expect(extractFunction(html, "serviceSvg")).toContain('width="16" height="16"');
+    const start = html.indexOf('<style id="schediClassicRoster">');
+    const end = html.indexOf("</style>", start);
+    const classic = html.slice(start, end);
+    expect(classic).toContain("#tenantPortalSection:not(.schedi-newdash)");
+    expect(classic).toContain("#tenantPortalSection:not(.schedi-newdash) .sd-pay svg,\n#tenantPortalSection:not(.schedi-newdash) .sd-chip svg { width: 14px; height: 14px;");
+    expect(classic).toContain(".sd-svc-mark svg");
+    expect(classic).toContain(".roster-paid-kicker { display: none; }");
+    expect(classic).toContain(".sd-roster-search-toggle { display: none; }");
+    expect(classic).toContain(".sd-roster-all { display: none; }");
+    expect(dashCss(html)).not.toContain(":not(.schedi-newdash)");
+    expect(unscopedSelectors(dashCss(html))).toEqual([]);
   });
 });
 
@@ -2738,16 +2756,24 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       for (const width of [340, 390]) {
         await page.setViewport({ width, height: 900 });
         await page.evaluate(() => (window as unknown as { openRosterPaidMethodModal: (id: string) => void }).openRosterPaidMethodModal("HB-1002"));
-        await page.waitForSelector("#rosterPaidMethodOptions .roster-paid-opt.is-on", { timeout: 10000 });
+        await page.waitForSelector("#rosterPaidMethodModal:not(.hidden) .roster-paid-opt", { timeout: 10000 });
+        const paidClose = await page.$eval("#rosterPaidMethodModal .sd-form-close", (el) => {
+          const box = el.getBoundingClientRect();
+          return { label: el.getAttribute("aria-label") || "", w: Math.round(box.width), h: Math.round(box.height), radius: getComputedStyle(el).borderRadius };
+        });
+        expect(paidClose.label).toBe("Close");
+        expect(paidClose.w).toBeGreaterThanOrEqual(44);
+        expect(paidClose.h).toBeGreaterThanOrEqual(44);
+        expect(parseFloat(paidClose.radius)).toBeGreaterThanOrEqual(20);
         for (const theme of ["dark", "light"] as const) {
           await page.evaluate((mode) => (window as unknown as { setSchediTheme: (mode: string) => void }).setSchediTheme(mode), theme);
           const view = await read();
           expect(view.role).toBe("radiogroup");
           expect(view.labelled).toBe("rosterPaidMethodTitle");
-          expect(view.enabled).toBe(true);
+          expect(view.enabled).toBe(false);
           expect(view.options.map((row) => row.method)).toEqual(["cashapp", "zelle", "venmo", "cash"]);
           const on = view.options.filter((row) => row.checked === "true");
-          expect(on.map((row) => row.method)).toEqual(["cashapp"]);
+          expect(on).toEqual([]);
           for (const row of view.options) {
             expect(row.radio).toBe("radio");
             expect(row.h).toBeGreaterThanOrEqual(44);
@@ -2786,12 +2812,13 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       });
       expect(saved).toEqual({ paidMethod: "zelle", paymentStatus: "PAID" });
       await page.evaluate(() => (window as unknown as { openRosterPaidMethodModal: (id: string) => void }).openRosterPaidMethodModal("HB-1003"));
-      await page.waitForSelector('#rosterPaidMethodOptions [data-paid-method="cash"].is-on', { timeout: 10000 });
+      await page.waitForSelector("#rosterPaidMethodModal:not(.hidden) #rosterPaidMethodOptions .roster-paid-opt", { timeout: 10000 });
       const cash = await read();
-      expect(cash.enabled).toBe(true);
-      expect(cash.options.filter((row) => row.checked === "true").map((row) => row.method)).toEqual(["cash"]);
+      expect(cash.enabled).toBe(false);
+      expect(cash.options.filter((row) => row.checked === "true")).toEqual([]);
       expect(cash.options.map((row) => row.method)).toEqual(["cashapp", "zelle", "venmo", "cash"]);
-      expect(cash.options.find((row) => row.method === "cash")?.bg).toBe(brands.cash.dark);
+      expect(cash.options.find((row) => row.method === "cash")?.bg).toBe(muted.dark.bg);
+      expect(cash.options.some((row) => row.method === "card")).toBe(false);
       await page.evaluate(() => {
         const tenant = (window as unknown as { getTenant?: () => { paymentGateways?: Record<string, boolean> } }).getTenant?.();
         if (!tenant || !tenant.paymentGateways) return;
@@ -3411,7 +3438,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
         }, { timeout: 5000 }, id);
       };
       const passes: Array<{ width: number; id: string; labels: string[] }> = [
-        { width: 390, id: "HB-1004", labels: ["Mark paid", "Reschedule", "Mark no-show", "Cancel", "Edit", "Delete"] },
+        { width: 390, id: "HB-1004", labels: ["Reschedule", "Cancel", "Edit", "Delete"] },
         { width: 340, id: "HB-1003", labels: ["Mark paid", "Reschedule", "Mark no-show", "Cancel", "Edit", "Delete"] },
         { width: 390, id: "HB-1001", labels: ["Mark unpaid"] },
         { width: 340, id: "HB-1001", labels: ["Mark unpaid"] },
@@ -5413,6 +5440,171 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
           await page.click("#sdSeriesPreview .sd-form-close");
         }
       }
+    } finally {
+      await browser.close();
+      await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+    }
+  }, 120000);
+});
+
+describe.skipIf(!chrome)("classic owner roster icons", () => {
+  it("keeps roster icons sized without the new dashboard or the demo flag", async () => {
+    const types: Record<string, string> = {
+      ".html": "text/html; charset=utf-8",
+      ".js": "text/javascript; charset=utf-8",
+      ".svg": "image/svg+xml",
+      ".png": "image/png",
+      ".jpg": "image/jpeg",
+      ".jpeg": "image/jpeg",
+      ".json": "application/json",
+      ".webmanifest": "application/manifest+json",
+    };
+    const policy = contentSecurityPolicy(true);
+    const server = createServer((req, res) => {
+      const path = new URL(req.url || "/", "http://127.0.0.1").pathname;
+      const file = path === "/" || path === "/portal-preview" ? "/index.html" : path;
+      const full = join(root, file);
+      if (!full.startsWith(root) || !existsSync(full)) {
+        res.writeHead(404);
+        res.end("missing");
+        return;
+      }
+      const headers: Record<string, string> = {
+        "content-type": types[extname(full)] || "application/octet-stream",
+        "x-content-type-options": "nosniff",
+        "referrer-policy": "strict-origin-when-cross-origin",
+        "strict-transport-security": "max-age=31536000",
+      };
+      if (file === "/index.html") {
+        headers["content-security-policy"] = policy;
+        headers["x-frame-options"] = "DENY";
+      }
+      res.writeHead(200, headers);
+      res.end(readFileSync(full));
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const address = server.address();
+    const port = typeof address === "object" && address ? address.port : 0;
+    const puppeteer = await import("puppeteer-core");
+    const browser = await puppeteer.default.launch({
+      executablePath: chrome,
+      headless: true,
+      args: ["--no-sandbox", "--disable-dev-shm-usage"],
+    });
+    try {
+      const page = await browser.newPage();
+      await page.setViewport({ width: 1024, height: 800 });
+      await page.setRequestInterception(true);
+      page.on("request", (request) => {
+        const url = request.url();
+        if (url.startsWith("https://schedi.app/")) {
+          const headers = {
+            "access-control-allow-origin": "*",
+            "access-control-allow-methods": "GET, POST, OPTIONS",
+            "access-control-allow-headers": "content-type",
+          };
+          if (request.method() === "OPTIONS") {
+            void request.respond({ status: 204, headers });
+            return;
+          }
+          const body = url.includes("/auth/tenant")
+            ? JSON.stringify({ session: "roster-classic-test", tenantId: "aura-exec" })
+            : JSON.stringify({ ok: true });
+          void request.respond({ status: 200, contentType: "application/json", headers, body });
+          return;
+        }
+        void request.continue();
+      });
+      const response = await page.goto(`http://127.0.0.1:${port}/?newdash=0`, { waitUntil: "domcontentloaded", timeout: 45000 });
+      expect(response?.headers()["content-security-policy"]).toBe(policy);
+      await page.waitForSelector("#tenantLoginEmail", { timeout: 20000 });
+      await page.type("#tenantLoginEmail", "alex@auraconsulting.com");
+      await page.type("#tenantLoginPassword", "classic-roster");
+      await page.click("#tenantLoginBox button[type='submit']");
+      await page.waitForFunction(() => {
+        const row = document.querySelector("#tenantRosterTableBody .sd-pay svg");
+        const box = row?.getBoundingClientRect();
+        return !!box && box.width > 0;
+      }, { timeout: 20000 });
+      const measure = () => page.evaluate(() => {
+        const section = document.getElementById("tenantPortalSection");
+        const nodes = [
+          ...document.querySelectorAll("#rosterPayFilter svg, #tenantRosterTableBody svg, #tenantRosterTableBody .sd-svc-mark svg"),
+        ] as SVGElement[];
+        const svgs = nodes.map((svg) => {
+          const box = svg.getBoundingClientRect();
+          return { w: box.width, h: box.height };
+        });
+        const paid = document.querySelector("#tenantRosterTableBody .roster-paid-amt") as HTMLElement | null;
+        const count = document.querySelector("#rosterPayFilter .sd-chip-count") as HTMLElement | null;
+        const input = document.getElementById("rosterSearchInput") as HTMLElement | null;
+        const toggle = document.getElementById("rosterSearchToggle");
+        const selectAll = document.getElementById("rosterSelectAllPhone");
+        const labels = [...document.querySelectorAll("#rosterPayFilter button")].map((btn) => (btn.textContent || "").replace(/\s+/g, ""));
+        return {
+          newdash: !!(section && section.classList.contains("schedi-newdash")) || document.body.classList.contains("schedi-newdash"),
+          demo: (window as unknown as { __SCHEDI_DEMO?: boolean }).__SCHEDI_DEMO === true,
+          svgs,
+          paid: paid ? paid.innerText.replace(/\s+/g, " ").trim() : "",
+          countGap: count ? getComputedStyle(count).marginLeft : "",
+          inputBg: input ? getComputedStyle(input).backgroundColor : "",
+          toggle: toggle ? getComputedStyle(toggle).display : "",
+          selectAll: selectAll ? getComputedStyle(selectAll).display : "",
+          labels,
+          light: document.documentElement.classList.contains("schedi-light"),
+        };
+      });
+      const dark = await measure();
+      expect(dark.demo).toBe(false);
+      expect(dark.newdash).toBe(false);
+      expect(dark.svgs.length).toBeGreaterThan(0);
+      dark.svgs.forEach((svg) => {
+        expect(svg.w).toBeGreaterThan(0);
+        expect(svg.w).toBeLessThanOrEqual(48);
+        expect(svg.h).toBeLessThanOrEqual(48);
+      });
+      expect(dark.paid).toBe("$75.00");
+      expect(dark.paid).not.toContain("Paid$");
+      expect(dark.labels.some((label) => /Card/.test(label) && /All/.test(label))).toBe(false);
+      expect(dark.countGap).not.toBe("0px");
+      expect(dark.toggle).toBe("none");
+      expect(dark.selectAll).toBe("none");
+      expect(dark.inputBg).not.toBe("rgb(255, 255, 255)");
+      await page.evaluate(() => document.documentElement.classList.add("schedi-light"));
+      const light = await measure();
+      expect(light.light).toBe(true);
+      expect(light.newdash).toBe(false);
+      light.svgs.forEach((svg) => {
+        expect(svg.w).toBeGreaterThan(0);
+        expect(svg.w).toBeLessThanOrEqual(48);
+        expect(svg.h).toBeLessThanOrEqual(48);
+      });
+      expect(light.paid).toBe("$75.00");
+      expect(light.toggle).toBe("none");
+      const demo = await page.goto(`http://127.0.0.1:${port}/portal-preview`, { waitUntil: "domcontentloaded", timeout: 45000 });
+      expect(demo?.headers()["content-security-policy"]).toBe(policy);
+      await page.waitForFunction(() => {
+        const row = document.querySelector("#tenantRosterTableBody .sd-pay svg, #schediTodaySchedule .sd-pay svg");
+        const box = row?.getBoundingClientRect();
+        return document.body.classList.contains("schedi-newdash") && !!box && box.width > 0;
+      }, { timeout: 20000 });
+      const preview = await page.evaluate(() => {
+        const nodes = [...document.querySelectorAll("#rosterPayFilter svg, #tenantRosterTableBody svg, #schediTodaySchedule .sd-pay svg, #schediTodaySchedule .sd-svc-mark svg")] as SVGElement[];
+        return {
+          demo: (window as unknown as { __SCHEDI_DEMO?: boolean }).__SCHEDI_DEMO === true,
+          svgs: nodes.map((svg) => {
+            const box = svg.getBoundingClientRect();
+            return { w: box.width, h: box.height };
+          }),
+        };
+      });
+      expect(preview.demo).toBe(true);
+      const visible = preview.svgs.filter((svg) => svg.w > 0 || svg.h > 0);
+      expect(visible.length).toBeGreaterThan(0);
+      visible.forEach((svg) => {
+        expect(svg.w).toBeLessThanOrEqual(48);
+        expect(svg.h).toBeLessThanOrEqual(48);
+      });
     } finally {
       await browser.close();
       await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));

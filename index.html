@@ -1413,7 +1413,7 @@ body.schedi-newdash #ownerRecurringModal .sd-choice {
 }
 html.schedi-light body.schedi-newdash #ownerRecurringModal .sd-choice { color: #0f172a; }
 body.schedi-newdash #ownerRecurringModal .sd-preview {
-    margin: 0;
+    margin: 12px 0 0;
     padding: 8px 12px;
     border-radius: 12px;
     border: 1px solid rgba(148, 163, 184, 0.35);
@@ -1471,6 +1471,20 @@ body.schedi-newdash .sd-form-head {
 }
 html.schedi-light body.schedi-newdash .sd-form-head { background: #ffffff; border-bottom-color: #e2e8f0; }
 body.schedi-newdash .sd-form-head h3 { margin: 0; min-width: 0; overflow-wrap: break-word; }
+body.schedi-newdash .sd-kind-badge {
+    display: inline-flex;
+    align-items: center;
+    margin: 0 0 6px;
+    border-radius: 999px;
+    padding: 3px 8px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    color: #6ee7b7;
+    background: rgba(16, 185, 129, 0.14);
+    border: 1px solid rgba(16, 185, 129, 0.35);
+}
+html.schedi-light body.schedi-newdash .sd-kind-badge { color: #047857; background: rgba(16, 185, 129, 0.12); }
 body.schedi-newdash .sd-form-close,
 #tenantPortalSection.schedi-newdash .sd-form-close {
     width: 48px;
@@ -4233,6 +4247,15 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-theme-seg { background
 }
 #tenantPortalSection.schedi-newdash .sd-theme-seg .sd-theme-opt i { font-size: 22px; width: 22px; text-align: center; }
 #tenantPortalSection.schedi-newdash #schediDashMoreSheet .sd-theme-seg { width: calc(100% - 16px); margin: 8px; }
+#tenantPortalSection.schedi-newdash #schediDashMoreSheet .sd-sheet-bar {
+    min-height: 72px;
+    padding: 12px 12px 16px;
+    margin-bottom: 4px;
+}
+#tenantPortalSection.schedi-newdash #schediDashMoreSheet .sd-sheet-card > button.sd-danger {
+    margin-top: 16px;
+    margin-bottom: 8px;
+}
 @media (max-width: 859px) {
     #tenantPortalSection.schedi-newdash #schediDashMoreSheet .sd-sheet-card { max-height: min(88vh, 760px); }
     #tenantPortalSection.schedi-newdash #schediDashMoreSheet .sd-sheet-bar h3 { font-size: 22px; font-weight: 800; }
@@ -4478,6 +4501,7 @@ body.schedi-newdash .owner-time-extras .sd-pay-switch-title {
     font-size: 17px;
     font-weight: 700;
     line-height: 1.3;
+    white-space: nowrap;
     color: #f8fafc;
 }
 html.schedi-light body.schedi-newdash .owner-time-extras .sd-pay-switch-title { color: #0f172a; }
@@ -4545,6 +4569,78 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
     accent-color: #10b981;
 }
 
+</style>
+<style id="schediClassicRoster">
+/* Classic owner portal (no schedi-newdash). Real schedi.app sessions never get that class, but the roster still emits these widgets. */
+#tenantPortalSection:not(.schedi-newdash) .sd-svc-line { display: inline-flex; align-items: center; gap: 6px; min-width: 0; max-width: 100%; vertical-align: middle; }
+#tenantPortalSection:not(.schedi-newdash) .sd-svc-mark { display: inline-flex; width: 18px; height: 18px; align-items: center; justify-content: center; flex: 0 0 auto; color: #34d399; }
+#tenantPortalSection:not(.schedi-newdash) .sd-svc-mark svg,
+#tenantPortalSection:not(.schedi-newdash) .sd-svc-mark img { width: 16px; height: 16px; display: block; object-fit: cover; border-radius: 4px; }
+#tenantPortalSection:not(.schedi-newdash) .sd-pay,
+#tenantPortalSection:not(.schedi-newdash) .sd-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    max-width: 100%;
+    min-height: 28px;
+    border-radius: 999px;
+    border: 1px solid #334155;
+    background: rgba(148, 163, 184, 0.14);
+    color: #e2e8f0;
+    font-weight: 800;
+    font-size: 12px;
+    line-height: 1.3;
+    padding: 2px 10px;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+#tenantPortalSection:not(.schedi-newdash) .sd-pay svg,
+#tenantPortalSection:not(.schedi-newdash) .sd-chip svg { width: 14px; height: 14px; display: block; flex: none; }
+#tenantPortalSection:not(.schedi-newdash) .sd-pay-filters { display: flex; flex-wrap: wrap; gap: 6px; }
+#tenantPortalSection:not(.schedi-newdash) .sd-chip-count { margin-left: 4px; color: #94a3b8; font-weight: 700; }
+#tenantPortalSection:not(.schedi-newdash) .sd-chip.is-on { background: rgba(16, 185, 129, 0.16); color: #34d399; border-color: rgba(16, 185, 129, 0.45); }
+#tenantPortalSection:not(.schedi-newdash) .sd-chip.is-on .sd-chip-count { color: inherit; }
+#tenantPortalSection:not(.schedi-newdash) .sd-pay-unpaid { color: #fb7185; border-color: rgba(244, 63, 94, 0.35); background: rgba(244, 63, 94, 0.1); }
+#tenantPortalSection:not(.schedi-newdash) .sd-pay-card { color: #34d399; border-color: rgba(16, 185, 129, 0.4); background: rgba(16, 185, 129, 0.14); }
+#tenantPortalSection:not(.schedi-newdash) .sd-roster-search { display: flex; align-items: center; min-width: 0; }
+#tenantPortalSection:not(.schedi-newdash) .sd-roster-search-toggle { display: none; }
+#tenantPortalSection:not(.schedi-newdash) .sd-roster-search-field {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: min(280px, 46vw);
+    min-height: 40px;
+    padding: 0 8px 0 12px;
+    border-radius: 12px;
+    border: 1px solid #334155;
+    background: #0f172a;
+    color: #94a3b8;
+}
+#tenantPortalSection:not(.schedi-newdash) .sd-roster-search-field input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    background: transparent;
+    color: #f8fafc;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 8px 0;
+    -webkit-appearance: none;
+    appearance: none;
+}
+#tenantPortalSection:not(.schedi-newdash) .sd-roster-search-field input:focus { outline: none; }
+#tenantPortalSection:not(.schedi-newdash) .sd-roster-all { display: none; }
+#tenantPortalSection:not(.schedi-newdash) .sd-roster-check { display: inline-flex; align-items: center; justify-content: center; }
+#tenantPortalSection:not(.schedi-newdash) .sd-roster-check input { width: 16px; height: 16px; margin: 0; accent-color: #10b981; }
+#tenantPortalSection:not(.schedi-newdash) .roster-paid-amt { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.15; }
+#tenantPortalSection:not(.schedi-newdash) .roster-paid-kicker { display: none; }
+#tenantPortalSection:not(.schedi-newdash) .roster-paid-figure { font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; color: #f8fafc; }
+#tenantPortalSection:not(.schedi-newdash) .roster-paid-note { font-size: 10px; font-weight: 700; color: #94a3b8; }
+html.schedi-light #tenantPortalSection:not(.schedi-newdash) .sd-pay,
+html.schedi-light #tenantPortalSection:not(.schedi-newdash) .sd-chip { color: #0f172a; border-color: #cbd5e1; background: #f8fafc; }
+html.schedi-light #tenantPortalSection:not(.schedi-newdash) .sd-roster-search-field { background: #ffffff; border-color: #cbd5e1; color: #64748b; }
+html.schedi-light #tenantPortalSection:not(.schedi-newdash) .sd-roster-search-field input,
+html.schedi-light #tenantPortalSection:not(.schedi-newdash) .roster-paid-figure { color: #0f172a; }
 </style>
 <style id="schediNewBookManage">
 body.schedi-newbook { background: #06080d; color: #e7edf5; }
@@ -6194,17 +6290,22 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
 
     
     <div id="rosterPaidMethodModal" role="dialog" aria-modal="true" aria-labelledby="rosterPaidMethodTitle" tabindex="-1" class="fixed inset-0 z-[60] bg-slate-950/80 backdrop-blur-md flex items-start sm:items-center justify-center p-3 sm:p-4 overflow-y-auto overscroll-contain hidden">
-        <div class="max-w-sm w-full glass-card rounded-2xl p-5 sm:p-6 space-y-4 fade-in border border-emerald-500/25 my-4 min-w-0">
-            <div>
-                <h3 id="rosterPaidMethodTitle" class="text-lg font-bold text-white">How was it paid?</h3>
-                <p class="text-sm text-slate-300 mt-1">Choose how this appointment was paid. The client is emailed a payment receipt.</p>
+        <div class="max-w-sm w-full glass-card rounded-2xl fade-in border border-emerald-500/25 my-4 min-w-0 sd-form-sheet">
+            <div class="sd-form-head">
+                <div class="min-w-0">
+                    <h3 id="rosterPaidMethodTitle" class="text-lg font-bold text-white">How was it paid?</h3>
+                    <p class="text-sm text-slate-300 mt-1">Choose how this appointment was paid. The client is emailed a payment receipt.</p>
+                </div>
+                <button type="button" class="sd-form-close" onclick="closeRosterPaidMethodModal()" aria-label="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
             </div>
+            <div class="space-y-4 sd-form-scroll">
             <p id="rosterPaidMethodCode" class="hidden text-xs text-slate-300 rounded-xl bg-slate-900 border border-slate-800 px-3 py-2"></p>
             <input type="hidden" id="rosterPaidMethodAppId" value="">
             <div class="grid grid-cols-1 gap-2" id="rosterPaidMethodOptions" role="radiogroup" aria-labelledby="rosterPaidMethodTitle"></div>
             <div class="pt-1 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
                 <button type="button" onclick="closeRosterPaidMethodModal()" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-sm transition-all">Cancel</button>
                 <button type="button" id="rosterPaidMethodConfirmBtn" onclick="confirmRosterMarkPaid()" class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm border border-emerald-400/40 transition-all">Mark paid</button>
+            </div>
             </div>
         </div>
     </div>
@@ -6265,7 +6366,10 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
     <div id="manualBookingModal" role="dialog" aria-modal="true" aria-labelledby="manModalTitle" tabindex="-1" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-start sm:items-center justify-center p-3 sm:p-4 overflow-y-auto overscroll-contain hidden">
         <div class="max-w-md w-full glass-card rounded-2xl p-5 sm:p-6 space-y-4 fade-in my-4 min-w-0 sd-form-sheet">
             <div class="sd-form-head">
-                <h3 id="manModalTitle" class="text-lg font-bold text-white">Log Manual Walk-In / Phone Booking</h3>
+                <div class="min-w-0">
+                    <p id="manKindBadge" class="sd-kind-badge">Appointment</p>
+                    <h3 id="manModalTitle" class="text-lg font-bold text-white">Add appointment</h3>
+                </div>
                 <button type="button" class="sd-form-close" onclick="closeManualBookingModal()" aria-label="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
             </div>
             <form id="manualBookingForm" onsubmit="handleManualBookingSubmit(event)" class="space-y-3 text-xs sd-form-scroll">
@@ -6309,7 +6413,7 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-3">
+                <div class="grid grid-cols-1 gap-3">
                     <div>
                         <label class="block font-semibold text-slate-300 mb-1">Appointment Date *</label>
                         <input type="date" id="manDate" required class="w-full px-3 py-2 rounded-xl glass-input">
@@ -7947,8 +8051,7 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
         }
 
         function rosterAcceptedBadge(app) {
-            // Display only: label accepted / auto-confirmed bookings until they are marked paid.
-            if (!app || bookingPaymentState(app) === 'paid') return '';
+            if (!app) return '';
             var label = String(app.status || '').toLowerCase() === 'accepted' ? 'Accepted' : 'Confirmed';
             return '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-sky-500/20 text-sky-300 border border-sky-500/30 mr-1 mb-1 inline-block whitespace-nowrap">' + label + '</span>';
         }
@@ -12953,7 +13056,7 @@ function schediQrCardPixels(text, color) {
                 cash: '<circle cx="8" cy="5" r="2" fill="currentColor"/><path d="M3.8 13.2c.7-2.3 2.2-3.4 4.2-3.4s3.5 1.1 4.2 3.4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>',
                 unpaid: '<circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M5.2 8h5.6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>'
             };
-            return '<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">' + (body[kind] || body.unpaid) + '</svg>';
+            return '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">' + (body[kind] || body.unpaid) + '</svg>';
         }
 
         function rosterBrandPayClass(kind) {
@@ -13363,18 +13466,19 @@ function schediQrCardPixels(text, color) {
             if (schedule) {
                 schedule.innerHTML = todayApps.length ? todayApps.map(function (app) {
                     var id = esc(jsArg(app.id));
-                    var payAction = rosterPayMenuLabel(app) === 'Mark unpaid'
+                    var cardStatus = String(app.status || '').toLowerCase();
+                    var acceptedCard = cardStatus !== 'pending' && cardStatus !== 'requested';
+                    var payAction = !acceptedCard ? '' : (rosterPayMenuLabel(app) === 'Mark unpaid'
                         ? '<button type="button" role="menuitem" onclick="closeSchediTodayMenus(event); markAppointmentUnpaid(' + id + ')">Mark unpaid</button>'
-                        : '<button type="button" class="sd-act-ok" role="menuitem" onclick="closeSchediTodayMenus(event); markAppointmentPaid(' + id + ')">Mark paid</button>';
-                    var noShowAction = appointmentIsNoShow(app)
+                        : '<button type="button" class="sd-act-ok" role="menuitem" onclick="closeSchediTodayMenus(event); markAppointmentPaid(' + id + ')">Mark paid</button>');
+                    var noShowAction = !acceptedCard ? '' : (appointmentIsNoShow(app)
                         ? '<button type="button" role="menuitem" onclick="closeSchediTodayMenus(event); undoAppointmentNoShow(' + id + ')"><i class="fa-solid fa-rotate-left mr-1" aria-hidden="true"></i>Undo no-show</button>'
-                        : '<button type="button" role="menuitem" onclick="closeSchediTodayMenus(event); markAppointmentNoShow(' + id + ')">Mark no-show</button>';
+                        : '<button type="button" role="menuitem" onclick="closeSchediTodayMenus(event); markAppointmentNoShow(' + id + ')">Mark no-show</button>');
                     return '<article class="sd-card sd-row">' +
                         '<div class="sd-time">' + esc(app.time || '') + '</div>' +
                         '<div class="sd-row-main"><div class="sd-row-head"><h4><span class="sd-row-title">' + esc(app.clientName || 'Client') + (app.walkIn ? ' · Walk-in' : '') + '</span></h4>' +
-                        '<div class="sd-row-chips">' + appointmentStatusChipsHtml(app, { payment: false, price: false, pendingLabel: 'New request' }) + '</div></div>' +
+                        '<div class="sd-row-chips">' + appointmentStatusChipsHtml(app, { pendingLabel: 'New request' }) + '</div></div>' +
                         '<p class="sd-meta"><span class="sd-svc-line">' + serviceMarkHtml(tenant, app.serviceName) + '<span>' + esc(app.serviceName || 'Appointment') + '</span></span></p></div>' +
-                        '<div class="sd-row-side">' + appointmentPayMarkup(app, false) + '</div>' +
                         '<details class="sd-more"><summary aria-label="More actions" aria-expanded="false"><i class="fa-solid fa-ellipsis-vertical" aria-hidden="true"></i></summary>' +
                         '<div class="sd-more-menu" role="menu">' +
                         payAction +
@@ -14732,7 +14836,6 @@ function schediQrCardPixels(text, color) {
                 if (st === 'accepted') request = 'accepted';
                 else if (st === 'confirmed' || st === 'booked' || st === '') request = 'confirmed';
             }
-            if ((request === 'accepted' || request === 'confirmed') && bookingPaymentState(app) === 'paid') request = '';
             var outcomes = [];
             if (noShow) outcomes.push('noshow');
             if (cancelled) outcomes.push('cancelled');
@@ -14841,15 +14944,16 @@ function schediQrCardPixels(text, color) {
                     out.push(btn('acceptAppointment', 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30', 'Accept'));
                     out.push(btn('denyAppointment', 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30', 'Deny'));
                 }
-                if (bookingPaymentState(app) === 'paid') {
+                var decided = st !== 'pending' && st !== 'requested';
+                if (decided && bookingPaymentState(app) === 'paid') {
                     out.push(btn('markAppointmentUnpaid', 'sd-act', 'Mark unpaid'));
-                } else {
+                } else if (decided) {
                     out.push(btn('markAppointmentPaid', 'sd-act sd-act-ok', '<i class="fa-solid fa-circle-check mr-1"></i>Mark paid'));
                 }
                 out.push(btn('openEditAppointment', 'sd-act', 'Edit'));
                 out.push(btn('openTenantRescheduleModal', 'sd-act sd-act-ok', '<i class="fa-solid fa-calendar-days mr-1"></i>Reschedule'));
-                if (appointmentIsNoShow(app)) out.push(btn('undoAppointmentNoShow', 'sd-act', '<i class="fa-solid fa-rotate-left mr-1" aria-hidden="true"></i>Undo no-show'));
-                else out.push(btn('markAppointmentNoShow', 'sd-act', 'Mark no-show'));
+                if (decided && appointmentIsNoShow(app)) out.push(btn('undoAppointmentNoShow', 'sd-act', '<i class="fa-solid fa-rotate-left mr-1" aria-hidden="true"></i>Undo no-show'));
+                else if (decided) out.push(btn('markAppointmentNoShow', 'sd-act', 'Mark no-show'));
                 out.push(btn('deleteAppointment', 'sd-act sd-act-no', '<i class="fa-solid fa-xmark mr-1"></i>Cancel'));
             }
             out.push(btn('openRosterDeleteModal', 'sd-act sd-act-no', '<i class="fa-solid fa-trash mr-1"></i>Delete'));
@@ -17220,6 +17324,7 @@ function schediQrCardPixels(text, color) {
                             </div>
                             <p id="shiftError_${day}" class="sd-hours-error" role="alert"></p>
                             <p class="sd-hours-week-closed-note">Not applied while closed</p>
+                            <button type="button" class="sd-hours-week-copy" onclick="openHoursCopySheet('${day}')">Copy to…</button>
                         </div>
                     `;
                     }).join('');
@@ -18114,7 +18219,7 @@ function schediQrCardPixels(text, color) {
                 el.value = '';
             } else {
                 el.innerHTML = opts.map(function (t) {
-                    var label = (current && !showAll && t === current.time && current.date === (document.getElementById(c.date) || {}).value) ? (t + ' (current)') : t;
+                    var label = t;
                     return '<option value="' + esc(t) + '">' + esc(label) + '</option>';
                 }).join('');
                 el.value = (want && opts.indexOf(want) !== -1) ? want : opts[0];
@@ -20687,7 +20792,7 @@ function schediQrCardPixels(text, color) {
         }
 
         function serviceSvg(inner) {
-            return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + inner + '</svg>';
+            return '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + inner + '</svg>';
         }
 
         var SERVICE_ICON_SVG = {
@@ -21208,6 +21313,11 @@ function schediQrCardPixels(text, color) {
             offCls.forEach(function (c) { btn.classList.toggle(c, !on); });
             onCls.forEach(function (c) { btn.classList.toggle(c, on); });
             if (hint) hint.classList.toggle('hidden', !on);
+            var editing = !!String((document.getElementById('manEditId') || {}).value || '');
+            var title = document.getElementById('manModalTitle');
+            var badge = document.getElementById('manKindBadge');
+            if (!editing && title) title.textContent = on ? 'Walk-in' : (title.textContent === 'Edit appointment' ? 'Edit appointment' : 'Add appointment');
+            if (badge) badge.textContent = on ? 'Walk-in' : 'Appointment';
             var tenant = getTenant();
             var extras = document.getElementById('manTimeExtras');
             var showAll = extras ? extras.querySelector('.owner-time-showall') : null;
@@ -21240,7 +21350,10 @@ function schediQrCardPixels(text, color) {
             var clientPhone = prefill && prefill.clientPhone ? String(prefill.clientPhone) : '';
             var clientEmail = prefill && prefill.clientEmail ? String(prefill.clientEmail) : '';
             document.getElementById('manEditId').value = '';
-            document.getElementById('manModalTitle').textContent = clientName ? 'Add appointment' : 'Log Manual Walk-In / Phone Booking';
+            var addKind = (prefill && prefill.kind === 'walkin') ? 'walkin' : 'appointment';
+            document.getElementById('manModalTitle').textContent = addKind === 'walkin' ? 'Walk-in' : (clientName ? 'Add appointment' : 'Add appointment');
+            var addBadge = document.getElementById('manKindBadge');
+            if (addBadge) addBadge.textContent = addKind === 'walkin' ? 'Walk-in' : 'Appointment';
             var manDelNew = document.getElementById('manDeleteBtn');
             if (manDelNew) manDelNew.classList.add('hidden');
             var manSubNew = document.getElementById('manSubmitBtn');
@@ -21257,7 +21370,8 @@ function schediQrCardPixels(text, color) {
             if (clientName) bookedDate = addIsoDays(bookedDate, 1) || bookedDate;
             document.getElementById('manDate').value = bookedDate;
             populateOwnerTimeSelect('manTime', tenant, '09:00 AM');
-            setManualWalkIn(false, false);
+            if (addKind === 'walkin') setManualWalkIn(true, true);
+            else setManualWalkIn(false, false);
             var freshDep = document.getElementById('manDepositBox');
             if (freshDep) freshDep.classList.add('hidden');
             var freshPay = document.getElementById('manPaymentStatus');
@@ -21277,6 +21391,8 @@ function schediQrCardPixels(text, color) {
             if (!app) return;
             document.getElementById('manEditId').value = app.id;
             document.getElementById('manModalTitle').textContent = 'Edit appointment';
+            var editBadge = document.getElementById('manKindBadge');
+            if (editBadge) editBadge.textContent = app.walkIn === true ? 'Walk-in' : 'Appointment';
             var manDel = document.getElementById('manDeleteBtn');
             if (manDel) manDel.classList.remove('hidden');
             var manSub = document.getElementById('manSubmitBtn');
@@ -22488,7 +22604,7 @@ function schediQrCardPixels(text, color) {
             openDenyConfirmModal(appId);
         };
 
-        var _rosterPaidMethodSelected = 'cash';
+        var _rosterPaidMethodSelected = '';
 
         window.openRosterPaidMethodModal = function(appId) {
             var tenant = getTenant();
@@ -22499,7 +22615,7 @@ function schediQrCardPixels(text, color) {
                 showToast('Appointment #' + appId + ' is already marked paid.', 'info');
                 return;
             }
-            _rosterPaidMethodSelected = inferPaidMethodFromBooking(app);
+            _rosterPaidMethodSelected = '';
             document.getElementById('rosterPaidMethodAppId').value = app.id;
             var codeEl = document.getElementById('rosterPaidMethodCode');
             if (codeEl) {
@@ -22538,7 +22654,7 @@ function schediQrCardPixels(text, color) {
                 var brand = on ? rosterBrandPayClass(row.kind) : '';
                 return '<button type="button" ' + attr + '="' + esc(row.id) + '" class="sd-pay-choice' + extra + brand + (on ? ' is-on' : '') + '" role="radio" aria-checked="' + (on ? 'true' : 'false') + '" tabindex="' + (on ? '0' : '-1') + '">' +
                     payKindSvg(row.kind) + '<span>' + esc(row.label) + '</span>' +
-                    (on ? '<span class="sd-paid-check" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M3.2 8.2 6.4 11.4 12.8 4.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>' : '') +
+                    (on ? '<span class="sd-paid-check" aria-hidden="true"><svg viewBox="0 0 16 16" width="16" height="16"><path d="M3.2 8.2 6.4 11.4 12.8 4.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>' : '') +
                     '</button>';
             }).join('');
             if (!chosen) {
