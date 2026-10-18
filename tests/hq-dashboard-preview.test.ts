@@ -176,7 +176,10 @@ describe.skipIf(!chrome)("agency HQ dashboard browser", () => {
       expect(billing.text).toContain("Complimentary Pro");
       expect(billing.text).toContain("Live Stripe");
       expect(billing.text).toContain("Auto-debit on the 1st");
+      expect(billing.text).toContain("PayPal / webhook auto-draft");
       expect(billing.switched).toBe(true);
+      const gatewaySwitches = await page.evaluate(() => document.querySelectorAll("#hqdGatewayMount .hqd-switch").length);
+      expect(gatewaySwitches).toBe(1);
       const lumen = await page.evaluate(() => {
         const card = Array.from(document.querySelectorAll("#hqdBillList article")).find((el) => el.textContent?.includes("Lumen Studio"));
         return !!card?.querySelector("[data-hqd-comp]")?.hasAttribute("checked") || (card?.querySelector("[data-hqd-comp]") as HTMLInputElement | null)?.checked;
@@ -215,6 +218,13 @@ describe.skipIf(!chrome)("agency HQ dashboard browser", () => {
             return rects.every((rect) => rect.top < bandBottom && rect.bottom > bandTop);
           };
           const pricesOk = Array.from(document.querySelectorAll("#hqdBillList .hqd-price")).every(oneLine);
+          const note = document.querySelector("#hqdBillList .hqd-bill-note");
+          const card = note?.closest(".hqd-card");
+          const noteBox = note?.getBoundingClientRect();
+          const cardBox = card?.getBoundingClientRect();
+          const cardStyle = card ? getComputedStyle(card) : null;
+          const pad = cardStyle ? parseFloat(cardStyle.paddingLeft) + parseFloat(cardStyle.paddingRight) : 0;
+          const noteWide = !!noteBox && !!cardBox && Math.abs(noteBox.width - (cardBox.width - pad)) < 4;
           const brands = Array.from(document.querySelectorAll("#hqDash .hqd-brand")).filter((el) => {
             const box = el.getBoundingClientRect();
             return box.width > 0 && box.height > 0;
@@ -222,19 +232,39 @@ describe.skipIf(!chrome)("agency HQ dashboard browser", () => {
           (window as unknown as { hqDashGo: (id: string) => void }).hqDashGo("directory");
           const chips = document.getElementById("hqdStatusChips");
           const chipTops = Array.from(chips?.querySelectorAll(".hqd-chip") || []).map((el) => el.getBoundingClientRect().top);
-          const selectTops = Array.from(document.querySelectorAll("#hqdDirectory .hqd-selects select")).map((el) => el.getBoundingClientRect().top);
+          const selects = Array.from(document.querySelectorAll("#hqdDirectory .hqd-selects select")) as HTMLSelectElement[];
+          const selectTops = selects.map((el) => el.getBoundingClientRect().top);
+          const labelsFit = selects.every((el) => el.scrollWidth <= el.clientWidth + 1 && getComputedStyle(el).textOverflow !== "ellipsis");
+          const selected = selects.map((el) => el.options[el.selectedIndex]?.text || "");
           const flat = (tops: number[]) => tops.length > 0 && Math.max(...tops) - Math.min(...tops) < 8;
+          const modal = document.getElementById("editTenantModal");
+          modal?.classList.remove("hidden");
+          const sheet = modal?.querySelector(":scope > .glass-card") as HTMLElement | null;
+          const sheetBox = sheet?.getBoundingClientRect();
+          const sheetStyle = sheet ? getComputedStyle(sheet) : null;
+          const bottomGap = sheetBox ? window.innerHeight - sheetBox.bottom : 999;
+          if (modal) modal.classList.add("hidden");
           return {
             prices: pricesOk,
+            noteWide,
             brands: brands.length,
             chips: flat(chipTops),
-            selects: selectTops.length === 3 && flat(selectTops),
+            selects: selectTops.length === 3 && flat(selectTops) && labelsFit,
+            selected,
+            bottomGap,
+            bottomRadius: sheetStyle?.borderBottomLeftRadius || "",
           };
         });
         expect(layout.prices, "prices " + width).toBe(true);
+        expect(layout.noteWide, "billing note " + width).toBe(true);
         expect(layout.brands, "logos " + width).toBe(1);
         expect(layout.chips, "status chips " + width).toBe(true);
         expect(layout.selects, "filter row " + width).toBe(true);
+        expect(layout.selected.join("|"), "filter labels " + width).toBe("Plan: All|Type: All|Sort: Name");
+        if (width < 860) {
+          expect(layout.bottomGap, "edit sheet " + width).toBeLessThan(2);
+          expect(layout.bottomRadius, "edit sheet radius " + width).toBe("0px");
+        }
         await page.evaluate(() => document.documentElement.classList.remove("schedi-light"));
         const dark = await page.evaluate(() => ({
           overflow: document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1,

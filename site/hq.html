@@ -913,16 +913,17 @@ html.schedi-newhq #hqDash .hqd-chips, html.schedi-newhq #hqDash .hqd-selects { d
 html.schedi-newhq #hqDash .hqd-chips-scroll { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
 html.schedi-newhq #hqDash .hqd-chips-scroll::-webkit-scrollbar { display: none; }
 html.schedi-newhq #hqDash .hqd-chips-scroll .hqd-chip { flex: 0 0 auto; }
-html.schedi-newhq #hqDash .hqd-selects { flex-wrap: nowrap; gap: 6px; }
+html.schedi-newhq #hqDash .hqd-selects { flex-wrap: nowrap; gap: 4px; max-width: 100%; min-width: 0; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+html.schedi-newhq #hqDash .hqd-selects::-webkit-scrollbar { display: none; }
 html.schedi-newhq #hqDash .hqd-chip, html.schedi-newhq #hqDash .hqd-selects select {
     min-height: 34px; border-radius: 999px; border: 1px solid var(--hqd-line); background: transparent; color: var(--hqd-text);
     font-weight: 800; font-size: 12px; padding: 4px 12px; cursor: pointer;
 }
-html.schedi-newhq #hqDash .hqd-selects select { flex: 1 1 0; width: 0; min-width: 0; max-width: 100%; padding: 4px 22px 4px 10px; text-overflow: ellipsis; }
+html.schedi-newhq #hqDash .hqd-selects select { flex: 0 0 auto; width: max-content; max-width: none; min-width: max-content; field-sizing: content; padding: 4px 18px 4px 8px; text-overflow: clip; white-space: nowrap; }
 html.schedi-newhq #hqDash .hqd-chip.is-on { background: rgba(16, 185, 129, 0.16); color: var(--hqd-brand-2); border-color: rgba(16, 185, 129, 0.45); }
 html.schedi-newhq #hqDash .hqd-chip-count { margin-left: 4px; color: var(--hqd-muted); font-weight: 700; }
 html.schedi-newhq #hqDash .hqd-chip.is-on .hqd-chip-count { color: inherit; }
-html.schedi-newhq #hqDash .hqd-selects select { appearance: none; padding-right: 28px; background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%); background-position: calc(100% - 14px) 55%, calc(100% - 9px) 55%; background-size: 5px 5px, 5px 5px; background-repeat: no-repeat; }
+html.schedi-newhq #hqDash .hqd-selects select { appearance: none; padding-right: 18px; background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%); background-position: calc(100% - 11px) 55%, calc(100% - 6px) 55%; background-size: 5px 5px, 5px 5px; background-repeat: no-repeat; }
 html.schedi-newhq #hqDash .hqd-search { position: relative; margin-top: 12px; }
 html.schedi-newhq #hqDash .hqd-search > i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--hqd-faint); pointer-events: none; }
 html.schedi-newhq #hqDash #agencySearchInput { width: 100%; min-height: 44px; border-radius: 14px; border: 1px solid var(--hqd-line); background: var(--hqd-panel); color: var(--hqd-text); padding: 10px 12px 10px 36px; }
@@ -964,10 +965,11 @@ html.schedi-light.schedi-newhq #hqDash .hqd-switch,
 html.schedi-light.schedi-newhq #editTenantModal .hqd-switch { background: #cbd5e1; }
 html.schedi-light.schedi-newhq #hqDash .hqd-switch:checked,
 html.schedi-light.schedi-newhq #editTenantModal .hqd-switch:checked { background: #059669; }
-html.schedi-newhq #editTenantModal { align-items: flex-end; padding: 0; }
+html.schedi-newhq #editTenantModal { flex-direction: column; align-items: stretch !important; justify-content: flex-end !important; padding: 0 !important; overflow: hidden !important; }
 html.schedi-newhq #editTenantModal > .glass-card {
-    width: min(520px, 100%); max-width: 520px; max-height: min(92vh, 860px); margin: 0;
+    position: absolute; left: 0; right: 0; bottom: 0; width: auto !important; max-width: none !important; max-height: 100dvh; margin: 0 !important;
     display: flex; flex-direction: column; overflow: hidden; padding: 0 !important; border-radius: 24px 24px 0 0 !important;
+    animation: none; transform: none;
 }
 html.schedi-newhq #editTenantModal > .glass-card > div:first-of-type { flex: none; align-items: flex-start; gap: 12px; margin: 0; padding: 14px 12px 10px 20px; }
 html.schedi-newhq #editTenantModal > .glass-card > div:first-of-type > button {
@@ -976,13 +978,14 @@ html.schedi-newhq #editTenantModal > .glass-card > div:first-of-type > button {
 }
 html.schedi-newhq #editTenantModal > .glass-card > div:first-of-type > button i { font-size: 22px; line-height: 1; pointer-events: none; }
 html.schedi-light.schedi-newhq #editTenantModal > .glass-card > div:first-of-type > button { background: #f1f5f9; color: #0f172a; border: 1px solid #cbd5e1; }
-html.schedi-newhq #editTenantModal > .glass-card > form { overflow: auto; margin: 0; padding: 12px 20px 24px; }
+html.schedi-newhq #editTenantModal > .glass-card > form { overflow: auto; margin: 0; padding: 12px 20px calc(24px + env(safe-area-inset-bottom, 0px)); }
 html.schedi-newhq #editTenantModal label.hqd-switch-row {
     display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 56px;
     margin: 0; padding: 8px 0 !important; background: transparent !important; border: 0 !important; cursor: pointer;
 }
 html.schedi-newhq #editTenantModal #editComplimentaryPro.hqd-switch { order: 2; width: 52px !important; height: 30px !important; margin-top: 0 !important; }
 html.schedi-newhq #hqDash .hqd-bill-top > div:first-child { min-width: 0; flex: 1 1 auto; }
+html.schedi-newhq #hqDash .hqd-bill-note { display: block; width: 100%; margin: 8px 0 0; overflow-wrap: normal; word-break: normal; }
 html.schedi-newhq #hqDash .hqd-bill-side { display: flex; align-items: flex-start; gap: 2px; flex: 0 0 auto; }
 html.schedi-newhq #hqDash .hqd-bill-side .hq-more > summary { margin: -6px -4px 0 0; }
 html.schedi-newhq #hqDash .hqd-price { display: block; margin: 0; font-size: 1.7rem; letter-spacing: -0.03em; color: var(--hqd-text); text-align: right; white-space: nowrap; flex: 0 0 auto; overflow-wrap: normal; word-break: keep-all; }
@@ -1087,8 +1090,8 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
     html.schedi-newhq #hqDash .hqd-sheet-card { margin-bottom: 24px; border-radius: 24px; }
     html.schedi-newhq #hqDashSheet:not([hidden]), html.schedi-newhq #hqDashDialog:not([hidden]) { align-items: center; }
     html.schedi-newhq #hqDashTabbar { display: none !important; }
-    html.schedi-newhq #editTenantModal { align-items: center; padding: 24px; }
-    html.schedi-newhq #editTenantModal > .glass-card { border-radius: 24px !important; }
+    html.schedi-newhq #editTenantModal { flex-direction: row; align-items: center !important; justify-content: center !important; padding: 24px !important; overflow: auto !important; }
+    html.schedi-newhq #editTenantModal > .glass-card { position: relative; left: auto; right: auto; bottom: auto; width: min(520px, 100%) !important; max-width: 520px !important; max-height: min(92vh, 860px); border-radius: 24px !important; }
 }
 @media (max-width: 360px) {
     html.schedi-newhq #hqDashTabbar > button { font-size: 11px; }
@@ -6591,25 +6594,11 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
                 auto.setAttribute('aria-label', 'Auto-debit on the 1st');
                 var header = auto.closest('.border-b');
                 if (header && header.parentElement) {
-                    var paypalRow = document.createElement('label');
-                    paypalRow.className = 'hqd-switch-row';
-                    paypalRow.innerHTML = '<span class="hqd-switch-copy"><i class="fa-brands fa-paypal" aria-hidden="true"></i><span><span class="hqd-switch-title">PayPal / webhook auto-draft</span></span></span>';
-                    var paypalSwitch = document.createElement('input');
-                    paypalSwitch.type = 'checkbox';
-                    paypalSwitch.className = 'hqd-switch';
-                    paypalSwitch.setAttribute('role', 'switch');
-                    paypalSwitch.setAttribute('aria-label', 'PayPal webhook auto-draft');
-                    paypalSwitch.checked = !!auto.checked;
-                    paypalSwitch.addEventListener('change', function () {
-                        auto.checked = paypalSwitch.checked;
-                    });
-                    auto.addEventListener('change', function () { paypalSwitch.checked = auto.checked; });
-                    paypalRow.appendChild(paypalSwitch);
                     var autoRow = document.createElement('label');
                     autoRow.className = 'hqd-switch-row';
-                    autoRow.innerHTML = '<span class="hqd-switch-copy"><i class="fa-solid fa-calendar-day" aria-hidden="true"></i><span><span class="hqd-switch-title">Auto-debit on the 1st</span></span></span>';
+                    autoRow.innerHTML = '<span class="hqd-switch-copy"><i class="fa-brands fa-paypal" aria-hidden="true"></i><span><span class="hqd-switch-title">Auto-debit on the 1st</span><span class="hqd-switch-note">PayPal / webhook auto-draft</span></span></span>';
                     autoRow.appendChild(auto);
-                    header.replaceWith(paypalRow, autoRow);
+                    header.replaceWith(autoRow);
                 }
             }
             var editComp = document.getElementById('editComplimentaryPro');
@@ -6811,7 +6800,7 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
             var comp = isComplimentaryPro(t);
             var paused = t.subscriptionStatus !== 'active';
             var note = comp ? 'Billing exempt · not charged' : (paused ? 'Left out of MRR while paused · booking page is off' : (price > 0 ? 'Counted in MRR · owner pays from their portal' : 'Free · not charged'));
-            return '<article class="hqd-card hqd-bill" data-hqd-open="' + esc(t.id) + '"><div class="hqd-bill-top"><div><button type="button" class="hqd-name" onclick="hqDashOpen(' + jsArg(t.id) + ')">' + esc(t.name) + '</button><div class="hqd-pills">' + hqDashPlanPill(t) + hqDashStatusPill(t) + (comp ? '<span class="hqd-pill hqd-pill-ok">Complimentary</span>' : '') + '</div><p class="hqd-meta">' + esc(note) + '</p></div><div class="hqd-bill-side"><strong class="hqd-price">' + hqDashMoney(price, false) + '<span>/mo</span></strong>' + hqDashMenu(t, true) + '</div></div>' + hqDashCompRow(t, true) + '</article>';
+            return '<article class="hqd-card hqd-bill" data-hqd-open="' + esc(t.id) + '"><div class="hqd-bill-top"><div><button type="button" class="hqd-name" onclick="hqDashOpen(' + jsArg(t.id) + ')">' + esc(t.name) + '</button><div class="hqd-pills">' + hqDashPlanPill(t) + hqDashStatusPill(t) + (comp ? '<span class="hqd-pill hqd-pill-ok">Complimentary</span>' : '') + '</div></div><div class="hqd-bill-side"><strong class="hqd-price">' + hqDashMoney(price, false) + '<span>/mo</span></strong>' + hqDashMenu(t, true) + '</div></div><p class="hqd-meta hqd-bill-note">' + esc(note) + '</p>' + hqDashCompRow(t, true) + '</article>';
         }
         function hqDashPaint() {
             if (!document.documentElement.classList.contains('schedi-newhq') || !document.getElementById('hqDash')) return;
