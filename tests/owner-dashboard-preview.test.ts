@@ -344,7 +344,7 @@ describe("owner dashboard preview", () => {
     expect(html).toContain("first === 'portal-preview'");
   });
 
-  it("turns the new dashboard on for the preview and off on production", () => {
+  it("turns the new dashboard on for real owner sessions and keeps demo data off production", () => {
     const demo = runHead("/portal-preview", "", "127.0.0.1");
     expect(demo.demo).toBe(true);
     expect(demo.dash).toBe(true);
@@ -356,22 +356,28 @@ describe("owner dashboard preview", () => {
 
     const production = runHead("/login", "", "schedi.app");
     expect(production.demo).toBe(false);
-    expect(production.dash).toBe(false);
+    expect(production.dash).toBe(true);
+    expect(production.classes).toContain("schedi-newdash-boot");
+
+    const classic = runHead("/login", "?classic=1", "www.schedi.app");
+    expect(classic.demo).toBe(false);
+    expect(classic.dash).toBe(false);
 
     const previewHost = runHead("/login", "", "localhost");
+    expect(previewHost.demo).toBe(false);
     expect(previewHost.dash).toBe(true);
 
     const forced = runHead("/login", "?newdash=1", "www.schedi.app");
     expect(forced.demo).toBe(false);
-    expect(forced.dash).toBe(false);
+    expect(forced.dash).toBe(true);
 
     const productionPath = runHead("/portal-preview", "", "schedi.app");
     expect(productionPath.demo).toBe(false);
-    expect(productionPath.dash).toBe(false);
+    expect(productionPath.dash).toBe(true);
 
     const productionDemo = runHead("/", "?demo=1", "schedi.app");
     expect(productionDemo.demo).toBe(false);
-    expect(productionDemo.dash).toBe(false);
+    expect(productionDemo.dash).toBe(true);
 
     const worker = runHead("/portal-preview", "", "preview.example.workers.dev");
     expect(worker.demo).toBe(true);
@@ -381,8 +387,9 @@ describe("owner dashboard preview", () => {
     expect(localDemo.demo).toBe(true);
     expect(localDemo.dash).toBe(true);
 
-    const storedOff = runHead("/login", "", "localhost", { schediNewDash: "0" });
-    expect(storedOff.dash).toBe(false);
+    const storedOff = runHead("/login", "", "schedi.app", { schediNewDash: "0" });
+    expect(storedOff.demo).toBe(false);
+    expect(storedOff.dash).toBe(true);
   });
 
   it("blocks demo writes before they reach the network or stored auth", async () => {
@@ -5448,7 +5455,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
 });
 
 describe.skipIf(!chrome)("classic owner roster icons", () => {
-  it("keeps roster icons sized without the new dashboard or the demo flag", async () => {
+  it("gives a signed-in owner the new dashboard and keeps roster icons sized", async () => {
     const types: Record<string, string> = {
       ".html": "text/html; charset=utf-8",
       ".js": "text/javascript; charset=utf-8",
@@ -5462,7 +5469,7 @@ describe.skipIf(!chrome)("classic owner roster icons", () => {
     const policy = contentSecurityPolicy(true);
     const server = createServer((req, res) => {
       const path = new URL(req.url || "/", "http://127.0.0.1").pathname;
-      const file = path === "/" || path === "/portal-preview" ? "/index.html" : path;
+      const file = path === "/" || path === "/login" || path === "/portal-preview" ? "/index.html" : path;
       const full = join(root, file);
       if (!full.startsWith(root) || !existsSync(full)) {
         res.writeHead(404);
@@ -5515,12 +5522,21 @@ describe.skipIf(!chrome)("classic owner roster icons", () => {
         }
         void request.continue();
       });
-      const response = await page.goto(`http://127.0.0.1:${port}/?newdash=0`, { waitUntil: "domcontentloaded", timeout: 45000 });
+      const response = await page.goto(`http://127.0.0.1:${port}/login`, { waitUntil: "domcontentloaded", timeout: 45000 });
       expect(response?.headers()["content-security-policy"]).toBe(policy);
       await page.waitForSelector("#tenantLoginEmail", { timeout: 20000 });
       await page.type("#tenantLoginEmail", "alex@auraconsulting.com");
       await page.type("#tenantLoginPassword", "classic-roster");
       await page.click("#tenantLoginBox button[type='submit']");
+      await page.waitForFunction(() => {
+        const section = document.getElementById("tenantPortalSection");
+        const side = document.getElementById("schediDashSidebar");
+        return document.body.classList.contains("schedi-newdash")
+          && !!section?.classList.contains("schedi-newdash")
+          && !!side
+          && getComputedStyle(side).display !== "none";
+      }, { timeout: 20000 });
+      await page.evaluate(() => (window as unknown as { schediDashGo: (page: string) => void }).schediDashGo("appointments"));
       await page.waitForFunction(() => {
         const row = document.querySelector("#tenantRosterTableBody .sd-pay svg");
         const box = row?.getBoundingClientRect();
@@ -5528,13 +5544,15 @@ describe.skipIf(!chrome)("classic owner roster icons", () => {
       }, { timeout: 20000 });
       const measure = () => page.evaluate(() => {
         const section = document.getElementById("tenantPortalSection");
+        const side = document.getElementById("schediDashSidebar");
+        const tab = document.getElementById("schediDashTabbar");
         const nodes = [
-          ...document.querySelectorAll("#rosterPayFilter svg, #tenantRosterTableBody svg, #tenantRosterTableBody .sd-svc-mark svg"),
+          ...document.querySelectorAll("#rosterPayFilter svg, #tenantRosterTableBody svg, #schediTodaySchedule svg"),
         ] as SVGElement[];
-        const svgs = nodes.map((svg) => {
+        const svgs = nodes.filter((svg) => svg.getAttribute("role") !== "img").map((svg) => {
           const box = svg.getBoundingClientRect();
           return { w: box.width, h: box.height };
-        });
+        }).filter((box) => box.w > 0 || box.h > 0);
         const paid = document.querySelector("#tenantRosterTableBody .roster-paid-amt") as HTMLElement | null;
         const count = document.querySelector("#rosterPayFilter .sd-chip-count") as HTMLElement | null;
         const input = document.getElementById("rosterSearchInput") as HTMLElement | null;
@@ -5542,8 +5560,10 @@ describe.skipIf(!chrome)("classic owner roster icons", () => {
         const selectAll = document.getElementById("rosterSelectAllPhone");
         const labels = [...document.querySelectorAll("#rosterPayFilter button")].map((btn) => (btn.textContent || "").replace(/\s+/g, ""));
         return {
-          newdash: !!(section && section.classList.contains("schedi-newdash")) || document.body.classList.contains("schedi-newdash"),
+          newdash: !!(section && section.classList.contains("schedi-newdash") && document.body.classList.contains("schedi-newdash")),
           demo: (window as unknown as { __SCHEDI_DEMO?: boolean }).__SCHEDI_DEMO === true,
+          side: side ? getComputedStyle(side).display : "",
+          tab: tab ? getComputedStyle(tab).display : "",
           svgs,
           paid: paid ? paid.innerText.replace(/\s+/g, " ").trim() : "",
           countGap: count ? getComputedStyle(count).marginLeft : "",
@@ -5556,10 +5576,11 @@ describe.skipIf(!chrome)("classic owner roster icons", () => {
       });
       const dark = await measure();
       expect(dark.demo).toBe(false);
-      expect(dark.newdash).toBe(false);
+      expect(dark.newdash).toBe(true);
+      expect(dark.side).not.toBe("none");
+      expect(dark.tab).toBe("none");
       expect(dark.svgs.length).toBeGreaterThan(0);
       dark.svgs.forEach((svg) => {
-        expect(svg.w).toBeGreaterThan(0);
         expect(svg.w).toBeLessThanOrEqual(48);
         expect(svg.h).toBeLessThanOrEqual(48);
       });
@@ -5570,17 +5591,36 @@ describe.skipIf(!chrome)("classic owner roster icons", () => {
       expect(dark.toggle).toBe("none");
       expect(dark.selectAll).toBe("none");
       expect(dark.inputBg).not.toBe("rgb(255, 255, 255)");
-      await page.evaluate(() => document.documentElement.classList.add("schedi-light"));
+      await page.setViewport({ width: 390, height: 800 });
+      const phone = await measure();
+      expect(phone.newdash).toBe(true);
+      expect(phone.demo).toBe(false);
+      expect(phone.side).toBe("none");
+      expect(phone.tab).not.toBe("none");
+      phone.svgs.forEach((svg) => {
+        expect(svg.w).toBeLessThanOrEqual(48);
+        expect(svg.h).toBeLessThanOrEqual(48);
+      });
+      await page.setViewport({ width: 1024, height: 800 });
+      await page.evaluate(() => (window as unknown as { setSchediTheme: (mode: string) => void }).setSchediTheme("light"));
       const light = await measure();
       expect(light.light).toBe(true);
-      expect(light.newdash).toBe(false);
+      expect(light.newdash).toBe(true);
+      expect(light.side).not.toBe("none");
+      expect(light.tab).toBe("none");
       light.svgs.forEach((svg) => {
-        expect(svg.w).toBeGreaterThan(0);
         expect(svg.w).toBeLessThanOrEqual(48);
         expect(svg.h).toBeLessThanOrEqual(48);
       });
       expect(light.paid).toBe("$75.00");
       expect(light.toggle).toBe("none");
+      const classic = await page.goto(`http://127.0.0.1:${port}/login?classic=1`, { waitUntil: "domcontentloaded", timeout: 45000 });
+      expect(classic?.headers()["content-security-policy"]).toBe(policy);
+      await page.waitForFunction(() => {
+        const row = document.querySelector("#tenantRosterTableBody .sd-pay svg");
+        const box = row?.getBoundingClientRect();
+        return !document.body.classList.contains("schedi-newdash") && !!box && box.width > 0 && box.width <= 48;
+      }, { timeout: 20000 });
       const demo = await page.goto(`http://127.0.0.1:${port}/portal-preview`, { waitUntil: "domcontentloaded", timeout: 45000 });
       expect(demo?.headers()["content-security-policy"]).toBe(policy);
       await page.waitForFunction(() => {

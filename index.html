@@ -390,7 +390,7 @@
         html.schedi-light #navModeTenant.bg-slate-800 { background-color: #e2e8f0 !important; }
             </style>
 <style id="schediNewDashStyle">
-/* schedi-newdash: owner portal preview only. Every selector includes schedi-newdash. */
+/* schedi-newdash: owner portal. Every selector includes schedi-newdash. */
 html.schedi-newdash-boot #tenantDashboard { visibility: hidden; }
 html.schedi-newdash-ready #tenantDashboard { visibility: visible; }
 body.schedi-newdash { background: #06080d; }
@@ -4683,16 +4683,8 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
     var previewHost = host === 'localhost' || host === '127.0.0.1' || host === '::1' || host.slice(-12) === '.workers.dev';
     var demo = previewHost && (path === '/portal-preview' || q.get('demo') === '1');
     window.__SCHEDI_DEMO = demo;
-    var dash;
-    if (q.get('newdash') === '0') dash = false;
-    else if (previewHost && (q.get('newdash') === '1' || demo)) dash = true;
-    else {
-        var stored = null;
-        try { stored = localStorage.getItem('schediNewDash'); } catch (errStore) { stored = null; }
-        if (stored === '0') dash = false;
-        else if (stored === '1') dash = true;
-        else dash = host !== 'schedi.app' && host !== 'www.schedi.app';
-    }
+    // Signed-in owners get the new dashboard at every width. ?classic=1 and ?newdash=0 keep the classic portal.
+    var dash = q.get('classic') !== '1' && q.get('newdash') !== '0';
     window.__SCHEDI_NEWDASH = dash;
     if (dash) document.documentElement.classList.add('schedi-newdash-boot');
     if (!demo) return;
