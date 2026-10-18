@@ -15,6 +15,7 @@ import { isUnpaidPast } from './unpaid-digest.js';
 import { adminAuthHeaders } from './firebase-admin.js';
 import { applyCancellationFee, cancellationPolicyPublic } from './cancellation-fee.js';
 import { proOnlyBookingError } from './entitlements.js';
+import { squareClientBookingError } from './deposit-methods.js';
 import { rateLimitOk } from './rate-limit.js';
 import { bookingMakesClient, upsertClientsFromBookings } from './private-clients.js';
 import { bookingNoticeError } from './booking-notice.js';
@@ -263,6 +264,8 @@ function wantsPayCode(booking) {
   if (!booking) return false;
   const method = String(booking.paymentMethod || '').toLowerCase();
   if (method === 'card' || method === 'square') return false;
+  // Cash App, Zelle, Venmo, and PayPal still need a code when the deposit is unpaid.
+  if (method === 'cashapp' || method === 'zelle' || method === 'venmo' || method === 'paypal') return true;
   if (Number(booking.depositAmount) > 0) return false;
   return true;
 }
@@ -1219,6 +1222,8 @@ export async function handlePrivateBookingHttp(request, env, origin, path, deps,
       if (itemsErr) return respond(json, { ok: false, error: itemsErr }, 400, origin, isAllowedOrigin);
       const planErr = proOnlyBookingError(tenant, booking);
       if (planErr) return respond(json, { ok: false, error: planErr }, 403, origin, isAllowedOrigin);
+      const squareErr = squareClientBookingError(booking);
+      if (squareErr) return respond(json, { ok: false, error: squareErr }, 400, origin, isAllowedOrigin);
       if (existing.some((a) => a && a.id === booking.id) || created.some((a) => a.id === booking.id)) {
         return respond(json, { ok: false, error: 'duplicate_booking' }, 409, origin, isAllowedOrigin);
       }

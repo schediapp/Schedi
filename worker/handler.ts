@@ -148,12 +148,20 @@ function decodePart(value: string): string | null {
   }
 }
 
+function isPreviewHost(hostname: string): boolean {
+  const host = hostname.toLowerCase().replace(/\.+$/, "");
+  if (host === "localhost" || host === "127.0.0.1" || host === "::1") return true;
+  return host.endsWith(".workers.dev");
+}
+
 function wantsPortal(url: URL): boolean {
   if (stripTrailing(collapse(url.pathname)) !== "/") return false;
   const portal = url.searchParams.get("portal");
   if (portal === "login") return true;
   if (url.searchParams.get("forgot") === "1") return true;
   if (url.searchParams.has("billing")) return true;
+  // Sample dashboard flags stay on preview hosts. Production home stays the marketing page.
+  if (!isPreviewHost(url.hostname)) return false;
   if (url.searchParams.get("demo") === "1") return true;
   if (url.searchParams.get("newdash") === "1") return true;
   return false;
@@ -446,9 +454,29 @@ function isHqSpaPath(pathname: string): boolean {
   return HQ_PATHS.has(first.toLowerCase());
 }
 
+function isPortalPreviewPath(pathname: string): boolean {
+  let stripped = stripTrailing(collapse(pathname));
+  try {
+    stripped = decodeURIComponent(stripped);
+  } catch {
+    return false;
+  }
+  return stripped.toLowerCase() === "/portal-preview";
+}
+
 export async function handleRequest(request: Request, env: SchediEnv, ctx: SchediContext): Promise<Response> {
   const url = new URL(request.url);
   const method = request.method.toUpperCase();
+  // The sample owner dashboard is preview-only. Production sends that path to the real portal.
+  if ((method === "GET" || method === "HEAD") && !isPreviewHost(url.hostname) && isPortalPreviewPath(url.pathname)) {
+    const dest = new URL(url.toString());
+    dest.protocol = "https:";
+    dest.hostname = "schedi.app";
+    dest.port = "";
+    dest.pathname = "/portal";
+    dest.search = "";
+    return redirect(dest.toString(), 302);
+  }
   if (isWww(url.hostname)) {
     const dest = new URL(url.toString());
     dest.protocol = "https:";
@@ -643,10 +671,24 @@ async function serveSpa(
   return new Response(body, { status: 200, headers });
 }
 
+function hqDemoRequest(request: Request): boolean {
+  try {
+    const url = new URL(request.url);
+    if (url.searchParams.get("demo") !== "1") return false;
+    const host = url.hostname.toLowerCase().replace(/\.$/, "");
+    // Production keeps the agency session gate. The assets-only preview has no KV.
+    return host !== "schedi.app" && host !== "www.schedi.app";
+  } catch {
+    return false;
+  }
+}
+
 async function serveHq(request: Request, env: SchediEnv, method: string): Promise<Response> {
   const token = agencySessionToken(request);
   const allowed = await hasAgencySession(env.AUTH_KV, token);
-  if (!allowed) {
+  // Preview only. demo=1 paints sample businesses and the page blocks live calls.
+  // It does not create an agency session and does not authorize API routes.
+  if (!allowed && !hqDemoRequest(request)) {
     return textResponse(
       injectWebAnalytics(hqLoginDocument(), new URL(request.url)),
       200,

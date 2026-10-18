@@ -9,7 +9,7 @@ import { renderRobots, renderSitemap } from "../worker/render";
 
 const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const root = new URL("..", import.meta.url).pathname;
-const BOOKING_TEMPLATE_SHA = "e07eb14f8d9174a9ceb5788fce33e426c30df12e0ef9361f3cc9640313bba586";
+const BOOKING_TEMPLATE_SHA = "4a9d977367ad21a56ddd5b455892539ecba5e513346b95da068992caa5153659";
 const SHELL_STYLE_SHA = "7c1f1bbb7af97aa8c1e95ab8de650f6493512361a409fd083bcbe3a2c04332d6";
 
 function bookingTemplate(source: string): string {
@@ -277,19 +277,44 @@ describe("owner dashboard preview", () => {
 
   it("serves the preview shell and keeps production opt-in", async () => {
     const preview = await handleRequest(new Request("https://schedi.app/portal-preview"), env(), ctx());
-    expect(preview.status).toBe(200);
-    expect(await preview.text()).toContain("<title>Schedi</title>");
-    expect(preview.headers.get("x-robots-tag")).toContain("noindex");
+    expect(preview.status).toBe(302);
+    expect(preview.headers.get("location")).toBe("https://schedi.app/portal");
+
+    const wwwPreview = await handleRequest(new Request("https://www.schedi.app/portal-preview?demo=1"), env(), ctx());
+    expect(wwwPreview.status).toBe(302);
+    expect(wwwPreview.headers.get("location")).toBe("https://schedi.app/portal");
 
     for (const path of ["/?demo=1", "/?newdash=1"]) {
       const response = await handleRequest(new Request("https://schedi.app" + path), env(), ctx());
       expect(response.status, path).toBe(200);
+      expect(response.headers.get("location"), path).toBeNull();
       const text = await response.text();
-      expect(text, path).toContain("<body>app");
-      expect(text, path).toContain("</body>");
-      if (path.includes("demo=1")) expect(text, path).toContain("<body>app</body>");
-      else expect(text, path).toContain("Cloudflare Web Analytics");
+      expect(text, path).toContain("Schedi | Booking pages for service businesses");
+      expect(text, path).not.toContain("<body>app</body>");
     }
+
+    const portal = await handleRequest(new Request("https://schedi.app/portal?biz=harbor&demo=1"), env(), ctx());
+    expect(portal.status).toBe(200);
+    expect(portal.headers.get("location")).toBeNull();
+    expect(await portal.text()).toContain("<body>app</body>");
+
+    const workerPreview = await handleRequest(
+      new Request("https://schedi-dashboard-preview.axl199.workers.dev/portal-preview"),
+      env(),
+      ctx(),
+    );
+    expect(workerPreview.status).toBe(200);
+    expect(await workerPreview.text()).toContain("<body>app</body>");
+
+    for (const path of ["/?demo=1", "/?newdash=1"]) {
+      const response = await handleRequest(new Request("http://127.0.0.1" + path), env(), ctx());
+      expect(response.status, path).toBe(200);
+      expect(await response.text(), path).toContain("<body>app</body>");
+    }
+
+    const localPreview = await handleRequest(new Request("http://localhost/portal-preview"), env(), ctx());
+    expect(localPreview.status).toBe(200);
+    expect(await localPreview.text()).toContain("<title>Schedi</title>");
 
     const home = await handleRequest(new Request("https://schedi.app/"), env(), ctx());
     expect(await home.text()).not.toContain("<body>app</body>");
@@ -317,7 +342,23 @@ describe("owner dashboard preview", () => {
 
     const forced = runHead("/login", "?newdash=1", "www.schedi.app");
     expect(forced.demo).toBe(false);
-    expect(forced.dash).toBe(true);
+    expect(forced.dash).toBe(false);
+
+    const productionPath = runHead("/portal-preview", "", "schedi.app");
+    expect(productionPath.demo).toBe(false);
+    expect(productionPath.dash).toBe(false);
+
+    const productionDemo = runHead("/", "?demo=1", "schedi.app");
+    expect(productionDemo.demo).toBe(false);
+    expect(productionDemo.dash).toBe(false);
+
+    const worker = runHead("/portal-preview", "", "preview.example.workers.dev");
+    expect(worker.demo).toBe(true);
+    expect(worker.dash).toBe(true);
+
+    const localDemo = runHead("/", "?demo=1", "localhost");
+    expect(localDemo.demo).toBe(true);
+    expect(localDemo.dash).toBe(true);
 
     const storedOff = runHead("/login", "", "localhost", { schediNewDash: "0" });
     expect(storedOff.dash).toBe(false);
@@ -1426,6 +1467,24 @@ describe("owner dashboard preview", () => {
     expect(css).toContain("body.schedi-newdash #rosterApptModal > .sd-form-sheet");
     expect(css).toContain("max-height: 94dvh;");
     expect(unscopedSelectors(css)).toEqual([]);
+  });
+
+  it("puts client actions beside the details and uses the business mark on every avatar", () => {
+    const row = html.slice(html.indexOf("sd-client-copy"), html.indexOf("function clientTagsHtml"));
+    expect(row.indexOf("sd-client-copy")).toBeLessThan(row.indexOf("sd-client-contact"));
+    expect(row.indexOf("sd-client-contact")).toBeLessThan(row.indexOf("sd-client-actions"));
+    const css = dashCss(html);
+    const phone = css.slice(css.indexOf("@media (max-width: 859px)"));
+    expect(phone).toContain("#tenantPortalSection.schedi-newdash .sd-client-actions button { flex: 0 0 auto; }");
+    expect(phone).not.toContain(".sd-client-actions { width: 100%; }");
+    expect(css).toContain("@media (min-width: 860px)");
+    expect(css).toContain("#tenantPortalSection.schedi-newdash #schediDashTop .sd-theme { display: none; }");
+    expect(html).toContain('id="schediDashUserLogoPhone"');
+    const paint = extractFunction(html, "schediDashPaint");
+    expect(paint).toContain("schediDashInitials(bizName)");
+    expect(paint).not.toContain("schediDashInitials(who)");
+    expect(paint).toContain("schediDashUserLogoPhone");
+    expect(paint).toContain("schediDashApplyLogo(phoneLogo, phoneInitials)");
   });
 });
 
