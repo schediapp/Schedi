@@ -138,7 +138,15 @@ const BOOKING_KEYS = [
   'stripeCustomerId', 'stripePaymentMethodId',
   'cancellationFeeStatus', 'cancellationFeeReason', 'cancellationFeeAmount', 'cancellationFeeAt',
   'cancellationFeePaymentIntentId',
+  'squarePaymentId', 'squareOrderId', 'squarePaymentLinkId',
+  'squareRefundId', 'squareRefundStatus', 'squareRefundedCents', 'squareAmountCents', 'squareCurrency',
   'items',
+];
+
+/** Written by the Square webhook and refund route. A booking save from the browser cannot set them. */
+export const SQUARE_SERVER_KEYS = [
+  'squarePaymentId', 'squareOrderId', 'squarePaymentLinkId',
+  'squareRefundId', 'squareRefundStatus', 'squareRefundedCents', 'squareAmountCents', 'squareCurrency',
 ];
 
 function sanitizeRecurrence(value) {
@@ -254,7 +262,7 @@ export function newPayCode() {
 function wantsPayCode(booking) {
   if (!booking) return false;
   const method = String(booking.paymentMethod || '').toLowerCase();
-  if (method === 'card') return false;
+  if (method === 'card' || method === 'square') return false;
   if (Number(booking.depositAmount) > 0) return false;
   return true;
 }
@@ -318,6 +326,7 @@ export function sanitizeBooking(raw, tenantId) {
     if (key === 'stripeCustomerId' || key === 'stripePaymentMethodId' || key === 'cancellationFeePaymentIntentId') {
       continue;
     }
+    if (SQUARE_SERVER_KEYS.includes(key)) continue;
     if (key === 'cancellationFeeStatus') {
       const status = clip(raw[key], 40);
       if (status === 'outside_window' || status === 'collected' || status === 'not_collected') out[key] = status;
@@ -628,6 +637,39 @@ function applyServerOnlyFields(booking, prev, options) {
     if (pi && String(options.feeBookingId || '') === String(booking.id)) {
       booking.cancellationFeePaymentIntentId = pi;
     }
+  }
+  if (prev) {
+    for (const key of SQUARE_SERVER_KEYS) {
+      if (prev[key] !== undefined && prev[key] !== '' && prev[key] !== null) booking[key] = prev[key];
+    }
+    const prevPaid = String(prev.paymentStatus || '').toUpperCase();
+    const nextStatus = String(booking.paymentStatus || '').toUpperCase();
+    if (prev.paidMethod === 'square' && prevPaid.indexOf('PAID') !== -1 && prevPaid.indexOf('AWAITING') === -1) {
+      if (nextStatus.indexOf('AWAITING') !== -1 || nextStatus.indexOf('PENDING SQUARE') !== -1) {
+        booking.paymentStatus = prev.paymentStatus;
+        booking.paidMethod = 'square';
+        booking.paymentMethod = 'square';
+        if (prev.depositPaid === true) booking.depositPaid = true;
+      }
+    }
+    if (prev.squareRefundStatus === 'COMPLETED' && booking.squareRefundStatus !== 'COMPLETED') {
+      booking.squareRefundStatus = 'COMPLETED';
+      if (prev.squareRefundId) booking.squareRefundId = prev.squareRefundId;
+      if (prev.squareRefundedCents != null) booking.squareRefundedCents = prev.squareRefundedCents;
+      if (String(prev.paymentStatus || '').toUpperCase() === 'REFUNDED') booking.paymentStatus = prev.paymentStatus;
+    }
+  }
+  const stamps = options && options.squareStamps;
+  const stamp = stamps && stamps[String(booking.id)];
+  if (stamp && typeof stamp === 'object') {
+    for (const key of SQUARE_SERVER_KEYS) {
+      if (stamp[key] !== undefined && stamp[key] !== '' && stamp[key] !== null) booking[key] = stamp[key];
+    }
+    if (stamp.paymentStatus) booking.paymentStatus = clip(stamp.paymentStatus, 60);
+    if (stamp.paidMethod === 'square') booking.paidMethod = 'square';
+    if (stamp.paymentMethod === 'square') booking.paymentMethod = 'square';
+    if (stamp.depositPaid === true) booking.depositPaid = true;
+    if (stamp.paymentOptionLabel) booking.paymentOptionLabel = clip(stamp.paymentOptionLabel, 60);
   }
   return booking;
 }

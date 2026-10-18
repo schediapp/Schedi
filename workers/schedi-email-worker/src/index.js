@@ -49,6 +49,7 @@ import {
   listPrivateTenants,
   patchPrivateTenant,
 } from './tenant-private.js';
+import { handleSquareHttp, runSquareReconcile } from './square.js';
 
 const ALLOWED_ORIGINS = new Set([
   'https://schedi.app',
@@ -2974,6 +2975,19 @@ export default {
       }
       return handleLogoUpload(request, env, origin, { json, isAllowedOrigin, readSession });
     }
+    if (path === '/api/webhooks/square' || path === '/api/square/callback' || path === '/api/square/checkout' || path === '/api/square/confirm' || path === '/api/square/connect' || path === '/api/square/status' || path === '/api/square/location' || path === '/api/square/disconnect' || path === '/api/square/refund') {
+      return handleSquareHttp(request, env, origin, path, {
+        json,
+        isAllowedOrigin,
+        getTenantById,
+        firebaseAnonymousToken,
+        planName: tenantPlanName,
+        bookingPrice: bookingPriceForCharge,
+        depositQuote: quoteDepositForPrice,
+        depositOn: depositRequiredForTenant,
+        slugFor: publicBookingSlug,
+      });
+    }
 
     if (path === '/auth/provision-mail') {
       return handleAgencyProvisionMail(request, env, origin);
@@ -3080,6 +3094,11 @@ export default {
       runSignupReminders(env, { firebaseAnonymousToken, listAllTenants, patchTenantFields, sendResend, onboardingFrom: ONBOARDING_FROM })
         .then((r) => { if (r.sent || r.errors) console.log('signup reminders', JSON.stringify({ sent: r.sent, errors: r.errors })); })
         .catch((err) => console.error('signup reminders failed', err && err.message ? err.message : err))
+    );
+    ctx.waitUntil(
+      runSquareReconcile(env)
+        .then((r) => { if (r && (r.checked || r.errors)) console.log('square reconcile', JSON.stringify(r)); })
+        .catch((err) => console.error('square reconcile failed', err && err.message ? err.message : err))
     );
   },
 };
