@@ -144,8 +144,12 @@ describe.skipIf(!chrome)("agency HQ dashboard browser", () => {
       expect(menu).toContain("Email welcome");
       expect(menu).toContain("Pause business");
       expect(menu).toContain("Delete business");
-      page.once("dialog", (dialog) => dialog.dismiss());
       await page.click('#hqdDirList details[open] .hq-more-danger');
+      await page.waitForSelector("#hqDashDialog:not([hidden])");
+      const deleteCopy = await page.evaluate(() => document.getElementById("hqdDialogBody")?.textContent || "");
+      expect(deleteCopy).toContain("cannot be undone");
+      await page.click("#hqdDialogNo");
+      await page.waitForFunction(() => document.getElementById("hqDashDialog")?.hidden);
       const stillThere = await page.evaluate(() => document.body.innerText.includes("Harbor Studio"));
       expect(stillThere).toBe(true);
 
@@ -195,6 +199,42 @@ describe.skipIf(!chrome)("agency HQ dashboard browser", () => {
 
       for (const width of [340, 390, 1280]) {
         await page.setViewport({ width, height: width === 1280 ? 800 : 844 });
+        await page.evaluate(() => {
+          document.documentElement.classList.remove("schedi-light");
+          (window as unknown as { hqDashGo: (id: string) => void }).hqDashGo("billing");
+        });
+        const layout = await page.evaluate(() => {
+          const oneLine = (el: Element | null) => {
+            if (!el) return false;
+            const range = document.createRange();
+            range.selectNodeContents(el);
+            const rects = Array.from(range.getClientRects());
+            if (!rects.length) return false;
+            const bandTop = rects[0].top;
+            const bandBottom = rects[0].bottom;
+            return rects.every((rect) => rect.top < bandBottom && rect.bottom > bandTop);
+          };
+          const pricesOk = Array.from(document.querySelectorAll("#hqdBillList .hqd-price")).every(oneLine);
+          const brands = Array.from(document.querySelectorAll("#hqDash .hqd-brand")).filter((el) => {
+            const box = el.getBoundingClientRect();
+            return box.width > 0 && box.height > 0;
+          });
+          (window as unknown as { hqDashGo: (id: string) => void }).hqDashGo("directory");
+          const chips = document.getElementById("hqdStatusChips");
+          const chipTops = Array.from(chips?.querySelectorAll(".hqd-chip") || []).map((el) => el.getBoundingClientRect().top);
+          const selectTops = Array.from(document.querySelectorAll("#hqdDirectory .hqd-selects select")).map((el) => el.getBoundingClientRect().top);
+          const flat = (tops: number[]) => tops.length > 0 && Math.max(...tops) - Math.min(...tops) < 8;
+          return {
+            prices: pricesOk,
+            brands: brands.length,
+            chips: flat(chipTops),
+            selects: selectTops.length === 3 && flat(selectTops),
+          };
+        });
+        expect(layout.prices, "prices " + width).toBe(true);
+        expect(layout.brands, "logos " + width).toBe(1);
+        expect(layout.chips, "status chips " + width).toBe(true);
+        expect(layout.selects, "filter row " + width).toBe(true);
         await page.evaluate(() => document.documentElement.classList.remove("schedi-light"));
         const dark = await page.evaluate(() => ({
           overflow: document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1,
