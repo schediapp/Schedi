@@ -309,7 +309,10 @@ describe("owner dashboard preview", () => {
     for (const path of ["/?demo=1", "/?newdash=1"]) {
       const response = await handleRequest(new Request("http://127.0.0.1" + path), env(), ctx());
       expect(response.status, path).toBe(200);
-      expect(await response.text(), path).toContain("<body>app</body>");
+      const text = await response.text();
+      expect(text, path).toContain("<title>Schedi</title>");
+      expect(text, path).toContain("<body>app");
+      expect(text, path).not.toContain("Booking pages for service businesses");
     }
 
     const localPreview = await handleRequest(new Request("http://localhost/portal-preview"), env(), ctx());

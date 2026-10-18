@@ -281,7 +281,7 @@ describe("HQ route", () => {
     expect(owner).toContain("window.location.assign(managedUrl)");
     expect(owner).toContain("ownerSelfSession = false");
     expect(hqHtml).toContain("window.loginAsTenantOwner(tenantId);");
-    expect(hqHtml.match(/onclick="loginAsTenantOwner\(/g)).toHaveLength(2);
+    expect(hqHtml.match(/onclick="loginAsTenantOwner\(/g)).toHaveLength(7);
     expect(hqHtml.match(/>Manage<\/button>/g)).toHaveLength(2);
   });
 
