@@ -48,6 +48,24 @@ function headScript(source: string): string {
   return source.slice(start + "<script>".length, end);
 }
 
+function cssColorParts(value: string): [number, number, number, number] | null {
+  const match = value.trim().match(/^rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)(?:[,\s/]+([\d.]+))?\s*\)$/i);
+  if (!match) return null;
+  return [Number(match[1]), Number(match[2]), Number(match[3]), match[4] == null ? 1 : Number(match[4])];
+}
+
+function expectSettledColor(actual: string, expected: string, label: string) {
+  const got = cssColorParts(actual);
+  const want = cssColorParts(expected);
+  expect(got, `${label} ${actual}`).not.toBeNull();
+  expect(want, label).not.toBeNull();
+  if (!got || !want) return;
+  expect(Math.abs(got[0] - want[0]), `${label} red`).toBeLessThanOrEqual(1);
+  expect(Math.abs(got[1] - want[1]), `${label} green`).toBeLessThanOrEqual(1);
+  expect(Math.abs(got[2] - want[2]), `${label} blue`).toBeLessThanOrEqual(1);
+  expect(Math.abs(got[3] - want[3]), `${label} alpha`).toBeLessThanOrEqual(0.02);
+}
+
 function unscopedSelectors(css: string): string[] {
   const clean = css.replace(/\/\*[\s\S]*?\*\//g, "");
   const bad: string[] = [];
@@ -4518,7 +4536,9 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
           }, theme);
           await page.waitForFunction((mode) => document.documentElement.classList.contains("schedi-light") === (mode === "light"), { timeout: 2000 }, theme);
           for (const item of kinds) {
-            const sample = await page.evaluate((kind) => new Promise<{
+            const expectedBorder = theme === "dark" ? "rgb(52, 211, 153)" : "rgb(5, 150, 105)";
+            const expectedBg = theme === "dark" ? "rgba(16, 185, 129, 0.2)" : "rgb(209, 250, 229)";
+            const sample = await page.evaluate((kind, borderTarget, bgTarget) => new Promise<{
               picked: boolean;
               menuOpen: boolean;
               modalHidden: boolean;
@@ -4534,32 +4554,70 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
               (document.querySelector("#schediDashTabbar .sd-fab") as HTMLButtonElement).click();
               const button = menu.querySelector(`[data-dash-add="${kind}"]`) as HTMLButtonElement;
               const started = performance.now();
-              button.click();
-              window.setTimeout(() => {
+              const parts = (value: string) => {
+                const match = value.trim().match(/^rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)(?:[,\s/]+([\d.]+))?\s*\)$/i);
+                if (!match) return null;
+                return [Number(match[1]), Number(match[2]), Number(match[3]), match[4] == null ? 1 : Number(match[4])];
+              };
+              const nearColor = (actual: string, expected: string) => {
+                const got = parts(actual);
+                const want = parts(expected);
+                if (!got || !want) return false;
+                return Math.abs(got[0] - want[0]) <= 1 && Math.abs(got[1] - want[1]) <= 1 && Math.abs(got[2] - want[2]) <= 1 && Math.abs(got[3] - want[3]) <= 0.02;
+              };
+              const read = () => {
                 const style = getComputedStyle(button);
                 const matrix = style.transform.match(/matrix\(([^)]+)\)/);
                 const scale = matrix ? Number(matrix[1].split(",")[0]) : (style.transform === "none" ? 1 : 0);
                 const modalId = kind === "recurring" ? "ownerRecurringModal" : "manualBookingModal";
-                resolve({
+                const shadow = style.boxShadow;
+                const blurNear = (shadow.match(/([\d.]+)px/g) || []).some((part) => Math.abs(parseFloat(part) - 18) <= 1);
+                return {
                   picked: button.classList.contains("is-picked"),
                   menuOpen: !menu.hidden,
                   modalHidden: document.getElementById(modalId)?.classList.contains("hidden") !== false,
                   border: style.borderTopColor,
-                  shadow: style.boxShadow,
+                  shadow,
                   scale,
                   bg: style.backgroundColor,
                   visible: button.getBoundingClientRect().height > 0,
                   started,
-                });
-              }, 120);
-            }), item.kind);
+                  ready: nearColor(style.borderTopColor, borderTarget) && nearColor(style.backgroundColor, bgTarget) && blurNear && scale > 0.95 && scale < 0.99,
+                };
+              };
+              let settled = false;
+              const finish = () => {
+                if (settled) return;
+                settled = true;
+                button.removeEventListener("transitionend", onEnd);
+                resolve(read());
+              };
+              const seen = { border: false, transform: false, shadow: false };
+              const onEnd = (event: TransitionEvent) => {
+                if (event.target !== button) return;
+                const name = event.propertyName || "";
+                if (name === "border-color" || /^border-(top|right|bottom|left)-color$/.test(name)) seen.border = true;
+                if (name === "transform") seen.transform = true;
+                if (name === "box-shadow") seen.shadow = true;
+                if (seen.border && seen.transform && seen.shadow) finish();
+              };
+              button.addEventListener("transitionend", onEnd);
+              button.click();
+              const watch = () => {
+                if (settled) return;
+                const snap = read();
+                if (snap.ready || !snap.modalHidden || performance.now() - started > 1000) finish();
+                else requestAnimationFrame(watch);
+              };
+              requestAnimationFrame(watch);
+            }), item.kind, expectedBorder, expectedBg);
             expect(sample.picked, item.kind).toBe(true);
             expect(sample.menuOpen, item.kind).toBe(true);
             expect(sample.modalHidden, item.kind).toBe(true);
             expect(sample.visible, item.kind).toBe(true);
-            expect(sample.border, item.kind).toBe(theme === "dark" ? "rgb(52, 211, 153)" : "rgb(5, 150, 105)");
-            expect(sample.bg, item.kind).toBe(theme === "dark" ? "rgba(16, 185, 129, 0.2)" : "rgb(209, 250, 229)");
-            expect(sample.shadow, item.kind).toContain("18px");
+            expectSettledColor(sample.border, expectedBorder, item.kind);
+            expectSettledColor(sample.bg, expectedBg, item.kind);
+            expect((sample.shadow.match(/([\d.]+)px/g) || []).some((part) => Math.abs(parseFloat(part) - 18) <= 1), item.kind).toBe(true);
             expect(sample.scale, item.kind).toBeGreaterThan(0.95);
             expect(sample.scale, item.kind).toBeLessThan(0.99);
             await page.waitForFunction((modalId) => !document.getElementById(modalId)?.classList.contains("hidden"), { timeout: 2000 }, item.modal);
