@@ -621,8 +621,23 @@ describe("owner dashboard preview", () => {
     expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-hours-open .sd-pay-switch,");
     expect(css).toContain("width: 52px;\n    height: 30px;");
     expect(extractFunction(html, "hoursWeekDayHtml")).toContain("openAddBlockedTimeForDay");
-    expect(extractFunction(html, "hoursWeekDayHtml")).toContain("copyHoursToOtherDays");
+    expect(extractFunction(html, "hoursWeekDayHtml")).toContain("openHoursCopySheet");
+    expect(extractFunction(html, "hoursWeekDayHtml")).toContain("Copy to…");
+    expect(extractFunction(html, "hoursWeekDayHtml")).not.toContain("copyHoursToOtherDays");
     expect(extractFunction(html, "copyHoursToOtherDays")).not.toContain("saveState");
+    expect(extractFunction(html, "copyHoursToOtherDays")).toContain("hoursCopyTargets");
+    expect(html).toContain('id="hoursCopySheet"');
+    expect(html).toContain('id="hoursCopyAll"');
+    expect(html).toContain(">Select all</span>");
+    expect(html).toContain('id="hoursCopyApply"');
+    expect(html).toContain(">Apply</button>");
+    expect(extractFunction(html, "openHoursCopySheet")).toContain("all.checked = false");
+    const copyTargets = new Function(
+      `${extractFunction(html, "hoursCopyDayOrder")}\n${extractFunction(html, "hoursCopyTargets")}; return hoursCopyTargets;`,
+    )() as (source: string, selected: string[]) => string[];
+    expect(copyTargets("Mon", [])).toEqual([]);
+    expect(copyTargets("Mon", ["Mon", "Tue", "Fri"])).toEqual(["Tue", "Fri"]);
+    expect(copyTargets("Sun", ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"])).toEqual(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]);
     const saveHours = html.slice(html.indexOf("window.handleUpdateShiftsSubmit"), html.indexOf("function canManageBlockedTimes"));
     expect(saveHours).toContain("shiftOpen_${day}");
     expect(saveHours).toContain("shiftStart_${day}");
@@ -1746,6 +1761,68 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       expect(phone.columns.split(" ").length).toBe(1);
       expect(phone.scrollWidth).toBeLessThanOrEqual(phone.clientWidth + 1);
       expect(phone.fontSize).toBe("16px");
+      await page.setViewport({ width: 390, height: 844 });
+      const beforeCopy = await page.evaluate(() => ({
+        tue: (document.getElementById("shiftStart_Tue") as HTMLInputElement).value,
+        wed: (document.getElementById("shiftStart_Wed") as HTMLInputElement).value,
+        sun: (document.getElementById("shiftOpen_Sun") as HTMLInputElement).checked,
+      }));
+      await page.$eval(".sd-hours-week-day .sd-hours-week-copy", (el) => (el as HTMLButtonElement).click());
+      const sheet = await page.evaluate(() => {
+        const root = document.getElementById("hoursCopySheet");
+        const boxes = [...document.querySelectorAll("#hoursCopyDays input")].map((el) => ({
+          value: (el as HTMLInputElement).value,
+          checked: (el as HTMLInputElement).checked,
+        }));
+        const close = root?.querySelector(".sd-form-close") as HTMLElement | null;
+        const closeBox = close?.getBoundingClientRect();
+        const card = root?.querySelector(".sd-sheet-card") as HTMLElement | null;
+        const cardBox = card?.getBoundingClientRect();
+        return {
+          hidden: !!root?.hidden,
+          title: document.getElementById("hoursCopyTitle")?.textContent || "",
+          boxes,
+          applyDisabled: (document.getElementById("hoursCopyApply") as HTMLButtonElement | null)?.disabled,
+          allChecked: (document.getElementById("hoursCopyAll") as HTMLInputElement | null)?.checked,
+          close: closeBox ? { w: closeBox.width, h: closeBox.height, top: closeBox.top, right: closeBox.right, bottom: closeBox.bottom } : null,
+          cardTop: cardBox?.top || 0,
+          labels: [...document.querySelectorAll(".sd-hours-week-copy")].map((el) => (el.textContent || "").trim()),
+          overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        };
+      });
+      expect(sheet.hidden).toBe(false);
+      expect(sheet.title).toBe("Copy Monday to…");
+      expect(sheet.boxes.map((box) => box.value)).toEqual(["Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]);
+      expect(sheet.boxes.every((box) => !box.checked)).toBe(true);
+      expect(sheet.applyDisabled).toBe(true);
+      expect(sheet.allChecked).toBe(false);
+      expect(sheet.close && sheet.close.w).toBeGreaterThanOrEqual(48);
+      expect(sheet.close && sheet.close.h).toBeGreaterThanOrEqual(48);
+      expect(sheet.close && sheet.close.top).toBeGreaterThanOrEqual(0);
+      expect(sheet.close && sheet.close.right).toBeLessThanOrEqual(390);
+      expect(sheet.cardTop).toBeGreaterThanOrEqual(0);
+      expect(sheet.overflow).toBeLessThanOrEqual(1);
+      expect(sheet.labels).toEqual(["Copy to…", "Copy to…", "Copy to…", "Copy to…", "Copy to…", "Copy to…", "Copy to…"]);
+      await page.click('#hoursCopyDays input[value="Tue"]');
+      await page.click("#hoursCopyApply");
+      const afterCopy = await page.evaluate(() => ({
+        sheetHidden: document.getElementById("hoursCopySheet")?.hidden,
+        tue: (document.getElementById("shiftStart_Tue") as HTMLInputElement).value,
+        tueEnd: (document.getElementById("shiftEnd_Tue") as HTMLInputElement).value,
+        tueOpen: (document.getElementById("shiftOpen_Tue") as HTMLInputElement).checked,
+        wed: (document.getElementById("shiftStart_Wed") as HTMLInputElement).value,
+        sun: (document.getElementById("shiftOpen_Sun") as HTMLInputElement).checked,
+        mon: (document.getElementById("shiftStart_Mon") as HTMLInputElement).value,
+        monEnd: (document.getElementById("shiftEnd_Mon") as HTMLInputElement).value,
+        monOpen: (document.getElementById("shiftOpen_Mon") as HTMLInputElement).checked,
+      }));
+      expect(afterCopy.sheetHidden).toBe(true);
+      expect(afterCopy.tue).toBe(afterCopy.mon);
+      expect(afterCopy.tueEnd).toBe(afterCopy.monEnd);
+      expect(afterCopy.tueOpen).toBe(afterCopy.monOpen);
+      expect(afterCopy.tue).not.toBe(beforeCopy.tue);
+      expect(afterCopy.wed).toBe(beforeCopy.wed);
+      expect(afterCopy.sun).toBe(beforeCopy.sun);
     } finally {
       await browser.close();
       await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));

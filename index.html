@@ -3757,6 +3757,93 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
         border-color: #cbd5e1;
         color: #1f2937;
     }
+    #tenantPortalSection.schedi-newdash #hoursCopySheet {
+        z-index: 80;
+        padding: 12px 12px calc(12px + env(safe-area-inset-bottom, 0px));
+    }
+    #tenantPortalSection.schedi-newdash #hoursCopySheet .sd-sheet-card {
+        width: min(420px, 100%);
+        max-height: min(78dvh, 560px);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        padding: 8px;
+    }
+    #tenantPortalSection.schedi-newdash #hoursCopySheet .sd-sheet-bar {
+        position: static;
+        flex: none;
+        padding: 4px 4px 8px 12px;
+    }
+    #tenantPortalSection.schedi-newdash #hoursCopySheet .sd-sheet-bar h3 {
+        font-size: 18px;
+        line-height: 1.2;
+    }
+    #tenantPortalSection.schedi-newdash .sd-hours-copy-all { flex: none; margin: 0 4px 4px; }
+    #tenantPortalSection.schedi-newdash .sd-hours-copy-days {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        padding: 0 4px 4px;
+    }
+    #tenantPortalSection.schedi-newdash .sd-hours-copy-day {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-height: 48px;
+        margin: 0;
+        padding: 0 12px;
+        border-radius: 12px;
+        border: 1px solid transparent;
+        color: var(--sd-text);
+        font-size: 16px;
+        font-weight: 800;
+        cursor: pointer;
+    }
+    #tenantPortalSection.schedi-newdash .sd-hours-copy-day input {
+        width: 22px;
+        height: 22px;
+        margin: 0;
+        flex: none;
+        accent-color: var(--sd-brand);
+        cursor: pointer;
+    }
+    #tenantPortalSection.schedi-newdash .sd-hours-copy-day:has(input:checked) {
+        background: rgba(16, 185, 129, 0.14);
+        border-color: rgba(16, 185, 129, 0.28);
+    }
+    #tenantPortalSection.schedi-newdash .sd-hours-copy-foot {
+        flex: none;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 8px 4px 4px;
+        border-top: 1px solid var(--sd-line);
+    }
+    #tenantPortalSection.schedi-newdash .sd-hours-copy-apply {
+        width: 100%;
+        min-height: 48px;
+        margin: 0;
+        padding: 0 12px;
+        border-radius: 14px;
+        border: 1px solid #10b981;
+        background: #10b981;
+        color: #022c22;
+        font-size: 16px;
+        font-weight: 800;
+        cursor: pointer;
+    }
+    #tenantPortalSection.schedi-newdash .sd-hours-copy-apply:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+    }
+    #tenantPortalSection.schedi-newdash .sd-hours-copy-day:focus-within,
+    #tenantPortalSection.schedi-newdash .sd-hours-copy-apply:focus-visible {
+        outline: 2px solid #10b981;
+        outline-offset: 2px;
+    }
     html.schedi-light #tenantPortalSection.schedi-newdash .sd-hours-week-empty { color: #334155; }
     @media (min-width: 640px) {
         #tenantPortalSection.schedi-newdash .sd-hours-week-head { display: grid; }
@@ -4702,6 +4789,22 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
                             <p class="sd-help-lead">Short videos for the business portal. The written steps live on the help page.</p>
                             <p class="sd-help-lead"><a id="schediDashHelpPageLink" href="/portal/help" onclick="this.href=ownerHelpHref()">Open the help page</a></p>
                             <div id="schediDashHelpBody"></div>
+                        </div>
+                    </div>
+                    <div id="hoursCopySheet" class="sd-sheet" hidden onclick="if (event.target === this) closeHoursCopySheet()">
+                        <div class="sd-sheet-card" role="dialog" aria-modal="true" aria-labelledby="hoursCopyTitle">
+                            <div class="sd-sheet-bar">
+                                <h3 id="hoursCopyTitle">Copy to…</h3>
+                                <button type="button" class="sd-form-close" onclick="closeHoursCopySheet()" aria-label="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+                            </div>
+                            <label class="sd-hours-copy-day sd-hours-copy-all">
+                                <input type="checkbox" id="hoursCopyAll" onchange="hoursCopyToggleAll(this.checked)">
+                                <span>Select all</span>
+                            </label>
+                            <div id="hoursCopyDays" class="sd-hours-copy-days"></div>
+                            <div class="sd-hours-copy-foot">
+                                <button type="button" id="hoursCopyApply" class="sd-hours-copy-apply" onclick="applyHoursCopy()" disabled>Apply</button>
+                            </div>
                         </div>
                     </div>
                     <div id="sdClientPanel" class="sd-client-panel" hidden>
@@ -15597,7 +15700,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
                 + split
                 + '<div class="space-y-1.5">' + blocks + '</div>'
                 + '<button type="button" class="sd-hours-week-add" onclick="openAddBlockedTimeForDay(' + jsArg(day) + ')">Add blocked time</button>'
-                + '<button type="button" class="sd-hours-week-copy" onclick="copyHoursToOtherDays(' + jsArg(day) + ')">Copy to other days</button>'
+                + '<button type="button" class="sd-hours-week-copy" onclick="openHoursCopySheet(' + jsArg(day) + ')">Copy to…</button>'
                 + '</div>';
         }
 
@@ -15614,7 +15717,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
                 + '<div class="sd-hours-week-head">' + head + '</div>'
                 + '<div class="roster-week-grid sd-hours-week">' + cells + '</div>'
                 + '</div>'
-                + '<p class="sd-hours-hint sd-hours-hint-gap">Week layout uses the same seven day columns as the appointments week. Weekly hours still save one open and one close. A recurring block in the middle splits the bookable day. Copy to other days fills the fields. Save operating hours keeps them.</p>';
+                + '<p class="sd-hours-hint sd-hours-hint-gap">Week layout uses the same seven day columns as the appointments week. Weekly hours still save one open and one close. A recurring block in the middle splits the bookable day. Copy to… fills the chosen days. Save operating hours keeps them.</p>';
         }
 
         function hoursSummaryParts(label) {
@@ -15730,13 +15833,86 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
         }
         window.paintHoursWeekSummary = paintHoursWeekSummary;
 
-        function copyHoursToOtherDays(day) {
-            var days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        var hoursCopySource = '';
+
+        function hoursCopyDayOrder() {
+            return ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        }
+
+        function hoursCopyDayName(day) {
+            return ({ Mon: 'Monday', Tue: 'Tuesday', Wed: 'Wednesday', Thu: 'Thursday', Fri: 'Friday', Sat: 'Saturday', Sun: 'Sunday' })[day] || String(day || '');
+        }
+
+        function hoursCopyTargets(source, selected) {
+            var pick = {};
+            (selected || []).forEach(function (day) { pick[String(day)] = true; });
+            return hoursCopyDayOrder().filter(function (day) { return day !== source && pick[day]; });
+        }
+
+        function hoursCopyPaintApply() {
+            var apply = document.getElementById('hoursCopyApply');
+            var all = document.getElementById('hoursCopyAll');
+            var boxes = document.querySelectorAll('#hoursCopyDays input[type="checkbox"]');
+            var on = 0;
+            boxes.forEach(function (box) { if (box.checked) on += 1; });
+            if (apply) apply.disabled = on === 0;
+            if (all) all.checked = boxes.length > 0 && on === boxes.length;
+        }
+        window.hoursCopyPaintApply = hoursCopyPaintApply;
+
+        function hoursCopyToggleAll(on) {
+            document.querySelectorAll('#hoursCopyDays input[type="checkbox"]').forEach(function (box) {
+                box.checked = !!on;
+            });
+            hoursCopyPaintApply();
+        }
+        window.hoursCopyToggleAll = hoursCopyToggleAll;
+
+        function openHoursCopySheet(day) {
+            hoursCopySource = day;
+            var sheet = document.getElementById('hoursCopySheet');
+            var title = document.getElementById('hoursCopyTitle');
+            var list = document.getElementById('hoursCopyDays');
+            if (!sheet || !list) return;
+            if (typeof closeAllOwnerTimeLists === 'function') closeAllOwnerTimeLists();
+            if (title) title.textContent = 'Copy ' + hoursCopyDayName(day) + ' to…';
+            list.innerHTML = hoursCopyTargets(day, hoursCopyDayOrder()).map(function (other) {
+                return '<label class="sd-hours-copy-day"><input type="checkbox" value="' + esc(other) + '" onchange="hoursCopyPaintApply()"><span>' + esc(hoursCopyDayName(other)) + '</span></label>';
+            }).join('');
+            var all = document.getElementById('hoursCopyAll');
+            if (all) all.checked = false;
+            hoursCopyPaintApply();
+            sheet.hidden = false;
+            var closeBtn = sheet.querySelector('.sd-form-close');
+            if (closeBtn && closeBtn.focus) closeBtn.focus();
+        }
+        window.openHoursCopySheet = openHoursCopySheet;
+
+        function closeHoursCopySheet() {
+            var sheet = document.getElementById('hoursCopySheet');
+            if (sheet) sheet.hidden = true;
+            hoursCopySource = '';
+        }
+        window.closeHoursCopySheet = closeHoursCopySheet;
+
+        function applyHoursCopy() {
+            var boxes = document.querySelectorAll('#hoursCopyDays input[type="checkbox"]:checked');
+            var targets = [];
+            boxes.forEach(function (box) { targets.push(box.value); });
+            var chosen = hoursCopyTargets(hoursCopySource, targets);
+            if (!chosen.length) return;
+            copyHoursToOtherDays(hoursCopySource, chosen);
+            closeHoursCopySheet();
+        }
+        window.applyHoursCopy = applyHoursCopy;
+
+        function copyHoursToOtherDays(day, targets) {
+            var chosen = hoursCopyTargets(day, targets);
+            if (!chosen.length) return;
             var open = document.getElementById('shiftOpen_' + day);
             var start = document.getElementById('shiftStart_' + day);
             var end = document.getElementById('shiftEnd_' + day);
-            days.forEach(function (other) {
-                if (other === day) return;
+            chosen.forEach(function (other) {
                 var openEl = document.getElementById('shiftOpen_' + other);
                 var startEl = document.getElementById('shiftStart_' + other);
                 var endEl = document.getElementById('shiftEnd_' + other);
@@ -15748,10 +15924,20 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
                 if (endEl && end) endEl.value = end.value;
                 hoursWeekOpenChanged(other);
             });
-            showToast('Copied ' + day + ' to the other days. Save operating hours to keep them.', 'success');
+            var names = chosen.map(hoursCopyDayName);
+            var list = names.length === 1 ? names[0] : (names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1]);
+            showToast('Copied ' + hoursCopyDayName(day) + ' to ' + list + '. Save operating hours to keep them.', 'success');
             paintHoursWeekSummary();
         }
         window.copyHoursToOtherDays = copyHoursToOtherDays;
+
+        document.addEventListener('keydown', function (event) {
+            if (!event || event.key !== 'Escape') return;
+            var sheet = document.getElementById('hoursCopySheet');
+            if (!sheet || sheet.hidden) return;
+            event.preventDefault();
+            closeHoursCopySheet();
+        });
 
         function hoursApplyOpenState(day) {
             var openEl = document.getElementById('shiftOpen_' + day);
