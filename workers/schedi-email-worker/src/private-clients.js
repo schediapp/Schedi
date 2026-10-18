@@ -10,7 +10,12 @@
  *   import  -> { rows: [{name, firstName, lastName, email, phone, notes, row}] }  (max 2000 rows)
  *              -> { ok, added, skipped: [{row, reason}], errors: [{row, reason}], total }
  *   add     -> { client: {...} }  -> { ok, client } | { ok:false, error:'duplicate' }
+ *   update  -> { clientId, client: { name, email, phone, notes, tags } } -> { ok, client }
  *   delete  -> { clientId }
+ *
+ * Allowed client fields are name, email, phone, notes, and tags. Anything else on the
+ * payload is dropped. Updating a client does not rewrite bookings or the roster.
+ * Visits already on the calendar keep the name, email, and phone stored on each booking.
  *
  * Bookings: upsertClientsFromBookings() is called server-side whenever bookings are saved
  * (private-bookings.js persistTenantAppointments) for bookings that just became accepted/confirmed,
@@ -44,6 +49,25 @@ export function phoneKey(value) {
   return d;
 }
 
+const MAX_CLIENT_TAGS = 12;
+
+export function sanitizeClientTags(value) {
+  const list = Array.isArray(value) ? value : (typeof value === 'string' ? value.split(/[,;\n]/) : []);
+  const out = [];
+  const seen = new Set();
+  for (const item of list) {
+    if (out.length >= MAX_CLIENT_TAGS) break;
+    if (item != null && typeof item !== 'string' && typeof item !== 'number') continue;
+    const tag = cleanText(item, 24);
+    if (!tag) continue;
+    const key = tag.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(tag);
+  }
+  return out;
+}
+
 export function sanitizeClientInput(raw) {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return { error: 'invalid_row' };
   let name = cleanText(raw.name, 120);
@@ -52,12 +76,13 @@ export function sanitizeClientInput(raw) {
   const phoneRaw = cleanText(raw.phone, 40);
   const pk = phoneKey(phoneRaw);
   const notes = cleanText(raw.notes, 500);
+  const tags = sanitizeClientTags(raw.tags);
   if (!name && !email && !phoneRaw) return { error: 'empty_row' };
   if (!name) return { error: 'missing_name' };
   if (email && !EMAIL_RE.test(email)) return { error: 'invalid_email' };
   if (phoneRaw && (pk.length < 7 || pk.length > 15)) return { error: 'invalid_phone' };
   if (!email && !phoneRaw) return { error: 'missing_contact' };
-  return { client: { name, email, phone: phoneRaw, notes } };
+  return { client: { name, email, phone: phoneRaw, notes, tags } };
 }
 
 function randomId() {
@@ -90,6 +115,7 @@ function clientForOwner(c) {
     email: clip(c.email, 254),
     phone: clip(c.phone, 40),
     notes: clip(c.notes, 500),
+    tags: sanitizeClientTags(c.tags),
     source: clip(c.source, 10),
     firstBookingDate: clip(c.firstBookingDate, 10),
     createdAt: clip(c.createdAt, 30),
@@ -175,6 +201,7 @@ export async function upsertClientsFromBookings(env, tenantId, bookings) {
       email: cand.email,
       phone: cand.phone,
       notes: '',
+      tags: [],
       source: 'booking',
       firstBookingDate: date,
       createdAt: now,
@@ -366,6 +393,36 @@ export async function handleClientsHttp(request, env, origin, deps) {
     if (next.length === existing.length) return respond({ ok: false, error: 'not_found' }, 404, origin, isAllowedOrigin);
     await saveClients(env, tenantId, next);
     return respond({ ok: true, deleted: clientId, count: next.length }, 200, origin, isAllowedOrigin);
+  }
+
+  if (action === 'update') {
+    if (!(await rateLimitOk(env.RL_CLIENTS, 'update:' + tenantId, 40, 'clients-update'))) {
+      return respond({ ok: false, error: 'rate_limited' }, 429, origin, isAllowedOrigin);
+    }
+    const clientId = clip(body.clientId, 40);
+    if (!clientId) return respond({ ok: false, error: 'not_found' }, 404, origin, isAllowedOrigin);
+    const existing = await loadClients(env, tenantId);
+    const current = existing.find((c) => c && String(c.id) === clientId);
+    if (!current) return respond({ ok: false, error: 'not_found' }, 404, origin, isAllowedOrigin);
+    const res = sanitizeClientInput(body.client || {});
+    if (res.error) return respond({ ok: false, error: res.error }, 400, origin, isAllowedOrigin);
+    const others = existing.filter((c) => c && String(c.id) !== clientId);
+    const dup = duplicateReason(dedupeIndex(others), res.client);
+    if (dup) return respond({ ok: false, error: dup }, 409, origin, isAllowedOrigin);
+    const updated = {
+      id: current.id,
+      name: res.client.name,
+      email: res.client.email,
+      phone: res.client.phone,
+      notes: res.client.notes,
+      tags: res.client.tags,
+      source: clip(current.source, 10),
+      firstBookingDate: clip(current.firstBookingDate, 10),
+      createdAt: clip(current.createdAt, 30),
+    };
+    const next = existing.map((c) => (c && String(c.id) === clientId ? updated : c));
+    await saveClients(env, tenantId, next);
+    return respond({ ok: true, client: clientForOwner(updated) }, 200, origin, isAllowedOrigin);
   }
 
   return respond({ ok: false, error: 'unknown_action' }, 400, origin, isAllowedOrigin);

@@ -157,10 +157,25 @@ label{font-size:12px;font-weight:600}
 input{width:100%;box-sizing:border-box;padding:10px 12px;border-radius:10px;border:1px solid #334155;background:#0f172a;color:#fff}
 button{margin-top:6px;padding:12px;border:0;border-radius:12px;background:#10b981;color:#042f2e;font-weight:800;cursor:pointer}
 .err{color:#fda4af;font-size:12px;min-height:1em}
+#hq-theme{display:none}
+html.schedi-newhq body{background:#06080d;color:#e7edf5}
+html.schedi-newhq form{background:#121826;border:1px solid rgba(148,163,184,.18);border-radius:20px;padding:28px}
+html.schedi-newhq h1{font-size:1.7rem;font-weight:800;letter-spacing:-0.03em}
+html.schedi-newhq p{color:#94a3b8}
+html.schedi-newhq input{background:#0c1018;border-color:rgba(148,163,184,.28);border-radius:12px;min-height:44px}
+html.schedi-newhq button{min-height:44px;border-radius:12px}
+html.schedi-newhq #hq-theme{display:inline-flex;align-self:flex-start;margin-top:0;padding:8px 12px;background:#121826;color:#e7edf5;border:1px solid rgba(148,163,184,.28);font-size:12px}
+html.schedi-light.schedi-newhq body{background:#f4f7fb;color:#0f172a}
+html.schedi-light.schedi-newhq form{background:#ffffff;border-color:#d7dee8}
+html.schedi-light.schedi-newhq p{color:#475569}
+html.schedi-light.schedi-newhq input{background:#ffffff;color:#0f172a;border-color:#cbd5e1}
+html.schedi-light.schedi-newhq button[type="submit"]{background:#059669;color:#ffffff}
+html.schedi-light.schedi-newhq #hq-theme{background:#ffffff;color:#0f172a;border-color:#d7dee8}
 </style>
 </head>
 <body>
 <form id="hq-login">
+<button type="button" id="hq-theme">Light</button>
 <h1>Schedi HQ</h1>
 <p>Sign in to open HQ.</p>
 <label for="hq-email">Email</label>
@@ -171,6 +186,35 @@ button{margin-top:6px;padding:12px;border:0;border-radius:12px;background:#10b98
 <button type="submit">Sign in</button>
 </form>
 <script>
+(function () {
+  var on = false;
+  try {
+    var flag = new URLSearchParams(location.search || '').get('newhq');
+    on = flag === '1' || flag === 'true' || flag === 'on';
+  } catch (errFlag) { on = false; }
+  if (!on) return;
+  document.documentElement.classList.add('schedi-newhq');
+  var link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap';
+  document.head.appendChild(link);
+  function paint(theme) {
+    var light = theme === 'light';
+    document.documentElement.classList.toggle('schedi-light', light);
+    var toggle = document.getElementById('hq-theme');
+    if (toggle) toggle.textContent = light ? 'Dark' : 'Light';
+  }
+  var theme = 'dark';
+  try { theme = localStorage.getItem('schedi.theme') === 'light' ? 'light' : 'dark'; } catch (errTheme) { theme = 'dark'; }
+  paint(theme);
+  var toggle = document.getElementById('hq-theme');
+  if (toggle) toggle.addEventListener('click', function () {
+    theme = theme === 'light' ? 'dark' : 'light';
+    try { localStorage.setItem('schedi.theme', theme); } catch (errStore) {}
+    paint(theme);
+  });
+})();
+
 document.getElementById('hq-login').addEventListener('submit', async function (event) {
   event.preventDefault();
   var error = document.getElementById('hq-error');

@@ -54,6 +54,21 @@ pattern = "schedi.app/api/profile"
 zone_name = "schedi.app"
 
 [[routes]]
+pattern = "schedi.app/api/logo-upload"
+zone_name = "schedi.app"
+
+# Logo files. Create the bucket before uncommenting the binding, or the next deploy fails:
+#   npx wrangler r2 bucket create schedi-logos
+# Then attach a public hostname (r2.dev or logos.schedi.app). Add LOGO_PUBLIC_BASE to the
+# existing [vars] block (do not add a second [vars]) as that https origin with no path.
+# The image host must allow public GET. The upload POST uses the worker's existing
+# portal CORS list; img tags do not need CORS.
+# [[r2_buckets]]
+# binding = "LOGO_BUCKET"
+# bucket_name = "schedi-logos"
+# LOGO_PUBLIC_BASE = "https://logos.schedi.app"
+
+[[routes]]
 pattern = "schedi.app/api/push-token"
 zone_name = "schedi.app"
 

@@ -139,6 +139,38 @@ describe("crawler files and app routes", () => {
     }
   });
 
+  it("serves /portal/help on the app with noindex and keeps the owner query", async () => {
+    const shell = "<!DOCTYPE html><html><head><title>Schedi</title></head><body>app<script>name=\"robots\"</script></body></html>";
+    const assets: SchediEnv["ASSETS"] = {
+      async fetch(request: Request) {
+        const path = new URL(request.url).pathname;
+        if (path === "/index.html") return new Response(shell, { headers: { "content-type": "text/html; charset=utf-8" } });
+        return new Response("missing", { status: 404 });
+      },
+    };
+    const query = "demo=1&portal=preview&dash=hours&biz=harbor-demo&tenant=harbor";
+    for (const path of ["/portal/help", "/portal/help/", "/portal", "/portal/hours"]) {
+      const response = await handleRequest(new Request(`https://schedi.app${path}?${query}`), envWith(assets), ctx());
+      expect(response.status, path).toBe(200);
+      expect(response.headers.get("location"), path).toBeNull();
+      expect(response.headers.get("x-robots-tag"), path).toContain("noindex");
+      const html = await response.text();
+      expect(html, path).toContain("<title>Schedi</title>");
+      expect(html, path).toContain('content="noindex, follow"');
+      expect(html.slice(0, html.indexOf("</head>")), path).toContain('name="robots"');
+    }
+    const marketing = await handleRequest(
+      new Request(`https://schedi.app/help?${query}`),
+      envWith(assets),
+      ctx(),
+    );
+    expect(marketing.status).toBe(200);
+    expect(marketing.headers.get("location")).toBeNull();
+    const helpHtml = await marketing.text();
+    expect(helpHtml).toContain("Schedi help | Business portal steps");
+    expect(helpHtml).not.toContain("Back to portal");
+  });
+
   it("keeps SPA deep links and sends noindex on non-public app routes", async () => {
     const env = envWith(shellAssets());
     env.FIREBASE_PROJECT_ID = "";

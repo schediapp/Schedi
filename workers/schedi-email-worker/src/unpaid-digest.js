@@ -39,7 +39,7 @@ function shortDate(ymd) {
   return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], 12)).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' });
 }
 
-const METHOD_LABELS = { cashapp: 'Cash App', 'cash-app': 'Cash App', venmo: 'Venmo', zelle: 'Zelle', paypal: 'PayPal', later: 'Pay at appointment', card: 'Card' };
+const METHOD_LABELS = { cashapp: 'Cash App', 'cash-app': 'Cash App', venmo: 'Venmo', zelle: 'Zelle', paypal: 'PayPal', square: 'Square', cash: 'In person / Cash', later: 'Pay at appointment', card: 'Card' };
 
 export function methodLabel(b) {
   const m = String(b.paymentMethod || '').toLowerCase();
