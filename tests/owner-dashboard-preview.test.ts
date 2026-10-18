@@ -1089,7 +1089,9 @@ describe("owner dashboard preview", () => {
   it("orders appointment status chips as booking, outcome, payment, then price", () => {
     const api = new Function(`
       ${extractFunction(html, "esc")}
+      ${extractFunction(html, "roundMoney")}
       ${extractFunction(html, "hasPricedAmount")}
+      ${extractFunction(html, "formatBookingAmountLabel")}
       ${extractFunction(html, "appointmentIsCancelled")}
       ${extractFunction(html, "appointmentIsNoShow")}
       ${extractFunction(html, "bookingPaymentState")}
@@ -1097,6 +1099,7 @@ describe("owner dashboard preview", () => {
       ${extractFunction(html, "appointmentPayKind")}
       ${extractFunction(html, "payKindSvg")}
       var ROSTER_PAY_WORDS = { unpaid: "Unpaid", card: "Card (Stripe)", cashapp: "Cash App", zelle: "Zelle", venmo: "Venmo", paypal: "PayPal", square: "Square", cash: "In person / Cash" };
+      ${extractFunction(html, "appointmentPaidChipMoney")}
       ${extractFunction(html, "appointmentPayMarkup")}
       ${extractFunction(html, "noShowPillHtml")}
       ${extractFunction(html, "rosterAcceptedBadge")}
@@ -1126,16 +1129,41 @@ describe("owner dashboard preview", () => {
     expect(api.appointmentStatusLabels({ status: "denied", noShow: true, paymentStatus: "PAY AT APPOINTMENT", amount: 80 })).toEqual(["Denied", "No-show"]);
     expect(api.appointmentStatusLabels({ status: "declined", paymentStatus: "PAY AT APPOINTMENT" })).toEqual(["Declined"]);
     expect(api.appointmentStatusLabels({ status: "cancelled", paymentStatus: "PAID", amount: 65 })).toEqual(["Cancelled"]);
-    expect(api.appointmentStatusLabels({ status: "accepted", noShow: true, paymentStatus: "PAID IN CASH", paidMethod: "cash", amount: 65 })).toEqual(["No-show", "Paid", "$65"]);
-    expect(api.appointmentStatusLabels({ status: "completed", paymentStatus: "PAID", paidMethod: "cash", amount: 65 })).toEqual(["Completed", "Paid", "$65"]);
-    expect(api.appointmentStatusLabels({ status: "done", paymentStatus: "PAID", amount: 40 })).toEqual(["Done", "Paid", "$40"]);
+    expect(api.appointmentStatusLabels({ status: "accepted", noShow: true, paymentStatus: "PAID IN CASH", paidMethod: "cash", amount: 65 })).toEqual(["No-show", "Paid · $65"]);
+    expect(api.appointmentStatusLabels({ status: "completed", paymentStatus: "PAID", paidMethod: "cash", amount: 65 })).toEqual(["Completed", "Paid · $65"]);
+    expect(api.appointmentStatusLabels({ status: "done", paymentStatus: "PAID", amount: 40 })).toEqual(["Done", "Paid · $40"]);
     expect(api.appointmentStatusLabels({ status: "rescheduled", paymentStatus: "PAY AT APPOINTMENT", amount: 28 })).toEqual(["Rescheduled", "Unpaid", "$28"]);
     expect(api.appointmentStatusParts({ status: "accepted", paymentStatus: "DEPOSIT PAID", depositPaid: true, amount: 120 }).payment).toBe("deposit");
-    expect(api.appointmentStatusLabels({ status: "accepted", paymentStatus: "DEPOSIT PAID", depositPaid: true, amount: 120 })).toEqual(["Deposit paid", "$120"]);
-    expect(api.appointmentStatusLabels({ status: "accepted", paymentStatus: "PAID", refundAmount: 20, amount: 65 })).toEqual(["Refunded", "$65"]);
+    expect(api.appointmentStatusLabels({ status: "accepted", paymentStatus: "DEPOSIT PAID", depositPaid: true, amount: 120 })).toEqual(["Deposit paid · $120"]);
+    expect(api.appointmentStatusLabels({ status: "accepted", paymentStatus: "DEPOSIT PAID", depositPaid: true, depositAmount: 36, amount: 120 })).toEqual(["Deposit paid · $36"]);
+    expect(api.appointmentStatusLabels({ status: "accepted", paymentStatus: "PAID", refundAmount: 20, amount: 65 })).toEqual(["Refunded · $45"]);
     const deposit = api.appointmentStatusChipsHtml({ status: "accepted", paymentStatus: "DEPOSIT PAID", paidMethod: "card", depositPaid: true, amount: 120 });
+    expect(deposit).toContain("Card (Stripe) · $120");
     expect(deposit.indexOf("sd-pay-card")).toBeLessThan(deposit.indexOf("$120"));
+    expect(deposit).not.toContain("text-slate-300");
     expect(deposit).not.toContain("Accepted");
+    const depositRecorded = api.appointmentStatusChipsHtml({ status: "accepted", paymentStatus: "DEPOSIT PAID", paidMethod: "card", depositPaid: true, depositAmount: 36, amount: 120 });
+    expect(depositRecorded).toContain('aria-label="Card (Stripe) · $36"');
+    expect(depositRecorded).not.toContain("$120");
+    expect(depositRecorded).not.toContain("text-slate-300");
+    const zelle = api.appointmentStatusChipsHtml({ status: "accepted", paymentStatus: "PAID ZELLE", paidMethod: "zelle", amount: 65 });
+    expect(zelle).toContain('aria-label="Zelle · $65"');
+    expect(zelle).toContain(">Zelle · $65<");
+    expect(zelle).not.toContain("text-slate-300");
+    const unpaidChip = api.appointmentStatusChipsHtml(elena);
+    expect(unpaidChip).toContain("Unpaid");
+    expect(unpaidChip).not.toContain("Unpaid ·");
+    expect(unpaidChip).toContain("$120");
+    const refunded = api.appointmentStatusChipsHtml({ status: "accepted", paymentStatus: "PAID", paidMethod: "cash", refundAmount: 20, amount: 65 });
+    expect(refunded).toContain(">In person / Cash · $45<");
+    expect(refunded).not.toContain("$65");
+    expect(refunded).not.toContain("text-slate-300");
+    const historyPaid = api.appointmentStatusChipsHtml({ status: "completed", paymentStatus: "PAID", paidMethod: "zelle", amount: 65 }, { priceHtml: "<span>$65</span>" });
+    expect(historyPaid).toContain(">Zelle · $65<");
+    expect(historyPaid).not.toContain("<span>$65</span>");
+    const historyUnpaid = api.appointmentStatusChipsHtml(elena, { priceHtml: "<span>$120</span>" });
+    expect(historyUnpaid).toContain("Unpaid");
+    expect(historyUnpaid).toContain("$120");
     const source = extractFunction(html, "appointmentStatusChipsHtml");
     expect(source.indexOf("appointmentRequestChipHtml")).toBeLessThan(source.indexOf("appointmentOutcomeChipHtml"));
     expect(source.indexOf("appointmentOutcomeChipHtml")).toBeLessThan(source.indexOf("appointmentPayMarkup"));
@@ -1550,9 +1578,9 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
         };
       });
       expect(Number(paidFlip.unpaid)).toBe(Number(paidFlip.unpaidBefore) - 1);
-      expect(paidFlip.pill).toContain("In person / Cash");
+      expect(paidFlip.pill).toContain("In person / Cash · $80");
       expect(paidFlip.pillClass).toContain("sd-pay-cash");
-      expect(paidFlip.maya).toContain("Card (Stripe)");
+      expect(paidFlip.maya).toContain("Card (Stripe) · $65");
       expect(paidFlip.chips.join(" ")).toMatch(/Card/);
       expect(paidFlip.chips.join(" ")).toMatch(/Cash App/);
       expect(paidFlip.chips.join(" ")).toMatch(/PayPal/);

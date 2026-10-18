@@ -619,7 +619,7 @@ html.schedi-light body.schedi-newdash #rosterApptModal .text-amber-400,
 html.schedi-light body.schedi-newdash #rosterApptModal .sd-pill-amber { color: #92400e !important; }
 #tenantPortalSection.schedi-newdash .sd-visit { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; padding: 8px 0; border-top: 1px solid var(--sd-line); }
 #tenantPortalSection.schedi-newdash .sd-visit p { margin: 0; min-width: 0; }
-#tenantPortalSection.schedi-newdash .sd-pay { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; border-radius: 999px; padding: 2px 8px; font-size: 11px; font-weight: 800; line-height: 1.3; border: 1px solid var(--sd-line); color: var(--sd-text); background: rgba(148, 163, 184, 0.14); }
+#tenantPortalSection.schedi-newdash .sd-pay { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; border-radius: 999px; padding: 2px 8px; font-size: 11px; font-weight: 800; line-height: 1.3; border: 1px solid var(--sd-line); color: var(--sd-text); background: rgba(148, 163, 184, 0.14); white-space: nowrap; }
 #tenantPortalSection.schedi-newdash .sd-pay svg { width: 14px; height: 14px; display: block; flex: none; }
 #tenantPortalSection.schedi-newdash .sd-pay-card { color: var(--sd-brand-2); border-color: rgba(16, 185, 129, 0.4); background: rgba(16, 185, 129, 0.14); }
 #tenantPortalSection.schedi-newdash .sd-pay-unpaid { color: var(--sd-rose); border-color: rgba(244, 63, 94, 0.35); background: rgba(244, 63, 94, 0.1); }
@@ -11711,9 +11711,37 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
             return '';
         }
 
+        // Recorded amount for a paid chip: deposit when that is the only payment, otherwise the
+        // appointment amount minus any refund. A mark-paid with no stored amount uses the catalog price.
+        function appointmentPaidChipMoney(app) {
+            if (bookingPaymentState(app) !== 'paid') return '';
+            var status = String((app && app.paymentStatus) || '').toUpperCase();
+            var refundMarked = !!(app && (app.refunded === true || status.indexOf('REFUND') !== -1));
+            var refundRaw = app && (hasPricedAmount(app.refundAmount) ? app.refundAmount : app.amountRefunded);
+            var deposit = app ? Number(app.depositAmount) : NaN;
+            var depositOnly = !!(app && app.depositPaid === true && isFinite(deposit) && deposit > 0 && status.indexOf('DEPOSIT') !== -1);
+            var gross = null;
+            if (depositOnly) gross = roundMoney(deposit);
+            else if (app && hasPricedAmount(app.amount)) gross = roundMoney(app.amount);
+            else if (typeof rosterAmountCollected === 'function') {
+                var tenant = null;
+                try { tenant = (typeof getTenant === 'function') ? getTenant() : null; } catch (errTenant) { tenant = null; }
+                var row = rosterAmountCollected(app, tenant);
+                if (row && !row.empty) return formatBookingAmountLabel(row.net);
+                return '';
+            }
+            if (gross === null) return '';
+            var refund = hasPricedAmount(refundRaw) ? roundMoney(refundRaw) : (refundMarked ? gross : 0);
+            return formatBookingAmountLabel(roundMoney(Math.max(0, gross - refund)));
+        }
+
         function appointmentPayMarkup(app, iconOnly) {
             var kind = appointmentPayKind(app);
             var label = ROSTER_PAY_WORDS[kind] || ROSTER_PAY_WORDS.unpaid;
+            if (kind !== 'unpaid') {
+                var money = appointmentPaidChipMoney(app);
+                if (money) label = label + ' · ' + money;
+            }
             return '<span class="sd-pay sd-pay-' + kind + (iconOnly ? ' is-icon' : '') + '" title="' + esc(label) + '" aria-label="' + esc(label) + '">' +
                 payKindSvg(kind) + '<span class="sd-pay-word">' + esc(label) + '</span></span>';
         }
@@ -13471,9 +13499,12 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
             var order = [];
             if (parts.request && requestWords[parts.request]) order.push(requestWords[parts.request]);
             (parts.outcomes || []).forEach(function (kind) { if (outcomeWords[kind]) order.push(outcomeWords[kind]); });
-            if (opts.payment !== false && parts.showPayment && paymentWords[parts.payment]) order.push(paymentWords[parts.payment]);
-            if (opts.priceHtml) order.push(String(opts.priceText || ''));
-            else if (opts.price !== false && parts.showPrice) {
+            var paidMoney = (opts.payment !== false && parts.showPayment && parts.payment && parts.payment !== 'unpaid') ? appointmentPaidChipMoney(app) : '';
+            if (opts.payment !== false && parts.showPayment && paymentWords[parts.payment]) {
+                order.push(paymentWords[parts.payment] + (paidMoney ? (' · ' + paidMoney) : ''));
+            }
+            if (!paidMoney && opts.priceHtml) order.push(String(opts.priceText || ''));
+            else if (!paidMoney && opts.price !== false && parts.showPrice) {
                 var price = appointmentStatusPriceHtml(app);
                 if (price) order.push('$' + (Number(app.amount) || 0));
             }
@@ -13491,8 +13522,9 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
                 if (chip) bits.push(chip);
             });
             if (opts.payment !== false && parts.showPayment) bits.push(appointmentPayMarkup(app, !!opts.iconOnly));
-            if (opts.priceHtml) bits.push(opts.priceHtml);
-            else if (opts.price !== false && parts.showPrice) {
+            var paidMoney = (opts.payment !== false && parts.showPayment && parts.payment && parts.payment !== 'unpaid') ? appointmentPaidChipMoney(app) : '';
+            if (!paidMoney && opts.priceHtml) bits.push(opts.priceHtml);
+            else if (!paidMoney && opts.price !== false && parts.showPrice) {
                 var price = appointmentStatusPriceHtml(app);
                 if (price) bits.push(price);
             }
