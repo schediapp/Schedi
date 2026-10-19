@@ -193,11 +193,15 @@ html.schedi-light.schedi-newhq #hq-theme{background:#ffffff;color:#0f172a;border
 </form>
 <script>
 (function () {
-  var on = false;
+  var on = true;
   try {
-    var flag = new URLSearchParams(location.search || '').get('newhq');
-    on = flag === '1' || flag === 'true' || flag === 'on';
-  } catch (errFlag) { on = false; }
+    var q = new URLSearchParams(location.search || '');
+    var flag = q.get('newhq');
+    var classic = q.get('classichq');
+    if (flag === '0' || flag === 'false' || flag === 'off') on = false;
+    if (flag === '1' || flag === 'true' || flag === 'on') on = true;
+    if (classic === '1' || classic === 'true' || classic === 'on') on = false;
+  } catch (errFlag) { on = true; }
   if (!on) return;
   document.documentElement.classList.add('schedi-newhq');
   var link = document.createElement('link');

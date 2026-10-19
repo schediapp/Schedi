@@ -7,11 +7,14 @@
     <script>
     (function () {
         var demo = false;
-        var hq = false;
+        var hq = true;
         try {
             var q = new URLSearchParams(location.search || '');
             var flag = q.get('newhq');
-            hq = flag === '1' || flag === 'true' || flag === 'on';
+            var classic = q.get('classichq');
+            if (flag === '0' || flag === 'false' || flag === 'off') hq = false;
+            if (flag === '1' || flag === 'true' || flag === 'on') hq = true;
+            if (classic === '1' || classic === 'true' || classic === 'on') hq = false;
             var host = String(location.hostname || '').toLowerCase().replace(/\.$/, '');
             demo = q.get('demo') === '1' && host !== 'schedi.app' && host !== 'www.schedi.app';
         } catch (errFlag) {}
@@ -811,7 +814,11 @@ html.schedi-light.schedi-newhq #hqDash {
     --hqd-rose: #be123c;
     --hqd-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
 }
+html.schedi-newhq #agencyHqSection:has(#hqDash),
 html.schedi-newhq #agencyHqSection:has(.hq-dash-on) { padding: 0 !important; min-height: 100vh; }
+html.schedi-newhq #agencyHqSection:has(#hqDash) #hqNewSidebar,
+html.schedi-newhq #agencyHqSection:has(#hqDash) #hqNewTop,
+html.schedi-newhq #agencyHqSection:has(#hqDash) #hqNewTabs { display: none !important; }
 html.schedi-newhq #agencyMasterDashboard.hq-dash-on #hqGlanceCard,
 html.schedi-newhq #agencyMasterDashboard.hq-dash-on #agencyDirectory,
 html.schedi-newhq #agencyMasterDashboard.hq-dash-on #agencyBilling,
@@ -971,13 +978,19 @@ html.schedi-newhq #editTenantModal > .glass-card {
     display: flex; flex-direction: column; overflow: hidden; padding: 0 !important; border-radius: 24px 24px 0 0 !important;
     animation: none; transform: none;
 }
-html.schedi-newhq #editTenantModal > .glass-card > div:first-of-type { flex: none; align-items: flex-start; gap: 12px; margin: 0; padding: 14px 12px 10px 20px; }
-html.schedi-newhq #editTenantModal > .glass-card > div:first-of-type > button {
+html.schedi-newhq #editTenantModal > .glass-card > div:first-of-type,
+html.schedi-newhq #provisionModal > .glass-card > div:first-of-type { flex: none; align-items: flex-start; gap: 12px; margin: 0; padding: 14px 12px 10px 20px; }
+html.schedi-newhq #editTenantModal > .glass-card > div:first-of-type > h3,
+html.schedi-newhq #provisionModal > .glass-card > div:first-of-type > h3 { min-width: 0; overflow-wrap: anywhere; }
+html.schedi-newhq #editTenantModal > .glass-card > div:first-of-type > button,
+html.schedi-newhq #provisionModal > .glass-card > div:first-of-type > button {
     width: 48px; height: 48px; min-width: 48px; min-height: 48px; padding: 0; border: 0; border-radius: 999px;
     background: #1e293b; color: #e2e8f0; display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto;
 }
-html.schedi-newhq #editTenantModal > .glass-card > div:first-of-type > button i { font-size: 22px; line-height: 1; pointer-events: none; }
-html.schedi-light.schedi-newhq #editTenantModal > .glass-card > div:first-of-type > button { background: #f1f5f9; color: #0f172a; border: 1px solid #cbd5e1; }
+html.schedi-newhq #editTenantModal > .glass-card > div:first-of-type > button i,
+html.schedi-newhq #provisionModal > .glass-card > div:first-of-type > button i { font-size: 22px; line-height: 1; pointer-events: none; }
+html.schedi-light.schedi-newhq #editTenantModal > .glass-card > div:first-of-type > button,
+html.schedi-light.schedi-newhq #provisionModal > .glass-card > div:first-of-type > button { background: #f1f5f9; color: #0f172a; border: 1px solid #cbd5e1; }
 html.schedi-newhq #editTenantModal > .glass-card > form { overflow: auto; margin: 0; padding: 12px 20px calc(24px + env(safe-area-inset-bottom, 0px)); }
 html.schedi-newhq #editTenantModal label.hqd-switch-row {
     display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 56px;
@@ -2280,7 +2293,7 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
         <div class="max-w-lg w-full glass-card rounded-2xl p-5 sm:p-6 space-y-4 fade-in my-4 min-w-0">
             <div class="flex justify-between items-center border-b border-slate-800 pb-3">
                 <h3 class="text-lg font-bold text-white">Provision New Client Business Site</h3>
-                <button type="button" onclick="closeProvisionModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+                <button type="button" class="hqd-close" onclick="closeProvisionModal()" aria-label="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
             </div>
             <form onsubmit="handleProvisionSubmit(event)" class="space-y-3 text-xs">
                 <div>
@@ -2353,7 +2366,7 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
         <div class="max-w-lg w-full glass-card rounded-2xl p-5 sm:p-6 space-y-4 fade-in my-4 min-w-0">
             <div class="flex justify-between items-center border-b border-slate-800 pb-3">
                 <h3 class="text-lg font-bold text-white">Edit Business Owner Profile & Subscription</h3>
-                <button type="button" onclick="closeEditTenantModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+                <button type="button" class="hqd-close" onclick="closeEditTenantModal()" aria-label="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
             </div>
             <form onsubmit="handleEditTenantSubmit(event)" class="space-y-3 text-xs">
                 <input type="hidden" id="editTenantId">
@@ -3778,12 +3791,19 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
             });
         }
         window.hqNewGo = function (id) {
+            var dash = document.getElementById('hqDash');
+            var map = { hqGlanceCard: 'overview', agencyDirectory: 'directory', agencyBilling: 'billing', agencyEmail: 'email' };
+            if (dash && !dash.hidden && map[id] && window.hqDashGo) {
+                window.hqDashGo(map[id]);
+                return;
+            }
             var el = document.getElementById(id);
             if (el && el.scrollIntoView) el.scrollIntoView({ block: 'start' });
             hqSetNavOn(id);
         };
         function hqInitScrollSpy() {
             if (!document.documentElement.classList.contains('schedi-newhq') || window.__hqScrollSpyOn) return;
+            if (document.getElementById('hqDash')) return;
             var ids = ['hqGlanceCard', 'agencyDirectory', 'agencyBilling', 'agencyEmail'];
             var sections = ids.map(function (id) { return document.getElementById(id); }).filter(Boolean);
             if (!sections.length || typeof IntersectionObserver !== 'function') return;
@@ -6288,6 +6308,11 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
         window.hqBackToDirectory = function() {
             switchPlatformMode('agency');
             setTimeout(function () {
+                var dash = document.getElementById('hqDash');
+                if (dash && !dash.hidden && window.hqDashGo) {
+                    window.hqDashGo('directory');
+                    return;
+                }
                 var grid = document.getElementById('agencyTenantGrid');
                 if (grid && grid.scrollIntoView) grid.scrollIntoView({ block: 'start' });
             }, 60);
@@ -6664,6 +6689,7 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
         }
         window.hqDashGo = function (id) {
             if (id !== 'overview' && id !== 'directory' && id !== 'billing' && id !== 'email') return;
+            if (window.__hqDashView && window.__hqDashView !== id && window.hqDashCloseSheet) window.hqDashCloseSheet();
             window.__hqDashView = id;
             hqDashShow();
             try { window.scrollTo(0, 0); } catch (errTop) {}
@@ -6940,7 +6966,7 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
             }
 
             if (loginBox) loginBox.classList.add('hidden');
-            if (dashboard) dashboard.classList.remove('hidden');
+            if (dashboard && document.documentElement.classList.contains('schedi-newhq')) dashboard.classList.add('hq-dash-on');
             syncPublicHomeFooter();
 
             const totalSites = platformState.tenants.length;
@@ -6968,6 +6994,7 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
             const grid = document.getElementById('agencyTenantGrid');
             if (grid) hqDirRender(grid);
             try { hqDashPaint(); } catch (errDash) { console.error(errDash); }
+            if (dashboard) dashboard.classList.remove('hidden');
         }
 
         // ---- HQ client directory: search / sort / filters / tags / health ----
@@ -15968,7 +15995,7 @@ function paintBizHeader() {
             for (var day = 1; day <= days; day++) {
                 var iso = customViewYear + '-' + String(customViewMonth + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
                 var isFirst = iso === selectedDateStr;
-                var isPicked = !!customDates[iso];
+                var isPicked = Object.prototype.hasOwnProperty.call(customDates, iso);
                 var resolved = resolveHoursForDate(tenantData, iso);
                 var closed = resolved.closed || !!isDateFullyBlocked(iso);
                 var disabled = iso <= today && !isPicked || isFirst || (closed && !isPicked) || (full && !isPicked) || iso < selectedDateStr;
