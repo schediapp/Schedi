@@ -4,6 +4,35 @@
 <!-- schedi-deploy 7c4a91e0-no-store-html stale-first-paint-fix -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <script>
+    (function () {
+        var demo = false;
+        var hq = false;
+        try {
+            var q = new URLSearchParams(location.search || '');
+            var flag = q.get('newhq');
+            hq = flag === '1' || flag === 'true' || flag === 'on';
+            var host = String(location.hostname || '').toLowerCase().replace(/\.$/, '');
+            demo = q.get('demo') === '1' && host !== 'schedi.app' && host !== 'www.schedi.app';
+        } catch (errFlag) {}
+        if (hq) document.documentElement.classList.add('schedi-newhq');
+        if (!demo) return;
+        window.__SCHEDI_HQ_DEMO = true;
+        document.documentElement.classList.add('schedi-hq-demo');
+        window.__schediHqDemoBlocked = [];
+        function block(url, method) {
+            try { window.__schediHqDemoBlocked.push({ url: String(url || ''), method: String(method || 'GET') }); } catch (errNote) {}
+        }
+        window.fetch = function (input, init) {
+            var url = typeof input === 'string' ? input : (input && input.url) || '';
+            var method = (init && init.method) || (input && input.method) || 'GET';
+            block(url, method);
+            return Promise.resolve(new Response(JSON.stringify({ ok: false, demo: true }), { status: 403, headers: { 'content-type': 'application/json' } }));
+        };
+        if (navigator.sendBeacon) navigator.sendBeacon = function (url) { block(url, 'BEACON'); return true; };
+        window.WebSocket = function (url) { block(url, 'WS'); return { close: function () {}, send: function () {}, addEventListener: function () {}, readyState: 3 }; };
+    })();
+    </script>
     <title>Schedi</title>
     <link rel="icon" href="/assets/homescreen-icon.png" type="image/png">
     <link rel="shortcut icon" href="/assets/homescreen-icon.png" type="image/png">
@@ -117,8 +146,13 @@
         .hq-stat { background: rgba(15,23,42,.8); border: 1px solid #1e293b; border-radius: 10px; padding: 6px 2px; }
         .hq-stat div { font-weight: 800; color: #fff; font-size: 13px; }
         .hq-stat span { display: block; font-size: 9px; color: #94a3b8; text-transform: uppercase; letter-spacing: .05em; }
-        .hq-collapse-btn { margin-left: auto; width: 32px; height: 32px; border-radius: 10px; color: #94a3b8; border: 1px solid #334155; background: rgba(15,23,42,.6); flex-shrink: 0; }
+        #agencyHqSection [data-hq-collapse-head] { display: flex; flex-direction: row; flex-wrap: nowrap; align-items: flex-start; justify-content: flex-start; gap: 8px; min-width: 0; }
+        #agencyHqSection .hq-card-main { flex: 1 1 auto; min-width: 0; display: flex; align-items: flex-start; gap: 12px; }
+        #agencyHqSection .hq-card-icon { flex-shrink: 0; }
+        #agencyHqSection .hq-card-copy { min-width: 0; flex: 1 1 auto; }
+        .hq-collapse-btn { margin-left: auto; align-self: flex-start; display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; min-width: 44px; min-height: 44px; flex: 0 0 44px; padding: 0; border-radius: 10px; color: #f8fafc; border: 1px solid #64748b; background: #1e293b; cursor: pointer; }
         .hq-collapse-btn i { transition: transform .15s; }
+        .hq-collapse-btn:focus-visible { outline: 2px solid #10b981; outline-offset: 2px; }
         html.schedi-light .hq-table th { color: #475569; border-color: #e2e8f0; }
         html.schedi-light .hq-table td { border-color: #e2e8f0; }
         html.schedi-light .hq-table tbody tr:hover { background: #f8fafc; }
@@ -126,7 +160,48 @@
         html.schedi-light .hq-stat div { color: #0f172a; }
         html.schedi-light .hq-stat span { color: #475569; }
         html.schedi-light .hq-warn { color: #b91c1c; }
-        html.schedi-light .hq-collapse-btn { background: #fff; border-color: #cbd5e1; color: #475569; }
+        html.schedi-light .hq-collapse-btn { background: #fff !important; border-color: #64748b !important; color: #0f172a !important; }
+        #agencyHqSection .hq-glance-head { display: flex; flex-direction: column; gap: 4px; min-width: 0; cursor: pointer; }
+        #agencyHqSection .hq-glance-title-row { display: flex; flex-direction: row; align-items: center; gap: 8px; min-width: 0; position: relative; padding-right: 52px; }
+        #agencyHqSection .hq-glance-title-row h2 { flex: 1 1 auto; min-width: 0; margin: 0; line-height: 1.25; }
+        #agencyHqSection .hq-glance-title-row > .hq-collapse-btn { position: absolute; right: 0; top: 50%; margin-left: 0; transform: translateY(-50%); z-index: 1; }
+        #agencyHqSection .hq-glance-summary { margin: 0; padding-right: 52px; font-size: 13px; line-height: 1.35; color: #e2e8f0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #agencyHqSection .hq-glance-summary[hidden] { display: none !important; }
+        #agencyHqSection .hq-glance-body { display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 12px; }
+        #agencyHqSection .hq-glance-body[hidden] { display: none !important; }
+        #agencyHqSection .hq-glance-row { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 8px 10px; border-radius: 12px; background: rgba(15,23,42,.72); border: 1px solid #334155; }
+        #agencyHqSection .hq-glance-ico { width: 36px; height: 36px; flex: 0 0 36px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; font-size: 15px; }
+        #agencyHqSection .hq-glance-meta { min-width: 0; }
+        #agencyHqSection .hq-glance-label { display: block; font-size: 10px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: #94a3b8; }
+        #agencyHqSection .hq-glance-value { font-size: 20px; font-weight: 800; line-height: 1.2; color: #f8fafc; }
+        #agencyHqSection .hq-glance-sub { display: block; font-size: 11px; font-weight: 600; }
+        #agencyHqSection .hq-glance-ico-sites { background: rgba(16,185,129,.12); color: #34d399; }
+        #agencyHqSection .hq-glance-sub-sites { color: #34d399; }
+        #agencyHqSection .hq-glance-ico-mrr { background: rgba(56,189,248,.12); color: #38bdf8; }
+        #agencyHqSection .hq-glance-sub-mrr { color: #38bdf8; }
+        #agencyHqSection .hq-glance-ico-books { background: rgba(99,102,241,.14); color: #a5b4fc; }
+        #agencyHqSection .hq-glance-sub-books { color: #a5b4fc; }
+        #agencyHqSection .hq-glance-ico-live { background: rgba(251,191,36,.12); color: #fbbf24; }
+        #agencyHqSection .hq-glance-sub-live { color: #fbbf24; }
+        @media (min-width: 860px) {
+            #agencyHqSection .hq-glance-body { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+        }
+        html.schedi-light #agencyHqSection .hq-glance-summary { color: #334155 !important; }
+        html.schedi-light #agencyHqSection .hq-glance-row { background: #f8fafc; border-color: #cbd5e1; }
+        html.schedi-light #agencyHqSection .hq-glance-label { color: #475569; }
+        html.schedi-light #agencyHqSection .hq-glance-value { color: #0f172a !important; }
+        html.schedi-light #agencyHqSection .hq-glance-ico-sites,
+        html.schedi-light #agencyHqSection .hq-glance-sub-sites { color: #047857; }
+        html.schedi-light #agencyHqSection .hq-glance-ico-sites { background: #ecfdf5; }
+        html.schedi-light #agencyHqSection .hq-glance-ico-mrr,
+        html.schedi-light #agencyHqSection .hq-glance-sub-mrr { color: #0369a1; }
+        html.schedi-light #agencyHqSection .hq-glance-ico-mrr { background: #f0f9ff; }
+        html.schedi-light #agencyHqSection .hq-glance-ico-books,
+        html.schedi-light #agencyHqSection .hq-glance-sub-books { color: #4338ca; }
+        html.schedi-light #agencyHqSection .hq-glance-ico-books { background: #eef2ff; }
+        html.schedi-light #agencyHqSection .hq-glance-ico-live,
+        html.schedi-light #agencyHqSection .hq-glance-sub-live { color: #b45309; }
+        html.schedi-light #agencyHqSection .hq-glance-ico-live { background: #fffbeb; }
 <!-- SCHEDI_HQ_END -->
         html.schedi-light .text-emerald-200, html.schedi-light .text-emerald-300, html.schedi-light .text-emerald-400, html.schedi-light .text-emerald-500 { color: #047857 !important; }
         html.schedi-light .text-amber-200, html.schedi-light .text-amber-300, html.schedi-light .text-amber-400, html.schedi-light .text-amber-500,
@@ -413,6 +488,616 @@
         html.schedi-light #navModeAgency.bg-slate-800 { background-color: #e2e8f0 !important; }
         <!-- SCHEDI_HQ_END -->
     </style>
+    <style id="schedi-hq-frame">
+        html.schedi-newhq {
+            --hq-bg: #06080d;
+            --hq-panel: #121826;
+            --hq-panel-2: #0c1018;
+            --hq-line: rgba(148, 163, 184, 0.18);
+            --hq-text: #e7edf5;
+            --hq-muted: #94a3b8;
+            --hq-brand: #10b981;
+            --hq-ink: #022c22;
+        }
+        html.schedi-light.schedi-newhq {
+            --hq-bg: #f4f7fb;
+            --hq-panel: #ffffff;
+            --hq-panel-2: #f8fafc;
+            --hq-line: #d7dee8;
+            --hq-text: #0f172a;
+            --hq-muted: #475569;
+            --hq-brand: #059669;
+            --hq-ink: #ffffff;
+        }
+        html.schedi-newhq body { background: var(--hq-bg); color: var(--hq-text); }
+        html.schedi-newhq body > header,
+        html.schedi-newhq #publicHomeFooter { display: none !important; }
+        html.schedi-newhq main { max-width: none !important; width: 100% !important; margin: 0 !important; padding: 0 !important; }
+        #hqNewSidebar, #hqNewTop, #hqNewTabs { display: none; }
+        html.schedi-newhq #hqNewSidebar,
+        html.schedi-newhq #hqNewTop,
+        html.schedi-newhq #hqNewTabs { margin: 0 !important; }
+        html.schedi-newhq #hqGlanceCard,
+        html.schedi-newhq #agencyDirectory,
+        html.schedi-newhq #agencyBilling,
+        html.schedi-newhq #agencyEmail { scroll-margin-top: 80px; }
+        html.schedi-newhq #hqNewSidebar {
+            display: flex;
+            position: fixed;
+            z-index: 40;
+            left: 0; top: 0; bottom: 0;
+            width: 244px;
+            flex-direction: column;
+            gap: 4px;
+            padding: 18px 14px 16px;
+            background: var(--hq-panel);
+            border-right: 1px solid var(--hq-line);
+        }
+        html.schedi-newhq #hqNewTop {
+            display: flex;
+            position: fixed;
+            z-index: 41;
+            top: 0; left: 244px; right: 0;
+            height: 64px;
+            align-items: center;
+            gap: 12px;
+            padding: 0 18px;
+            background: var(--hq-panel);
+            border-bottom: 1px solid var(--hq-line);
+        }
+        html.schedi-newhq #agencyHqSection { min-height: 100vh; padding: 84px 28px 48px 268px; animation: none; transform: none; }
+        html.schedi-newhq #agencyMasterDashboard:not(.hidden) { display: flex; flex-direction: column; }
+        html.schedi-newhq #hqGlanceCard { order: 1; }
+        html.schedi-newhq #agencyDirectory { order: 2; }
+        html.schedi-newhq #agencyBilling { order: 3; }
+        html.schedi-newhq #agencyEmail { order: 4; }
+        html.schedi-newhq .hq-brand { font-weight: 800; letter-spacing: -0.03em; font-size: 1.15rem; color: var(--hq-text); }
+        html.schedi-newhq .hq-kicker { margin: 14px 8px 6px; font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--hq-brand); }
+        html.schedi-newhq .hq-nav-btn {
+            display: flex; align-items: center; gap: 10px;
+            width: 100%; min-height: 44px; padding: 0 12px;
+            border: 0; border-radius: 12px;
+            background: transparent; color: var(--hq-muted);
+            font-weight: 700; text-align: left; cursor: pointer;
+        }
+        html.schedi-newhq .hq-nav-btn.is-on,
+        html.schedi-newhq .hq-nav-btn:hover { background: color-mix(in srgb, var(--hq-brand) 14%, transparent); color: var(--hq-text); }
+        html.schedi-newhq #hqNewTop .hq-brand { white-space: nowrap; flex: 0 0 auto; }
+        html.schedi-newhq #hqDemoNote {
+            margin-right: auto; min-width: 0;
+            font-size: 13px; font-weight: 700; line-height: 1.2; color: var(--hq-muted);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .hq-demo-short { display: none; }
+        html.schedi-newhq #hqNewTheme {
+            margin-left: auto; min-height: 40px; padding: 0 12px;
+            border-radius: 12px; border: 1px solid var(--hq-line);
+            background: var(--hq-panel-2); color: var(--hq-text); font-weight: 700;
+        }
+        html.schedi-newhq #agencyMasterDashboard .glass-card,
+        html.schedi-newhq #editTenantModal .glass-card,
+        html.schedi-newhq #provisionModal .glass-card {
+            background: var(--hq-panel) !important;
+            color: var(--hq-text);
+            border: 1px solid var(--hq-line) !important;
+            border-radius: 20px !important;
+            box-shadow: none !important;
+            backdrop-filter: none !important;
+        }
+        html.schedi-newhq #agencyStats { gap: 12px; }
+        html.schedi-newhq #agencyStats > div {
+            background: var(--hq-panel);
+            border: 1px solid var(--hq-line) !important;
+            border-left-width: 1px !important;
+            border-radius: 20px;
+            box-shadow: none;
+            min-width: 0;
+        }
+        html.schedi-newhq #agencyStats > div > div:first-child { min-width: 0; }
+        .hq-label-short { display: none; }
+        html.schedi-newhq #agencyStats .hq-label-full { display: none; }
+        html.schedi-newhq #agencyStats .hq-label-short { display: inline; white-space: nowrap; }
+        html.schedi-newhq #agencyStats span.uppercase { letter-spacing: 0.04em; white-space: nowrap; }
+        html.schedi-newhq #agencyStats .hq-sub .hq-label-full { display: inline; }
+        html.schedi-newhq #agencyStats .hq-sub .hq-label-short { display: none; }
+        html.schedi-newhq #agencyStats .hq-sub { display: block; white-space: normal; }
+        html.schedi-newhq #agencyStats .text-2xl { letter-spacing: -0.03em; }
+        html.schedi-newhq #agencyStripeStatusBadge { white-space: nowrap; flex-shrink: 0; }
+        html.schedi-newhq #agencyMasterDashboard h2 { letter-spacing: -0.03em; }
+        html.schedi-newhq #agencyMasterDashboard .glass-input,
+        html.schedi-newhq #editTenantModal .glass-input,
+        html.schedi-newhq #provisionModal .glass-input {
+            background: var(--hq-panel-2);
+            border: 1px solid var(--hq-line);
+            border-radius: 12px;
+            min-height: 44px;
+            color: var(--hq-text);
+        }
+        html.schedi-newhq #agencyMasterDashboard button,
+        html.schedi-newhq #editTenantModal button,
+        html.schedi-newhq #provisionModal button { min-height: 44px; border-radius: 12px; }
+        html.schedi-newhq #agencyMasterDashboard button.bg-gradient-to-r,
+        html.schedi-newhq #agencyMasterDashboard button[type="submit"],
+        html.schedi-newhq #editTenantModal button[type="submit"],
+        html.schedi-newhq #provisionModal button[type="submit"] {
+            background: var(--hq-brand) !important;
+            color: var(--hq-ink) !important;
+            box-shadow: none !important;
+        }
+        html.schedi-newhq .hq-dir-scroll { max-width: 100%; overflow-x: auto; }
+        html.schedi-newhq .hq-table { table-layout: auto; width: 100%; max-width: 100%; border-collapse: collapse; border-spacing: 0; }
+        html.schedi-newhq .hq-table th { color: var(--hq-muted); border-color: var(--hq-line); font-size: 11px; letter-spacing: 0.04em; white-space: nowrap; padding: 8px 6px; text-align: left; }
+        html.schedi-newhq .hq-table td { border-color: var(--hq-line); padding: 8px 6px; overflow: visible; text-align: left; }
+        html.schedi-newhq .hq-table th.hq-col-biz,
+        html.schedi-newhq .hq-table td.hq-col-biz { text-align: left; padding-left: 0; }
+        html.schedi-newhq .hq-table tbody tr:hover { background: color-mix(in srgb, var(--hq-brand) 8%, transparent); }
+        html.schedi-newhq #agencyDirectory { padding: 20px 16px; }
+        html.schedi-newhq .hq-table .hq-clip {
+            display: block; width: max-content; max-width: none;
+            overflow: visible; text-overflow: clip; white-space: nowrap;
+            word-break: normal; overflow-wrap: normal;
+        }
+        html.schedi-newhq .hq-table .hq-plan-detail {
+            width: auto; max-width: 10.5rem; white-space: normal;
+        }
+        html.schedi-newhq .hq-table div.hq-comp { display: inline-flex; width: auto; max-width: none; white-space: nowrap; }
+        html.schedi-newhq .hq-col-status,
+        html.schedi-newhq .hq-col-extra,
+        html.schedi-newhq .hq-col-last,
+        html.schedi-newhq .hq-col-health { width: 1%; white-space: nowrap; }
+        html.schedi-newhq .hq-col-actions { width: 1%; white-space: nowrap; }
+        html.schedi-newhq .hq-table th.hq-col-actions,
+        html.schedi-newhq .hq-table td.hq-col-actions { text-align: right; }
+        html.schedi-newhq .hq-col-actions .flex { flex-wrap: nowrap; justify-content: flex-end; align-items: center; width: auto; gap: 6px; }
+        html.schedi-newhq .hq-table button,
+        html.schedi-newhq .hq-table a { min-height: 32px; }
+        html.schedi-newhq .hq-more { position: relative; display: inline-flex; vertical-align: middle; }
+        html.schedi-newhq .hq-more > summary {
+            list-style: none;
+            width: 32px; height: 32px; min-height: 32px;
+            border-radius: 10px;
+            border: 1px solid var(--hq-line);
+            background: var(--hq-panel-2);
+            color: var(--hq-text);
+            display: inline-flex; align-items: center; justify-content: center;
+            cursor: pointer; font-weight: 800; line-height: 1; letter-spacing: 0;
+        }
+        html.schedi-newhq .hq-more > summary::-webkit-details-marker,
+        html.schedi-newhq .hq-more > summary::marker { display: none; content: ""; }
+        html.schedi-newhq .hq-more-menu {
+            position: fixed; z-index: 80; left: 0; top: 0; visibility: hidden;
+            min-width: 188px; max-height: min(320px, calc(100vh - 96px));
+            overflow: auto; padding: 6px; border-radius: 14px;
+            border: 1px solid var(--hq-line); background: var(--hq-panel);
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
+        }
+        html.schedi-newhq .hq-more-menu button,
+        html.schedi-newhq .hq-more-menu a {
+            display: flex; align-items: center; gap: 8px;
+            width: 100%; min-height: 36px; text-align: left;
+            background: transparent; border: 0; color: var(--hq-text);
+            border-radius: 10px; padding: 8px 10px;
+            font-size: 13px; font-weight: 700; cursor: pointer; text-decoration: none;
+        }
+        html.schedi-newhq .hq-more-menu button:hover,
+        html.schedi-newhq .hq-more-menu a:hover { background: color-mix(in srgb, var(--hq-brand) 12%, transparent); }
+        html.schedi-newhq .hq-more-menu .hq-more-danger { color: #fb7185; }
+        html.schedi-light.schedi-newhq .hq-more-menu .hq-more-danger { color: #dc2626; }
+        html.schedi-light.schedi-newhq .hq-more-menu .hq-more-danger:hover { background: #fef2f2; color: #dc2626; }
+        @media (max-width: 1099px) {
+            html.schedi-newhq .hq-col-extra { display: none; }
+        }
+        html.schedi-newhq .hq-badge { border-radius: 999px; padding: 3px 8px; }
+        html.schedi-newhq .hq-stat { background: var(--hq-panel-2); border-color: var(--hq-line); border-radius: 12px; }
+        html.schedi-newhq .hq-stat > div { white-space: nowrap; }
+        html.schedi-newhq .hq-empty {
+            border: 0 !important;
+            background: transparent !important;
+            text-align: left;
+            padding: 4px 0 !important;
+            color: var(--hq-muted) !important;
+        }
+        span.hq-comp { display: none; }
+        html.schedi-newhq div.hq-comp,
+        html.schedi-newhq span.hq-comp {
+            display: inline-flex;
+            margin-top: 4px;
+            padding: 2px 8px;
+            border-radius: 999px;
+            background: color-mix(in srgb, var(--hq-brand) 16%, transparent);
+            color: var(--hq-brand) !important;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+        html.schedi-newhq #editTenantModal,
+        html.schedi-newhq #provisionModal { background: rgba(6, 8, 13, 0.72); backdrop-filter: none; }
+        html.schedi-light.schedi-newhq #editTenantModal,
+        html.schedi-light.schedi-newhq #provisionModal { background: rgba(15, 23, 42, 0.35); }
+        @media (max-width: 800px) {
+            html.schedi-newhq #hqNewSidebar { display: none; }
+            html.schedi-newhq #hqNewTop { left: 0; gap: 8px; padding: 0 12px; }
+            html.schedi-newhq #hqNewTop .hq-brand { font-size: 1rem; }
+            html.schedi-newhq #hqDemoNote { font-size: 12px; }
+            html.schedi-newhq .hq-demo-full { display: none; }
+            html.schedi-newhq .hq-demo-short { display: inline; }
+            html.schedi-newhq #hqNewTabs {
+                display: flex;
+                position: fixed;
+                z-index: 42;
+                left: 0; right: 0; bottom: 0;
+                height: 64px;
+                align-items: stretch;
+                justify-content: space-around;
+                background: var(--hq-panel);
+                border-top: 1px solid var(--hq-line);
+                padding-bottom: env(safe-area-inset-bottom);
+            }
+            html.schedi-newhq #hqNewTabs button {
+                flex: 1;
+                border: 0;
+                background: transparent;
+                color: var(--hq-muted);
+                font-size: 11px;
+                font-weight: 800;
+            }
+            html.schedi-newhq #hqNewTabs button.is-on { color: var(--hq-brand); }
+            html.schedi-newhq #agencyHqSection { padding: 76px 16px 96px; }
+            html.schedi-newhq #agencyDirectory [data-hq-collapse-head],
+            html.schedi-newhq #agencyBilling [data-hq-collapse-head],
+            html.schedi-newhq #agencyEmail [data-hq-collapse-head] { position: relative; }
+            html.schedi-newhq #agencyDirectory .hq-card-copy > h2,
+            html.schedi-newhq #agencyDirectory .hq-card-copy > p,
+            html.schedi-newhq #agencyBilling .hq-card-copy,
+            html.schedi-newhq #agencyEmail .hq-card-copy { padding-right: 52px; }
+            html.schedi-newhq #agencyDirectory .hq-card-copy > h2,
+            html.schedi-newhq #agencyBilling .hq-card-copy > h2,
+            html.schedi-newhq #agencyEmail .hq-card-copy > h2 { margin: 0; line-height: 1.75rem; }
+            html.schedi-newhq #agencyDirectory .hq-card-copy > p,
+            html.schedi-newhq #agencyBilling .hq-card-copy > p,
+            html.schedi-newhq #agencyEmail .hq-card-copy > p { margin-top: 2px; }
+            html.schedi-newhq #agencyDirectory .hq-collapse-btn,
+            html.schedi-newhq #agencyBilling .hq-collapse-btn,
+            html.schedi-newhq #agencyEmail .hq-collapse-btn {
+                position: absolute;
+                right: 0;
+                top: 0;
+                margin-left: 0;
+                z-index: 1;
+                transform: translateY(calc(0.875rem - 50%));
+            }
+            html.schedi-newhq #agencyDirectory [data-hq-collapse-tools] {
+                flex-direction: column;
+                align-items: flex-start;
+                width: 100%;
+            }
+            html.schedi-newhq #agencyDirectory #agencySearchInput {
+                width: 100%;
+                max-width: none;
+            }
+        }
+    </style>
+<style id="schediHqDashStyle">
+html.schedi-newhq #hqDash {
+    --hqd-bg: #06080d;
+    --hqd-panel: #0f172a;
+    --hqd-line: rgba(255, 255, 255, 0.08);
+    --hqd-text: #f1f5f9;
+    --hqd-muted: #94a3b8;
+    --hqd-faint: #64748b;
+    --hqd-brand: #10b981;
+    --hqd-brand-2: #34d399;
+    --hqd-ink: #022c22;
+    --hqd-amber: #fbbf24;
+    --hqd-rose: #fb7185;
+    --hqd-shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
+    color: var(--hqd-text);
+    background: var(--hqd-bg);
+    min-height: 100vh;
+    font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+html.schedi-light.schedi-newhq #hqDash {
+    --hqd-bg: #f4f7fb;
+    --hqd-panel: #ffffff;
+    --hqd-line: #d7dee8;
+    --hqd-text: #0f172a;
+    --hqd-muted: #475569;
+    --hqd-faint: #64748b;
+    --hqd-brand: #059669;
+    --hqd-brand-2: #047857;
+    --hqd-ink: #ffffff;
+    --hqd-amber: #b45309;
+    --hqd-rose: #be123c;
+    --hqd-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
+}
+html.schedi-newhq #agencyHqSection:has(.hq-dash-on) { padding: 0 !important; min-height: 100vh; }
+html.schedi-newhq #agencyMasterDashboard.hq-dash-on #hqGlanceCard,
+html.schedi-newhq #agencyMasterDashboard.hq-dash-on #agencyDirectory,
+html.schedi-newhq #agencyMasterDashboard.hq-dash-on #agencyBilling,
+html.schedi-newhq #agencyMasterDashboard.hq-dash-on #agencyEmail { display: none !important; }
+html.schedi-newhq #agencyHqSection:has(.hq-dash-on) #hqNewSidebar,
+html.schedi-newhq #agencyHqSection:has(.hq-dash-on) #hqNewTop,
+html.schedi-newhq #agencyHqSection:has(.hq-dash-on) #hqNewTabs { display: none !important; }
+html.schedi-newhq #hqDash[hidden] { display: none !important; }
+html.schedi-newhq #hqDash:not([hidden]) { display: block; }
+html.schedi-newhq #hqDash *, html.schedi-newhq #hqDash *::before, html.schedi-newhq #hqDash *::after { box-sizing: border-box; }
+html.schedi-newhq #hqDash button, html.schedi-newhq #hqDash input, html.schedi-newhq #hqDash select { font-family: inherit; }
+html.schedi-newhq #hqDash h2 { margin: 2px 0 0; font-size: 1.7rem; font-weight: 800; letter-spacing: -0.03em; color: var(--hqd-text); }
+html.schedi-newhq #hqDash h3 { margin: 18px 0 10px; font-size: 15px; font-weight: 800; color: var(--hqd-text); }
+html.schedi-newhq #hqDash .hqd-kicker { margin: 0; font-size: 13px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--hqd-brand-2); }
+html.schedi-newhq #hqDash .hqd-sub, html.schedi-newhq #hqDash .hqd-lead, html.schedi-newhq #hqDash .hqd-meta { margin: 4px 0 0; color: var(--hqd-muted); font-size: 13px; }
+html.schedi-newhq #hqDash .hqd-main { padding: 76px 16px calc(112px + env(safe-area-inset-bottom)); }
+html.schedi-newhq #hqDashSidebar {
+    display: none;
+    position: fixed; z-index: 30; left: 0; top: 0; bottom: 0; width: 244px;
+    flex-direction: column; gap: 4px; padding: 18px 14px 16px;
+    background: var(--hqd-panel); border-right: 1px solid var(--hqd-line); overflow: auto;
+}
+html.schedi-newhq #hqDashTop {
+    position: fixed; z-index: 35; top: 0; left: 0; right: 0; height: 64px;
+    display: flex; align-items: center; gap: 8px; padding: 0 12px;
+    background: color-mix(in srgb, var(--hqd-panel) 92%, transparent);
+    border-bottom: 1px solid var(--hqd-line);
+}
+html.schedi-newhq #hqDash .hqd-brand { display: inline-flex; align-items: center; gap: 8px; min-width: 0; color: var(--hqd-text); text-decoration: none; font-weight: 800; letter-spacing: -0.03em; font-size: 1.15rem; }
+html.schedi-newhq #hqDash .hqd-mark { width: 28px; height: 28px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; background: var(--hqd-brand); color: #022c22; font-size: 14px; font-weight: 900; }
+html.schedi-newhq #hqDash .hqd-spacer { flex: 1; }
+html.schedi-newhq #hqDashTheme.schedi-theme-btn {
+    width: 44px; height: 44px; min-width: 44px; min-height: 44px; padding: 0; border-radius: 999px;
+    background: #1e293b; color: #e2e8f0; border: 0; box-shadow: none;
+}
+html.schedi-newhq #hqDashTheme .schedi-theme-btn-label { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); border: 0; }
+html.schedi-newhq #hqDashTheme i { font-size: 16px; }
+html.schedi-light.schedi-newhq #hqDashTheme.schedi-theme-btn { background: #f1f5f9 !important; color: #0f172a !important; border: 1px solid #cbd5e1 !important; }
+html.schedi-newhq #hqDash .hqd-hq-pill { display: inline-flex; align-items: center; min-height: 26px; padding: 0 8px; border-radius: 999px; border: 1px solid rgba(16, 185, 129, 0.45); color: var(--hqd-brand-2); font-size: 12px; font-weight: 800; letter-spacing: 0.04em; }
+html.schedi-newhq #hqDashDemo { margin: 0 0 14px; padding: 8px 12px; border-radius: 12px; border: 1px solid rgba(56, 189, 248, 0.35); background: rgba(14, 165, 233, 0.1); color: #7dd3fc; font-size: 13px; font-weight: 700; }
+html.schedi-light.schedi-newhq #hqDashDemo { color: #0369a1; background: #f0f9ff; border-color: #7dd3fc; }
+html.schedi-newhq #hqDashDemo[hidden] { display: none !important; }
+html.schedi-newhq #hqDash .hqd-nav { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
+html.schedi-newhq #hqDash .hqd-nav button {
+    display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+    border: 1px solid transparent; background: transparent; color: var(--hqd-muted);
+    border-radius: 12px; padding: 10px 12px; font-size: 14px; font-weight: 700; cursor: pointer; min-height: 44px;
+}
+html.schedi-newhq #hqDash .hqd-nav button i { width: 1.1rem; text-align: center; color: var(--hqd-faint); }
+html.schedi-newhq #hqDash .hqd-nav button.is-on { background: rgba(16, 185, 129, 0.14); color: var(--hqd-brand-2); border-color: rgba(16, 185, 129, 0.28); }
+html.schedi-newhq #hqDash .hqd-nav button.is-on i { color: var(--hqd-brand); }
+html.schedi-newhq #hqDash .hqd-side-kicker { margin: 14px 8px 6px; font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--hqd-brand-2); }
+html.schedi-newhq #hqDashTabbar { display: none; }
+html.schedi-newhq #hqDash .hqd-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 16px 0; }
+html.schedi-newhq #hqDash .hqd-stat, html.schedi-newhq #hqDash .hqd-card {
+    background: var(--hqd-panel); border: 1px solid var(--hqd-line); border-radius: 18px; box-shadow: var(--hqd-shadow);
+}
+html.schedi-newhq #hqDash .hqd-stat { padding: 14px 16px; }
+html.schedi-newhq #hqDash .hqd-stat p, html.schedi-newhq #hqDash .hqd-stat span { margin: 0; color: var(--hqd-muted); font-size: 12px; font-weight: 700; }
+html.schedi-newhq #hqDash .hqd-stat strong { display: block; margin: 6px 0 2px; font-size: 1.7rem; letter-spacing: -0.03em; color: var(--hqd-text); overflow-wrap: anywhere; }
+html.schedi-newhq #hqDash .hqd-stat strong.hqd-stat-line { font-size: 1.05rem; line-height: 1.3; }
+html.schedi-newhq #hqDash .hqd-add, html.schedi-newhq #hqDash .hqd-login {
+    display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 48px;
+    border: 0; border-radius: 14px; background: var(--hqd-brand); color: var(--hqd-ink); font-size: 15px; font-weight: 800; cursor: pointer;
+}
+html.schedi-newhq #hqDash .hqd-card { padding: 14px; }
+html.schedi-newhq #hqDash .hqd-stack { display: flex; flex-direction: column; gap: 10px; }
+html.schedi-newhq #hqDash .hqd-count { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; margin-left: 6px; padding: 0 6px; border-radius: 999px; background: rgba(251, 191, 36, 0.18); color: var(--hqd-amber); font-size: 12px; }
+html.schedi-newhq #hqDash .hqd-attn { border-left-width: 3px; }
+html.schedi-newhq #hqDash .hqd-attn.is-paused { border-left-color: var(--hqd-amber); }
+html.schedi-newhq #hqDash .hqd-attn.is-unpaid, html.schedi-newhq #hqDash .hqd-attn.is-setup { border-left-color: var(--hqd-rose); }
+html.schedi-newhq #hqDash .hqd-attn h4, html.schedi-newhq #hqDash .hqd-name { margin: 0; font-size: 16px; font-weight: 800; color: var(--hqd-text); background: transparent; border: 0; padding: 0; text-align: left; cursor: pointer; }
+html.schedi-newhq #hqDash .hqd-attn-top, html.schedi-newhq #hqDash .hqd-biz-top, html.schedi-newhq #hqDash .hqd-bill-top, html.schedi-newhq #hqDash .hqd-welcome { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
+html.schedi-newhq #hqDash .hqd-attn-actions { display: flex; gap: 8px; margin-top: 12px; }
+html.schedi-newhq #hqDash .hqd-ghost, html.schedi-newhq #hqDash .hqd-resume {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; padding: 8px 12px;
+    border-radius: 12px; font-weight: 800; font-size: 13px; cursor: pointer; text-decoration: none; flex: 1;
+}
+html.schedi-newhq #hqDash .hqd-ghost { background: transparent; color: var(--hqd-text); border: 1px solid var(--hqd-line); }
+html.schedi-newhq #hqDash .hqd-ghost.hqd-wide { width: 100%; margin-top: 12px; flex: none; }
+html.schedi-newhq #hqDash .hqd-resume { background: rgba(16, 185, 129, 0.16); color: var(--hqd-brand-2); border: 1px solid rgba(16, 185, 129, 0.35); }
+html.schedi-newhq #hqDash .hqd-pill { display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; padding: 3px 8px; font-size: 11px; font-weight: 800; border: 1px solid transparent; white-space: nowrap; }
+html.schedi-newhq #hqDash .hqd-pill-ok { color: var(--hqd-brand-2); background: rgba(16, 185, 129, 0.14); border-color: rgba(16, 185, 129, 0.3); }
+html.schedi-newhq #hqDash .hqd-pill-amber { color: var(--hqd-amber); background: rgba(245, 158, 11, 0.12); border-color: rgba(245, 158, 11, 0.3); }
+html.schedi-newhq #hqDash .hqd-pill-rose { color: var(--hqd-rose); background: rgba(244, 63, 94, 0.1); border-color: rgba(244, 63, 94, 0.28); }
+html.schedi-newhq #hqDash .hqd-pill-grey { color: #e2e8f0; background: rgba(148, 163, 184, 0.2); border-color: rgba(148, 163, 184, 0.45); }
+html.schedi-light.schedi-newhq #hqDash .hqd-pill-grey { color: #334155; background: rgba(100, 116, 139, 0.16); border-color: rgba(100, 116, 139, 0.4); }
+html.schedi-newhq #hqDash .hqd-pill-starter { color: #7dd3fc; background: rgba(14, 165, 233, 0.16); border-color: rgba(56, 189, 248, 0.45); }
+html.schedi-light.schedi-newhq #hqDash .hqd-pill-starter { color: #0369a1; background: #e0f2fe; border-color: #7dd3fc; }
+html.schedi-newhq #hqDash .hqd-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+html.schedi-newhq #hqDash .hqd-latest { width: 100%; display: grid; grid-template-columns: 72px minmax(0, 1fr) auto auto; gap: 8px; align-items: center; text-align: left; color: inherit; }
+html.schedi-newhq #hqDash .hqd-latest .hq-more > summary { margin: 0; width: 44px; height: 44px; min-width: 44px; min-height: 44px; }
+html.schedi-newhq #hqDash .hqd-when { font-weight: 800; color: var(--hqd-brand-2); font-size: 13px; }
+html.schedi-newhq #hqDash .hqd-latest-main { min-width: 0; display: flex; flex-direction: column; background: transparent; border: 0; padding: 0; text-align: left; color: inherit; cursor: pointer; font: inherit; }
+html.schedi-newhq #hqDash .hqd-latest-main strong { font-size: 16px; font-weight: 800; color: var(--hqd-text); }
+html.schedi-newhq #hqDash .hqd-latest-main span, html.schedi-newhq #hqDash .hqd-slug, html.schedi-newhq #hqDash .hqd-owner { color: var(--hqd-muted); font-size: 12px; margin: 2px 0 0; overflow-wrap: anywhere; }
+html.schedi-newhq #hqDash .hqd-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+html.schedi-newhq #hqDash .hqd-chips, html.schedi-newhq #hqDash .hqd-selects { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+html.schedi-newhq #hqDash .hqd-chips-scroll { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+html.schedi-newhq #hqDash .hqd-chips-scroll::-webkit-scrollbar { display: none; }
+html.schedi-newhq #hqDash .hqd-chips-scroll .hqd-chip { flex: 0 0 auto; }
+html.schedi-newhq #hqDash .hqd-selects { flex-wrap: nowrap; gap: 4px; max-width: 100%; min-width: 0; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+html.schedi-newhq #hqDash .hqd-selects::-webkit-scrollbar { display: none; }
+html.schedi-newhq #hqDash .hqd-chip, html.schedi-newhq #hqDash .hqd-selects select {
+    min-height: 34px; border-radius: 999px; border: 1px solid var(--hqd-line); background: transparent; color: var(--hqd-text);
+    font-weight: 800; font-size: 12px; padding: 4px 12px; cursor: pointer;
+}
+html.schedi-newhq #hqDash .hqd-selects select { flex: 0 0 auto; width: max-content; max-width: none; min-width: max-content; field-sizing: content; padding: 4px 18px 4px 8px; text-overflow: clip; white-space: nowrap; }
+html.schedi-newhq #hqDash .hqd-chip.is-on { background: rgba(16, 185, 129, 0.16); color: var(--hqd-brand-2); border-color: rgba(16, 185, 129, 0.45); }
+html.schedi-newhq #hqDash .hqd-chip-count { margin-left: 4px; color: var(--hqd-muted); font-weight: 700; }
+html.schedi-newhq #hqDash .hqd-chip.is-on .hqd-chip-count { color: inherit; }
+html.schedi-newhq #hqDash .hqd-selects select { appearance: none; padding-right: 18px; background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%); background-position: calc(100% - 11px) 55%, calc(100% - 6px) 55%; background-size: 5px 5px, 5px 5px; background-repeat: no-repeat; }
+html.schedi-newhq #hqDash .hqd-search { position: relative; margin-top: 12px; }
+html.schedi-newhq #hqDash .hqd-search > i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--hqd-faint); pointer-events: none; }
+html.schedi-newhq #hqDash #agencySearchInput { width: 100%; min-height: 44px; border-radius: 14px; border: 1px solid var(--hqd-line); background: var(--hqd-panel); color: var(--hqd-text); padding: 10px 12px 10px 36px; }
+html.schedi-newhq #hqDash .hqd-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 12px 0; }
+html.schedi-newhq #hqDash .hqd-metrics-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+html.schedi-newhq #hqDash .hqd-metrics div { background: color-mix(in srgb, var(--hqd-bg) 65%, var(--hqd-panel)); border: 1px solid var(--hqd-line); border-radius: 12px; padding: 8px 4px; text-align: center; }
+html.schedi-newhq #hqDash .hqd-metrics strong { display: block; font-size: 16px; color: var(--hqd-text); }
+html.schedi-newhq #hqDash .hqd-metrics strong.is-hot { color: var(--hqd-amber); }
+html.schedi-newhq #hqDash .hqd-metrics span { display: block; margin-top: 2px; font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--hqd-muted); }
+html.schedi-newhq #hqDash .hqd-biz-side { display: flex; align-items: flex-start; gap: 2px; }
+html.schedi-newhq #hqDash .hq-more > summary {
+    list-style: none; width: 48px; height: 48px; min-width: 48px; min-height: 48px; margin: -8px -6px 0 0; padding: 0;
+    border: 0; border-radius: 999px; background: transparent; color: var(--hqd-text);
+    display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+}
+html.schedi-newhq #hqDash .hq-more > summary i { font-size: 24px; font-weight: 900; line-height: 1; pointer-events: none; -webkit-text-stroke: 0.4px currentColor; }
+html.schedi-newhq #hqDash .hq-more > summary:hover, html.schedi-newhq #hqDash .hq-more > summary:focus-visible, html.schedi-newhq #hqDash .hq-more > summary:active { background: rgba(148, 163, 184, 0.18); }
+html.schedi-light.schedi-newhq #hqDash .hq-more > summary:hover, html.schedi-light.schedi-newhq #hqDash .hq-more > summary:active { background: rgba(15, 23, 42, 0.08); }
+html.schedi-newhq #hqDash .hq-more-menu { min-width: 220px; background: var(--hqd-panel); border-color: var(--hqd-line); }
+html.schedi-newhq #hqDash .hqd-switch-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 56px; margin: 4px 0; cursor: pointer; }
+html.schedi-newhq #hqDash .hqd-switch-copy { display: flex; align-items: flex-start; gap: 12px; min-width: 0; flex: 1 1 auto; }
+html.schedi-newhq #hqDash .hqd-switch-copy > i { flex: 0 0 auto; width: 22px; margin-top: 2px; font-size: 18px; text-align: center; color: var(--hqd-muted); }
+html.schedi-newhq #hqDash .hqd-switch-title { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 700; }
+html.schedi-newhq #hqDash .hqd-switch-note { display: block; margin-top: 2px; color: var(--hqd-muted); font-size: 13px; font-weight: 600; }
+html.schedi-newhq #hqDash .hqd-switch,
+html.schedi-newhq #editTenantModal .hqd-switch {
+    appearance: none; -webkit-appearance: none; flex: 0 0 auto; width: 52px; height: 30px; margin: 0; border: 0; border-radius: 999px;
+    background: #64748b; position: relative; cursor: pointer;
+}
+html.schedi-newhq #hqDash .hqd-switch::after,
+html.schedi-newhq #editTenantModal .hqd-switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 999px; background: #fff; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35); transition: transform 0.15s ease; }
+html.schedi-newhq #hqDash .hqd-switch:checked,
+html.schedi-newhq #editTenantModal .hqd-switch:checked { background: #10b981; }
+html.schedi-newhq #hqDash .hqd-switch:checked::after,
+html.schedi-newhq #editTenantModal .hqd-switch:checked::after { transform: translateX(22px); }
+html.schedi-newhq #hqDash .hqd-switch:focus-visible,
+html.schedi-newhq #editTenantModal .hqd-switch:focus-visible { outline: 2px solid #10b981; outline-offset: 2px; }
+html.schedi-light.schedi-newhq #hqDash .hqd-switch,
+html.schedi-light.schedi-newhq #editTenantModal .hqd-switch { background: #cbd5e1; }
+html.schedi-light.schedi-newhq #hqDash .hqd-switch:checked,
+html.schedi-light.schedi-newhq #editTenantModal .hqd-switch:checked { background: #059669; }
+html.schedi-newhq #editTenantModal { flex-direction: column; align-items: stretch !important; justify-content: flex-end !important; padding: 0 !important; overflow: hidden !important; }
+html.schedi-newhq #editTenantModal > .glass-card {
+    position: absolute; left: 0; right: 0; bottom: 0; width: auto !important; max-width: none !important; max-height: 100dvh; margin: 0 !important;
+    display: flex; flex-direction: column; overflow: hidden; padding: 0 !important; border-radius: 24px 24px 0 0 !important;
+    animation: none; transform: none;
+}
+html.schedi-newhq #editTenantModal > .glass-card > div:first-of-type { flex: none; align-items: flex-start; gap: 12px; margin: 0; padding: 14px 12px 10px 20px; }
+html.schedi-newhq #editTenantModal > .glass-card > div:first-of-type > button {
+    width: 48px; height: 48px; min-width: 48px; min-height: 48px; padding: 0; border: 0; border-radius: 999px;
+    background: #1e293b; color: #e2e8f0; display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto;
+}
+html.schedi-newhq #editTenantModal > .glass-card > div:first-of-type > button i { font-size: 22px; line-height: 1; pointer-events: none; }
+html.schedi-light.schedi-newhq #editTenantModal > .glass-card > div:first-of-type > button { background: #f1f5f9; color: #0f172a; border: 1px solid #cbd5e1; }
+html.schedi-newhq #editTenantModal > .glass-card > form { overflow: auto; margin: 0; padding: 12px 20px calc(24px + env(safe-area-inset-bottom, 0px)); }
+html.schedi-newhq #editTenantModal label.hqd-switch-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 56px;
+    margin: 0; padding: 8px 0 !important; background: transparent !important; border: 0 !important; cursor: pointer;
+}
+html.schedi-newhq #editTenantModal #editComplimentaryPro.hqd-switch { order: 2; width: 52px !important; height: 30px !important; margin-top: 0 !important; }
+html.schedi-newhq #hqDash .hqd-bill-top > div:first-child { min-width: 0; flex: 1 1 auto; }
+html.schedi-newhq #hqDash .hqd-bill-note { display: block; width: 100%; margin: 8px 0 0; overflow-wrap: normal; word-break: normal; }
+html.schedi-newhq #hqDash .hqd-bill-side { display: flex; align-items: flex-start; gap: 2px; flex: 0 0 auto; }
+html.schedi-newhq #hqDash .hqd-bill-side .hq-more > summary { margin: -6px -4px 0 0; }
+html.schedi-newhq #hqDash .hqd-price { display: block; margin: 0; font-size: 1.7rem; letter-spacing: -0.03em; color: var(--hqd-text); text-align: right; white-space: nowrap; flex: 0 0 auto; overflow-wrap: normal; word-break: keep-all; }
+html.schedi-newhq #hqDash .hqd-price span { font-size: 13px; font-weight: 700; color: var(--hqd-muted); white-space: nowrap; }
+html.schedi-newhq #hqDash .hqd-biz .hqd-switch-row { border-top: 1px solid var(--hqd-line); margin-top: 4px; padding-top: 8px; }
+html.schedi-newhq #hqDash .hqd-label { margin: 16px 0 8px; font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--hqd-muted); }
+html.schedi-newhq #hqDash .hqd-contact { display: flex; align-items: center; gap: 10px; margin: 8px 0; font-size: 15px; }
+html.schedi-newhq #hqDash .hqd-contact i { width: 18px; color: var(--hqd-muted); text-align: center; }
+html.schedi-newhq #hqDash .hqd-svc { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-top: 1px solid var(--hqd-line); font-weight: 700; }
+html.schedi-newhq #hqDash .hqd-svc i { color: var(--hqd-brand-2); margin-right: 6px; }
+html.schedi-newhq #hqDash .hqd-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+html.schedi-newhq #hqDash .hqd-tag, html.schedi-newhq #hqDash .hqd-tag-add { display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 800; }
+html.schedi-newhq #hqDash .hqd-tag { color: var(--hqd-brand-2); background: rgba(16, 185, 129, 0.14); border: 1px solid rgba(16, 185, 129, 0.35); }
+html.schedi-newhq #hqDash .hqd-tag-add { background: transparent; color: var(--hqd-text); border: 1px dashed var(--hqd-line); cursor: pointer; min-height: 32px; }
+html.schedi-newhq #hqDash .hqd-pay { display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 800; border: 1px solid var(--hqd-line); }
+html.schedi-newhq #hqDash .hqd-pay-card { color: var(--hqd-brand-2); border-color: rgba(16, 185, 129, 0.4); background: rgba(16, 185, 129, 0.14); }
+html.schedi-newhq #hqDash .hqd-pay-cash { color: #0b1220; background: #00D64F; border-color: #00A83C; }
+html.schedi-newhq #hqDash .hqd-pay-later { color: var(--hqd-text); background: rgba(148, 163, 184, 0.14); }
+html.schedi-newhq #hqDash .hqd-pay-zelle { color: #fff; background: #6D1ED4; border-color: #6D1ED4; }
+html.schedi-newhq #hqDash .hqd-pay-venmo { color: #b9ddff; background: rgba(0, 140, 255, 0.16); border-color: #008CFF; }
+html.schedi-newhq #hqDash .hqd-pay-paypal { color: #fff; background: #0070E0; border-color: #0070E0; }
+html.schedi-light.schedi-newhq #hqDash .hqd-pay-venmo { color: #0057B8; }
+html.schedi-light.schedi-newhq #hqDash .hqd-pay-paypal { background: #003087; border-color: #003087; }
+html.schedi-newhq #hqDash .hqd-sheet-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
+html.schedi-newhq #hqDash .hqd-action-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+html.schedi-newhq #hqDash .hqd-action-row .hqd-ghost, html.schedi-newhq #hqDash .hqd-action-row .hqd-danger { width: 100%; min-height: 44px; font-size: 13px; }
+html.schedi-newhq #hqDash .hqd-danger { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; border-radius: 12px; border: 1px solid rgba(244, 63, 94, 0.35); background: rgba(244, 63, 94, 0.08); color: var(--hqd-rose); font-weight: 800; cursor: pointer; }
+html.schedi-newhq #hqDash .hqd-welcome strong { display: block; }
+html.schedi-newhq #hqDash .hqd-welcome p { margin: 2px 0 0; color: var(--hqd-muted); font-size: 12px; overflow-wrap: anywhere; }
+html.schedi-newhq #hqDash .hqd-welcome > button { flex: 0 0 auto; width: auto; min-height: 40px; padding: 8px 14px; border-radius: 12px; border: 1px solid var(--hqd-line); background: transparent; color: var(--hqd-text); font-size: 14px; font-weight: 700; cursor: pointer; }
+html.schedi-newhq #hqdGatewayMount form, html.schedi-newhq #hqdEmailMount form { color: var(--hqd-text); }
+html.schedi-newhq #hqdGatewayMount form.hqd-gateway { background: var(--hqd-panel); border: 1px solid var(--hqd-line); border-radius: 18px; padding: 16px; }
+html.schedi-newhq #hqdGatewayMount .grid { display: flex; flex-direction: column; gap: 12px; }
+html.schedi-newhq #hqdGatewayMount form.hqd-gateway .grid > div { background: transparent; border: 0; border-radius: 0; padding: 0; box-shadow: none; }
+html.schedi-newhq #hqdEmailMount form { background: transparent; border: 0; border-radius: 0; padding: 8px 0 0; box-shadow: none; }
+html.schedi-newhq #hqdGatewayMount .text-white, html.schedi-newhq #hqdEmailMount .text-white { color: var(--hqd-text) !important; }
+html.schedi-newhq #hqdGatewayMount .text-slate-300, html.schedi-newhq #hqdGatewayMount .text-slate-400, html.schedi-newhq #hqdGatewayMount .text-slate-500,
+html.schedi-newhq #hqdEmailMount .text-slate-400, html.schedi-newhq #hqdEmailMount .text-slate-500 { color: var(--hqd-muted) !important; }
+html.schedi-newhq #hqdGatewayMount .border-b { flex-wrap: wrap; }
+html.schedi-newhq #hqdGatewayMount label.cursor-pointer { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 56px; }
+html.schedi-newhq #hqdGatewayMount label.cursor-pointer span { font-size: 16px; font-weight: 700; color: var(--hqd-text) !important; }
+html.schedi-newhq #hqDash #agencyAutoDraftEnabled.hqd-switch { width: 52px !important; height: 30px !important; }
+html.schedi-newhq #hqdGatewayMount button[type="submit"] { width: 100%; min-height: 48px; border: 0; border-radius: 14px; background: var(--hqd-brand) !important; color: var(--hqd-ink) !important; font-weight: 800; }
+html.schedi-newhq #hqdEmailMount form { display: flex; flex-direction: column; gap: 10px; }
+html.schedi-newhq #hqdEmailMount .flex { display: flex; flex-wrap: nowrap; gap: 8px; }
+html.schedi-newhq #hqdEmailMount .flex > button { flex: 1 1 0; width: auto; min-width: 0; min-height: 48px; border-radius: 14px; font-weight: 800; }
+html.schedi-newhq #hqdEmailMount button[type="submit"] { border: 0; background: var(--hqd-brand) !important; color: var(--hqd-ink) !important; }
+html.schedi-newhq #hqdEmailMount button[type="button"] { border: 1px solid var(--hqd-line); background: transparent; color: var(--hqd-text); }
+html.schedi-newhq #hqdStripeMount, html.schedi-newhq #hqdEmailBadgeMount { display: inline-flex; }
+html.schedi-newhq #hqDash #agencyStripeStatusBadge, html.schedi-newhq #hqDash #agencyEmailDeliveryBadge { border-radius: 999px; }
+html.schedi-newhq #hqDashSheet[hidden], html.schedi-newhq #hqDashDialog[hidden] { display: none !important; }
+html.schedi-newhq #hqDashSheet:not([hidden]), html.schedi-newhq #hqDashDialog:not([hidden]) { position: fixed; inset: 0; z-index: 85; display: flex; align-items: flex-end; justify-content: center; }
+html.schedi-newhq #hqDashDialog:not([hidden]) { z-index: 140; }
+html.schedi-newhq #hqDash .hqd-dialog-actions { display: flex; gap: 8px; margin-top: 16px; }
+html.schedi-newhq #hqDash .hqd-dialog-actions > button { flex: 1 1 0; min-height: 48px; }
+html.schedi-newhq #hqDash #hqdDialogField { display: block; margin-top: 12px; font-size: 13px; font-weight: 700; color: var(--hqd-muted); }
+html.schedi-newhq #hqDash #hqdDialogField[hidden] { display: none !important; }
+html.schedi-newhq #hqDash #hqdDialogInput { width: 100%; min-height: 48px; margin-top: 8px; border-radius: 12px; border: 1px solid var(--hqd-line); background: var(--hqd-bg); color: var(--hqd-text); padding: 10px 12px; }
+html.schedi-newhq #hqDash .hqd-sheet-backdrop { position: absolute; inset: 0; border: 0; background: rgba(6, 8, 13, 0.72); cursor: pointer; }
+html.schedi-newhq #hqDash .hqd-sheet-card { position: relative; z-index: 1; width: min(520px, 100%); max-height: min(92vh, 860px); display: flex; flex-direction: column; background: var(--hqd-panel); color: var(--hqd-text); border: 1px solid var(--hqd-line); border-radius: 24px 24px 0 0; box-shadow: var(--hqd-shadow); }
+html.schedi-newhq #hqDash .hqd-sheet-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 14px 12px 10px 20px; border-bottom: 1px solid var(--hqd-line); }
+html.schedi-newhq #hqDash .hqd-sheet-head h3 { margin: 0; font-size: 1.25rem; }
+html.schedi-newhq #hqDash .hqd-sheet-head p { margin: 4px 0 0; color: var(--hqd-muted); font-size: 13px; overflow-wrap: anywhere; }
+html.schedi-newhq #hqDash .hqd-close { width: 48px; height: 48px; min-width: 48px; min-height: 48px; border: 0; border-radius: 999px; background: #1e293b; color: #e2e8f0; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+html.schedi-newhq #hqDash .hqd-close i { font-size: 22px; line-height: 1; pointer-events: none; }
+html.schedi-light.schedi-newhq #hqDash .hqd-close { background: #f1f5f9; color: #0f172a; border: 1px solid #cbd5e1; }
+html.schedi-newhq #hqDash .hqd-sheet-body { overflow: auto; padding: 12px 20px 24px; }
+html.schedi-newhq body.hqd-sheet-open { overflow: hidden; }
+html.schedi-newhq #provisionModal, html.schedi-newhq #editTenantModal { z-index: 100; }
+html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
+@media (max-width: 859px) {
+    html.schedi-newhq #hqDashTabbar {
+        --hq-tab-slot: 0;
+        display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));
+        position: fixed; z-index: 40; left: 0; right: 0; bottom: 0;
+        margin: 0; padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
+        background: #0b1220; border: 0; border-top: 1px solid rgba(148, 163, 184, 0.32); overflow: visible;
+    }
+    html.schedi-light.schedi-newhq #hqDashTabbar { background: #ffffff; border-top-color: #e2e8f0; }
+    html.schedi-newhq #hqDashTabbar .hqd-tab-indicator { position: absolute; z-index: 0; top: 0; bottom: 0; left: 0; width: 20%; pointer-events: none; transform: translateX(calc(var(--hq-tab-slot, 0) * 100%)); transition: transform 200ms ease-out; }
+    html.schedi-newhq #hqDashTabbar .hqd-tab-indicator::before { content: ""; position: absolute; left: 8px; right: 8px; top: 6px; bottom: calc(6px + env(safe-area-inset-bottom)); border-radius: 14px; background: rgba(16, 185, 129, 0.15); }
+    html.schedi-newhq #hqDashTabbar .hqd-tab-indicator::after { content: ""; position: absolute; top: -2px; left: 50%; width: 28px; height: 3px; border-radius: 999px; transform: translateX(-50%); background: #34d399; box-shadow: 0 0 8px rgba(52, 211, 153, 0.95), 0 0 2px rgba(16, 185, 129, 0.9); }
+    html.schedi-light.schedi-newhq #hqDashTabbar .hqd-tab-indicator::after { background: #10b981; box-shadow: 0 0 8px rgba(16, 185, 129, 0.7), 0 0 2px rgba(5, 150, 105, 0.85); }
+    html.schedi-newhq #hqDashTabbar > button { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-width: 0; min-height: 44px; background: transparent; border: 0; border-radius: 0; color: #a3b1c6; font-size: 12px; font-weight: 700; line-height: 1.15; padding: 8px 0 6px; cursor: pointer; }
+    html.schedi-newhq #hqDashTabbar > button span { white-space: nowrap; }
+    html.schedi-light.schedi-newhq #hqDashTabbar > button { color: #3f4b5e; }
+    html.schedi-newhq #hqDashTabbar > button:not(.hqd-fab) i { font-size: 22px; line-height: 1; color: inherit; }
+    html.schedi-newhq #hqDashTabbar > button:not(.hqd-fab).is-on { color: #34d399; }
+    html.schedi-light.schedi-newhq #hqDashTabbar > button:not(.hqd-fab).is-on { color: #047857; }
+    html.schedi-newhq #hqDashTabbar .hqd-fab { z-index: 2; align-self: start; width: 52px; height: 52px; min-height: 52px; margin: -6px auto 0; padding: 0; border: 0; border-radius: 999px; background: #10b981; color: #fff; box-shadow: 0 6px 16px rgba(16, 185, 129, 0.5), 0 0 22px rgba(16, 185, 129, 0.35); }
+    html.schedi-newhq #hqDashTabbar .hqd-fab i { font-size: 22px; color: #fff; }
+}
+@media (max-width: 859px) and (prefers-reduced-motion: reduce) {
+    html.schedi-newhq #hqDashTabbar .hqd-tab-indicator, html.schedi-newhq #hqDashTabbar > button, html.schedi-newhq #hqDash .hqd-switch::after { transition: none; }
+}
+@media (min-width: 860px) {
+    html.schedi-newhq #hqDashSidebar { display: flex; }
+    html.schedi-newhq #hqDashTop { left: 244px; }
+    html.schedi-newhq #hqDashTop .hqd-brand { display: none; }
+    html.schedi-newhq #hqDash .hqd-main { padding: 84px 28px 48px 268px; }
+    html.schedi-newhq #hqDash .hqd-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    html.schedi-newhq #hqDash .hqd-sheet-card { margin-bottom: 24px; border-radius: 24px; }
+    html.schedi-newhq #hqDashSheet:not([hidden]), html.schedi-newhq #hqDashDialog:not([hidden]) { align-items: center; }
+    html.schedi-newhq #hqDashTabbar { display: none !important; }
+    html.schedi-newhq #editTenantModal { flex-direction: row; align-items: center !important; justify-content: center !important; padding: 24px !important; overflow: auto !important; }
+    html.schedi-newhq #editTenantModal > .glass-card { position: relative; left: auto; right: auto; bottom: auto; width: min(520px, 100%) !important; max-width: 520px !important; max-height: min(92vh, 860px); border-radius: 24px !important; }
+}
+@media (max-width: 360px) {
+    html.schedi-newhq #hqDashTabbar > button { font-size: 11px; }
+    html.schedi-newhq #hqDash .hqd-metrics-4 { grid-template-columns: 1fr 1fr; }
+}
+</style>
 </head>
 <body class="min-h-screen flex flex-col justify-between selection:bg-brand-500 selection:text-slate-950">
 
@@ -468,7 +1153,26 @@
 <!-- SCHEDI_HQ_START -->
         <!-- AGENCY HQ SECTION -->
         <div id="agencyHqSection" class="space-y-6 fade-in hidden">
-            
+            <aside id="hqNewSidebar" aria-label="Agency HQ">
+                <div class="hq-brand">Schedi HQ</div>
+                <p class="hq-kicker">Agency</p>
+                <button type="button" class="hq-nav-btn is-on" data-hq-go="hqGlanceCard" onclick="hqNewGo('hqGlanceCard')"><i class="fa-solid fa-chart-pie" aria-hidden="true"></i><span>Overview</span></button>
+                <button type="button" class="hq-nav-btn" data-hq-go="agencyDirectory" onclick="hqNewGo('agencyDirectory')"><i class="fa-solid fa-store" aria-hidden="true"></i><span>Directory</span></button>
+                <button type="button" class="hq-nav-btn" data-hq-go="agencyBilling" onclick="hqNewGo('agencyBilling')"><i class="fa-solid fa-credit-card" aria-hidden="true"></i><span>Billing</span></button>
+                <button type="button" class="hq-nav-btn" data-hq-go="agencyEmail" onclick="hqNewGo('agencyEmail')"><i class="fa-solid fa-envelope" aria-hidden="true"></i><span>Email</span></button>
+            </aside>
+            <header id="hqNewTop">
+                <strong class="hq-brand">Schedi HQ</strong>
+                <p id="hqDemoNote" hidden><span class="hq-demo-full">Demo · sample businesses · nothing is saved or sent</span><span class="hq-demo-short">Demo · not saved</span></p>
+                <button type="button" id="hqNewTheme" class="schedi-theme-btn" onclick="toggleSchediTheme()" title="Switch to light theme" aria-label="Switch to light theme"><i class="fa-solid fa-sun" aria-hidden="true"></i><span class="schedi-theme-btn-label">Light</span></button>
+            </header>
+            <nav id="hqNewTabs" aria-label="Agency HQ">
+                <button type="button" class="is-on" data-hq-go="hqGlanceCard" onclick="hqNewGo('hqGlanceCard')">Overview</button>
+                <button type="button" data-hq-go="agencyDirectory" onclick="hqNewGo('agencyDirectory')">Directory</button>
+                <button type="button" data-hq-go="agencyBilling" onclick="hqNewGo('agencyBilling')">Billing</button>
+                <button type="button" data-hq-go="agencyEmail" onclick="hqNewGo('agencyEmail')">Email</button>
+            </nav>
+
             <!-- MASTER AGENCY AUTH GATEWAY -->
             <div id="agencyMasterLoginBox" class="max-w-md mx-auto glass-card rounded-2xl p-6 sm:p-8 space-y-6 my-10">
                 <div class="text-center space-y-2">
@@ -500,72 +1204,185 @@
 
             <!-- AGENCY HQ DASHBOARD -->
             <div id="agencyMasterDashboard" class="space-y-6 hidden">
+<div id="hqDash" hidden>
+                <aside id="hqDashSidebar" aria-label="Agency HQ">
+                    <a class="hqd-brand" href="/" aria-label="Schedi home"><span class="hqd-mark" aria-hidden="true">✓</span><span>Schedi</span><span class="hqd-hq-pill">HQ</span></a>
+                    <p class="hqd-side-kicker">Agency</p>
+                    <nav class="hqd-nav">
+                        <button type="button" data-hqd-go="overview"><i class="fa-solid fa-chart-pie" aria-hidden="true"></i><span>Overview</span></button>
+                        <button type="button" data-hqd-go="directory"><i class="fa-solid fa-address-book" aria-hidden="true"></i><span>Directory</span></button>
+                        <button type="button" onclick="openProvisionModal()"><i class="fa-solid fa-plus" aria-hidden="true"></i><span>Add business</span></button>
+                        <button type="button" data-hqd-go="billing"><i class="fa-solid fa-credit-card" aria-hidden="true"></i><span>Billing</span></button>
+                        <button type="button" data-hqd-go="email"><i class="fa-solid fa-envelope" aria-hidden="true"></i><span>Email</span></button>
+                    </nav>
+                </aside>
+                <header id="hqDashTop">
+                    <a class="hqd-brand" href="/" aria-label="Schedi home"><span class="hqd-mark" aria-hidden="true">✓</span><span>Schedi</span><span class="hqd-hq-pill">HQ</span></a>
+                    <span class="hqd-spacer"></span>
+                    <button type="button" id="hqDashTheme" class="schedi-theme-btn" onclick="toggleSchediTheme()" title="Switch to light theme" aria-label="Switch to light theme"><i class="fa-solid fa-sun" aria-hidden="true"></i><span class="schedi-theme-btn-label">Light</span></button>
+                </header>
+                <div class="hqd-main">
+                    <p id="hqDashDemo" class="hqd-demo" hidden>Demo · sample agency · nothing is saved or sent</p>
+                    <section id="hqdOverview" data-hqd-view="overview">
+                        <p class="hqd-kicker">Agency HQ</p>
+                        <h2>Overview</h2>
+                        <p id="hqdOverviewDate" class="hqd-sub"></p>
+                        <div id="hqdStats" class="hqd-stats" aria-live="polite"></div>
+                        <button type="button" class="hqd-add" onclick="openProvisionModal()"><i class="fa-solid fa-plus" aria-hidden="true"></i><span>Add business</span></button>
+                        <h3>Needs attention <span id="hqdAttnCount" class="hqd-count" hidden></span></h3>
+                        <div id="hqdAttention" class="hqd-stack"></div>
+                        <h3>Latest booking by business</h3>
+                        <div id="hqdLatest" class="hqd-stack"></div>
+                    </section>
+                    <section id="hqdDirectory" data-hqd-view="directory" hidden>
+                        <p class="hqd-kicker">Agency HQ</p>
+                        <h2>Directory</h2>
+                        <p id="hqdDirCountLine" class="hqd-sub"></p>
+                        <div id="hqdSearchMount" class="hqd-search"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i></div>
+                        <div id="hqdStatusChips" class="hqd-chips hqd-chips-scroll" role="group" aria-label="Status"></div>
+                        <div class="hqd-selects">
+                            <select id="hqdPlan" aria-label="Plan" onchange="hqDirSet('plan', this.value)">
+                                <option value="">Plan: All</option>
+                                <option value="free">Plan: Free</option>
+                                <option value="starter">Plan: Starter</option>
+                                <option value="pro">Plan: Pro</option>
+                            </select>
+                            <select id="hqdType" aria-label="Type" onchange="hqDirSet('type', this.value)"></select>
+                            <select id="hqdSort" aria-label="Sort" onchange="hqDirSet('sort', this.value)">
+                                <option value="name">Sort: Name</option>
+                                <option value="newest">Sort: Newest</option>
+                                <option value="plan">Sort: Plan</option>
+                                <option value="lastBooking">Sort: Last booking</option>
+                            </select>
+                        </div>
+                        <div id="hqdDirList" class="hqd-stack"></div>
+                    </section>
+                    <section id="hqdBilling" data-hqd-view="billing" hidden>
+                        <p class="hqd-kicker">Agency HQ</p>
+                        <h2>Billing</h2>
+                        <p class="hqd-lead">Owner subscriptions bill through Stripe on the server.</p>
+                        <div id="hqdStripeMount"></div>
+                        <div id="hqdBillStats" class="hqd-stats"></div>
+                        <div id="hqdBillChips" class="hqd-chips" role="group" aria-label="Plan"></div>
+                        <p class="hqd-meta">Free $0 · Starter $29/mo · Pro $49/mo</p>
+                        <div id="hqdBillList" class="hqd-stack"></div>
+                        <h3>Payment gateways</h3>
+                        <div id="hqdGatewayMount"></div>
+                    </section>
+                    <section id="hqdEmail" data-hqd-view="email" hidden>
+                        <p class="hqd-kicker">Agency HQ</p>
+                        <h2>Email</h2>
+                        <p class="hqd-lead">Booking confirmations send through Schedi email (Cloudflare Worker → Resend). Reply-To stays the business contact.</p>
+                        <div class="hqd-card">
+                            <div class="hqd-attn-top"><h3 style="margin:0">Booking email delivery</h3><span id="hqdEmailBadgeMount"></span></div>
+                            <div id="hqdEmailMount"></div>
+                        </div>
+                        <h3>Welcome emails</h3>
+                        <div id="hqdWelcome" class="hqd-stack"></div>
+                    </section>
+                </div>
+                <nav id="hqDashTabbar" aria-label="Agency HQ">
+                    <span class="hqd-tab-indicator" aria-hidden="true"></span>
+                    <button type="button" data-hqd-go="overview"><i class="fa-solid fa-chart-pie" aria-hidden="true"></i><span>Overview</span></button>
+                    <button type="button" data-hqd-go="directory"><i class="fa-solid fa-address-book" aria-hidden="true"></i><span>Directory</span></button>
+                    <button type="button" class="hqd-fab" onclick="openProvisionModal()" aria-label="Add business"><i class="fa-solid fa-plus" aria-hidden="true"></i></button>
+                    <button type="button" data-hqd-go="billing"><i class="fa-solid fa-credit-card" aria-hidden="true"></i><span>Billing</span></button>
+                    <button type="button" data-hqd-go="email"><i class="fa-solid fa-envelope" aria-hidden="true"></i><span>Email</span></button>
+                </nav>
+                <div id="hqDashSheet" class="hqd-sheet" hidden>
+                    <button type="button" class="hqd-sheet-backdrop" onclick="hqDashCloseSheet()" aria-label="Close business details"></button>
+                    <div class="hqd-sheet-card" role="dialog" aria-modal="true" aria-labelledby="hqdSheetTitle">
+                        <div class="hqd-sheet-head">
+                            <div><h3 id="hqdSheetTitle">Business</h3><p id="hqdSheetSub"></p></div>
+                            <button type="button" class="hqd-close" onclick="hqDashCloseSheet()" aria-label="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+                        </div>
+                        <div id="hqdSheetBody" class="hqd-sheet-body"></div>
+                    </div>
+                </div>
+                <div id="hqDashDialog" class="hqd-sheet" hidden>
+                    <button type="button" class="hqd-sheet-backdrop" onclick="hqDashDialogClose(false)" aria-label="Cancel"></button>
+                    <div class="hqd-sheet-card hqd-dialog-card" role="dialog" aria-modal="true" aria-labelledby="hqdDialogTitle">
+                        <div class="hqd-sheet-head">
+                            <div><h3 id="hqdDialogTitle">Confirm</h3></div>
+                            <button type="button" class="hqd-close" onclick="hqDashDialogClose(false)" aria-label="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+                        </div>
+                        <div class="hqd-sheet-body">
+                            <p id="hqdDialogBody" class="hqd-lead"></p>
+                            <label id="hqdDialogField" hidden><span id="hqdDialogFieldLabel"></span><input id="hqdDialogInput" type="text" autocomplete="off" onkeydown="if (event.key === 'Enter') { event.preventDefault(); hqDashDialogClose(true); }"></label>
+                            <div class="hqd-dialog-actions">
+                                <button type="button" class="hqd-ghost" id="hqdDialogNo" onclick="hqDashDialogClose(false)">Cancel</button>
+                                <button type="button" class="hqd-login" id="hqdDialogYes" onclick="hqDashDialogClose(true)">Confirm</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
                 
-                <!-- Metrics Grid -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div class="glass-card rounded-2xl p-5 border-l-4 border-l-brand-500 flex items-center justify-between">
-                        <div>
-                            <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Managed Business Sites</span>
-                            <div id="statTotalSites" class="text-2xl font-black text-white mt-1">0</div>
-                            <span class="text-[10px] text-brand-400 font-semibold">Active & Deployed</span>
+                <!-- At a glance -->
+                <div class="glass-card rounded-2xl p-4 sm:p-5" id="hqGlanceCard">
+                    <div class="hq-glance-head" id="hqGlanceHead">
+                        <div class="hq-glance-title-row">
+                            <h2 class="text-lg font-extrabold text-white">At a glance</h2>
+                            <button type="button" class="hq-collapse-btn" id="hqGlanceBtn" aria-expanded="false" aria-controls="hqGlanceBody" aria-label="Show or hide the overview numbers">
+                                <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+                            </button>
                         </div>
-                        <div class="w-12 h-12 rounded-xl bg-brand-500/10 text-brand-400 flex items-center justify-center text-xl">
-                            <i class="fa-solid fa-store"></i>
-                        </div>
+                        <p id="hqGlanceSummary" class="hq-glance-summary">0 sites · $0.00/mo · 0 bookings · 0 live</p>
                     </div>
-
-                    <div class="glass-card rounded-2xl p-5 border-l-4 border-l-accent-400 flex items-center justify-between">
-                        <div>
-                            <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Agency MRR</span>
-                            <div id="statAgencyMRR" class="text-2xl font-black text-white mt-1">$0.00</div>
-                            <span class="text-[10px] text-accent-400 font-semibold">Monthly Subscription Volume</span>
+                    <div id="hqGlanceBody" class="hq-glance-body" hidden>
+                        <div class="hq-glance-row">
+                            <div class="hq-glance-ico hq-glance-ico-sites" aria-hidden="true"><i class="fa-solid fa-store"></i></div>
+                            <div class="hq-glance-meta">
+                                <span class="hq-glance-label">Managed Business Sites</span>
+                                <div id="statTotalSites" class="hq-glance-value">0</div>
+                                <span class="hq-glance-sub hq-glance-sub-sites">Active &amp; Deployed</span>
+                            </div>
                         </div>
-                        <div class="w-12 h-12 rounded-xl bg-accent-400/10 text-accent-400 flex items-center justify-center text-xl">
-                            <i class="fa-solid fa-sack-dollar"></i>
+                        <div class="hq-glance-row">
+                            <div class="hq-glance-ico hq-glance-ico-mrr" aria-hidden="true"><i class="fa-solid fa-sack-dollar"></i></div>
+                            <div class="hq-glance-meta">
+                                <span class="hq-glance-label">Agency MRR</span>
+                                <div id="statAgencyMRR" class="hq-glance-value">$0.00</div>
+                                <span class="hq-glance-sub hq-glance-sub-mrr">Monthly Subscription Volume</span>
+                            </div>
                         </div>
-                    </div>
-
-                    <div class="glass-card rounded-2xl p-5 border-l-4 border-l-indigo-500 flex items-center justify-between">
-                        <div>
-                            <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Total System Bookings</span>
-                            <div id="statTotalBookings" class="text-2xl font-black text-white mt-1">0</div>
-                            <span class="text-[10px] text-indigo-400 font-semibold">Cross-Tenant Volume</span>
+                        <div class="hq-glance-row">
+                            <div class="hq-glance-ico hq-glance-ico-books" aria-hidden="true"><i class="fa-solid fa-calendar-check"></i></div>
+                            <div class="hq-glance-meta">
+                                <span class="hq-glance-label">Total System Bookings</span>
+                                <div id="statTotalBookings" class="hq-glance-value">0</div>
+                                <span class="hq-glance-sub hq-glance-sub-books">Cross-Tenant Volume</span>
+                            </div>
                         </div>
-                        <div class="w-12 h-12 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center text-xl">
-                            <i class="fa-solid fa-calendar-check"></i>
-                        </div>
-                    </div>
-
-                    <div class="glass-card rounded-2xl p-5 border-l-4 border-l-amber-400 flex items-center justify-between">
-                        <div>
-                            <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Active Booking Pages</span>
-                            <div id="statActivePages" class="text-2xl font-black text-white mt-1">0</div>
-                            <span class="text-[10px] text-amber-400 font-semibold">Live on schedi.app/{slug}/</span>
-                        </div>
-                        <div class="w-12 h-12 rounded-xl bg-amber-400/10 text-amber-400 flex items-center justify-center text-xl">
-                            <i class="fa-solid fa-link"></i>
+                        <div class="hq-glance-row">
+                            <div class="hq-glance-ico hq-glance-ico-live" aria-hidden="true"><i class="fa-solid fa-link"></i></div>
+                            <div class="hq-glance-meta">
+                                <span class="hq-glance-label">Active Booking Pages</span>
+                                <div id="statActivePages" class="hq-glance-value">0</div>
+                                <span class="hq-glance-sub hq-glance-sub-live">Live on schedi.app/{slug}/</span>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- HQ Gateways -->
-                <div class="glass-card rounded-2xl p-6 space-y-5" data-hq-collapse="gateways">
-                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4" data-hq-collapse-head>
-                        <div class="flex items-center space-x-3">
-                            <div class="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center text-xl border border-indigo-500/20">
+                <div id="agencyBilling" class="glass-card rounded-2xl p-6 space-y-5" data-hq-collapse="gateways">
+                    <div class="hq-card-head border-b border-slate-800 pb-4" data-hq-collapse-head>
+                        <div class="hq-card-main">
+                            <div class="hq-card-icon w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center text-xl border border-indigo-500/20">
                                 <i class="fa-solid fa-plug text-lg"></i>
                             </div>
-                            <div>
+                            <div class="hq-card-copy">
                                 <h2 class="text-lg font-extrabold text-white">Agency Payment Gateways & Revenue Settlement</h2>
                                 <p class="text-xs text-slate-400 mt-0.5">Owner subscriptions bill through Stripe on the server. Starter is $29/mo and Pro is $49/mo. Free businesses are not charged.</p>
+                                <div class="flex items-center space-x-2 mt-2">
+                                    <span id="agencyStripeStatusBadge" class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center space-x-1.5">
+                                        <i class="fa-solid fa-circle text-[8px] animate-pulse"></i>
+                                        <span>Live Stripe · server-side</span>
+                                    </span>
+                                </div>
                             </div>
-                        </div>
-
-                        <div class="flex items-center space-x-2">
-                            <span id="agencyStripeStatusBadge" class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center space-x-1.5">
-                                <i class="fa-solid fa-circle text-[8px] animate-pulse"></i>
-                                <span>Live Stripe · server-side</span>
-                            </span>
                         </div>
                     </div>
 
@@ -616,18 +1433,18 @@
                 </div>
 
                 <!-- Booking email delivery -->
-                <div class="glass-card rounded-2xl p-6 space-y-4" data-hq-collapse="email">
-                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4" data-hq-collapse-head>
-                        <div class="flex items-center space-x-3">
-                            <div class="w-10 h-10 rounded-xl bg-brand-500/10 text-brand-400 flex items-center justify-center text-xl border border-brand-500/20">
+                <div id="agencyEmail" class="glass-card rounded-2xl p-6 space-y-4" data-hq-collapse="email">
+                    <div class="hq-card-head border-b border-slate-800 pb-4" data-hq-collapse-head>
+                        <div class="hq-card-main">
+                            <div class="hq-card-icon w-10 h-10 rounded-xl bg-brand-500/10 text-brand-400 flex items-center justify-center text-xl border border-brand-500/20">
                                 <i class="fa-solid fa-envelope"></i>
                             </div>
-                            <div>
+                            <div class="hq-card-copy">
                                 <h2 class="text-lg font-extrabold text-white">Booking Email Delivery</h2>
                                 <p class="text-xs text-slate-400 mt-0.5">Booking confirmations send through Schedi email (Cloudflare Worker → Resend). Reply-To stays the business contact.</p>
+                                <span id="agencyEmailDeliveryBadge" class="mt-2 inline-block px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">Connected</span>
                             </div>
                         </div>
-                        <span id="agencyEmailDeliveryBadge" class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">Connected</span>
                     </div>
                     <form onsubmit="handleSaveEmailSender(event)" class="space-y-3 text-xs max-w-3xl" data-hq-collapse-body>
                         <div>
@@ -647,22 +1464,23 @@
                 </div>
 
                 <!-- Client Sites Roster -->
-                <div class="glass-card rounded-2xl p-6 space-y-5">
-                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
-                        <div>
+                <div id="agencyDirectory" class="glass-card rounded-2xl p-6 space-y-5" data-hq-collapse="directory">
+                    <div class="hq-card-head border-b border-slate-800 pb-4" data-hq-collapse-head>
+                        <div class="hq-card-main">
+                        <div class="hq-card-copy">
                             <h2 class="text-xl font-extrabold text-white">Client Business Directory</h2>
                             <p class="text-xs text-slate-400 mt-0.5">Provision new sites, update owner profile details, adjust subscription plans, or log into tenant portals.</p>
-                        </div>
-
-                        <div class="flex flex-wrap items-center gap-2">
+                        <div class="flex flex-wrap items-center gap-2 mt-3" data-hq-collapse-tools>
                             <input type="search" id="agencySearchInput" oninput="filterAgencyTenants(this.value)" placeholder="Search name, owner email, or slug" aria-label="Search businesses" class="px-3.5 py-2 rounded-xl glass-input text-xs w-full sm:w-64">
                             <button type="button" onclick="openProvisionModal()" class="px-4 py-2 rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-slate-950 font-bold text-xs shadow-md glow-emerald flex items-center space-x-2 transition-all">
                                 <i class="fa-solid fa-plus"></i>
                                 <span>Provision New Site</span>
                             </button>
                         </div>
+                        </div>
+                        </div>
                     </div>
-
+                    <div data-hq-collapse-body class="space-y-5">
                     <div id="hqDirControls" class="flex flex-wrap items-center gap-2 text-xs">
                         <label class="sr-only" for="hqDirSort">Sort</label>
                         <select id="hqDirSort" onchange="hqDirSet('sort', this.value)" class="w-auto max-w-[11rem] px-2.5 py-1.5 rounded-lg glass-input text-xs">
@@ -684,6 +1502,7 @@
                     </div>
                     <div id="agencyTenantGrid">
                         <!-- Directory injected via JS -->
+                    </div>
                     </div>
                 </div>
 
@@ -1559,7 +2378,7 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-3">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                         <label class="block font-semibold text-slate-300 mb-1">Owner Login Email *</label>
                         <input type="email" id="editOwnerEmail" required class="w-full px-3 py-2 rounded-xl glass-input">
@@ -1570,15 +2389,15 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-3">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                         <label class="block font-semibold text-slate-300 mb-1">Monthly Pricing ($USD) *</label>
                         <input type="number" id="editMonthlyPrice" required class="w-full px-3 py-2 rounded-xl glass-input font-bold text-brand-400">
                     </div>
                     <div>
-                        <div class="flex items-center justify-between gap-2 mb-1">
-                            <label class="block font-semibold text-slate-300" for="editTenantPlan">Plan tier *</label>
-                            <button type="button" onclick="openComparePlansModal()" class="shrink-0 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide bg-slate-800 hover:bg-slate-700 text-brand-400 border border-brand-500/30">
+                        <div class="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 mb-1">
+                            <label class="font-semibold text-slate-300 whitespace-nowrap shrink-0" for="editTenantPlan">Plan tier *</label>
+                            <button type="button" onclick="openComparePlansModal()" class="shrink-0 whitespace-nowrap px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide bg-slate-800 hover:bg-slate-700 text-brand-400 border border-brand-500/30">
                                 <i class="fa-solid fa-table-columns mr-1" aria-hidden="true"></i>Compare Plans
                             </button>
                         </div>
@@ -2119,9 +2938,12 @@
     </script>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        if (window.__SCHEDI_HQ_DEMO) {
+            window.dispatchEvent(new Event('db_ready'));
+        } else {
+        const { initializeApp } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js");
+        const { getAuth, signInAnonymously, signInWithCustomToken } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js");
+        const { getFirestore, doc, getDoc, onSnapshot, collection } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
 
         // Safely parse injected configs to prevent [object Object] syntax crashes
         let firebaseConfig = {};
@@ -2178,6 +3000,7 @@
             } catch (error) {
                 console.warn("Failed to initialize Firebase App:", error);
             }
+        }
         }
     </script>
 
@@ -2664,6 +3487,7 @@
         }
 
         async function saveState() {
+            if (window.__SCHEDI_HQ_DEMO) return { appointments: {}, profile: { ok: false, skipped: true, demo: true } };
             (platformState.tenants || []).forEach(stripTenantSecrets);
             try {
                 window.localStorage.setItem(STORAGE_KEY, JSON.stringify({
@@ -2741,6 +3565,7 @@
         }
 
         function loadState() {
+            if (window.__SCHEDI_HQ_DEMO) return;
             try {
                 var raw = window.localStorage.getItem(STORAGE_KEY);
                 if (!raw) return;
@@ -2915,7 +3740,83 @@
         }
         window.addEventListener('db_ready', attachCloudDbSync);
 
+        function bootSchediHqDemo() {
+            var tenants = [
+                { id: 'harbor-demo', name: 'Harbor Studio', slug: 'harbor-demo', industry: 'Salon', ownerName: 'Avery Cole', ownerEmail: 'demo@harbor.studio', ownerPhone: '(555) 010-1944', plan: 'pro', monthlyPrice: 49, subscriptionStatus: 'active', paymentGateways: { card: true, cashapp: true, later: true }, cashAppTag: '$HarborStudio', services: [{ id: 1, name: 'Cut & style', price: 65, icon: 'fa-scissors' }], createdAt: '2026-01-04' },
+                { id: 'northwind-demo', name: 'Northwind Clinic', slug: 'northwind-clinic', industry: 'Medical', ownerName: 'Riley North', ownerEmail: 'demo@northwind.clinic', ownerPhone: '(555) 010-2200', plan: 'starter', monthlyPrice: 29, subscriptionStatus: 'paused', paymentGateways: {}, services: [], createdAt: '2026-02-11' },
+                { id: 'lumen-demo', name: 'Lumen Studio', slug: 'lumen-studio', industry: 'Consulting', ownerName: 'Jules Lumen', ownerEmail: 'demo@lumen.studio', ownerPhone: '(555) 010-3300', plan: 'pro', monthlyPrice: 0, subscriptionStatus: 'active', complimentaryPro: true, billingExempt: true, paymentGateways: { later: true }, services: [{ id: 1, name: 'Consult', price: 0, icon: 'fa-comments' }], createdAt: '2026-03-02' }
+            ];
+            tenants.forEach(function (t) {
+                try { ensurePaymentGateways(t); } catch (errPay) {}
+                try { ensureDepositSettings(t); } catch (errDep) {}
+                try { ensureCancellationFeeSettings(t); } catch (errFee) {}
+                try { ensureAllowRecurringBookings(t); } catch (errRec) {}
+                try { ensureBlockedArrays(t); } catch (errBlock) {}
+                try { ensureTenantPlan(t); } catch (errPlan) {}
+            });
+            platformState.tenants = tenants;
+            platformState.activeTenantId = tenants[0].id;
+            platformState.isAgencyMasterLoggedIn = true;
+            platformState.isTenantOwnerLoggedIn = false;
+            platformState.ownerSelfSession = false;
+            platformState.appointmentCounts = { 'harbor-demo': 42, 'northwind-demo': 6, 'lumen-demo': 11 };
+            platformState.tenantHealth = {
+                'harbor-demo': { month: 18, unpaid: 3, lastBooking: '2026-10-15' },
+                'northwind-demo': { month: 0, unpaid: 0, lastBooking: '' },
+                'lumen-demo': { month: 4, unpaid: 0, lastBooking: '2026-10-12' }
+            };
+            window.__schediCloudTenantsLoaded = true;
+            var note = document.getElementById('hqDemoNote');
+            if (note) note.hidden = false;
+            try { applySchediTheme(localStorage.getItem('schedi.theme') === 'light' ? 'light' : 'dark'); } catch (errTheme) {}
+            try { updateMasterAuthUI(); } catch (errAuth) {}
+            switchPlatformMode('agency');
+        }
+        function hqSetNavOn(id) {
+            document.querySelectorAll('[data-hq-go]').forEach(function (btn) {
+                btn.classList.toggle('is-on', btn.getAttribute('data-hq-go') === id);
+            });
+        }
+        window.hqNewGo = function (id) {
+            var el = document.getElementById(id);
+            if (el && el.scrollIntoView) el.scrollIntoView({ block: 'start' });
+            hqSetNavOn(id);
+        };
+        function hqInitScrollSpy() {
+            if (!document.documentElement.classList.contains('schedi-newhq') || window.__hqScrollSpyOn) return;
+            var ids = ['hqGlanceCard', 'agencyDirectory', 'agencyBilling', 'agencyEmail'];
+            var sections = ids.map(function (id) { return document.getElementById(id); }).filter(Boolean);
+            if (!sections.length || typeof IntersectionObserver !== 'function') return;
+            window.__hqScrollSpyOn = true;
+            function hqSpyPick() {
+                var line = 88;
+                var active = sections[0].id;
+                for (var i = 0; i < sections.length; i++) {
+                    if (sections[i].getBoundingClientRect().top <= line) active = sections[i].id;
+                }
+                var last = sections[sections.length - 1];
+                var doc = document.documentElement;
+                var atBottom = last && window.innerHeight + window.scrollY >= doc.scrollHeight - 4;
+                if (atBottom && window.scrollY > 8 && last.getBoundingClientRect().top > line) active = last.id;
+                hqSetNavOn(active);
+            }
+            var observer = new IntersectionObserver(function () { hqSpyPick(); }, {
+                root: null,
+                rootMargin: '-64px 0px -45% 0px',
+                threshold: [0, 0.15, 0.35, 0.55, 0.75, 1]
+            });
+            sections.forEach(function (el) { observer.observe(el); });
+            hqSpyPick();
+            window.addEventListener('load', hqSpyPick);
+            window.addEventListener('pageshow', hqSpyPick);
+        }
+
         window.addEventListener('DOMContentLoaded', function () {
+            try { hqInitScrollSpy(); } catch (errSpy) {}
+            if (window.__SCHEDI_HQ_DEMO && typeof isAgencyHqRoute === 'function' && isAgencyHqRoute()) {
+                try { bootSchediHqDemo(); } catch (errDemo) { console.error(errDemo); }
+                return;
+            }
             loadState();
             if (!window.db && ensureAppointmentManageTokens(platformState.tenants)) saveState();
             if (platformState.agencyStripe) {
@@ -3667,7 +4568,7 @@
         function isReservedBusinessSlug(slug) {
             var first = String(slug || '').toLowerCase();
             if (!first) return true;
-            if (first === 'index.html' || first === 'agency' || first === 'admin' || first === 'hq' || first === 'signup' || first === 'terms' || first === 'privacy' || first === 'help' || first === 'auth' || first === 'reset' || first === 'billing' || first === 'api' || first === 'www' || first === 'schedi' || first === 'index' || first === 'login' || first === 'features' || first === 'compare' || first === 'for' || first === 'pricing' || first === 'portal' || first === 'faq') return true;
+            if (first === 'index.html' || first === 'agency' || first === 'admin' || first === 'hq' || first === 'signup' || first === 'terms' || first === 'privacy' || first === 'help' || first === 'auth' || first === 'reset' || first === 'billing' || first === 'api' || first === 'www' || first === 'schedi' || first === 'index' || first === 'login' || first === 'features' || first === 'compare' || first === 'for' || first === 'pricing' || first === 'portal' || first === 'portal-preview' || first === 'faq') return true;
             // SCHEDI_HQ_START
             if (first === 'hq-9h7p52') return true;
             // SCHEDI_HQ_END
@@ -5545,6 +6446,488 @@
         }
 
 // SCHEDI_HQ_START
+        function hqDashMoney(n, cents) {
+            var x = Number(n) || 0;
+            if (cents) return '$' + x.toFixed(2);
+            if (Math.round(x * 100) % 100 === 0) return '$' + Math.round(x);
+            return '$' + x.toFixed(2);
+        }
+        function hqDashShortDate(iso) {
+            var raw = String(iso || '');
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) return '';
+            var mon = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][Number(raw.slice(5, 7)) - 1];
+            return mon ? (mon + ' ' + Number(raw.slice(8, 10))) : '';
+        }
+        function hqDashSince(iso) {
+            var raw = String(iso || '');
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) return '';
+            var mon = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][Number(raw.slice(5, 7)) - 1];
+            return mon ? ('Since ' + mon + ' ' + Number(raw.slice(8, 10)) + ', ' + raw.slice(0, 4)) : '';
+        }
+        function hqDashPlanName(t) {
+            var plan = ensureTenantPlan(t);
+            return plan === 'pro' ? 'Pro' : (plan === 'starter' ? 'Starter' : 'Free');
+        }
+        function hqDashStatusPill(t) {
+            var st = hqStatusOf(t);
+            if (st === 'paused') return '<span class="hqd-pill hqd-pill-amber">Paused</span>';
+            if (st === 'setup') return '<span class="hqd-pill hqd-pill-rose">Needs setup</span>';
+            return '<span class="hqd-pill hqd-pill-ok">Active</span>';
+        }
+        function hqDashPlanPill(t) {
+            var name = hqDashPlanName(t);
+            var tone = name === 'Pro' ? 'hqd-pill-ok' : (name === 'Starter' ? 'hqd-pill-starter' : 'hqd-pill-grey');
+            return '<span class="hqd-pill ' + tone + '">' + name + '</span>';
+        }
+        function hqDashSwitch(attrs, on) {
+            return '<input type="checkbox" class="hqd-switch" role="switch" ' + attrs + (on ? ' checked' : '') + '>';
+        }
+        function hqDashLiveRow(t, compact) {
+            var on = t.subscriptionStatus === 'active';
+            var copy = compact
+                ? '<span class="hqd-switch-title"><i class="fa-solid fa-globe" aria-hidden="true"></i> Booking page live</span>'
+                : '<span class="hqd-switch-copy"><i class="fa-solid fa-globe" aria-hidden="true"></i><span><span class="hqd-switch-title">Booking page live</span><span class="hqd-switch-note">Turn off to pause the public booking page</span></span></span>';
+            return '<label class="hqd-switch-row">' + copy + hqDashSwitch('data-hqd-live="' + esc(t.id) + '" aria-label="Booking page live for ' + esc(t.name || 'business') + '"', on) + '</label>';
+        }
+        function hqDashCompRow(t, compact) {
+            var on = isComplimentaryPro(t);
+            var copy = compact
+                ? '<span class="hqd-switch-title"><i class="fa-solid fa-gift" aria-hidden="true"></i> Complimentary Pro</span>'
+                : '<span class="hqd-switch-copy"><i class="fa-solid fa-gift" aria-hidden="true"></i><span><span class="hqd-switch-title">Complimentary Pro</span><span class="hqd-switch-note">Pro features with no subscription charge</span></span></span>';
+            return '<label class="hqd-switch-row">' + copy + hqDashSwitch('data-hqd-comp="' + esc(t.id) + '" aria-label="Complimentary Pro for ' + esc(t.name || 'business') + '"', on) + '</label>';
+        }
+        function hqDashMenu(t, quick) {
+            var id = jsArg(t.id);
+            var pause = t.subscriptionStatus === 'active';
+            var comp = isComplimentaryPro(t);
+            var items = '<a role="menuitem" href="' + esc(getTenantPublicBookingUrl(t)) + '" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>Open booking page</a>'
+                + (quick ? '<button type="button" role="menuitem" onclick="loginAsTenantOwner(' + id + ')"><i class="fa-solid fa-arrow-right-to-bracket" aria-hidden="true"></i>Log in to portal</button>' : '')
+                + '<button type="button" role="menuitem" onclick="openEditTenantModal(' + id + ')"><i class="fa-solid fa-pen-to-square" aria-hidden="true"></i>Edit profile</button>';
+            if (quick) {
+                items += '<button type="button" role="menuitem" onclick="hqDashSetComp(' + id + ',' + (comp ? 'false' : 'true') + ')"><i class="fa-solid fa-gift" aria-hidden="true"></i>' + (comp ? 'Turn off Complimentary Pro' : 'Turn on Complimentary Pro') + '</button>';
+            } else {
+                items += '<button type="button" role="menuitem" onclick="hqEditTags(' + id + ')"><i class="fa-solid fa-tags" aria-hidden="true"></i>Edit HQ tags</button>'
+                    + '<button type="button" role="menuitem" onclick="resendProvisionWelcome(' + id + ')"><i class="fa-solid fa-envelope" aria-hidden="true"></i>Email welcome</button>'
+                    + '<button type="button" role="menuitem" onclick="toggleSubscriptionPause(' + id + ')"><i class="fa-solid ' + (pause ? 'fa-pause' : 'fa-play') + '" aria-hidden="true"></i>' + (pause ? 'Pause business' : 'Resume business') + '</button>'
+                    + '<button type="button" role="menuitem" class="hq-more-danger" onclick="deleteAgencyTenant(' + id + ')"><i class="fa-solid fa-trash-can" aria-hidden="true"></i>Delete business</button>';
+            }
+            return '<details class="hq-more hqd-more"><summary aria-label="More actions for ' + esc(t.name || 'business') + '"><i class="fa-solid fa-ellipsis-vertical" aria-hidden="true"></i></summary><div class="hq-more-menu" role="menu">' + items + '</div></details>';
+        }
+        function hqDashPayChips(t) {
+            var pg = (t && t.paymentGateways) || {};
+            var bits = [];
+            if (pg.card) bits.push('<span class="hqd-pay hqd-pay-card"><i class="fa-solid fa-credit-card" aria-hidden="true"></i> Card</span>');
+            if (pg.cashapp && t.cashAppTag) bits.push('<span class="hqd-pay hqd-pay-cash"><i class="fa-solid fa-dollar-sign" aria-hidden="true"></i> Cash App ' + esc(t.cashAppTag) + '</span>');
+            if (pg.zelle && (t.zelleHandle || t.zelleLink)) bits.push('<span class="hqd-pay hqd-pay-zelle">Zelle ' + esc(t.zelleHandle || '') + '</span>');
+            if (pg.venmo && (t.venmoHandle || t.venmoLink)) bits.push('<span class="hqd-pay hqd-pay-venmo">Venmo ' + esc(t.venmoHandle || '') + '</span>');
+            if (pg.paypal && (t.paypalHandle || t.paypalLink)) bits.push('<span class="hqd-pay hqd-pay-paypal">PayPal ' + esc(t.paypalHandle || '') + '</span>');
+            if (pg.later) bits.push('<span class="hqd-pay hqd-pay-later">Pay later</span>');
+            if (!bits.length) bits.push('<span class="hqd-meta">No payment method</span>');
+            return bits.join('');
+        }
+        function hqDashServices(t) {
+            var list = Array.isArray(t.services) ? t.services : [];
+            if (!list.length) return '<p class="hqd-meta">No services</p>';
+            return list.map(function (s) {
+                var icon = String((s && s.icon) || 'fa-scissors');
+                if (!/^fa-[a-z0-9-]+$/i.test(icon)) icon = 'fa-scissors';
+                var price = (s && s.price != null && s.price !== '') ? hqDashMoney(s.price, false) : '—';
+                return '<div class="hqd-svc"><span><i class="fa-solid ' + icon + '" aria-hidden="true"></i> ' + esc((s && s.name) || 'Service') + '</span><strong>' + price + '</strong></div>';
+            }).join('');
+        }
+        function hqDashTags(t) {
+            var tags = hqTagsOf(t).map(function (g) { return '<span class="hqd-tag">' + esc(g) + '</span>'; }).join('');
+            return '<div class="hqd-tags">' + tags + '<button type="button" class="hqd-tag-add" onclick="hqEditTags(' + jsArg(t.id) + ')"><i class="fa-solid fa-plus" aria-hidden="true"></i> Add tag</button></div>';
+        }
+        function hqDashMatch(t, p, skipStatus) {
+            if (!t) return false;
+            var q = String(p.q || '').toLowerCase().trim();
+            if (q && String(t.name || '').toLowerCase().indexOf(q) === -1 && String(t.ownerName || '').toLowerCase().indexOf(q) === -1 && String(t.ownerEmail || '').toLowerCase().indexOf(q) === -1 && String(t.slug || t.id || '').toLowerCase().indexOf(q) === -1) return false;
+            if (p.plan && ensureTenantPlan(t) !== p.plan) return false;
+            if (!skipStatus && p.status && hqStatusOf(t) !== p.status) return false;
+            if (p.type && String(t.industry || '') !== p.type) return false;
+            if (p.tag && !hqTagsOf(t).some(function (g) { return g.toLowerCase() === p.tag; })) return false;
+            return true;
+        }
+        function hqDashSortRows(rows, sort) {
+            var byName = function (a, b) { return String(a.name || '').localeCompare(String(b.name || ''), undefined, { sensitivity: 'base' }); };
+            rows.sort(function (a, b) {
+                if (sort === 'plan') return (HQ_PLAN_RANK[ensureTenantPlan(a)] - HQ_PLAN_RANK[ensureTenantPlan(b)]) || byName(a, b);
+                if (sort === 'newest') return String(b.createdAt || '').localeCompare(String(a.createdAt || '')) || byName(a, b);
+                if (sort === 'lastBooking') {
+                    var ha = hqHealthOf(a), hb = hqHealthOf(b);
+                    return String((hb && hb.lastBooking) || '').localeCompare(String((ha && ha.lastBooking) || '')) || byName(a, b);
+                }
+                return byName(a, b);
+            });
+            return rows;
+        }
+        function hqDashMount() {
+            var dash = document.getElementById('hqDash');
+            var root = document.getElementById('agencyMasterDashboard');
+            if (!dash || !root || !document.documentElement.classList.contains('schedi-newhq')) return;
+            root.classList.add('hq-dash-on');
+            dash.hidden = false;
+            if (dash.getAttribute('data-hqd-mounted') === '1') return;
+            dash.setAttribute('data-hqd-mounted', '1');
+            var search = document.getElementById('agencySearchInput');
+            var searchMount = document.getElementById('hqdSearchMount');
+            if (search && searchMount && search.parentElement !== searchMount) searchMount.appendChild(search);
+            var billForm = document.querySelector('#agencyBilling form');
+            var billMount = document.getElementById('hqdGatewayMount');
+            if (billForm && billMount && billForm.parentElement !== billMount) billMount.appendChild(billForm);
+            var emailForm = document.querySelector('#agencyEmail form');
+            var emailMount = document.getElementById('hqdEmailMount');
+            if (emailForm && emailMount && emailForm.parentElement !== emailMount) emailMount.appendChild(emailForm);
+            var badge = document.getElementById('agencyStripeStatusBadge');
+            var badgeMount = document.getElementById('hqdStripeMount');
+            if (badge && badgeMount && !badgeMount.contains(badge)) badgeMount.appendChild(badge);
+            var emailBadge = document.getElementById('agencyEmailDeliveryBadge');
+            var emailBadgeMount = document.getElementById('hqdEmailBadgeMount');
+            if (emailBadge && emailBadgeMount && !emailBadgeMount.contains(emailBadge)) emailBadgeMount.appendChild(emailBadge);
+            var auto = document.getElementById('agencyAutoDraftEnabled');
+            if (auto && billForm) {
+                billForm.classList.add('hqd-gateway');
+                auto.classList.add('hqd-switch');
+                auto.setAttribute('role', 'switch');
+                auto.setAttribute('aria-label', 'Auto-debit on the 1st');
+                var header = auto.closest('.border-b');
+                if (header && header.parentElement) {
+                    var autoRow = document.createElement('label');
+                    autoRow.className = 'hqd-switch-row';
+                    autoRow.innerHTML = '<span class="hqd-switch-copy"><i class="fa-brands fa-paypal" aria-hidden="true"></i><span><span class="hqd-switch-title">Auto-debit on the 1st</span><span class="hqd-switch-note">PayPal / webhook auto-draft</span></span></span>';
+                    autoRow.appendChild(auto);
+                    header.replaceWith(autoRow);
+                }
+            }
+            var editComp = document.getElementById('editComplimentaryPro');
+            if (editComp) {
+                editComp.classList.add('hqd-switch');
+                editComp.setAttribute('role', 'switch');
+                var editLabel = editComp.closest('label');
+                if (editLabel) editLabel.classList.add('hqd-switch-row');
+            }
+            var saveGate = billMount && billMount.querySelector('button[type="submit"] span');
+            if (saveGate) saveGate.textContent = 'Save payment gateways';
+            var nameField = document.getElementById('agencyEmailFromName');
+            var urlField = document.getElementById('agencyEmailWebhook');
+            if (nameField && urlField && nameField.parentElement && urlField.parentElement && nameField.parentElement !== urlField.parentElement) {
+                urlField.parentElement.parentElement.insertBefore(nameField.parentElement, urlField.parentElement);
+            }
+            var saveMail = emailMount && emailMount.querySelector('button[type="submit"]');
+            if (saveMail) saveMail.textContent = 'Save sender';
+            var testMail = emailMount && emailMount.querySelector('button[type="button"]');
+            if (testMail) testMail.innerHTML = '<i class="fa-solid fa-paper-plane" aria-hidden="true"></i> Send test';
+            if (!window.__hqDashBound) {
+                window.__hqDashBound = true;
+                document.addEventListener('click', function (event) {
+                    var host = document.getElementById('hqDash');
+                    if (!host || host.hidden) return;
+                    var node = event.target && event.target.closest ? event.target : null;
+                    if (!node || !node.closest || !host.contains(node)) return;
+                    var go = node.closest('[data-hqd-go]');
+                    if (go) { hqDashGo(go.getAttribute('data-hqd-go')); return; }
+                    var open = node.closest('[data-hqd-open]');
+                    if (open && !node.closest('button, a, summary, input, label, .hq-more')) hqDashOpen(open.getAttribute('data-hqd-open'));
+                });
+                document.addEventListener('change', function (event) {
+                    var el = event.target;
+                    if (!el || !el.getAttribute) return;
+                    var live = el.getAttribute('data-hqd-live');
+                    if (live) { el.checked = !el.checked; toggleSubscriptionPause(live); return; }
+                    var comp = el.getAttribute('data-hqd-comp');
+                    if (comp) { var next = el.checked; el.checked = !next; hqDashSetComp(comp, next); }
+                });
+                document.addEventListener('keydown', function (event) {
+                    if (event.key !== 'Escape' || !document.documentElement.classList.contains('schedi-newhq')) return;
+                    var dialog = document.getElementById('hqDashDialog');
+                    if (dialog && !dialog.hidden) { hqDashDialogClose(false); return; }
+                    var sheet = document.getElementById('hqDashSheet');
+                    if (sheet && !sheet.hidden) hqDashCloseSheet();
+                });
+            }
+        }
+        function hqDashShow() {
+            var view = window.__hqDashView || 'overview';
+            document.querySelectorAll('#hqDash [data-hqd-view]').forEach(function (el) {
+                el.hidden = el.getAttribute('data-hqd-view') !== view;
+            });
+            var slot = { overview: 0, directory: 1, billing: 3, email: 4 }[view] || 0;
+            var bar = document.getElementById('hqDashTabbar');
+            if (bar) bar.style.setProperty('--hq-tab-slot', String(slot));
+            document.querySelectorAll('#hqDash [data-hqd-go]').forEach(function (btn) {
+                var on = btn.getAttribute('data-hqd-go') === view;
+                btn.classList.toggle('is-on', on);
+                if (on) btn.setAttribute('aria-current', 'page');
+                else btn.removeAttribute('aria-current');
+            });
+        }
+        window.hqDashGo = function (id) {
+            if (id !== 'overview' && id !== 'directory' && id !== 'billing' && id !== 'email') return;
+            window.__hqDashView = id;
+            hqDashShow();
+            try { window.scrollTo(0, 0); } catch (errTop) {}
+        };
+        window.hqDashBill = function (plan) {
+            window.__hqBillPlan = String(plan || '');
+            hqDashPaint();
+        };
+        window.hqDashOpen = function (id) {
+            document.querySelectorAll('details.hq-more[open]').forEach(function (el) { el.open = false; });
+            window.__hqDashSheetId = id;
+            hqDashPaintSheet();
+        };
+        window.hqDashCloseSheet = function () {
+            window.__hqDashSheetId = '';
+            var sheet = document.getElementById('hqDashSheet');
+            if (sheet) sheet.hidden = true;
+            var dialog = document.getElementById('hqDashDialog');
+            if (!dialog || dialog.hidden) document.body.classList.remove('hqd-sheet-open');
+        };
+        window.hqDashConfirm = function (opts) {
+            var root = document.getElementById('hqDashDialog');
+            if (!root) return;
+            opts = opts || {};
+            window.__hqDashDialogYes = opts.onYes || null;
+            var title = document.getElementById('hqdDialogTitle');
+            var body = document.getElementById('hqdDialogBody');
+            var field = document.getElementById('hqdDialogField');
+            var input = document.getElementById('hqdDialogInput');
+            var label = document.getElementById('hqdDialogFieldLabel');
+            var yes = document.getElementById('hqdDialogYes');
+            if (title) title.textContent = opts.title || 'Confirm';
+            if (body) body.textContent = opts.body || '';
+            if (field && input) {
+                var show = !!opts.field;
+                field.hidden = !show;
+                if (show) {
+                    if (label) label.textContent = opts.field.label || '';
+                    input.value = opts.field.value || '';
+                }
+            }
+            if (yes) {
+                yes.textContent = opts.confirmLabel || 'Confirm';
+                yes.classList.toggle('hqd-danger', !!opts.danger);
+                yes.classList.toggle('hqd-login', !opts.danger);
+            }
+            root.hidden = false;
+            document.body.classList.add('hqd-sheet-open');
+            if (opts.field && input) input.focus();
+        };
+        window.hqDashDialogClose = function (accepted) {
+            var root = document.getElementById('hqDashDialog');
+            var input = document.getElementById('hqdDialogInput');
+            var value = input ? input.value : '';
+            var yes = window.__hqDashDialogYes;
+            window.__hqDashDialogYes = null;
+            if (root) root.hidden = true;
+            var sheet = document.getElementById('hqDashSheet');
+            if (!sheet || sheet.hidden) document.body.classList.remove('hqd-sheet-open');
+            if (accepted && yes) yes(value);
+        };
+        window.hqDashSetComp = function (tenantId, on) {
+            var tenant = getTenant(tenantId);
+            if (!tenant) return;
+            if (on) {
+                tenant.complimentaryPro = true;
+                tenant.billingExempt = true;
+                tenant.plan = 'pro';
+                tenant.monthlyPrice = 0;
+                tenant.subscriptionStatus = 'active';
+            } else {
+                tenant.complimentaryPro = false;
+                tenant.billingExempt = false;
+                if (ensureTenantPlan(tenant) !== 'free' && ensureTenantPlan(tenant) !== 'starter' && ensureTenantPlan(tenant) !== 'pro') tenant.plan = 'pro';
+                tenant.monthlyPrice = monthlyFeeForPlan(ensureTenantPlan(tenant));
+            }
+            saveState();
+            renderAgencyDashboard();
+        };
+        function hqDashSheetHtml(t) {
+            var h = hqHealthOf(t) || {};
+            var counts = platformState.appointmentCounts || {};
+            var all = counts[t.id] == null ? '—' : String(Number(counts[t.id]) || 0);
+            var month = h.month == null ? '—' : String(h.month);
+            var unpaid = h.unpaid == null ? '—' : String(h.unpaid);
+            var last = hqDashShortDate(h.lastBooking) || '—';
+            var since = hqDashSince(t.createdAt);
+            var price = hqDashMoney(Number(t.monthlyPrice) || 0, false) + '/mo';
+            return '<div class="hqd-pills">' + hqDashStatusPill(t) + hqDashPlanPill(t) + '<span class="hqd-pill hqd-pill-grey">' + esc(price) + '</span>' + (since ? '<span class="hqd-pill hqd-pill-grey">' + esc(since) + '</span>' : '') + '</div>'
+                + hqDashLiveRow(t, false) + hqDashCompRow(t, false)
+                + '<h4 class="hqd-label">Activity</h4><div class="hqd-metrics hqd-metrics-4"><div><strong>' + esc(all) + '</strong><span>All time</span></div><div><strong>' + esc(month) + '</strong><span>This month</span></div><div><strong>' + esc(unpaid) + '</strong><span>Unpaid</span></div><div><strong>' + esc(last) + '</strong><span>Last</span></div></div>'
+                + '<h4 class="hqd-label">Owner</h4>'
+                + '<p class="hqd-contact"><i class="fa-solid fa-user" aria-hidden="true"></i> ' + esc(t.ownerName || '—') + '</p>'
+                + '<p class="hqd-contact"><i class="fa-solid fa-envelope" aria-hidden="true"></i> ' + esc(t.ownerEmail || '—') + '</p>'
+                + '<p class="hqd-contact"><i class="fa-solid fa-phone" aria-hidden="true"></i> ' + esc(t.ownerPhone || '—') + '</p>'
+                + '<h4 class="hqd-label">Takes payment by</h4><div class="hqd-pills">' + hqDashPayChips(t) + '</div>'
+                + '<h4 class="hqd-label">Services</h4>' + hqDashServices(t)
+                + '<h4 class="hqd-label">HQ tags</h4>' + hqDashTags(t)
+                + '<div class="hqd-sheet-actions"><button type="button" class="hqd-login" onclick="loginAsTenantOwner(' + jsArg(t.id) + ')"><i class="fa-solid fa-arrow-right-to-bracket" aria-hidden="true"></i> Log in to portal</button>'
+                + '<div class="hqd-action-row"><a class="hqd-ghost" href="' + esc(getTenantPublicBookingUrl(t)) + '" target="_blank" rel="noopener">Open booking page</a>'
+                + '<button type="button" class="hqd-ghost" onclick="openEditTenantModal(' + jsArg(t.id) + ')">Edit profile</button>'
+                + '<button type="button" class="hqd-ghost" onclick="resendProvisionWelcome(' + jsArg(t.id) + ')">Email welcome</button>'
+                + '<button type="button" class="hqd-danger" onclick="deleteAgencyTenant(' + jsArg(t.id) + ')">Delete business</button></div></div>';
+        }
+        function hqDashPaintSheet() {
+            var sheet = document.getElementById('hqDashSheet');
+            var body = document.getElementById('hqdSheetBody');
+            var title = document.getElementById('hqdSheetTitle');
+            var sub = document.getElementById('hqdSheetSub');
+            var tenant = window.__hqDashSheetId ? getTenant(window.__hqDashSheetId) : null;
+            if (!sheet || !body || !tenant) { if (sheet && window.__hqDashSheetId) window.hqDashCloseSheet(); return; }
+            if (title) title.textContent = tenant.name || 'Business';
+            if (sub) sub.innerHTML = '<span class="hqd-mono">schedi.app/' + esc(tenant.slug || tenant.id) + '</span>' + (tenant.industry ? ' · ' + esc(tenant.industry) : '');
+            body.innerHTML = hqDashSheetHtml(tenant);
+            sheet.hidden = false;
+            document.body.classList.add('hqd-sheet-open');
+        }
+        function hqDashBizCard(t) {
+            var h = hqHealthOf(t) || {};
+            var month = h.month == null ? '—' : String(h.month);
+            var unpaid = h.unpaid == null ? '—' : String(h.unpaid);
+            var last = hqDashShortDate(h.lastBooking) || '—';
+            var warns = hqWarnings(t).map(function (w) { return '<span class="hqd-pill hqd-pill-rose"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> ' + esc(w) + '</span>'; }).join('');
+            var comp = isComplimentaryPro(t) ? '<span class="hqd-pill hqd-pill-ok"><i class="fa-solid fa-gift" aria-hidden="true"></i> Complimentary</span>' : '';
+            var id = jsArg(t.id);
+            return '<article class="hqd-card hqd-biz" data-hqd-open="' + esc(t.id) + '"><div class="hqd-biz-top"><div><button type="button" class="hqd-name" onclick="hqDashOpen(' + id + ')">' + esc(t.name) + '</button><p class="hqd-slug"><span class="hqd-mono">/' + esc(t.slug || t.id) + '</span> · ' + esc(t.industry || '') + '</p><p class="hqd-owner">' + esc(t.ownerName || '') + (t.ownerEmail ? ' · ' + esc(t.ownerEmail) : '') + '</p><div class="hqd-pills">' + hqDashPlanPill(t) + comp + warns + '</div></div><div class="hqd-biz-side">' + hqDashStatusPill(t) + hqDashMenu(t) + '</div></div>'
+                + '<div class="hqd-metrics"><div><strong>' + esc(month) + '</strong><span>This month</span></div><div><strong class="' + (Number(h.unpaid) > 0 ? 'is-hot' : '') + '">' + esc(unpaid) + '</strong><span>Unpaid</span></div><div><strong>' + esc(last) + '</strong><span>Last booking</span></div></div>'
+                + hqDashLiveRow(t, true)
+                + '<button type="button" class="hqd-login" onclick="loginAsTenantOwner(' + id + ')"><i class="fa-solid fa-arrow-right-to-bracket" aria-hidden="true"></i> Log in to portal</button></article>';
+        }
+        function hqDashBillCard(t) {
+            var price = Number(t.monthlyPrice) || 0;
+            var comp = isComplimentaryPro(t);
+            var paused = t.subscriptionStatus !== 'active';
+            var note = comp ? 'Billing exempt · not charged' : (paused ? 'Left out of MRR while paused · booking page is off' : (price > 0 ? 'Counted in MRR · owner pays from their portal' : 'Free · not charged'));
+            return '<article class="hqd-card hqd-bill" data-hqd-open="' + esc(t.id) + '"><div class="hqd-bill-top"><div><button type="button" class="hqd-name" onclick="hqDashOpen(' + jsArg(t.id) + ')">' + esc(t.name) + '</button><div class="hqd-pills">' + hqDashPlanPill(t) + hqDashStatusPill(t) + (comp ? '<span class="hqd-pill hqd-pill-ok">Complimentary</span>' : '') + '</div></div><div class="hqd-bill-side"><strong class="hqd-price">' + hqDashMoney(price, false) + '<span>/mo</span></strong>' + hqDashMenu(t, true) + '</div></div><p class="hqd-meta hqd-bill-note">' + esc(note) + '</p>' + hqDashCompRow(t, true) + '</article>';
+        }
+        function hqDashPaint() {
+            if (!document.documentElement.classList.contains('schedi-newhq') || !document.getElementById('hqDash')) return;
+            hqDashMount();
+            var tenants = (platformState.tenants || []).filter(Boolean);
+            var ready = !!window.__schediCloudTenantsLoaded;
+            var live = 0, pausedN = 0, mrr = 0, month = 0, all = 0, unpaid = 0, paying = 0, compN = 0;
+            var plans = { pro: 0, starter: 0, free: 0 };
+            var counts = platformState.appointmentCounts;
+            tenants.forEach(function (t) {
+                var active = t.subscriptionStatus === 'active';
+                if (active) { live++; mrr += Number(t.monthlyPrice) || 0; if ((Number(t.monthlyPrice) || 0) > 0 && !isComplimentaryPro(t)) paying++; }
+                else pausedN++;
+                if (isComplimentaryPro(t)) compN++;
+                plans[ensureTenantPlan(t)] = (plans[ensureTenantPlan(t)] || 0) + 1;
+                var h = hqHealthOf(t);
+                if (h) { month += Number(h.month) || 0; unpaid += Number(h.unpaid) || 0; }
+                if (counts && counts[t.id] != null) all += Number(counts[t.id]) || 0;
+            });
+            var dateEl = document.getElementById('hqdOverviewDate');
+            if (dateEl) {
+                var today = new Date();
+                var pretty = today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+                dateEl.textContent = pretty + ' · ' + tenants.length + (tenants.length === 1 ? ' business' : ' businesses');
+            }
+            var demo = document.getElementById('hqDashDemo');
+            if (demo) demo.hidden = !document.documentElement.classList.contains('schedi-hq-demo');
+            var stats = document.getElementById('hqdStats');
+            if (stats) {
+                function cell(id, label, value, sub) { return '<article class="hqd-stat"><p>' + label + '</p><strong id="' + id + '">' + value + '</strong><span>' + sub + '</span></article>'; }
+                stats.innerHTML = cell('hqdStatBusinesses', 'Businesses', ready ? String(tenants.length) : '—', ready ? (live + ' live · ' + pausedN + ' paused') : 'live and paused')
+                    + cell('hqdStatMrr', 'Agency MRR', ready ? hqDashMoney(mrr, false) : '—', 'active subscriptions')
+                    + cell('hqdStatMonth', 'This month', ready ? String(month) : '—', 'bookings · ' + (ready && counts ? all : '—') + ' all time')
+                    + cell('hqdStatUnpaid', 'Unpaid', ready ? String(unpaid) : '—', 'appointments, all sites');
+            }
+            var attn = [];
+            tenants.forEach(function (t) {
+                var st = hqStatusOf(t);
+                var h = hqHealthOf(t) || {};
+                var due = Number(h.unpaid) || 0;
+                var isPaused = st === 'paused';
+                var setup = st === 'setup';
+                if (!isPaused && !setup && due <= 0) return;
+                var id = jsArg(t.id);
+                var slug = 'schedi.app/' + (t.slug || t.id);
+                var warns = hqWarnings(t).map(function (w) { return '<span class="hqd-pill hqd-pill-rose"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> ' + esc(w) + '</span>'; }).join('');
+                if (isPaused || setup) {
+                    var meta = (isPaused ? 'Booking page paused' : 'Needs setup') + ' · ' + slug;
+                    if (due > 0) meta += ' · ' + due + ' unpaid';
+                    attn.push({ sort: isPaused ? 0 : 1, name: String(t.name || ''), html: '<article class="hqd-card hqd-attn ' + (isPaused ? 'is-paused' : 'is-setup') + '"><div class="hqd-attn-top"><div><h4>' + esc(t.name) + '</h4><p class="hqd-meta">' + esc(meta) + '</p><div class="hqd-pills">' + warns + hqDashPlanPill(t) + '</div></div>' + hqDashStatusPill(t) + '</div><div class="hqd-attn-actions"><button type="button" class="hqd-ghost" onclick="loginAsTenantOwner(' + id + ')">Log in</button>' + (isPaused ? '<button type="button" class="hqd-resume" onclick="toggleSubscriptionPause(' + id + ')"><i class="fa-solid fa-play" aria-hidden="true"></i> Resume</button>' : '') + '</div></article>' });
+                    return;
+                }
+                attn.push({ sort: 2, name: String(t.name || ''), html: '<article class="hqd-card hqd-attn is-unpaid"><div class="hqd-attn-top"><div><h4>' + esc(t.name) + '</h4><p class="hqd-meta">' + esc(due + ' unpaid appointment' + (due === 1 ? '' : 's') + ' · ' + (t.ownerName || 'Owner')) + '</p></div><span class="hqd-pill hqd-pill-rose">' + due + ' unpaid</span></div><button type="button" class="hqd-ghost hqd-wide" onclick="loginAsTenantOwner(' + id + ')">Log in to follow up</button></article>' });
+            });
+            attn.sort(function (a, b) { return a.sort - b.sort || a.name.localeCompare(b.name); });
+            var attnCount = document.getElementById('hqdAttnCount');
+            if (attnCount) { attnCount.hidden = attn.length === 0; attnCount.textContent = String(attn.length); }
+            var attnEl = document.getElementById('hqdAttention');
+            if (attnEl) attnEl.innerHTML = attn.length ? attn.map(function (row) { return row.html; }).join('') : '<p class="hqd-meta">Nothing needs attention.</p>';
+            var latest = tenants.slice().sort(function (a, b) {
+                var ha = (hqHealthOf(a) || {}).lastBooking || '';
+                var hb = (hqHealthOf(b) || {}).lastBooking || '';
+                if (ha !== hb) return String(hb).localeCompare(String(ha));
+                return String(a.name || '').localeCompare(String(b.name || ''));
+            });
+            var latestEl = document.getElementById('hqdLatest');
+            if (latestEl) latestEl.innerHTML = latest.map(function (t) {
+                var h = hqHealthOf(t) || {};
+                var when = hqDashShortDate(h.lastBooking) || '—';
+                var shown = h.month == null ? '—' : String(h.month);
+                var active = t.subscriptionStatus === 'active';
+                return '<article class="hqd-card hqd-latest" data-hqd-open="' + esc(t.id) + '"><span class="hqd-when">' + esc(when) + '</span><button type="button" class="hqd-latest-main" onclick="hqDashOpen(' + jsArg(t.id) + ')"><strong>' + esc(t.name) + '</strong><span>' + esc(shown + ' this month · ' + (t.industry || 'Business')) + '</span></button>' + (active ? '<span class="hqd-pill hqd-pill-ok">Active</span>' : '<span class="hqd-pill hqd-pill-amber">Paused</span>') + hqDashMenu(t, true) + '</article>';
+            }).join('');
+            var pref = hqDirPrefs();
+            var facet = tenants.filter(function (t) { return hqDashMatch(t, pref, true); });
+            var chips = document.getElementById('hqdStatusChips');
+            if (chips) {
+                function count(status) { return facet.filter(function (t) { return status ? hqStatusOf(t) === status : true; }).length; }
+                function chip(label, value, n) {
+                    var on = String(pref.status || '') === value;
+                    return '<button type="button" class="hqd-chip' + (on ? ' is-on' : '') + '" aria-pressed="' + (on ? 'true' : 'false') + '" onclick="hqDirSet(\'status\',' + jsArg(value) + ')">' + label + ' <span class="hqd-chip-count">' + n + '</span></button>';
+                }
+                chips.innerHTML = chip('All', '', count('')) + chip('Active', 'active', count('active')) + chip('Paused', 'paused', count('paused')) + chip('Needs setup', 'setup', count('setup'));
+            }
+            var typeSel = document.getElementById('hqdType');
+            if (typeSel) {
+                var types = {};
+                tenants.forEach(function (t) { if (t.industry) types[String(t.industry)] = 1; });
+                var typeHtml = '<option value="">Type: All</option>' + Object.keys(types).sort().map(function (k) { return '<option value="' + esc(k) + '">Type: ' + esc(k) + '</option>'; }).join('');
+                if (typeSel.getAttribute('data-opts') !== typeHtml) { typeSel.innerHTML = typeHtml; typeSel.setAttribute('data-opts', typeHtml); }
+                typeSel.value = pref.type || '';
+            }
+            var planSel = document.getElementById('hqdPlan');
+            if (planSel) planSel.value = pref.plan || '';
+            var sortSel = document.getElementById('hqdSort');
+            if (sortSel) sortSel.value = pref.sort || 'name';
+            var rows = hqDashSortRows(tenants.filter(function (t) { return hqDashMatch(t, pref, false); }), pref.sort);
+            var dirCount = document.getElementById('hqdDirCountLine');
+            if (dirCount) dirCount.textContent = rows.length + ' of ' + tenants.length + ' businesses';
+            var dirList = document.getElementById('hqdDirList');
+            if (dirList) dirList.innerHTML = rows.length ? rows.map(hqDashBizCard).join('') : '<p class="hqd-meta">No businesses match these filters.</p>';
+            var billStats = document.getElementById('hqdBillStats');
+            if (billStats) {
+                billStats.innerHTML = '<article class="hqd-stat"><p>Agency MRR</p><strong id="hqdBillMrr">' + hqDashMoney(mrr, true) + '</strong><span>' + paying + ' paying business' + (paying === 1 ? '' : 'es') + '</span></article>'
+                    + '<article class="hqd-stat"><p>Paused</p><strong>' + pausedN + '</strong><span>left out of MRR</span></article>'
+                    + '<article class="hqd-stat"><p>Complimentary</p><strong>' + compN + '</strong><span>Pro at $0</span></article>'
+                    + '<article class="hqd-stat"><p>Plans</p><strong class="hqd-stat-line">' + plans.pro + ' Pro · ' + plans.starter + ' Starter</strong><span>' + plans.free + ' Free</span></article>';
+            }
+            var billPlan = String(window.__hqBillPlan || '');
+            var billChips = document.getElementById('hqdBillChips');
+            if (billChips) {
+                function billChip(label, value, n) {
+                    var on = billPlan === value;
+                    return '<button type="button" class="hqd-chip' + (on ? ' is-on' : '') + '" aria-pressed="' + (on ? 'true' : 'false') + '" onclick="hqDashBill(' + jsArg(value) + ')">' + label + ' <span class="hqd-chip-count">' + n + '</span></button>';
+                }
+                billChips.innerHTML = billChip('All', '', tenants.length) + billChip('Pro', 'pro', plans.pro) + billChip('Starter', 'starter', plans.starter) + billChip('Free', 'free', plans.free);
+            }
+            var billRows = tenants.filter(function (t) { return !billPlan || ensureTenantPlan(t) === billPlan; }).sort(function (a, b) { return String(a.name || '').localeCompare(String(b.name || '')); });
+            var billList = document.getElementById('hqdBillList');
+            if (billList) billList.innerHTML = billRows.map(hqDashBillCard).join('');
+            var welcome = document.getElementById('hqdWelcome');
+            if (welcome) welcome.innerHTML = tenants.map(function (t) {
+                return '<article class="hqd-card hqd-welcome"><div><strong>' + esc(t.name) + '</strong><p>' + esc(t.ownerEmail || '') + '</p></div><button type="button" onclick="resendProvisionWelcome(' + jsArg(t.id) + ')"><i class="fa-solid fa-envelope" aria-hidden="true"></i> Resend</button></article>';
+            }).join('');
+            hqDashShow();
+            if (window.__hqDashSheetId) hqDashPaintSheet();
+        }
+
         function renderAgencyDashboard() {
             const loginBox = document.getElementById('agencyMasterLoginBox');
             const dashboard = document.getElementById('agencyMasterDashboard');
@@ -5580,10 +6963,11 @@
             if (stMRR) stMRR.textContent = `$${totalMRR.toFixed(2)}`;
             if (stBookings) stBookings.textContent = totalBookings === null ? '—' : totalBookings;
             if (stActivePages) stActivePages.textContent = activePages;
+            if (typeof hqPaintGlanceSummary === 'function') hqPaintGlanceSummary();
 
             const grid = document.getElementById('agencyTenantGrid');
-            if (!grid) return;
-            hqDirRender(grid);
+            if (grid) hqDirRender(grid);
+            try { hqDashPaint(); } catch (errDash) { console.error(errDash); }
         }
 
         // ---- HQ client directory: search / sort / filters / tags / health ----
@@ -5686,41 +7070,162 @@
             }
             var planLabel = function (pl) { return pl === 'pro' ? 'Pro' : (pl === 'starter' ? 'Starter' : 'Free'); };
             var warnHtml = function (w) { return w.length ? w.map(function (x) { return '<span class="hq-warn"><i class="fa-solid fa-triangle-exclamation mr-1"></i>' + esc(x) + '</span>'; }).join('') : '<span class="text-[11px] text-slate-500">No issues</span>'; };
-            var desktop = '<div class="hidden md:block overflow-x-auto"><table class="hq-table w-full text-xs"><thead><tr>'
-                + '<th>Business</th><th>Owner</th><th>Plan</th><th>Status</th><th title="Bookings this month">This month</th><th>Unpaid</th><th>Last booking</th><th>Health</th><th class="text-right">Actions</th></tr></thead><tbody>'
+            function clipLine(text, cls) {
+                var raw = text === null || text === undefined || text === '' ? '' : String(text);
+                var body = raw ? esc(raw) : '<span class="text-slate-500">—</span>';
+                return '<div class="hq-clip ' + cls + '"' + (raw ? ' title="' + esc(raw) + '"' : '') + '>' + body + '</div>';
+            }
+            function shortBookingDate(iso) {
+                var raw = iso === null || iso === undefined || iso === '' ? '' : String(iso);
+                if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw ? esc(raw) : '<span class="text-slate-500">—</span>';
+                var mon = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][Number(raw.slice(5, 7)) - 1];
+                return mon ? esc(mon + ' ' + Number(raw.slice(8, 10))) : esc(raw);
+            }
+            var compactDates = document.documentElement.classList.contains('schedi-newhq');
+            function hqMoreMenu(t) {
+                var id = jsArg(t.id);
+                var pause = t.subscriptionStatus === 'active';
+                return '<details class="hq-more"><summary aria-label="More actions for ' + esc(t.name || 'business') + '">⋯</summary><div class="hq-more-menu" role="menu">'
+                    + '<a role="menuitem" href="' + esc(getTenantPublicBookingUrl(t)) + '" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square text-xs" aria-hidden="true"></i>Open booking page</a>'
+                    + '<button type="button" role="menuitem" onclick="hqEditTags(' + id + ')"><i class="fa-solid fa-tags text-xs" aria-hidden="true"></i>Edit tags</button>'
+                    + '<button type="button" role="menuitem" onclick="openEditTenantModal(' + id + ')"><i class="fa-solid fa-pen-to-square text-xs" aria-hidden="true"></i>Edit profile</button>'
+                    + '<button type="button" role="menuitem" onclick="resendProvisionWelcome(' + id + ')"><i class="fa-solid fa-envelope text-xs" aria-hidden="true"></i>Email welcome</button>'
+                    + '<button type="button" role="menuitem" onclick="toggleSubscriptionPause(' + id + ')"><i class="fa-solid ' + (pause ? 'fa-pause' : 'fa-play') + ' text-xs" aria-hidden="true"></i>' + (pause ? 'Pause business' : 'Resume business') + '</button>'
+                    + '<button type="button" role="menuitem" class="hq-more-danger" onclick="deleteAgencyTenant(' + id + ')"><i class="fa-solid fa-trash-can text-xs" aria-hidden="true"></i>Delete business</button>'
+                    + '</div></details>';
+            }
+            var desktop = '<div class="hq-dir-scroll hidden md:block overflow-x-auto"><table class="hq-table w-full text-xs"><thead><tr>'
+                + '<th class="hq-col-biz">Business</th><th class="hq-col-owner">Owner</th><th class="hq-col-plan">Plan</th><th class="hq-col-status">Status</th><th class="hq-col-extra" title="Bookings this month">This month</th><th class="hq-col-extra">Unpaid</th><th class="hq-col-last">Last booking</th><th class="hq-col-health">Health</th><th class="hq-col-actions text-right">Actions</th></tr></thead><tbody>'
                 + rows.map(function (t) {
                     var v = view(t);
-                    return '<tr><td><div class="font-bold text-white">' + esc(t.name) + '</div><div class="font-mono text-[11px] text-slate-400">/' + esc(t.slug || t.id) + '</div>' + (v.tagsHtml ? '<div class="mt-1 flex flex-wrap gap-1">' + v.tagsHtml + '</div>' : '') + '</td>'
-                        + '<td><div class="text-slate-200">' + cell(t.ownerName) + '</div><div class="font-mono text-[11px] text-brand-400 break-all">' + cell(t.ownerEmail) + '</div></td>'
-                        + '<td><div class="font-semibold text-white">' + planLabel(v.plan) + '</div><div class="text-[11px] text-slate-400">' + esc(schediBillingLabel(t)) + '</div></td>'
-                        + '<td>' + v.stBadge + '</td><td class="font-bold text-white">' + cell(v.month) + '</td>'
-                        + '<td class="' + (v.unpaid ? 'font-bold text-amber-400' : 'text-white') + '">' + cell(v.unpaid) + '</td><td class="text-slate-300 whitespace-nowrap">' + cell(v.last) + '</td>'
-                        + '<td><div class="flex flex-col gap-1">' + warnHtml(v.w) + '</div></td>'
-                        + '<td><div class="flex items-center justify-end gap-0.5">' + v.actions + '</div></td></tr>';
+                    var bill = schediBillingLabel(t);
+                    return '<tr><td class="hq-col-biz">' + clipLine(t.name, 'font-bold text-white') + clipLine('/' + (t.slug || t.id), 'font-mono text-[11px] text-slate-400') + (v.tagsHtml ? '<div class="mt-1 flex flex-wrap gap-1">' + v.tagsHtml + '</div>' : '') + '</td>'
+                        + '<td class="hq-col-owner">' + clipLine(t.ownerName, 'text-slate-200') + clipLine(t.ownerEmail, 'font-mono text-[11px] text-brand-400 break-all') + '</td>'
+                        + '<td class="hq-col-plan"><div class="font-semibold text-white">' + planLabel(v.plan) + '</div>' + clipLine(bill, 'text-[11px] text-slate-400' + (isComplimentaryPro(t) ? ' hq-comp' : ' hq-plan-detail')) + '</td>'
+                        + '<td class="hq-col-status">' + v.stBadge + '</td><td class="hq-col-extra font-bold text-white">' + cell(v.month) + '</td>'
+                        + '<td class="hq-col-extra ' + (v.unpaid ? 'font-bold text-amber-400' : 'text-white') + '">' + cell(v.unpaid) + '</td><td class="hq-col-last text-slate-300 whitespace-nowrap"' + (v.last ? ' title="' + esc(String(v.last)) + '"' : '') + '>' + (compactDates ? shortBookingDate(v.last) : cell(v.last)) + '</td>'
+                        + '<td class="hq-col-health"><div class="flex flex-col gap-1">' + warnHtml(v.w) + '</div></td>'
+                        + '<td class="hq-col-actions">' + (compactDates
+                            ? '<div class="flex items-center justify-end gap-1.5"><button type="button" onclick="loginAsTenantOwner(' + jsArg(t.id) + ')" class="px-3 py-1.5 rounded-lg bg-brand-500 hover:bg-brand-600 text-slate-950 font-bold text-xs">Manage</button>' + hqMoreMenu(t) + '</div>'
+                            : '<div class="flex items-center justify-end gap-0.5">' + v.actions + '</div>') + '</td></tr>';
                 }).join('') + '</tbody></table></div>';
             var mobile = '<div class="md:hidden space-y-3">' + rows.map(function (t) {
                 var v = view(t);
+                var lastRaw = v.last === null || v.last === undefined || v.last === '' ? '' : String(v.last);
+                var lastHtml = compactDates ? shortBookingDate(lastRaw) : cell(v.last);
                 return '<div class="glass-card rounded-2xl p-4 space-y-3 border border-slate-800">'
-                    + '<div class="flex items-start justify-between gap-2"><div class="min-w-0"><div class="font-extrabold text-white text-sm">' + esc(t.name) + '</div><div class="font-mono text-[11px] text-slate-400">/' + esc(t.slug || t.id) + '</div></div>' + v.stBadge + '</div>'
+                    + '<div class="flex items-start justify-between gap-2"><div class="min-w-0"><div class="font-extrabold text-white text-sm">' + esc(t.name) + '</div><div class="font-mono text-[11px] text-slate-400">/' + esc(t.slug || t.id) + '</div>' + (isComplimentaryPro(t) ? '<span class="hq-comp">Complimentary Pro</span>' : '') + '</div>' + v.stBadge + '</div>'
                     + (v.tagsHtml ? '<div class="flex flex-wrap gap-1">' + v.tagsHtml + '</div>' : '')
                     + '<div class="text-[11px] text-slate-300 break-all">' + cell(t.ownerName) + ' · <span class="font-mono text-brand-400">' + cell(t.ownerEmail) + '</span></div>'
                     + '<div class="grid grid-cols-4 gap-2 text-center">'
                     + '<div class="hq-stat"><div>' + planLabel(v.plan) + '</div><span>Plan</span></div>'
                     + '<div class="hq-stat"><div>' + cell(v.month) + '</div><span>This month</span></div>'
                     + '<div class="hq-stat"><div class="' + (v.unpaid ? 'text-amber-400' : '') + '">' + cell(v.unpaid) + '</div><span>Unpaid</span></div>'
-                    + '<div class="hq-stat"><div class="text-[11px]">' + cell(v.last) + '</div><span>Last booking</span></div></div>'
+                    + '<div class="hq-stat"><div class="text-[11px]"' + (lastRaw ? ' title="' + esc(lastRaw) + '"' : '') + '>' + lastHtml + '</div><span>Last booking</span></div></div>'
                     + '<div class="flex flex-wrap gap-1">' + warnHtml(v.w) + '</div>'
                     + '<div class="flex items-center justify-between gap-1 pt-2 border-t border-slate-800">' + v.actions + '</div></div>';
             }).join('') + '</div>';
             grid.innerHTML = desktop + mobile;
         }
 
-        window.hqEditTags = function (tenantId) {
-            var t = getTenant(tenantId);
-            if (!t || t.id !== tenantId) return;
-            var cur = hqTagsOf(t).join(', ');
-            var next = window.prompt('HQ tags for ' + (t.name || t.id) + ' (comma separated, only visible in Agency HQ):', cur);
-            if (next === null) return;
+        window.placeHqMoreMenu = function (details) {
+            if (!details || !details.classList || !details.classList.contains('hq-more')) return;
+            var menu = details.querySelector('.hq-more-menu');
+            if (!menu) return;
+            if (!details.open) {
+                menu.style.visibility = 'hidden';
+                return;
+            }
+            document.querySelectorAll('details.hq-more[open]').forEach(function (el) {
+                if (el !== details) el.open = false;
+            });
+            var summary = details.querySelector('summary');
+            if (!summary) return;
+            menu.style.visibility = 'hidden';
+            menu.style.position = 'fixed';
+            menu.style.right = 'auto';
+            menu.style.bottom = 'auto';
+            menu.style.maxHeight = '';
+            menu.style.zIndex = '80';
+            var rect = summary.getBoundingClientRect();
+            var width = Math.max(menu.offsetWidth || 0, 188);
+            var sidebar = window.innerWidth > 800 ? 244 : 0;
+            var topLimit = 72;
+            var bottomGap = window.innerWidth > 800 ? 12 : 80;
+            var leftLimit = sidebar + 8;
+            var rightLimit = window.innerWidth - 8;
+            var bottomLimit = window.innerHeight - bottomGap;
+            var left = rect.right - width;
+            if (left < leftLimit) left = rect.left;
+            if (left + width > rightLimit) left = Math.max(leftLimit, rightLimit - width);
+            var natural = menu.scrollHeight || menu.offsetHeight || 240;
+            var spaceBelow = bottomLimit - (rect.bottom + 6);
+            var spaceAbove = rect.top - 6 - topLimit;
+            var openUp = spaceBelow < natural && spaceAbove > spaceBelow;
+            var room = Math.max(96, openUp ? spaceAbove : spaceBelow);
+            menu.style.maxHeight = Math.min(320, Math.floor(room)) + 'px';
+            var height = menu.offsetHeight || Math.min(natural, room);
+            var top = openUp ? rect.top - height - 6 : rect.bottom + 6;
+            var buttonVisible = rect.bottom > topLimit && rect.top < bottomLimit;
+            if (buttonVisible) {
+                if (top < topLimit) top = topLimit;
+                if (top + height > bottomLimit) top = Math.max(topLimit, bottomLimit - height);
+            }
+            menu.style.left = Math.round(left) + 'px';
+            menu.style.top = Math.round(top) + 'px';
+            menu.style.visibility = 'visible';
+        };
+
+        if (!window.__hqMoreMenuBound) {
+            window.__hqMoreMenuBound = true;
+            document.addEventListener('click', function (event) {
+                if (!document.documentElement.classList.contains('schedi-newhq')) return;
+                var summaryHost = event.target;
+                if (summaryHost && summaryHost.nodeType === 3) summaryHost = summaryHost.parentElement;
+                var summaryNode = summaryHost && summaryHost.closest ? summaryHost.closest('details.hq-more > summary') : null;
+                if (!summaryNode) return;
+                event.preventDefault();
+                var details = summaryNode.parentElement;
+                if (!details) return;
+                details.open = !details.open;
+                window.placeHqMoreMenu(details);
+            }, true);
+            document.addEventListener('toggle', function (event) {
+                var details = event.target;
+                if (!details || !details.classList || !details.classList.contains('hq-more')) return;
+                window.placeHqMoreMenu(details);
+            }, true);
+            document.addEventListener('click', function (event) {
+                if (!document.documentElement.classList.contains('schedi-newhq')) return;
+                var node = event.target && event.target.closest ? event.target : null;
+                if (!node && event.target && event.target.parentElement) node = event.target.parentElement;
+                if (!node || !node.closest) return;
+                var item = node.closest('.hq-more-menu [role="menuitem"]');
+                if (item) {
+                    var host = item.closest('details.hq-more');
+                    if (host) host.open = false;
+                }
+                document.querySelectorAll('details.hq-more[open]').forEach(function (el) {
+                    if (!el.contains(node)) el.open = false;
+                });
+            });
+            document.addEventListener('keydown', function (event) {
+                if (!document.documentElement.classList.contains('schedi-newhq') || event.key !== 'Escape') return;
+                document.querySelectorAll('details.hq-more[open]').forEach(function (el) { el.open = false; });
+            });
+            window.addEventListener('resize', function () {
+                if (!document.documentElement.classList.contains('schedi-newhq')) return;
+                document.querySelectorAll('details.hq-more[open]').forEach(function (el) { window.placeHqMoreMenu(el); });
+            });
+            window.addEventListener('scroll', function (event) {
+                if (!document.documentElement.classList.contains('schedi-newhq')) return;
+                var target = event.target;
+                if (target && target.closest && target.closest('.hq-more-menu')) return;
+                document.querySelectorAll('details.hq-more[open]').forEach(function (el) { el.open = false; });
+            }, true);
+        }
+
+        function hqApplyTags(t, next) {
             var list = [];
             String(next).split(',').forEach(function (x) { x = x.trim().slice(0, 24); if (x && !list.some(function (y) { return y.toLowerCase() === x.toLowerCase(); })) list.push(x); });
             t.hqTags = list.slice(0, 8);
@@ -5731,6 +7236,24 @@
                 if (!res) showToast('Could not save tags. Try again.', 'error');
                 else showToast('Tags saved', 'success');
             }).catch(function () { showToast('Could not save tags. Try again.', 'error'); });
+        }
+        window.hqEditTags = function (tenantId) {
+            var t = getTenant(tenantId);
+            if (!t || t.id !== tenantId) return;
+            var cur = hqTagsOf(t).join(', ');
+            if (document.documentElement.classList.contains('schedi-newhq') && window.hqDashConfirm) {
+                window.hqDashConfirm({
+                    title: 'HQ tags',
+                    body: 'Comma separated. Only visible in Agency HQ.',
+                    field: { label: 'Tags for ' + (t.name || t.id), value: cur },
+                    confirmLabel: 'Save tags',
+                    onYes: function (next) { hqApplyTags(t, next); }
+                });
+                return;
+            }
+            var next = window.prompt('HQ tags for ' + (t.name || t.id) + ' (comma separated, only visible in Agency HQ):', cur);
+            if (next === null) return;
+            hqApplyTags(t, next);
         };
 
         // Collapsible HQ sections (state remembered per section; expanded by default).
@@ -5741,11 +7264,57 @@
             var head = card.querySelector('[data-hq-collapse-head]');
             var btn = card.querySelector('.hq-collapse-btn');
             if (body) body.classList.toggle('hidden', collapsed);
+            card.querySelectorAll('[data-hq-collapse-tools]').forEach(function (el) { el.classList.toggle('hidden', collapsed); });
             if (head) { head.classList.toggle('border-b', !collapsed); head.classList.toggle('pb-4', !collapsed); }
             if (btn) { btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true'); btn.querySelector('i').style.transform = collapsed ? 'rotate(-90deg)' : ''; }
         }
+        function hqPrepareNewDirectory() {
+            var dir;
+            var header;
+            var titleWrap;
+            var tools;
+            var main;
+            var copy;
+            var body;
+            var controls;
+            var grid;
+            if (!document.documentElement.classList.contains('schedi-newhq')) return;
+            dir = document.getElementById('agencyDirectory');
+            if (!dir || dir.getAttribute('data-hq-collapse')) return;
+            header = dir.querySelector(':scope > div');
+            if (!header) return;
+            titleWrap = header.children[0];
+            tools = header.children[1];
+            header.className = 'hq-card-head border-b border-slate-800 pb-4';
+            header.setAttribute('data-hq-collapse-head', '');
+            main = document.createElement('div');
+            main.className = 'hq-card-main';
+            copy = document.createElement('div');
+            copy.className = 'hq-card-copy';
+            if (titleWrap) {
+                while (titleWrap.firstChild) copy.appendChild(titleWrap.firstChild);
+            }
+            if (tools) {
+                tools.setAttribute('data-hq-collapse-tools', '');
+                tools.classList.add('mt-3');
+                copy.appendChild(tools);
+            }
+            main.appendChild(copy);
+            header.textContent = '';
+            header.appendChild(main);
+            body = document.createElement('div');
+            body.setAttribute('data-hq-collapse-body', '');
+            body.className = 'space-y-5';
+            controls = document.getElementById('hqDirControls');
+            grid = document.getElementById('agencyTenantGrid');
+            if (controls) body.appendChild(controls);
+            if (grid) body.appendChild(grid);
+            dir.appendChild(body);
+            dir.setAttribute('data-hq-collapse', 'directory');
+        }
         function initHqCollapsibles() {
             var map = hqCollapsedMap();
+            hqPrepareNewDirectory();
             document.querySelectorAll('[data-hq-collapse]').forEach(function (card) {
                 var key = card.getAttribute('data-hq-collapse');
                 var head = card.querySelector('[data-hq-collapse-head]');
@@ -5758,7 +7327,8 @@
                 head.appendChild(btn);
                 head.style.cursor = 'pointer';
                 head.addEventListener('click', function (ev) {
-                    if (ev.target.closest('input,select,a,label') ) return;
+                    if (ev.target.closest('input,select,textarea,a,label,[data-hq-collapse-tools]')) return;
+                    if (ev.target.closest('button') && !ev.target.closest('.hq-collapse-btn')) return;
                     var m = hqCollapsedMap();
                     m[key] = !m[key];
                     try { window.localStorage.setItem(HQ_COLLAPSE_KEY, JSON.stringify(m)); } catch (e) {}
@@ -5768,6 +7338,65 @@
             });
         }
         try { if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initHqCollapsibles); else initHqCollapsibles(); } catch (errCol) {}
+
+        var HQ_GLANCE_KEY = 'schedi.hqGlanceOpen.v1';
+        function hqPaintGlanceSummary() {
+            var el = document.getElementById('hqGlanceSummary');
+            if (!el) return;
+            function text(id, fallback) {
+                var node = document.getElementById(id);
+                var value = node ? String(node.textContent || '').trim() : '';
+                return value || fallback;
+            }
+            var mrr = text('statAgencyMRR', '$0.00');
+            if (mrr.slice(-3) !== '/mo') mrr += '/mo';
+            el.textContent = text('statTotalSites', '0') + ' sites · ' + mrr + ' · ' + text('statTotalBookings', '0') + ' bookings · ' + text('statActivePages', '0') + ' live';
+        }
+        function hqGlanceWantsOpen() {
+            try {
+                var saved = window.localStorage.getItem(HQ_GLANCE_KEY);
+                if (saved === '1') return true;
+                if (saved === '0') return false;
+            } catch (e) {}
+            return window.matchMedia('(min-width: 860px)').matches;
+        }
+        function hqApplyGlance(open) {
+            var body = document.getElementById('hqGlanceBody');
+            var btn = document.getElementById('hqGlanceBtn');
+            var summary = document.getElementById('hqGlanceSummary');
+            if (body) {
+                if (open) body.removeAttribute('hidden');
+                else body.setAttribute('hidden', '');
+            }
+            if (summary) {
+                if (open) summary.setAttribute('hidden', '');
+                else summary.removeAttribute('hidden');
+            }
+            if (btn) {
+                btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+                var icon = btn.querySelector('i');
+                if (icon) icon.style.transform = open ? '' : 'rotate(-90deg)';
+            }
+        }
+        function hqToggleGlance() {
+            var btn = document.getElementById('hqGlanceBtn');
+            var open = !(btn && btn.getAttribute('aria-expanded') === 'true');
+            try { window.localStorage.setItem(HQ_GLANCE_KEY, open ? '1' : '0'); } catch (e) {}
+            hqApplyGlance(open);
+        }
+        function initHqGlance() {
+            var head = document.getElementById('hqGlanceHead');
+            var btn = document.getElementById('hqGlanceBtn');
+            if (!head || !btn || head.getAttribute('data-hq-glance-ready')) return;
+            head.setAttribute('data-hq-glance-ready', '1');
+            head.addEventListener('click', function (ev) {
+                if (ev.target.closest('a,input,select,textarea,label')) return;
+                hqToggleGlance();
+            });
+            hqApplyGlance(hqGlanceWantsOpen());
+            hqPaintGlanceSummary();
+        }
+        try { if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initHqGlance); else initHqGlance(); } catch (errGlance) {}
 
         window.filterAgencyTenants = function(query) {
             hqDirSet('q', String(query || ''));
@@ -6125,11 +7754,23 @@
             const currentlyActive = tenant.subscriptionStatus === 'active';
 
             if (currentlyActive) {
+                var applyPause = function () {
+                    tenant.subscriptionStatus = 'paused';
+                    saveState();
+                    renderAgencyDashboard();
+                    showToast(`Paused "${name}" (data kept)`, 'info');
+                };
+                if (document.documentElement.classList.contains('schedi-newhq') && window.hqDashConfirm) {
+                    window.hqDashConfirm({
+                        title: 'Pause ' + name + '?',
+                        body: 'Public booking at /' + slug + '/ will be unavailable. All data is kept so you can resume later.',
+                        confirmLabel: 'Pause business',
+                        onYes: applyPause
+                    });
+                    return;
+                }
                 if (!window.confirm(`Pause "${name}"? Public booking at /${slug}/ will be unavailable. All data is kept so you can resume later.`)) return;
-                tenant.subscriptionStatus = 'paused';
-                saveState();
-                renderAgencyDashboard();
-                showToast(`Paused "${name}" (data kept)`, 'info');
+                applyPause();
             } else {
                 tenant.subscriptionStatus = 'active';
                 saveState();
@@ -6144,8 +7785,7 @@
 
             const name = tenant.name || tenantId;
             const slug = tenant.slug || tenant.id;
-            if (!window.confirm(`Delete "${name}" permanently? This removes the owner portal and public booking page /${slug}/. This cannot be undone.`)) return;
-
+            const applyDelete = async function () {
             platformState.tenants = platformState.tenants.filter(t => t.id !== tenantId);
 
             if (platformState.activeTenantId === tenantId) {
@@ -6168,6 +7808,19 @@
             populateTenantSelect();
             renderAgencyDashboard();
             showToast(`Deleted business: "${name}"`, 'success');
+            };
+            if (document.documentElement.classList.contains('schedi-newhq') && window.hqDashConfirm) {
+                window.hqDashConfirm({
+                    title: 'Delete ' + name + '?',
+                    body: 'This removes the owner portal and public booking page /' + slug + '/. This cannot be undone.',
+                    confirmLabel: 'Delete business',
+                    danger: true,
+                    onYes: applyDelete
+                });
+                return;
+            }
+            if (!window.confirm(`Delete "${name}" permanently? This removes the owner portal and public booking page /${slug}/. This cannot be undone.`)) return;
+            await applyDelete();
         }
 
 // SCHEDI_HQ_END
@@ -6660,7 +8313,49 @@
             showToast('Stripe billing is connected on the server. Keys are not saved in the browser.', 'info');
         }
 
+        function hqManagedPortalUrl(tenant) {
+            var demo = window.__SCHEDI_HQ_DEMO === true;
+            var framed = false;
+            try { framed = document.documentElement.classList.contains('schedi-newhq'); } catch (errFrame) {}
+            if (!demo && !framed) return '';
+            var slug = '';
+            var id = '';
+            try {
+                slug = String((tenant && (tenant.slug || tenant.id)) || '').trim();
+                id = String((tenant && tenant.id) || '').trim();
+            } catch (errId) {}
+            var params = new URLSearchParams();
+            var keep = ['booking', 'date', 'biz', 'tenant', 'slug', 'from', 'appt', 'ref'];
+            try {
+                var current = new URLSearchParams(window.location.search || '');
+                keep.forEach(function (key) {
+                    if (current.has(key)) params.set(key, current.get(key) || '');
+                });
+            } catch (errCur) {}
+            if (slug) params.set('biz', slug);
+            if (id) params.set('tenant', id);
+            if (demo) {
+                params.delete('newhq');
+                params.set('demo', '1');
+                var demoQs = params.toString();
+                return '/portal-preview' + (demoQs ? '?' + demoQs : '');
+            }
+            params.set('newdash', '1');
+            params.delete('demo');
+            return '/?' + params.toString();
+        }
+
         window.loginAsTenantOwner = function(tenantId) {
+            var managedTenant = null;
+            try {
+                managedTenant = (platformState.tenants || []).find(function (row) { return row && row.id === tenantId; }) || null;
+            } catch (errFind) { managedTenant = null; }
+            var managedUrl = '';
+            try { if (managedTenant) managedUrl = hqManagedPortalUrl(managedTenant); } catch (errUrl) { managedUrl = ''; }
+            if (managedUrl) {
+                try { window.location.assign(managedUrl); } catch (errGo) {}
+                return;
+            }
             platformState.activeTenantId = tenantId;
             platformState.isTenantOwnerLoggedIn = true;
             platformState.ownerSelfSession = false;
@@ -11930,6 +13625,23 @@
         html.schedi-light .cal-day-selected.cal-day-today { box-shadow: 0 0 0 2px #065f46, inset 0 0 0 2px #ffffff; }
         /* Month title sits on the dark slate-900 bar. Light mode otherwise remaps .text-white to near-black. */
         html.schedi-light #monthTitleLabel { color: #f8fafc !important; }
+        @media (max-width: 639px) {
+            .cal-day { container-type: inline-size; padding-left: 1px; padding-right: 1px; }
+            .cal-day-label,
+            html.schedi-newbook .cal-day-away .cal-day-label {
+                font-size: 20cqw;
+                letter-spacing: 0;
+                text-transform: none;
+                line-height: 1.05;
+                white-space: normal;
+                overflow-wrap: normal;
+                word-break: keep-all;
+                display: -webkit-box;
+                -webkit-box-orient: vertical;
+                -webkit-line-clamp: 2;
+                max-height: 2.15em;
+            }
+        }
         /* /booking-day-contrast */
         .biz-header { border-radius: 1rem; overflow: hidden; border: 1px solid rgba(255,255,255,0.08); background: rgba(17, 24, 39, 0.8); }
         html.schedi-light .biz-header { background: #ffffff; border-color: #d7dee8; }

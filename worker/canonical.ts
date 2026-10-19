@@ -66,6 +66,44 @@ function destination(url: URL, origin: string, pathname: string, search: string)
   return dest.toString();
 }
 
+const DASHBOARD_QUERY = new Set([
+  "demo",
+  "newdash",
+  "newbook",
+  "newhq",
+  "classic",
+  "dash",
+  "portal",
+  "biz",
+  "tenant",
+  "forgot",
+  "billing",
+]);
+
+/**
+ * Marketing pages drop tracking and other campaign params.
+ * `demo=1` stays. Owner dashboard flags (`newdash`, `newbook`, `newhq`, `classic`, `dash`)
+ * stay so a preview link is not redirected off the page that reads it.
+ * `/?portal=login`, `/?forgot=1`, and `/?billing=*` keep their full query.
+ */
+function marketingSearch(url: URL, path: string): string {
+  if (path === "/" && rootFunctional(url.search)) return url.search;
+  const params = new URLSearchParams(url.search);
+  let strippedTracking = false;
+  for (const key of [...params.keys()]) {
+    const lower = key.toLowerCase();
+    if (lower.startsWith("utm_") || lower === "gclid" || lower === "fbclid" || lower === "ref") {
+      params.delete(key);
+      strippedTracking = true;
+    }
+  }
+  const unknown = [...params.keys()].some((key) => !DASHBOARD_QUERY.has(key.toLowerCase()));
+  if (unknown) return params.get("demo") === "1" ? "?demo=1" : "";
+  if (!strippedTracking) return url.search;
+  const next = params.toString();
+  return next ? `?${next}` : "";
+}
+
 /**
  * Returns the absolute URL to 301 to, or null when the request is already canonical.
  * Marketing pages and the home page drop tracking query params. `demo=1` stays.
@@ -90,14 +128,16 @@ export function publicDuplicateRedirect(url: URL): string | null {
     return null;
   }
   const lookup = decoded.toLowerCase() || "/";
+  const first = lookup.split("/").filter(Boolean)[0] || "";
+  // /portal and /portal-preview keep their path, including a trailing slash.
+  // The owner sign-in redirect runs before this and owns bare /portal.
+  if (first === "portal" || first === "portal-preview") {
+    return destination(url, origin, collapsed, withoutTracking(url.search));
+  }
+
   const page = marketingPage(lookup);
   if (page) {
-    const search = page.path === "/" && rootFunctional(url.search)
-      ? url.search
-      : url.searchParams.get("demo") === "1"
-        ? "?demo=1"
-        : "";
-    return destination(url, origin, page.path, search);
+    return destination(url, origin, page.path, marketingSearch(url, page.path));
   }
 
   if (lookup === "/faq") {
@@ -109,5 +149,5 @@ export function publicDuplicateRedirect(url: URL): string | null {
     return destination(url, origin, collapsed, url.search);
   }
 
-  return destination(url, origin, noSlash === "" ? "/" : noSlash, withoutTracking(url.search));
+  return destination(url, origin, collapsed, withoutTracking(url.search));
 }

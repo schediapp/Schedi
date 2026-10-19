@@ -276,7 +276,7 @@ export const MARKETING_PAGES: MarketingPage[] = [
       p("Short steps for the business portal. Names match the buttons on the screen."),
       helpVideosHtml(),
       `<section><h2>Sign in</h2><ol><li>Open Schedi and sign in to the Business Portal.</li><li>Enter the owner email and password.</li></ol></section>`,
-      `<section><h2>Add a service</h2><ol><li>Open Manage Services.</li><li>Click Add New Service.</li><li>Enter the name, duration, optional price, and description, then save. Leave price blank if you do not want a price shown.</li><li>Use Edit or Delete on a service you already added.</li><li>Free keeps one service. A second service is not saved.</li></ol></section>`,
+      `<section><h2>Add a service</h2><ol><li>Open Manage Services.</li><li>Click Add service.</li><li>Enter the name, duration, optional price, and description, then save. Leave price blank if you do not want a price shown.</li><li>Use Edit or Delete on a service you already added.</li><li>Free keeps one service. A second service is not saved.</li></ol></section>`,
       `<section><h2>Set hours</h2><ol><li>Open Hours &amp; Blocked Times.</li><li>Check Open for a day, then set Start and End.</li><li>Choose Start times every 15 minutes, 30 minutes, or 1 hour.</li><li>Click Save Operating Hours.</li><li>Use Add Special Hours to open or change one date without editing the weekly schedule.</li><li>Use Add Recurring Outage or Add Date Block when you need time off.</li></ol></section>`,
       `<section><h2>Payments</h2><ol><li>Open Payment Options.</li><li>Free only allows Pay at Appointment.</li><li>Starter can use Cash App, Venmo, Zelle, PayPal, and Pay at Appointment. Starter doesn't include card checkout.</li><li>Credit / debit card checkout stays hidden until Stripe card payments and payouts are active. It is not offered to clients today.</li><li>Appointment deposits stay hidden until Stripe card payments and payouts are active.</li><li>Cancellation fee stays off until you turn it on. Set the hours (default 24) and a percent or a fixed amount. Charging that fee to a card stays hidden until Stripe card payments and payouts are active. Free and Starter only show the rule.</li><li>Click Save Payment Gateways.</li></ol></section>`,
       `<section><h2>Appointments</h2><ol><li>Open Appointments Roster.</li><li>Free bookings are confirmed as soon as the client reserves.</li><li>Starter and Pro bookings stay pending. Click Accept or Deny. Deny frees that time.</li><li>Mark paid, Reschedule, and Cancel are on the same row.</li><li>Add Manual Appointment records a visit you took in person.</li></ol></section>`,
@@ -447,14 +447,13 @@ function helpVideosHtml(): string {
     const title = escapeHtml(video.title);
     const desc = escapeHtml(video.desc);
     return `<figure>
-      <img src="${poster}" alt="${title}" width="480" height="270" loading="lazy" decoding="async">
-      <video class="schedi-help-video" controls preload="none" poster="${poster}" width="480" height="270">
+      <video class="schedi-help-video" controls preload="none" poster="${poster}" width="720" height="1280">
         <source src="${file}" type="video/mp4">
       </video>
       <figcaption><strong>${title}</strong> (${escapeHtml(video.dur)}). ${desc}</figcaption>
     </figure>`;
   }).join("\n");
-  return `<section><h2>Video tutorials</h2><p>Short videos, about 20 seconds each. They load when you press play.</p>${cards}</section>`;
+  return `<section class="help-clips"><h2>Video tutorials</h2><p>Short videos, about 20 seconds each. They load when you press play.</p><div class="help-clip-grid">${cards}</div></section>`;
 }
 
 export function escapeHtml(value: string): string {

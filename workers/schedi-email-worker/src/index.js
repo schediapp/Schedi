@@ -31,6 +31,7 @@ import { hydrateTenantBookings, persistTenantAppointments, handlePrivateBookingH
 import { handleClientsHttp, runClientsBackfillOnce } from './private-clients.js';
 import { adminAuthHeaders } from './firebase-admin.js';
 import { handleProfileRequest } from './profile-store.js';
+import { handleLogoUpload } from './logo-upload.js';
 import { handlePushTokenHttp, handlePushTestHttp } from './owner-push.js';
 import { applyCancellationFee, cancellationFeeSentence } from './cancellation-fee.js';
 import { handleOpsSnapshotHttp, runOpsSnapshotCron } from './ops-snapshot.js';
@@ -2966,6 +2967,13 @@ export default {
         return new Response(null, { status: 204, headers: corsHeaders(origin) });
       }
       return handleProfileRequest(request, env, origin, json);
+    }
+    if (path === '/api/logo-upload') {
+      if (request.method === 'OPTIONS') {
+        if (origin && !isAllowedOrigin(origin)) return new Response(null, { status: 403 });
+        return new Response(null, { status: 204, headers: corsHeaders(origin) });
+      }
+      return handleLogoUpload(request, env, origin, { json, isAllowedOrigin, readSession });
     }
     if (path === '/api/webhooks/square' || path === '/api/square/callback' || path === '/api/square/checkout' || path === '/api/square/confirm' || path === '/api/square/connect' || path === '/api/square/status' || path === '/api/square/location' || path === '/api/square/disconnect' || path === '/api/square/refund') {
       return handleSquareHttp(request, env, origin, path, {

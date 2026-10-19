@@ -139,10 +139,42 @@ describe("crawler files and app routes", () => {
     }
   });
 
+  it("serves /portal/help on the app with noindex and keeps the owner query", async () => {
+    const shell = "<!DOCTYPE html><html><head><title>Schedi</title></head><body>app<script>name=\"robots\"</script></body></html>";
+    const assets: SchediEnv["ASSETS"] = {
+      async fetch(request: Request) {
+        const path = new URL(request.url).pathname;
+        if (path === "/index.html") return new Response(shell, { headers: { "content-type": "text/html; charset=utf-8" } });
+        return new Response("missing", { status: 404 });
+      },
+    };
+    const query = "demo=1&portal=preview&dash=hours&biz=harbor-demo&tenant=harbor";
+    for (const path of ["/portal/help", "/portal/help/", "/portal", "/portal/hours"]) {
+      const response = await handleRequest(new Request(`https://schedi.app${path}?${query}`), envWith(assets), ctx());
+      expect(response.status, path).toBe(200);
+      expect(response.headers.get("location"), path).toBeNull();
+      expect(response.headers.get("x-robots-tag"), path).toContain("noindex");
+      const html = await response.text();
+      expect(html, path).toContain("<title>Schedi</title>");
+      expect(html, path).toContain('content="noindex, follow"');
+      expect(html.slice(0, html.indexOf("</head>")), path).toContain('name="robots"');
+    }
+    const marketing = await handleRequest(
+      new Request(`https://schedi.app/help?${query}`),
+      envWith(assets),
+      ctx(),
+    );
+    expect(marketing.status).toBe(200);
+    expect(marketing.headers.get("location")).toBeNull();
+    const helpHtml = await marketing.text();
+    expect(helpHtml).toContain("Schedi help | Business portal steps");
+    expect(helpHtml).not.toContain("Back to portal");
+  });
+
   it("keeps SPA deep links and sends noindex on non-public app routes", async () => {
     const env = envWith(shellAssets());
     env.FIREBASE_PROJECT_ID = "";
-    for (const path of ["/signup", "/help/booking", "/reset", "/portal", "/admin", "/bright-cuts", "/bright-cuts/manage/token"]) {
+    for (const path of ["/signup", "/help/booking", "/reset", "/portal?biz=harbor", "/admin", "/bright-cuts", "/bright-cuts/manage/token"]) {
       const response = await handleRequest(new Request(`https://schedi.app${path}`), env, ctx());
       expect(response.status, path).toBe(200);
       const html = await response.text();
@@ -150,6 +182,9 @@ describe("crawler files and app routes", () => {
       expect(html).toContain('content="noindex, follow"');
       expect(response.headers.get("x-robots-tag")).toContain("noindex");
     }
+    const barePortal = await handleRequest(new Request("https://schedi.app/portal"), env, ctx());
+    expect(barePortal.status).toBe(302);
+    expect(barePortal.headers.get("location")).toBe("https://schedi.app/login");
   });
 
   it("redirects /?portal=login to /login and keeps other params", async () => {
@@ -168,10 +203,11 @@ describe("crawler files and app routes", () => {
     }
   });
 
-  it("redirects a trailing slash on /login to the same path", async () => {
+  it("keeps a trailing slash on /login on the app shell", async () => {
     const response = await handleRequest(new Request("https://schedi.app/login/"), envWith(shellAssets()), ctx());
-    expect(response.status).toBe(301);
-    expect(response.headers.get("location")).toBe("https://schedi.app/login");
+    expect(response.status).toBe(200);
+    expect(response.headers.get("location")).toBeNull();
+    expect(await response.text()).toContain("<title>Schedi</title>");
   });
 
   it("marketing Log in links point to /login", () => {

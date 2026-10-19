@@ -82,6 +82,7 @@ const RESERVED = new Set([
   "features",
   "compare",
   "faq",
+  "portal-preview",
   "marketing-boot.js",
   "marketing-theme.js",
 ]);
@@ -93,7 +94,7 @@ const STATIC_TYPES: Record<string, string> = {
   "/firebase-messaging-sw.js": "text/javascript; charset=utf-8",
 };
 
-const SPA_EXACT = new Set(["login", "signup", "reset", "auth", "agency", "hq", "hq-9h7p52"]);
+const SPA_EXACT = new Set(["login", "signup", "reset", "auth", "agency", "hq", "hq-9h7p52", "portal-preview"]);
 
 export function contentSecurityPolicy(html: boolean): string {
   if (!html) return "";
@@ -161,12 +162,22 @@ function decodePart(value: string): string | null {
   }
 }
 
+function isPreviewHost(hostname: string): boolean {
+  const host = hostname.toLowerCase().replace(/\.+$/, "");
+  if (host === "localhost" || host === "127.0.0.1" || host === "::1") return true;
+  return host.endsWith(".workers.dev");
+}
+
 function wantsPortal(url: URL): boolean {
   if (stripTrailing(collapse(url.pathname)) !== "/") return false;
   const portal = url.searchParams.get("portal");
   if (portal === "login") return true;
   if (url.searchParams.get("forgot") === "1") return true;
   if (url.searchParams.has("billing")) return true;
+  // Sample dashboard flags stay on preview hosts. Production home stays the marketing page.
+  if (!isPreviewHost(url.hostname)) return false;
+  if (url.searchParams.get("demo") === "1") return true;
+  if (url.searchParams.get("newdash") === "1") return true;
   return false;
 }
 
@@ -276,9 +287,14 @@ export function injectBookingMeta(
 
 function injectNoindex(html: string): string {
   const tag = `<meta name="robots" content="noindex, follow">`;
-  if (html.includes('name="robots"')) return html;
-  const head = html.indexOf("<head>");
-  if (head >= 0) return html.slice(0, head + 6) + tag + html.slice(head + 6);
+  const headOpen = html.search(/<head\b[^>]*>/i);
+  const headClose = html.search(/<\/head>/i);
+  const headHtml = headOpen >= 0 && headClose > headOpen ? html.slice(headOpen, headClose) : "";
+  if (headHtml.includes('name="robots"') || headHtml.includes("name='robots'")) return html;
+  if (headOpen >= 0) {
+    const insertAt = html.indexOf(">", headOpen) + 1;
+    return html.slice(0, insertAt) + tag + html.slice(insertAt);
+  }
   return tag + html;
 }
 
@@ -437,9 +453,66 @@ function isHqSpaPath(pathname: string): boolean {
   return HQ_PATHS.has(first.toLowerCase());
 }
 
+function exactAppPath(pathname: string): string | null {
+  let stripped = stripTrailing(collapse(pathname));
+  try {
+    stripped = decodeURIComponent(stripped);
+  } catch {
+    return null;
+  }
+  return stripped.toLowerCase();
+}
+
+function isPortalPreviewPath(pathname: string): boolean {
+  return exactAppPath(pathname) === "/portal-preview";
+}
+
+function hasNamedBusiness(url: URL): boolean {
+  for (const key of ["biz", "tenant"]) {
+    for (const value of url.searchParams.getAll(key)) {
+      if (value.trim()) return true;
+    }
+  }
+  return false;
+}
+
+// Owner sign-in. dropPreviewParams removes demo/biz/tenant from the sample
+// dashboard link and keeps classic, newdash, dash, and anything else.
+function ownerLoginLocation(url: URL, dropPreviewParams: boolean): string {
+  const dest = new URL(url.toString());
+  dest.protocol = "https:";
+  dest.hostname = "schedi.app";
+  dest.port = "";
+  dest.pathname = "/login";
+  if (dropPreviewParams) {
+    dest.searchParams.delete("demo");
+    dest.searchParams.delete("biz");
+    dest.searchParams.delete("tenant");
+  }
+  return dest.toString();
+}
+
 export async function handleRequest(request: Request, env: SchediEnv, ctx: SchediContext): Promise<Response> {
   const url = new URL(request.url);
   const method = request.method.toUpperCase();
+  // Production /portal with no business is not a booking page. The SPA would
+  // treat "portal" as a slug and show "Booking page not found". Send that
+  // request to /login and keep classic, newdash, dash, and other params.
+  // A returning owner already reaches the dashboard from /login: the page
+  // reads schedi.authSession, applySchediAuthMetaOptimistic marks them signed
+  // in, and switchPlatformMode('tenant') hides the login box and paints the
+  // portal. verifySchediAuthSessionRestore then calls openTenantOwnerPortal.
+  // /portal-preview is the sample dashboard. Preview hosts still serve it.
+  // Production goes straight to /login, keeping classic/newdash and dropping
+  // demo, biz, and tenant so the sample link cannot land on the error card.
+  // This runs before the marketing canonical redirect, which would otherwise
+  // drop biz, tenant, dash, demo, and newdash on the way to /login.
+  if ((method === "GET" || method === "HEAD") && !isPreviewHost(url.hostname)) {
+    if (isPortalPreviewPath(url.pathname)) return redirect(ownerLoginLocation(url, true), 302);
+    if (exactAppPath(url.pathname) === "/portal" && !hasNamedBusiness(url)) {
+      return redirect(ownerLoginLocation(url, false), 302);
+    }
+  }
   const canonicalLocation = publicDuplicateRedirect(url);
   if (canonicalLocation) return redirect(canonicalLocation, 301);
   if (method !== "GET" && method !== "HEAD") {
@@ -514,6 +587,13 @@ export async function handleRequest(request: Request, env: SchediEnv, ctx: Sched
     return redirect(dest.toString(), 302);
   }
   if (lower === "/" && wantsPortal(url)) {
+    return serveSpa(request, env, ctx, method, null, false);
+  }
+
+  // /portal?biz= or ?tenant=, and /portal/help, stay on the app. A marketing
+  // canonical redirect must not run first: it would drop biz, tenant, dash,
+  // demo, and portal. Preview hosts also serve a bare /portal for the sample.
+  if (lower === "/portal" || lower.startsWith("/portal/")) {
     return serveSpa(request, env, ctx, method, null, false);
   }
 
@@ -613,10 +693,24 @@ async function serveSpa(
   return new Response(body, { status: 200, headers });
 }
 
+function hqDemoRequest(request: Request): boolean {
+  try {
+    const url = new URL(request.url);
+    if (url.searchParams.get("demo") !== "1") return false;
+    const host = url.hostname.toLowerCase().replace(/\.$/, "");
+    // Production keeps the agency session gate. The assets-only preview has no KV.
+    return host !== "schedi.app" && host !== "www.schedi.app";
+  } catch {
+    return false;
+  }
+}
+
 async function serveHq(request: Request, env: SchediEnv, method: string): Promise<Response> {
   const token = agencySessionToken(request);
   const allowed = await hasAgencySession(env.AUTH_KV, token);
-  if (!allowed) {
+  // Preview only. demo=1 paints sample businesses and the page blocks live calls.
+  // It does not create an agency session and does not authorize API routes.
+  if (!allowed && !hqDemoRequest(request)) {
     return textResponse(
       injectWebAnalytics(hqLoginDocument(), new URL(request.url)),
       200,

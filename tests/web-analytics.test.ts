@@ -71,7 +71,7 @@ describe("cloudflare web analytics snippet", () => {
     "/help/booking",
     "/bright-cuts",
     "/bright-cuts/manage/token",
-    "/portal",
+    "/portal/help",
   ])("inserts the beacon just before </body> on %s", async (path) => {
     const response = await handleRequest(new Request(`https://schedi.app${path}`), env(), ctx());
     expect(response.status).toBe(200);

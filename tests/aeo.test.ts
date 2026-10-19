@@ -98,8 +98,16 @@ describe("answer pages and crawler files", () => {
     for (const agent of ["*", "GPTBot", "PerplexityBot", "ClaudeBot", "Google-Extended", "Bingbot"]) {
       expect(robots).toContain(`User-agent: ${agent}`);
     }
-    expect(robots.match(/Disallow: \/portal/g)?.length).toBe(6);
+    expect(robots.match(/^Disallow: \/portal$/gm)?.length).toBe(6);
+    expect(robots.match(/^Disallow: \/portal-preview$/gm)?.length).toBe(6);
     expect(robots.match(/Disallow: \/api/g)?.length).toBe(6);
+    const llmsPublic = renderLlms();
+    const sitemap = renderSitemap();
+    for (const hidden of ["portal-preview", "newhq", "newbook", "demo=1"]) {
+      expect(llmsPublic, hidden).not.toContain(hidden);
+      expect(sitemap, hidden).not.toContain(hidden);
+      expect(robots, hidden).not.toContain(hidden === "portal-preview" ? "Allow: /portal-preview" : hidden);
+    }
     expect(robots).toContain("Sitemap: https://schedi.app/sitemap.xml");
 
     const llms = renderLlms();
@@ -116,7 +124,8 @@ describe("answer pages and crawler files", () => {
   it("keeps cited competitor prices and omits unconfirmed Schedi claims", () => {
     const compare = renderMarketingPage(MARKETING_PAGES.find((page) => page.path === "/compare")!);
     const text = visible(compare);
-    expect(text).toContain("Prices as listed on each vendor's site on Oct 17, 2026");
+    expect(text).toContain("Prices as listed on each vendor's site on Oct 19, 2026");
+    expect(text).not.toContain("Oct 17, 2026");
     expect(text).not.toContain("Prices as of Oct 2026. Prices as listed");
     const internalNotes = [
       "re-check before publishing",
