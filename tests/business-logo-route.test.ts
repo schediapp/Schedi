@@ -54,6 +54,28 @@ describe("schedi-web logo route", () => {
     expect(otherApi.status).toBe(404);
     const missingLogo = await handleRequest(new Request("https://schedi.app/logos/harbor-demo"), {}, { waitUntil() {} });
     expect(missingLogo.status).toBe(404);
+
+    const assets = {
+      async fetch(request: Request) {
+        const path = new URL(request.url).pathname;
+        if (path === "/index.html") {
+          return new Response("<!DOCTYPE html><html><head><title>Schedi</title></head><body>app</body></html>", {
+            headers: { "content-type": "text/html; charset=utf-8" },
+          });
+        }
+        return new Response("missing", { status: 404 });
+      },
+    };
+    const home = await handleRequest(new Request("https://schedi.app/"), { ASSETS: assets, FIREBASE_PROJECT_ID: "" }, { waitUntil() {} });
+    expect(home.status).toBe(200);
+    const homeHtml = await home.text();
+    expect(homeHtml).toContain("<html");
+    expect(homeHtml).not.toContain("logo_storage_unconfigured");
+    const booking = await handleRequest(new Request("https://schedi.app/aria-rose"), { ASSETS: assets, FIREBASE_PROJECT_ID: "" }, { waitUntil() {} });
+    expect(booking.status).toBe(200);
+    const bookingHtml = await booking.text();
+    expect(bookingHtml).toContain("<body>app");
+    expect(bookingHtml).not.toContain("logo_storage_unconfigured");
   });
 
   it("stores, serves, and removes a logo only for the owner session", async () => {
@@ -92,15 +114,11 @@ describe("schedi-web logo route", () => {
 });
 
 describe("logo wrangler config", () => {
-  it("binds production and preview buckets separately and does not publish preview on schedi.app", () => {
+  it("binds production and preview buckets in wrangler.jsonc and does not track a second preview config", () => {
     const prod = readFileSync(new URL("../wrangler.jsonc", import.meta.url), "utf8");
-    const preview = readFileSync(new URL("../wrangler.preview.jsonc", import.meta.url), "utf8");
     expect(prod).toContain('"bucket_name": "schedi-logos"');
     expect(prod).toContain('"bucket_name": "schedi-logos-preview"');
-    expect(preview).toContain('"bucket_name": "schedi-logos-preview"');
-    expect(preview).not.toContain("schedi-logos\"");
-    expect(preview).not.toContain("schedi.app/*");
-    expect(preview).toContain('"routes": []');
-    expect(preview).toContain('"kv_namespaces": []');
+    expect(prod).toContain('"name": "schedi-web-preview"');
+    expect(() => readFileSync(new URL("../wrangler.preview.jsonc", import.meta.url), "utf8")).toThrow();
   });
 });

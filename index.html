@@ -12157,21 +12157,7 @@ function schediQrCardPixels(text, color) {
             const publicUrl = getTenantPublicBookingUrl(tenant);
 
             if (bannerName) bannerName.textContent = tenant.name;
-            var bannerInitials = document.getElementById('tenantBannerInitials');
-            var bannerLogo = document.getElementById('tenantBannerLogo');
-            if (bannerInitials) bannerInitials.textContent = schediDashInitials(tenant.name || '');
-            var bannerLogoUrl = safeHttpsUrl(tenant.logoUrl || tenant.logo || '');
-            if (bannerLogo) {
-                if (bannerLogoUrl) {
-                    bannerLogo.hidden = false;
-                    bannerLogo.src = bannerLogoUrl;
-                    if (bannerInitials) bannerInitials.hidden = true;
-                } else {
-                    bannerLogo.hidden = true;
-                    bannerLogo.removeAttribute('src');
-                    if (bannerInitials) bannerInitials.hidden = false;
-                }
-            }
+            paintClassicBannerLogo(tenant);
             if (bannerSlug) bannerSlug.textContent = '/' + slug;
             if (ownerContact) ownerContact.textContent = (tenant.ownerName || tenant.ownerEmail)
                 ? ('Manager: ' + (tenant.ownerName || '') + (tenant.ownerEmail ? ' (' + tenant.ownerEmail + ')' : ''))
@@ -14100,6 +14086,44 @@ function schediQrCardPixels(text, color) {
             return letters.toUpperCase();
         }
 
+        // The URL an upload or Business profile save persists. logoUrl is written
+        // first; logo is the same value so an older reader still finds it.
+        function schediLogoUrl(tenant) {
+            var raw = String((tenant && (tenant.logoUrl || tenant.logo)) || '').trim();
+            if (!raw || raw.length > 500) return '';
+            if (raw.slice(0, 8).toLowerCase() !== 'https://') return '';
+            if (raw.indexOf(' ') !== -1 || raw.indexOf('<') !== -1 || raw.indexOf('>') !== -1 || raw.indexOf('"') !== -1 || raw.indexOf("'") !== -1) return '';
+            return raw;
+        }
+
+        function writeBusinessLogo(tenant, url) {
+            if (!tenant) return '';
+            var safe = schediLogoUrl({ logoUrl: url });
+            tenant.logoUrl = safe;
+            tenant.logo = safe;
+            var input = document.getElementById('tenantLogoUrl');
+            if (input) input.value = safe;
+            return safe;
+        }
+
+        function paintClassicBannerLogo(tenant) {
+            var letters = document.getElementById('tenantBannerInitials');
+            var img = document.getElementById('tenantBannerLogo');
+            var mark = schediDashInitials((tenant && tenant.name) || '');
+            if (letters) letters.textContent = mark;
+            var url = schediLogoUrl(tenant);
+            if (img && url) {
+                img.hidden = false;
+                img.src = url;
+                img.alt = ((tenant && tenant.name) || 'Business') + ' logo';
+                if (letters) letters.hidden = true;
+            } else if (img) {
+                img.hidden = true;
+                img.removeAttribute('src');
+                if (letters) letters.hidden = false;
+            }
+        }
+
         function renderSchediToday(tenant) {
             if (!schediNewDashOn() || !tenant) return;
             if (typeof schediDenyUndoBoot === 'function') schediDenyUndoBoot(tenant);
@@ -14268,7 +14292,7 @@ function schediQrCardPixels(text, color) {
             return 'Free';
         }
 
-        window.schediDashLogoFailed = function (img) {
+        function schediDashLogoFailed(img) {
             if (!img) return;
             img.hidden = true;
             img.removeAttribute('src');
@@ -14277,7 +14301,8 @@ function schediQrCardPixels(text, color) {
                 : 'schediDashUserInitials';
             var letters = document.getElementById(lettersId);
             if (letters) letters.hidden = false;
-        };
+        }
+        window.schediDashLogoFailed = schediDashLogoFailed;
 
         function schediDashPaint() {
             var tenant = (typeof getTenant === 'function') ? getTenant() : null;
@@ -14294,7 +14319,7 @@ function schediQrCardPixels(text, color) {
             var planEl = document.getElementById('schediDashUserPlan');
             var logoEl = document.getElementById('schediDashUserLogo');
             var phoneLogo = document.getElementById('schediDashUserLogoPhone');
-            var logo = String(tenant.logoUrl || tenant.logo || '').trim();
+            var logo = schediLogoUrl(tenant);
             var mark = schediDashInitials(bizName);
             if (nameEl) nameEl.textContent = bizName;
             if (planEl) planEl.textContent = planWord;
@@ -14305,7 +14330,7 @@ function schediQrCardPixels(text, color) {
                 if (logo) {
                     img.hidden = false;
                     img.src = logo;
-                    img.alt = '';
+                    img.alt = bizName + ' logo';
                     if (letters) letters.hidden = true;
                 } else {
                     img.hidden = true;
@@ -18452,18 +18477,21 @@ function schediQrCardPixels(text, color) {
                     var fresh = getTenant();
                     if (fresh) renderTenantServices(fresh);
                 } else {
-                    var input = document.getElementById('tenantLogoUrl');
-                    if (input) input.value = body.url;
-                    tenant.logoUrl = body.url;
+                    writeBusinessLogo(tenant, body.url);
                     revokeLogoObjectUrl();
                     logoPendingSvg = null;
                     var saveBtn = document.getElementById('logoUploadSave');
                     if (saveBtn) saveBtn.classList.add('hidden');
                     refreshLogoPreview();
                     setLogoNote('Logo saved.', false);
-                    try { await saveState(); } catch (errSave) {}
                     try { schediDashPaint(); } catch (errPaint) {}
-                    try { renderTenantAdminPortal(); } catch (errBanner) {}
+                    try { paintClassicBannerLogo(tenant); } catch (errBanner) {}
+                    try { renderLivePreviewIframe(); } catch (errPreview) {}
+                    try { await saveState(); } catch (errSave) {}
+                    var freshLogo = (typeof getTenant === 'function') ? getTenant() : tenant;
+                    if (freshLogo && freshLogo !== tenant) writeBusinessLogo(freshLogo, body.url);
+                    try { schediDashPaint(); } catch (errPaint2) {}
+                    try { paintClassicBannerLogo(freshLogo || tenant); } catch (errBanner2) {}
                 }
             } catch (errNet) {
                 if (serviceTarget) setServiceUploadNote(serviceImageMessage(''), true);
@@ -18518,11 +18546,15 @@ function schediQrCardPixels(text, color) {
                     refreshLogoPreview();
                     return;
                 }
-                tenant.logoUrl = '';
-                tenant.logo = '';
-                try { await saveState(); } catch (errSave) {}
+                writeBusinessLogo(tenant, '');
                 try { schediDashPaint(); } catch (errPaint) {}
-                try { renderTenantAdminPortal(); } catch (errBanner) {}
+                try { paintClassicBannerLogo(tenant); } catch (errBanner) {}
+                try { renderLivePreviewIframe(); } catch (errPreview) {}
+                try { await saveState(); } catch (errSave) {}
+                var freshClear = (typeof getTenant === 'function') ? getTenant() : tenant;
+                if (freshClear && freshClear !== tenant) writeBusinessLogo(freshClear, '');
+                try { schediDashPaint(); } catch (errPaint2) {}
+                try { paintClassicBannerLogo(freshClear || tenant); } catch (errBanner2) {}
             }
             setLogoNote('Logo removed.', false);
             refreshLogoPreview();
@@ -18759,10 +18791,12 @@ function schediQrCardPixels(text, color) {
                 tenant.businessAddress = '';
                 tenant.businessLocation = '';
             }
-            tenant.logoUrl = safeHttpsUrl(logoRaw);
+            writeBusinessLogo(tenant, safeHttpsUrl(logoRaw));
             tenant.coverUrl = safeHttpsUrl(coverRaw);
 
             saveState();
+            try { schediDashPaint(); } catch (errLogoPaint) {}
+            try { paintClassicBannerLogo(tenant); } catch (errLogoBanner) {}
             renderTenantHours(tenant);
             renderLivePreviewIframe();
             showToast('Operating shift hours saved!', 'success');
@@ -26126,6 +26160,28 @@ function schediQrCardPixels(text, color) {
             return letters.toUpperCase();
         }
         function paintBizHeader() {
+            var logo = publicHttpsUrl(tenantData && (tenantData.logoUrl || tenantData.logo || tenantData.businessLogo));
+            var logoName = String((tenantData && tenantData.name) || 'Business');
+            var logoLetters = bizInitials(logoName);
+            function showBizMark(img, letters, wrap) {
+                if (letters) letters.textContent = logoLetters;
+                if (logo && img) {
+                    img.hidden = false;
+                    img.src = logo;
+                    img.alt = logoName + ' logo';
+                    if (letters) letters.hidden = true;
+                    if (wrap) wrap.hidden = false;
+                } else {
+                    if (img) {
+                        img.hidden = true;
+                        img.removeAttribute('src');
+                    }
+                    if (letters) letters.hidden = false;
+                    if (wrap) wrap.hidden = false;
+                }
+            }
+            showBizMark(document.getElementById('bizLogo'), document.getElementById('bizLogoInitials'), document.getElementById('bizLogoWrap'));
+            showBizMark(document.getElementById('pubHeaderLogo'), document.getElementById('pubHeaderInitials'), null);
             var title = document.getElementById('bizTitle');
             if (title) title.textContent = String((tenantData && tenantData.name) || 'Book an appointment');
             var industryEl = document.getElementById('bizIndustry');
@@ -26152,28 +26208,6 @@ function schediQrCardPixels(text, color) {
                 hoursEl.textContent = hoursText;
                 hoursEl.hidden = !hoursText;
             }
-            var logo = publicHttpsUrl(tenantData && (tenantData.logoUrl || tenantData.logo || tenantData.businessLogo));
-            var logoName = String((tenantData && tenantData.name) || 'Business');
-            var logoLetters = bizInitials(logoName);
-            function showBizMark(img, letters, wrap) {
-                if (letters) letters.textContent = logoLetters;
-                if (logo && img) {
-                    img.hidden = false;
-                    img.src = logo;
-                    img.alt = logoName + ' logo';
-                    if (letters) letters.hidden = true;
-                    if (wrap) wrap.hidden = false;
-                } else {
-                    if (img) {
-                        img.hidden = true;
-                        img.removeAttribute('src');
-                    }
-                    if (letters) letters.hidden = false;
-                    if (wrap) wrap.hidden = false;
-                }
-            }
-            showBizMark(document.getElementById('bizLogo'), document.getElementById('bizLogoInitials'), document.getElementById('bizLogoWrap'));
-            showBizMark(document.getElementById('pubHeaderLogo'), document.getElementById('pubHeaderInitials'), null);
             var cover = publicHttpsUrl(tenantData && (tenantData.coverUrl || tenantData.coverPhoto || tenantData.coverPhotoUrl));
             var coverWrap = document.getElementById('bizCoverWrap');
             var coverEl = document.getElementById('bizCover');

@@ -14947,6 +14947,28 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
             return letters.toUpperCase();
         }
         function paintBizHeader() {
+            var logo = publicHttpsUrl(tenantData && (tenantData.logoUrl || tenantData.logo || tenantData.businessLogo));
+            var logoName = String((tenantData && tenantData.name) || 'Business');
+            var logoLetters = bizInitials(logoName);
+            function showBizMark(img, letters, wrap) {
+                if (letters) letters.textContent = logoLetters;
+                if (logo && img) {
+                    img.hidden = false;
+                    img.src = logo;
+                    img.alt = logoName + ' logo';
+                    if (letters) letters.hidden = true;
+                    if (wrap) wrap.hidden = false;
+                } else {
+                    if (img) {
+                        img.hidden = true;
+                        img.removeAttribute('src');
+                    }
+                    if (letters) letters.hidden = false;
+                    if (wrap) wrap.hidden = false;
+                }
+            }
+            showBizMark(document.getElementById('bizLogo'), document.getElementById('bizLogoInitials'), document.getElementById('bizLogoWrap'));
+            showBizMark(document.getElementById('pubHeaderLogo'), document.getElementById('pubHeaderInitials'), null);
             var title = document.getElementById('bizTitle');
             if (title) title.textContent = String((tenantData && tenantData.name) || 'Book an appointment');
             var industryEl = document.getElementById('bizIndustry');
@@ -14973,28 +14995,6 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
                 hoursEl.textContent = hoursText;
                 hoursEl.hidden = !hoursText;
             }
-            var logo = publicHttpsUrl(tenantData && (tenantData.logoUrl || tenantData.logo || tenantData.businessLogo));
-            var logoName = String((tenantData && tenantData.name) || 'Business');
-            var logoLetters = bizInitials(logoName);
-            function showBizMark(img, letters, wrap) {
-                if (letters) letters.textContent = logoLetters;
-                if (logo && img) {
-                    img.hidden = false;
-                    img.src = logo;
-                    img.alt = logoName + ' logo';
-                    if (letters) letters.hidden = true;
-                    if (wrap) wrap.hidden = false;
-                } else {
-                    if (img) {
-                        img.hidden = true;
-                        img.removeAttribute('src');
-                    }
-                    if (letters) letters.hidden = false;
-                    if (wrap) wrap.hidden = false;
-                }
-            }
-            showBizMark(document.getElementById('bizLogo'), document.getElementById('bizLogoInitials'), document.getElementById('bizLogoWrap'));
-            showBizMark(document.getElementById('pubHeaderLogo'), document.getElementById('pubHeaderInitials'), null);
             var cover = publicHttpsUrl(tenantData && (tenantData.coverUrl || tenantData.coverPhoto || tenantData.coverPhotoUrl));
             var coverWrap = document.getElementById('bizCoverWrap');
             var coverEl = document.getElementById('bizCover');
