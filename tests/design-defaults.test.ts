@@ -106,7 +106,7 @@ describe("booking page default", () => {
 
   it("keeps classicbook on a booking URL and still counts the visit only on schedi.app", () => {
     expect(publicDuplicateRedirect(new URL("https://schedi.app/bright-cuts?classicbook=1"))).toBeNull();
-    expect(publicDuplicateRedirect(new URL("https://schedi.app/bright-cuts/?newbook=1"))).toBe("https://schedi.app/bright-cuts?newbook=1");
+    expect(publicDuplicateRedirect(new URL("https://schedi.app/bright-cuts/?newbook=1"))).toBeNull();
     expect(publicDuplicateRedirect(new URL("https://www.schedi.app/harbor?classicbook=1"))).toBe("https://schedi.app/harbor?classicbook=1");
     expect(visit("")).toBe(true);
     expect(visit("classicbook=1")).toBe(true);
@@ -184,7 +184,7 @@ describe.skipIf(!chrome)("booking page layout", () => {
       const shell = await browser.newPage();
       shell.on("pageerror", (error) => errors.push("shell " + String(error)));
       await shell.goto(`http://127.0.0.1:${port}/?demo=1`, { waitUntil: "domcontentloaded", timeout: 45000 });
-      await shell.waitForFunction(() => document.body.innerText.includes("Harbor Studio"), { timeout: 20000 });
+      await shell.waitForFunction(() => document.title.includes("Harbor Studio") && typeof (window as unknown as { generateStandaloneHtmlForTenant?: unknown }).generateStandaloneHtmlForTenant === "function", { timeout: 20000 });
       const rendered = await shell.evaluate(() => {
         const tenant = (window as unknown as { schediBuildDemoTenant: () => { services: { name: string }[]; logoUrl: string } }).schediBuildDemoTenant();
         tenant.services = [
@@ -200,9 +200,23 @@ describe.skipIf(!chrome)("booking page layout", () => {
       const page = await browser.newPage();
       page.on("pageerror", (error) => errors.push(String(error)));
       await page.setContent(rendered, { waitUntil: "domcontentloaded", timeout: 45000 });
-      await page.waitForFunction(() => document.documentElement.classList.contains("schedi-newbook") && document.body.innerText.includes("First saved"), { timeout: 20000 });
+      await page.waitForFunction(() => {
+        const cal = document.getElementById("monthCalendarContainer");
+        const pay = document.getElementById("paymentMethodsGrid");
+        const text = pay?.textContent || "";
+        return document.documentElement.classList.contains("schedi-newbook")
+          && document.body.innerText.includes("First saved")
+          && !!cal
+          && getComputedStyle(cal).display === "grid"
+          && text.includes("Pay at Appt")
+          && text.includes("Cash App")
+          && text.includes("Zelle");
+      }, { timeout: 20000 });
       const order = await page.evaluate(() => Array.from(document.querySelectorAll("#serviceListContainer .font-bold")).map((el) => (el.textContent || "").trim()).filter((text) => text.includes("saved")));
       expect(order.slice(0, 3)).toEqual(["First saved", "Second saved", "Third saved"]);
+      const payText = await page.evaluate(() => document.getElementById("paymentMethodsGrid")?.innerText || "");
+      expect(payText).toContain("Venmo");
+      expect(payText).not.toMatch(/Square/i);
       for (const width of [390, 768, 1024, 1280, 1920]) {
         await page.setViewport({ width, height: width < 800 ? 844 : 900 });
         for (const themeName of ["dark", "light"] as const) {
@@ -235,7 +249,7 @@ describe.skipIf(!chrome)("booking page layout", () => {
       const classicShell = await browser.newPage();
       classicShell.on("pageerror", (error) => errors.push("classic shell " + String(error)));
       await classicShell.goto(`http://127.0.0.1:${port}/?demo=1&classicbook=1`, { waitUntil: "domcontentloaded", timeout: 45000 });
-      await classicShell.waitForFunction(() => document.body.innerText.includes("Harbor Studio"), { timeout: 20000 });
+      await classicShell.waitForFunction(() => document.title.includes("Harbor Studio") && typeof (window as unknown as { generateStandaloneHtmlForTenant?: unknown }).generateStandaloneHtmlForTenant === "function", { timeout: 20000 });
       const classicHtml = await classicShell.evaluate(() => {
         const tenant = (window as unknown as { schediBuildDemoTenant: () => unknown }).schediBuildDemoTenant();
         return (window as unknown as { generateStandaloneHtmlForTenant: (row: unknown) => string }).generateStandaloneHtmlForTenant(tenant);

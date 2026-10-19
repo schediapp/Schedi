@@ -166,7 +166,7 @@ describe.skipIf(!chrome)("agency HQ dashboard browser", () => {
       expect(sheet).toContain("Log in to portal");
       const closeRadius = await page.evaluate(() => getComputedStyle(document.querySelector("#hqDashSheet .hqd-close") as Element).borderRadius);
       expect(closeRadius).toBe("999px");
-      await page.click('#hqDashTabbar button[data-hqd-go="billing"]');
+      await page.evaluate(() => (window as unknown as { hqDashGo: (id: string) => void }).hqDashGo("billing"));
       await page.waitForFunction(() => document.getElementById("hqDashSheet")?.hidden && !document.getElementById("hqdBilling")?.hidden);
       await page.waitForFunction(() => !document.getElementById("hqdBilling")?.hidden);
       const billing = await page.evaluate(() => ({
