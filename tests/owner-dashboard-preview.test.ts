@@ -642,10 +642,13 @@ describe("owner dashboard preview", () => {
     expect(css).toContain("grid-template-columns: 1fr");
     expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-hours-week-day");
     expect(css).not.toContain("minmax(200px");
-    const desktopWeek = css.slice(css.indexOf("@media (min-width: 1024px)"));
+    const stackedWeek = css.slice(css.indexOf("@media (min-width: 640px) and (max-width: 1099px)"));
+    expect(stackedWeek).toContain("grid-template-columns: 1fr");
+    expect(stackedWeek).toContain("overflow-x: visible");
+    const desktopWeek = css.slice(css.indexOf("@media (min-width: 1100px)"));
     expect(desktopWeek).toContain("repeat(7, minmax(0, 1fr))");
     expect(desktopWeek).toContain("overflow-x: visible");
-    expect(css).toContain("repeat(7, minmax(148px, 1fr))");
+    expect(css).not.toContain("minmax(148px");
     expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-hours-week-day .sd-time-input");
     expect(css).toContain("font-size: 11px");
     expect(extractFunction(html, "hoursWeekDayHtml")).toContain("Not applied while closed");
