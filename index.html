@@ -5194,6 +5194,184 @@ html.schedi-light #tenantPortalSection:not(.schedi-newdash) .sd-chip { color: #0
 html.schedi-light #tenantPortalSection:not(.schedi-newdash) .sd-roster-search-field { background: #ffffff; border-color: #cbd5e1; color: #64748b; }
 html.schedi-light #tenantPortalSection:not(.schedi-newdash) .sd-roster-search-field input,
 html.schedi-light #tenantPortalSection:not(.schedi-newdash) .roster-paid-figure { color: #0f172a; }
+/* Service reorder: round borderless grip and move controls, both dashboards. */
+#tenantPortalSection #tenantSectionServices,
+#tenantPortalSection #tenantServicesGrid,
+#tenantPortalSection #tenantServicesGrid .sd-svc-card {
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+#tenantPortalSection #tenantServicesGrid .sd-svc-top {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    max-width: 100%;
+}
+#tenantPortalSection #tenantServicesGrid .sd-svc-top .sd-svc-price {
+    margin-left: auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+#tenantPortalSection #tenantServicesGrid .sd-svc-grip,
+#tenantPortalSection #tenantServicesGrid .sd-svc-more {
+    flex: 0 0 auto;
+}
+#tenantPortalSection #tenantServicesGrid .sd-svc-grip,
+#tenantPortalSection:not(.schedi-newdash) #tenantServicesGrid .sd-svc-more > summary {
+    list-style: none;
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    min-height: 40px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: #e2e8f0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-sizing: border-box;
+}
+#tenantPortalSection #tenantServicesGrid .sd-svc-grip {
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: -0.18em;
+    line-height: 1;
+}
+#tenantPortalSection #tenantServicesGrid .sd-svc-grip:active { cursor: grabbing; }
+#tenantPortalSection #tenantServicesGrid .sd-svc-grip:hover,
+#tenantPortalSection #tenantServicesGrid .sd-svc-grip:focus-visible,
+#tenantPortalSection:not(.schedi-newdash) #tenantServicesGrid .sd-svc-more > summary:hover,
+#tenantPortalSection:not(.schedi-newdash) #tenantServicesGrid .sd-svc-more > summary:focus-visible {
+    background: rgba(148, 163, 184, 0.18);
+}
+#tenantPortalSection #tenantServicesGrid .sd-svc-grip:focus-visible,
+#tenantPortalSection #tenantServicesGrid .sd-svc-moves button:focus-visible,
+#tenantPortalSection:not(.schedi-newdash) #tenantServicesGrid .sd-svc-more > summary:focus-visible {
+    outline: 2px solid #10b981;
+    outline-offset: 2px;
+}
+#tenantPortalSection:not(.schedi-newdash) #tenantServicesGrid .sd-svc-more > summary::-webkit-details-marker { display: none; }
+#tenantPortalSection:not(.schedi-newdash) #tenantServicesGrid .sd-svc-more > summary i {
+    font-size: 18px;
+    line-height: 1;
+    pointer-events: none;
+}
+#tenantPortalSection:not(.schedi-newdash) #tenantServicesGrid .sd-svc-more .sd-more-menu {
+    position: fixed;
+    z-index: 45;
+    left: 0;
+    top: 0;
+    visibility: hidden;
+    min-width: 180px;
+    max-height: min(320px, calc(100vh - 96px));
+    overflow: auto;
+    padding: 6px;
+    border-radius: 14px;
+    border: 1px solid #334155;
+    background: #0f172a;
+    box-shadow: 0 16px 40px rgba(2, 6, 23, 0.45);
+}
+#tenantPortalSection:not(.schedi-newdash) #tenantServicesGrid .sd-svc-more .sd-more-menu button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border: 0;
+    color: #e2e8f0;
+    border-radius: 10px;
+    padding: 8px 10px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+}
+#tenantPortalSection:not(.schedi-newdash) #tenantServicesGrid .sd-svc-more .sd-more-menu button:hover { background: rgba(148, 163, 184, 0.1); }
+#tenantPortalSection #tenantServicesGrid .sd-svc-more .sd-more-menu button:disabled,
+#tenantPortalSection #tenantServicesGrid .sd-svc-moves button:disabled {
+    opacity: 0.38;
+    cursor: not-allowed;
+}
+#tenantPortalSection #tenantServicesGrid .sd-svc-moves {
+    display: none;
+    gap: 8px;
+    min-width: 0;
+    max-width: 100%;
+    margin-top: 8px;
+}
+#tenantPortalSection #tenantServicesGrid .sd-svc-quiet {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 6px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #94a3b8;
+    vertical-align: middle;
+}
+#tenantPortalSection #tenantServicesGrid .sd-svc-card.is-dragging { opacity: 0.55; pointer-events: none; }
+#tenantPortalSection #tenantServicesGrid .sd-svc-card.is-drop { box-shadow: inset 0 0 0 2px #34d399; }
+html.schedi-light #tenantPortalSection #tenantServicesGrid .sd-svc-grip,
+html.schedi-light #tenantPortalSection:not(.schedi-newdash) #tenantServicesGrid .sd-svc-more > summary,
+html.schedi-light #tenantPortalSection #tenantServicesGrid .sd-svc-moves button { color: #0f172a; }
+html.schedi-light #tenantPortalSection #tenantServicesGrid .sd-svc-grip:hover,
+html.schedi-light #tenantPortalSection #tenantServicesGrid .sd-svc-grip:focus-visible,
+html.schedi-light #tenantPortalSection:not(.schedi-newdash) #tenantServicesGrid .sd-svc-more > summary:hover,
+html.schedi-light #tenantPortalSection:not(.schedi-newdash) #tenantServicesGrid .sd-svc-more > summary:focus-visible,
+html.schedi-light #tenantPortalSection #tenantServicesGrid .sd-svc-moves button:hover,
+html.schedi-light #tenantPortalSection #tenantServicesGrid .sd-svc-moves button:focus-visible {
+    background: rgba(15, 23, 42, 0.08);
+}
+html.schedi-light #tenantPortalSection:not(.schedi-newdash) #tenantServicesGrid .sd-svc-more .sd-more-menu {
+    background: #ffffff;
+    border-color: #e2e8f0;
+    color: #0f172a;
+}
+html.schedi-light #tenantPortalSection:not(.schedi-newdash) #tenantServicesGrid .sd-svc-more .sd-more-menu button { color: #0f172a; }
+html.schedi-light #tenantPortalSection #tenantServicesGrid .sd-svc-card.is-drop { box-shadow: inset 0 0 0 2px #047857; }
+html.schedi-light #tenantPortalSection #tenantServicesGrid .sd-svc-quiet { color: #64748b; }
+#tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-svc-more > summary {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    min-height: 40px;
+}
+@media (max-width: 767px) {
+    #tenantPortalSection #tenantServicesGrid .sd-svc-grip,
+    #tenantPortalSection #tenantServicesGrid .sd-svc-more { display: none !important; }
+    #tenantPortalSection #tenantServicesGrid .sd-svc-moves { display: flex; }
+    #tenantPortalSection #tenantServicesGrid .sd-svc-moves button {
+        flex: 1 1 0;
+        min-width: 0;
+        min-height: 44px;
+        padding: 8px 10px;
+        border: 0;
+        border-radius: 999px;
+        background: transparent;
+        color: #e2e8f0;
+        font-size: 16px;
+        font-weight: 700;
+        line-height: 1.2;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+}
+@media (min-width: 768px) {
+    #tenantPortalSection #tenantServicesGrid .sd-svc-grip { display: inline-flex; }
+    #tenantPortalSection #tenantServicesGrid .sd-svc-moves { display: none !important; }
+}
 /* Classic sign-in stays in the column under the header, centered on desktop. */
 @media (min-width: 860px) {
     #tenantPortalSection:not(.schedi-newdash):has(> #tenantLoginBox:not(.hidden)) {
@@ -7899,7 +8077,7 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                     if (!saved.tenants.length) return;
                     platformState.tenants = saved.tenants.map(stripPrivateTenantFields);
                     platformState.tenants.forEach(stripTenantSecrets);
-                    platformState.tenants.forEach(function (t) { ensurePaymentGateways(t); ensureDepositSettings(t); ensureCancellationFeeSettings(t); ensureAllowRecurringBookings(t); ensureBlockedArrays(t); ensureTenantPlan(t); });
+                    platformState.tenants.forEach(function (t) { ensurePaymentGateways(t); ensureDepositSettings(t); ensureCancellationFeeSettings(t); ensureAllowRecurringBookings(t); ensureBlockedArrays(t); ensureTenantPlan(t); ensureServiceOrder(t); });
                     if (saved.activeTenantId) platformState.activeTenantId = saved.activeTenantId;
                     if (saved.agencyStripe) {
                         platformState.agencyStripe = { enabled: saved.agencyStripe.enabled !== false };
@@ -7947,7 +8125,7 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                     snapshot.forEach(doc => loadedTenants.push(doc.data()));
                     loadedTenants.forEach(stripTenantSecrets);
                     if (schediAuthSession()) applyPrivateProfiles(loadedTenants);
-                    loadedTenants.forEach(function (t) { ensurePaymentGateways(t); ensureDepositSettings(t); ensureCancellationFeeSettings(t); ensureAllowRecurringBookings(t); ensureBlockedArrays(t); });
+                    loadedTenants.forEach(function (t) { ensurePaymentGateways(t); ensureDepositSettings(t); ensureCancellationFeeSettings(t); ensureAllowRecurringBookings(t); ensureBlockedArrays(t); ensureServiceOrder(t); });
                     var managedKeep = null;
                     var manageRouteNow = getManageRouteFromPath();
                     if (manageRouteNow && manageRouteNow.token) {
@@ -14684,7 +14862,7 @@ function schediQrCardPixels(text, color) {
             if (email) email.value = prefill.clientEmail || '';
             var sel = document.getElementById('ownerRecurService');
             if (sel) {
-                var options = (tenant.services || []).filter(function (s) { return s && String(s.name || '').trim(); }).map(function (s) {
+                var options = orderedServices(tenant.services).filter(function (s) { return s && String(s.name || '').trim(); }).map(function (s) {
                     var pl = formatServicePriceLabel(s);
                     return '<option value="' + esc(s.name) + '">' + esc(s.name) + (pl ? (' (' + pl + ')') : '') + '</option>';
                 }).join('');
@@ -16292,21 +16470,275 @@ function schediQrCardPixels(text, color) {
             if (scheduleChanged) sendClientRescheduleEmail(tenant, app, prevSlot);
         }
 
+        function serviceOrderNumber(svc) {
+            if (!svc || typeof svc !== 'object') return null;
+            if (svc.sortOrder == null || svc.sortOrder === '') return null;
+            var n = Number(svc.sortOrder);
+            return isFinite(n) ? n : null;
+        }
+
+        function serviceIsInactive(svc) {
+            if (!svc || typeof svc !== 'object') return false;
+            if (svc.hidden === true || svc.inactive === true) return true;
+            if (svc.active === false || svc.enabled === false) return true;
+            var status = String(svc.status || '').toLowerCase();
+            return status === 'hidden' || status === 'inactive';
+        }
+
+        function serviceQuietLabel(svc) {
+            if (!serviceIsInactive(svc)) return '';
+            if (svc.hidden === true || String(svc.status || '').toLowerCase() === 'hidden') return 'Hidden';
+            return 'Inactive';
+        }
+
+        function orderedServices(list) {
+            var src = Array.isArray(list) ? list.slice() : [];
+            var any = false;
+            for (var i = 0; i < src.length; i++) {
+                if (serviceOrderNumber(src[i]) != null) { any = true; break; }
+            }
+            if (!any) return src;
+            return src.map(function (s, i) {
+                var key = serviceOrderNumber(s);
+                return { s: s, i: i, k: key == null ? i : key };
+            }).sort(function (a, b) {
+                if (a.k !== b.k) return a.k - b.k;
+                return a.i - b.i;
+            }).map(function (row) { return row.s; });
+        }
+
+        function stampServiceOrder(list) {
+            return (list || []).map(function (svc, i) {
+                if (!svc || typeof svc !== 'object') return svc;
+                var copy = {};
+                for (var k in svc) {
+                    if (Object.prototype.hasOwnProperty.call(svc, k)) copy[k] = svc[k];
+                }
+                copy.sortOrder = i;
+                return copy;
+            });
+        }
+
+        function ensureServiceOrder(tenant) {
+            if (!tenant) return [];
+            if (!Array.isArray(tenant.services)) {
+                tenant.services = [];
+                return tenant.services;
+            }
+            var next = orderedServices(tenant.services);
+            var same = next.length === tenant.services.length;
+            if (same) {
+                for (var i = 0; i < next.length; i++) {
+                    if (next[i] !== tenant.services[i]) { same = false; break; }
+                }
+            }
+            if (!same) tenant.services = next;
+            return tenant.services;
+        }
+
+        function moveServiceInList(list, id, delta) {
+            var ordered = orderedServices(list);
+            var idx = -1;
+            for (var i = 0; i < ordered.length; i++) {
+                if (ordered[i] && String(ordered[i].id) === String(id)) { idx = i; break; }
+            }
+            var step = Number(delta);
+            if (idx < 0 || (step !== 1 && step !== -1)) return ordered.slice();
+            var next = idx + step;
+            if (next < 0 || next >= ordered.length) return ordered.slice();
+            var copy = ordered.slice();
+            var item = copy.splice(idx, 1)[0];
+            copy.splice(next, 0, item);
+            return stampServiceOrder(copy);
+        }
+
+        function moveServiceBefore(list, fromId, toId) {
+            var ordered = orderedServices(list);
+            var from = -1;
+            var to = -1;
+            for (var i = 0; i < ordered.length; i++) {
+                if (!ordered[i]) continue;
+                if (String(ordered[i].id) === String(fromId)) from = i;
+                if (String(ordered[i].id) === String(toId)) to = i;
+            }
+            if (from < 0 || to < 0 || from === to) return ordered.slice();
+            var copy = ordered.slice();
+            var item = copy.splice(from, 1)[0];
+            copy.splice(to, 0, item);
+            return stampServiceOrder(copy);
+        }
+
+        function serviceMoveState(list, id) {
+            var ordered = orderedServices(list);
+            var idx = -1;
+            for (var i = 0; i < ordered.length; i++) {
+                if (ordered[i] && String(ordered[i].id) === String(id)) { idx = i; break; }
+            }
+            return {
+                index: idx,
+                count: ordered.length,
+                up: idx > 0,
+                down: idx >= 0 && idx < ordered.length - 1
+            };
+        }
+
+        function serviceCardById(id) {
+            var cards = document.querySelectorAll('#tenantServicesGrid [data-svc-id]');
+            var want = String(id);
+            for (var i = 0; i < cards.length; i++) {
+                if (cards[i].getAttribute('data-svc-id') === want && cards[i].classList.contains('sd-svc-card')) return cards[i];
+            }
+            return null;
+        }
+
+        function focusMovedService(id, delta) {
+            var card = serviceCardById(id);
+            if (!card) return;
+            var summary = card.querySelector('.sd-svc-more > summary');
+            var grip = card.querySelector('.sd-svc-grip');
+            var moves = delta == null ? null : card.querySelector('.sd-svc-moves [data-svc-move="' + delta + '"]');
+            var target = null;
+            if (moves && moves.offsetParent !== null && !moves.disabled) target = moves;
+            else if (grip && grip.offsetParent !== null) target = grip;
+            else if (summary && summary.offsetParent !== null) target = summary;
+            else if (moves) target = moves;
+            if (target && target.focus) target.focus();
+        }
+
+        function applyTenantServiceMove(id, target, mode) {
+            var tenant = (typeof getTenant === 'function') ? getTenant() : null;
+            if (!tenant || !Array.isArray(tenant.services)) return;
+            var before = orderedServices(tenant.services).map(function (s) { return String(s && s.id); }).join('|');
+            var next = mode === 'before' ? moveServiceBefore(tenant.services, id, target) : moveServiceInList(tenant.services, id, Number(target));
+            var after = next.map(function (s) { return String(s && s.id); }).join('|');
+            if (before === after) return;
+            tenant.services = next;
+            try { saveState(); } catch (errSaveOrder) {}
+            renderTenantServices(tenant);
+            try { renderLivePreviewIframe(); } catch (errPreview) {}
+            if (typeof showToast === 'function') showToast('Order saved', 'info');
+            focusMovedService(id, mode === 'delta' ? Number(target) : null);
+        }
+        window.moveTenantService = function (id, delta) { applyTenantServiceMove(id, delta, 'delta'); };
+
+        var serviceReorderBound = false;
+        function bindServiceReorder() {
+            if (serviceReorderBound) return;
+            serviceReorderBound = true;
+            var svcDrag = null;
+            function clearServiceDragStyles() {
+                document.querySelectorAll('#tenantServicesGrid .is-dragging, #tenantServicesGrid .is-drop').forEach(function (el) {
+                    el.classList.remove('is-dragging');
+                    el.classList.remove('is-drop');
+                });
+            }
+            function serviceCardFromPoint(x, y) {
+                var el = document.elementFromPoint(x, y);
+                var card = el && el.closest ? el.closest('#tenantServicesGrid .sd-svc-card') : null;
+                return card;
+            }
+            document.addEventListener('pointerdown', function (event) {
+                var grip = event.target && event.target.closest ? event.target.closest('#tenantServicesGrid .sd-svc-grip') : null;
+                if (!grip) return;
+                if (event.button != null && event.button !== 0) return;
+                var card = grip.closest('.sd-svc-card');
+                if (!card) return;
+                svcDrag = {
+                    id: card.getAttribute('data-svc-id'),
+                    x: event.clientX,
+                    y: event.clientY,
+                    moved: false,
+                    over: card.getAttribute('data-svc-id'),
+                    pointer: event.pointerId
+                };
+                try { grip.setPointerCapture(event.pointerId); } catch (errCap) {}
+                if (grip.focus) grip.focus();
+                event.preventDefault();
+            });
+            document.addEventListener('pointermove', function (event) {
+                if (!svcDrag || event.pointerId !== svcDrag.pointer) return;
+                if (!svcDrag.moved && Math.abs(event.clientX - svcDrag.x) + Math.abs(event.clientY - svcDrag.y) < 6) return;
+                svcDrag.moved = true;
+                var fromCard = serviceCardById(svcDrag.id);
+                if (fromCard) fromCard.classList.add('is-dragging');
+                document.querySelectorAll('#tenantServicesGrid .is-drop').forEach(function (el) { el.classList.remove('is-drop'); });
+                var over = serviceCardFromPoint(event.clientX, event.clientY);
+                if (over && over.getAttribute('data-svc-id') !== svcDrag.id) {
+                    over.classList.add('is-drop');
+                    svcDrag.over = over.getAttribute('data-svc-id');
+                }
+            });
+            document.addEventListener('pointerup', function (event) {
+                if (!svcDrag || event.pointerId !== svcDrag.pointer) return;
+                var drag = svcDrag;
+                svcDrag = null;
+                clearServiceDragStyles();
+                if (!drag.moved || !drag.over || drag.over === drag.id) return;
+                applyTenantServiceMove(drag.id, drag.over, 'before');
+            });
+            document.addEventListener('pointercancel', function (event) {
+                if (!svcDrag || event.pointerId !== svcDrag.pointer) return;
+                svcDrag = null;
+                clearServiceDragStyles();
+            });
+            document.addEventListener('keydown', function (event) {
+                var grip = event.target && event.target.closest ? event.target.closest('#tenantServicesGrid .sd-svc-grip') : null;
+                if (!grip) return;
+                if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
+                event.preventDefault();
+                var card = grip.closest('.sd-svc-card');
+                if (!card) return;
+                applyTenantServiceMove(card.getAttribute('data-svc-id'), event.key === 'ArrowUp' ? -1 : 1, 'delta');
+            });
+            document.addEventListener('click', function (event) {
+                var node = event.target && event.target.closest ? event.target : null;
+                if (node && node.nodeType === 3) node = node.parentElement;
+                if (!node || !node.closest) return;
+                var btn = node.closest('#tenantServicesGrid [data-svc-move]');
+                if (!btn || btn.disabled) return;
+                event.preventDefault();
+                var card = btn.closest('.sd-svc-card');
+                var id = btn.getAttribute('data-svc-id') || (card ? card.getAttribute('data-svc-id') : '');
+                applyTenantServiceMove(id, btn.getAttribute('data-svc-move'), 'delta');
+            });
+        }
+
         function renderTenantServices(tenant) {
             const grid = document.getElementById('tenantServicesGrid');
             if (!grid) return;
+            bindServiceReorder();
+            const services = ensureServiceOrder(tenant);
 
-            grid.innerHTML = tenant.services.map(s => `
-                <div class="sd-svc-card p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-3 flex flex-col justify-between">
+            grid.innerHTML = services.map(s => {
+                var move = serviceMoveState(services, s.id);
+                var quiet = serviceQuietLabel(s);
+                var upAttr = move.up ? '' : ' disabled';
+                var downAttr = move.down ? '' : ' disabled';
+                var sid = esc(s.id);
+                var sname = esc(s.name);
+                return `
+                <div class="sd-svc-card p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-3 flex flex-col justify-between" data-svc-id="${sid}">
                     <div>
-                        <div class="flex items-center justify-between mb-2">
-                            <div class="w-9 h-9 rounded-xl bg-slate-800 text-brand-400 flex items-center justify-center overflow-hidden">
+                        <div class="sd-svc-top flex items-center gap-2 mb-2">
+                            <button type="button" class="sd-svc-grip" aria-label="Drag to reorder ${sname}. Press arrow up or arrow down to move."><span aria-hidden="true">⋮⋮</span></button>
+                            <div class="w-9 h-9 rounded-xl bg-slate-800 text-brand-400 flex items-center justify-center overflow-hidden shrink-0">
                                 ${serviceIconMarkup(s)}
                             </div>
                             <span class="sd-svc-price text-xs font-bold text-white">${esc(formatServicePriceLabel(s) || 'No price')}</span>
+                            <details class="sd-more sd-svc-more">
+                                <summary aria-label="Reorder ${sname}" aria-expanded="false"><i class="fa-solid fa-ellipsis-vertical" aria-hidden="true"></i></summary>
+                                <div class="sd-more-menu" role="menu">
+                                    <button type="button" role="menuitem" data-svc-move="-1" data-svc-id="${sid}"${upAttr}>Move up</button>
+                                    <button type="button" role="menuitem" data-svc-move="1" data-svc-id="${sid}"${downAttr}>Move down</button>
+                                </div>
+                            </details>
                         </div>
-                        <h4 class="sd-svc-title text-xs font-bold text-white" title="${esc(s.name)}">${esc(s.name)}${s.icon || serviceImageSrc(s) ? '' : ' <span class="ml-1 text-[10px] uppercase tracking-wide text-brand-400">Auto</span>'}</h4>
+                        <h4 class="sd-svc-title text-xs font-bold text-white" title="${sname}">${esc(s.name)}${s.icon || serviceImageSrc(s) ? '' : ' <span class="ml-1 text-[10px] uppercase tracking-wide text-brand-400">Auto</span>'}${quiet ? ' <span class="sd-svc-quiet">' + esc(quiet) + '</span>' : ''}</h4>
                         <p class="sd-svc-desc text-[11px] text-slate-400 mt-1 line-clamp-2">${esc(s.desc)}</p>
+                        <div class="sd-svc-moves" role="group" aria-label="Reorder ${sname}">
+                            <button type="button" class="sd-svc-move" data-svc-move="-1" data-svc-id="${sid}"${upAttr} aria-label="Move ${sname} up">Move up</button>
+                            <button type="button" class="sd-svc-move" data-svc-move="1" data-svc-id="${sid}"${downAttr} aria-label="Move ${sname} down">Move down</button>
+                        </div>
                     </div>
                     <div class="sd-svc-foot pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px]">
                         <span class="sd-svc-duration text-slate-500 font-semibold">${esc(formatServiceDuration(s.duration))}</span>
@@ -16320,7 +16752,8 @@ function schediQrCardPixels(text, color) {
                         </div>
                     </div>
                 </div>
-            `).join('');
+            `;
+            }).join('');
         }
 
         function ownerTimeStepMins() {
@@ -21911,6 +22344,7 @@ function schediQrCardPixels(text, color) {
             e.preventDefault();
             const tenant = getTenant();
             if (!tenant) return;
+            ensureServiceOrder(tenant);
 
             const editId = document.getElementById('svcEditId').value;
             const name = document.getElementById('svcName').value.trim();
@@ -21974,6 +22408,12 @@ function schediQrCardPixels(text, color) {
                 applyImage(svc);
                 applyDuration(svc);
                 applyPrice(svc);
+                var orderKey = null;
+                (tenant.services || []).forEach(function (row) {
+                    var n = serviceOrderNumber(row);
+                    if (n != null && (orderKey == null || n > orderKey)) orderKey = n;
+                });
+                if (orderKey != null) svc.sortOrder = orderKey + 1;
                 tenant.services.push(svc);
                 var pendingKey = String(editId || '');
                 if (pendingKey && pendingKey !== String(newId) && serviceIconPreviews[pendingKey]) {
@@ -22018,7 +22458,7 @@ function schediQrCardPixels(text, color) {
         function fillManualServiceSelect(tenant, currentName) {
             var select = document.getElementById('manServiceSelect');
             if (!select) return;
-            var options = (tenant.services || []).map(function (s) {
+            var options = orderedServices(tenant && tenant.services).map(function (s) {
                 var pl = formatServicePriceLabel(s);
                 return '<option value="' + esc(s.name) + '">' + esc(s.name) + (pl ? (' (' + pl + ')') : '') + '</option>';
             }).join('');
@@ -24413,7 +24853,7 @@ function schediQrCardPixels(text, color) {
             // effective plan in; otherwise the public checkout can fall back to pay-at-appointment only.
             publicTenant.plan = normalizePlan(tenant);
             if (Array.isArray(publicTenant.services)) {
-                publicTenant.services = publicTenant.services.map(function (svc) {
+                publicTenant.services = orderedServices(publicTenant.services).map(function (svc) {
                     if (!svc) return svc;
                     var image = String(svc.imageUrl || '');
                     var dropImage = image && !/^https:\/\//i.test(image);
@@ -24485,7 +24925,7 @@ function schediQrCardPixels(text, color) {
                 ld.address = address;
             }
             var catalog = [];
-            (Array.isArray(tenant.services) ? tenant.services : []).forEach(function (service) {
+            orderedServices(tenant.services).forEach(function (service) {
                 if (!service) return;
                 var serviceName = String(service.name || '').trim();
                 if (!serviceName) return;

@@ -95,6 +95,14 @@ export function sanitizeService(raw) {
   if (icon) out.icon = icon;
   const imageUrl = cleanServiceText(raw.imageUrl, 500);
   if (/^https:\/\/\S+$/i.test(imageUrl)) out.imageUrl = imageUrl;
+  const sortOrder = Number(raw.sortOrder);
+  if (Number.isInteger(sortOrder) && sortOrder >= 0 && sortOrder <= 10000) out.sortOrder = sortOrder;
+  if (raw.hidden === true) out.hidden = true;
+  if (raw.inactive === true) out.inactive = true;
+  if (raw.active === false) out.active = false;
+  if (raw.enabled === false) out.enabled = false;
+  const status = cleanServiceText(raw.status, 20).toLowerCase();
+  if (status === 'hidden' || status === 'inactive') out.status = status;
   if (out.id == null && !out.name) return null;
   return out;
 }
