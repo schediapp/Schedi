@@ -3630,6 +3630,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
     #tenantPortalSection.schedi-newdash .roster-cell-price {
         white-space: nowrap;
         vertical-align: middle;
+        text-align: left;
         font-variant-numeric: tabular-nums;
     }
     #tenantPortalSection.schedi-newdash .roster-status-price { white-space: nowrap; }
@@ -3783,8 +3784,9 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
         #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-pay { width: 210px; }
         #tenantPortalSection.schedi-newdash #rosterListWrap .roster-status-line {
             display: flex;
-            flex-wrap: nowrap;
+            flex-wrap: wrap;
             align-items: center;
+            align-content: flex-start;
             gap: 4px;
             min-width: 0;
             max-width: 100%;
@@ -3792,7 +3794,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
         #tenantPortalSection.schedi-newdash #rosterListWrap .roster-status-line > * { flex: none; }
         #tenantPortalSection.schedi-newdash #rosterListWrap .roster-status-line > .sd-pay {
             flex: 0 1 auto;
-            min-width: 0;
+            min-width: min(100%, max-content);
+            max-width: 100%;
             overflow: hidden;
         }
         #tenantPortalSection.schedi-newdash #rosterListWrap .roster-status-line > .sd-pay .sd-pay-word {
@@ -6663,7 +6666,7 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
             <div class="space-y-4 sd-form-scroll">
                 <p id="ownerConfirmBody" class="text-sm text-slate-300 leading-relaxed"></p>
                 <div class="pt-1 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
-                    <button type="button" onclick="closeOwnerConfirm(false)" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-sm transition-all">Cancel</button>
+                    <button type="button" id="ownerConfirmDismiss" onclick="closeOwnerConfirm(false)" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-sm transition-all">Cancel</button>
                     <button type="button" id="ownerConfirmBtn" onclick="closeOwnerConfirm(true)" class="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-sm border border-rose-400/40 shadow-lg shadow-rose-900/30 transition-all">Confirm</button>
                 </div>
             </div>
@@ -14796,10 +14799,10 @@ function schediQrCardPixels(text, color) {
                     { id: 'HB-1006', clientName: 'Noah Brooks', clientPhone: '(555) 201-1180', clientEmail: 'noah@example.com', serviceName: 'Cut & style', date: tomorrow, time: '10:00 AM', status: 'accepted', paymentStatus: 'PAID', paidMethod: 'cash', amount: 65, refundAmount: 20, durationMins: 45 },
                     { id: 'HB-1007', clientName: 'Elena Vasquez', clientPhone: '(555) 201-4419', clientEmail: 'elena@example.com', serviceName: 'Color', date: day(2), time: '01:00 PM', status: 'accepted', paymentStatus: 'PAY AT APPOINTMENT', amount: 120, durationMins: 90, seriesId: 'series-harbor-elena', recurrence: { frequency: 'weekly', count: 4, index: 2, total: 4, dates: [day(-5), day(2), day(9), day(16)] } },
                     { id: 'HB-1008', clientName: 'Sam Okonkwo', clientPhone: '(555) 201-3304', clientEmail: 'sam@example.com', serviceName: 'Cut & style', date: day(-4), time: '11:00 AM', status: 'accepted', paymentStatus: 'PAID IN CASH', paidMethod: 'cash', amount: 65, durationMins: 45, noShow: true },
-                    { id: 'HB-1009', clientName: 'Casey Ng', clientPhone: '(555) 201-4410', clientEmail: 'casey@example.com', serviceName: 'Beard trim', date: day(-2), time: '03:00 PM', status: 'accepted', paymentStatus: 'PAID', paidMethod: 'cashapp', paymentMethod: 'cashapp', durationMins: 20 },
-                    { id: 'HB-1010', clientName: 'Drew Patel', clientPhone: '(555) 201-4411', clientEmail: 'drew@example.com', serviceName: 'Consultation', date: day(-3), time: '05:00 PM', status: 'accepted', paymentStatus: 'PAID', paidMethod: 'zelle', paymentMethod: 'zelle', durationMins: 30 },
-                    { id: 'HB-1011', clientName: 'Quinn Brooks', clientPhone: '(555) 201-4412', clientEmail: 'quinn@example.com', serviceName: 'Cut & style', date: day(1), time: '03:30 PM', status: 'accepted', paymentStatus: 'PAID', paidMethod: 'venmo', paymentMethod: 'venmo', durationMins: 45 },
-                    { id: 'HB-1012', clientName: 'Harper Diaz', clientPhone: '(555) 201-4413', clientEmail: 'harper@example.com', serviceName: 'Gloss', date: day(2), time: '04:30 PM', status: 'accepted', paymentStatus: 'PAID SQUARE', paidMethod: 'square', paymentMethod: 'square', paymentOptionLabel: 'Square', durationMins: 75 },
+                    { id: 'HB-1009', clientName: 'Casey Ng', clientPhone: '(555) 201-4410', clientEmail: 'casey@example.com', serviceName: 'Beard trim', date: day(-2), time: '03:00 PM', status: 'accepted', paymentStatus: 'PAID', paidMethod: 'cashapp', paymentMethod: 'cashapp', amount: 28, durationMins: 20 },
+                    { id: 'HB-1010', clientName: 'Drew Patel', clientPhone: '(555) 201-4411', clientEmail: 'drew@example.com', serviceName: 'Consultation', date: day(-3), time: '05:00 PM', status: 'accepted', paymentStatus: 'PAID', paidMethod: 'zelle', paymentMethod: 'zelle', amount: 45, durationMins: 30 },
+                    { id: 'HB-1011', clientName: 'Quinn Brooks', clientPhone: '(555) 201-4412', clientEmail: 'quinn@example.com', serviceName: 'Cut & style', date: day(1), time: '03:30 PM', status: 'accepted', paymentStatus: 'PAID', paidMethod: 'venmo', paymentMethod: 'venmo', amount: 65, durationMins: 45 },
+                    { id: 'HB-1012', clientName: 'Harper Diaz', clientPhone: '(555) 201-4413', clientEmail: 'harper@example.com', serviceName: 'Gloss', date: day(2), time: '04:30 PM', status: 'accepted', paymentStatus: 'PAID SQUARE', paidMethod: 'square', paymentMethod: 'square', paymentOptionLabel: 'Square', amount: 80, durationMins: 75 },
                     { id: 'HB-1013', clientName: 'Maya Chen', clientPhone: '(555) 999-0142', clientEmail: 'Maya@Example.com', serviceName: 'Beard trim', date: day(-16), time: '10:00 AM', status: 'accepted', paymentStatus: 'PAID VIA CARD', paidMethod: 'card', amount: 28, durationMins: 20 },
                     { id: 'HB-1014', clientName: 'Maya Chen', clientPhone: '(555) 201-0142', clientEmail: 'maya@example.com', serviceName: 'Gloss', date: day(-22), time: '02:00 PM', status: 'accepted', paymentStatus: 'PAID IN CASH', paidMethod: 'cash', amount: 80, durationMins: 75, noShow: true },
                     { id: 'HB-1015', clientName: 'Maya Chen', clientPhone: '(555) 201-0142', clientEmail: 'maya@example.com', serviceName: 'Cut & style', date: day(-30), time: '09:30 AM', status: 'cancelled', paymentStatus: 'PAID', paidMethod: 'card', amount: 65, durationMins: 45 },
@@ -15304,11 +15307,10 @@ function schediQrCardPixels(text, color) {
             return '<div class="roster-status-line">' + appointmentStatusChipsHtml(app, chipOpts) + '</div>' + depositRosterLine(app) + cancellationFeeRosterLine(app);
         }
 
-        // Table price column. Paid chips already include the amount, so only the standalone price is shown here.
+        // Table price column. Paid and unpaid rows use the same figure so the column lines up.
         function rosterListPriceHtml(app) {
             var parts = appointmentStatusParts(app);
-            var paidMoney = (parts.showPayment && parts.payment && parts.payment !== 'unpaid') ? appointmentPaidChipMoney(app) : '';
-            if (paidMoney || !parts.showPrice) return '';
+            if (!parts.showPrice) return '';
             return appointmentStatusPriceHtml(app);
         }
 
@@ -23446,7 +23448,8 @@ function schediQrCardPixels(text, color) {
             if (!await openOwnerConfirm({
                 title: 'Cancel ' + who + '?',
                 body: 'Cancel the appointment for ' + who + '? This cannot be undone.',
-                confirmLabel: 'Cancel appointment'
+                confirmLabel: 'Cancel appointment',
+                dismissLabel: 'Keep appointment'
             })) return;
 
             if (doomed) markAppointmentCancelled(doomed, 'owner');
@@ -23470,9 +23473,11 @@ function schediQrCardPixels(text, color) {
                 var title = document.getElementById('ownerConfirmTitle');
                 var body = document.getElementById('ownerConfirmBody');
                 var btn = document.getElementById('ownerConfirmBtn');
+                var dismiss = document.getElementById('ownerConfirmDismiss');
                 var modal = document.getElementById('ownerConfirmModal');
                 if (title) title.textContent = opts.title || 'Are you sure?';
                 if (body) body.textContent = opts.body || '';
+                if (dismiss) dismiss.textContent = opts.dismissLabel || 'Cancel';
                 if (btn) {
                     btn.textContent = opts.confirmLabel || 'Confirm';
                     btn.className = 'px-4 py-2.5 rounded-xl font-bold text-sm border transition-all ' + (opts.danger === false

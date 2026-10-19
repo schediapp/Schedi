@@ -1047,6 +1047,37 @@ describe("owner dashboard preview", () => {
     expect(unscopedSelectors(dashCss(html))).toEqual([]);
   });
 
+  it("wraps crowded payment chips, keeps the cancel dismiss label, and lines up list prices", () => {
+    const css = dashCss(html);
+    const line = css.slice(css.indexOf("#tenantPortalSection.schedi-newdash #rosterListWrap .roster-status-line {"));
+    const status = line.slice(0, line.indexOf("}"));
+    expect(status).toContain("flex-wrap: wrap");
+    expect(status).not.toContain("nowrap");
+    const payChip = line.slice(line.indexOf(".roster-status-line > .sd-pay {"), line.indexOf(".sd-pay-word"));
+    expect(payChip).toContain("min-width: min(100%, max-content)");
+    expect(payChip).not.toContain("min-width: 0");
+    expect(line.slice(0, line.indexOf("@media (min-width: 1360px)"))).toContain("white-space: nowrap");
+    const priceRule = css.slice(css.indexOf("#tenantPortalSection.schedi-newdash .roster-cell-price {"), css.indexOf("#tenantPortalSection.schedi-newdash .roster-status-price"));
+    expect(priceRule).toContain("text-align: left");
+    const price = extractFunction(html, "rosterListPriceHtml");
+    expect(price).toContain("if (!parts.showPrice) return '';");
+    expect(price).toContain("return appointmentStatusPriceHtml(app);");
+    expect(price).not.toContain("paidMoney");
+    const cancel = html.slice(html.indexOf("window.deleteAppointment = async function"), html.indexOf("var ownerConfirmResolve"));
+    expect(cancel).toContain("confirmLabel: 'Cancel appointment'");
+    expect(cancel).toContain("dismissLabel: 'Keep appointment'");
+    const open = html.slice(html.indexOf("window.openOwnerConfirm = function"), html.indexOf("window.closeOwnerConfirm = function"));
+    expect(open).toContain("getElementById('ownerConfirmDismiss')");
+    expect(open).toContain("opts.dismissLabel || 'Cancel'");
+    expect(html).toContain('id="ownerConfirmDismiss"');
+    const drew = html.slice(html.indexOf("id: 'HB-1010'"), html.indexOf("id: 'HB-1011'"));
+    expect(drew).toContain("paidMethod: 'zelle'");
+    expect(drew).toContain("amount: 45");
+    expect(html.slice(html.indexOf("id: 'HB-1009'"), html.indexOf("id: 'HB-1010'"))).toContain("amount: 28");
+    expect(html.slice(html.indexOf("id: 'HB-1011'"), html.indexOf("id: 'HB-1012'"))).toContain("amount: 65");
+    expect(html.slice(html.indexOf("id: 'HB-1012'"), html.indexOf("id: 'HB-1013'"))).toContain("amount: 80");
+  });
+
   it("clears a no-show and restores a no-show status without charging", () => {
     const start = html.indexOf("window.undoAppointmentNoShow = function");
     const end = html.indexOf("window.deleteAppointment = async function");
