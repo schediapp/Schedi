@@ -62,7 +62,7 @@ describe("owner dashboard fixes", () => {
     const css = dashCss(html);
     expect(css).toContain(".roster-ref-id");
     expect(css).toContain("grid-row: 2");
-    expect(css).toContain("min-width: 1120px");
+    expect(css).toContain("min-width: 1080px");
     expect(css).toContain(".sd-gateway-paypal { color: #0070E0; }");
     expect(css).toContain(".sd-gateway-paypal { color: #003087; }");
     expect(css).toContain("#webPushCard.wp-card-hit");
@@ -151,7 +151,7 @@ describe.skipIf(!chrome)("owner dashboard fixes in the browser", () => {
           app.id = "BK-CB126C75";
           app.payCode = "";
           app.clientName = "Ref Layout Client";
-          const longId = "BK-CB126C75-EXTRA-LONG-REFERENCE";
+          const longId = "BK-" + "A".repeat(120);
           const copy = { ...app, id: longId, clientName: "Long Ref Client", payCode: "" };
           tenant.appointments.push(copy);
           w.setRosterPayFilter("all");
@@ -164,7 +164,7 @@ describe.skipIf(!chrome)("owner dashboard fixes in the browser", () => {
           return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom, width: rect.width, height: rect.height };
         };
         const read = (id: string) => {
-          const row = document.querySelector(`[data-booking-id="${id}"]`);
+          const row = [...document.querySelectorAll("#tenantRosterTableBody tr.roster-row")].find((el) => el.getAttribute("data-booking-id") === id);
           const ref = row?.querySelector(".roster-ref-id") as HTMLElement | null;
           const client = row?.querySelector(".roster-client-name") as HTMLElement | null;
           const cell = row?.querySelector(".roster-cell-ref") as HTMLElement | null;
@@ -188,7 +188,7 @@ describe.skipIf(!chrome)("owner dashboard fixes in the browser", () => {
         const todayOverflow = today ? today.scrollWidth > today.clientWidth + 1 : false;
         return {
           standard: read("BK-CB126C75"),
-          long: read("BK-CB126C75-EXTRA-LONG-REFERENCE"),
+          long: read("BK-" + "A".repeat(120)),
           todayText: today?.textContent || "",
           todayOverflow,
         };
@@ -206,13 +206,20 @@ describe.skipIf(!chrome)("owner dashboard fixes in the browser", () => {
           expect(measured.standard!.scroll).toBeLessThanOrEqual(measured.standard!.clientWidth + 1);
           expect(measured.standard?.whiteSpace).toBe("nowrap");
           expect(overlaps(measured.standard!.ref, measured.standard!.name)).toBe(false);
-          expect(measured.long?.text).toBe("#BK-CB126C75-EXTRA-LONG-REFERENCE");
-          expect(measured.long?.title).toBe("#BK-CB126C75-EXTRA-LONG-REFERENCE");
+          expect(measured.long?.text).toBe("#" + "BK-" + "A".repeat(120));
+          expect(measured.long?.title).toBe("#" + "BK-" + "A".repeat(120));
           expect(measured.long!.scroll).toBeGreaterThan(measured.long!.clientWidth);
           expect(measured.long?.whiteSpace).toBe("nowrap");
           expect(measured.long?.lines).toBe(1);
           expect(overlaps(measured.long!.ref, measured.long!.name)).toBe(false);
           expect(measured.long!.cell.right).toBeLessThanOrEqual(measured.long!.name.left + 1);
+          if (width >= 1440) {
+            const scroll = await page.evaluate(() => {
+              const wrap = document.getElementById("rosterListWrap") as HTMLElement;
+              return { scroll: wrap.scrollWidth, client: wrap.clientWidth };
+            });
+            expect(scroll.scroll, `${width} ${mode} table scroll`).toBeLessThanOrEqual(scroll.client + 2);
+          }
         }
       }
 
@@ -223,6 +230,8 @@ describe.skipIf(!chrome)("owner dashboard fixes in the browser", () => {
       expect(stacked.standard!.ref.top).toBeGreaterThanOrEqual(stacked.standard!.name.bottom - 1);
       expect(overlaps(stacked.standard!.ref, stacked.standard!.name)).toBe(false);
       expect(stacked.standard!.scroll).toBeLessThanOrEqual(stacked.standard!.clientWidth + 1);
+      expect(stacked.long?.whiteSpace).toBe("nowrap");
+      expect(stacked.long?.lines).toBe(1);
       expect(stacked.long!.scroll).toBeGreaterThan(stacked.long!.clientWidth);
       expect(overlaps(stacked.long!.ref, stacked.long!.name)).toBe(false);
       await page.evaluate(() => (window as unknown as { schediDashGo: (page: string) => void }).schediDashGo("today"));
@@ -308,8 +317,10 @@ describe.skipIf(!chrome)("owner dashboard fixes in the browser", () => {
       const hoursPage = await browser.newPage();
       hoursPage.on("pageerror", (error) => errors.push(String(error)));
       await hoursPage.evaluateOnNewDocument(() => {
-        localStorage.removeItem("schediWeekHours");
-        localStorage.removeItem("schediWeekHoursEpoch");
+        try {
+          localStorage.removeItem("schediWeekHours");
+          localStorage.removeItem("schediWeekHoursEpoch");
+        } catch (errStore) {}
       });
       for (const width of [390, 1280]) {
         await hoursPage.setViewport({ width, height: 900 });
@@ -338,8 +349,10 @@ describe.skipIf(!chrome)("owner dashboard fixes in the browser", () => {
       const migrated = await browser.newPage();
       migrated.on("pageerror", (error) => errors.push(String(error)));
       await migrated.evaluateOnNewDocument(() => {
-        localStorage.setItem("schediWeekHours", "0");
-        localStorage.removeItem("schediWeekHoursEpoch");
+        try {
+          localStorage.setItem("schediWeekHours", "0");
+          localStorage.removeItem("schediWeekHoursEpoch");
+        } catch (errStore) {}
       });
       await migrated.setViewport({ width: 1280, height: 900 });
       await migrated.goto(`http://127.0.0.1:${server.port}/portal-preview`, { waitUntil: "domcontentloaded", timeout: 45000 });
@@ -358,8 +371,10 @@ describe.skipIf(!chrome)("owner dashboard fixes in the browser", () => {
       const remembered = await browser.newPage();
       remembered.on("pageerror", (error) => errors.push(String(error)));
       await remembered.evaluateOnNewDocument(() => {
-        localStorage.setItem("schediWeekHoursEpoch", "2");
-        localStorage.setItem("schediWeekHours", "0");
+        try {
+          localStorage.setItem("schediWeekHoursEpoch", "2");
+          localStorage.setItem("schediWeekHours", "0");
+        } catch (errStore) {}
       });
       await remembered.goto(`http://127.0.0.1:${server.port}/portal-preview`, { waitUntil: "domcontentloaded", timeout: 45000 });
       await remembered.waitForFunction(() => document.body.classList.contains("schedi-newdash"), { timeout: 20000 });
