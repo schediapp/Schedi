@@ -1682,7 +1682,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       await page.waitForFunction(() => {
         const today = document.getElementById("schediStatToday");
         const review = document.getElementById("schediStatReview");
-        return today?.textContent === "4" && review?.textContent === "3" && document.body.textContent?.includes("Maya Chen");
+        return today?.textContent === "2" && review?.textContent === "3" && document.body.textContent?.includes("Maya Chen");
       }, { timeout: 20000 });
       const stats = await page.evaluate(() => {
         const tenant = (window as unknown as { getTenant: () => { appointments: { id: string; date?: string; status?: string; amount?: number }[] } }).getTenant();
@@ -1717,6 +1717,14 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       expect(stats.setup).toBe("Finish setting up 5 of 6");
       expect(stats.unpaid).toBe("7");
       expect(stats.week).toBe(stats.weekExpected);
+      const pendingDates = await page.evaluate(() => {
+        const tenant = (window as unknown as { getTenant: () => { appointments: { id?: string; date?: string; status?: string }[] } }).getTenant();
+        const today = tenant.appointments.find((app) => app.id === "HB-1001")?.date || "";
+        const pending = tenant.appointments.filter((app) => String(app.status || "").toLowerCase() === "pending");
+        return { today, rows: pending.map((app) => ({ id: app.id || "", date: app.date || "" })) };
+      });
+      expect(pendingDates.rows.map((row) => row.id).sort()).toEqual(["HB-1002", "HB-1004", "HB-1031"]);
+      pendingDates.rows.forEach((row) => expect(row.date > pendingDates.today).toBe(true));
       const accept = await page.evaluate(() => {
         const button = [...document.querySelectorAll("button")].find((node) => node.textContent === "Accept");
         if (!button) return "missing";
@@ -3553,6 +3561,12 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       });
       await page.goto(`http://127.0.0.1:${port}/portal-preview`, { waitUntil: "domcontentloaded", timeout: 45000 });
       await page.waitForFunction(() => document.body.classList.contains("schedi-newdash"), { timeout: 20000 });
+      await page.evaluate(() => {
+        const tenant = (window as unknown as { getTenant: () => { appointments: { id?: string; date?: string }[] } }).getTenant();
+        const today = tenant.appointments.find((app) => app.id === "HB-1001")?.date || "";
+        const row = tenant.appointments.find((app) => app.id === "HB-1004");
+        if (row && today) row.date = today;
+      });
       const menuState = () => page.evaluate(() => {
         const menus = Array.from(document.querySelectorAll("#schediTodaySchedule .sd-more-menu")) as HTMLElement[];
         return {
@@ -4040,7 +4054,13 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       };
       for (const theme of ["light", "dark"] as const) {
         await page.evaluate((mode) => (window as unknown as { setSchediTheme: (mode: string) => void }).setSchediTheme(mode), theme);
-        await page.evaluate(() => (window as unknown as { schediDashGo: (tab: string) => void }).schediDashGo("today"));
+        await page.evaluate(() => {
+          const tenant = (window as unknown as { getTenant: () => { appointments: { id?: string; date?: string }[] } }).getTenant();
+          const today = tenant.appointments.find((app) => app.id === "HB-1001")?.date || "";
+          const row = tenant.appointments.find((app) => app.id === "HB-1004");
+          if (row && today) row.date = today;
+          (window as unknown as { schediDashGo: (tab: string) => void }).schediDashGo("today");
+        });
         const id = "HB-1004";
         await page.waitForSelector(`#schediTodaySchedule button[onclick*="${id}"]`, { timeout: 10000 });
         await page.evaluate((appointmentId) => {
@@ -4146,9 +4166,12 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
         await page.setViewport({ width, height: 900 });
         for (const theme of ["dark", "light"] as const) {
           await page.evaluate((mode) => {
-            const tenant = (window as unknown as { getTenant: () => { appointments: { id?: string; noShow?: boolean }[] } }).getTenant();
+            const tenant = (window as unknown as { getTenant: () => { appointments: { id?: string; noShow?: boolean; date?: string }[] } }).getTenant();
             const row = tenant.appointments.find((app) => app && app.id === "HB-1026");
             if (row) row.noShow = true;
+            const today = tenant.appointments.find((app) => app && app.id === "HB-1001")?.date || "";
+            const request = tenant.appointments.find((app) => app && app.id === "HB-1002");
+            if (request && today) request.date = today;
             (window as unknown as { setSchediTheme: (mode: string) => void }).setSchediTheme(mode);
             (window as unknown as { schediDashGo: (tab: string) => void }).schediDashGo("appointments");
           }, theme);
@@ -4306,7 +4329,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
           }, theme);
           await page.waitForFunction(() => {
             const titles = Array.from(document.querySelectorAll("#schediTodaySchedule .sd-row-title")).map((el) => (el.textContent || "").trim());
-            return titles.includes("Luis Ortega") && titles.includes("Jordan Lee · Walk-in");
+            return titles.includes("Jordan Lee · Walk-in") && titles.includes("Maya Chen") && !titles.includes("Luis Ortega");
           }, { timeout: 10000 });
           const rows = await page.evaluate(() => Array.from(document.querySelectorAll("#schediTodaySchedule .sd-row")).map((row) => {
             const title = row.querySelector(".sd-row-title") as HTMLElement | null;
@@ -4324,7 +4347,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
               clipped: !!title && title.scrollWidth > title.clientWidth + 1,
             };
           }));
-          for (const name of ["Luis Ortega", "Jordan Lee · Walk-in", "Maya Chen"]) {
+          for (const name of ["Jordan Lee · Walk-in", "Maya Chen"]) {
             const row = rows.find((item) => item.name === name);
             expect(row, name).toBeTruthy();
             expect(row?.clipped).toBe(false);

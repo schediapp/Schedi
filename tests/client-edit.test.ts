@@ -238,7 +238,7 @@ describe.skipIf(!chrome)("client edit demo", () => {
       page.on("pageerror", (error) => errors.push(String(error)));
       await page.setViewport({ width: 1280, height: 900 });
       await page.goto(`http://127.0.0.1:${port}/portal-preview`, { waitUntil: "domcontentloaded", timeout: 45000 });
-      await page.waitForFunction(() => document.getElementById("schediStatToday")?.textContent === "4", { timeout: 20000 });
+      await page.waitForFunction(() => document.getElementById("schediStatToday")?.textContent === "2", { timeout: 20000 });
       const before = await page.evaluate(() => {
         const w = window as unknown as { schediDashGo: (page: string) => void; getTenant: () => { appointments: { id: string; clientName?: string; clientPhone?: string; clientEmail?: string }[] } };
         w.schediDashGo("clients");

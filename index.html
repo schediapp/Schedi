@@ -840,13 +840,18 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-chip.sd-pay-square {
 #tenantPortalSection.schedi-newdash .sd-client-noshow { margin-top: 8px; line-height: 1.45; font-weight: 700; }
 #tenantPortalSection.schedi-newdash .sd-client-usual { margin: 0 0 10px; font-weight: 800; color: var(--sd-text); }
 #tenantPortalSection.schedi-newdash .sd-client-totals,
+#tenantPortalSection.schedi-newdash .sd-client-history-totals,
 #tenantPortalSection.schedi-newdash .sd-client-stats {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
     margin: 0 0 10px;
 }
+#tenantPortalSection.schedi-newdash .sd-client-history-totals {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
 #tenantPortalSection.schedi-newdash .sd-client-totals p,
+#tenantPortalSection.schedi-newdash .sd-client-history-totals p,
 #tenantPortalSection.schedi-newdash .sd-client-stat {
     margin: 0;
     padding: 10px;
@@ -856,6 +861,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-chip.sd-pay-square {
     min-width: 0;
 }
 #tenantPortalSection.schedi-newdash .sd-client-totals span,
+#tenantPortalSection.schedi-newdash .sd-client-history-totals span,
 #tenantPortalSection.schedi-newdash .sd-client-stat p {
     display: block;
     color: var(--sd-muted);
@@ -863,6 +869,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-chip.sd-pay-square {
     font-weight: 800;
 }
 #tenantPortalSection.schedi-newdash .sd-client-totals strong,
+#tenantPortalSection.schedi-newdash .sd-client-history-totals strong,
 #tenantPortalSection.schedi-newdash .sd-client-stat strong {
     display: block;
     margin-top: 4px;
@@ -1628,6 +1635,34 @@ body.schedi-newdash #ownerRecurringModal .sd-form-save {
     body.schedi-newdash #comparePlansModal .sd-form-sheet,
     body.schedi-newdash #rosterApptModal .sd-form-sheet {
         animation: none;
+    }
+}
+body.schedi-newdash #clientHistoryModal { overflow: hidden; }
+body.schedi-newdash #clientHistoryModal .sd-form-sheet {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-height: min(92vh, 860px);
+    overflow: hidden;
+    padding: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+}
+body.schedi-newdash #clientHistoryModal .sd-form-sheet > * + * { margin-top: 0; }
+@media (max-width: 859px) {
+    body.schedi-newdash #clientHistoryModal {
+        flex-direction: column;
+        align-items: stretch !important;
+        justify-content: flex-end;
+        padding: 0 !important;
+    }
+    body.schedi-newdash #clientHistoryModal > .sd-form-sheet {
+        width: 100%;
+        max-width: none;
+        min-height: 0;
+        max-height: 94dvh;
+        margin: 0 !important;
+        border-radius: 20px 20px 0 0;
     }
 }
 body.schedi-newdash #rosterDeleteModal,
@@ -4534,6 +4569,11 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-theme-seg { background
     margin-top: 16px;
     margin-bottom: 8px;
 }
+#tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-svc-edit,
+#tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-svc-delete {
+    min-height: 36px;
+    box-sizing: border-box;
+}
 @media (max-width: 859px) {
     #tenantPortalSection.schedi-newdash #schediDashMoreSheet .sd-sheet-card { max-height: min(88vh, 760px); }
     #tenantPortalSection.schedi-newdash #schediDashMoreSheet .sd-sheet-bar h3 { font-size: 22px; font-weight: 800; }
@@ -6694,6 +6734,19 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                 <button type="button" onclick="closeRosterApptModal()" aria-label="Close" class="sd-form-close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
             </div>
             <div id="rosterApptBody" class="space-y-4 text-xs sd-form-scroll"></div>
+        </div>
+    </div>
+
+    <div id="clientHistoryModal" role="dialog" aria-modal="true" aria-labelledby="clientHistoryTitle" tabindex="-1" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-start sm:items-center justify-center p-3 sm:p-4 overscroll-contain hidden" onclick="if (event.target === this) closeClientHistory()">
+        <div class="max-w-md w-full glass-card rounded-2xl fade-in min-w-0 sd-form-sheet">
+            <div class="sd-form-head">
+                <div class="min-w-0">
+                    <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Client history</p>
+                    <h3 id="clientHistoryTitle" class="text-lg font-bold text-white break-words"></h3>
+                </div>
+                <button type="button" onclick="closeClientHistory()" aria-label="Close" class="sd-form-close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+            </div>
+            <div id="clientHistoryBody" class="sd-form-scroll"></div>
         </div>
     </div>
 
@@ -12407,7 +12460,7 @@ function schediQrCardPixels(text, color) {
         function clientMetricsHtml(stats) {
             stats = stats || {};
             var visits = '<span class="sd-client-visits" title="Completed visits, or confirmed visits whose start has passed. Pending, denied, no-shows, and cancellations are not counted."><strong>' + String(stats.visits || 0) + '</strong> done</span>';
-            var figure = stats.paidKnown ? ('$' + Number(stats.paid || 0).toFixed(2)) : '\u2014';
+            var figure = stats.paidKnown ? (formatBookingAmountLabel(stats.paid) || '$0') : '\u2014';
             var muted = !stats.paidKnown || Number(stats.paid) === 0;
             var paid = '<span class="sd-client-paid"><span class="sd-client-paid-kicker">Paid</span><span class="sd-client-paid-figure' + (muted ? ' is-muted' : '') + '">' + figure + '</span></span>';
             var chip = stats.method ? clientMethodChipHtml(stats.method) : '';
@@ -12511,7 +12564,11 @@ function schediQrCardPixels(text, color) {
                     + '</div><div class="sd-client-actions">'
                     + (editing ? '' : ('<button type="button" class="sd-client-edit-btn px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold text-[11px] border border-slate-700" onclick="startOwnerClientEdit(' + jsArg(x.id) + ')" aria-label="Edit ' + esc(x.name) + '">Edit</button>'
                     + '<details class="sd-more"><summary aria-label="More actions for ' + esc(x.name) + '"><i class="fa-solid fa-ellipsis-vertical" aria-hidden="true"></i></summary>'
-                    + '<div class="sd-more-menu" role="menu"><button type="button" class="sd-act-no" role="menuitem" onclick="closeSchediTodayMenus(event); deleteOwnerClient(' + jsArg(x.id) + ')">Remove</button></div></details>'))
+                    + '<div class="sd-more-menu" role="menu">'
+                    + '<button type="button" role="menuitem" onclick="closeSchediTodayMenus(event); bookClientAgain(' + jsArg(x.id) + ')">Book appointment</button>'
+                    + '<button type="button" role="menuitem" onclick="closeSchediTodayMenus(event); openClientHistory(' + jsArg(x.id) + ')">View history</button>'
+                    + '<button type="button" class="sd-act-no" role="menuitem" onclick="closeSchediTodayMenus(event); deleteOwnerClient(' + jsArg(x.id) + ')">Remove</button>'
+                    + '</div></details>'))
                     + '</div></div>'
                     + metrics
                     + editor
@@ -12733,12 +12790,15 @@ function schediQrCardPixels(text, color) {
             return found;
         }
 
-        function clientHistoryGroupHtml(title, apps, tenant) {
+        function clientHistoryGroupHtml(title, apps, tenant, priceOf) {
+            var priceFn = typeof priceOf === 'function' ? priceOf : function (app) {
+                return clientHistoryPrice(app) || '—';
+            };
             var rows = (apps || []).map(function (app) {
                 var when = rosterPrettyDate(app && app.date) || String((app && app.date) || '');
                 if (app && app.time) when = when ? (when + ' · ' + app.time) : String(app.time);
-                var price = clientHistoryPrice(app);
-                var chips = appointmentStatusChipsHtml(app, { priceHtml: '<span>' + esc(price || '—') + '</span>' });
+                var price = priceFn(app);
+                var chips = appointmentStatusChipsHtml(app, price ? { priceHtml: '<span>' + esc(price) + '</span>' } : { price: false });
                 return '<article class="sd-client-visit"><div class="sd-client-visit-main">'
                     + '<p class="sd-client-visit-when">' + esc(when || 'Date not set') + '</p>'
                     + '<p class="sd-client-visit-svc"><span class="sd-svc-line">' + serviceMarkHtml(tenant, app && app.serviceName) + '<span>' + esc((app && app.serviceName) || 'Appointment') + '</span></span></p>'
@@ -12803,7 +12863,7 @@ function schediQrCardPixels(text, color) {
         }
 
         function clientPanelBlocked() {
-            var ids = ['manualBookingModal', 'ownerRecurringModal', 'clientImportModal', 'denyConfirmModal', 'rosterPaidMethodModal'];
+            var ids = ['manualBookingModal', 'ownerRecurringModal', 'clientImportModal', 'denyConfirmModal', 'rosterPaidMethodModal', 'clientHistoryModal'];
             for (var i = 0; i < ids.length; i++) {
                 var node = document.getElementById(ids[i]);
                 if (node && !node.classList.contains('hidden')) return true;
@@ -12940,6 +13000,42 @@ function schediQrCardPixels(text, color) {
             var x = clientById(clientId);
             if (!x || typeof openManualBookingModal !== 'function') return;
             openManualBookingModal({ clientName: x.name || '', clientPhone: x.phone || '', clientEmail: x.email || '' });
+        };
+
+        function clientHistorySheetPrice(app) {
+            return formatBookingAmountLabel(app && app.amount);
+        }
+
+        window.openClientHistory = function (clientId) {
+            var client = clientById(clientId);
+            var modal = document.getElementById('clientHistoryModal');
+            var title = document.getElementById('clientHistoryTitle');
+            var body = document.getElementById('clientHistoryBody');
+            if (!client || !modal || !title || !body) return;
+            var tenant = getTenant();
+            var today = '';
+            try { today = rosterTodayIso(tenant); } catch (errToday) { today = localISODate(new Date()); }
+            var model = clientHistoryModel(client, (tenant && tenant.appointments) || [], today, bookingPaymentState, appointmentPayKind);
+            var paid = formatBookingAmountLabel(model.paidRevenue) || '$0';
+            title.textContent = client.name || 'Client';
+            body.innerHTML = '<div class="sd-client-history-totals">'
+                + '<p><span>Visits</span><strong>' + esc(String(model.visitCount)) + '</strong></p>'
+                + '<p><span>Total paid</span><strong>' + esc(paid) + '</strong></p>'
+                + '</div>'
+                + clientHistoryGroupHtml('Upcoming', model.upcoming, tenant, clientHistorySheetPrice)
+                + clientHistoryGroupHtml('Past', model.past, tenant, clientHistorySheetPrice);
+            body.scrollTop = 0;
+            modal.classList.remove('hidden');
+            modal.scrollTop = 0;
+            var closeBtn = modal.querySelector('.sd-form-close');
+            if (closeBtn && closeBtn.focus) {
+                try { closeBtn.focus(); } catch (errFocus) {}
+            }
+        };
+
+        window.closeClientHistory = function () {
+            var modal = document.getElementById('clientHistoryModal');
+            if (modal) modal.classList.add('hidden');
         };
 
         (function bindClientPanel() {
@@ -14803,9 +14899,9 @@ function schediQrCardPixels(text, color) {
                 _rosterRevision: 1,
                 appointments: [
                     { id: 'HB-1001', clientName: 'Maya Chen', clientPhone: '(555) 201-0142', clientEmail: 'maya@example.com', serviceName: 'Cut & style', date: today, time: '09:00 AM', status: 'accepted', paymentStatus: 'PAID VIA CARD', paidMethod: 'card', stripePaymentMethodId: 'pm_harbor_demo', amount: 65, durationMins: 45 },
-                    { id: 'HB-1002', clientName: 'Luis Ortega', clientPhone: '(555) 201-2288', clientEmail: 'luis@example.com', serviceName: 'Beard trim', date: today, time: '11:30 AM', status: 'pending', paymentStatus: 'PENDING CASH APP', paymentMethod: 'cashapp', amount: 28, durationMins: 20 },
+                    { id: 'HB-1002', clientName: 'Luis Ortega', clientPhone: '(555) 201-2288', clientEmail: 'luis@example.com', serviceName: 'Beard trim', date: day(1), time: '11:30 AM', status: 'pending', paymentStatus: 'PENDING CASH APP', paymentMethod: 'cashapp', amount: 28, durationMins: 20 },
                     { id: 'HB-1003', clientName: 'Jordan Lee', clientPhone: '(555) 201-7730', clientEmail: '', serviceName: 'Gloss', date: today, time: '01:30 PM', status: 'accepted', paymentStatus: 'PAY AT APPOINTMENT', amount: 80, durationMins: 75, walkIn: true },
-                    { id: 'HB-1004', clientName: 'Priya Shah', clientPhone: '(555) 201-9094', clientEmail: 'priya@example.com', serviceName: 'Consultation', date: today, time: '04:00 PM', status: 'pending', paymentStatus: 'PENDING ZELLE', paymentMethod: 'zelle', durationMins: 30 },
+                    { id: 'HB-1004', clientName: 'Priya Shah', clientPhone: '(555) 201-9094', clientEmail: 'priya@example.com', serviceName: 'Consultation', date: day(2), time: '04:00 PM', status: 'pending', paymentStatus: 'PENDING ZELLE', paymentMethod: 'zelle', durationMins: 30 },
                     { id: 'HB-1005', clientName: 'Avery Kim', clientPhone: '(555) 201-6621', clientEmail: 'avery@example.com', serviceName: 'Cut & style', date: day(-1), time: '02:00 PM', status: 'accepted', paymentStatus: 'PENDING VENMO', paymentMethod: 'venmo', amount: 55, durationMins: 45, noShow: true },
                     { id: 'HB-1006', clientName: 'Noah Brooks', clientPhone: '(555) 201-1180', clientEmail: 'noah@example.com', serviceName: 'Cut & style', date: tomorrow, time: '10:00 AM', status: 'accepted', paymentStatus: 'PAID', paidMethod: 'cash', amount: 65, refundAmount: 20, durationMins: 45 },
                     { id: 'HB-1007', clientName: 'Elena Vasquez', clientPhone: '(555) 201-4419', clientEmail: 'elena@example.com', serviceName: 'Color', date: day(2), time: '01:00 PM', status: 'accepted', paymentStatus: 'PAY AT APPOINTMENT', amount: 120, durationMins: 90, seriesId: 'series-harbor-elena', recurrence: { frequency: 'weekly', count: 4, index: 2, total: 4, dates: [day(-5), day(2), day(9), day(16)] } },

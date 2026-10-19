@@ -273,6 +273,18 @@ describe("client list sorting and totals", () => {
     const css = dashCss(html);
     expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-client-export {\n        grid-column: 1 / -1;\n        width: 100%;");
     expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-client-paid-figure");
+    const metrics = extractFunction(html, "clientMetricsHtml");
+    expect(metrics).toContain("formatBookingAmountLabel(stats.paid)");
+    expect(metrics).not.toContain("toFixed(2)");
+    const menu = html.slice(html.indexOf("More actions for "), html.indexOf("function clientTagsHtml"));
+    expect(menu.indexOf("Book appointment")).toBeGreaterThan(-1);
+    expect(menu.indexOf("Book appointment")).toBeLessThan(menu.indexOf("View history"));
+    expect(menu.indexOf("View history")).toBeLessThan(menu.indexOf(">Remove</button>"));
+    expect(menu).toContain('class="sd-act-no" role="menuitem"');
+    const svc36 = css.indexOf("#tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-svc-edit,\n#tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-svc-delete {\n    min-height: 36px;");
+    const svc48 = css.indexOf("    #tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-svc-edit,\n    #tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-svc-delete {\n        min-height: 48px;");
+    expect(svc36).toBeGreaterThan(-1);
+    expect(svc48).toBeGreaterThan(svc36);
     expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-client-walk");
   });
 });

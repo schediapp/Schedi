@@ -157,6 +157,11 @@ describe("client history matching", () => {
     expect(owner).toContain("Book again");
     expect(owner).toContain("New recurring appointment");
     expect(owner).toContain("window.bookClientAgain = function");
+    expect(owner).toContain("Book appointment");
+    expect(owner).toContain("View history");
+    expect(owner).toContain('id="clientHistoryModal"');
+    expect(owner).toContain("window.openClientHistory = function");
+    expect(owner).toContain("clientHistorySheetPrice");
     expect(owner).toContain("openManualBookingModal({ clientName:");
     expect(owner).toContain("No usual method yet.");
     expect(owner).toContain("No-shows: ");
