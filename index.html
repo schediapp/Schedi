@@ -717,8 +717,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-chip.sd-pay-square {
 #tenantPortalSection.schedi-newdash .sd-client-list { display: flex; flex-direction: column; }
 #tenantPortalSection.schedi-newdash .sd-client { display: block; padding: 12px 0; border-top: 1px solid var(--sd-line); }
 #tenantPortalSection.schedi-newdash .sd-client:first-child { border-top: 0; }
-#tenantPortalSection.schedi-newdash .sd-client-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 8px; }
-#tenantPortalSection.schedi-newdash .sd-client-copy { flex: 1 1 16rem; min-width: 0; }
+#tenantPortalSection.schedi-newdash .sd-client-head { display: flex; flex-wrap: nowrap; align-items: center; justify-content: flex-start; gap: 8px; }
+#tenantPortalSection.schedi-newdash .sd-client-copy { flex: 1 1 auto; min-width: 0; }
 #tenantPortalSection.schedi-newdash .sd-client-main { min-width: 0; }
 #tenantPortalSection.schedi-newdash .sd-client-name { font-weight: 800; font-size: 14px; color: var(--sd-text); background: transparent; border: 0; padding: 0; text-align: left; cursor: pointer; }
 #tenantPortalSection.schedi-newdash .sd-client-contact,
@@ -726,8 +726,9 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-chip.sd-pay-square {
 #tenantPortalSection.schedi-newdash .sd-client-notes { margin-top: 4px; overflow-wrap: anywhere; }
 #tenantPortalSection.schedi-newdash .sd-client-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
 #tenantPortalSection.schedi-newdash .sd-tag { display: inline-flex; align-items: center; border-radius: 999px; padding: 2px 8px; font-size: 11px; font-weight: 800; color: var(--sd-brand-2); background: rgba(16, 185, 129, 0.14); border: 1px solid rgba(16, 185, 129, 0.35); }
-#tenantPortalSection.schedi-newdash .sd-client-actions { display: flex; flex: 0 0 auto; flex-wrap: nowrap; align-items: center; gap: 6px; }
-#tenantPortalSection.schedi-newdash .sd-client-actions .sd-more { flex: 0 0 auto; }
+#tenantPortalSection.schedi-newdash .sd-client-actions { display: flex; flex: 0 0 auto; flex-wrap: nowrap; align-items: center; justify-content: flex-end; gap: 6px; margin-left: auto; }
+#tenantPortalSection.schedi-newdash .sd-client-actions .sd-more { flex: 0 0 auto; align-self: center; }
+#tenantPortalSection.schedi-newdash .sd-client-actions .sd-client-edit-btn { flex: 0 0 auto; align-self: center; white-space: nowrap; }
 #tenantPortalSection.schedi-newdash .sd-client-actions .sd-more-menu button {
     min-height: 40px;
     border: 0;
@@ -3092,8 +3093,9 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
     #tenantPortalSection.schedi-newdash .sd-client-edit input,
     #tenantPortalSection.schedi-newdash .sd-client-edit textarea { min-height: 44px; }
     #tenantPortalSection.schedi-newdash .sd-client-edit textarea { min-height: 88px; }
-    #tenantPortalSection.schedi-newdash .sd-client-copy { flex-basis: 100%; }
-    #tenantPortalSection.schedi-newdash .sd-client-actions { width: auto; }
+    #tenantPortalSection.schedi-newdash .sd-client-copy { flex: 1 1 auto; min-width: 0; }
+    #tenantPortalSection.schedi-newdash .sd-client-head { flex-wrap: nowrap; align-items: center; }
+    #tenantPortalSection.schedi-newdash .sd-client-actions { width: auto; margin-left: auto; align-self: center; }
     #tenantPortalSection.schedi-newdash .sd-client-actions button { flex: 0 0 auto; }
     #tenantPortalSection.schedi-newdash .sd-client-name { min-height: 44px; }
     #tenantPortalSection.schedi-newdash .sd-client-panel { top: 0; left: 0; }
@@ -4657,18 +4659,27 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-theme-seg { background
 }
 @media (max-width: 420px) {
     #tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-svc-foot {
-        flex-direction: column;
-        align-items: stretch;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: center;
+        justify-content: flex-start;
         gap: 8px;
     }
+    #tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-svc-duration { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     #tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-svc-actions {
         display: flex;
-        flex-direction: column;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: center;
+        justify-content: flex-end;
         gap: 8px;
-        width: 100%;
+        width: auto;
+        margin-left: auto;
     }
     #tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-svc-actions > button {
-        width: 100%;
+        width: auto;
+        flex: 0 0 auto;
+        white-space: nowrap;
         margin-left: 0;
         margin-right: 0;
     }

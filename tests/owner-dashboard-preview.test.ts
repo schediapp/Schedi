@@ -1602,6 +1602,16 @@ describe("owner dashboard preview", () => {
     const phone = css.slice(css.indexOf("@media (max-width: 859px)"));
     expect(phone).toContain("#tenantPortalSection.schedi-newdash .sd-client-actions button { flex: 0 0 auto; }");
     expect(phone).not.toContain(".sd-client-actions { width: 100%; }");
+    expect(phone).toContain("#tenantPortalSection.schedi-newdash .sd-client-head { flex-wrap: nowrap; align-items: center; }");
+    expect(phone).toContain("#tenantPortalSection.schedi-newdash .sd-client-actions { width: auto; margin-left: auto; align-self: center; }");
+    expect(css).not.toContain(".sd-client-copy { flex-basis: 100%; }");
+    const head = css.slice(css.indexOf("#tenantPortalSection.schedi-newdash .sd-client-head {"), css.indexOf("#tenantPortalSection.schedi-newdash .sd-client-copy {"));
+    expect(head).toContain("flex-wrap: nowrap");
+    expect(head).toContain("align-items: center");
+    const svcNarrow = css.slice(css.indexOf("@media (max-width: 420px)"), css.indexOf("@media (min-width: 768px) and (max-width: 1099px)"));
+    expect(svcNarrow).toContain("#tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-svc-actions {");
+    expect(svcNarrow.slice(svcNarrow.indexOf(".sd-svc-actions {"), svcNarrow.indexOf(".sd-svc-actions > button"))).toContain("flex-direction: row");
+    expect(svcNarrow).not.toContain("flex-direction: column");
     expect(css).toContain("@media (min-width: 860px)");
     expect(css).toContain("#tenantPortalSection.schedi-newdash #schediDashTop .sd-theme { display: none; }");
     expect(html).toContain('id="schediDashUserLogoPhone"');
