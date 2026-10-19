@@ -6155,6 +6155,17 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                                 <input type="text" id="tenantAddress" maxlength="200" placeholder="123 Main Street, City" class="w-full px-3 py-2 rounded-xl glass-input text-xs">
                                 <p class="text-[10px] text-slate-500 mt-1">Linked to a map. Leave blank to hide it.</p>
                             </div>
+                            <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800">
+                                <label class="sd-pay-switch-row" for="tenantShowAddress">
+                                    <span class="sd-pay-switch-copy">
+                                        <span>
+                                            <span class="sd-pay-switch-title font-bold text-white" id="tenantShowAddressLabel">Show my address on my booking page</span>
+                                            <span class="sd-pay-switch-note text-slate-400">On by default. Off hides it on your booking page, manage page, confirmations, map links, search listings, and client emails.</span>
+                                        </span>
+                                    </span>
+                                    <input type="checkbox" id="tenantShowAddress" class="sd-pay-switch" role="switch" aria-checked="true" aria-labelledby="tenantShowAddressLabel" checked>
+                                </label>
+                            </div>
                             <div class="space-y-2">
                                 <p class="text-xs font-semibold text-slate-300">Logo <span class="text-slate-500 font-normal">optional</span></p>
                                 <div id="logoUploadDrop">
@@ -10460,7 +10471,8 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
         function renderManageAppointment(main, tenant, appt) {
             if (!main) return;
             var feeLine = (tenant && tenant._cancellationFeeSummary) ? tenant._cancellationFeeSummary : cancellationFeeSentence(tenant, appt && appt.amount);
-            var sig = String(appt.manageToken || '') + '|' + String(appt.id || '') + '|' + String(appt.date || '') + '|' + String(appt.time || '') + '|' + ((tenant && tenant._manageAwaitHours) ? '0' : '1') + '|' + String((tenant && tenant.name) || '') + '|' + feeLine;
+            var publicWhere = publicTenantLocation(tenant);
+            var sig = String(appt.manageToken || '') + '|' + String(appt.id || '') + '|' + String(appt.date || '') + '|' + String(appt.time || '') + '|' + ((tenant && tenant._manageAwaitHours) ? '0' : '1') + '|' + String((tenant && tenant.name) || '') + '|' + feeLine + '|' + publicWhere;
             if (platformState.manageSig === sig && document.getElementById('manageApptCard')) return;
             platformState.manageSig = sig;
             platformState.manageSelectedTime = appt.time || '';
@@ -10473,6 +10485,7 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                 '<tr><td class="py-1 pr-3 text-slate-400">Service</td><td class="py-1 font-semibold text-white">' + esc(appt.serviceName || 'Appointment') + '</td></tr>' +
                 '<tr><td class="py-1 pr-3 text-slate-400">Date</td><td class="py-1 font-semibold text-white" id="manageDateLabel">' + esc(appt.date || '') + '</td></tr>' +
                 '<tr><td class="py-1 pr-3 text-slate-400">Time</td><td class="py-1 font-semibold text-white" id="manageTimeLabel">' + esc(appt.time || '') + '</td></tr>' +
+                (publicWhere ? ('<tr><td class="py-1 pr-3 text-slate-400">Where</td><td class="py-1 font-semibold text-white"><a id="manageAddressLink" href="https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(publicWhere) + '" target="_blank" rel="noopener noreferrer">' + esc(publicWhere) + '</a></td></tr>') : '') +
                 '<tr><td class="py-1 pr-3 text-slate-400">Reference</td><td class="py-1 font-semibold text-white font-mono">#' + esc(appt.id || '') + '</td></tr>' +
                 '</table>' +
                 (seriesNote ? ('<p class="text-xs text-sky-300 bg-sky-500/10 border border-sky-500/20 rounded-xl p-3">' + esc(seriesNote) + '</p>') : '') +
@@ -19063,6 +19076,8 @@ function schediQrCardPixels(text, color) {
             if (minNoticeEl) minNoticeEl.value = String(getMinNoticeHours(tenant));
             var addressEl = document.getElementById('tenantAddress');
             if (addressEl) addressEl.value = getTenantLocation(tenant);
+            var showAddrEl = document.getElementById('tenantShowAddress');
+            if (showAddrEl) showAddrEl.checked = showPublicAddressOn(tenant);
             var logoEl = document.getElementById('tenantLogoUrl');
             if (logoEl && !logoObjectUrl) logoEl.value = tenant.logoUrl || tenant.logo || '';
             bindLogoUpload();
@@ -19849,6 +19864,8 @@ function schediQrCardPixels(text, color) {
                 tenant.businessAddress = '';
                 tenant.businessLocation = '';
             }
+            var showAddrEl = document.getElementById('tenantShowAddress');
+            tenant.showPublicAddress = !showAddrEl || !!showAddrEl.checked;
             writeBusinessLogo(tenant, safeHttpsUrl(logoRaw));
             tenant.logoBackdrop = readLogoBackdrop();
             tenant.coverUrl = safeHttpsUrl(coverRaw);
@@ -20891,6 +20908,15 @@ function schediQrCardPixels(text, color) {
             return String(tenant.address || tenant.location || tenant.businessAddress || tenant.businessLocation || '').trim();
         }
 
+        function showPublicAddressOn(tenant) {
+            return !tenant || tenant.showPublicAddress !== false;
+        }
+
+        function publicTenantLocation(tenant) {
+            if (!showPublicAddressOn(tenant)) return '';
+            return getTenantLocation(tenant);
+        }
+
         function durationMinsForBooking(tenant, booking) {
             var name = booking && booking.serviceName;
             var services = (tenant && tenant.services) || [];
@@ -20973,7 +20999,7 @@ function schediQrCardPixels(text, color) {
 
         function buildCalendarPayload(tenant, booking) {
             var tz = getTenantTimezone(tenant);
-            var loc = getTenantLocation(tenant);
+            var loc = publicTenantLocation(tenant);
             var startMins = toMinutes(booking && booking.time);
             if (startMins == null) startMins = 10 * 60;
             var dur = durationMinsForBooking(tenant, booking);
@@ -21263,7 +21289,7 @@ function schediQrCardPixels(text, color) {
             var price = confirmEmailPriceLabel(booking && booking.amount);
             var payLabel = paymentOptionLabel(booking);
             if (payLabel === '—') payLabel = '';
-            var address = getTenantLocation(tenant);
+            var address = publicTenantLocation(tenant);
             var manageUrl = appointmentManageUrl(tenant, booking);
             var seriesLine = seriesManagePlainNote(booking);
             var feeSentence = cancellationFeeSentence(tenant, booking && booking.amount);
@@ -22029,7 +22055,7 @@ function schediQrCardPixels(text, color) {
                 ? Math.round(Number(booking.durationMins))
                 : durationMinsForBooking(tenant, booking);
             var lengthLabel = durMins > 0 ? (durMins + ' min') : '';
-            var address = getTenantLocation(tenant);
+            var address = publicTenantLocation(tenant);
             var hasPrev = !!(prev && (prev.date || prev.time) && (prev.date !== booking.date || prev.time !== booking.time));
             var prevDateLabel = (hasPrev && prev.date) ? formatFriendlyLocalDateEmail(prev.date) : '';
             if (prevDateLabel && String(prev.date).slice(0, 4) === String(booking.date || '').slice(0, 4)) {
@@ -25716,6 +25742,16 @@ function schediQrCardPixels(text, color) {
             publicTenant.publicSlots = (Array.isArray(tenant.publicSlots) && tenant.publicSlots.length)
                 ? tenant.publicSlots.map(publicSlotFromAppointment).filter(Boolean)
                 : (tenant.appointments || []).map(publicSlotFromAppointment).filter(Boolean);
+            if (publicTenant.showPublicAddress === false) {
+                delete publicTenant.address;
+                delete publicTenant.location;
+                delete publicTenant.businessAddress;
+                delete publicTenant.businessLocation;
+                delete publicTenant.city;
+                delete publicTenant.businessCity;
+                delete publicTenant.state;
+                delete publicTenant.businessState;
+            }
             const jsonTenant = JSON.stringify(publicTenant)
                 .replace(/</g, '\\u003C')
                 .replace(/>/g, '\\u003E')
@@ -25760,11 +25796,12 @@ function schediQrCardPixels(text, color) {
                 description: 'Online appointment scheduling for ' + tenant.name + '.'
             };
             if (bookingCanonical) ld.url = bookingCanonical;
-            var street = [tenant.address, tenant.location, tenant.businessAddress, tenant.businessLocation].map(function (v) {
+            var shareAddress = tenant.showPublicAddress !== false;
+            var street = shareAddress ? ([tenant.address, tenant.location, tenant.businessAddress, tenant.businessLocation].map(function (v) {
                 return String(v || '').trim();
-            }).filter(Boolean)[0] || '';
-            var locality = String(tenant.city || tenant.businessCity || '').trim();
-            var region = String(tenant.state || tenant.businessState || '').trim();
+            }).filter(Boolean)[0] || '') : '';
+            var locality = shareAddress ? String(tenant.city || tenant.businessCity || '').trim() : '';
+            var region = shareAddress ? String(tenant.state || tenant.businessState || '').trim() : '';
             var address = {};
             if (street) address.streetAddress = street;
             if (locality) address.addressLocality = locality;
@@ -26115,6 +26152,155 @@ function schediQrCardPixels(text, color) {
         html.schedi-light .biz-hours { color: #334155; }
         .tz-note { margin: 4px 0 0; font-size: 0.75rem; line-height: 1.45; color: #e2e8f0; }
         html.schedi-light .tz-note { color: #334155; }
+        /* booking-notices */
+        #noPricePayNote {
+            background: #0e2134 !important;
+            border: 1px solid #0284c7 !important;
+            color: #e0f2fe !important;
+        }
+        html.schedi-light #noPricePayNote {
+            background: #3f4756 !important;
+            border-color: #0284c7 !important;
+            color: #ffffff !important;
+        }
+        html.schedi-light #cancelFeeNoticeBox {
+            background: #fffbeb !important;
+            border-color: #b45309 !important;
+        }
+        html.schedi-light #cancelFeeNoticeBox,
+        html.schedi-light #cancelFeeNoticeBox .text-white,
+        html.schedi-light #cancelFeeNoticeBox .text-slate-300 {
+            color: #78350f !important;
+        }
+        html.schedi-light #depositNoticeBox {
+            background: #eef2ff !important;
+            border-color: #4338ca !important;
+        }
+        html.schedi-light #depositNoticeBox,
+        html.schedi-light #depositNoticeBox .text-white,
+        html.schedi-light #depositNoticeBox .text-slate-300 {
+            color: #1e1b4b !important;
+        }
+        html.schedi-light #depositNoticeBox .text-emerald-400 { color: #047857 !important; }
+        html.schedi-light #bookingErrMsg {
+            background: #fff1f2 !important;
+            border-color: #e11d48 !important;
+            color: #9f1239 !important;
+        }
+        html.schedi-light #cardPaymentFieldsBox {
+            background: #f8fafc !important;
+            border-color: #cbd5e1 !important;
+            color: #334155 !important;
+        }
+        html.schedi-light #cardPaymentFieldsBox .text-white { color: #0f172a !important; }
+        html.schedi-light #cardPaymentFieldsBox .text-slate-300 { color: #334155 !important; }
+        html.schedi-light #cardPaymentFieldsBox .text-slate-400 { color: #475569 !important; }
+        html.schedi-light #cardPaymentFieldsBox .text-emerald-400 { color: #047857 !important; }
+        html.schedi-light #recurrencePreviewBox {
+            background: #f8fafc !important;
+            border-color: #cbd5e1 !important;
+            color: #334155 !important;
+        }
+        html.schedi-light #recurrencePreviewBox .text-slate-300 { color: #334155 !important; }
+        html.schedi-light #recurrencePreviewList { color: #047857 !important; }
+        html.schedi-light #recurrencePreviewList .text-rose-400,
+        html.schedi-light #recurrenceConflictHint { color: #be123c !important; }
+        html.schedi-light #customMonthTitle { color: #f8fafc !important; }
+        html.schedi-light #payCodeBox {
+            background: #ecfdf5 !important;
+            border-color: #047857 !important;
+        }
+        html.schedi-light #payCodeBox .text-slate-200,
+        html.schedi-light #payCodeBox .text-slate-400 { color: #064e3b !important; }
+        html.schedi-light #payCodeBox .text-emerald-300,
+        html.schedi-light #payCodeValue { color: #047857 !important; }
+        html.schedi-light #payCodeValue {
+            background: #ffffff !important;
+            border-color: #047857 !important;
+        }
+        html.schedi-light #resCheckoutError { color: #9f1239 !important; }
+        html.schedi-light #resSeriesBox {
+            background: #e0f2fe !important;
+            border-color: #0369a1 !important;
+        }
+        html.schedi-light #resSeriesBox .text-sky-300 { color: #075985 !important; }
+        html.schedi-light #resSeriesBox .text-slate-300 { color: #0c4a6e !important; }
+        html.schedi-light #resCardReceiptBox .text-indigo-300,
+        html.schedi-light #resCardReceiptBox .text-indigo-400 { color: #3730a3 !important; }
+        html.schedi-light #cashAppPayBox {
+            background: #ecfdf5 !important;
+            border-color: #047857 !important;
+        }
+        html.schedi-light #cashAppPayBox .text-emerald-400 { color: #047857 !important; }
+        html.schedi-light #cashAppPayBox .text-slate-300 { color: #064e3b !important; }
+        html.schedi-light #zellePayBox {
+            background: #f5f3ff !important;
+            border-color: #6d28d9 !important;
+        }
+        html.schedi-light #zellePayBox .text-violet-300 { color: #5b21b6 !important; }
+        html.schedi-light #zellePayBox .text-slate-300 { color: #4c1d95 !important; }
+        html.schedi-light #venmoPayBox {
+            background: #e0f2fe !important;
+            border-color: #0369a1 !important;
+        }
+        html.schedi-light #venmoPayBox .text-sky-300 { color: #075985 !important; }
+        html.schedi-light #venmoPayBox .text-slate-300 { color: #0c4a6e !important; }
+        html.schedi-light #paypalPayBox {
+            background: #eff6ff !important;
+            border-color: #1d4ed8 !important;
+        }
+        html.schedi-light #paypalPayBox .text-blue-300 { color: #1e40af !important; }
+        html.schedi-light #paypalPayBox .text-slate-300 { color: #1e3a8a !important; }
+        html.schedi-light #copyToastNotice {
+            background: #ecfdf5 !important;
+            border-color: #047857 !important;
+            color: #065f46 !important;
+        }
+        html.schedi-light .pub-banner-ok {
+            background: #ecfdf5 !important;
+            border-color: #047857 !important;
+            color: #065f46 !important;
+        }
+        html.schedi-light .pub-banner-warn {
+            background: #fffbeb !important;
+            border-color: #b45309 !important;
+            color: #78350f !important;
+        }
+        html.schedi-light .pub-banner-info {
+            background: #eef2ff !important;
+            border-color: #4338ca !important;
+            color: #312e81 !important;
+        }
+        html.schedi-light .pub-banner-err {
+            background: #fff1f2 !important;
+            border-color: #e11d48 !important;
+            color: #9f1239 !important;
+        }
+        /* recurrence-tap: sr-only radios are 1px and clipped. Android Chrome keeps a touch
+           target on that clipped control, so a tap on the chip never checks the option. */
+        #recurrenceFreqGroup .recurrence-opt {
+            position: relative;
+            display: inline-flex;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+        #recurrenceFreqGroup .recurrence-opt input {
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            opacity: 0;
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+        }
+        #recurrenceFreqGroup .recurrence-opt input:focus-visible + span {
+            outline: 2px solid #047857;
+            outline-offset: 2px;
+        }
+        /* /booking-notices */
         @media (min-width: 640px) {
             .biz-cover img { height: 200px; }
             .biz-logo, .biz-logo-initials { width: 64px; height: 64px; }
@@ -26286,24 +26472,24 @@ function schediQrCardPixels(text, color) {
                 <p class="text-xs text-slate-400 mt-0.5">Optional recurring series — one-time is the default.</p>
             </div>
             <div class="flex flex-wrap gap-2 text-xs" id="recurrenceFreqGroup" role="radiogroup" aria-label="Appointment frequency">
-                <label class="cursor-pointer">
-                    <input type="radio" name="pubRecurrenceFreq" value="once" class="sr-only peer" checked onchange="updateRecurrencePreview()">
+                <label class="recurrence-opt">
+                    <input type="radio" name="pubRecurrenceFreq" value="once" class="peer" checked onchange="updateRecurrencePreview()">
                     <span class="px-3 py-2 rounded-xl border border-slate-700 bg-slate-900 text-slate-300 peer-checked:bg-emerald-500/20 peer-checked:border-emerald-500/40 peer-checked:text-emerald-300 font-bold inline-block">One-time</span>
                 </label>
-                <label class="cursor-pointer">
-                    <input type="radio" name="pubRecurrenceFreq" value="weekly" class="sr-only peer" onchange="updateRecurrencePreview()">
+                <label class="recurrence-opt">
+                    <input type="radio" name="pubRecurrenceFreq" value="weekly" class="peer" onchange="updateRecurrencePreview()">
                     <span class="px-3 py-2 rounded-xl border border-slate-700 bg-slate-900 text-slate-300 peer-checked:bg-emerald-500/20 peer-checked:border-emerald-500/40 peer-checked:text-emerald-300 font-bold inline-block">Weekly</span>
                 </label>
-                <label class="cursor-pointer">
-                    <input type="radio" name="pubRecurrenceFreq" value="biweekly" class="sr-only peer" onchange="updateRecurrencePreview()">
+                <label class="recurrence-opt">
+                    <input type="radio" name="pubRecurrenceFreq" value="biweekly" class="peer" onchange="updateRecurrencePreview()">
                     <span class="px-3 py-2 rounded-xl border border-slate-700 bg-slate-900 text-slate-300 peer-checked:bg-emerald-500/20 peer-checked:border-emerald-500/40 peer-checked:text-emerald-300 font-bold inline-block">Biweekly</span>
                 </label>
-                <label class="cursor-pointer">
-                    <input type="radio" name="pubRecurrenceFreq" value="monthly" class="sr-only peer" onchange="updateRecurrencePreview()">
+                <label class="recurrence-opt">
+                    <input type="radio" name="pubRecurrenceFreq" value="monthly" class="peer" onchange="updateRecurrencePreview()">
                     <span class="px-3 py-2 rounded-xl border border-slate-700 bg-slate-900 text-slate-300 peer-checked:bg-emerald-500/20 peer-checked:border-emerald-500/40 peer-checked:text-emerald-300 font-bold inline-block">Monthly</span>
                 </label>
-                <label class="cursor-pointer">
-                    <input type="radio" name="pubRecurrenceFreq" value="custom" class="sr-only peer" onchange="updateRecurrencePreview()">
+                <label class="recurrence-opt">
+                    <input type="radio" name="pubRecurrenceFreq" value="custom" class="peer" onchange="updateRecurrencePreview()">
                     <span class="px-3 py-2 rounded-xl border border-slate-700 bg-slate-900 text-slate-300 peer-checked:bg-emerald-500/20 peer-checked:border-emerald-500/40 peer-checked:text-emerald-300 font-bold inline-block">Pick my own dates</span>
                 </label>
             </div>
@@ -26361,7 +26547,7 @@ function schediQrCardPixels(text, color) {
                     <p class="text-slate-300">If you pay by card, a deposit of <strong id="depositDueLabel" class="text-emerald-400"></strong> is due now. The rest (<strong id="depositBalanceLabel" class="text-white"></strong>) is due at the appointment. Card is optional. Cash App, Zelle, Venmo, PayPal, and pay at the appointment stay available.</p>
                 </div>
 
-                <div id="noPricePayNote" class="hidden p-3 rounded-xl bg-slate-900/80 border border-slate-700 text-xs text-slate-300">
+                <div id="noPricePayNote" class="pub-note hidden p-3 rounded-xl text-xs" role="status">
                     This service has no price set. Card checkout is unavailable for it — choose another payment option or pay at the appointment.
                 </div>
 
@@ -26432,6 +26618,7 @@ function schediQrCardPixels(text, color) {
             <p class="text-xs text-brand-400 font-bold">Scheduled for: <span id="resDateDisplay" class="text-white"></span> at <span id="resTimeDisplay" class="text-white"></span></p>
             <p id="resTzNote" class="tz-note"></p>
             <p id="resServiceLine" class="hidden text-xs text-slate-300 font-semibold"></p>
+            <p id="resWhereLine" class="hidden text-xs text-slate-300"></p>
             <div id="resSeriesBox" class="hidden p-3 rounded-xl bg-sky-950/40 border border-sky-500/30 text-left text-xs space-y-1">
                 <div class="font-bold text-sky-300"><i class="fa-solid fa-arrows-rotate mr-1"></i><span id="resSeriesLabel">Recurring series</span></div>
                 <p id="resSeriesDates" class="text-slate-300 font-mono text-[11px] leading-relaxed"></p>
@@ -26979,9 +27166,7 @@ function schediQrCardPixels(text, color) {
                 var payLabel = paymentOptionLabel(booking);
                 if (payLabel === '—') payLabel = '';
                 var address = '';
-                try {
-                    address = String((tenantData.address || tenantData.location || tenantData.businessAddress || tenantData.businessLocation) || '').trim();
-                } catch (addrErr) { address = ''; }
+                try { address = getPubLocation(); } catch (addrErr) { address = ''; }
                 var manageUrl = '';
                 if (booking && booking.manageToken) {
                     var manageSlug = String(tenantData.slug || tenantData.id || '').trim();
@@ -27385,7 +27570,26 @@ function schediQrCardPixels(text, color) {
             return String((tenantData && (tenantData.timezone || tenantData.timeZone)) || 'America/New_York').trim() || 'America/New_York';
         }
         function getPubLocation() {
+            if (tenantData && tenantData.showPublicAddress === false) return '';
             return String((tenantData && (tenantData.address || tenantData.location || tenantData.businessAddress || tenantData.businessLocation)) || '').trim();
+        }
+        function paintConfirmationWhere() {
+            var line = document.getElementById('resWhereLine');
+            if (!line) return;
+            var where = getPubLocation();
+            line.textContent = '';
+            if (!where) {
+                line.classList.add('hidden');
+                return;
+            }
+            line.classList.remove('hidden');
+            line.appendChild(document.createTextNode('Where: '));
+            var link = document.createElement('a');
+            link.href = mapsHref(where);
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+            link.textContent = where;
+            line.appendChild(link);
         }
         function publicHttpsUrl(raw) {
             var s = String(raw || '').trim();
@@ -28612,10 +28816,10 @@ function paintBizHeader() {
                 var depositReturn = (typeof SCHEDULE_PAY_KIND === 'undefined') || SCHEDULE_PAY_KIND !== 'card';
                 if (SCHEDULE_PAY_RETURN === 'success') {
                     payBanner.innerHTML = depositReturn
-                        ? '<div style="padding:12px;border-radius:12px;border:1px solid rgba(16,185,129,.35);background:rgba(16,185,129,.12);color:#6ee7b7;font-size:12px;font-weight:600">Deposit checkout finished. The appointment is confirmed only after the deposit is recorded and the business accepts the time. Any remaining balance is due at the appointment.</div>'
-                        : '<div style="padding:12px;border-radius:12px;border:1px solid rgba(16,185,129,.35);background:rgba(16,185,129,.12);color:#6ee7b7;font-size:12px;font-weight:600">Card checkout finished. The business still needs to accept the time on Starter and Pro.</div>';
+                        ? '<div class="pub-banner pub-banner-ok" style="padding:12px;border-radius:12px;border:1px solid rgba(16,185,129,.35);background:rgba(16,185,129,.12);color:#6ee7b7;font-size:12px;font-weight:600">Deposit checkout finished. The appointment is confirmed only after the deposit is recorded and the business accepts the time. Any remaining balance is due at the appointment.</div>'
+                        : '<div class="pub-banner pub-banner-ok" style="padding:12px;border-radius:12px;border:1px solid rgba(16,185,129,.35);background:rgba(16,185,129,.12);color:#6ee7b7;font-size:12px;font-weight:600">Card checkout finished. The business still needs to accept the time on Starter and Pro.</div>';
                 } else {
-                    payBanner.innerHTML = '<div style="padding:12px;border-radius:12px;border:1px solid rgba(245,158,11,.35);background:rgba(245,158,11,.12);color:#fcd34d;font-size:12px;font-weight:600">Checkout canceled. No charge was made. You can open the payment link again.</div>';
+                    payBanner.innerHTML = '<div class="pub-banner pub-banner-warn" style="padding:12px;border-radius:12px;border:1px solid rgba(245,158,11,.35);background:rgba(245,158,11,.12);color:#fcd34d;font-size:12px;font-weight:600">Checkout canceled. No charge was made. You can open the payment link again.</div>';
                 }
                 var headerEl = document.querySelector('header');
                 if (headerEl && headerEl.parentNode) headerEl.parentNode.insertBefore(payBanner, headerEl.nextSibling);
@@ -28630,7 +28834,7 @@ function paintBizHeader() {
                 resumeBanner.style.margin = '12px auto';
                 resumeBanner.style.maxWidth = '56rem';
                 resumeBanner.style.padding = '0 16px';
-                resumeBanner.innerHTML = '<div style="padding:12px;border-radius:12px;border:1px solid rgba(99,102,241,.35);background:rgba(99,102,241,.12);color:#c7d2fe;font-size:12px;font-weight:600">Opening secure card checkout…</div>';
+                resumeBanner.innerHTML = '<div class="pub-banner pub-banner-info" style="padding:12px;border-radius:12px;border:1px solid rgba(99,102,241,.35);background:rgba(99,102,241,.12);color:#c7d2fe;font-size:12px;font-weight:600">Opening secure card checkout…</div>';
                 var resumeHeader = document.querySelector('header');
                 if (resumeHeader && resumeHeader.parentNode) resumeHeader.parentNode.insertBefore(resumeBanner, resumeHeader.nextSibling);
                 if (resumeIds.length) {
@@ -28644,10 +28848,10 @@ function paintBizHeader() {
                         chargeKind: resumeKind
                     }).then(function (out) {
                         if (out && out.url && assignTopStripe(out.url)) return;
-                        resumeBanner.innerHTML = '<div role="alert" style="padding:12px;border-radius:12px;border:1px solid rgba(244,63,94,.35);background:rgba(244,63,94,.12);color:#fecdd3;font-size:12px;font-weight:600">Card checkout did not open. This booking page is still here. Nothing was charged.</div>';
+                        resumeBanner.innerHTML = '<div role="alert" class="pub-banner pub-banner-err" style="padding:12px;border-radius:12px;border:1px solid rgba(244,63,94,.35);background:rgba(244,63,94,.12);color:#fecdd3;font-size:12px;font-weight:600">Card checkout did not open. This booking page is still here. Nothing was charged.</div>';
                     });
                 } else {
-                    resumeBanner.innerHTML = '<div role="alert" style="padding:12px;border-radius:12px;border:1px solid rgba(244,63,94,.35);background:rgba(244,63,94,.12);color:#fecdd3;font-size:12px;font-weight:600">This payment link is missing a booking reference. Nothing was charged.</div>';
+                    resumeBanner.innerHTML = '<div role="alert" class="pub-banner pub-banner-err" style="padding:12px;border-radius:12px;border:1px solid rgba(244,63,94,.35);background:rgba(244,63,94,.12);color:#fecdd3;font-size:12px;font-weight:600">This payment link is missing a booking reference. Nothing was charged.</div>';
                 }
             }
 
@@ -29608,6 +29812,7 @@ function paintBizHeader() {
                 document.getElementById('resDateDisplay').textContent = selectedDateStr;
                 document.getElementById('resTimeDisplay').textContent = selectedTime;
                 paintTimezoneNotes();
+                try { paintConfirmationWhere(); } catch (whereErr) {}
                 var resSvc = document.getElementById('resServiceLine');
                 if (resSvc) {
                     if (cartIsMulti()) {
