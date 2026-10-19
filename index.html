@@ -2922,6 +2922,20 @@ html.schedi-light body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.
     border-color: #003087;
     box-shadow: 0 0 0 2px #0070E0;
 }
+body.schedi-newdash .sd-pay-choice.is-on.sd-pay-card,
+body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.is-on.sd-pay-card {
+    color: #ffffff;
+    background: #635BFF;
+    border-color: #635BFF;
+    box-shadow: 0 0 0 2px #a5a0ff;
+}
+html.schedi-light body.schedi-newdash .sd-pay-choice.is-on.sd-pay-card,
+html.schedi-light body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.is-on.sd-pay-card {
+    color: #ffffff;
+    background: #4338ca;
+    border-color: #4338ca;
+    box-shadow: 0 0 0 2px #635BFF;
+}
 body.schedi-newdash .sd-pay-choice.is-on.sd-pay-square,
 body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.is-on.sd-pay-square {
     color: #000000;
@@ -14112,7 +14126,7 @@ function schediQrCardPixels(text, color) {
 
         var rosterPayFilter = 'all';
         var OWNER_PAY_METHODS = [
-            ['card', 'Card', 'Card (Stripe)'],
+            ['card', 'Card', 'Card'],
             ['cashapp', 'Cash App', 'Cash App'],
             ['zelle', 'Zelle', 'Zelle'],
             ['venmo', 'Venmo', 'Venmo'],
@@ -24753,6 +24767,7 @@ function schediQrCardPixels(text, color) {
         function ownerMarkPaidMethods(tenant) {
             var pg = (tenant && tenant.paymentGateways) || {};
             return OWNER_PAY_METHODS.filter(function (row) {
+                if (row[0] === 'square') return false;
                 if (row[0] === 'cash') return true;
                 return pg[row[0]] === true;
             });
@@ -24812,7 +24827,7 @@ function schediQrCardPixels(text, color) {
                 _rosterPaidMethodSelected = '';
             }
             paintOwnerPayRadios(box, {
-                choices: methods.map(function (row) { return { id: row[0], label: row[1], kind: row[0] }; }),
+                choices: methods.map(function (row) { return { id: row[0], label: row[0] === 'card' ? 'Card (Stripe)' : row[1], kind: row[0] }; }),
                 selected: chosen,
                 attr: 'data-paid-method',
                 extraClass: 'roster-paid-opt',

@@ -1185,7 +1185,10 @@ describe("owner dashboard preview", () => {
     expect(css).toContain("body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.is-on.sd-pay-zelle");
     expect(css).toContain("body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.is-on.sd-pay-venmo");
     expect(css).toContain("body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.is-on.sd-pay-paypal");
+    expect(css).toContain("body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.is-on.sd-pay-card");
     expect(css).toContain("body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.is-on.sd-pay-square");
+    expect(css).toContain("background: #635BFF");
+    expect(css).toContain("background: #4338ca");
     expect(css).toContain("body.schedi-newdash #rosterPaidMethodConfirmBtn:disabled");
   });
 
@@ -1452,7 +1455,7 @@ describe("owner dashboard preview", () => {
       ${extractFunction(html, "inferPaidMethodFromBooking")}
       ${extractFunction(html, "appointmentPayKind")}
       ${extractFunction(html, "payKindSvg")}
-      var ROSTER_PAY_WORDS = { unpaid: "Unpaid", card: "Card (Stripe)", cashapp: "Cash App", zelle: "Zelle", venmo: "Venmo", paypal: "PayPal", square: "Square", cash: "In person / Cash" };
+      var ROSTER_PAY_WORDS = { unpaid: "Unpaid", card: "Card", cashapp: "Cash App", zelle: "Zelle", venmo: "Venmo", paypal: "PayPal", square: "Square", cash: "In person / Cash" };
       ${extractFunction(html, "appointmentPaidChipMoney")}
       ${extractFunction(html, "appointmentPayMarkup")}
       ${extractFunction(html, "noShowPillHtml")}
@@ -1492,12 +1495,12 @@ describe("owner dashboard preview", () => {
     expect(api.appointmentStatusLabels({ status: "accepted", paymentStatus: "DEPOSIT PAID", depositPaid: true, depositAmount: 36, amount: 120 })).toEqual(["Accepted", "Deposit paid · $36"]);
     expect(api.appointmentStatusLabels({ status: "accepted", paymentStatus: "PAID", refundAmount: 20, amount: 65 })).toEqual(["Accepted", "Refunded · $45"]);
     const deposit = api.appointmentStatusChipsHtml({ status: "accepted", paymentStatus: "DEPOSIT PAID", paidMethod: "card", depositPaid: true, amount: 120 });
-    expect(deposit).toContain("Card (Stripe) · $120");
+    expect(deposit).toContain("Card · $120");
     expect(deposit.indexOf("Accepted")).toBeLessThan(deposit.indexOf("sd-pay-card"));
     expect(deposit.indexOf("sd-pay-card")).toBeLessThan(deposit.indexOf("$120"));
     expect(deposit).not.toContain("text-slate-300");
     const depositRecorded = api.appointmentStatusChipsHtml({ status: "accepted", paymentStatus: "DEPOSIT PAID", paidMethod: "card", depositPaid: true, depositAmount: 36, amount: 120 });
-    expect(depositRecorded).toContain('aria-label="Card (Stripe) · $36"');
+    expect(depositRecorded).toContain('aria-label="Card · $36"');
     expect(depositRecorded).not.toContain("$120");
     expect(depositRecorded).not.toContain("text-slate-300");
     const zelle = api.appointmentStatusChipsHtml({ status: "accepted", paymentStatus: "PAID ZELLE", paidMethod: "zelle", amount: 65 });
@@ -1558,11 +1561,15 @@ describe("owner dashboard preview", () => {
       return ownerMarkPaidMethods;
     `)() as (tenant: { paymentGateways?: Record<string, boolean> }) => string[][];
     expect(methods({ paymentGateways: { card: false, cashapp: true, zelle: true, venmo: true, paypal: false, later: true } }).map((row) => row[0])).toEqual(["cashapp", "zelle", "venmo", "cash"]);
-    expect(methods({ paymentGateways: { card: true, square: true, later: false } }).map((row) => row[0])).toEqual(["card", "square", "cash"]);
+    expect(methods({ paymentGateways: { card: true, square: true, later: false } }).map((row) => row[0])).toEqual(["card", "cash"]);
+    expect(methods({ paymentGateways: { card: false, square: true, paypal: true } }).map((row) => row[0])).toEqual(["paypal", "cash"]);
     expect(methods({ paymentGateways: {} }).map((row) => row[0])).toEqual(["cash"]);
     const paint = extractFunction(html, "paintRosterPaidMethodOptions");
     expect(paint).toContain("ownerMarkPaidMethods");
+    expect(paint).toContain("Card (Stripe)");
     expect(paint).not.toContain("OWNER_PAY_METHODS.map");
+    expect(extractFunction(html, "ownerMarkPaidMethods")).toContain("row[0] === 'square'");
+    expect(html).toContain("['card', 'Card', 'Card']");
     expect(html).toContain("if (!method || !allowed) return;");
     const logChoices = new Function(`
       var OWNER_PAY_METHODS = [
@@ -1585,12 +1592,12 @@ describe("owner dashboard preview", () => {
       return ownerLogPayChoices;
     `)() as (tenant: { paymentGateways?: Record<string, boolean> }, status: string) => { method: string }[];
     expect(logChoices({ paymentGateways: { card: false, cashapp: true, zelle: true, venmo: true, paypal: false } }, "PAY AT APPOINTMENT").map((row) => row.method)).toEqual(["cashapp", "zelle", "venmo", "cash", "later"]);
-    expect(logChoices({ paymentGateways: { card: true, square: true } }, "PAY AT APPOINTMENT").map((row) => row.method)).toEqual(["card", "square", "cash", "later"]);
+    expect(logChoices({ paymentGateways: { card: true, square: true } }, "PAY AT APPOINTMENT").map((row) => row.method)).toEqual(["card", "cash", "later"]);
     expect(logChoices({ paymentGateways: {} }, "PAID SQUARE").map((row) => row.method)).toEqual(["square", "cash", "later"]);
     expect(logChoices({ paymentGateways: { card: false } }, "PAID VIA CARD").map((row) => row.method)).toEqual(["card", "cash", "later"]);
     const filterRows = new Function(`
       var OWNER_PAY_METHODS = [
-        ["card", "Card", "Card (Stripe)"], ["cashapp", "Cash App", "Cash App"], ["zelle", "Zelle", "Zelle"],
+        ["card", "Card", "Card"], ["cashapp", "Cash App", "Cash App"], ["zelle", "Zelle", "Zelle"],
         ["venmo", "Venmo", "Venmo"], ["paypal", "PayPal", "PayPal"], ["square", "Square", "Square"],
         ["cash", "In person / Cash", "In person / Cash"]
       ];
@@ -2073,7 +2080,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       expect(owedNumber(paidFlip.unpaidBefore) - owedNumber(paidFlip.unpaid)).toBe(80);
       expect(paidFlip.pill).toContain("In person / Cash · $80");
       expect(paidFlip.pillClass).toContain("sd-pay-cash");
-      expect(paidFlip.maya).toContain("Card (Stripe) · $65");
+      expect(paidFlip.maya).toContain("Card · $65");
       expect(paidFlip.chips.join(" ")).toMatch(/Card/);
       expect(paidFlip.chips.join(" ")).toMatch(/Cash App/);
       expect(paidFlip.chips.join(" ")).toMatch(/PayPal/);
@@ -3118,7 +3125,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       venmo: { dark: "rgb(0, 140, 255)", light: "rgb(0, 140, 255)", fg: "rgb(11, 18, 32)" },
       paypal: { dark: "rgb(0, 112, 224)", light: "rgb(0, 48, 135)", fg: "rgb(255, 255, 255)" },
       square: { dark: "rgb(255, 255, 255)", light: "rgb(0, 0, 0)", fg: "rgb(0, 0, 0)", lightFg: "rgb(255, 255, 255)" },
-      card: { dark: "rgb(5, 150, 105)", light: "rgb(4, 120, 87)", fg: "rgb(255, 255, 255)" },
+      card: { dark: "rgb(99, 91, 255)", light: "rgb(67, 56, 202)", fg: "rgb(255, 255, 255)" },
       cash: { dark: "rgb(5, 150, 105)", light: "rgb(4, 120, 87)", fg: "rgb(255, 255, 255)" },
     };
     try {
@@ -3146,6 +3153,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
             const box = el.getBoundingClientRect();
             return {
               method: el.getAttribute("data-paid-method") || "",
+              label: (el.querySelector("span")?.textContent || "").trim(),
               radio: el.getAttribute("role"),
               checked: el.getAttribute("aria-checked"),
               bg: style.backgroundColor,
@@ -3232,13 +3240,45 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
         tenant.paymentGateways.cashapp = false;
         tenant.paymentGateways.paypal = false;
         tenant.paymentGateways.later = false;
-        (window as unknown as { openRosterPaidMethodModal: (id: string) => void }).openRosterPaidMethodModal("HB-1004");
+        (window as unknown as { openRosterPaidMethodModal: (id: string) => void }).openRosterPaidMethodModal("HB-1003");
       });
-      await page.waitForSelector('#rosterPaidMethodOptions [data-paid-method="square"]', { timeout: 10000 });
+      await page.waitForSelector('#rosterPaidMethodOptions [data-paid-method="card"]', { timeout: 10000 });
       const gated = await read();
-      expect(gated.options.map((row) => row.method)).toEqual(["card", "zelle", "venmo", "square", "cash"]);
-      expect(gated.options.find((row) => row.method === "square")?.checked).toBe("false");
+      expect(gated.options.map((row) => row.method)).toEqual(["card", "zelle", "venmo", "cash"]);
+      expect(gated.options.some((row) => row.method === "square")).toBe(false);
+      expect(gated.options.find((row) => row.method === "card")?.label).toBe("Card (Stripe)");
       expect(gated.options.find((row) => row.method === "cash")?.checked).toBe("false");
+      await page.evaluate(() => {
+        const card = document.querySelector('#rosterPaidMethodOptions [data-paid-method="card"]') as HTMLButtonElement | null;
+        card?.click();
+      });
+      for (const theme of ["dark", "light"] as const) {
+        await page.evaluate((mode) => (window as unknown as { setSchediTheme: (mode: string) => void }).setSchediTheme(mode), theme);
+        const picked = await read();
+        const card = picked.options.find((row) => row.method === "card");
+        expect(card?.checked).toBe("true");
+        expect(card?.bg).toBe(brands.card[theme]);
+        expect(card?.fg).toBe(brands.card.fg);
+        expect(picked.options.find((row) => row.method === "zelle")?.bg).toBe(muted[theme].bg);
+      }
+      await page.click("#rosterPaidMethodConfirmBtn");
+      await page.waitForFunction(() => document.getElementById("rosterPaidMethodModal")?.classList.contains("hidden"), { timeout: 10000 });
+      const cardPaid = await page.evaluate(() => {
+        const row = [...document.querySelectorAll("#schediTodaySchedule article")].find((node) => node.textContent?.includes("Jordan"));
+        const pill = row?.querySelector(".sd-pay") as HTMLElement | null;
+        const style = pill ? getComputedStyle(pill) : null;
+        return { text: pill?.textContent || "", cls: pill?.className || "", color: style?.color || "" };
+      });
+      expect(cardPaid.text).toContain("Card · $80");
+      expect(cardPaid.cls).toContain("sd-pay-card");
+      expect(cardPaid.color).toBe("rgb(67, 56, 202)");
+      await page.evaluate(() => (window as unknown as { setSchediTheme: (mode: string) => void }).setSchediTheme("dark"));
+      const cardPaidDark = await page.evaluate(() => {
+        const row = [...document.querySelectorAll("#schediTodaySchedule article")].find((node) => node.textContent?.includes("Jordan"));
+        const pill = row?.querySelector(".sd-pay") as HTMLElement | null;
+        return getComputedStyle(pill as Element).color;
+      });
+      expect(cardPaidDark).toBe("rgb(196, 192, 255)");
       expect(writes).toEqual([]);
     } finally {
       await browser.close();
@@ -5469,7 +5509,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       venmo: { dark: "rgb(0, 140, 255)", light: "rgb(0, 140, 255)", fg: "rgb(11, 18, 32)" },
       paypal: { dark: "rgb(0, 112, 224)", light: "rgb(0, 48, 135)", fg: "rgb(255, 255, 255)" },
       square: { dark: "rgb(255, 255, 255)", light: "rgb(0, 0, 0)", fg: "rgb(0, 0, 0)", lightFg: "rgb(255, 255, 255)" },
-      card: { dark: "rgb(5, 150, 105)", light: "rgb(4, 120, 87)", fg: "rgb(255, 255, 255)" },
+      card: { dark: "rgb(99, 91, 255)", light: "rgb(67, 56, 202)", fg: "rgb(255, 255, 255)" },
       cash: { dark: "rgb(5, 150, 105)", light: "rgb(4, 120, 87)", fg: "rgb(255, 255, 255)" },
       later: { dark: "rgb(5, 150, 105)", light: "rgb(4, 120, 87)", fg: "rgb(255, 255, 255)" },
     };
