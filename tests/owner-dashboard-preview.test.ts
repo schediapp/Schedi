@@ -1046,7 +1046,7 @@ describe("owner dashboard preview", () => {
 
   it("clears a no-show and restores a no-show status without charging", () => {
     const start = html.indexOf("window.undoAppointmentNoShow = function");
-    const end = html.indexOf("window.deleteAppointment = function");
+    const end = html.indexOf("window.deleteAppointment = async function");
     expect(start).toBeGreaterThan(0);
     expect(end).toBeGreaterThan(start);
     const src = html.slice(start, end);
@@ -1243,18 +1243,22 @@ describe("owner dashboard preview", () => {
     expect(depositRecorded).not.toContain("text-slate-300");
     const zelle = api.appointmentStatusChipsHtml({ status: "accepted", paymentStatus: "PAID ZELLE", paidMethod: "zelle", amount: 65 });
     expect(zelle).toContain('aria-label="Zelle · $65"');
-    expect(zelle).toContain(">Zelle · $65<");
+    expect(zelle).toContain(">Zelle<");
+    expect(zelle).toContain('class="sd-pay-amt"> · $65<');
     expect(zelle).not.toContain("text-slate-300");
     const unpaidChip = api.appointmentStatusChipsHtml(elena);
     expect(unpaidChip).toContain("Unpaid");
     expect(unpaidChip).not.toContain("Unpaid ·");
     expect(unpaidChip).toContain("$120");
     const refunded = api.appointmentStatusChipsHtml({ status: "accepted", paymentStatus: "PAID", paidMethod: "cash", refundAmount: 20, amount: 65 });
-    expect(refunded).toContain(">In person / Cash · $45<");
+    expect(refunded).toContain('aria-label="In person / Cash · $45"');
+    expect(refunded).toContain(">In person / Cash<");
+    expect(refunded).toContain('class="sd-pay-amt"> · $45<');
     expect(refunded).not.toContain("$65");
     expect(refunded).not.toContain("text-slate-300");
     const historyPaid = api.appointmentStatusChipsHtml({ status: "completed", paymentStatus: "PAID", paidMethod: "zelle", amount: 65 }, { priceHtml: "<span>$65</span>" });
-    expect(historyPaid).toContain(">Zelle · $65<");
+    expect(historyPaid).toContain(">Zelle<");
+    expect(historyPaid).toContain('class="sd-pay-amt"> · $65<');
     expect(historyPaid).not.toContain("<span>$65</span>");
     const historyUnpaid = api.appointmentStatusChipsHtml(elena, { priceHtml: "<span>$120</span>" });
     expect(historyUnpaid).toContain("Unpaid");
@@ -1267,6 +1271,10 @@ describe("owner dashboard preview", () => {
     expect(extractFunction(html, "clientHistoryGroupHtml")).toContain("appointmentStatusChipsHtml");
     expect(extractFunction(html, "renderRosterSearchResults")).toContain("appointmentStatusChipsHtml");
     expect(extractFunction(html, "rosterStatusCellHtml").indexOf("appointmentStatusChipsHtml")).toBeLessThan(extractFunction(html, "rosterStatusCellHtml").indexOf("depositRosterLine"));
+    const depositLine = extractFunction(html, "depositRosterLine");
+    expect(depositLine).toContain("formatBookingAmountLabel(dep)");
+    expect(depositLine).toContain("formatBookingAmountLabel(roundMoney(bal))");
+    expect(depositLine).not.toContain("toFixed");
   });
 
   it("keeps light-mode status chips readable and hides disabled mark-paid methods", () => {

@@ -631,7 +631,9 @@ html.schedi-light body.schedi-newdash #rosterApptModal .sd-pill-amber { color: #
 #tenantPortalSection.schedi-newdash .sd-pay-card { color: var(--sd-brand-2); border-color: rgba(16, 185, 129, 0.4); background: rgba(16, 185, 129, 0.14); }
 #tenantPortalSection.schedi-newdash .sd-pay-unpaid { color: var(--sd-rose); border-color: rgba(244, 63, 94, 0.35); background: rgba(244, 63, 94, 0.1); }
 #tenantPortalSection.schedi-newdash .sd-pay.is-icon { padding: 3px; }
-#tenantPortalSection.schedi-newdash .sd-pay.is-icon .sd-pay-word { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); border: 0; }
+#tenantPortalSection.schedi-newdash .sd-pay.is-icon .sd-pay-word,
+#tenantPortalSection.schedi-newdash .sd-pay.is-icon .sd-pay-amt { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); border: 0; }
+#tenantPortalSection.schedi-newdash .sd-pay-amt { flex: none; white-space: nowrap; }
 #tenantPortalSection.schedi-newdash .sd-pay-filters { display: flex; flex-wrap: wrap; gap: 6px; }
 #tenantPortalSection.schedi-newdash .sd-chip { min-height: 36px; border-radius: 999px; border: 1px solid var(--sd-line); background: transparent; color: var(--sd-text); font-weight: 800; font-size: 12px; padding: 4px 10px; display: inline-flex; align-items: center; }
 #tenantPortalSection.schedi-newdash .sd-chip svg { width: 14px; height: 14px; display: block; flex: none; margin-right: 4px; }
@@ -1607,6 +1609,39 @@ body.schedi-newdash #ownerRecurringModal .sd-form-save {
     body.schedi-newdash #comparePlansModal .sd-form-sheet,
     body.schedi-newdash #rosterApptModal .sd-form-sheet {
         animation: none;
+    }
+}
+body.schedi-newdash #rosterDeleteModal,
+body.schedi-newdash #ownerConfirmModal { overflow: hidden; }
+body.schedi-newdash #rosterDeleteModal .sd-form-sheet,
+body.schedi-newdash #ownerConfirmModal .sd-form-sheet {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-height: min(92vh, 860px);
+    overflow: hidden;
+    padding: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+}
+body.schedi-newdash #rosterDeleteModal .sd-form-sheet > * + *,
+body.schedi-newdash #ownerConfirmModal .sd-form-sheet > * + * { margin-top: 0; }
+@media (max-width: 859px) {
+    body.schedi-newdash #rosterDeleteModal,
+    body.schedi-newdash #ownerConfirmModal {
+        flex-direction: column;
+        align-items: stretch !important;
+        justify-content: flex-end;
+        padding: 0 !important;
+    }
+    body.schedi-newdash #rosterDeleteModal > .sd-form-sheet,
+    body.schedi-newdash #ownerConfirmModal > .sd-form-sheet {
+        width: 100%;
+        max-width: none;
+        min-height: 0;
+        max-height: 94dvh;
+        margin: 0 !important;
+        border-radius: 20px 20px 0 0;
     }
 }
 body.schedi-newdash #svcIconGrid [role="option"] { min-height: 64px; }
@@ -3689,6 +3724,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
         #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-actions { width: 160px; }
         #tenantPortalSection.schedi-newdash #rosterListWrap th.roster-cell-client,
         #tenantPortalSection.schedi-newdash #rosterListWrap td.roster-cell-client { padding-left: 8px; padding-right: 8px; }
+        #tenantPortalSection.schedi-newdash #rosterListWrap th.roster-cell-service,
+        #tenantPortalSection.schedi-newdash #rosterListWrap td.roster-cell-service { padding-left: 6px; padding-right: 6px; }
         #tenantPortalSection.schedi-newdash #rosterListWrap th.roster-cell-pay,
         #tenantPortalSection.schedi-newdash #rosterListWrap td.roster-cell-pay,
         #tenantPortalSection.schedi-newdash #rosterListWrap th.roster-cell-price,
@@ -3698,8 +3735,22 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
         #tenantPortalSection.schedi-newdash #rosterListWrap th.roster-cell-actions,
         #tenantPortalSection.schedi-newdash #rosterListWrap td.roster-cell-actions { padding-left: 4px; padding-right: 4px; }
         #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-client { overflow: hidden; }
-        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-service,
-        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-when { overflow-wrap: anywhere; }
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-service { overflow: hidden; }
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-service .sd-svc-line {
+            display: flex;
+            width: 100%;
+            min-width: 0;
+        }
+        #tenantPortalSection.schedi-newdash #rosterListWrap .sd-svc-name {
+            min-width: 0;
+            flex: 1 1 auto;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            overflow-wrap: normal;
+            word-break: normal;
+        }
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-when { overflow-wrap: break-word; }
         #tenantPortalSection.schedi-newdash #rosterListWrap .roster-actions {
             display: flex;
             flex-wrap: nowrap;
@@ -3710,8 +3761,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
         #tenantPortalSection.schedi-newdash #rosterListWrap .roster-actions > button { white-space: nowrap; }
     }
     @media (min-width: 1280px) {
-        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-service { width: 84px; }
-        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-pay { width: 232px; }
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-service { width: 116px; }
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-pay { width: 210px; }
         #tenantPortalSection.schedi-newdash #rosterListWrap .roster-status-line {
             display: flex;
             flex-wrap: nowrap;
@@ -3727,14 +3778,19 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
             overflow: hidden;
         }
         #tenantPortalSection.schedi-newdash #rosterListWrap .roster-status-line > .sd-pay .sd-pay-word {
+            min-width: 0;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
         }
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-status-line > .sd-pay .sd-pay-amt {
+            flex: none;
+            white-space: nowrap;
+        }
     }
     @media (min-width: 1360px) {
-        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-pay { width: 260px; }
-        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-service { width: 112px; }
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-pay { width: 240px; }
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-service { width: 168px; }
     }
     @media (max-width: 1099px) {
         #tenantPortalSection.schedi-newdash .sd-client-page-head {
@@ -6497,21 +6553,41 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
             </div>
         </div>
     </div>
-<div id="rosterDeleteModal" role="dialog" aria-modal="true" aria-labelledby="rosterDeleteTitle" tabindex="-1" class="fixed inset-0 z-[60] bg-slate-950/80 backdrop-blur-md flex items-start sm:items-center justify-center p-3 sm:p-4 overflow-y-auto overscroll-contain hidden">
-        <div class="max-w-sm w-full glass-card rounded-2xl p-5 sm:p-6 space-y-4 fade-in border border-rose-500/30 my-4 min-w-0">
-            <div class="flex items-start gap-3">
-                <div class="w-10 h-10 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-400 shrink-0">
-                    <i class="fa-solid fa-trash"></i>
-                </div>
-                <div class="min-w-0">
+<div id="rosterDeleteModal" role="dialog" aria-modal="true" aria-labelledby="rosterDeleteTitle" tabindex="-1" class="fixed inset-0 z-[60] bg-slate-950/80 backdrop-blur-md flex items-start sm:items-center justify-center p-3 sm:p-4 overflow-y-auto overscroll-contain hidden" onclick="if (event.target === this) closeRosterDeleteModal()">
+        <div class="max-w-sm w-full glass-card rounded-2xl fade-in border border-rose-500/30 my-4 min-w-0 sd-form-sheet">
+            <div class="sd-form-head">
+                <div class="min-w-0 flex items-start gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-400 shrink-0">
+                        <i class="fa-solid fa-trash"></i>
+                    </div>
                     <h3 id="rosterDeleteTitle" class="text-lg font-bold text-white">Delete appointment?</h3>
-                    <p id="rosterDeleteBody" class="text-sm text-slate-300 mt-2 leading-relaxed">Delete this appointment? This removes it permanently and frees the time slot. The client is not notified.</p>
+                </div>
+                <button type="button" class="sd-form-close" onclick="closeRosterDeleteModal()" aria-label="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+            </div>
+            <div class="space-y-4 sd-form-scroll">
+                <p id="rosterDeleteBody" class="text-sm text-slate-300 leading-relaxed">Delete this appointment? This removes it permanently and frees the time slot. The client is not notified.</p>
+                <input type="hidden" id="rosterDeleteAppId" value="">
+                <div class="pt-1 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+                    <button type="button" onclick="closeRosterDeleteModal()" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-sm transition-all">Cancel</button>
+                    <button type="button" id="rosterDeleteConfirmBtn" onclick="confirmRosterDeleteFromModal()" class="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-sm border border-rose-400/40 shadow-lg shadow-rose-900/30 transition-all">Delete</button>
                 </div>
             </div>
-            <input type="hidden" id="rosterDeleteAppId" value="">
-            <div class="pt-1 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
-                <button type="button" onclick="closeRosterDeleteModal()" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-sm transition-all">Cancel</button>
-                <button type="button" id="rosterDeleteConfirmBtn" onclick="confirmRosterDeleteFromModal()" class="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-sm border border-rose-400/40 shadow-lg shadow-rose-900/30 transition-all">Delete</button>
+        </div>
+    </div>
+    <div id="ownerConfirmModal" role="dialog" aria-modal="true" aria-labelledby="ownerConfirmTitle" tabindex="-1" class="fixed inset-0 z-[70] bg-slate-950/80 backdrop-blur-md flex items-start sm:items-center justify-center p-3 sm:p-4 overflow-y-auto overscroll-contain hidden" onclick="if (event.target === this) closeOwnerConfirm(false)">
+        <div class="max-w-sm w-full glass-card rounded-2xl fade-in border border-rose-500/30 my-4 min-w-0 sd-form-sheet">
+            <div class="sd-form-head">
+                <div class="min-w-0">
+                    <h3 id="ownerConfirmTitle" class="text-lg font-bold text-white">Are you sure?</h3>
+                </div>
+                <button type="button" class="sd-form-close" onclick="closeOwnerConfirm(false)" aria-label="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+            </div>
+            <div class="space-y-4 sd-form-scroll">
+                <p id="ownerConfirmBody" class="text-sm text-slate-300 leading-relaxed"></p>
+                <div class="pt-1 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+                    <button type="button" onclick="closeOwnerConfirm(false)" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-sm transition-all">Cancel</button>
+                    <button type="button" id="ownerConfirmBtn" onclick="closeOwnerConfirm(true)" class="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-sm border border-rose-400/40 shadow-lg shadow-rose-900/30 transition-all">Confirm</button>
+                </div>
             </div>
         </div>
     </div>
@@ -8261,7 +8337,7 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
             var hint = '';
             if (awaiting && st === 'pending') hint = ' · Accept to keep it; unpaid requests are released after 24h';
             else if (awaiting) hint = ' · Client can pay any time before the appointment';
-            return '<div class="text-[10px] text-slate-300 mt-1">' + badge + 'Deposit $' + dep.toFixed(2) + ' · ' + (paid ? 'Paid' : 'Unpaid') + ' · Balance $' + roundMoney(bal).toFixed(2) + hint + '</div>';
+            return '<div class="text-[10px] text-slate-300 mt-1">' + badge + 'Deposit ' + formatBookingAmountLabel(dep) + ' · ' + (paid ? 'Paid' : 'Unpaid') + ' · Balance ' + formatBookingAmountLabel(roundMoney(bal)) + hint + '</div>';
         }
 
         function cancellationFeeRosterLine(app) {
@@ -10464,7 +10540,12 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                 return;
             }
             var switching = !!String(tenant.stripeSubscriptionId || '').trim() && tenant.subscriptionStatus !== 'paused' && normalizePlan(tenant) !== plan && normalizePlan(tenant) !== 'free';
-            if (switching && !window.confirm('Switch to ' + (plan === 'pro' ? 'Pro ($49/mo)' : 'Starter ($29/mo)') + '? Stripe starts the new plan when you pay, and unused time on your current plan is credited to your next invoice.')) {
+            if (switching && !await openOwnerConfirm({
+                title: 'Switch plan?',
+                body: 'Switch to ' + (plan === 'pro' ? 'Pro ($49/mo)' : 'Starter ($29/mo)') + '? Stripe starts the new plan when you pay, and unused time on your current plan is credited to your next invoice.',
+                confirmLabel: 'Switch plan',
+                danger: false
+            })) {
                 return;
             }
             var btn = document.getElementById(plan === 'pro' ? 'subscribeProBtn' : 'subscribeStarterBtn');
@@ -10564,7 +10645,11 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
         window.cancelSchediSubscription = async function() {
             var tenant = getTenant();
             if (!tenant) return;
-            if (!window.confirm('Cancel at the end of the current paid period? You keep access until then and are not charged again.')) return;
+            if (!await openOwnerConfirm({
+                title: 'Cancel this plan?',
+                body: 'Cancel at the end of the current paid period? You keep access until then and are not charged again.',
+                confirmLabel: 'Cancel plan'
+            })) return;
             var data = await postSchediBillingAction('/cancel', 'cancelBillingBtn', 'Scheduling cancellation...');
             if (!data) return;
             tenant.cancelAtPeriodEnd = true;
@@ -12838,7 +12923,11 @@ function schediQrCardPixels(text, color) {
             var c = t && ownerClientCache[t.id];
             if (!c) return;
             var x = c.clients.find(function (k) { return k && k.id === clientId; });
-            if (!x || !window.confirm('Remove ' + (x.name || 'this client') + ' from your clients? Appointments are not changed.')) return;
+            if (!x || !await openOwnerConfirm({
+                title: 'Remove ' + (x.name || 'this client') + '?',
+                body: 'Remove ' + (x.name || 'this client') + ' from your clients? Appointments are not changed.',
+                confirmLabel: 'Remove client'
+            })) return;
             var data = await clientsApi({ action: 'delete', tenantId: t.id, clientId: clientId });
             if (!data.ok && data.error !== 'not_found') { showToast('Could not remove the client. Try again.', 'error'); return; }
             c.clients = c.clients.filter(function (k) { return k && k.id !== clientId; });
@@ -13278,12 +13367,11 @@ function schediQrCardPixels(text, color) {
         function appointmentPayMarkup(app, iconOnly) {
             var kind = appointmentPayKind(app);
             var label = ROSTER_PAY_WORDS[kind] || ROSTER_PAY_WORDS.unpaid;
-            if (kind !== 'unpaid') {
-                var money = appointmentPaidChipMoney(app);
-                if (money) label = label + ' · ' + money;
-            }
-            return '<span class="sd-pay sd-pay-' + kind + (iconOnly ? ' is-icon' : '') + '" title="' + esc(label) + '" aria-label="' + esc(label) + '">' +
-                payKindSvg(kind) + '<span class="sd-pay-word">' + esc(label) + '</span></span>';
+            var money = kind === 'unpaid' ? '' : appointmentPaidChipMoney(app);
+            var full = money ? (label + ' · ' + money) : label;
+            var amount = money ? '<span class="sd-pay-amt"> · ' + esc(money) + '</span>' : '';
+            return '<span class="sd-pay sd-pay-' + kind + (iconOnly ? ' is-icon' : '') + '" title="' + esc(full) + '" aria-label="' + esc(full) + '">' +
+                payKindSvg(kind) + '<span class="sd-pay-word">' + esc(label) + '</span>' + amount + '</span>';
         }
 
         function rosterPassesPayFilter(app) {
@@ -15703,7 +15791,7 @@ function schediQrCardPixels(text, color) {
                         <div class="roster-client-name font-bold text-white"><span class="roster-client-name-text">${esc(app.clientName)}</span>${app.walkIn === true ? '<span class="align-middle inline-block px-1.5 py-0.5 rounded-md bg-slate-800 border border-slate-700 text-slate-300 text-[10px] font-semibold whitespace-nowrap"><i class="fa-solid fa-person-walking mr-1"></i>Walk-in</span>' : ''}</div>
                         <div class="roster-client-meta text-[10px] text-slate-400">${app.clientPhone ? `<span class="roster-client-phone">${esc(app.clientPhone)}</span>` : ''}${app.clientPhone && app.clientEmail ? '<span class="roster-client-sep"> • </span>' : ''}${app.clientEmail ? `<span class="roster-client-email" title="${esc(app.clientEmail)}">${esc(app.clientEmail)}</span>` : ''}</div>
                     </td>
-                    <td class="roster-cell-service p-3 font-semibold text-slate-300"><span class="sd-svc-line">${serviceMarkHtml(tenant, app.serviceName)}<span>${esc(app.serviceName)}</span></span></td>
+                    <td class="roster-cell-service p-3 font-semibold text-slate-300"><span class="sd-svc-line">${serviceMarkHtml(tenant, app.serviceName)}<span class="sd-svc-name" title="${esc(app.serviceName)}">${esc(app.serviceName)}</span></span></td>
                     <td class="roster-cell-when p-3">
                         <span class="text-brand-400 font-bold">${esc(app.date)}</span>
                         <div class="text-[10px] text-slate-400">${esc(app.time)}${(app.seriesId || (app.recurrence && app.recurrence.frequency && app.recurrence.frequency !== 'once')) ? (' · <span class="text-sky-400">' + esc(recurrenceLabel((app.recurrence && app.recurrence.frequency) || 'weekly')) + (app.recurrence && app.recurrence.index && app.recurrence.total ? (' ' + app.recurrence.index + '/' + app.recurrence.total) : '') + '</span>') : ''}</div>
@@ -18348,9 +18436,13 @@ function schediQrCardPixels(text, color) {
             showToast(`Added recurring outage rule: "${title}" (${duration})`, 'success');
         }
 
-        window.deleteBlockedTimeRule = function(ruleId) {
+        window.deleteBlockedTimeRule = async function(ruleId) {
             if (!canManageBlockedTimes()) return;
-            if (!window.confirm('Remove this recurring block? This cannot be undone.')) return;
+            if (!await openOwnerConfirm({
+                title: 'Remove this recurring block?',
+                body: 'Remove this recurring block? This cannot be undone.',
+                confirmLabel: 'Remove block'
+            })) return;
             const tenant = getTenant();
             if (!tenant) return;
             ensureBlockedArrays(tenant);
@@ -18667,9 +18759,13 @@ function schediQrCardPixels(text, color) {
             showToast('Added date block' + (note ? (': "' + note + '"') : '') + ' (' + startDate + (endDate !== startDate ? (' → ' + endDate) : '') + ')', 'success');
         }
 
-        window.deleteDateBlock = function(blockId) {
+        window.deleteDateBlock = async function(blockId) {
             if (!canManageBlockedTimes()) return;
-            if (!window.confirm('Remove this date block? This cannot be undone.')) return;
+            if (!await openOwnerConfirm({
+                title: 'Remove this date block?',
+                body: 'Remove this date block? This cannot be undone.',
+                confirmLabel: 'Remove block'
+            })) return;
             const tenant = getTenant();
             if (!tenant) return;
             ensureBlockedArrays(tenant);
@@ -18861,9 +18957,13 @@ function schediQrCardPixels(text, color) {
             showToast('Special hours saved for ' + dateKey + ' (' + label + ')', 'success');
         }
 
-        window.deleteSpecialHours = function(dateKey) {
+        window.deleteSpecialHours = async function(dateKey) {
             if (!canManageBlockedTimes()) return;
-            if (!window.confirm('Remove special hours for ' + dateKey + '? That day will use your weekly hours again.')) return;
+            if (!await openOwnerConfirm({
+                title: 'Remove special hours?',
+                body: 'Remove special hours for ' + dateKey + '? That day will use your weekly hours again.',
+                confirmLabel: 'Remove hours'
+            })) return;
             var tenant = getTenant();
             if (!tenant) return;
             ensureSpecialHours(tenant);
@@ -21459,7 +21559,7 @@ function schediQrCardPixels(text, color) {
             showToast(`Saved service: "${name}"`, 'success');
         }
 
-        window.deleteService = function(svcId) {
+        window.deleteService = async function(svcId) {
             const tenant = getTenant();
             if (!tenant) return;
 
@@ -21469,7 +21569,11 @@ function schediQrCardPixels(text, color) {
             }
 
             const doomed = tenant.services.find(s => s.id === svcId);
-            if (!window.confirm(`Delete the service "${doomed ? doomed.name : svcId}"? This cannot be undone.`)) return;
+            if (!await openOwnerConfirm({
+                title: 'Delete this service?',
+                body: 'Delete the service "' + (doomed ? doomed.name : svcId) + '"? This cannot be undone.',
+                confirmLabel: 'Delete service'
+            })) return;
 
             revokeServicePreview(svcId);
             tenant.services = tenant.services.filter(s => s.id !== svcId);
@@ -21688,7 +21792,7 @@ function schediQrCardPixels(text, color) {
                 var depPaid = app.depositPaid === true ? 'Paid' : 'Unpaid';
                 var depBal = Number(app.balanceDue);
                 if (!isFinite(depBal)) depBal = Math.max(0, roundMoney((Number(app.amount) || 0) - Number(app.depositAmount)));
-                depText.textContent = 'Deposit $' + Number(app.depositAmount).toFixed(2) + ' · ' + depPaid + '. Remaining balance $' + roundMoney(depBal).toFixed(2) + ' due at the appointment. Clients cannot change this.';
+                depText.textContent = 'Deposit ' + formatBookingAmountLabel(app.depositAmount) + ' · ' + depPaid + '. Remaining balance ' + formatBookingAmountLabel(roundMoney(depBal)) + ' due at the appointment. Clients cannot change this.';
                 depBox.classList.remove('hidden');
             } else if (depBox) {
                 depBox.classList.add('hidden');
@@ -23254,13 +23358,17 @@ function schediQrCardPixels(text, color) {
             showToast('No-show cleared', 'info');
         };
 
-        window.deleteAppointment = function(appId) {
+        window.deleteAppointment = async function(appId) {
             const tenant = getTenant();
             if (!tenant) return;
 
             const doomed = tenant.appointments.find(a => a.id === appId);
             const who = doomed ? doomed.clientName : appId;
-            if (!window.confirm(`Cancel the appointment for ${who}? This cannot be undone.`)) return;
+            if (!await openOwnerConfirm({
+                title: 'Cancel ' + who + '?',
+                body: 'Cancel the appointment for ' + who + '? This cannot be undone.',
+                confirmLabel: 'Cancel appointment'
+            })) return;
 
             if (doomed) markAppointmentCancelled(doomed, 'owner');
             saveState();
@@ -23269,6 +23377,51 @@ function schediQrCardPixels(text, color) {
             showToast(`Cancelled appointment #${appId}`, 'info');
             if (doomed) sendClientCancellationEmail(tenant, doomed);
         }
+
+        var ownerConfirmResolve = null;
+        window.openOwnerConfirm = function (opts) {
+            opts = opts || {};
+            return new Promise(function (resolve) {
+                if (ownerConfirmResolve) {
+                    var previous = ownerConfirmResolve;
+                    ownerConfirmResolve = null;
+                    previous(false);
+                }
+                ownerConfirmResolve = resolve;
+                var title = document.getElementById('ownerConfirmTitle');
+                var body = document.getElementById('ownerConfirmBody');
+                var btn = document.getElementById('ownerConfirmBtn');
+                var modal = document.getElementById('ownerConfirmModal');
+                if (title) title.textContent = opts.title || 'Are you sure?';
+                if (body) body.textContent = opts.body || '';
+                if (btn) {
+                    btn.textContent = opts.confirmLabel || 'Confirm';
+                    btn.className = 'px-4 py-2.5 rounded-xl font-bold text-sm border transition-all ' + (opts.danger === false
+                        ? 'bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-400/40'
+                        : 'bg-rose-600 hover:bg-rose-500 text-white border-rose-400/40 shadow-lg shadow-rose-900/30');
+                }
+                if (modal) {
+                    modal.classList.remove('hidden');
+                    modal.scrollTop = 0;
+                    var closeBtn = modal.querySelector('.sd-form-close');
+                    if (closeBtn && closeBtn.focus) closeBtn.focus();
+                }
+            });
+        };
+        window.closeOwnerConfirm = function (accepted) {
+            var modal = document.getElementById('ownerConfirmModal');
+            if (modal) modal.classList.add('hidden');
+            var resolve = ownerConfirmResolve;
+            ownerConfirmResolve = null;
+            if (resolve) resolve(accepted === true);
+        };
+        document.addEventListener('keydown', function (event) {
+            if (!event || event.key !== 'Escape') return;
+            var modal = document.getElementById('ownerConfirmModal');
+            if (!modal || modal.classList.contains('hidden')) return;
+            event.preventDefault();
+            window.closeOwnerConfirm(false);
+        });
 
         window.openRosterDeleteModal = function(appId) {
             var id = String(appId || '').trim();

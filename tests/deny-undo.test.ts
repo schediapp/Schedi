@@ -116,8 +116,9 @@ describe("deny undo queue", () => {
     expect(html).toContain("Appointment denied");
     expect(html).toContain("pagehide");
     expect(html).toContain("a beacon racing the");
-    const cancel = html.slice(html.indexOf("window.deleteAppointment = function"), html.indexOf("window.openRosterDeleteModal"));
-    expect(cancel).toContain("window.confirm");
+    const cancel = html.slice(html.indexOf("window.deleteAppointment = async function"), html.indexOf("window.openRosterDeleteModal"));
+    expect(cancel).toContain("openOwnerConfirm");
+    expect(cancel).not.toContain("window.confirm");
     expect(cancel).toContain("saveState()");
     expect(cancel).toContain("sendClientCancellationEmail");
     expect(cancel).not.toContain("schediDenyUndo");
