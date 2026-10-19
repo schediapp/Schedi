@@ -3618,7 +3618,32 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
     }
     @media (min-width: 1100px) {
         #tenantPortalSection.schedi-newdash #rosterListWrap { overflow-x: auto; }
-        #tenantPortalSection.schedi-newdash #rosterListWrap > table { width: 100%; }
+        #tenantPortalSection.schedi-newdash #rosterListWrap > table {
+            width: 100%;
+            table-layout: fixed;
+        }
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-check { width: 40px; }
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-ref { width: 78px; white-space: nowrap; }
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-when { width: 104px; }
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-when > span { white-space: nowrap; }
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-price { width: 56px; }
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-collected { width: 72px; }
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-pay { width: 176px; }
+        #tenantPortalSection.schedi-newdash #rosterListWrap th.roster-cell-pay,
+        #tenantPortalSection.schedi-newdash #rosterListWrap td.roster-cell-pay { padding-left: 6px; padding-right: 6px; }
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-actions { width: 240px; }
+        #tenantPortalSection.schedi-newdash #rosterListWrap th.roster-cell-actions,
+        #tenantPortalSection.schedi-newdash #rosterListWrap td.roster-cell-actions { padding-left: 6px; padding-right: 6px; }
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-client,
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-service,
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-pay,
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-when { overflow-wrap: anywhere; }
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-actions {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: 6px;
+        }
     }
     @media (max-width: 1099px) {
         #tenantPortalSection.schedi-newdash .sd-client-page-head {
@@ -5225,14 +5250,14 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                                             <input type="checkbox" id="rosterSelectAll" aria-label="Select all" onchange="setRosterSelectAll(this.checked)">
                                         </label>
                                     </th>
-                                    <th class="p-3">Ref ID</th>
-                                    <th class="p-3">Client Name</th>
-                                    <th class="p-3">Service</th>
-                                    <th class="p-3">Date & Time</th>
-                                    <th class="p-3">Payment</th>
+                                    <th class="roster-cell-ref p-3">Ref ID</th>
+                                    <th class="roster-cell-client p-3">Client Name</th>
+                                    <th class="roster-cell-service p-3">Service</th>
+                                    <th class="roster-cell-when p-3">Date & Time</th>
+                                    <th class="roster-cell-pay p-3">Payment</th>
                                     <th class="roster-cell-price p-3">Price</th>
                                     <th class="roster-cell-collected p-3 text-right">Paid</th>
-                                    <th class="p-3 text-right">Actions</th>
+                                    <th class="roster-cell-actions p-3 text-right">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="tenantRosterTableBody" class="divide-y divide-slate-800/80">
