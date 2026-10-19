@@ -73,14 +73,17 @@ export function tenantFromFirestore(document: unknown): TenantSeo | null {
       services.push(price === undefined ? { name: serviceName } : { name: serviceName, price });
     }
   }
-  const street = text(
-    decodeFirestore(fields.address),
-    decodeFirestore(fields.location),
-    decodeFirestore(fields.businessAddress),
-    decodeFirestore(fields.businessLocation),
-  );
-  const city = text(decodeFirestore(fields.city), decodeFirestore(fields.businessCity));
-  const region = text(decodeFirestore(fields.state), decodeFirestore(fields.businessState));
+  const showPublicAddress = decodeFirestore(fields.showPublicAddress) !== false;
+  const street = showPublicAddress
+    ? text(
+        decodeFirestore(fields.address),
+        decodeFirestore(fields.location),
+        decodeFirestore(fields.businessAddress),
+        decodeFirestore(fields.businessLocation),
+      )
+    : "";
+  const city = showPublicAddress ? text(decodeFirestore(fields.city), decodeFirestore(fields.businessCity)) : "";
+  const region = showPublicAddress ? text(decodeFirestore(fields.state), decodeFirestore(fields.businessState)) : "";
   const timezone = text(decodeFirestore(fields.timezone), decodeFirestore(fields.timeZone));
   const tenant: TenantSeo = {
     name,
