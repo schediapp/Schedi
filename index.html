@@ -224,6 +224,18 @@
         #rosterAlertsBtn { min-width: 2.5rem; }
         #rosterAlertsBtn.wp-btn-on i { color: #34d399; }
         html.schedi-light #rosterAlertsBtn.wp-btn-on i { color: #047857; }
+        #webPushCard { min-width: 0; max-width: 100%; }
+        #webPushHint, #webPushHintText, .wp-iphone-help { overflow-wrap: anywhere; }
+        .wp-iphone-help { color: #34d399; font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
+        html.schedi-light .wp-iphone-help { color: #047857; }
+        #webPushHint.is-strong .wp-iphone-help { display: block; margin-top: 6px; font-size: 13px; line-height: 1.35; }
+        .schedi-help-guide, .schedi-help-guide-body, .schedi-help-guide ol, .schedi-help-guide ul, .schedi-help-guide li, .schedi-help-guide p, .schedi-help-guide a, .schedi-help-guide h3, .schedi-help-guide h4 {
+            min-width: 0;
+            max-width: 100%;
+            overflow-wrap: anywhere;
+        }
+        .schedi-help-guide { box-sizing: border-box; }
+        #legalSection .grid, #schediDashHelpBody .grid { min-width: 0; }
         .roster-nav-step { width: 6.5rem; flex: 0 0 6.5rem; text-align: center; white-space: nowrap; }
         @media (max-width: 639px) { .roster-nav-step { width: 100%; padding-left: 4px; padding-right: 4px; } }
         @media (max-width: 639px) {
@@ -1284,7 +1296,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash #schediDashAddMenu button.
 #tenantPortalSection.schedi-newdash .sd-danger { color: var(--sd-rose) !important; }
 #tenantPortalSection.schedi-newdash .sd-help-lead { margin: 4px 10px 8px; color: var(--sd-muted); font-size: 13px; }
 #tenantPortalSection.schedi-newdash .sd-help-lead a { color: var(--sd-brand-2); font-weight: 800; }
-#tenantPortalSection.schedi-newdash .sd-help-card { width: min(880px, 100%); }
+#tenantPortalSection.schedi-newdash .sd-help-card { width: min(880px, 100%); min-width: 0; max-width: 100%; }
+#tenantPortalSection.schedi-newdash #schediDashHelpBody { min-width: 0; max-width: 100%; }
 #tenantPortalSection.schedi-newdash .sd-qr-card {
     width: min(440px, 100%);
     max-height: min(92vh, 760px);
@@ -6366,7 +6379,7 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                             </div>
                             <button type="button" id="webPushSwitch" role="switch" aria-checked="false" aria-labelledby="webPushTitle" class="wp-switch" onclick="schediWebPushToggle()"><span></span></button>
                         </div>
-                        <p id="webPushHint" class="text-[11px] text-slate-500"></p>
+                        <p id="webPushHint" class="text-[11px] text-slate-500 leading-relaxed min-w-0"><span id="webPushHintText"></span> <a id="webPushIphoneHelpLink" class="wp-iphone-help" href="/portal/help#owner-20-booking-alerts-iphone" onclick="this.href=ownerBookingAlertsHelpHref()">How to turn on alerts on iPhone</a></p>
                         <div id="webPushActions" class="hidden">
                             <button type="button" id="webPushTestBtn" onclick="schediWebPushTest()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold border border-slate-700 text-xs">
                                 <i class="fa-solid fa-paper-plane mr-1.5" aria-hidden="true"></i><span id="webPushTestLabel">Send test alert</span>
@@ -9330,38 +9343,96 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
         }
 
         // Help page tutorial videos (files in /assets/help-videos/). preload="none" + poster keeps page load light.
-        var SCHEDI_HELP_VIDEOS = [{"slug": "client-booking-demo", "file": "client-booking-demo.mp4?v=9", "poster": "client-booking-demo.jpg?v=9", "title": "How clients book", "desc": "Clients pick a service, a day and time, enter their info, choose how to pay, and send the request.", "dur": "0:30", "aud": "client"}, {"slug": "owner-01-create-your-page", "file": "owner-01-create-your-page.mp4?v=8", "poster": "owner-01-create-your-page.jpg?v=8", "title": "Create your booking page", "desc": "Sign up, get your free page, and compare Free, Starter, and Pro.", "dur": "0:24", "aud": "owner"}, {"slug": "owner-02-add-services", "file": "owner-02-add-services.mp4?v=8", "poster": "owner-02-add-services.jpg?v=8", "title": "Add your services", "desc": "Add each service with its length and an optional price.", "dur": "0:21", "aud": "owner"}, {"slug": "owner-03-set-hours", "file": "owner-03-set-hours.mp4?v=9", "poster": "owner-03-set-hours.jpg?v=9", "title": "Set your hours", "desc": "Pick the days you work and your open and close times.", "dur": "0:20", "aud": "owner"}, {"slug": "owner-04-payment-options", "file": "owner-04-payment-options.mp4?v=7", "poster": "owner-04-payment-options.jpg?v=7", "title": "Payment options", "desc": "Turn on Cash App, Zelle, Venmo, or PayPal (Starter and Pro) or keep pay at appointment.", "dur": "0:28", "aud": "owner"}, {"slug": "owner-05-share-booking-link", "file": "owner-05-share-booking-link.mp4?v=8", "poster": "owner-05-share-booking-link.jpg?v=8", "title": "Share your booking link", "desc": "Copy or Share your link from the top of your portal. Open Public Page and Add to home screen are in More & settings.", "dur": "0:20", "aud": "owner"}, {"slug": "owner-06-accept-booking-request", "file": "owner-06-accept-booking-request.mp4?v=8", "poster": "owner-06-accept-booking-request.jpg?v=8", "title": "Accept a booking request", "desc": "On phones, each booking is a card; tap Accept and it shows as Accepted (Starter and Pro).", "dur": "0:20", "aud": "owner"}, {"slug": "owner-07-appointments-report", "file": "owner-07-appointments-report.mp4?v=8", "poster": "owner-07-appointments-report.jpg?v=8", "title": "Appointments report", "desc": "See counts, recorded prices, marked paid, and walk-ins; export CSV or print.", "dur": "0:21", "aud": "owner"}, {"slug": "owner-08-add-manual-appointment", "file": "owner-08-add-manual-appointment.mp4?v=8", "poster": "owner-08-add-manual-appointment.jpg?v=8", "title": "Add a walk-in or phone booking", "desc": "Log a walk-in or phone booking with the Walk-in toggle, saved-client suggest, open time slot, and payment status.", "dur": "0:28", "aud": "owner"}, {"slug": "owner-09-mark-paid", "file": "owner-09-mark-paid.mp4?v=8", "poster": "owner-09-mark-paid.jpg?v=8", "title": "Mark an appointment paid", "desc": "Tap Mark paid, pick how the client paid, and the booking turns green.", "dur": "0:22", "aud": "owner"}, {"slug": "owner-10-reschedule", "file": "owner-10-reschedule.mp4?v=8", "poster": "owner-10-reschedule.jpg?v=8", "title": "Reschedule an appointment", "desc": "Pick a new date and an open time slot, then tap Update Reservation.", "dur": "0:23", "aud": "owner"}, {"slug": "owner-11-cancel-appointment", "file": "owner-11-cancel-appointment.mp4?v=8", "poster": "owner-11-cancel-appointment.jpg?v=8", "title": "Cancel an appointment", "desc": "Tap Cancel and confirm; the booking stays on your roster as Cancelled.", "dur": "0:20", "aud": "owner"}, {"slug": "owner-12-special-hours", "file": "owner-12-special-hours.mp4?v=9", "poster": "owner-12-special-hours.jpg?v=9", "title": "Special hours", "desc": "Close or change your hours for one date without touching your weekly hours.", "dur": "0:21", "aud": "owner"}, {"slug": "owner-13-date-blocks", "file": "owner-13-date-blocks.mp4?v=9", "poster": "owner-13-date-blocks.jpg?v=9", "title": "Vacation and date blocks", "desc": "Block a range of dates so clients cannot book them.", "dur": "0:22", "aud": "owner"}, {"slug": "owner-14-email-confirmations", "file": "owner-14-email-confirmations.mp4?v=7", "poster": "owner-14-email-confirmations.jpg?v=7", "title": "Email confirmations and reminders", "desc": "Set your Reply-To email, an extra note, and same-day reminder emails.", "dur": "0:23", "aud": "owner"}, {"slug": "owner-15-recurring-visits-pro", "file": "owner-15-recurring-visits-pro.mp4?v=7", "poster": "owner-15-recurring-visits-pro.jpg?v=7", "title": "Recurring appointments (Pro)", "desc": "On Pro, let clients book weekly, biweekly, or monthly; off until you turn it on.", "dur": "0:21", "aud": "owner"}, {"slug": "owner-16-clients", "file": "owner-16-clients.mp4?v=7", "poster": "owner-16-clients.jpg?v=7", "title": "Clients list", "desc": "Search, add, or remove clients. Auto-added clients show From booking since...", "dur": "0:24", "aud": "owner"}, {"slug": "owner-17-import-clients-csv", "file": "owner-17-import-clients-csv.mp4?v=8", "poster": "owner-17-import-clients-csv.jpg?v=8", "title": "Import clients from CSV", "desc": "Upload a CSV, match columns, preview, and import. Schedi never emails imports.", "dur": "0:22", "aud": "owner"}, {"slug": "owner-18-compare-plans", "file": "owner-18-compare-plans.mp4?v=8", "poster": "owner-18-compare-plans.jpg?v=8", "title": "Compare Plans", "desc": "Open the Free / Starter / Pro chart from your Schedi subscription card (below More & settings), including Agency Management on Pro.", "dur": "0:18", "aud": "owner"}, {"slug": "owner-19-roster-week-month", "file": "owner-19-roster-week-month.mp4?v=8", "poster": "owner-19-roster-week-month.jpg?v=8", "title": "Week and month roster", "desc": "Switch to Week or Month, move with Previous, Next, or Today, tap a booking for details, and tap a busy day.", "dur": "0:22", "aud": "owner"}];
-        var SCHEDI_HELP_VIDEO_GROUPS = [["Get set up", ["owner-01-create-your-page", "owner-02-add-services", "owner-03-set-hours", "owner-04-payment-options", "owner-05-share-booking-link", "owner-18-compare-plans"]], ["Bookings and the roster", ["owner-06-accept-booking-request", "owner-08-add-manual-appointment", "owner-09-mark-paid", "owner-10-reschedule", "owner-11-cancel-appointment", "owner-07-appointments-report", "owner-19-roster-week-month"]], ["Clients", ["owner-16-clients", "owner-17-import-clients-csv"]], ["Hours and time off", ["owner-12-special-hours", "owner-13-date-blocks"]], ["Emails and Pro features", ["owner-14-email-confirmations", "owner-15-recurring-visits-pro"]], ["What your clients see", ["client-booking-demo"]]];
-        function schediHelpVideoCard(v) {
+        var SCHEDI_HELP_VIDEOS = [{"slug": "client-booking-demo", "file": "client-booking-demo.mp4?v=9", "poster": "client-booking-demo.jpg?v=9", "title": "How clients book", "desc": "Clients pick a service, a day and time, enter their info, choose how to pay, and send the request.", "dur": "0:30", "aud": "client"}, {"slug": "owner-01-create-your-page", "file": "owner-01-create-your-page.mp4?v=8", "poster": "owner-01-create-your-page.jpg?v=8", "title": "Create your booking page", "desc": "Sign up, get your free page, and compare Free, Starter, and Pro.", "dur": "0:24", "aud": "owner"}, {"slug": "owner-02-add-services", "file": "owner-02-add-services.mp4?v=8", "poster": "owner-02-add-services.jpg?v=8", "title": "Add your services", "desc": "Add each service with its length and an optional price.", "dur": "0:21", "aud": "owner"}, {"slug": "owner-03-set-hours", "file": "owner-03-set-hours.mp4?v=9", "poster": "owner-03-set-hours.jpg?v=9", "title": "Set your hours", "desc": "Pick the days you work and your open and close times.", "dur": "0:20", "aud": "owner"}, {"slug": "owner-04-payment-options", "file": "owner-04-payment-options.mp4?v=7", "poster": "owner-04-payment-options.jpg?v=7", "title": "Payment options", "desc": "Turn on Cash App, Zelle, Venmo, or PayPal (Starter and Pro) or keep pay at appointment.", "dur": "0:28", "aud": "owner"}, {"slug": "owner-05-share-booking-link", "file": "owner-05-share-booking-link.mp4?v=8", "poster": "owner-05-share-booking-link.jpg?v=8", "title": "Share your booking link", "desc": "Copy or Share your link from the top of your portal. Open Public Page and Add to home screen are in More & settings.", "dur": "0:20", "aud": "owner"}, {"slug": "owner-06-accept-booking-request", "file": "owner-06-accept-booking-request.mp4?v=8", "poster": "owner-06-accept-booking-request.jpg?v=8", "title": "Accept a booking request", "desc": "On phones, each booking is a card; tap Accept and it shows as Accepted (Starter and Pro).", "dur": "0:20", "aud": "owner"}, {"slug": "owner-07-appointments-report", "file": "owner-07-appointments-report.mp4?v=8", "poster": "owner-07-appointments-report.jpg?v=8", "title": "Appointments report", "desc": "See counts, recorded prices, marked paid, and walk-ins; export CSV or print.", "dur": "0:21", "aud": "owner"}, {"slug": "owner-08-add-manual-appointment", "file": "owner-08-add-manual-appointment.mp4?v=8", "poster": "owner-08-add-manual-appointment.jpg?v=8", "title": "Add a walk-in or phone booking", "desc": "Log a walk-in or phone booking with the Walk-in toggle, saved-client suggest, open time slot, and payment status.", "dur": "0:28", "aud": "owner"}, {"slug": "owner-09-mark-paid", "file": "owner-09-mark-paid.mp4?v=8", "poster": "owner-09-mark-paid.jpg?v=8", "title": "Mark an appointment paid", "desc": "Tap Mark paid, pick how the client paid, and the booking turns green.", "dur": "0:22", "aud": "owner"}, {"slug": "owner-10-reschedule", "file": "owner-10-reschedule.mp4?v=8", "poster": "owner-10-reschedule.jpg?v=8", "title": "Reschedule an appointment", "desc": "Pick a new date and an open time slot, then tap Update Reservation.", "dur": "0:23", "aud": "owner"}, {"slug": "owner-11-cancel-appointment", "file": "owner-11-cancel-appointment.mp4?v=8", "poster": "owner-11-cancel-appointment.jpg?v=8", "title": "Cancel an appointment", "desc": "Tap Cancel and confirm; the booking stays on your roster as Cancelled.", "dur": "0:20", "aud": "owner"}, {"slug": "owner-12-special-hours", "file": "owner-12-special-hours.mp4?v=9", "poster": "owner-12-special-hours.jpg?v=9", "title": "Special hours", "desc": "Close or change your hours for one date without touching your weekly hours.", "dur": "0:21", "aud": "owner"}, {"slug": "owner-13-date-blocks", "file": "owner-13-date-blocks.mp4?v=9", "poster": "owner-13-date-blocks.jpg?v=9", "title": "Vacation and date blocks", "desc": "Block a range of dates so clients cannot book them.", "dur": "0:22", "aud": "owner"}, {"slug": "owner-14-email-confirmations", "file": "owner-14-email-confirmations.mp4?v=7", "poster": "owner-14-email-confirmations.jpg?v=7", "title": "Email confirmations and reminders", "desc": "Set your Reply-To email, an extra note, and same-day reminder emails.", "dur": "0:23", "aud": "owner"}, {"slug": "owner-15-recurring-visits-pro", "file": "owner-15-recurring-visits-pro.mp4?v=7", "poster": "owner-15-recurring-visits-pro.jpg?v=7", "title": "Recurring appointments (Pro)", "desc": "On Pro, let clients book weekly, biweekly, or monthly; off until you turn it on.", "dur": "0:21", "aud": "owner"}, {"slug": "owner-16-clients", "file": "owner-16-clients.mp4?v=7", "poster": "owner-16-clients.jpg?v=7", "title": "Clients list", "desc": "Search, add, or remove clients. Auto-added clients show From booking since...", "dur": "0:24", "aud": "owner"}, {"slug": "owner-17-import-clients-csv", "file": "owner-17-import-clients-csv.mp4?v=8", "poster": "owner-17-import-clients-csv.jpg?v=8", "title": "Import clients from CSV", "desc": "Upload a CSV, match columns, preview, and import. Schedi never emails imports.", "dur": "0:22", "aud": "owner"}, {"slug": "owner-18-compare-plans", "file": "owner-18-compare-plans.mp4?v=8", "poster": "owner-18-compare-plans.jpg?v=8", "title": "Compare Plans", "desc": "Open the Free / Starter / Pro chart from your Schedi subscription card (below More & settings), including Agency Management on Pro.", "dur": "0:18", "aud": "owner"}, {"slug": "owner-19-roster-week-month", "file": "owner-19-roster-week-month.mp4?v=8", "poster": "owner-19-roster-week-month.jpg?v=8", "title": "Week and month roster", "desc": "Switch to Week or Month, move with Previous, Next, or Today, tap a booking for details, and tap a busy day.", "dur": "0:22", "aud": "owner"}, {"slug": "owner-20-booking-alerts-iphone", "file": "", "poster": "", "title": "Booking alerts on iPhone", "desc": "Turn on a pop-up on your iPhone when a booking comes in.", "dur": "", "aud": "owner", "kind": "guide"}];
+        var SCHEDI_HELP_VIDEO_GROUPS = [["Get set up", ["owner-01-create-your-page", "owner-02-add-services", "owner-03-set-hours", "owner-04-payment-options", "owner-05-share-booking-link", "owner-18-compare-plans"]], ["Bookings and the roster", ["owner-06-accept-booking-request", "owner-08-add-manual-appointment", "owner-09-mark-paid", "owner-10-reschedule", "owner-11-cancel-appointment", "owner-07-appointments-report", "owner-19-roster-week-month"]], ["Clients", ["owner-16-clients", "owner-17-import-clients-csv"]], ["Hours and time off", ["owner-12-special-hours", "owner-13-date-blocks"]], ["Emails and Pro features", ["owner-14-email-confirmations", "owner-15-recurring-visits-pro", "owner-20-booking-alerts-iphone"]], ["What your clients see", ["client-booking-demo"]]];
+        function schediHelpVideoPlayer(v) {
             var base = '/assets/help-videos/';
-            return '<figure class="rounded-xl border border-slate-800 bg-slate-900 p-2.5 flex flex-col">'
-                + '<figcaption class="mb-2"><div class="text-[13px] font-bold text-white leading-snug">' + esc(v.title) + ' <span class="text-[11px] font-semibold text-slate-500">' + esc(v.dur) + '</span></div>'
-                + '<div class="text-[11px] text-slate-400 leading-snug mt-0.5">' + esc(v.desc) + '</div></figcaption>'
-                + '<div class="mt-auto relative w-full rounded-lg overflow-hidden bg-black" style="aspect-ratio:9/16">'
+            return '<div class="relative w-full rounded-lg overflow-hidden bg-black min-w-0" style="aspect-ratio:9/16">'
                 + '<video class="schedi-help-video absolute inset-0 w-full h-full object-contain bg-black" controls playsinline preload="none" controlsList="nodownload" disablePictureInPicture oncontextmenu="return false;"'
                 + ' poster="' + base + esc(v.poster) + '" aria-label="' + esc(v.title) + ' video" title="' + esc(v.title) + '">'
                 + '<source src="' + base + esc(v.file) + '" type="video/mp4">'
-                + '</video></div></figure>';
+                + '</video></div>';
+        }
+        function schediHelpVideoCard(v) {
+            return '<figure class="rounded-xl border border-slate-800 bg-slate-900 p-2.5 flex flex-col min-w-0">'
+                + '<figcaption class="mb-2"><div class="text-[13px] font-bold text-white leading-snug">' + esc(v.title) + ' <span class="text-[11px] font-semibold text-slate-500">' + esc(v.dur) + '</span></div>'
+                + '<div class="text-[11px] text-slate-400 leading-snug mt-0.5">' + esc(v.desc) + '</div></figcaption>'
+                + '<div class="mt-auto">' + schediHelpVideoPlayer(v) + '</div></figure>';
+        }
+        function schediBookingAlertsIphoneGuideHtml() {
+            return '<div class="schedi-help-guide-body mt-3 space-y-3 text-sm text-slate-300 leading-relaxed">'
+                + '<ol class="list-decimal pl-5 space-y-1">'
+                + '<li>Requires iOS 16.4 or later.</li>'
+                + '<li>Open <a class="text-brand-400 underline font-semibold" href="https://schedi.app/login">schedi.app/login</a> in Safari.</li>'
+                + '<li>Tap Share, then Add to Home Screen.</li>'
+                + '<li>Open Schedi from the Home Screen icon and sign in.</li>'
+                + '<li>Tap the bell, or go to Emails &gt; Booking alerts, and turn on the switch.</li>'
+                + '<li>Tap Allow on the iOS prompt.</li>'
+                + '<li>To test it, tap Send test alert.</li>'
+                + '</ol>'
+                + '<h4 class="text-[13px] font-bold text-white">If alerts do not show</h4>'
+                + '<ul class="list-disc pl-5 space-y-1">'
+                + '<li>If alerts are blocked: Settings &gt; Notifications &gt; Schedi &gt; Allow.</li>'
+                + '<li>Focus / Do Not Disturb can hide alerts.</li>'
+                + '<li>Alerts only arrive in the Home Screen app, not in Safari tabs.</li>'
+                + '<li>Re-adding to the Home Screen means re-enabling alerts.</li>'
+                + '</ul>'
+                + '<h4 class="text-[13px] font-bold text-white">Android</h4>'
+                + '<p>Open Schedi in Chrome. Go to Emails &gt; Booking alerts, turn on the switch, and tap Allow. Alerts can arrive while Chrome is open, even when the Schedi tab is closed.</p>'
+                + '<h4 class="text-[13px] font-bold text-white">Desktop</h4>'
+                + '<p>Use Chrome, Edge, Firefox, or Safari. Go to Emails &gt; Booking alerts, turn on the switch, and click Allow. Alerts work while the browser is open, even when the Schedi tab is closed.</p>'
+                + '</div>';
+        }
+        function schediHelpGuideBody(v) {
+            if (v && v.slug === 'owner-20-booking-alerts-iphone') return schediBookingAlertsIphoneGuideHtml();
+            return '';
+        }
+        function schediHelpGuideCard(v) {
+            // Empty file/poster keeps the video slot. Drop in owner-20-booking-alerts-iphone.mp4 later and the player fills this slot.
+            var slot = v.file
+                ? '<div class="schedi-help-video-slot mt-3 max-w-[260px] min-w-0" data-video-slug="' + esc(v.slug) + '">' + schediHelpVideoPlayer(v) + '</div>'
+                : '<div class="schedi-help-video-slot" data-video-slug="' + esc(v.slug) + '" hidden></div>';
+            return '<article id="' + esc(v.slug) + '" class="schedi-help-guide col-span-2 sm:col-span-3 min-w-0 max-w-full rounded-xl border border-slate-800 bg-slate-900 p-3 sm:p-4">'
+                + '<h3 class="text-[13px] font-bold text-white leading-snug">' + esc(v.title) + '</h3>'
+                + '<p class="text-[11px] text-slate-400 leading-snug mt-0.5">' + esc(v.desc) + '</p>'
+                + slot
+                + schediHelpGuideBody(v)
+                + '</article>';
+        }
+        function schediHelpItemCard(v) {
+            if (v && v.kind === 'guide') return schediHelpGuideCard(v);
+            return schediHelpVideoCard(v);
         }
         function schediHelpVideosHtml(audience) {
             var bySlug = {};
             SCHEDI_HELP_VIDEOS.forEach(function (v) { bySlug[v.slug] = v; });
-            var grid = 'grid grid-cols-2 sm:grid-cols-3 gap-3';
+            var grid = 'grid grid-cols-2 sm:grid-cols-3 gap-3 min-w-0';
             if (audience === 'client') {
-                var c = SCHEDI_HELP_VIDEOS.filter(function (v) { return v.aud === 'client'; });
+                var c = SCHEDI_HELP_VIDEOS.filter(function (v) { return v.aud === 'client' && v.kind !== 'guide'; });
                 if (!c.length) return '';
                 return '<section class="mb-6"><h2 class="text-base font-bold text-white mb-2">Watch how booking works</h2>'
                     + '<div class="max-w-[260px]">' + c.map(schediHelpVideoCard).join('') + '</div></section>';
             }
-            var out = '<section class="mb-8"><h2 class="text-lg font-black text-white mb-1">Video tutorials</h2>'
+            var out = '<section class="mb-8 min-w-0"><h2 class="text-lg font-black text-white mb-1">Video tutorials</h2>'
                 + '<p class="text-sm text-slate-400 mb-4">Short videos, about 20 seconds each. Tap play to watch here. <button type="button" class="text-brand-400 underline font-semibold" onclick="var n=this.closest(\'section\').nextElementSibling; if (n) n.scrollIntoView({behavior:\'smooth\'});">Skip to written steps</button></p>';
             SCHEDI_HELP_VIDEO_GROUPS.forEach(function (g) {
                 var vids = g[1].map(function (slug) { return bySlug[slug]; }).filter(Boolean);
                 if (!vids.length) return;
                 out += '<h3 class="text-sm font-bold text-slate-300 uppercase tracking-wide mt-5 mb-2">' + esc(g[0]) + '</h3>'
-                    + '<div class="' + grid + '">' + vids.map(schediHelpVideoCard).join('') + '</div>';
+                    + '<div class="' + grid + '">' + vids.map(schediHelpItemCard).join('') + '</div>';
             });
             return out + '</section>';
+        }
+        function schediFocusHelpHash(root) {
+            var hash = '';
+            try { hash = decodeURIComponent(String(window.location.hash || '').replace(/^#/, '')); } catch (errHash) { hash = ''; }
+            if (!/^[a-z0-9-]{1,80}$/.test(hash)) return;
+            var scope = root && root.querySelector ? root : document;
+            var node = scope.querySelector('[id="' + hash + '"]');
+            if (!node) return;
+            setTimeout(function () {
+                try { node.scrollIntoView({ block: 'start' }); } catch (errScroll) {}
+            }, 40);
         }
         // Only one help video plays at a time.
         document.addEventListener('play', function (e) {
@@ -9494,11 +9565,13 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                     + '<section><h2 class="text-base font-bold text-white mb-1">Set hours</h2><ol class="list-decimal pl-5 space-y-1"><li>Open Hours &amp; Blocked Times.</li><li>Check Open for a day, then set Start and End.</li><li>Choose Start times every 15 minutes, 30 minutes, or 1 hour.</li><li>Click Save Operating Hours.</li><li>On the calendar, tap a date to set custom hours or close that day.</li><li>Drag across days, or hold a date and tap the last day, to mark time off. Use Add Recurring Outage for a repeating break such as lunch.</li></ol></section>'
                     + '<section><h2 class="text-base font-bold text-white mb-1">Payments</h2><ol class="list-decimal pl-5 space-y-1"><li>Open Payment Options.</li><li>Free only allows Pay at Appointment.</li><li>Starter can use Cash App, Venmo, Zelle, PayPal, and Pay at Appointment. Card checkout is not offered.</li><li>Pro can also turn on Credit / Debit Card (Stripe).</li><li>On Pro, Appointment deposit can be a percent of the service price or a fixed amount. It stays off until you turn it on. Percent deposits skip services with no price; card checkout also needs a price. Free and Starter cannot collect a card deposit.</li><li>Cancellation fee stays off until you turn it on. Set the hours (default 24) and a percent or a fixed amount. Pro charges a card already used for that visit. Free and Starter only show the rule.</li><li>Click Save Payment Gateways.</li></ol></section>'
                     + '<section><h2 class="text-base font-bold text-white mb-1">Appointments</h2><ol class="list-decimal pl-5 space-y-1"><li>Open Appointments Roster.</li><li>Free bookings are confirmed as soon as the client reserves.</li><li>Starter and Pro bookings stay pending. Click Accept or Deny. Deny frees that time.</li><li>Mark paid, Reschedule, and Cancel are on the same row.</li><li>Add Manual Appointment records a visit you took in person.</li></ol></section>'
+                    + '<section><h2 class="text-base font-bold text-white mb-1">Booking alerts on iPhone</h2><p>The steps, troubleshooting, and short Android and desktop notes are in <a class="text-brand-400 underline font-semibold" href="#owner-20-booking-alerts-iphone">Booking alerts on iPhone</a> with the videos above.</p></section>'
                     + '<section><h2 class="text-base font-bold text-white mb-1">Repeating visits</h2><ol class="list-decimal pl-5 space-y-1"><li>Open Email Confirmations.</li><li>On Pro, turn on Allow recurring appointments and click Save Email Settings.</li><li>Free and Starter do not show repeating visits on the booking page.</li></ol></section>'
                     + '<section><h2 class="text-base font-bold text-white mb-1">Your Schedi plan</h2><p>Starter is $29/mo and Pro is $49/mo, month to month, with no contract. ' + SCHEDI_OWNER_POLICY_SHORT + ' Use Cancel subscription to stop renewal at the end of the paid period. Resume subscription if you change your mind before then. Card updates stay in Manage billing. To request a refund of the first payment within 15 days, email <a class="text-brand-400 underline" href="mailto:admin@schedi.app">admin@schedi.app</a> with the business name and the charge date.</p></section>'
                     + '<section><h2 class="text-base font-bold text-white mb-1">Your public page</h2><p>The link at the top of the portal is the booking page. Copy link and Share use https://schedi.app/ and your slug.</p></section>'
                     + '<p><a class="text-slate-400 underline" href="https://schedi.app/">Back to Schedi</a></p>'
                     + '</div>';
+                try { schediFocusHelpHash(legal); } catch (errHash) {}
             }
             syncAgencyChrome();
             syncPublicHomeFooter();
@@ -14106,6 +14179,17 @@ function schediQrCardPixels(text, color) {
             return '/portal/help' + (q ? ('?' + q) : '');
         }
 
+        function ownerBookingAlertsHelpHrefFrom(helpHref) {
+            return String(helpHref || '/portal/help').split('#')[0] + '#owner-20-booking-alerts-iphone';
+        }
+
+        function ownerBookingAlertsHelpHref() {
+            var href = '/portal/help';
+            try { href = ownerHelpHref(); } catch (errHref) { href = '/portal/help'; }
+            return ownerBookingAlertsHelpHrefFrom(href);
+        }
+        window.ownerBookingAlertsHelpHref = ownerBookingAlertsHelpHref;
+
         function ownerPortalBackHrefFrom(search) {
             var params = new URLSearchParams(String(search || '').replace(/^\?/, ''));
             var preview = params.get('demo') === '1' || params.get('portal') === 'preview';
@@ -14144,6 +14228,8 @@ function schediQrCardPixels(text, color) {
                 var el = document.getElementById(id);
                 if (el) el.setAttribute('href', href);
             });
+            var iphone = document.getElementById('webPushIphoneHelpLink');
+            if (iphone) iphone.setAttribute('href', ownerBookingAlertsHelpHrefFrom(href));
         }
 
         function schediDashPage() {
@@ -15343,6 +15429,7 @@ function schediQrCardPixels(text, color) {
                 body.setAttribute('data-ready', '1');
             }
             panel.hidden = false;
+            try { schediFocusHelpHash(panel); } catch (errHash) {}
         };
 
         document.addEventListener('click', function (event) {
@@ -29477,7 +29564,9 @@ ${schediWebAnalytics}
             card.classList.add('wp-card-hit');
             try { card.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
             var sw = el('webPushSwitch');
+            var helpLink = el('webPushIphoneHelpLink');
             if (sw && !sw.disabled) { try { sw.focus({ preventScroll: true }); } catch (e2) {} }
+            else if (helpLink) { try { helpLink.focus({ preventScroll: true }); } catch (e3) {} }
             setTimeout(function () { card.classList.remove('wp-card-hit'); }, 2600);
         }, 80);
     };
@@ -29566,7 +29655,17 @@ ${schediWebAnalytics}
         sw.setAttribute('aria-checked', st === 'on' ? 'true' : 'false');
         sw.disabled = st === 'ios-install' || st === 'unsupported';
         if (busy) sw.setAttribute('aria-busy', 'true'); else sw.removeAttribute('aria-busy');
-        el('webPushHint').textContent = hint(st);
+        var hintText = el('webPushHintText');
+        var hintEl = el('webPushHint');
+        if (hintText) hintText.textContent = hint(st);
+        else if (hintEl) hintEl.textContent = hint(st);
+        if (hintEl) hintEl.classList.toggle('is-strong', st === 'ios-install' || st === 'blocked' || st === 'unsupported');
+        var helpLink = el('webPushIphoneHelpLink');
+        if (helpLink) {
+            var helpHref = '/portal/help#owner-20-booking-alerts-iphone';
+            try { if (typeof ownerBookingAlertsHelpHref === 'function') helpHref = ownerBookingAlertsHelpHref(); } catch (errHelp) {}
+            helpLink.setAttribute('href', helpHref);
+        }
         el('webPushActions').classList.toggle('hidden', st !== 'on');
     }
     window.schediWebPushRender = function () { lastKey = ''; render(); };
