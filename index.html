@@ -628,8 +628,16 @@ html.schedi-light body.schedi-newdash #rosterApptModal .sd-pill-amber { color: #
 #tenantPortalSection.schedi-newdash .sd-visit p { margin: 0; min-width: 0; }
 #tenantPortalSection.schedi-newdash .sd-pay { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; border-radius: 999px; padding: 2px 8px; font-size: 11px; font-weight: 800; line-height: 1.3; border: 1px solid var(--sd-line); color: var(--sd-text); background: rgba(148, 163, 184, 0.14); white-space: nowrap; }
 #tenantPortalSection.schedi-newdash .sd-pay svg { width: 14px; height: 14px; display: block; flex: none; }
-#tenantPortalSection.schedi-newdash .sd-pay-card { color: var(--sd-brand-2); border-color: rgba(16, 185, 129, 0.4); background: rgba(16, 185, 129, 0.14); }
-#tenantPortalSection.schedi-newdash .sd-pay-unpaid { color: var(--sd-rose); border-color: rgba(244, 63, 94, 0.35); background: rgba(244, 63, 94, 0.1); }
+#tenantPortalSection.schedi-newdash .sd-pay-card,
+#tenantPortalSection.schedi-newdash .sd-chip.sd-pay-card,
+body.schedi-newdash #clientHistoryModal .sd-pay.sd-pay-card { color: #c4c0ff; border-color: #635BFF; background: rgba(99, 91, 255, 0.18); }
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-card,
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-chip.sd-pay-card,
+html.schedi-light body.schedi-newdash #clientHistoryModal .sd-pay.sd-pay-card { color: #4338ca; border-color: #635BFF; background: rgba(99, 91, 255, 0.14); }
+#tenantPortalSection.schedi-newdash .sd-chip.is-on.sd-pay-card { background: rgba(99, 91, 255, 0.28); color: #c4c0ff; border-color: #635BFF; }
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-chip.is-on.sd-pay-card { background: rgba(99, 91, 255, 0.22); color: #4338ca; border-color: #635BFF; }
+#tenantPortalSection.schedi-newdash .sd-pay-unpaid,
+body.schedi-newdash #clientHistoryModal .sd-pay.sd-pay-unpaid { color: var(--sd-rose); border-color: rgba(244, 63, 94, 0.35); background: rgba(244, 63, 94, 0.1); }
 #tenantPortalSection.schedi-newdash .sd-pay.is-icon { padding: 3px; }
 #tenantPortalSection.schedi-newdash .sd-pay.is-icon .sd-pay-word,
 #tenantPortalSection.schedi-newdash .sd-pay.is-icon .sd-pay-amt { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); border: 0; }
@@ -638,76 +646,130 @@ html.schedi-light body.schedi-newdash #rosterApptModal .sd-pill-amber { color: #
 #tenantPortalSection.schedi-newdash .sd-chip { min-height: 36px; border-radius: 999px; border: 1px solid var(--sd-line); background: transparent; color: var(--sd-text); font-weight: 800; font-size: 12px; padding: 4px 10px; display: inline-flex; align-items: center; }
 #tenantPortalSection.schedi-newdash .sd-chip svg { width: 14px; height: 14px; display: block; flex: none; margin-right: 4px; }
 #tenantPortalSection.schedi-newdash .sd-chip.is-on { background: rgba(16, 185, 129, 0.16); color: var(--sd-brand-2); border-color: rgba(16, 185, 129, 0.45); }
-/* Paid-method brand colors. Venmo is a tinted pill; PayPal is a solid fill so the blues stay apart.
-   Venmo #008CFF — Venmo blue, PayPal Brand Identity Quick Guide (2022).
-   Cash App #00D64F — Cash App green. Press kits have also used #00D632; #00D64F is the mark used here.
-   Zelle #6D1ED4 — Zelle style guide (brand.zelle.com).
-   PayPal #003087 light / #0070E0 dark — Left Blue / Right Blue, PayPal Brand Identity Quick Guide.
-   Square uses the same muted chip as the other historical methods. */
+/* Paid-method chips are brand-tinted in both themes, with text that clears WCAG AA at 11px.
+   Dark text is the bright brand color on a tint. Light text is a darker brand shade on a tint.
+   Cash App #00D64F. Venmo #008CFF. Zelle #6D1ED4. PayPal #003087 light / #0070E0 dark.
+   Square is a charcoal chip: near-black fill with an off-white border in dark mode, near-black text and border in light mode.
+   Card uses Stripe blurple #635BFF. In-person cash stays the neutral slate chip. Unpaid stays red. */
 #tenantPortalSection.schedi-newdash .sd-pay-venmo,
-#tenantPortalSection.schedi-newdash .sd-chip.sd-pay-venmo {
+#tenantPortalSection.schedi-newdash .sd-chip.sd-pay-venmo,
+body.schedi-newdash #clientHistoryModal .sd-pay.sd-pay-venmo {
     color: #b9ddff;
     background: rgba(0, 140, 255, 0.16);
     border-color: #008CFF;
 }
 html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-venmo,
-html.schedi-light #tenantPortalSection.schedi-newdash .sd-chip.sd-pay-venmo {
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-chip.sd-pay-venmo,
+html.schedi-light body.schedi-newdash #clientHistoryModal .sd-pay.sd-pay-venmo {
     color: #0057B8;
     background: rgba(0, 140, 255, 0.12);
     border-color: #008CFF;
 }
+#tenantPortalSection.schedi-newdash .sd-chip.is-on.sd-pay-venmo {
+    background: rgba(0, 140, 255, 0.28);
+}
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-chip.is-on.sd-pay-venmo {
+    background: rgba(0, 140, 255, 0.22);
+}
 #tenantPortalSection.schedi-newdash .sd-pay.sd-pay-cashapp,
-#tenantPortalSection.schedi-newdash .sd-chip.sd-pay-cashapp {
-    color: #e2e8f0;
-    background: rgba(148, 163, 184, 0.16);
-    border-color: #94a3b8;
+#tenantPortalSection.schedi-newdash .sd-chip.sd-pay-cashapp,
+body.schedi-newdash #clientHistoryModal .sd-pay.sd-pay-cashapp {
+    color: #00D64F;
+    background: rgba(0, 214, 79, 0.18);
+    border-color: #00D64F;
 }
 html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay.sd-pay-cashapp,
-html.schedi-light #tenantPortalSection.schedi-newdash .sd-chip.sd-pay-cashapp {
-    color: #0f172a;
-    background: rgba(15, 23, 42, 0.06);
-    border-color: #64748b;
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-chip.sd-pay-cashapp,
+html.schedi-light body.schedi-newdash #clientHistoryModal .sd-pay.sd-pay-cashapp {
+    color: #046632;
+    background: rgba(0, 214, 79, 0.16);
+    border-color: #00D64F;
 }
-#tenantPortalSection.schedi-newdash .sd-chip.is-on.sd-pay-cashapp,
+#tenantPortalSection.schedi-newdash .sd-chip.is-on.sd-pay-cashapp {
+    background: rgba(0, 214, 79, 0.28);
+    color: #00D64F;
+    border-color: #00D64F;
+}
 html.schedi-light #tenantPortalSection.schedi-newdash .sd-chip.is-on.sd-pay-cashapp {
-    background: rgba(16, 185, 129, 0.16);
-    color: var(--sd-brand-2);
-    border-color: rgba(16, 185, 129, 0.45);
+    background: rgba(0, 214, 79, 0.24);
+    color: #046632;
+    border-color: #00D64F;
 }
 #tenantPortalSection.schedi-newdash .sd-pay-zelle,
 #tenantPortalSection.schedi-newdash .sd-chip.sd-pay-zelle,
+body.schedi-newdash #clientHistoryModal .sd-pay.sd-pay-zelle {
+    color: #e4d4ff;
+    background: rgba(109, 30, 212, 0.22);
+    border-color: #6D1ED4;
+}
 html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-zelle,
-html.schedi-light #tenantPortalSection.schedi-newdash .sd-chip.sd-pay-zelle {
-    color: #ffffff;
-    background: #6D1ED4;
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-chip.sd-pay-zelle,
+html.schedi-light body.schedi-newdash #clientHistoryModal .sd-pay.sd-pay-zelle {
+    color: #4c128f;
+    background: rgba(109, 30, 212, 0.14);
+    border-color: #6D1ED4;
+}
+#tenantPortalSection.schedi-newdash .sd-chip.is-on.sd-pay-zelle {
+    background: rgba(109, 30, 212, 0.34);
+    color: #e4d4ff;
+    border-color: #6D1ED4;
+}
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-chip.is-on.sd-pay-zelle {
+    background: rgba(109, 30, 212, 0.22);
+    color: #4c128f;
     border-color: #6D1ED4;
 }
 #tenantPortalSection.schedi-newdash .sd-pay-paypal,
-#tenantPortalSection.schedi-newdash .sd-chip.sd-pay-paypal {
-    color: #ffffff;
-    background: #0070E0;
+#tenantPortalSection.schedi-newdash .sd-chip.sd-pay-paypal,
+body.schedi-newdash #clientHistoryModal .sd-pay.sd-pay-paypal {
+    color: #c5ddff;
+    background: rgba(0, 112, 224, 0.2);
     border-color: #0070E0;
 }
 html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-paypal,
-html.schedi-light #tenantPortalSection.schedi-newdash .sd-chip.sd-pay-paypal {
-    color: #ffffff;
-    background: #003087;
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-chip.sd-pay-paypal,
+html.schedi-light body.schedi-newdash #clientHistoryModal .sd-pay.sd-pay-paypal {
+    color: #003087;
+    background: rgba(0, 48, 135, 0.12);
+    border-color: #003087;
+}
+#tenantPortalSection.schedi-newdash .sd-chip.is-on.sd-pay-paypal {
+    background: rgba(0, 112, 224, 0.32);
+    color: #c5ddff;
+    border-color: #0070E0;
+}
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-chip.is-on.sd-pay-paypal {
+    background: rgba(0, 48, 135, 0.2);
+    color: #003087;
     border-color: #003087;
 }
 #tenantPortalSection.schedi-newdash .sd-pay-square,
-#tenantPortalSection.schedi-newdash .sd-chip.sd-pay-square {
-    color: #e2e8f0;
-    background: rgba(148, 163, 184, 0.16);
-    border-color: #94a3b8;
+#tenantPortalSection.schedi-newdash .sd-chip.sd-pay-square,
+body.schedi-newdash #clientHistoryModal .sd-pay.sd-pay-square {
+    color: #f8fafc;
+    background: #111111;
+    border-color: #f8fafc;
 }
 html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-square,
-html.schedi-light #tenantPortalSection.schedi-newdash .sd-chip.sd-pay-square {
-    color: #0f172a;
-    background: rgba(15, 23, 42, 0.06);
-    border-color: #64748b;
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-chip.sd-pay-square,
+html.schedi-light body.schedi-newdash #clientHistoryModal .sd-pay.sd-pay-square {
+    color: #111111;
+    background: rgba(17, 17, 17, 0.08);
+    border-color: #111111;
+}
+#tenantPortalSection.schedi-newdash .sd-chip.is-on.sd-pay-square {
+    background: #262626;
+    color: #f8fafc;
+    border-color: #f8fafc;
+}
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-chip.is-on.sd-pay-square {
+    background: rgba(17, 17, 17, 0.16);
+    color: #111111;
+    border-color: #111111;
 }
 #tenantPortalSection.schedi-newdash .sd-chip-count { margin-left: 4px; color: var(--sd-muted); font-weight: 700; }
 #tenantPortalSection.schedi-newdash .sd-chip.is-on .sd-chip-count,
+#tenantPortalSection.schedi-newdash .sd-chip.sd-pay-card .sd-chip-count,
 #tenantPortalSection.schedi-newdash .sd-chip.sd-pay-venmo .sd-chip-count,
 #tenantPortalSection.schedi-newdash .sd-chip.sd-pay-cashapp .sd-chip-count,
 #tenantPortalSection.schedi-newdash .sd-chip.sd-pay-zelle .sd-chip-count,
@@ -1705,18 +1767,6 @@ html.schedi-light body.schedi-newdash #clientHistoryModal .text-amber-400 { colo
 body.schedi-newdash #clientHistoryModal .sd-pay { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; border-radius: 999px; padding: 2px 8px; font-size: 11px; font-weight: 800; line-height: 1.3; border: 1px solid var(--sd-line); color: var(--sd-text); background: rgba(148, 163, 184, 0.14); white-space: nowrap; }
 body.schedi-newdash #clientHistoryModal .sd-pay svg { width: 14px; height: 14px; display: block; flex: none; }
 body.schedi-newdash #clientHistoryModal .sd-pay-amt { flex: none; white-space: nowrap; }
-body.schedi-newdash #clientHistoryModal .sd-pay-card { color: var(--sd-brand-2); border-color: rgba(16, 185, 129, 0.4); background: rgba(16, 185, 129, 0.14); }
-body.schedi-newdash #clientHistoryModal .sd-pay-unpaid { color: var(--sd-rose); border-color: rgba(244, 63, 94, 0.35); background: rgba(244, 63, 94, 0.1); }
-body.schedi-newdash #clientHistoryModal .sd-pay-venmo { color: #b9ddff; background: rgba(0, 140, 255, 0.16); border-color: #008CFF; }
-html.schedi-light body.schedi-newdash #clientHistoryModal .sd-pay-venmo { color: #0057B8; background: rgba(0, 140, 255, 0.12); border-color: #008CFF; }
-body.schedi-newdash #clientHistoryModal .sd-pay.sd-pay-cashapp { color: #e2e8f0; background: rgba(148, 163, 184, 0.16); border-color: #94a3b8; }
-html.schedi-light body.schedi-newdash #clientHistoryModal .sd-pay.sd-pay-cashapp { color: #0f172a; background: rgba(15, 23, 42, 0.06); border-color: #64748b; }
-body.schedi-newdash #clientHistoryModal .sd-pay-zelle,
-html.schedi-light body.schedi-newdash #clientHistoryModal .sd-pay-zelle { color: #ffffff; background: #6D1ED4; border-color: #6D1ED4; }
-body.schedi-newdash #clientHistoryModal .sd-pay-paypal { color: #ffffff; background: #0070E0; border-color: #0070E0; }
-html.schedi-light body.schedi-newdash #clientHistoryModal .sd-pay-paypal { color: #ffffff; background: #003087; border-color: #003087; }
-body.schedi-newdash #clientHistoryModal .sd-pay-square { color: #e2e8f0; background: rgba(148, 163, 184, 0.16); border-color: #94a3b8; }
-html.schedi-light body.schedi-newdash #clientHistoryModal .sd-pay-square { color: #0f172a; background: rgba(15, 23, 42, 0.06); border-color: #64748b; }
 body.schedi-newdash #clientHistoryModal .sd-pay-cash { color: var(--sd-text); }
 body.schedi-newdash #clientHistoryModal .sd-client-history-totals { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 12px 0 10px; }
 body.schedi-newdash #clientHistoryModal .sd-client-history-totals p { margin: 0; padding: 10px; border: 1px solid var(--sd-line); border-radius: 14px; background: var(--sd-bg); min-width: 0; }
@@ -13635,7 +13685,7 @@ function schediQrCardPixels(text, color) {
         }
 
         function rosterBrandPayClass(kind) {
-            if (kind === 'venmo' || kind === 'cashapp' || kind === 'zelle' || kind === 'paypal' || kind === 'square') return ' sd-pay-' + kind;
+            if (kind === 'card' || kind === 'venmo' || kind === 'cashapp' || kind === 'zelle' || kind === 'paypal' || kind === 'square') return ' sd-pay-' + kind;
             return '';
         }
 

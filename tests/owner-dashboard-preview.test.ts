@@ -584,10 +584,31 @@ describe("owner dashboard preview", () => {
       css.indexOf("#tenantPortalSection.schedi-newdash .sd-pay-square,"),
       css.indexOf("#tenantPortalSection.schedi-newdash .sd-chip-count"),
     );
-    expect(squareChip).toContain("background: rgba(148, 163, 184, 0.16)");
+    expect(squareChip).toContain("background: #111111");
+    expect(squareChip).toContain("border-color: #f8fafc");
+    expect(squareChip).toContain("color: #f8fafc");
+    expect(squareChip).toContain("color: #111111");
+    expect(squareChip).toContain("background: rgba(17, 17, 17, 0.08)");
     expect(squareChip).not.toContain("#000000");
     expect(squareChip).not.toContain("#ffffff");
+    const cashChip = css.slice(
+      css.indexOf("#tenantPortalSection.schedi-newdash .sd-pay.sd-pay-cashapp,"),
+      css.indexOf("#tenantPortalSection.schedi-newdash .sd-pay-zelle,"),
+    );
+    expect(cashChip).toContain("color: #00D64F");
+    expect(cashChip).toContain("background: rgba(0, 214, 79, 0.18)");
+    expect(cashChip).toContain("border-color: #00D64F");
+    expect(cashChip).toContain("color: #046632");
+    expect(cashChip).toContain("background: rgba(0, 214, 79, 0.16)");
+    expect(cashChip).not.toContain("rgba(148, 163, 184");
     expect(css).toContain("rgba(0, 140, 255, 0.16)");
+    expect(css).toContain("rgba(109, 30, 212, 0.22)");
+    expect(css).toContain("color: #4c128f");
+    expect(css).toContain("color: #c5ddff");
+    expect(css).toContain("#635BFF");
+    expect(css).toContain("color: #c4c0ff");
+    expect(css).toContain("color: #4338ca");
+    expect(css).toContain("background: rgba(99, 91, 255, 0.18)");
     expect(extractFunction(html, "noShowPillHtml")).toContain("sd-pill-rose");
     expect(extractFunction(html, "rosterApptChip")).toContain("appointmentStatusChipsHtml");
     expect(extractFunction(html, "appointmentOutcomeChipHtml")).toContain("noShowPillHtml");
@@ -5821,7 +5842,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
           expect(view.svgW, `${width} ${theme}`).toBe(14);
           expect(view.svgDisplay, `${width} ${theme}`).toBe("block");
           expect(view.sameLine, `${width} ${theme}`).toBe(true);
-          expect(view.chipColor, `${width} ${theme}`).toBe(theme === "dark" ? "rgb(52, 211, 153)" : "rgb(4, 120, 87)");
+          expect(view.chipColor, `${width} ${theme}`).toBe(theme === "dark" ? "rgb(196, 192, 255)" : "rgb(67, 56, 202)");
           expect(view.spanDisplay, `${width} ${theme}`).toBe("block");
           expect(view.strongDisplay, `${width} ${theme}`).toBe("block");
           expect(view.stacked, `${width} ${theme}`).toBe(true);
@@ -5867,6 +5888,185 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
         expect(remove.find((row) => row.label === "Remove")?.bg).toBe("rgba(0, 0, 0, 0)");
         expect(remove.find((row) => row.label === "View history")?.fg).toBe(rest);
         await page.evaluate(() => (window as unknown as { closeSchediTodayMenus: () => void }).closeSchediTodayMenus());
+      }
+    } finally {
+      await browser.close();
+      await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+    }
+  }, 120000);
+
+  it("paints paid method chips in brand tints on cards, filters, and history", async () => {
+    const paint = {
+      cashapp: {
+        dark: { color: "rgb(0, 214, 79)", bg: "rgba(0, 214, 79, 0.18)", border: "rgb(0, 214, 79)" },
+        light: { color: "rgb(4, 102, 50)", bg: "rgba(0, 214, 79, 0.16)", border: "rgb(0, 214, 79)" },
+        on: {
+          dark: { color: "rgb(0, 214, 79)", bg: "rgba(0, 214, 79, 0.28)", border: "rgb(0, 214, 79)" },
+          light: { color: "rgb(4, 102, 50)", bg: "rgba(0, 214, 79, 0.24)", border: "rgb(0, 214, 79)" },
+        },
+      },
+      venmo: {
+        dark: { color: "rgb(185, 221, 255)", bg: "rgba(0, 140, 255, 0.16)", border: "rgb(0, 140, 255)" },
+        light: { color: "rgb(0, 87, 184)", bg: "rgba(0, 140, 255, 0.12)", border: "rgb(0, 140, 255)" },
+        on: {
+          dark: { color: "rgb(185, 221, 255)", bg: "rgba(0, 140, 255, 0.28)", border: "rgb(0, 140, 255)" },
+          light: { color: "rgb(0, 87, 184)", bg: "rgba(0, 140, 255, 0.22)", border: "rgb(0, 140, 255)" },
+        },
+      },
+      zelle: {
+        dark: { color: "rgb(228, 212, 255)", bg: "rgba(109, 30, 212, 0.22)", border: "rgb(109, 30, 212)" },
+        light: { color: "rgb(76, 18, 143)", bg: "rgba(109, 30, 212, 0.14)", border: "rgb(109, 30, 212)" },
+        on: {
+          dark: { color: "rgb(228, 212, 255)", bg: "rgba(109, 30, 212, 0.34)", border: "rgb(109, 30, 212)" },
+          light: { color: "rgb(76, 18, 143)", bg: "rgba(109, 30, 212, 0.22)", border: "rgb(109, 30, 212)" },
+        },
+      },
+      paypal: {
+        dark: { color: "rgb(197, 221, 255)", bg: "rgba(0, 112, 224, 0.2)", border: "rgb(0, 112, 224)" },
+        light: { color: "rgb(0, 48, 135)", bg: "rgba(0, 48, 135, 0.12)", border: "rgb(0, 48, 135)" },
+        on: {
+          dark: { color: "rgb(197, 221, 255)", bg: "rgba(0, 112, 224, 0.32)", border: "rgb(0, 112, 224)" },
+          light: { color: "rgb(0, 48, 135)", bg: "rgba(0, 48, 135, 0.2)", border: "rgb(0, 48, 135)" },
+        },
+      },
+      square: {
+        dark: { color: "rgb(248, 250, 252)", bg: "rgb(17, 17, 17)", border: "rgb(248, 250, 252)" },
+        light: { color: "rgb(17, 17, 17)", bg: "rgba(17, 17, 17, 0.08)", border: "rgb(17, 17, 17)" },
+        on: {
+          dark: { color: "rgb(248, 250, 252)", bg: "rgb(38, 38, 38)", border: "rgb(248, 250, 252)" },
+          light: { color: "rgb(17, 17, 17)", bg: "rgba(17, 17, 17, 0.16)", border: "rgb(17, 17, 17)" },
+        },
+      },
+      card: {
+        dark: { color: "rgb(196, 192, 255)", bg: "rgba(99, 91, 255, 0.18)", border: "rgb(99, 91, 255)" },
+        light: { color: "rgb(67, 56, 202)", bg: "rgba(99, 91, 255, 0.14)", border: "rgb(99, 91, 255)" },
+        on: {
+          dark: { color: "rgb(196, 192, 255)", bg: "rgba(99, 91, 255, 0.28)", border: "rgb(99, 91, 255)" },
+          light: { color: "rgb(67, 56, 202)", bg: "rgba(99, 91, 255, 0.22)", border: "rgb(99, 91, 255)" },
+        },
+      },
+      cash: {
+        dark: { color: "rgb(241, 245, 249)", bg: "rgba(148, 163, 184, 0.14)", border: "rgba(255, 255, 255, 0.08)" },
+        light: { color: "rgb(15, 23, 42)", bg: "rgba(148, 163, 184, 0.14)", border: "rgb(215, 222, 232)" },
+      },
+      unpaid: {
+        dark: { color: "rgb(251, 113, 133)", bg: "rgba(244, 63, 94, 0.1)", border: "rgba(244, 63, 94, 0.35)" },
+        light: { color: "rgb(190, 18, 60)", bg: "rgba(244, 63, 94, 0.1)", border: "rgba(244, 63, 94, 0.35)" },
+      },
+    };
+    const rows: Record<string, string> = {
+      cashapp: "HB-1009",
+      zelle: "HB-1010",
+      venmo: "HB-1011",
+      square: "HB-1012",
+      paypal: "HB-1024",
+      card: "HB-1001",
+      unpaid: "HB-1003",
+    };
+    const types: Record<string, string> = {
+      ".html": "text/html; charset=utf-8",
+      ".js": "text/javascript; charset=utf-8",
+      ".svg": "image/svg+xml",
+      ".png": "image/png",
+      ".json": "application/json",
+      ".webmanifest": "application/manifest+json",
+    };
+    const server = createServer((req, res) => {
+      const path = new URL(req.url || "/", "http://127.0.0.1").pathname;
+      const file = path === "/" || path === "/portal-preview" ? "/index.html" : path;
+      const full = join(root, file);
+      if (!full.startsWith(root) || !existsSync(full)) {
+        res.writeHead(404);
+        res.end("missing");
+        return;
+      }
+      res.writeHead(200, { "content-type": types[extname(full)] || "application/octet-stream" });
+      res.end(readFileSync(full));
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const address = server.address();
+    const port = typeof address === "object" && address ? address.port : 0;
+    const puppeteer = await import("puppeteer-core");
+    const browser = await puppeteer.default.launch({
+      executablePath: chrome,
+      headless: true,
+      args: ["--no-sandbox", "--disable-dev-shm-usage"],
+    });
+    try {
+      const page = await browser.newPage();
+      await page.goto(`http://127.0.0.1:${port}/portal-preview`, { waitUntil: "domcontentloaded", timeout: 45000 });
+      await page.waitForFunction(() => document.body.classList.contains("schedi-newdash"), { timeout: 20000 });
+      const readChip = (selector: string) => page.evaluate((sel) => {
+        const el = document.querySelector(sel) as HTMLElement | null;
+        if (!el) return null;
+        const style = getComputedStyle(el);
+        return {
+          text: (el.textContent || "").replace(/\s+/g, " ").trim(),
+          color: style.color,
+          bg: style.backgroundColor,
+          border: style.borderTopColor,
+        };
+      }, selector);
+      for (const width of [390, 1280]) {
+        await page.setViewport({ width, height: 900 });
+        for (const theme of ["dark", "light"] as const) {
+          await page.evaluate((mode) => (window as unknown as { setSchediTheme: (mode: string) => void }).setSchediTheme(mode), theme);
+          await page.evaluate(() => (window as unknown as { schediDashGo: (tab: string) => void }).schediDashGo("today"));
+          await page.waitForSelector("#schediTodaySchedule .sd-pay", { timeout: 8000 });
+          const todayNames = { card: "Maya Chen", unpaid: "Jordan Lee" } as const;
+          for (const kind of ["card", "unpaid"] as const) {
+            const chip = await page.evaluate((name) => {
+              const cards = document.querySelectorAll("#schediTodaySchedule .sd-card");
+              for (const card of cards) {
+                const title = card.querySelector(".sd-row-title")?.textContent || "";
+                if (!title.includes(name)) continue;
+                const el = card.querySelector(".sd-pay") as HTMLElement | null;
+                if (!el) return null;
+                const style = getComputedStyle(el);
+                return { color: style.color, bg: style.backgroundColor, border: style.borderTopColor };
+              }
+              return null;
+            }, todayNames[kind]);
+            expect(chip, `today ${kind} ${width} ${theme}`).toEqual(paint[kind][theme]);
+          }
+          await page.evaluate(() => (window as unknown as { schediDashGo: (tab: string) => void }).schediDashGo("appointments"));
+          await page.waitForSelector('#tenantSectionRoster [data-booking-id="HB-1009"] .sd-pay', { timeout: 8000 });
+          for (const kind of Object.keys(rows)) {
+            const chip = await readChip(`#tenantSectionRoster [data-booking-id="${rows[kind]}"] .sd-pay`);
+            expect(chip && { color: chip.color, bg: chip.bg, border: chip.border }, `roster ${kind} ${width} ${theme}`).toEqual(paint[kind as keyof typeof paint][theme]);
+            if (kind === "cashapp") expect(chip?.text, `${width} ${theme}`).toContain("Cash App");
+            if (kind === "cashapp") expect(chip?.text, `${width} ${theme}`).toContain("$28");
+            if (kind === "unpaid") {
+              const cashChip = await readChip('#tenantSectionRoster [data-booking-id="HB-1006"] .sd-pay');
+              expect(cashChip && { color: cashChip.color, bg: cashChip.bg, border: cashChip.border }, `roster cash ${width} ${theme}`).toEqual(paint.cash[theme]);
+              expect(cashChip?.bg, `${width} ${theme}`).not.toBe(chip?.bg);
+            }
+            const filter = await readChip(`#rosterPayFilter [data-pay-filter="${kind}"]`);
+            if (kind === "unpaid") {
+              expect(filter, `filter ${kind} ${width} ${theme}`).toBeTruthy();
+            } else {
+              expect(filter && { color: filter.color, bg: filter.bg, border: filter.border }, `filter ${kind} ${width} ${theme}`).toEqual(paint[kind as keyof typeof paint][theme]);
+            }
+          }
+          for (const kind of ["cashapp", "venmo", "zelle", "paypal", "square", "card"] as const) {
+            await page.evaluate((id) => (window as unknown as { setRosterPayFilter: (id: string) => void }).setRosterPayFilter(id), kind);
+            const selected = await readChip(`#rosterPayFilter [data-pay-filter="${kind}"]`);
+            expect(selected && { color: selected.color, bg: selected.bg, border: selected.border }, `selected ${kind} ${width} ${theme}`).toEqual(paint[kind].on[theme]);
+          }
+          await page.evaluate(() => (window as unknown as { setRosterPayFilter: (id: string) => void }).setRosterPayFilter("all"));
+          await page.evaluate(() => (window as unknown as { schediDashGo: (tab: string) => void }).schediDashGo("clients"));
+          await page.evaluate(() => (window as unknown as { openClientHistory: (id: string) => void }).openClientHistory("CL-LUIS"));
+          await page.waitForSelector("#clientHistoryModal:not(.hidden) .sd-pay-cashapp", { timeout: 5000 });
+          const historyCash = await readChip("#clientHistoryModal .sd-pay-cashapp");
+          expect(historyCash && { color: historyCash.color, bg: historyCash.bg, border: historyCash.border }, `history cash ${width} ${theme}`).toEqual(paint.cashapp[theme]);
+          expect(historyCash?.text, `${width} ${theme}`).toContain("$28");
+          await page.evaluate(() => (window as unknown as { closeClientHistory: () => void }).closeClientHistory());
+          await page.evaluate(() => (window as unknown as { openClientHistory: (id: string) => void }).openClientHistory("CL-ELENA"));
+          await page.waitForSelector("#clientHistoryModal:not(.hidden) .sd-pay-paypal", { timeout: 5000 });
+          const historyPayPal = await readChip("#clientHistoryModal .sd-pay-paypal");
+          expect(historyPayPal && { color: historyPayPal.color, bg: historyPayPal.bg, border: historyPayPal.border }, `history paypal ${width} ${theme}`).toEqual(paint.paypal[theme]);
+          await page.evaluate(() => (window as unknown as { closeClientHistory: () => void }).closeClientHistory());
+        }
       }
     } finally {
       await browser.close();
