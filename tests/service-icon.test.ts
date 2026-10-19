@@ -123,8 +123,8 @@ describe("owner service images", () => {
     expect(html).toContain("Current icon");
     expect(html).toContain("<svg viewBox=\"0 0 24 24\"");
     const store = extractFunction(html, "storeLogoBlob");
-    const beforeFetch = store.slice(0, store.indexOf("api/logo-upload"));
-    expect(store.indexOf("__SCHEDI_DEMO")).toBeLessThan(store.indexOf("api/logo-upload"));
+    const beforeFetch = store.slice(0, store.indexOf("api/business-logo"));
+    expect(store.indexOf("__SCHEDI_DEMO")).toBeLessThan(store.indexOf("api/business-logo"));
     expect(beforeFetch).toContain("serviceId");
     expect(beforeFetch).not.toContain("imageUrl");
     expect(store).toContain("payload.serviceId");

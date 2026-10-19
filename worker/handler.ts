@@ -28,6 +28,7 @@ import {
   renderRobots,
   renderSitemap,
 } from "./render";
+import { routeBusinessLogo, type LogoBucket } from "./logo-route";
 import { injectWebAnalytics, WEB_ANALYTICS_CONNECT_ORIGIN, WEB_ANALYTICS_SCRIPT_ORIGIN } from "./web-analytics";
 
 export interface AssetFetcher {
@@ -47,6 +48,8 @@ export interface SchediEnv {
   INDEXNOW_HOST?: string;
   /** Optional Bing Webmaster meta token. Omitted from HTML when unset or invalid. */
   BING_SITE_VERIFICATION?: string;
+  /** R2 bucket for business logos. Missing binding: uploads return logo_storage_unconfigured. */
+  LOGO_BUCKET?: LogoBucket;
 }
 
 export interface SchediContext {
@@ -505,6 +508,8 @@ function ownerLoginLocation(url: URL, dropPreviewParams: boolean): string {
 export async function handleRequest(request: Request, env: SchediEnv, ctx: SchediContext): Promise<Response> {
   const url = new URL(request.url);
   const method = request.method.toUpperCase();
+  const logoResponse = await routeBusinessLogo(request, env);
+  if (logoResponse) return logoResponse;
   // Production /portal with no business is not a booking page. The SPA would
   // treat "portal" as a slug and show "Booking page not found". Send that
   // request to /login and keep classic, newdash, dash, and other params.
