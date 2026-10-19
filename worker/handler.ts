@@ -319,6 +319,7 @@ async function lookupTenant(slug: string, env: SchediEnv, ctx: SchediContext): P
     `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/artifacts/${projectId}/public/data/tenants/${slug}` +
     `?mask.fieldPaths=name&mask.fieldPaths=industry&mask.fieldPaths=slug&mask.fieldPaths=seoPublic` +
     `&mask.fieldPaths=address&mask.fieldPaths=location&mask.fieldPaths=businessAddress&mask.fieldPaths=businessLocation` +
+    `&mask.fieldPaths=showPublicAddress` +
     `&mask.fieldPaths=city&mask.fieldPaths=businessCity&mask.fieldPaths=state&mask.fieldPaths=businessState&mask.fieldPaths=services` +
     `&mask.fieldPaths=timezone&mask.fieldPaths=timeZone`;
   const cacheKey = new Request(`https://schedi-meta.invalid/tenant/${projectId}/${slug}`);

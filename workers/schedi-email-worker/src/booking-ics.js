@@ -94,9 +94,14 @@ function durationMins(booking) {
   return 60;
 }
 
+export function publicBusinessAddress(tenant) {
+  if (tenant && tenant.showPublicAddress === false) return '';
+  return String((tenant && (tenant.address || tenant.location || tenant.businessAddress || tenant.businessLocation)) || '').trim();
+}
+
 function buildIcsBody(tenant, booking, manageUrl) {
   const tz = String((tenant && (tenant.timezone || tenant.timeZone)) || 'America/New_York').trim() || 'America/New_York';
-  const loc = String((tenant && (tenant.address || tenant.location || tenant.businessAddress || tenant.businessLocation)) || '').trim();
+  const loc = publicBusinessAddress(tenant);
   const service = String((booking && booking.serviceName) || 'Appointment');
   const biz = String((tenant && tenant.name) || 'Schedi');
   const summary = service + ' at ' + biz;

@@ -38,7 +38,7 @@ import { handleOpsSnapshotHttp, runOpsSnapshotCron } from './ops-snapshot.js';
 import { handleDefaultPasswordAudit } from './default-password-audit.js';
 import { handleResendEventsHttp } from './email-events.js';
 import { notifyOwnerOfNewBooking, notifyOwnerOfCancellation, ownerNotifyEnabledForTenant } from './owner-notify.js';
-import { handleBookingIcs } from './booking-ics.js';
+import { handleBookingIcs, publicBusinessAddress } from './booking-ics.js';
 import { handleBookingMailPost } from './booking-mail.js';
 import { rateLimitOk } from './rate-limit.js';
 import { handleOwnerBillingSchedule, ownerBillingScheduleAction, subscriptionScheduleFromStripe } from './owner-billing-schedule.js';
@@ -2448,7 +2448,7 @@ function googleCalendarUrlForBooking(tenant, booking) {
   const service = String((booking && booking.serviceName) || 'Appointment');
   const biz = String((tenant && tenant.name) || 'Schedi');
   const summary = service + ' at ' + biz;
-  const loc = String((tenant && (tenant.address || tenant.location || tenant.businessAddress || '')) || '').trim();
+  const loc = publicBusinessAddress(tenant);
   // Prefer linking Google template with dates filled by client email builder on Pages;
   // worker deposit path builds a simple details-only fallback URL without times if helpers unavailable.
   let gUrl = 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + encodeURIComponent(summary);
