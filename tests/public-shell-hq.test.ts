@@ -172,7 +172,7 @@ describe("HQ route", () => {
     assertNoHq(await production.text(), "production demo");
   });
 
-  it("blocks live calls in HQ demo and keeps the new frame off unless the query asks for it", async () => {
+  it("blocks live calls in HQ demo, uses the new frame by default, and keeps classichq as the hatch", async () => {
     const boot = hqHtml.slice(hqHtml.indexOf("<script>"), hqHtml.indexOf("</script>") + 9);
     expect(boot).not.toContain("localStorage");
     const calls: string[] = [];
@@ -205,7 +205,7 @@ describe("HQ route", () => {
     const off: string[] = [];
     const quiet = {
       window: {} as Record<string, unknown>,
-      location: { search: "?demo=1", hostname: "127.0.0.1" },
+      location: { search: "?classichq=1&demo=1", hostname: "127.0.0.1" },
       URLSearchParams,
       document: { documentElement: { classList: { add(name: string) { off.push(name); } } } },
       navigator: {},
@@ -216,6 +216,21 @@ describe("HQ route", () => {
     runInNewContext(boot.replace(/^<script>/, "").replace(/<\/script>$/, ""), quiet, { filename: "hq-demo-off.js" });
     expect(off).toEqual(["schedi-hq-demo"]);
     expect(quiet.window.__SCHEDI_HQ_DEMO).toBe(true);
+
+    const plain: string[] = [];
+    const preview = {
+      window: {} as Record<string, unknown>,
+      location: { search: "?demo=1", hostname: "127.0.0.1" },
+      URLSearchParams,
+      document: { documentElement: { classList: { add(name: string) { plain.push(name); } } } },
+      navigator: {},
+      Response,
+      Promise,
+    };
+    preview.window = preview as unknown as Record<string, unknown>;
+    runInNewContext(boot.replace(/^<script>/, "").replace(/<\/script>$/, ""), preview, { filename: "hq-demo-default.js" });
+    expect(plain).toEqual(["schedi-newhq", "schedi-hq-demo"]);
+    expect(preview.window.__SCHEDI_HQ_DEMO).toBe(true);
 
     const live: string[] = [];
     const production = {
@@ -235,7 +250,7 @@ describe("HQ route", () => {
     expect(production.window.fetch).toBe(production.fetch);
   });
 
-  it("opens the new owner dashboard from Manage only behind the HQ preview flags", () => {
+  it("opens the new owner dashboard from Manage when the HQ frame is on", () => {
     function extractFunction(source: string, name: string) {
       const start = source.indexOf("function " + name);
       const brace = source.indexOf("{", start);
@@ -327,7 +342,7 @@ describe("HQ route", () => {
     expect(await response.text()).not.toContain("agencyHqSection");
   });
 
-  it("opens the new owner dashboard from Manage only behind the HQ preview flags", () => {
+  it("opens the new owner dashboard from Manage when the HQ frame is on", () => {
     function extractFunction(source: string, name: string) {
       const start = source.indexOf("function " + name);
       const brace = source.indexOf("{", start);

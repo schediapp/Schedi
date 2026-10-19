@@ -70,7 +70,9 @@ const DASHBOARD_QUERY = new Set([
   "demo",
   "newdash",
   "newbook",
+  "classicbook",
   "newhq",
+  "classichq",
   "classic",
   "dash",
   "portal",
@@ -82,8 +84,8 @@ const DASHBOARD_QUERY = new Set([
 
 /**
  * Marketing pages drop tracking and other campaign params.
- * `demo=1` stays. Owner dashboard flags (`newdash`, `newbook`, `newhq`, `classic`, `dash`)
- * stay so a preview link is not redirected off the page that reads it.
+ * `demo=1` stays. Owner and HQ flags (`newdash`, `newbook`, `classicbook`, `newhq`,
+ * `classichq`, `classic`, `dash`) stay so a preview link is not redirected off the page that reads it.
  * `/?portal=login`, `/?forgot=1`, and `/?billing=*` keep their full query.
  */
 function marketingSearch(url: URL, path: string): string {

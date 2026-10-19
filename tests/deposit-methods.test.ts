@@ -108,8 +108,8 @@ describe("manual deposit payment codes and request email", () => {
   });
 });
 
-describe("public flags stay off without the query", () => {
-  it("keeps Pay at Appt, hides Square behind both switches, and does not save the public flag", () => {
+describe("new booking and HQ designs are the default", () => {
+  it("keeps Pay at Appt, hides Square behind both switches, and turns the booking skin on unless classicbook", () => {
     expect(html).toContain(">Pay at Appt</button>");
     expect(html).not.toContain("In person / Cash</button>");
     expect(html).toContain("var SCHEDI_SQUARE_PUBLIC_ENABLED = false;");
@@ -118,14 +118,20 @@ describe("public flags stay off without the query", () => {
     expect(html).toContain("function schediNewBookOn");
     const bookFn = html.slice(html.indexOf("function schediNewBookOn"), html.indexOf("function bookingPaymentState"));
     expect(bookFn).toContain("newbook");
+    expect(bookFn).toContain("classicbook");
+    expect(bookFn).toContain("return true");
     expect(bookFn).not.toContain("localStorage");
+    expect(html).toContain("get('classicbook')");
+    expect(html).toContain("document.documentElement.classList.toggle('schedi-newbook', SCHEDI_NEWBOOK === true)");
   });
 
-  it("keeps the HQ light theme behind ?newhq=1", () => {
+  it("uses the HQ sign-in theme by default and keeps ?classichq=1 as the hatch", () => {
     const doc = hqLoginDocument();
     expect(doc).toContain("Schedi HQ");
     expect(doc).toContain("html.schedi-light.schedi-newhq");
     expect(doc).toContain("get('newhq')");
+    expect(doc).toContain("get('classichq')");
+    expect(doc).toContain("var on = true");
     expect(doc).toContain("if (!on) return;");
     expect(doc).not.toContain("schediNewHq");
   });

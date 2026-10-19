@@ -8,7 +8,9 @@ const root = new URL("..", import.meta.url).pathname;
 const chrome = ["/usr/bin/google-chrome", "/usr/bin/google-chrome-stable", "/usr/bin/chromium", "/usr/bin/chromium-browser"].find((path) => existsSync(path));
 
 describe("agency HQ dashboard shell", () => {
-  it("keeps the newhq flag, demo businesses, and schedi.app guard", () => {
+  it("keeps the new HQ frame as the default, the classichq hatch, demo businesses, and the schedi.app guard", () => {
+    expect(hq).toContain("var hq = true");
+    expect(hq).toContain("get('classichq')");
     expect(hq).toContain("flag === '1' || flag === 'true' || flag === 'on'");
     expect(hq).toContain("host !== 'schedi.app' && host !== 'www.schedi.app'");
     expect(hq).toContain("window.__SCHEDI_HQ_DEMO = true");
@@ -89,7 +91,7 @@ describe.skipIf(!chrome)("agency HQ dashboard browser", () => {
       const page = await browser.newPage();
       page.on("pageerror", (error) => errors.push(String(error)));
       await page.setViewport({ width: 390, height: 844 });
-      await page.goto(`http://127.0.0.1:${port}/hq?demo=1&newhq=1`, { waitUntil: "domcontentloaded", timeout: 45000 });
+      await page.goto(`http://127.0.0.1:${port}/hq?demo=1`, { waitUntil: "domcontentloaded", timeout: 45000 });
       await page.waitForFunction(() => {
         const mrr = document.getElementById("hqdStatMrr");
         return mrr?.textContent === "$49" && document.body.textContent?.includes("Harbor Studio");
@@ -162,10 +164,10 @@ describe.skipIf(!chrome)("agency HQ dashboard browser", () => {
       expect(sheet).toContain("Cash App $HarborStudio");
       expect(sheet).toContain("Since Jan 4, 2026");
       expect(sheet).toContain("Log in to portal");
-      await page.click("#hqDashSheet .hqd-close");
-      await page.waitForFunction(() => document.getElementById("hqDashSheet")?.hidden);
-
-      await page.click('#hqDashTabbar button[data-hqd-go="billing"]');
+      const closeRadius = await page.evaluate(() => getComputedStyle(document.querySelector("#hqDashSheet .hqd-close") as Element).borderRadius);
+      expect(closeRadius).toBe("999px");
+      await page.evaluate(() => (window as unknown as { hqDashGo: (id: string) => void }).hqDashGo("billing"));
+      await page.waitForFunction(() => document.getElementById("hqDashSheet")?.hidden && !document.getElementById("hqdBilling")?.hidden);
       await page.waitForFunction(() => !document.getElementById("hqdBilling")?.hidden);
       const billing = await page.evaluate(() => ({
         mrr: document.getElementById("hqdBillMrr")?.textContent || "",
@@ -200,7 +202,7 @@ describe.skipIf(!chrome)("agency HQ dashboard browser", () => {
       expect(provisionOpen).toBe(true);
       await page.evaluate(() => (window as unknown as { closeProvisionModal: () => void }).closeProvisionModal());
 
-      for (const width of [340, 390, 1280]) {
+      for (const width of [340, 390, 768, 1024, 1280, 1920]) {
         await page.setViewport({ width, height: width === 1280 ? 800 : 844 });
         await page.evaluate(() => {
           document.documentElement.classList.remove("schedi-light");
@@ -266,24 +268,46 @@ describe.skipIf(!chrome)("agency HQ dashboard browser", () => {
           expect(layout.bottomRadius, "edit sheet radius " + width).toBe("0px");
         }
         await page.evaluate(() => document.documentElement.classList.remove("schedi-light"));
-        const dark = await page.evaluate(() => ({
-          overflow: document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1,
-          light: document.documentElement.classList.contains("schedi-light"),
-        }));
-        expect(dark.overflow, "dark " + width).toBe(true);
-        expect(dark.light).toBe(false);
-        await page.click("#hqDashTheme");
-        const light = await page.evaluate(() => ({
-          overflow: document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1,
-          light: document.documentElement.classList.contains("schedi-light"),
-        }));
-        expect(light.light, "light " + width).toBe(true);
-        expect(light.overflow, "light " + width).toBe(true);
+        for (const themeName of ["dark", "light"] as const) {
+          if (themeName === "light") await page.click("#hqDashTheme");
+          const scan = await page.evaluate(() => {
+            const go = (window as unknown as { hqDashGo: (id: string) => void }).hqDashGo;
+            const views = ["overview", "directory", "billing", "email"];
+            const overflow: Record<string, boolean> = {};
+            for (const view of views) {
+              go(view);
+              overflow[view] = document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1;
+            }
+            return { light: document.documentElement.classList.contains("schedi-light"), overflow };
+          });
+          expect(scan.light, themeName + " " + width).toBe(themeName === "light");
+          for (const view of ["overview", "directory", "billing", "email"]) {
+            expect(scan.overflow[view], themeName + " " + view + " " + width).toBe(true);
+          }
+        }
         await page.click("#hqDashTheme");
       }
+      const classic = await browser.newPage();
+      classic.on("pageerror", (error) => errors.push("classic " + String(error)));
+      await classic.setViewport({ width: 390, height: 844 });
+      await classic.goto(`http://127.0.0.1:${port}/hq?demo=1&classichq=1`, { waitUntil: "domcontentloaded", timeout: 45000 });
+      await classic.waitForFunction(() => document.body.innerText.includes("Harbor Studio"), { timeout: 20000 });
+      const classicState = await classic.evaluate(() => ({
+        newhq: document.documentElement.classList.contains("schedi-newhq"),
+        demo: document.documentElement.classList.contains("schedi-hq-demo"),
+        dashOn: document.getElementById("agencyMasterDashboard")?.classList.contains("hq-dash-on") || false,
+        dashHidden: document.getElementById("hqDash")?.hidden !== false,
+        directory: !document.getElementById("agencyDirectory")?.hidden,
+      }));
+      expect(classicState.newhq).toBe(false);
+      expect(classicState.demo).toBe(true);
+      expect(classicState.dashOn).toBe(false);
+      expect(classicState.dashHidden).toBe(true);
+      expect(classicState.directory).toBe(true);
+      await classic.close();
     } finally {
       await browser.close();
       await new Promise<void>((resolve, reject) => server.close((err) => (err ? reject(err) : resolve())));
     }
-  }, 90000);
+  }, 120000);
 });
