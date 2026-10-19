@@ -13652,7 +13652,9 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
         .biz-header.has-cover .biz-header-body { margin-top: -28px; position: relative; }
         .biz-logo-wrap { flex: 0 0 auto; display: flex; }
         .biz-logo, .biz-logo-initials { width: 48px; height: 48px; border-radius: 14px; }
-        .biz-logo { object-fit: cover; display: block; background: #ffffff; border: 2px solid #ffffff; }
+        .biz-logo { object-fit: cover; display: block; background: transparent; border: 0; }
+        .pub-header-logo.logo-plate-dark, .biz-logo.logo-plate-dark { background: #0f172a; box-sizing: border-box; padding: 2px; object-fit: contain; }
+        .pub-header-logo.logo-plate-light, .biz-logo.logo-plate-light { background: #ffffff; box-sizing: border-box; padding: 2px; object-fit: contain; }
         .biz-logo[hidden], .biz-logo-initials[hidden], .pub-header-logo[hidden], .pub-header-initials[hidden] { display: none !important; }
         .biz-logo-initials, .pub-header-initials {
             display: inline-flex; align-items: center; justify-content: center;
@@ -13661,7 +13663,7 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
         .biz-logo-initials { font-size: 16px; }
         .biz-header.has-cover .biz-logo, .biz-header.has-cover .biz-logo-initials { box-shadow: 0 4px 14px rgba(15, 23, 42, 0.28); }
         .pub-header-logo, .pub-header-initials { width: 28px; height: 28px; border-radius: 8px; margin-left: 8px; }
-        .pub-header-logo { object-fit: cover; display: block; background: #ffffff; }
+        .pub-header-logo { object-fit: cover; display: block; background: transparent; }
         .pub-header-initials { font-size: 11px; }
         html.schedi-newbook .biz-logo, html.schedi-newbook .biz-logo-initials,
         html.schedi-newbook .pub-header-logo, html.schedi-newbook .pub-header-initials { border-radius: 16px; }
@@ -14151,6 +14153,7 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
                 btn.setAttribute('aria-label', tip);
             }
             try { localStorage.setItem('schedi.theme', light ? 'light' : 'dark'); } catch (err) {}
+            try { paintBizHeader(); } catch (errPlate) {}
         }
         window.toggleSchediTheme = function() {
             var light = !document.documentElement.classList.contains('schedi-light');
@@ -14946,7 +14949,163 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
             var letters = parts[0].charAt(0) + (parts.length > 1 ? parts[parts.length - 1].charAt(0) : '');
             return letters.toUpperCase();
         }
-        function paintBizHeader() {
+        
+        function logoToneFromPixels(width, height, data) {
+                    var w = Number(width) || 0;
+                    var h = Number(height) || 0;
+                    var pixels = data;
+                    if (!pixels || w < 1 || h < 1) return null;
+                    var ink = 0;
+                    var weight = 0;
+                    var transparent = 0;
+                    var samples = 0;
+                    var step = (w * h > 160000) ? 2 : 1;
+                    for (var y = 0; y < h; y += step) {
+                        for (var x = 0; x < w; x += step) {
+                            var i = (y * w + x) * 4;
+                            var alpha = Number(pixels[i + 3]) / 255;
+                            samples += 1;
+                            if (!(alpha > 0.04)) {
+                                transparent += 1;
+                                continue;
+                            }
+                            var luma = (0.2126 * Number(pixels[i]) + 0.7152 * Number(pixels[i + 1]) + 0.0722 * Number(pixels[i + 2])) / 255;
+                            weight += alpha;
+                            ink += luma * alpha;
+                            if (alpha < 0.98) transparent += (1 - alpha);
+                        }
+                    }
+                    if (!(weight > 0) || !samples) return null;
+                    return {
+                        tone: (ink / weight) >= 0.62 ? 'light' : 'dark',
+                        clear: (transparent / samples) >= 0.12
+                    };
+                }
+
+        function logoBackdropChoice(value) {
+                    var choice = String(value || '').toLowerCase();
+                    if (choice === 'light' || choice === 'dark') return choice;
+                    return 'auto';
+                }
+
+        function logoPlateFor(tenant, surface) {
+                    var face = surface === 'light' ? 'light' : 'dark';
+                    var choice = logoBackdropChoice(tenant && tenant.logoBackdrop);
+                    if (choice === 'light' || choice === 'dark') return choice;
+                    if (!tenant || !tenant.logoClear) return '';
+                    var tone = tenant.logoTone === 'light' || tenant.logoTone === 'dark' ? tenant.logoTone : '';
+                    if (!tone || tone !== face) return '';
+                    return tone === 'light' ? 'dark' : 'light';
+                }
+
+        function logoSurfaceTone() {
+                    try {
+                        var root = document.documentElement;
+                        if (root && root.classList && root.classList.contains('schedi-light')) return 'light';
+                    } catch (errSurface) {}
+                    return 'dark';
+                }
+
+        function applyLogoPlate(img, tenant, surface) {
+                    if (!img || !img.classList) return;
+                    img.classList.remove('logo-plate-light');
+                    img.classList.remove('logo-plate-dark');
+                    var plate = logoPlateFor(tenant, surface || logoSurfaceTone());
+                    if (plate === 'dark') img.classList.add('logo-plate-dark');
+                    else if (plate === 'light') img.classList.add('logo-plate-light');
+                }
+
+        function measureLogoImage(img) {
+                    var w = img && (img.naturalWidth || img.width);
+                    var h = img && (img.naturalHeight || img.height);
+                    if (!w || !h || !document || !document.createElement) return null;
+                    var maxEdge = 64;
+                    var scale = Math.min(1, maxEdge / Math.max(w, h));
+                    var cw = Math.max(1, Math.round(w * scale));
+                    var ch = Math.max(1, Math.round(h * scale));
+                    try {
+                        var canvas = document.createElement('canvas');
+                        canvas.width = cw;
+                        canvas.height = ch;
+                        var ctx = canvas.getContext('2d');
+                        if (!ctx) return null;
+                        ctx.clearRect(0, 0, cw, ch);
+                        ctx.drawImage(img, 0, 0, cw, ch);
+                        var image = ctx.getImageData(0, 0, cw, ch);
+                        return logoToneFromPixels(cw, ch, image.data);
+                    } catch (errMeasure) {
+                        return null;
+                    }
+                }
+
+        function rememberLogoTone(tenant, measured, url) {
+                    if (!tenant) return;
+                    var src = url || '';
+                    if (!src) {
+                        try { src = schediLogoUrl(tenant); } catch (errSrc) { src = ''; }
+                    }
+                    tenant.logoToneFor = src;
+                    if (!measured || (measured.tone !== 'light' && measured.tone !== 'dark')) {
+                        tenant.logoTone = '';
+                        tenant.logoClear = false;
+                        return;
+                    }
+                    tenant.logoTone = measured.tone;
+                    tenant.logoClear = !!measured.clear;
+                }
+
+        function ensureLogoTone(tenant) {
+                    if (!tenant) return;
+                    var url = '';
+                    try { if (typeof schediLogoUrl === 'function') url = schediLogoUrl(tenant); } catch (errLogoUrl) { url = ''; }
+                    if (!url && typeof publicHttpsUrl === 'function') url = publicHttpsUrl(tenant.logoUrl || tenant.logo || tenant.businessLogo);
+                    if (!url) return;
+                    if ((tenant.logoTone === 'light' || tenant.logoTone === 'dark') && tenant.logoToneFor === url) return;
+                    var cacheKey = 'schedi.logoTone.' + url;
+                    try {
+                        var cached = sessionStorage.getItem(cacheKey);
+                        if (cached) {
+                            var parsed = JSON.parse(cached);
+                            if (parsed && (parsed.tone === 'light' || parsed.tone === 'dark')) {
+                                tenant.logoTone = parsed.tone;
+                                tenant.logoClear = !!parsed.clear;
+                                tenant.logoToneFor = url;
+                                return;
+                            }
+                        }
+                    } catch (errCache) {}
+                    if (tenant.logoToneFor === url) return;
+                    if (typeof Image !== 'function') return;
+                    try {
+                        if (window.__logoToneScan === url) return;
+                        window.__logoToneScan = url;
+                    } catch (errScan) { return; }
+                    var probe = new Image();
+                    try { probe.crossOrigin = 'anonymous'; } catch (errCors) {}
+                    probe.onload = function () {
+                        try { if (window.__logoToneScan === url) window.__logoToneScan = ''; } catch (errClear) {}
+                        var measured = measureLogoImage(probe);
+                        if (!measured) {
+                            tenant.logoToneFor = url;
+                            return;
+                        }
+                        rememberLogoTone(tenant, measured, url);
+                        try { sessionStorage.setItem(cacheKey, JSON.stringify({ tone: tenant.logoTone, clear: !!tenant.logoClear })); } catch (errStore) {}
+                        try { if (typeof schediDashPaint === 'function') schediDashPaint(); } catch (errDash) {}
+                        try { if (typeof paintClassicBannerLogo === 'function') paintClassicBannerLogo(tenant); } catch (errBanner) {}
+                        try { if (typeof paintLogoTonePreview === 'function') paintLogoTonePreview(); } catch (errPreviewTone) {}
+                        try { if (typeof saveState === 'function') saveState(); } catch (errSaveTone) {}
+                        try { if (typeof paintBizHeader === 'function') paintBizHeader(); } catch (errBiz) {}
+                    };
+                    probe.onerror = function () {
+                        try { if (window.__logoToneScan === url) window.__logoToneScan = ''; } catch (errClear2) {}
+                        tenant.logoToneFor = url;
+                    };
+                    probe.src = url;
+                }
+
+function paintBizHeader() {
+            try { ensureLogoTone(tenantData); } catch (errTone) {}
             var logo = publicHttpsUrl(tenantData && (tenantData.logoUrl || tenantData.logo || tenantData.businessLogo));
             var logoName = String((tenantData && tenantData.name) || 'Business');
             var logoLetters = bizInitials(logoName);
@@ -14958,10 +15117,12 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
                     img.alt = logoName + ' logo';
                     if (letters) letters.hidden = true;
                     if (wrap) wrap.hidden = false;
+                    applyLogoPlate(img, tenantData);
                 } else {
                     if (img) {
                         img.hidden = true;
                         img.removeAttribute('src');
+                        applyLogoPlate(img, null);
                     }
                     if (letters) letters.hidden = false;
                     if (wrap) wrap.hidden = false;

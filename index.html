@@ -378,6 +378,17 @@
         }
         #tenantDashboard .flex-wrap > * { max-width: 100%; }
         #tenantPortalSection { overflow-x: clip; }
+        img.logo-plate-dark { background-color: #0f172a; box-sizing: border-box; }
+        img.logo-plate-light { background-color: #ffffff; box-sizing: border-box; }
+        #logoBackdropField { max-width: 100%; min-width: 0; }
+        #logoBackdropField .logo-backdrop-choices,
+        #logoBackdropField .logo-tone-row { display: flex; flex-wrap: wrap; gap: 8px; max-width: 100%; min-width: 0; }
+        #logoBackdropField .logo-backdrop-choices label { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; max-width: 100%; }
+        .logo-tone-sample { width: 84px; max-width: 100%; box-sizing: border-box; border-radius: 12px; padding: 8px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+        .logo-tone-sample.is-light { background: #ffffff; color: #0f172a; border: 1px solid #d7dee8; }
+        .logo-tone-sample.is-dark { background: #0f172a; color: #f8fafc; border: 1px solid rgba(255, 255, 255, 0.14); }
+        .logo-tone-sample img { width: 40px; height: 40px; max-width: 100%; object-fit: contain; border-radius: 10px; }
+        .logo-tone-sample span { font-size: 10px; font-weight: 700; }
         /* Header: theme toggle stays in the same slot in dark + light. On phones the Active business picker
            always takes its own row, so the toggle never jumps based on name length / theme font metrics. */
         @media (max-width: 639px) {
@@ -391,6 +402,10 @@
             </style>
 <style id="schediNewDashStyle">
 /* schedi-newdash: owner portal. Every selector includes schedi-newdash. */
+#tenantPortalSection.schedi-newdash img.logo-plate-dark,
+body.schedi-newdash img.logo-plate-dark { background-color: #0f172a; box-sizing: border-box; padding: 2px; object-fit: contain; }
+#tenantPortalSection.schedi-newdash img.logo-plate-light,
+body.schedi-newdash img.logo-plate-light { background-color: #ffffff; box-sizing: border-box; padding: 2px; object-fit: contain; }
 html.schedi-newdash-boot #tenantDashboard { visibility: hidden; }
 html.schedi-newdash-ready #tenantDashboard { visibility: visible; }
 body.schedi-newdash { background: #06080d; }
@@ -6029,6 +6044,18 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                                     <button type="button" id="logoUploadRetry" class="hidden px-3 py-2 rounded-xl bg-slate-800 text-white font-bold text-xs border border-slate-700">Retry</button>
                                 </div>
                                 <button type="button" id="logoUploadClear" class="hidden text-[11px] font-bold text-slate-400 underline">Remove logo</button>
+                                <div id="logoBackdropField">
+                                    <p class="text-xs font-semibold text-slate-300">Logo background</p>
+                                    <div class="logo-backdrop-choices" role="radiogroup" aria-label="Logo background">
+                                        <label for="logoBackdropAuto"><input type="radio" name="logoBackdrop" id="logoBackdropAuto" value="auto" checked onchange="paintLogoTonePreview()"> Auto</label>
+                                        <label for="logoBackdropLight"><input type="radio" name="logoBackdrop" id="logoBackdropLight" value="light" onchange="paintLogoTonePreview()"> Light</label>
+                                        <label for="logoBackdropDark"><input type="radio" name="logoBackdrop" id="logoBackdropDark" value="dark" onchange="paintLogoTonePreview()"> Dark</label>
+                                    </div>
+                                    <div class="logo-tone-row" aria-hidden="true">
+                                        <div class="logo-tone-sample is-light"><img id="logoToneLight" alt="" hidden><span>Light</span></div>
+                                        <div class="logo-tone-sample is-dark"><img id="logoToneDark" alt="" hidden><span>Dark</span></div>
+                                    </div>
+                                </div>
                                 <label for="tenantLogoUrl" class="block text-xs font-semibold text-slate-300">Or paste a link</label>
                                 <input type="url" id="tenantLogoUrl" inputmode="url" placeholder="https://…" oninput="onLogoUrlInput()" class="w-full px-3 py-2 rounded-xl glass-input text-xs font-mono">
                             </div>
@@ -9516,6 +9543,9 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                 btn.setAttribute('aria-pressed', btn.getAttribute('data-theme-set') === themeName ? 'true' : 'false');
             });
             try { localStorage.setItem('schedi.theme', themeName); } catch (err) {}
+            try { schediDashPaint(); } catch (errPlate) {}
+            try { paintClassicBannerLogo((typeof getTenant === 'function') ? getTenant() : null); } catch (errBanner) {}
+            try { paintLogoTonePreview(); } catch (errPreview) {}
         }
 
         window.setSchediTheme = function (mode) {
@@ -14315,12 +14345,242 @@ function schediQrCardPixels(text, color) {
         function writeBusinessLogo(tenant, url) {
             if (!tenant) return '';
             var safe = schediLogoUrl({ logoUrl: url });
+            var previous = tenant.logoToneFor || '';
             tenant.logoUrl = safe;
             tenant.logo = safe;
+            if (!safe || (previous && previous !== safe)) {
+                tenant.logoTone = '';
+                tenant.logoClear = false;
+                tenant.logoToneFor = '';
+            }
             var input = document.getElementById('tenantLogoUrl');
             if (input) input.value = safe;
             return safe;
         }
+
+        function logoToneFromPixels(width, height, data) {
+            var w = Number(width) || 0;
+            var h = Number(height) || 0;
+            var pixels = data;
+            if (!pixels || w < 1 || h < 1) return null;
+            var ink = 0;
+            var weight = 0;
+            var transparent = 0;
+            var samples = 0;
+            var step = (w * h > 160000) ? 2 : 1;
+            for (var y = 0; y < h; y += step) {
+                for (var x = 0; x < w; x += step) {
+                    var i = (y * w + x) * 4;
+                    var alpha = Number(pixels[i + 3]) / 255;
+                    samples += 1;
+                    if (!(alpha > 0.04)) {
+                        transparent += 1;
+                        continue;
+                    }
+                    var luma = (0.2126 * Number(pixels[i]) + 0.7152 * Number(pixels[i + 1]) + 0.0722 * Number(pixels[i + 2])) / 255;
+                    weight += alpha;
+                    ink += luma * alpha;
+                    if (alpha < 0.98) transparent += (1 - alpha);
+                }
+            }
+            if (!(weight > 0) || !samples) return null;
+            return {
+                tone: (ink / weight) >= 0.62 ? 'light' : 'dark',
+                clear: (transparent / samples) >= 0.12
+            };
+        }
+
+        function logoBackdropChoice(value) {
+            var choice = String(value || '').toLowerCase();
+            if (choice === 'light' || choice === 'dark') return choice;
+            return 'auto';
+        }
+
+        function logoPlateFor(tenant, surface) {
+            var face = surface === 'light' ? 'light' : 'dark';
+            var choice = logoBackdropChoice(tenant && tenant.logoBackdrop);
+            if (choice === 'light' || choice === 'dark') return choice;
+            if (!tenant || !tenant.logoClear) return '';
+            var tone = tenant.logoTone === 'light' || tenant.logoTone === 'dark' ? tenant.logoTone : '';
+            if (!tone || tone !== face) return '';
+            return tone === 'light' ? 'dark' : 'light';
+        }
+
+        function logoSurfaceTone() {
+            try {
+                var root = document.documentElement;
+                if (root && root.classList && root.classList.contains('schedi-light')) return 'light';
+            } catch (errSurface) {}
+            return 'dark';
+        }
+
+        function applyLogoPlate(img, tenant, surface) {
+            if (!img || !img.classList) return;
+            img.classList.remove('logo-plate-light');
+            img.classList.remove('logo-plate-dark');
+            var plate = logoPlateFor(tenant, surface || logoSurfaceTone());
+            if (plate === 'dark') img.classList.add('logo-plate-dark');
+            else if (plate === 'light') img.classList.add('logo-plate-light');
+        }
+
+        function measureLogoImage(img) {
+            var w = img && (img.naturalWidth || img.width);
+            var h = img && (img.naturalHeight || img.height);
+            if (!w || !h || !document || !document.createElement) return null;
+            var maxEdge = 64;
+            var scale = Math.min(1, maxEdge / Math.max(w, h));
+            var cw = Math.max(1, Math.round(w * scale));
+            var ch = Math.max(1, Math.round(h * scale));
+            try {
+                var canvas = document.createElement('canvas');
+                canvas.width = cw;
+                canvas.height = ch;
+                var ctx = canvas.getContext('2d');
+                if (!ctx) return null;
+                ctx.clearRect(0, 0, cw, ch);
+                ctx.drawImage(img, 0, 0, cw, ch);
+                var image = ctx.getImageData(0, 0, cw, ch);
+                return logoToneFromPixels(cw, ch, image.data);
+            } catch (errMeasure) {
+                return null;
+            }
+        }
+
+        function measureLogoBlob(blob) {
+            return new Promise(function (resolve) {
+                if (!blob || typeof Image !== 'function' || !document || !document.createElement) {
+                    resolve(null);
+                    return;
+                }
+                var url = '';
+                try { url = URL.createObjectURL(blob); } catch (errUrl) { resolve(null); return; }
+                var img = new Image();
+                var settled = false;
+                function finish(value) {
+                    if (settled) return;
+                    settled = true;
+                    try { URL.revokeObjectURL(url); } catch (errRevoke) {}
+                    resolve(value || null);
+                }
+                img.onload = function () { finish(measureLogoImage(img)); };
+                img.onerror = function () { finish(null); };
+                img.src = url;
+            });
+        }
+
+        function rememberLogoTone(tenant, measured, url) {
+            if (!tenant) return;
+            var src = url || '';
+            if (!src) {
+                try { src = schediLogoUrl(tenant); } catch (errSrc) { src = ''; }
+            }
+            tenant.logoToneFor = src;
+            if (!measured || (measured.tone !== 'light' && measured.tone !== 'dark')) {
+                tenant.logoTone = '';
+                tenant.logoClear = false;
+                return;
+            }
+            tenant.logoTone = measured.tone;
+            tenant.logoClear = !!measured.clear;
+        }
+
+        function ensureLogoTone(tenant) {
+            if (!tenant) return;
+            var url = '';
+            try { if (typeof schediLogoUrl === 'function') url = schediLogoUrl(tenant); } catch (errLogoUrl) { url = ''; }
+            if (!url && typeof publicHttpsUrl === 'function') url = publicHttpsUrl(tenant.logoUrl || tenant.logo || tenant.businessLogo);
+            if (!url) return;
+            if ((tenant.logoTone === 'light' || tenant.logoTone === 'dark') && tenant.logoToneFor === url) return;
+            var cacheKey = 'schedi.logoTone.' + url;
+            try {
+                var cached = sessionStorage.getItem(cacheKey);
+                if (cached) {
+                    var parsed = JSON.parse(cached);
+                    if (parsed && (parsed.tone === 'light' || parsed.tone === 'dark')) {
+                        tenant.logoTone = parsed.tone;
+                        tenant.logoClear = !!parsed.clear;
+                        tenant.logoToneFor = url;
+                        return;
+                    }
+                }
+            } catch (errCache) {}
+            if (tenant.logoToneFor === url) return;
+            if (typeof Image !== 'function') return;
+            try {
+                if (window.__logoToneScan === url) return;
+                window.__logoToneScan = url;
+            } catch (errScan) { return; }
+            var probe = new Image();
+            try { probe.crossOrigin = 'anonymous'; } catch (errCors) {}
+            probe.onload = function () {
+                try { if (window.__logoToneScan === url) window.__logoToneScan = ''; } catch (errClear) {}
+                var measured = measureLogoImage(probe);
+                if (!measured) {
+                    tenant.logoToneFor = url;
+                    return;
+                }
+                rememberLogoTone(tenant, measured, url);
+                try { sessionStorage.setItem(cacheKey, JSON.stringify({ tone: tenant.logoTone, clear: !!tenant.logoClear })); } catch (errStore) {}
+                try { if (typeof schediDashPaint === 'function') schediDashPaint(); } catch (errDash) {}
+                try { if (typeof paintClassicBannerLogo === 'function') paintClassicBannerLogo(tenant); } catch (errBanner) {}
+                try { if (typeof paintLogoTonePreview === 'function') paintLogoTonePreview(); } catch (errPreviewTone) {}
+                try { if (typeof saveState === 'function') saveState(); } catch (errSaveTone) {}
+                try { if (typeof paintBizHeader === 'function') paintBizHeader(); } catch (errBiz) {}
+            };
+            probe.onerror = function () {
+                try { if (window.__logoToneScan === url) window.__logoToneScan = ''; } catch (errClear2) {}
+                tenant.logoToneFor = url;
+            };
+            probe.src = url;
+        }
+
+        function readLogoBackdrop() {
+            var light = document.getElementById('logoBackdropLight');
+            var dark = document.getElementById('logoBackdropDark');
+            if (light && light.checked) return 'light';
+            if (dark && dark.checked) return 'dark';
+            return 'auto';
+        }
+
+        function paintLogoBackdropField(tenant) {
+            var choice = logoBackdropChoice(tenant && tenant.logoBackdrop);
+            var auto = document.getElementById('logoBackdropAuto');
+            var light = document.getElementById('logoBackdropLight');
+            var dark = document.getElementById('logoBackdropDark');
+            if (auto) auto.checked = choice === 'auto';
+            if (light) light.checked = choice === 'light';
+            if (dark) dark.checked = choice === 'dark';
+        }
+
+        function paintLogoTonePreview() {
+            var tenant = (typeof getTenant === 'function') ? getTenant() : null;
+            var measured = logoPendingMeasured;
+            var view = {
+                logoTone: measured && measured.tone ? measured.tone : (tenant && tenant.logoTone),
+                logoClear: measured ? !!measured.clear : !!(tenant && tenant.logoClear),
+                logoBackdrop: readLogoBackdrop()
+            };
+            var field = document.getElementById('tenantLogoUrl');
+            var src = logoObjectUrl || schediLogoUrl(tenant) || '';
+            if (!src && field) {
+                try { src = safeHttpsUrl(field.value); } catch (errSrc) { src = ''; }
+            }
+            [['logoToneLight', 'light'], ['logoToneDark', 'dark']].forEach(function (pair) {
+                var img = document.getElementById(pair[0]);
+                if (!img) return;
+                if (src) {
+                    img.hidden = false;
+                    img.classList.remove('hidden');
+                    img.src = src;
+                    img.alt = 'Logo on a ' + pair[1] + ' background';
+                } else {
+                    img.hidden = true;
+                    img.removeAttribute('src');
+                }
+                applyLogoPlate(img, view, pair[1]);
+            });
+        }
+        window.paintLogoTonePreview = paintLogoTonePreview;
 
         function paintClassicBannerLogo(tenant) {
             var letters = document.getElementById('tenantBannerInitials');
@@ -14328,14 +14588,17 @@ function schediQrCardPixels(text, color) {
             var mark = schediDashInitials((tenant && tenant.name) || '');
             if (letters) letters.textContent = mark;
             var url = schediLogoUrl(tenant);
+            try { ensureLogoTone(tenant); } catch (errTone) {}
             if (img && url) {
                 img.hidden = false;
                 img.src = url;
                 img.alt = ((tenant && tenant.name) || 'Business') + ' logo';
                 if (letters) letters.hidden = true;
+                applyLogoPlate(img, tenant);
             } else if (img) {
                 img.hidden = true;
                 img.removeAttribute('src');
+                applyLogoPlate(img, null);
                 if (letters) letters.hidden = false;
             }
         }
@@ -14541,6 +14804,7 @@ function schediQrCardPixels(text, color) {
             if (planEl) planEl.textContent = planWord;
             if (initials) initials.textContent = mark;
             if (phoneInitials) phoneInitials.textContent = mark;
+            try { ensureLogoTone(tenant); } catch (errTone) {}
             function schediDashApplyLogo(img, letters) {
                 if (!img) return;
                 if (logo) {
@@ -14548,9 +14812,11 @@ function schediQrCardPixels(text, color) {
                     img.src = logo;
                     img.alt = bizName + ' logo';
                     if (letters) letters.hidden = true;
+                    applyLogoPlate(img, tenant);
                 } else {
                     img.hidden = true;
                     img.removeAttribute('src');
+                    applyLogoPlate(img, null);
                     if (letters) letters.hidden = false;
                 }
             }
@@ -18564,6 +18830,9 @@ function schediQrCardPixels(text, color) {
             if (logoEl && !logoObjectUrl) logoEl.value = tenant.logoUrl || tenant.logo || '';
             bindLogoUpload();
             refreshLogoPreview();
+            paintLogoBackdropField(tenant);
+            try { ensureLogoTone(tenant); } catch (errTone) {}
+            paintLogoTonePreview();
             var coverEl = document.getElementById('tenantCoverUrl');
             if (coverEl) coverEl.value = tenant.coverUrl || tenant.coverPhoto || tenant.coverPhotoUrl || '';
 
@@ -18680,6 +18949,7 @@ function schediQrCardPixels(text, color) {
         var logoPendingSvg = null;
         var logoPendingBlob = null;
         var logoPendingType = '';
+        var logoPendingMeasured = null;
         var logoUploadBound = false;
         var logoUploadTarget = { kind: 'logo' };
         var logoCropHome = null;
@@ -18799,6 +19069,7 @@ function schediQrCardPixels(text, color) {
             logoPendingBlob = null;
             logoPendingType = '';
             logoPendingSvg = null;
+            logoPendingMeasured = null;
             setLogoActionVisible('logoUploadSave', false);
             setLogoActionVisible('logoUploadRetry', false);
         }
@@ -18808,6 +19079,7 @@ function schediQrCardPixels(text, color) {
             clearStagedLogo();
             setLogoNote('', false);
             refreshLogoPreview();
+            try { paintLogoTonePreview(); } catch (errPreview) {}
         };
 
         function logoUploadIsService() {
@@ -18984,16 +19256,26 @@ function schediQrCardPixels(text, color) {
                     if (fresh) renderTenantServices(fresh);
                 } else {
                     writeBusinessLogo(tenant, body.url);
+                    var measuredTone = null;
+                    if (typeof measureLogoBlob === 'function') {
+                        try { measuredTone = await measureLogoBlob(blob); } catch (errTone) { measuredTone = null; }
+                    }
+                    if (typeof rememberLogoTone === 'function') rememberLogoTone(tenant, measuredTone, body.url);
+                    logoPendingMeasured = null;
                     revokeLogoObjectUrl();
                     clearStagedLogo();
                     refreshLogoPreview();
+                    try { paintLogoTonePreview(); } catch (errPreviewTone) {}
                     setLogoNote('Logo saved.', false);
                     try { schediDashPaint(); } catch (errPaint) {}
                     try { paintClassicBannerLogo(tenant); } catch (errBanner) {}
                     try { renderLivePreviewIframe(); } catch (errPreview) {}
                     try { await saveState(); } catch (errSave) {}
                     var freshLogo = (typeof getTenant === 'function') ? getTenant() : tenant;
-                    if (freshLogo && freshLogo !== tenant) writeBusinessLogo(freshLogo, body.url);
+                    if (freshLogo && freshLogo !== tenant) {
+                        writeBusinessLogo(freshLogo, body.url);
+                        if (typeof rememberLogoTone === 'function') rememberLogoTone(freshLogo, measuredTone, body.url);
+                    }
                     try { schediDashPaint(); } catch (errPaint2) {}
                     try { paintClassicBannerLogo(freshLogo || tenant); } catch (errBanner2) {}
                 }
@@ -19178,6 +19460,14 @@ function schediQrCardPixels(text, color) {
             setLogoActionVisible('logoUploadSave', true);
             setLogoActionVisible('logoUploadRetry', false);
             setLogoNote('Preview ready. Save the logo, or choose another file.', false);
+            logoPendingMeasured = null;
+            if (typeof measureLogoBlob === 'function') {
+                measureLogoBlob(blob).then(function (measured) {
+                    if (logoPendingBlob !== blob) return;
+                    logoPendingMeasured = measured;
+                    try { paintLogoTonePreview(); } catch (errPreview) {}
+                });
+            }
         }
 
         function showLogoUploadFailure(error) {
@@ -19323,6 +19613,7 @@ function schediQrCardPixels(text, color) {
                 tenant.businessLocation = '';
             }
             writeBusinessLogo(tenant, safeHttpsUrl(logoRaw));
+            tenant.logoBackdrop = readLogoBackdrop();
             tenant.coverUrl = safeHttpsUrl(coverRaw);
 
             saveState();
@@ -25431,7 +25722,9 @@ function schediQrCardPixels(text, color) {
         .biz-header.has-cover .biz-header-body { margin-top: -28px; position: relative; }
         .biz-logo-wrap { flex: 0 0 auto; display: flex; }
         .biz-logo, .biz-logo-initials { width: 48px; height: 48px; border-radius: 14px; }
-        .biz-logo { object-fit: cover; display: block; background: #ffffff; border: 2px solid #ffffff; }
+        .biz-logo { object-fit: cover; display: block; background: transparent; border: 0; }
+        .pub-header-logo.logo-plate-dark, .biz-logo.logo-plate-dark { background: #0f172a; box-sizing: border-box; padding: 2px; object-fit: contain; }
+        .pub-header-logo.logo-plate-light, .biz-logo.logo-plate-light { background: #ffffff; box-sizing: border-box; padding: 2px; object-fit: contain; }
         .biz-logo[hidden], .biz-logo-initials[hidden], .pub-header-logo[hidden], .pub-header-initials[hidden] { display: none !important; }
         .biz-logo-initials, .pub-header-initials {
             display: inline-flex; align-items: center; justify-content: center;
@@ -25440,7 +25733,7 @@ function schediQrCardPixels(text, color) {
         .biz-logo-initials { font-size: 16px; }
         .biz-header.has-cover .biz-logo, .biz-header.has-cover .biz-logo-initials { box-shadow: 0 4px 14px rgba(15, 23, 42, 0.28); }
         .pub-header-logo, .pub-header-initials { width: 28px; height: 28px; border-radius: 8px; margin-left: 8px; }
-        .pub-header-logo { object-fit: cover; display: block; background: #ffffff; }
+        .pub-header-logo { object-fit: cover; display: block; background: transparent; }
         .pub-header-initials { font-size: 11px; }
         html.schedi-newbook .biz-logo, html.schedi-newbook .biz-logo-initials,
         html.schedi-newbook .pub-header-logo, html.schedi-newbook .pub-header-initials { border-radius: 16px; }
@@ -26029,6 +26322,7 @@ function schediQrCardPixels(text, color) {
                 btn.setAttribute('aria-label', tip);
             }
             try { localStorage.setItem('schedi.theme', light ? 'light' : 'dark'); } catch (err) {}
+            try { paintBizHeader(); } catch (errPlate) {}
         }
         window.toggleSchediTheme = function() {
             var light = !document.documentElement.classList.contains('schedi-light');
@@ -26843,7 +27137,163 @@ function schediQrCardPixels(text, color) {
             var letters = parts[0].charAt(0) + (parts.length > 1 ? parts[parts.length - 1].charAt(0) : '');
             return letters.toUpperCase();
         }
-        function paintBizHeader() {
+        
+        function logoToneFromPixels(width, height, data) {
+                    var w = Number(width) || 0;
+                    var h = Number(height) || 0;
+                    var pixels = data;
+                    if (!pixels || w < 1 || h < 1) return null;
+                    var ink = 0;
+                    var weight = 0;
+                    var transparent = 0;
+                    var samples = 0;
+                    var step = (w * h > 160000) ? 2 : 1;
+                    for (var y = 0; y < h; y += step) {
+                        for (var x = 0; x < w; x += step) {
+                            var i = (y * w + x) * 4;
+                            var alpha = Number(pixels[i + 3]) / 255;
+                            samples += 1;
+                            if (!(alpha > 0.04)) {
+                                transparent += 1;
+                                continue;
+                            }
+                            var luma = (0.2126 * Number(pixels[i]) + 0.7152 * Number(pixels[i + 1]) + 0.0722 * Number(pixels[i + 2])) / 255;
+                            weight += alpha;
+                            ink += luma * alpha;
+                            if (alpha < 0.98) transparent += (1 - alpha);
+                        }
+                    }
+                    if (!(weight > 0) || !samples) return null;
+                    return {
+                        tone: (ink / weight) >= 0.62 ? 'light' : 'dark',
+                        clear: (transparent / samples) >= 0.12
+                    };
+                }
+
+        function logoBackdropChoice(value) {
+                    var choice = String(value || '').toLowerCase();
+                    if (choice === 'light' || choice === 'dark') return choice;
+                    return 'auto';
+                }
+
+        function logoPlateFor(tenant, surface) {
+                    var face = surface === 'light' ? 'light' : 'dark';
+                    var choice = logoBackdropChoice(tenant && tenant.logoBackdrop);
+                    if (choice === 'light' || choice === 'dark') return choice;
+                    if (!tenant || !tenant.logoClear) return '';
+                    var tone = tenant.logoTone === 'light' || tenant.logoTone === 'dark' ? tenant.logoTone : '';
+                    if (!tone || tone !== face) return '';
+                    return tone === 'light' ? 'dark' : 'light';
+                }
+
+        function logoSurfaceTone() {
+                    try {
+                        var root = document.documentElement;
+                        if (root && root.classList && root.classList.contains('schedi-light')) return 'light';
+                    } catch (errSurface) {}
+                    return 'dark';
+                }
+
+        function applyLogoPlate(img, tenant, surface) {
+                    if (!img || !img.classList) return;
+                    img.classList.remove('logo-plate-light');
+                    img.classList.remove('logo-plate-dark');
+                    var plate = logoPlateFor(tenant, surface || logoSurfaceTone());
+                    if (plate === 'dark') img.classList.add('logo-plate-dark');
+                    else if (plate === 'light') img.classList.add('logo-plate-light');
+                }
+
+        function measureLogoImage(img) {
+                    var w = img && (img.naturalWidth || img.width);
+                    var h = img && (img.naturalHeight || img.height);
+                    if (!w || !h || !document || !document.createElement) return null;
+                    var maxEdge = 64;
+                    var scale = Math.min(1, maxEdge / Math.max(w, h));
+                    var cw = Math.max(1, Math.round(w * scale));
+                    var ch = Math.max(1, Math.round(h * scale));
+                    try {
+                        var canvas = document.createElement('canvas');
+                        canvas.width = cw;
+                        canvas.height = ch;
+                        var ctx = canvas.getContext('2d');
+                        if (!ctx) return null;
+                        ctx.clearRect(0, 0, cw, ch);
+                        ctx.drawImage(img, 0, 0, cw, ch);
+                        var image = ctx.getImageData(0, 0, cw, ch);
+                        return logoToneFromPixels(cw, ch, image.data);
+                    } catch (errMeasure) {
+                        return null;
+                    }
+                }
+
+        function rememberLogoTone(tenant, measured, url) {
+                    if (!tenant) return;
+                    var src = url || '';
+                    if (!src) {
+                        try { src = schediLogoUrl(tenant); } catch (errSrc) { src = ''; }
+                    }
+                    tenant.logoToneFor = src;
+                    if (!measured || (measured.tone !== 'light' && measured.tone !== 'dark')) {
+                        tenant.logoTone = '';
+                        tenant.logoClear = false;
+                        return;
+                    }
+                    tenant.logoTone = measured.tone;
+                    tenant.logoClear = !!measured.clear;
+                }
+
+        function ensureLogoTone(tenant) {
+                    if (!tenant) return;
+                    var url = '';
+                    try { if (typeof schediLogoUrl === 'function') url = schediLogoUrl(tenant); } catch (errLogoUrl) { url = ''; }
+                    if (!url && typeof publicHttpsUrl === 'function') url = publicHttpsUrl(tenant.logoUrl || tenant.logo || tenant.businessLogo);
+                    if (!url) return;
+                    if ((tenant.logoTone === 'light' || tenant.logoTone === 'dark') && tenant.logoToneFor === url) return;
+                    var cacheKey = 'schedi.logoTone.' + url;
+                    try {
+                        var cached = sessionStorage.getItem(cacheKey);
+                        if (cached) {
+                            var parsed = JSON.parse(cached);
+                            if (parsed && (parsed.tone === 'light' || parsed.tone === 'dark')) {
+                                tenant.logoTone = parsed.tone;
+                                tenant.logoClear = !!parsed.clear;
+                                tenant.logoToneFor = url;
+                                return;
+                            }
+                        }
+                    } catch (errCache) {}
+                    if (tenant.logoToneFor === url) return;
+                    if (typeof Image !== 'function') return;
+                    try {
+                        if (window.__logoToneScan === url) return;
+                        window.__logoToneScan = url;
+                    } catch (errScan) { return; }
+                    var probe = new Image();
+                    try { probe.crossOrigin = 'anonymous'; } catch (errCors) {}
+                    probe.onload = function () {
+                        try { if (window.__logoToneScan === url) window.__logoToneScan = ''; } catch (errClear) {}
+                        var measured = measureLogoImage(probe);
+                        if (!measured) {
+                            tenant.logoToneFor = url;
+                            return;
+                        }
+                        rememberLogoTone(tenant, measured, url);
+                        try { sessionStorage.setItem(cacheKey, JSON.stringify({ tone: tenant.logoTone, clear: !!tenant.logoClear })); } catch (errStore) {}
+                        try { if (typeof schediDashPaint === 'function') schediDashPaint(); } catch (errDash) {}
+                        try { if (typeof paintClassicBannerLogo === 'function') paintClassicBannerLogo(tenant); } catch (errBanner) {}
+                        try { if (typeof paintLogoTonePreview === 'function') paintLogoTonePreview(); } catch (errPreviewTone) {}
+                        try { if (typeof saveState === 'function') saveState(); } catch (errSaveTone) {}
+                        try { if (typeof paintBizHeader === 'function') paintBizHeader(); } catch (errBiz) {}
+                    };
+                    probe.onerror = function () {
+                        try { if (window.__logoToneScan === url) window.__logoToneScan = ''; } catch (errClear2) {}
+                        tenant.logoToneFor = url;
+                    };
+                    probe.src = url;
+                }
+
+function paintBizHeader() {
+            try { ensureLogoTone(tenantData); } catch (errTone) {}
             var logo = publicHttpsUrl(tenantData && (tenantData.logoUrl || tenantData.logo || tenantData.businessLogo));
             var logoName = String((tenantData && tenantData.name) || 'Business');
             var logoLetters = bizInitials(logoName);
@@ -26855,10 +27305,12 @@ function schediQrCardPixels(text, color) {
                     img.alt = logoName + ' logo';
                     if (letters) letters.hidden = true;
                     if (wrap) wrap.hidden = false;
+                    applyLogoPlate(img, tenantData);
                 } else {
                     if (img) {
                         img.hidden = true;
                         img.removeAttribute('src');
+                        applyLogoPlate(img, null);
                     }
                     if (letters) letters.hidden = false;
                     if (wrap) wrap.hidden = false;
