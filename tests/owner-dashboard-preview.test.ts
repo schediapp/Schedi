@@ -1423,6 +1423,8 @@ describe("owner dashboard preview", () => {
     expect(filterRows({ paymentGateways: { cashapp: true } }, []).map((row) => row[0])).toEqual(["all", "cashapp", "cash", "unpaid"]);
     expect(filterRows({ paymentGateways: {} }, [{ paymentStatus: "PAID VIA CARD", paidMethod: "card" }]).map((row) => row[0])).toEqual(["all", "card", "cash", "unpaid"]);
     expect(extractFunction(html, "renderRosterPayFilter")).toContain("rosterPayFilterRows");
+    expect(html).toContain("row[0] === 'cash' ? 'Cash' : row[1]");
+    expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-chip { min-height: 36px; border-radius: 999px; border: 1px solid var(--sd-line); background: transparent; color: var(--sd-text); font-weight: 800; font-size: 12px; padding: 4px 10px; display: inline-flex; align-items: center; flex: none; white-space: nowrap; }");
     expect(extractFunction(html, "manualBookingFieldsUntouched")).toContain("manualBookingOpenedSnapshot");
     const submit = html.slice(html.indexOf("window.handleManualBookingSubmit = function"), html.indexOf("function appointmentReportRows"));
     expect(submit).toContain("if (window.__manualBookingDismissed) return;");
@@ -6038,6 +6040,33 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
               const cashChip = await readChip('#tenantSectionRoster [data-booking-id="HB-1006"] .sd-pay');
               expect(cashChip && { color: cashChip.color, bg: cashChip.bg, border: cashChip.border }, `roster cash ${width} ${theme}`).toEqual(paint.cash[theme]);
               expect(cashChip?.bg, `${width} ${theme}`).not.toBe(chip?.bg);
+              expect(cashChip?.text, `${width} ${theme}`).toContain("In person / Cash");
+            }
+            if (kind === "cashapp") {
+              const cashAppFilter = await page.evaluate(() => {
+                const el = document.querySelector('#rosterPayFilter [data-pay-filter="cashapp"]') as HTMLElement | null;
+                const cash = document.querySelector('#rosterPayFilter [data-pay-filter="cash"]') as HTMLElement | null;
+                if (!el || !cash) return null;
+                const style = getComputedStyle(el);
+                const cashStyle = getComputedStyle(cash);
+                return {
+                  color: style.color,
+                  bg: style.backgroundColor,
+                  border: style.borderTopColor,
+                  text: (el.textContent || "").replace(/\s+/g, " ").trim(),
+                  wrap: style.whiteSpace,
+                  cashText: (cash.textContent || "").replace(/\s+/g, " ").trim(),
+                  cashWrap: cashStyle.whiteSpace,
+                  cashH: cash.offsetHeight,
+                };
+              });
+              expect(cashAppFilter && { color: cashAppFilter.color, bg: cashAppFilter.bg, border: cashAppFilter.border }, `cash app filter ${width} ${theme}`).toEqual(paint.cashapp[theme]);
+              expect(cashAppFilter?.text, `${width} ${theme}`).toContain("Cash App");
+              expect(cashAppFilter?.wrap, `${width} ${theme}`).toBe("nowrap");
+              expect(cashAppFilter?.cashText, `${width} ${theme}`).toMatch(/^Cash\d+$/);
+              expect(cashAppFilter?.cashText, `${width} ${theme}`).not.toContain("In person");
+              expect(cashAppFilter?.cashWrap, `${width} ${theme}`).toBe("nowrap");
+              if (width >= 860) expect(cashAppFilter?.cashH, `${width} ${theme}`).toBeLessThanOrEqual(40);
             }
             const filter = await readChip(`#rosterPayFilter [data-pay-filter="${kind}"]`);
             if (kind === "unpaid") {

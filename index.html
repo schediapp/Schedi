@@ -643,7 +643,7 @@ body.schedi-newdash #clientHistoryModal .sd-pay.sd-pay-unpaid { color: var(--sd-
 #tenantPortalSection.schedi-newdash .sd-pay.is-icon .sd-pay-amt { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); border: 0; }
 #tenantPortalSection.schedi-newdash .sd-pay-amt { flex: none; white-space: nowrap; }
 #tenantPortalSection.schedi-newdash .sd-pay-filters { display: flex; flex-wrap: wrap; gap: 6px; }
-#tenantPortalSection.schedi-newdash .sd-chip { min-height: 36px; border-radius: 999px; border: 1px solid var(--sd-line); background: transparent; color: var(--sd-text); font-weight: 800; font-size: 12px; padding: 4px 10px; display: inline-flex; align-items: center; }
+#tenantPortalSection.schedi-newdash .sd-chip { min-height: 36px; border-radius: 999px; border: 1px solid var(--sd-line); background: transparent; color: var(--sd-text); font-weight: 800; font-size: 12px; padding: 4px 10px; display: inline-flex; align-items: center; flex: none; white-space: nowrap; }
 #tenantPortalSection.schedi-newdash .sd-chip svg { width: 14px; height: 14px; display: block; flex: none; margin-right: 4px; }
 #tenantPortalSection.schedi-newdash .sd-chip.is-on { background: rgba(16, 185, 129, 0.16); color: var(--sd-brand-2); border-color: rgba(16, 185, 129, 0.45); }
 /* Paid-method chips are brand-tinted in both themes, with text that clears WCAG AA at 11px.
@@ -13652,7 +13652,7 @@ function schediQrCardPixels(text, color) {
             ['cash', 'In person / Cash', 'In person / Cash']
         ];
         var ROSTER_PAY_FILTERS = [['all', 'All']].concat(OWNER_PAY_METHODS.map(function (row) {
-            return [row[0], row[1]];
+            return [row[0], row[0] === 'cash' ? 'Cash' : row[1]];
         })).concat([['unpaid', 'Unpaid']]);
         var ROSTER_PAY_WORDS = { unpaid: 'Unpaid' };
         OWNER_PAY_METHODS.forEach(function (row) { ROSTER_PAY_WORDS[row[0]] = row[2]; });
