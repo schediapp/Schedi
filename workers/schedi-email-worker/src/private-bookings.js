@@ -136,7 +136,7 @@ const BOOKING_KEYS = [
   'depositConfirmSentAt', 'notes', 'createdAt', 'walkIn',
   'depositNudgeSentAt', 'depositDayBeforeSentAt', 'depositOwnerWarnSentAt', 'depositExpiredAt',
   'payCode',
-  'stripeCustomerId', 'stripePaymentMethodId',
+  'stripeCustomerId', 'stripePaymentMethodId', 'stripePaymentIntentId',
   'cancellationFeeStatus', 'cancellationFeeReason', 'cancellationFeeAmount', 'cancellationFeeAt',
   'cancellationFeePaymentIntentId',
   'squarePaymentId', 'squareOrderId', 'squarePaymentLinkId',
@@ -326,7 +326,7 @@ export function sanitizeBooking(raw, tenantId) {
       if (raw[key] === true) out[key] = true;
       continue;
     }
-    if (key === 'stripeCustomerId' || key === 'stripePaymentMethodId' || key === 'cancellationFeePaymentIntentId') {
+    if (key === 'stripeCustomerId' || key === 'stripePaymentMethodId' || key === 'stripePaymentIntentId' || key === 'cancellationFeePaymentIntentId') {
       continue;
     }
     if (SQUARE_SERVER_KEYS.includes(key)) continue;
@@ -576,6 +576,7 @@ function bookingForClient(booking) {
   const copy = Object.assign({}, booking);
   delete copy.stripeCustomerId;
   delete copy.stripePaymentMethodId;
+  delete copy.stripePaymentIntentId;
   delete copy.cancellationFeePaymentIntentId;
   return copy;
 }
@@ -634,6 +635,14 @@ function applyServerOnlyFields(booking, prev, options) {
   if (!booking.stripePaymentMethodId && card) {
     const method = validServerId(card.stripePaymentMethodId, 'pm');
     if (method) booking.stripePaymentMethodId = method;
+  }
+  if (prev && prev.stripePaymentIntentId && !booking.stripePaymentIntentId) {
+    const previousIntent = validServerId(prev.stripePaymentIntentId, 'pi');
+    if (previousIntent) booking.stripePaymentIntentId = previousIntent;
+  }
+  if (card && card.stripePaymentIntentId) {
+    const intent = validServerId(card.stripePaymentIntentId, 'pi');
+    if (intent) booking.stripePaymentIntentId = intent;
   }
   if (trustFee) {
     const pi = validServerId(options && options.feePaymentIntentId, 'pi');

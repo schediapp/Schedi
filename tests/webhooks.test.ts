@@ -242,10 +242,90 @@ describe("webhook separation", () => {
     expect(store.getBooking(booking.id).status).toBe("confirmed");
   });
 
-  it("ignores a public SPA charge when that booking is not in the local database", () => {
+  it("records a public card payment for the owner dashboard and ignores a replay", async () => {
     const store = memoryStore();
     seedProBusiness(store);
-    expect(() =>
+    const seen: Array<{ tenantId: string; bookingIds: string[]; purpose: string; amountCents: number | null; paymentIntentId: string }> = [];
+    const paid = event({
+      id: "evt_public_card",
+      type: "checkout.session.completed",
+      account: "acct_northwind",
+      data: {
+        object: {
+          mode: "payment",
+          payment_status: "paid",
+          amount_total: 8000,
+          payment_intent: "pi_public_card",
+          metadata: {
+            kind: "booking_payment",
+            purpose: "card",
+            tenantId: "harbor",
+            bookingIds: "HB-1003",
+            schedi_booking_id: "HB-1003",
+            schedi_public_booking: "1",
+            charge_kind: "full",
+          },
+        },
+      },
+    });
+    const record = async (notice: { tenantId: string; bookingIds: string[]; purpose: string; amountCents: number | null; paymentIntentId: string }) => {
+      seen.push(notice);
+    };
+    await applyStripeEvent(store, paid, { recordPublicCardPayment: record });
+    await applyStripeEvent(store, paid, { recordPublicCardPayment: record });
+    expect(seen).toEqual([
+      expect.objectContaining({
+        tenantId: "harbor",
+        bookingIds: ["HB-1003"],
+        purpose: "card",
+        amountCents: 8000,
+        paymentIntentId: "pi_public_card",
+      }),
+    ]);
+    expect(store.hasStripeEvent("evt_public_card")).toBe(true);
+  });
+
+  it("records a deposit payment link with the amount paid", async () => {
+    const store = memoryStore();
+    const seen: Array<{ purpose: string; amountCents: number | null; bookingIds: string[] }> = [];
+    await applyStripeEvent(
+      store,
+      event({
+        id: "evt_public_deposit",
+        type: "checkout.session.async_payment_succeeded",
+        account: "acct_northwind",
+        data: {
+          object: {
+            mode: "payment",
+            payment_status: "paid",
+            amount_total: 3600,
+            payment_intent: "pi_deposit",
+            metadata: {
+              kind: "booking_payment",
+              purpose: "deposit",
+              charge_kind: "deposit",
+              tenantId: "harbor",
+              bookingIds: "HB-1027",
+              schedi_public_booking: "1",
+            },
+          },
+        },
+      }),
+      {
+        recordPublicCardPayment: async (notice) => {
+          seen.push(notice);
+        },
+      },
+    );
+    expect(seen).toEqual([
+      expect.objectContaining({ purpose: "deposit", amountCents: 3600, bookingIds: ["HB-1027"] }),
+    ]);
+  });
+
+  it("ignores a public SPA charge when that booking is not in the local database", async () => {
+    const store = memoryStore();
+    seedProBusiness(store);
+    await expect(
       applyStripeEvent(
         store,
         event({
@@ -262,6 +342,6 @@ describe("webhook separation", () => {
           },
         }),
       ),
-    ).not.toThrow();
+    ).resolves.toBeUndefined();
   });
 });

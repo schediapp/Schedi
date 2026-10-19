@@ -1,18 +1,23 @@
 import type Stripe from "stripe";
 import { confirmBooking, failBooking } from "./bookings";
+import { noticeFromCheckoutSession, recordConnectCardPayment, type ConnectCardPaidNotice } from "./connect-card-payment";
 import type { Store } from "./db";
 import { SchediError } from "./errors";
 import { applySubscriptionState } from "./subscription-state";
+
+export interface StripeEventDeps {
+  recordPublicCardPayment?: (notice: ConnectCardPaidNotice) => Promise<void>;
+}
 
 /**
  * Connected-account events are client card payments. They never pause the
  * public page. Owner subscription events on the platform account do.
  */
-export function applyStripeEvent(store: Store, event: Stripe.Event): void {
+export async function applyStripeEvent(store: Store, event: Stripe.Event, deps?: StripeEventDeps): Promise<void> {
   if (store.hasStripeEvent(event.id)) return;
 
   if (event.account) {
-    applyConnectedEvent(store, event);
+    await applyConnectedEvent(store, event, deps);
   } else {
     applyPlatformEvent(store, event);
   }
@@ -29,7 +34,7 @@ function ignoreMissingPublicBooking(error: unknown, metadata: Stripe.Metadata | 
   return isPublicSpaCharge(metadata) && error instanceof SchediError && error.status === 404;
 }
 
-function applyConnectedEvent(store: Store, event: Stripe.Event): void {
+async function applyConnectedEvent(store: Store, event: Stripe.Event, deps?: StripeEventDeps): Promise<void> {
   switch (event.type) {
     case "checkout.session.completed":
     case "checkout.session.async_payment_succeeded": {
@@ -37,13 +42,18 @@ function applyConnectedEvent(store: Store, event: Stripe.Event): void {
       if (session.mode !== "payment") return;
       if (event.type === "checkout.session.completed" && session.payment_status !== "paid") return;
       const bookingId = session.metadata?.schedi_booking_id;
-      if (!bookingId) return;
       const paymentIntentId = typeof session.payment_intent === "string" ? session.payment_intent : null;
-      try {
-        confirmBooking(store, bookingId, paymentIntentId);
-      } catch (error) {
-        if (ignoreMissingPublicBooking(error, session.metadata)) return;
-        throw error;
+      if (bookingId) {
+        try {
+          confirmBooking(store, bookingId, paymentIntentId);
+        } catch (error) {
+          if (!ignoreMissingPublicBooking(error, session.metadata)) throw error;
+        }
+      }
+      const notice = noticeFromCheckoutSession(session, event.id);
+      if (notice) {
+        const record = deps?.recordPublicCardPayment || recordConnectCardPayment;
+        await record(notice);
       }
       return;
     }
