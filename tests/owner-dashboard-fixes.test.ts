@@ -62,7 +62,9 @@ describe("owner dashboard fixes", () => {
     const css = dashCss(html);
     expect(css).toContain(".roster-ref-id");
     expect(css).toContain("grid-row: 2");
-    expect(css).toContain("min-width: 1080px");
+    expect(css).toContain("width: 9.25rem");
+    expect(css).not.toContain("min-width: 1080px");
+    expect(css).toContain("@media (max-width: 1199px)");
     expect(css).toContain(".sd-gateway-paypal { color: #0070E0; }");
     expect(css).toContain(".sd-gateway-paypal { color: #003087; }");
     expect(css).toContain("#webPushCard.wp-card-hit");
@@ -150,9 +152,8 @@ describe.skipIf(!chrome)("owner dashboard fixes in the browser", () => {
           const app = tenant.appointments.find((item) => item.id === current) || tenant.appointments[0];
           app.id = "BK-CB126C75";
           app.payCode = "";
-          app.clientName = "Ref Layout Client";
-          const longId = "BK-" + "A".repeat(120);
-          const copy = { ...app, id: longId, clientName: "Long Ref Client", payCode: "" };
+          app.clientName = "Christopher Montgomery-Bennett";
+          const copy = { ...app, id: "BK-A1B2C3D4E5F6-RESCHED-0042", clientName: "Christopher Montgomery-Bennett", payCode: "", status: "pending" };
           tenant.appointments.push(copy);
           w.setRosterPayFilter("all");
         });
@@ -188,7 +189,7 @@ describe.skipIf(!chrome)("owner dashboard fixes in the browser", () => {
         const todayOverflow = today ? today.scrollWidth > today.clientWidth + 1 : false;
         return {
           standard: read("BK-CB126C75"),
-          long: read("BK-" + "A".repeat(120)),
+          long: read("BK-A1B2C3D4E5F6-RESCHED-0042"),
           todayText: today?.textContent || "",
           todayOverflow,
         };
@@ -196,32 +197,65 @@ describe.skipIf(!chrome)("owner dashboard fixes in the browser", () => {
 
       await openDash();
       await plantRefs();
-      for (const width of [1100, 1280, 1440, 1920]) {
+      const widthReport: Record<string, { wrap: number; table: number }> = {};
+      for (const width of [1100, 1180, 1200, 1280, 1440, 1920]) {
         await page.setViewport({ width, height: 900 });
         for (const mode of ["dark", "light"] as const) {
           await setTheme(mode);
           const measured = await measureRefs();
-          expect(measured.standard, `${width} ${mode}`).toBeTruthy();
+          const fit = await page.evaluate(() => {
+            const wrap = document.getElementById("rosterListWrap") as HTMLElement;
+            const table = wrap.querySelector("table") as HTMLElement;
+            const actions = document.querySelector('[data-booking-id="BK-A1B2C3D4E5F6-RESCHED-0042"] .roster-actions') as HTMLElement;
+            const name = document.querySelector('[data-booking-id="BK-CB126C75"] .roster-client-name-text') as HTMLElement;
+            const date = document.querySelector('[data-booking-id="BK-CB126C75"] .roster-cell-when span') as HTMLElement | null;
+            const price = document.querySelector('[data-booking-id="BK-CB126C75"] .roster-cell-price') as HTMLElement | null;
+            const wrapBox = wrap.getBoundingClientRect();
+            const actionBox = actions.getBoundingClientRect();
+            return {
+              wrap: wrap.clientWidth,
+              table: Math.round(table.getBoundingClientRect().width),
+              scroll: wrap.scrollWidth,
+              actionsInside: actionBox.right <= wrapBox.right + 1 && actionBox.left >= wrapBox.left - 1,
+              nameText: name.textContent || "",
+              nameScroll: name.scrollWidth,
+              nameClient: name.clientWidth,
+              dateCut: date ? date.scrollWidth > date.clientWidth + 1 : false,
+              priceCut: price ? price.scrollWidth > price.clientWidth + 1 : false,
+            };
+          });
+          if (mode === "dark") widthReport[String(width)] = { wrap: fit.wrap, table: fit.table };
+          const label = `${width} ${mode}`;
+          expect(fit.scroll, label).toBeLessThanOrEqual(fit.wrap + 1);
+          expect(fit.table, label).toBeLessThanOrEqual(fit.wrap + 1);
+          expect(fit.actionsInside, label).toBe(true);
+          if (width >= 1200) {
+            expect(fit.dateCut, label).toBe(false);
+            expect(fit.priceCut, label).toBe(false);
+          }
+          expect(measured.standard, label).toBeTruthy();
           expect(measured.standard?.text).toBe("#BK-CB126C75");
-          expect(measured.standard!.scroll).toBeLessThanOrEqual(measured.standard!.clientWidth + 1);
+          expect(measured.standard!.scroll, label).toBeLessThanOrEqual(measured.standard!.clientWidth + 1);
           expect(measured.standard?.whiteSpace).toBe("nowrap");
-          expect(overlaps(measured.standard!.ref, measured.standard!.name)).toBe(false);
-          expect(measured.long?.text).toBe("#" + "BK-" + "A".repeat(120));
-          expect(measured.long?.title).toBe("#" + "BK-" + "A".repeat(120));
-          expect(measured.long!.scroll).toBeGreaterThan(measured.long!.clientWidth);
+          expect(overlaps(measured.standard!.ref, measured.standard!.name), label).toBe(false);
+          expect(measured.long?.text).toBe("#BK-A1B2C3D4E5F6-RESCHED-0042");
+          expect(measured.long?.title).toBe("#BK-A1B2C3D4E5F6-RESCHED-0042");
           expect(measured.long?.whiteSpace).toBe("nowrap");
           expect(measured.long?.lines).toBe(1);
-          expect(overlaps(measured.long!.ref, measured.long!.name)).toBe(false);
-          expect(measured.long!.cell.right).toBeLessThanOrEqual(measured.long!.name.left + 1);
-          if (width >= 1440) {
-            const scroll = await page.evaluate(() => {
-              const wrap = document.getElementById("rosterListWrap") as HTMLElement;
-              return { scroll: wrap.scrollWidth, client: wrap.clientWidth };
-            });
-            expect(scroll.scroll, `${width} ${mode} table scroll`).toBeLessThanOrEqual(scroll.client + 2);
+          expect(overlaps(measured.long!.ref, measured.long!.name), label).toBe(false);
+          expect(fit.nameText).toBe("Christopher Montgomery-Bennett");
+          if (width >= 1200) {
+            expect(measured.long!.scroll, label).toBeGreaterThan(measured.long!.clientWidth);
+            expect(measured.long!.cell.right, label).toBeLessThanOrEqual(measured.long!.name.left + 1);
+            if (width < 1600) expect(fit.nameScroll, label).toBeGreaterThan(fit.nameClient);
+            else expect(fit.nameScroll, label).toBeLessThanOrEqual(fit.nameClient + 1);
+          } else {
+            expect(measured.standard?.gridRow.startsWith("2"), label).toBe(true);
+            expect(measured.standard!.ref.top, label).toBeGreaterThanOrEqual(measured.standard!.name.bottom - 1);
           }
         }
       }
+      console.log("roster widths", JSON.stringify(widthReport));
 
       await page.setViewport({ width: 800, height: 900 });
       await setTheme("dark");
@@ -230,9 +264,10 @@ describe.skipIf(!chrome)("owner dashboard fixes in the browser", () => {
       expect(stacked.standard!.ref.top).toBeGreaterThanOrEqual(stacked.standard!.name.bottom - 1);
       expect(overlaps(stacked.standard!.ref, stacked.standard!.name)).toBe(false);
       expect(stacked.standard!.scroll).toBeLessThanOrEqual(stacked.standard!.clientWidth + 1);
+      expect(stacked.long?.text).toBe("#BK-A1B2C3D4E5F6-RESCHED-0042");
       expect(stacked.long?.whiteSpace).toBe("nowrap");
       expect(stacked.long?.lines).toBe(1);
-      expect(stacked.long!.scroll).toBeGreaterThan(stacked.long!.clientWidth);
+      expect(stacked.long!.scroll).toBeLessThanOrEqual(stacked.long!.clientWidth + 1);
       expect(overlaps(stacked.long!.ref, stacked.long!.name)).toBe(false);
       await page.evaluate(() => (window as unknown as { schediDashGo: (page: string) => void }).schediDashGo("today"));
       const today = await page.evaluate(() => {
