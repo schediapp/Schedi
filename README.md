@@ -68,7 +68,7 @@ npx wrangler deploy --config wrangler.jsonc --env preview
 
 The preview hostname stays on `*.workers.dev`. It does not 301 to `https://schedi.app`. Canonical link tags on marketing and tenant pages still point at `https://schedi.app`.
 
-`env.preview.vars.FIREBASE_PROJECT_ID` is `siteforge-97699`, so tenant booking pages can still read public Firestore fields. `env.preview` sets `"kv_namespaces": []` and does not bind `AUTH_KV`. The production id `d53378ec0cfb4d089d73add2ff01c62d` holds live agency sessions, and there is no separate preview namespace. Without `AUTH_KV`, `/hq` cannot save or check an agency session, so the preview shows only the HQ login screen. Preview also sets `"analytics_engine_datasets": []` so it does not write the production `schedi_page_visits` dataset. Preview hostnames are not counted anyway.
+`env.preview.vars.FIREBASE_PROJECT_ID` is `siteforge-97699`, so tenant booking pages can still read public Firestore fields. `env.preview` sets `"kv_namespaces": []` and does not bind `AUTH_KV`. The production id `d53378ec0cfb4d089d73add2ff01c62d` holds live agency sessions, and there is no separate preview namespace. Without `AUTH_KV`, `/hq` cannot save or check an agency session, so the preview shows only the HQ login screen.
 
 Do not set `INDEXNOW_KEY`, `INDEXNOW_ENABLED`, `INDEXNOW_HOST`, or `BING_SITE_VERIFICATION` on the preview Worker. Preview deploys must not ping IndexNow.
 
@@ -105,3 +105,18 @@ Owners get a pop-up for new and cancelled bookings on the Android app and in web
 - `site/firebase-messaging-sw.js` is the Firebase Cloud Messaging service worker. It is registered with scope `/firebase-cloud-messaging-push-scope`, has no fetch handler, and opens `https://schedi.app/login` when an alert is tapped. It must be deployed next to the shell.
 - Firebase web app `1:350589852487:web:c7b4017d8880f0761b0a62` (project `siteforge-97699`). `window.SCHEDI_WEB_PUSH_VAPID_KEY` may hold the public key from Firebase console > Project settings > Cloud Messaging > Web Push certificates; empty uses Firebase's built-in key.
 - Server (`workers/schedi-email-worker/src/owner-push.js`): `POST /api/push-token` stores every token in `pushTokens/{business}.tokens` and browser ones also in `webTokens`; web tokens get an FCM `webpush` payload with the Schedi icon and the portal link. Tokens FCM reports as unregistered are pruned. `POST /api/push-test` sends one test alert to the calling device, owner only, once per business per minute.
+
+## Booking page visits
+
+Published `GET /<slug>` views on `schedi.app` are counted in Workers Analytics Engine. `wrangler.jsonc` binds `PAGE_VISITS` to dataset `schedi_page_visits`. The dataset is created on the first counted view. There is no separate create command, and the counts are not stored in `AUTH_KV`.
+
+`env.preview` sets `"analytics_engine_datasets": []` so a preview deploy does not write the production dataset. Preview hostnames are not counted anyway.
+
+Reports reads the totals from `schedi-email-worker` (`POST /api/page-visits`). Before that can load in production, from `workers/schedi-email-worker`:
+
+```bash
+npx wrangler secret put ANALYTICS_API_TOKEN
+npx wrangler secret put CF_ACCOUNT_ID
+```
+
+`ANALYTICS_API_TOKEN` needs Account → Account Analytics → Read. `CF_ACCOUNT_ID` is the 32-character account id. Do not commit either value.

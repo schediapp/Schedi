@@ -20,17 +20,7 @@
   "kv_namespaces": [
     {
       "binding": "AUTH_KV",
-      // Same namespace as schedi-email-worker. Sign-in sessions only. Visit counts
-      // go to PAGE_VISITS so they do not spend this namespace's write quota.
       "id": "d53378ec0cfb4d089d73add2ff01c62d"
-    }
-  ],
-  // Created on the first writeDataPoint after deploy. No separate create command.
-  // The email worker reads it with the SQL API (ANALYTICS_API_TOKEN + CF_ACCOUNT_ID).
-  "analytics_engine_datasets": [
-    {
-      "binding": "PAGE_VISITS",
-      "dataset": "schedi_page_visits"
     }
   ],
   "observability": {
@@ -44,6 +34,15 @@
       "head_sampling_rate": 0.01
     }
   },
+  // Booking-page visits. Created on the first writeDataPoint after deploy.
+  // No separate create command. The email worker reads this dataset with the
+  // SQL API (secrets ANALYTICS_API_TOKEN and CF_ACCOUNT_ID). Not AUTH_KV.
+  "analytics_engine_datasets": [
+    {
+      "binding": "PAGE_VISITS",
+      "dataset": "schedi_page_visits"
+    }
+  ],
   "routes": [
     { "pattern": "schedi.app/*", "zone_name": "schedi.app" },
     { "pattern": "www.schedi.app/*", "zone_name": "schedi.app" }
@@ -56,13 +55,13 @@
       "vars": {
         "FIREBASE_PROJECT_ID": "siteforge-97699"
       },
+      // Do not inherit the production visit dataset. Preview hosts are not counted.
+      "analytics_engine_datasets": [],
       // Do not inherit the production AUTH_KV. That namespace holds live agency
       // sessions. There is no separate preview namespace, so /hq cannot store a
       // session and stays on the login screen. Never add INDEXNOW_* or
       // BING_SITE_VERIFICATION to this environment.
-      "kv_namespaces": [],
-      // Do not inherit the production dataset. Preview hosts are not counted.
-      "analytics_engine_datasets": []
+      "kv_namespaces": []
     }
   }
 }
