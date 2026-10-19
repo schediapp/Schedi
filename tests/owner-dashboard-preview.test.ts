@@ -1651,6 +1651,9 @@ describe("owner dashboard preview", () => {
     expect(bar).toContain("left: 0;");
     expect(bar).toContain("right: 0;");
     expect(bar).toContain("bottom: 0;");
+    expect(bar).toContain("width: 100vw;");
+    expect(bar).toContain("max-width: 100vw;");
+    expect(dashCss(html)).toContain("#tenantPortalSection.schedi-newdash .sd-pay { position: relative;");
     expect(bar).toContain("background: #0b1220;");
     expect(bar).toContain("border-top: 1px solid rgba(148, 163, 184, 0.32);");
     expect(bar).toContain("border-radius: 0;");
@@ -4915,6 +4918,111 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
         };
       });
       expect(more).toEqual({ slot: "4", current: "page", on: true });
+    } finally {
+      await browser.close();
+      await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+    }
+  }, 120000);
+
+  it("keeps Agenda, Clients, Add, Calendar, and More visible at 390 on every tab", async () => {
+    const types: Record<string, string> = {
+      ".html": "text/html; charset=utf-8",
+      ".js": "text/javascript; charset=utf-8",
+      ".svg": "image/svg+xml",
+      ".png": "image/png",
+      ".json": "application/json",
+      ".webmanifest": "application/manifest+json",
+    };
+    const server = createServer((req, res) => {
+      const path = new URL(req.url || "/", "http://127.0.0.1").pathname;
+      const file = path === "/" || path === "/portal-preview" ? "/index.html" : path;
+      const full = join(root, file);
+      if (!full.startsWith(root) || !existsSync(full)) {
+        res.writeHead(404);
+        res.end("missing");
+        return;
+      }
+      res.writeHead(200, { "content-type": types[extname(full)] || "application/octet-stream" });
+      res.end(readFileSync(full));
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const address = server.address();
+    const port = typeof address === "object" && address ? address.port : 0;
+    const puppeteer = await import("puppeteer-core");
+    const browser = await puppeteer.default.launch({
+      executablePath: chrome,
+      headless: true,
+      args: ["--no-sandbox", "--disable-dev-shm-usage"],
+    });
+    const page = await browser.newPage();
+    const readBar = () => page.evaluate(() => {
+      const bar = document.getElementById("schediDashTabbar") as HTMLElement;
+      const view = window.visualViewport;
+      const buttons = Array.from(bar.querySelectorAll(":scope > button")) as HTMLButtonElement[];
+      const items = buttons.map((btn) => {
+        const box = btn.getBoundingClientRect();
+        const hit = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+        return {
+          label: btn.getAttribute("aria-label") || (btn.querySelector("span")?.textContent || "").trim(),
+          left: box.left,
+          right: box.right,
+          top: box.top,
+          bottom: box.bottom,
+          hit: !!(hit && (hit === btn || btn.contains(hit))),
+        };
+      });
+      return {
+        inner: window.innerWidth,
+        visual: view?.width ?? window.innerWidth,
+        visualHeight: view?.height ?? window.innerHeight,
+        scroll: document.documentElement.scrollWidth,
+        dash: document.getElementById("tenantPortalSection")?.getAttribute("data-dash") || "",
+        view: (window as unknown as { rosterCalendarView?: string }).rosterCalendarView || "",
+        items,
+      };
+    });
+    const expectBar = async (where: string) => {
+      const bar = await readBar();
+      expect(bar.inner, where).toBe(390);
+      expect(bar.visual, where).toBe(390);
+      expect(bar.scroll, where).toBeLessThanOrEqual(390);
+      expect(bar.items.map((item) => item.label), where).toEqual(["Agenda", "Clients", "Add appointment", "Calendar", "More"]);
+      bar.items.forEach((item) => {
+        expect(item.left, `${where} ${item.label}`).toBeGreaterThanOrEqual(-1);
+        expect(item.right, `${where} ${item.label}`).toBeLessThanOrEqual(bar.visual + 1);
+        expect(item.top, `${where} ${item.label}`).toBeGreaterThanOrEqual(-1);
+        expect(item.bottom, `${where} ${item.label}`).toBeLessThanOrEqual(bar.visualHeight + 1);
+        expect(item.hit, `${where} ${item.label}`).toBe(true);
+      });
+    };
+    try {
+      await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+      await page.goto(`http://127.0.0.1:${port}/portal-preview`, { waitUntil: "domcontentloaded", timeout: 45000 });
+      await page.waitForFunction(() => document.getElementById("schediStatPeople")?.textContent === "2", { timeout: 20000 });
+      await expectBar("today");
+      await page.click('#schediDashTabbar [data-dash-go="clients"]');
+      await page.waitForFunction(() => document.getElementById("tenantPortalSection")?.getAttribute("data-dash") === "clients");
+      await expectBar("clients");
+      await page.click('#schediDashTabbar [data-dash-go="appointments"]');
+      await page.waitForFunction(() => document.getElementById("tenantPortalSection")?.getAttribute("data-dash") === "appointments");
+      await expectBar("calendar list");
+      await page.click("#rosterViewWeek");
+      await page.waitForFunction(() => (window as unknown as { rosterCalendarView?: string }).rosterCalendarView === "week");
+      await expectBar("calendar week");
+      await page.click("#rosterViewMonth");
+      await page.waitForFunction(() => (window as unknown as { rosterCalendarView?: string }).rosterCalendarView === "month");
+      await expectBar("calendar month");
+      for (const name of ["services", "hours", "payments", "emails", "profile", "reports", "account", "billing"]) {
+        await page.click("#schediDashMoreBtn");
+        await page.waitForSelector("#schediDashMoreSheet:not([hidden])");
+        await page.click(`#schediDashMoreSheet [data-dash-go="${name}"]`);
+        await page.waitForFunction((pageName) => {
+          const section = document.getElementById("tenantPortalSection");
+          const sheet = document.getElementById("schediDashMoreSheet");
+          return section?.getAttribute("data-dash") === pageName && !!sheet?.hidden;
+        }, {}, name);
+        await expectBar(name);
+      }
     } finally {
       await browser.close();
       await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
