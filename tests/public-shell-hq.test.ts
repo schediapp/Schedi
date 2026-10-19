@@ -89,7 +89,7 @@ describe("public booking HTML", () => {
     expect(hqCss).toMatch(/@media \(min-width:\s*860px\)/);
   });
 
-  it.each(["/axeldelcidphotography", "/login", "/portal"])(
+  it.each(["/axeldelcidphotography", "/login", "/portal?biz=harbor"])(
     "serves %s without HQ markers even if the asset still contains them",
     async (path) => {
       const response = await handleRequest(new Request("https://schedi.app" + path), env(hqHtml), ctx());

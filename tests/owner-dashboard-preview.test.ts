@@ -296,11 +296,44 @@ describe("owner dashboard preview", () => {
   it("serves the preview shell and keeps production opt-in", async () => {
     const preview = await handleRequest(new Request("https://schedi.app/portal-preview"), env(), ctx());
     expect(preview.status).toBe(302);
-    expect(preview.headers.get("location")).toBe("https://schedi.app/portal");
+    expect(preview.headers.get("location")).toBe("https://schedi.app/login");
 
     const wwwPreview = await handleRequest(new Request("https://www.schedi.app/portal-preview?demo=1"), env(), ctx());
     expect(wwwPreview.status).toBe(302);
-    expect(wwwPreview.headers.get("location")).toBe("https://schedi.app/portal");
+    expect(wwwPreview.headers.get("location")).toBe("https://schedi.app/login");
+
+    const previewClassic = await handleRequest(
+      new Request("https://schedi.app/portal-preview?classic=1&demo=1&biz=harbor&tenant=harbor&newdash=0&dash=hours"),
+      env(),
+      ctx(),
+    );
+    expect(previewClassic.status).toBe(302);
+    expect(previewClassic.headers.get("location")).toBe("https://schedi.app/login?classic=1&newdash=0&dash=hours");
+
+    const plainPortal = await handleRequest(new Request("https://schedi.app/portal"), env(), ctx());
+    expect(plainPortal.status).toBe(302);
+    expect(plainPortal.headers.get("location")).toBe("https://schedi.app/login");
+
+    const classicPortal = await handleRequest(new Request("https://schedi.app/portal?classic=1"), env(), ctx());
+    expect(classicPortal.status).toBe(302);
+    expect(classicPortal.headers.get("location")).toBe("https://schedi.app/login?classic=1");
+
+    const wwwPortal = await handleRequest(new Request("https://www.schedi.app/portal?classic=1"), env(), ctx());
+    expect(wwwPortal.status).toBe(302);
+    expect(wwwPortal.headers.get("location")).toBe("https://schedi.app/login?classic=1");
+    const classicAfter = runHead("/login", "?classic=1", "schedi.app");
+    expect(classicAfter.demo).toBe(false);
+    expect(classicAfter.dash).toBe(false);
+
+    const newdashPortal = await handleRequest(new Request("https://schedi.app/portal/?newdash=0&dash=hours"), env(), ctx());
+    expect(newdashPortal.status).toBe(302);
+    expect(newdashPortal.headers.get("location")).toBe("https://schedi.app/login?newdash=0&dash=hours");
+    const newdashAfter = runHead("/login", "?newdash=0", "schedi.app");
+    expect(newdashAfter.dash).toBe(false);
+
+    const headPortal = await handleRequest(new Request("https://schedi.app/PORTAL?classic=1", { method: "HEAD" }), env(), ctx());
+    expect(headPortal.status).toBe(302);
+    expect(headPortal.headers.get("location")).toBe("https://schedi.app/login?classic=1");
 
     for (const path of ["/?demo=1", "/?newdash=1"]) {
       const response = await handleRequest(new Request("https://schedi.app" + path), env(), ctx());
@@ -311,18 +344,49 @@ describe("owner dashboard preview", () => {
       expect(text, path).not.toContain("<body>app</body>");
     }
 
-    const portal = await handleRequest(new Request("https://schedi.app/portal?biz=harbor&demo=1"), env(), ctx());
-    expect(portal.status).toBe(200);
-    expect(portal.headers.get("location")).toBeNull();
-    expect(await portal.text()).toContain("<body>app</body>");
+    const portalDemo = await handleRequest(new Request("https://schedi.app/portal?biz=harbor&demo=1"), env(), ctx());
+    expect(portalDemo.status).toBe(200);
+    expect(portalDemo.headers.get("location")).toBeNull();
+    expect(await portalDemo.text()).toContain("<body>app</body>");
+
+    for (const path of ["/portal?biz=harbor", "/portal?tenant=harbor"]) {
+      const portal = await handleRequest(new Request("https://schedi.app" + path), env(), ctx());
+      expect(portal.status, path).toBe(200);
+      expect(portal.headers.get("location"), path).toBeNull();
+      expect(await portal.text(), path).toContain("<body>app");
+    }
+
+    const help = await handleRequest(new Request("https://schedi.app/portal/help?dash=hours"), env(), ctx());
+    expect(help.status).toBe(200);
+    expect(help.headers.get("location")).toBeNull();
+    expect(await help.text()).toContain("<body>app");
+
+    const login = await handleRequest(new Request("https://schedi.app/login"), env(), ctx());
+    expect(login.status).toBe(200);
+    expect(login.headers.get("location")).toBeNull();
+    expect(await login.text()).toContain("<body>app");
+
+    const booking = await handleRequest(new Request("https://schedi.app/axeldelcidphotography/"), env(), ctx());
+    expect(booking.status).toBe(200);
+    expect(booking.headers.get("location")).toBeNull();
+    expect(await booking.text()).toContain("<body>app");
 
     const workerPreview = await handleRequest(
-      new Request("https://schedi-dashboard-preview.axl199.workers.dev/portal-preview"),
+      new Request("https://schedi-dashboard-preview.axl199.workers.dev/portal-preview?demo=1"),
       env(),
       ctx(),
     );
     expect(workerPreview.status).toBe(200);
     expect(await workerPreview.text()).toContain("<body>app</body>");
+
+    const workerPortal = await handleRequest(
+      new Request("https://schedi-dashboard-preview.axl199.workers.dev/portal"),
+      env(),
+      ctx(),
+    );
+    expect(workerPortal.status).toBe(200);
+    expect(workerPortal.headers.get("location")).toBeNull();
+    expect(await workerPortal.text()).toContain("<body>app</body>");
 
     for (const path of ["/?demo=1", "/?newdash=1"]) {
       const response = await handleRequest(new Request("http://127.0.0.1" + path), env(), ctx());
@@ -342,6 +406,130 @@ describe("owner dashboard preview", () => {
     expect(renderRobots()).toContain("Disallow: /portal-preview");
     expect(renderSitemap()).not.toContain("portal-preview");
     expect(html).toContain("first === 'portal-preview'");
+  });
+
+  it("opens the owner dashboard from /login when a session is already stored", () => {
+    function extractAssigned(source: string, name: string): string {
+      const marker = "window." + name + " = function";
+      const start = source.indexOf(marker);
+      if (start < 0) throw new Error("could not extract " + name);
+      const brace = source.indexOf("{", start);
+      let depth = 0;
+      for (let i = brace; i < source.length; i++) {
+        if (source[i] === "{") depth++;
+        else if (source[i] === "}") {
+          depth--;
+          if (depth === 0) {
+            const params = source.slice(start + marker.length, brace).trim();
+            return "function " + name + params + " " + source.slice(brace, i + 1);
+          }
+        }
+      }
+      throw new Error("could not extract " + name);
+    }
+    function classList(hidden: boolean) {
+      const names = new Set(hidden ? ["hidden"] : []);
+      return {
+        add(...values: string[]) { for (const name of values) names.add(name); },
+        remove(...values: string[]) { for (const name of values) names.delete(name); },
+        contains(name: string) { return names.has(name); },
+      };
+    }
+    function boot(pathname: string, stored: Record<string, string> | null) {
+      const bag = new Map(Object.entries(stored || {}));
+      const els: Record<string, { classList: ReturnType<typeof classList> }> = {
+        tenantLoginBox: { classList: classList(false) },
+        tenantDashboard: { classList: classList(true) },
+        tenantPortalSection: { classList: classList(true) },
+      };
+      const sandbox = {
+        window: {
+          location: { pathname, search: "", hostname: "schedi.app" },
+          localStorage: {
+            getItem(key: string) { return bag.has(key) ? bag.get(key)! : null; },
+            setItem(key: string, value: string) { bag.set(key, String(value)); },
+            removeItem(key: string) { bag.delete(key); },
+          },
+          sessionStorage: {
+            getItem() { return null; },
+            setItem() {},
+            removeItem() {},
+          },
+        },
+        document: {
+          getElementById(id: string) { return els[id] || null; },
+        },
+      };
+      const script = [
+        "var SCHEDI_AUTH_SESSION_KEY = 'schedi.authSession';",
+        "var SCHEDI_AUTH_META_KEY = 'schedi.authMeta';",
+        "var platformState = { activeTenantId: '', isTenantOwnerLoggedIn: false, ownerSelfSession: false, isAgencyMasterLoggedIn: false, currentMode: '' };",
+        "var painted = 0;",
+        extractFunction(html, "isReservedBusinessSlug"),
+        extractFunction(html, "getPublicSlugFromPath"),
+        extractFunction(html, "isAgencyHqRoute"),
+        extractFunction(html, "schediAuthSession"),
+        extractFunction(html, "schediAuthMeta"),
+        extractFunction(html, "schediAuthRestoreAllowedHere"),
+        extractFunction(html, "applySchediAuthMetaOptimistic"),
+        extractAssigned(html, "switchPlatformMode"),
+        "function hqSectionEl(){return null;}",
+        "function hqNavButton(){return null;}",
+        "function syncHqManagingBanner(){}",
+        "function renderTenantAdminPortal(){ painted += 1; }",
+        "function updateLivePreviewControlsVisibility(){}",
+        "function syncAgencyChrome(){}",
+        "function syncPublicHomeFooter(){}",
+        "var onBookingPage = !!getPublicSlugFromPath();",
+        "var restored = onBookingPage ? false : applySchediAuthMetaOptimistic();",
+        "if (!onBookingPage) switchPlatformMode('tenant');",
+        "({",
+        "  restored: restored,",
+        "  loggedIn: platformState.isTenantOwnerLoggedIn,",
+        "  tenantId: platformState.activeTenantId,",
+        "  painted: painted,",
+        "  loginHidden: document.getElementById('tenantLoginBox').classList.contains('hidden'),",
+        "  dashboardHidden: document.getElementById('tenantDashboard').classList.contains('hidden'),",
+        "  sectionHidden: document.getElementById('tenantPortalSection').classList.contains('hidden')",
+        "});",
+      ].join("\n");
+      return runInNewContext(script, sandbox) as {
+        restored: boolean;
+        loggedIn: boolean;
+        tenantId: string;
+        painted: number;
+        loginHidden: boolean;
+        dashboardHidden: boolean;
+        sectionHidden: boolean;
+      };
+    }
+
+    const owner = boot("/login", {
+      "schedi.authSession": "owner-session",
+      "schedi.authMeta": JSON.stringify({ role: "owner", tenantId: "aura-exec", email: "alex@example.com" }),
+    });
+    expect(owner.restored).toBe(true);
+    expect(owner.loggedIn).toBe(true);
+    expect(owner.tenantId).toBe("aura-exec");
+    expect(owner.painted).toBe(1);
+    expect(owner.loginHidden).toBe(true);
+    expect(owner.dashboardHidden).toBe(false);
+    expect(owner.sectionHidden).toBe(false);
+
+    const signedOut = boot("/login", null);
+    expect(signedOut.restored).toBe(false);
+    expect(signedOut.loggedIn).toBe(false);
+    expect(signedOut.painted).toBe(0);
+    expect(signedOut.loginHidden).toBe(false);
+    expect(signedOut.dashboardHidden).toBe(true);
+
+    const booking = boot("/axeldelcidphotography/", {
+      "schedi.authSession": "owner-session",
+      "schedi.authMeta": JSON.stringify({ role: "owner", tenantId: "aura-exec", email: "alex@example.com" }),
+    });
+    expect(booking.restored).toBe(false);
+    expect(booking.loggedIn).toBe(false);
+    expect(booking.painted).toBe(0);
   });
 
   it("turns the new dashboard on for real owner sessions and keeps demo data off production", () => {
@@ -1659,6 +1847,21 @@ describe("owner dashboard preview", () => {
     expect(classic).toContain(".sd-roster-all { display: none; }");
     expect(dashCss(html)).not.toContain(":not(.schedi-newdash)");
     expect(unscopedSelectors(dashCss(html))).toEqual([]);
+  });
+
+  it("centers a visible owner sign-in inside the desktop new-dashboard shell", () => {
+    const css = dashCss(html);
+    const at = css.indexOf("@media (min-width: 860px) {\n    #tenantPortalSection.schedi-newdash:has(> #tenantLoginBox:not(.hidden))");
+    expect(at).toBeGreaterThan(0);
+    const rule = css.slice(at, css.indexOf("#tenantPortalSection.schedi-newdash .sd-pay-radio input") > at ? css.length : at + 900);
+    expect(rule).toContain("justify-content: center");
+    expect(rule).toContain("align-items: center");
+    expect(rule).toContain("min-height: 100dvh");
+    expect(unscopedSelectors(css)).toEqual([]);
+    const classicStart = html.indexOf('<style id="schediClassicRoster">');
+    const classic = html.slice(classicStart, html.indexOf("</style>", classicStart));
+    expect(classic).toContain("#tenantPortalSection:not(.schedi-newdash):has(> #tenantLoginBox:not(.hidden))");
+    expect(classic).toContain("@media (min-width: 860px)");
   });
 });
 
@@ -6292,6 +6495,146 @@ describe.skipIf(!chrome)("classic owner roster icons", () => {
         expect(svg.w).toBeLessThanOrEqual(48);
         expect(svg.h).toBeLessThanOrEqual(48);
       });
+    } finally {
+      await browser.close();
+      await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+    }
+  }, 120000);
+});
+
+describe.skipIf(!chrome)("owner sign-in placement", () => {
+  it("centers the sign-in card on desktop and leaves the phone layout and signed-in dashboard alone", async () => {
+    const types: Record<string, string> = {
+      ".html": "text/html; charset=utf-8",
+      ".js": "text/javascript; charset=utf-8",
+      ".svg": "image/svg+xml",
+      ".png": "image/png",
+      ".jpg": "image/jpeg",
+      ".jpeg": "image/jpeg",
+      ".json": "application/json",
+      ".webmanifest": "application/manifest+json",
+    };
+    const server = createServer((req, res) => {
+      const path = new URL(req.url || "/", "http://127.0.0.1").pathname;
+      const file = path === "/" || path === "/login" ? "/index.html" : path;
+      const full = join(root, file);
+      if (!full.startsWith(root) || !existsSync(full)) {
+        res.writeHead(404);
+        res.end("missing");
+        return;
+      }
+      res.writeHead(200, { "content-type": types[extname(full)] || "application/octet-stream" });
+      res.end(readFileSync(full));
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const address = server.address();
+    const port = typeof address === "object" && address ? address.port : 0;
+    const puppeteer = await import("puppeteer-core");
+    const browser = await puppeteer.default.launch({
+      executablePath: chrome,
+      headless: true,
+      args: ["--no-sandbox", "--disable-dev-shm-usage"],
+    });
+    try {
+      const page = await browser.newPage();
+      await page.setRequestInterception(true);
+      page.on("request", (request) => {
+        const url = request.url();
+        if (/googleapis|firebaseio|firebasestorage|gstatic|cloudflareinsights|schedi\.app/.test(url)) {
+          void request.respond({ status: 204, body: "" });
+          return;
+        }
+        void request.continue();
+      });
+      const place = () => page.evaluate(() => {
+        const box = document.getElementById("tenantLoginBox");
+        const section = document.getElementById("tenantPortalSection");
+        const side = document.getElementById("schediDashSidebar");
+        const rect = box?.getBoundingClientRect();
+        const visible = !!box && !box.classList.contains("hidden") && !!rect && rect.width > 0;
+        const style = section ? getComputedStyle(section) : null;
+        const sideRect = side?.getBoundingClientRect();
+        return {
+          deltaX: visible && rect ? (rect.left + rect.width / 2) - window.innerWidth / 2 : null,
+          deltaY: visible && rect ? (rect.top + rect.height / 2) - window.innerHeight / 2 : null,
+          top: visible && rect ? rect.top : null,
+          width: visible && rect ? rect.width : 0,
+          padL: style ? style.paddingLeft : "",
+          header: getComputedStyle(document.querySelector("header") as HTMLElement).display,
+          sideW: sideRect ? sideRect.width : 0,
+          light: document.documentElement.classList.contains("schedi-light"),
+        };
+      });
+      const open = async (path: string, width: number, height = 900) => {
+        await page.setViewport({ width, height, deviceScaleFactor: 1 });
+        await page.goto(`http://127.0.0.1:${port}${path}`, { waitUntil: "domcontentloaded", timeout: 30000 });
+        await page.waitForFunction(() => {
+          const box = document.getElementById("tenantLoginBox");
+          return !!box && box.getBoundingClientRect().width > 100;
+        }, { timeout: 15000 });
+      };
+      const mountDash = () => page.evaluate(() => {
+        document.body.classList.add("schedi-newdash");
+        const section = document.getElementById("tenantPortalSection");
+        section?.classList.add("schedi-newdash");
+        section?.classList.remove("hidden");
+        document.getElementById("tenantLoginBox")?.classList.remove("hidden");
+        document.getElementById("tenantDashboard")?.classList.add("hidden");
+      });
+      for (const width of [860, 1024, 1280, 1440]) {
+        await open("/login", width);
+        await mountDash();
+        for (const theme of ["dark", "light"]) {
+          await page.evaluate((mode) => {
+            document.documentElement.classList.toggle("schedi-light", mode === "light");
+          }, theme);
+          const box = await place();
+          expect(box.deltaX, `new ${width} ${theme}`).not.toBeNull();
+          expect(Math.abs(box.deltaX || 0), `new ${width} ${theme}`).toBeLessThanOrEqual(8);
+          expect(Math.abs(box.deltaY || 0), `new ${width} ${theme}`).toBeLessThanOrEqual(24);
+          expect(box.width, `new ${width} ${theme}`).toBeGreaterThan(400);
+          expect(box.width, `new ${width} ${theme}`).toBeLessThan(480);
+          expect(box.header, `new ${width} ${theme}`).toBe("none");
+          expect(box.light, `new ${width} ${theme}`).toBe(theme === "light");
+        }
+        await open("/login?classic=1", width);
+        for (const theme of ["dark", "light"]) {
+          await page.evaluate((mode) => {
+            document.documentElement.classList.toggle("schedi-light", mode === "light");
+          }, theme);
+          const box = await place();
+          expect(Math.abs(box.deltaX || 0), `classic ${width} ${theme}`).toBeLessThanOrEqual(8);
+          expect(box.top || 0, `classic ${width} ${theme}`).toBeGreaterThan(70);
+          expect(box.top || 0, `classic ${width} ${theme}`).toBeLessThan(220);
+          expect(box.header, `classic ${width} ${theme}`).toBe("block");
+          expect(box.width, `classic ${width} ${theme}`).toBeGreaterThan(400);
+        }
+      }
+      await open("/login", 390, 800);
+      const phone = await place();
+      expect(Math.abs(phone.deltaX || 0)).toBeLessThanOrEqual(8);
+      expect(phone.top || 0).toBeGreaterThan(120);
+      expect(phone.top || 0).toBeLessThan(220);
+      expect(phone.header).toBe("block");
+      expect(phone.padL).toBe("0px");
+      await mountDash();
+      const phoneDash = await place();
+      expect(Math.abs(phoneDash.deltaX || 0)).toBeLessThanOrEqual(8);
+      expect(phoneDash.padL).toBe("14px");
+      expect(phoneDash.top || 0).toBeLessThan(140);
+      expect(phoneDash.header).toBe("none");
+      await page.setViewport({ width: 1280, height: 900, deviceScaleFactor: 1 });
+      await page.evaluate(() => {
+        document.getElementById("tenantLoginBox")?.classList.add("hidden");
+        document.getElementById("tenantDashboard")?.classList.remove("hidden");
+        const chromeBox = document.getElementById("schediDashChrome");
+        if (chromeBox) chromeBox.hidden = false;
+      });
+      const signedIn = await place();
+      expect(signedIn.width).toBe(0);
+      expect(signedIn.padL).toBe("268px");
+      expect(signedIn.sideW).toBeGreaterThan(200);
+      expect(signedIn.header).toBe("none");
     } finally {
       await browser.close();
       await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));

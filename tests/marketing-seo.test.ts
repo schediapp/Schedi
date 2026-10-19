@@ -174,7 +174,7 @@ describe("crawler files and app routes", () => {
   it("keeps SPA deep links and sends noindex on non-public app routes", async () => {
     const env = envWith(shellAssets());
     env.FIREBASE_PROJECT_ID = "";
-    for (const path of ["/signup", "/help/booking", "/reset", "/portal", "/admin", "/bright-cuts", "/bright-cuts/manage/token"]) {
+    for (const path of ["/signup", "/help/booking", "/reset", "/portal?biz=harbor", "/admin", "/bright-cuts", "/bright-cuts/manage/token"]) {
       const response = await handleRequest(new Request(`https://schedi.app${path}`), env, ctx());
       expect(response.status, path).toBe(200);
       const html = await response.text();
@@ -182,6 +182,9 @@ describe("crawler files and app routes", () => {
       expect(html).toContain('content="noindex, follow"');
       expect(response.headers.get("x-robots-tag")).toContain("noindex");
     }
+    const barePortal = await handleRequest(new Request("https://schedi.app/portal"), env, ctx());
+    expect(barePortal.status).toBe(302);
+    expect(barePortal.headers.get("location")).toBe("https://schedi.app/login");
   });
 
   it("redirects /?portal=login to /login and keeps other params", async () => {
