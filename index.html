@@ -25713,6 +25713,136 @@ function schediQrCardPixels(text, color) {
         /* Month title sits on the dark slate-900 bar. Light mode otherwise remaps .text-white to near-black. */
         html.schedi-light #monthTitleLabel { color: #f8fafc !important; }
         /* /booking-day-contrast */
+        /* series-date-contrast */
+        #customDatesList .series-date-remove,
+        #recurrencePreviewList .series-date-remove {
+            color: #cbd5e1;
+            background: transparent;
+            border: 1px solid #334155;
+        }
+        #customDatesList .series-date-remove:hover,
+        #customDatesList .series-date-remove:focus-visible,
+        #recurrencePreviewList .series-date-remove:hover,
+        #recurrencePreviewList .series-date-remove:focus-visible {
+            color: #ffffff;
+            border-color: #94a3b8;
+            outline: 2px solid #34d399;
+            outline-offset: 2px;
+        }
+        html.schedi-light #customDatesList .series-date-row,
+        html.schedi-light.schedi-newbook #customDatesList .series-date-row,
+        html.schedi-light #recurrencePreviewList .series-date-row,
+        html.schedi-light.schedi-newbook #recurrencePreviewList .series-date-row {
+            background: #f8fafc !important;
+            border-color: #cbd5e1 !important;
+            color: #0f172a;
+        }
+        html.schedi-light #customDatesList .series-date-row.is-unavailable,
+        html.schedi-light.schedi-newbook #customDatesList .series-date-row.is-unavailable,
+        html.schedi-light #recurrencePreviewList .series-date-row.is-unavailable,
+        html.schedi-light.schedi-newbook #recurrencePreviewList .series-date-row.is-unavailable {
+            background: #fff1f2 !important;
+            border-color: #fecdd3 !important;
+        }
+        html.schedi-light #customDatesList .series-date-label,
+        html.schedi-light.schedi-newbook #customDatesList .series-date-label,
+        html.schedi-light #recurrencePreviewList .series-date-label,
+        html.schedi-light.schedi-newbook #recurrencePreviewList .series-date-label {
+            color: #0f172a !important;
+        }
+        html.schedi-light #customDatesList .series-date-time,
+        html.schedi-light.schedi-newbook #customDatesList .series-date-time,
+        html.schedi-light #recurrencePreviewList .series-date-time,
+        html.schedi-light.schedi-newbook #recurrencePreviewList .series-date-time {
+            color: #0f172a !important;
+            background: #ffffff !important;
+            border-color: #475569 !important;
+        }
+        html.schedi-light #customDatesList .series-date-remove,
+        html.schedi-light.schedi-newbook #customDatesList .series-date-remove,
+        html.schedi-light #recurrencePreviewList .series-date-remove,
+        html.schedi-light.schedi-newbook #recurrencePreviewList .series-date-remove {
+            color: #334155 !important;
+            background: #ffffff !important;
+            border-color: #334155 !important;
+        }
+        html.schedi-light #customDatesList .series-date-remove:hover,
+        html.schedi-light #customDatesList .series-date-remove:focus-visible,
+        html.schedi-light.schedi-newbook #customDatesList .series-date-remove:hover,
+        html.schedi-light.schedi-newbook #customDatesList .series-date-remove:focus-visible,
+        html.schedi-light #recurrencePreviewList .series-date-remove:hover,
+        html.schedi-light #recurrencePreviewList .series-date-remove:focus-visible,
+        html.schedi-light.schedi-newbook #recurrencePreviewList .series-date-remove:hover,
+        html.schedi-light.schedi-newbook #recurrencePreviewList .series-date-remove:focus-visible {
+            color: #0f172a !important;
+            background: #e2e8f0 !important;
+            border-color: #0f172a !important;
+            outline: 2px solid #047857;
+            outline-offset: 2px;
+        }
+        html.schedi-light #customDatesList .series-date-warn,
+        html.schedi-light.schedi-newbook #customDatesList .series-date-warn,
+        html.schedi-light #recurrencePreviewList .series-date-warn,
+        html.schedi-light.schedi-newbook #recurrencePreviewList .series-date-warn {
+            color: #be123c !important;
+        }
+        #customDatesList .series-date-row,
+        #recurrencePreviewList .series-date-row,
+        #seriesTimeBlock { max-width: 100%; min-width: 0; box-sizing: border-box; }
+        #customDatesList .series-date-warn,
+        #customDatesList .series-date-ok,
+        #recurrencePreviewList .series-date-warn,
+        #recurrencePreviewList .series-date-ok { min-width: 0; overflow-wrap: anywhere; }
+        #customDatesList .series-date-time,
+        #recurrencePreviewList .series-date-time { max-width: 100%; min-width: 0; }
+        #customDatesList .series-date-row.is-confirmed,
+        #recurrencePreviewList .series-date-row.is-confirmed { border-color: #047857; }
+        .series-date-ok { color: #6ee7b7; font-weight: 700; }
+        html.schedi-light #customDatesList .series-date-row.is-confirmed,
+        html.schedi-light.schedi-newbook #customDatesList .series-date-row.is-confirmed,
+        html.schedi-light #recurrencePreviewList .series-date-row.is-confirmed,
+        html.schedi-light.schedi-newbook #recurrencePreviewList .series-date-row.is-confirmed {
+            background: #ecfdf5 !important;
+            border-color: #047857 !important;
+        }
+        html.schedi-light .series-date-ok,
+        html.schedi-light.schedi-newbook .series-date-ok { color: #047857 !important; }
+        .series-date-confirm {
+            color: #ffffff;
+            background: #047857;
+            border: 1px solid #065f46;
+            font-weight: 700;
+        }
+        .series-date-confirm:hover,
+        .series-date-confirm:focus-visible {
+            color: #ffffff;
+            background: #065f46;
+            outline: 2px solid #6ee7b7;
+            outline-offset: 2px;
+        }
+        html.schedi-light .series-date-confirm,
+        html.schedi-light.schedi-newbook .series-date-confirm {
+            color: #ffffff !important;
+            background: #047857 !important;
+            border-color: #065f46 !important;
+        }
+        #seriesTimeBlock {
+            color: #fecdd3;
+            background: #4c0519;
+            border: 1px solid #fb7185;
+            border-radius: 12px;
+            padding: 8px 12px;
+            font-size: 12px;
+            font-weight: 700;
+            line-height: 1.4;
+        }
+        html.schedi-light #seriesTimeBlock,
+        html.schedi-light.schedi-newbook #seriesTimeBlock {
+            color: #9f1239 !important;
+            background: #fff1f2 !important;
+            border-color: #e11d48 !important;
+        }
+        /* /series-date-contrast */
         .biz-header { border-radius: 1rem; overflow: hidden; border: 1px solid rgba(255,255,255,0.08); background: rgba(17, 24, 39, 0.8); }
         html.schedi-light .biz-header { background: #ffffff; border-color: #d7dee8; }
         .biz-cover { background: #0f172a; }
@@ -25940,7 +26070,7 @@ function schediQrCardPixels(text, color) {
                 </label>
             </div>
             <div id="recurrenceCustomWrap" class="hidden space-y-3 text-xs">
-                <p class="text-slate-400">Tap the extra days you want. Your first visit is the day and time you picked above. You can change the time for each extra day.</p>
+                <p class="text-slate-400">Tap the extra days you want. Your first visit is the day and time you picked above. If that time is closed on an extra day, pick one of that day's open times and choose Use this time.</p>
                 <div class="flex items-center justify-between bg-slate-900/90 p-2 rounded-xl border border-slate-800">
                     <button type="button" onclick="customPrevMonth()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold" aria-label="Previous month"><i class="fa-solid fa-chevron-left"></i></button>
                     <span id="customMonthTitle" class="text-sm font-extrabold text-white"></span>
@@ -26046,7 +26176,8 @@ function schediQrCardPixels(text, color) {
                     <span>I agree to the <a href="https://schedi.app/terms" class="underline text-emerald-300" target="_blank" rel="noopener">Terms of Service</a> and <a href="https://schedi.app/privacy" class="underline text-emerald-300" target="_blank" rel="noopener">Privacy Policy</a>, and consent to the processing of my data.</span>
                 </label>
 
-                <button type="submit" id="pubSubmitBtn" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-sky-400 text-slate-950 font-black text-xs shadow-lg glow-emerald flex items-center justify-center space-x-2 transition-all">
+                <p id="seriesTimeBlock" class="hidden" role="status"></p>
+                <button type="submit" id="pubSubmitBtn" aria-describedby="seriesTimeBlock" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-sky-400 text-slate-950 font-black text-xs shadow-lg glow-emerald flex items-center justify-center space-x-2 transition-all">
                     <i class="fa-solid fa-lock text-sm"></i>
                     <span id="pubSubmitBtnText">Confirm & Reserve Appointment</span>
                 </button>
@@ -26844,6 +26975,10 @@ function schediQrCardPixels(text, color) {
         var MAX_BLOCK_MINS = 480;
         var MAX_SERIES_VISITS = 12;
         var customDates = {};
+        var customDatePending = {};
+        var customDateConfirmed = {};
+        var seriesTimeChoice = {};
+        var seriesSkipped = {};
         var customViewYear = null;
         var customViewMonth = null;
         function multiServiceEnabled() { return tenantData.allowMultiServiceBooking !== false; }
@@ -27906,6 +28041,7 @@ function paintBizHeader() {
         }
 
         // Series entries [{ date, time }]. First entry is always the date and time picked above.
+        // Later visits keep a confirmed replacement when the original time is closed that day.
         function buildSeriesEntries(freq) {
             if (freq === 'custom') {
                 var extra = Object.keys(customDates).filter(function (d) { return d > selectedDateStr; }).sort();
@@ -27914,7 +28050,121 @@ function paintBizHeader() {
                 }));
             }
             var count = freq === 'once' ? 1 : getSelectedRecurrenceCount();
-            return generateRecurringDates(selectedDateStr, freq, count).map(function (d) { return { date: d, time: selectedTime }; });
+            syncGeneratedSeriesChoices(freq);
+            return generateRecurringDates(selectedDateStr, freq, count).filter(function (d) {
+                return d === selectedDateStr || !seriesSkipped[d];
+            }).map(function (d) {
+                if (d === selectedDateStr) return { date: d, time: selectedTime };
+                var choice = seriesTimeChoice[d];
+                return { date: d, time: (choice && choice.confirmed && choice.time) ? choice.time : (selectedTime || '') };
+            });
+        }
+
+        function confirmedSeriesTimes(entries) {
+            return (entries || []).map(function (en) { return en && en.time; });
+        }
+
+        function syncGeneratedSeriesChoices(freq) {
+            if (!freq || freq === 'custom' || freq === 'once') return;
+            var dates = generateRecurringDates(selectedDateStr, freq, getSelectedRecurrenceCount());
+            var keep = {};
+            dates.forEach(function (d) { keep[d] = true; });
+            Object.keys(seriesTimeChoice).forEach(function (d) { if (!keep[d]) delete seriesTimeChoice[d]; });
+            Object.keys(seriesSkipped).forEach(function (d) { if (!keep[d]) delete seriesSkipped[d]; });
+            dates.forEach(function (d) {
+                if (d === selectedDateStr || seriesSkipped[d]) return;
+                var times = openTimesForDate(d);
+                var choice = seriesTimeChoice[d];
+                if (choice && choice.confirmed && times.indexOf(choice.time) !== -1) return;
+                if (choice && choice.pending && times.indexOf(choice.pending) !== -1) return;
+                if (selectedTime && times.indexOf(selectedTime) !== -1) {
+                    seriesTimeChoice[d] = { time: selectedTime, confirmed: true, pending: '' };
+                    return;
+                }
+                if (!choice) seriesTimeChoice[d] = { time: selectedTime || '', confirmed: false, pending: '' };
+                else {
+                    choice.confirmed = false;
+                    choice.time = selectedTime || choice.time || '';
+                }
+            });
+        }
+
+        function seriesUnresolvedReason() {
+            if (typeof recurrenceEnabled === 'function' && !recurrenceEnabled()) return '';
+            var freq = getSelectedRecurrenceFreq();
+            if (freq === 'once') return '';
+            if (freq === 'custom' && !Object.keys(customDates).length) return '';
+            var entries = buildSeriesEntries(freq);
+            var pending = [];
+            for (var i = 0; i < entries.length; i++) {
+                var en = entries[i];
+                if (!en || en.date === selectedDateStr) continue;
+                var times = openTimesForDate(en.date);
+                var ok = false;
+                if (freq === 'custom') ok = !!(customDateConfirmed[en.date] && times.indexOf(customDates[en.date]) !== -1);
+                else {
+                    var choice = seriesTimeChoice[en.date];
+                    ok = !!(choice && choice.confirmed && times.indexOf(choice.time) !== -1);
+                }
+                if (!ok) pending.push(prettyDatePub(en.date));
+            }
+            if (!pending.length) return '';
+            if (pending.length === 1) return 'Pick an available time for ' + pending[0] + '.';
+            return 'Pick an available time for ' + pending.length + ' dates.';
+        }
+
+        function paintSeriesSubmitGate() {
+            var btn = document.getElementById('pubSubmitBtn');
+            var note = document.getElementById('seriesTimeBlock');
+            var reason = '';
+            try { reason = seriesUnresolvedReason(); } catch (errGate) { reason = ''; }
+            if (note) {
+                note.textContent = reason;
+                note.classList.toggle('hidden', !reason);
+            }
+            if (!btn) return;
+            if (reason) {
+                btn.disabled = true;
+                btn.setAttribute('data-series-blocked', '1');
+            } else if (btn.getAttribute('data-series-blocked') === '1') {
+                btn.disabled = false;
+                btn.removeAttribute('data-series-blocked');
+            }
+        }
+
+        function seriesDateRowHtml(dateStr, storedTime, pending, confirmed) {
+            var times = openTimesForDate(dateStr);
+            var stored = storedTime || '';
+            var pendingTime = pending || '';
+            var available = !!(stored && times.indexOf(stored) !== -1);
+            var isConfirmed = !!(confirmed && available);
+            var chosen = pendingTime && times.indexOf(pendingTime) !== -1 ? pendingTime : '';
+            var selectedOpt = isConfirmed ? stored : chosen;
+            var quote = function (iso) { return JSON.stringify(iso).split('"').join("'"); };
+            var opts = times.map(function (t) {
+                return '<option value="' + escHtml(t) + '"' + (t === selectedOpt ? ' selected' : '') + '>' + escHtml(t) + '</option>';
+            }).join('');
+            var select = times.length
+                ? ('<select onchange="stageVisitTime(' + quote(dateStr) + ', this.value)" class="series-date-time glass-input px-2 py-1 rounded-lg text-xs font-mono" aria-label="Time on ' + escHtml(prettyDatePub(dateStr)) + '">'
+                    + '<option value=""' + (selectedOpt ? '' : ' selected') + '>' + (isConfirmed ? 'Change time' : 'Choose a time') + '</option>'
+                    + opts + '</select>')
+                : '';
+            var flag = '';
+            if (isConfirmed) flag = '<span class="series-date-ok">Confirmed at ' + escHtml(stored) + '</span>';
+            else if (!times.length) flag = '<span class="series-date-warn">No open times that day. Remove it or pick another day.</span>';
+            else if (!available) flag = '<span class="series-date-warn">Not available at ' + escHtml(stored || 'that time') + '</span>';
+            else if (chosen) flag = '<span class="series-date-warn">Confirm ' + escHtml(chosen) + '</span>';
+            var useBtn = (!isConfirmed && chosen)
+                ? ('<button type="button" class="series-date-confirm px-2 py-1 rounded-lg" onclick="confirmVisitTime(' + quote(dateStr) + ')">Use this time</button>')
+                : '';
+            var state = isConfirmed ? 'is-confirmed border-emerald-700 bg-slate-900/80' : (available ? 'border-slate-800 bg-slate-900/80' : 'is-unavailable border-rose-500/40 bg-rose-950/20');
+            return '<li class="series-date-row flex flex-wrap items-center gap-2 p-2 rounded-xl border ' + state + '">'
+                + '<span class="series-date-label font-bold text-white min-w-[7rem]">' + escHtml(prettyDatePub(dateStr)) + '</span>'
+                + select
+                + flag
+                + useBtn
+                + '<button type="button" onclick="removeSeriesVisit(' + quote(dateStr) + ')" class="series-date-remove ml-auto px-2 py-1 rounded-lg" aria-label="Remove ' + escHtml(prettyDatePub(dateStr)) + '">Remove</button>'
+                + '</li>';
         }
 
         function prettyDatePub(iso) {
@@ -27966,35 +28216,82 @@ function paintBizHeader() {
             if (list) {
                 var keys = Object.keys(customDates).sort();
                 list.innerHTML = keys.map(function (d) {
-                    var times = openTimesForDate(d);
-                    var cur = customDates[d];
-                    var ok = times.indexOf(cur) !== -1;
-                    var opts = (ok ? [] : ['<option value="' + escHtml(cur) + '" selected>' + escHtml(cur) + ' (not available)</option>'])
-                        .concat(times.map(function (t) { return '<option value="' + escHtml(t) + '"' + (t === cur ? ' selected' : '') + '>' + escHtml(t) + '</option>'; }));
-                    return '<li class="flex flex-wrap items-center gap-2 p-2 rounded-xl border ' + (ok ? 'border-slate-800 bg-slate-900/80' : 'border-rose-500/40 bg-rose-950/20') + '">'
-                        + '<span class="font-bold text-white min-w-[7rem]">' + escHtml(prettyDatePub(d)) + '</span>'
-                        + (times.length ? ('<select onchange="setCustomDateTime(' + JSON.stringify(d).split('"').join("'") + ', this.value)" class="glass-input px-2 py-1 rounded-lg text-xs font-mono" aria-label="Time on ' + escHtml(prettyDatePub(d)) + '">' + opts.join('') + '</select>') : '')
-                        + (ok ? '' : '<span class="text-rose-300 font-semibold">' + (times.length ? 'That time is not open. Pick another time.' : 'No open times that day. Remove it or pick another day.') + '</span>')
-                        + '<button type="button" onclick="toggleCustomDate(' + JSON.stringify(d).split('"').join("'") + ')" class="ml-auto px-2 py-1 rounded-lg border border-slate-700 text-slate-300 hover:text-white" aria-label="Remove ' + escHtml(prettyDatePub(d)) + '">Remove</button>'
-                        + '</li>';
+                    return seriesDateRowHtml(d, customDates[d], customDatePending[d] || '', !!customDateConfirmed[d]);
                 }).join('');
             }
         }
 
+        function clearCustomDate(iso) {
+            delete customDates[iso];
+            delete customDatePending[iso];
+            delete customDateConfirmed[iso];
+        }
+
         window.toggleCustomDate = function (iso) {
-            if (customDates[iso]) {
-                delete customDates[iso];
+            if (Object.prototype.hasOwnProperty.call(customDates, iso)) {
+                clearCustomDate(iso);
             } else {
                 if (Object.keys(customDates).length >= MAX_SERIES_VISITS - 1) return;
                 var times = openTimesForDate(iso);
-                customDates[iso] = (selectedTime && times.indexOf(selectedTime) !== -1) ? selectedTime : (times[0] || selectedTime || '');
+                customDates[iso] = selectedTime || '';
+                customDatePending[iso] = '';
+                customDateConfirmed[iso] = !!(selectedTime && times.indexOf(selectedTime) !== -1);
             }
             updateRecurrencePreview();
         };
         window.setCustomDateTime = function (iso, time) {
-            if (customDates[iso]) customDates[iso] = time;
-            updateRecurrencePreview();
+            stageVisitTime(iso, time);
         };
+        function stageVisitTime(iso, time) {
+            var times = openTimesForDate(iso);
+            if (Object.prototype.hasOwnProperty.call(customDates, iso)) {
+                if (!time) {
+                    customDatePending[iso] = '';
+                } else if (times.indexOf(time) !== -1) {
+                    customDatePending[iso] = time;
+                    customDateConfirmed[iso] = time === customDates[iso];
+                }
+            } else {
+                var choice = seriesTimeChoice[iso] || { time: selectedTime || '', confirmed: false, pending: '' };
+                if (!time) choice.pending = '';
+                else if (times.indexOf(time) !== -1) {
+                    choice.pending = time;
+                    choice.confirmed = !!(choice.time === time && times.indexOf(choice.time) !== -1 && choice.confirmed);
+                    if (choice.time !== time) choice.confirmed = false;
+                }
+                seriesTimeChoice[iso] = choice;
+            }
+            updateRecurrencePreview();
+        }
+        function confirmVisitTime(iso) {
+            var times = openTimesForDate(iso);
+            if (Object.prototype.hasOwnProperty.call(customDates, iso)) {
+                var pending = customDatePending[iso];
+                if (!pending || times.indexOf(pending) === -1) return;
+                customDates[iso] = pending;
+                customDateConfirmed[iso] = true;
+                customDatePending[iso] = '';
+            } else {
+                var choice = seriesTimeChoice[iso];
+                if (!choice || !choice.pending || times.indexOf(choice.pending) === -1) return;
+                choice.time = choice.pending;
+                choice.confirmed = true;
+                choice.pending = '';
+                seriesTimeChoice[iso] = choice;
+            }
+            updateRecurrencePreview();
+        }
+        function removeSeriesVisit(iso) {
+            if (Object.prototype.hasOwnProperty.call(customDates, iso)) clearCustomDate(iso);
+            else {
+                seriesSkipped[iso] = true;
+                delete seriesTimeChoice[iso];
+            }
+            updateRecurrencePreview();
+        }
+        window.stageVisitTime = stageVisitTime;
+        window.confirmVisitTime = confirmVisitTime;
+        window.removeSeriesVisit = removeSeriesVisit;
         window.customPrevMonth = function () {
             customViewMonth--; if (customViewMonth < 0) { customViewMonth = 11; customViewYear--; }
             renderCustomDatesPicker();
@@ -28021,6 +28318,7 @@ function paintBizHeader() {
             if (freq === 'custom') renderCustomDatesPicker();
             if (freq === 'once' || (freq === 'custom' && !Object.keys(customDates).length)) {
                 if (previewBox) previewBox.classList.add('hidden');
+                paintSeriesSubmitGate();
                 return;
             }
             var entries = buildSeriesEntries(freq);
@@ -28029,6 +28327,12 @@ function paintBizHeader() {
             if (list) {
                 list.innerHTML = entries.map(function (en, idx) {
                     var d = en.date;
+                    if (freq !== 'custom' && idx > 0 && !seriesSkipped[d]) {
+                        var choice = seriesTimeChoice[d] || {};
+                        var open = openTimesForDate(d);
+                        var clean = !!(choice.confirmed && choice.time === selectedTime && open.indexOf(choice.time) !== -1 && !choice.pending);
+                        if (!clean) return seriesDateRowHtml(d, choice.time || selectedTime || '', choice.pending || '', !!choice.confirmed);
+                    }
                     var reason = en.time ? slotConflictReason(d, en.time) : null;
                     // First date is the one they picked — treat as OK for preview unless already taken
                     if (idx === 0 && reason === 'Already booked') { /* keep */ }
@@ -28039,7 +28343,7 @@ function paintBizHeader() {
                 }).join('');
             }
             if (hint) {
-                if (conflicts.length) {
+                if (conflicts.length && freq !== 'custom') {
                     hint.textContent = 'Conflicts: ' + conflicts.join('; ') + '. Pick another time or reduce visits.';
                     hint.classList.remove('hidden');
                 } else {
@@ -28047,6 +28351,7 @@ function paintBizHeader() {
                     hint.classList.add('hidden');
                 }
             }
+            paintSeriesSubmitGate();
         }
 
         window.addEventListener('DOMContentLoaded', function () {
@@ -28671,6 +28976,10 @@ function paintBizHeader() {
             var countEl = document.getElementById('pubRecurrenceCount');
             if (countEl) countEl.value = '4';
             customDates = {};
+            customDatePending = {};
+            customDateConfirmed = {};
+            seriesTimeChoice = {};
+            seriesSkipped = {};
             svcCart = tenantData.services[0] ? [{ id: tenantData.services[0].id, qty: 1 }] : [];
             syncSelectedSvc();
             renderSvc();
@@ -28819,6 +29128,12 @@ function paintBizHeader() {
                 return;
             }
             if (recFreq === 'custom' && !Object.keys(customDates).length) recFreq = 'once';
+            var seriesBlock = seriesUnresolvedReason();
+            if (seriesBlock) {
+                fail(seriesBlock);
+                paintSeriesSubmitGate();
+                return;
+            }
             var seriesEntries = buildSeriesEntries(recFreq);
             var seriesDates = seriesEntries.map(function (en) { return en.date; });
             var conflictMsgs = [];
@@ -28888,7 +29203,7 @@ function paintBizHeader() {
                     count: seriesDates.length,
                     total: seriesDates.length,
                     dates: seriesDates.slice(),
-                    times: seriesEntries.map(function (en) { return en.time; })
+                    times: confirmedSeriesTimes(seriesEntries)
                 };
 
                 function newStandaloneManageToken() {
@@ -28914,7 +29229,7 @@ function paintBizHeader() {
                         serviceName: cartServiceName(),
                         items: cartItems(),
                         date: d,
-                        time: (seriesEntries[idx] && seriesEntries[idx].time) || selectedTime,
+                        time: confirmedSeriesTimes(seriesEntries)[idx] || selectedTime,
                         paymentStatus: payStatus,
                         paymentMethod: selectedPay,
                         paymentOptionLabel: payOptLabel,
