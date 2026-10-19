@@ -13095,6 +13095,14 @@ function schediQrCardPixels(text, color) {
             return n;
         }
 
+        function clientHistoryPaidLabel(client, appointments, tenant) {
+            var stats = clientListStats(client, appointments, {
+                collectedOf: function (app) { return rosterAmountCollected(app, tenant); }
+            });
+            if (!stats || !stats.paidKnown) return '\u2014';
+            return formatBookingAmountLabel(stats.paid) || '$0';
+        }
+
         window.openClientHistory = function (clientId) {
             var client = clientById(clientId);
             var modal = document.getElementById('clientHistoryModal');
@@ -13105,7 +13113,7 @@ function schediQrCardPixels(text, color) {
             var clock = clientHistoryClock(tenant);
             var apps = (tenant && tenant.appointments) || [];
             var model = clientHistoryModel(client, apps, clock.date, bookingPaymentState, appointmentPayKind, clock.minutes);
-            var paid = formatBookingAmountLabel(model.paidRevenue) || '$0';
+            var paid = clientHistoryPaidLabel(client, apps, tenant);
             var visits = clientHistoryDoneCount(client, apps, clock) + ' done · ' + model.upcoming.length + ' upcoming';
             title.textContent = client.name || 'Client';
             body.innerHTML = '<div class="sd-client-history-totals">'

@@ -5609,6 +5609,90 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
     }
   }, 120000);
 
+  it("includes every paid visit in history Total paid, including upcoming", async () => {
+    const types: Record<string, string> = {
+      ".html": "text/html; charset=utf-8",
+      ".js": "text/javascript; charset=utf-8",
+      ".svg": "image/svg+xml",
+      ".png": "image/png",
+      ".json": "application/json",
+      ".webmanifest": "application/manifest+json",
+    };
+    const server = createServer((req, res) => {
+      const path = new URL(req.url || "/", "http://127.0.0.1").pathname;
+      const file = path === "/" || path === "/portal-preview" ? "/index.html" : path;
+      const full = join(root, file);
+      if (!full.startsWith(root) || !existsSync(full)) {
+        res.writeHead(404);
+        res.end("missing");
+        return;
+      }
+      res.writeHead(200, { "content-type": types[extname(full)] || "application/octet-stream" });
+      res.end(readFileSync(full));
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const address = server.address();
+    const port = typeof address === "object" && address ? address.port : 0;
+    const puppeteer = await import("puppeteer-core");
+    const browser = await puppeteer.default.launch({
+      executablePath: chrome,
+      headless: true,
+      args: ["--no-sandbox", "--disable-dev-shm-usage"],
+    });
+    const money = (label: string) => Number(String(label).replace(/[^0-9.]/g, ""));
+    try {
+      const page = await browser.newPage();
+      await page.setViewport({ width: 1280, height: 900 });
+      await page.goto(`http://127.0.0.1:${port}/portal-preview`, { waitUntil: "domcontentloaded", timeout: 45000 });
+      await page.waitForFunction(() => document.body.classList.contains("schedi-newdash"), { timeout: 20000 });
+      await page.evaluate(() => (window as unknown as { schediDashGo: (tab: string) => void }).schediDashGo("clients"));
+      await page.waitForSelector('.sd-client-name[data-client-id="CL-MAYA"]', { timeout: 10000 });
+      const readPaid = () => page.evaluate(() => {
+        const card = document.querySelector('.sd-client-name[data-client-id="CL-MAYA"]')?.closest(".sd-client");
+        const figure = card?.querySelector(".sd-client-paid-figure");
+        (window as unknown as { openClientHistory: (id: string) => void }).openClientHistory("CL-MAYA");
+        const modal = document.getElementById("clientHistoryModal");
+        const totals = Array.from(modal?.querySelectorAll(".sd-client-history-totals p") || []);
+        const paid = totals.find((node) => (node.querySelector("span")?.textContent || "") === "Total paid");
+        const upcoming = Array.from(modal?.querySelectorAll(".sd-client-history-group") || []).find((node) => node.querySelector("h3")?.textContent === "Upcoming");
+        return {
+          card: figure?.textContent || "",
+          sheet: paid?.querySelector("strong")?.textContent || "",
+          upcoming: upcoming?.textContent || "",
+        };
+      });
+      const before = await readPaid();
+      expect(before.card).toBe("$238");
+      expect(before.sheet).toBe(before.card);
+      await page.evaluate(() => {
+        const tenant = (window as unknown as { getTenant: () => { appointments?: Record<string, unknown>[] } }).getTenant();
+        (tenant.appointments || []).push({
+          id: "HB-PREPAID",
+          clientName: "Maya Chen",
+          clientPhone: "(555) 201-0142",
+          clientEmail: "maya@example.com",
+          serviceName: "Prepaid color",
+          date: "2099-01-15",
+          time: "11:00 AM",
+          status: "accepted",
+          paymentStatus: "PAID VIA CARD",
+          paidMethod: "card",
+          amount: 65,
+          durationMins: 90,
+        });
+        (window as unknown as { renderClientList: () => void }).renderClientList();
+      });
+      const after = await readPaid();
+      expect(after.upcoming).toContain("Prepaid color");
+      expect(after.card).toBe("$303");
+      expect(after.sheet).toBe(after.card);
+      expect(money(after.sheet)).toBe(money(before.sheet) + 65);
+    } finally {
+      await browser.close();
+      await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+    }
+  }, 60000);
+
   it("gives the history sheet chip styles and closes it on Escape", async () => {
     const types: Record<string, string> = {
       ".html": "text/html; charset=utf-8",

@@ -179,6 +179,13 @@ describe("client history matching", () => {
     expect(owner).toContain('id="clientHistoryModal"');
     expect(owner).toContain("window.openClientHistory = function");
     expect(owner).toContain("clientHistorySheetPrice");
+    expect(owner).toContain("function clientHistoryPaidLabel");
+    const paidLabel = owner.slice(owner.indexOf("function clientHistoryPaidLabel"), owner.indexOf("window.openClientHistory = function"));
+    expect(paidLabel).toContain("clientListStats");
+    expect(paidLabel).toContain("rosterAmountCollected");
+    const historyOpen = owner.slice(owner.indexOf("window.openClientHistory = function"), owner.indexOf("window.closeClientHistory = function"));
+    expect(historyOpen).toContain("clientHistoryPaidLabel(client, apps, tenant)");
+    expect(historyOpen).not.toContain("model.paidRevenue");
     expect(owner).toContain("done · ");
     expect(owner).toContain("body.schedi-newdash #clientHistoryModal .sd-pay { display: inline-flex;");
     expect(owner).toContain("body.schedi-newdash #clientHistoryModal .sd-client-history-totals span { display: block;");
