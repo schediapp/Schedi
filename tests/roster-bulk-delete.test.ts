@@ -132,7 +132,7 @@ describe("roster bulk delete", () => {
     expect(html).toContain('class="roster-select"');
     expect(html).toContain('id="rosterBulkBar"');
     expect(html).toContain("Delete selected");
-    expect(html).toContain('colspan="8"');
+    expect(html).toContain('colspan="9"');
     const calendar = extractFunction(html, "renderRosterCalendar");
     expect(calendar).not.toContain("roster-select");
     expect(calendar).not.toContain("rosterSelectAll");
@@ -142,10 +142,11 @@ describe("roster bulk delete", () => {
     expect(css).toContain("min-height: 44px");
     expect(css).toContain("body.schedi-newdash .sd-bulk-count");
     expect(css).toContain("td.roster-cell-check");
-    expect(css).toContain("flex: 0 0 44px");
+    expect(css).toContain("padding: 16px");
+    expect(css).toContain("border-radius: 18px");
     expect(css).toContain("td.roster-cell-ref");
     expect(css).toContain(".sd-roster-all");
-    expect(css).toContain("padding-left: 2px");
+    expect(css).toContain("padding-left: 16px");
     expect(css).toContain(".sd-roster-results { left: 0; right: 0; width: auto; max-width: 100%; box-sizing: border-box; }");
     expect(css).not.toContain("100vw - 28px");
   });

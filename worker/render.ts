@@ -468,6 +468,10 @@ tbody th{font-weight:600;color:var(--head)}
 .hero{width:min(100%,640px);height:auto;border-radius:16px;margin:0 0 1.25rem}
 figure{margin:0 0 1rem}
 figure img,figure video{max-width:100%;height:auto;border-radius:12px}
+.help-clip-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:1rem;align-items:start}
+.help-clip-grid figure{margin:0}
+.help-clip-grid video{width:100%;aspect-ratio:9/16;object-fit:cover;background:#020617;border-radius:12px;display:block}
+.help-clip-grid figcaption{margin-top:.45rem;font-size:.86rem;color:var(--muted)}
 .site-footer{border-top:1px solid var(--line);padding:3rem 0 2.5rem;color:var(--muted);margin-top:2rem}
 .foot-top{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:2rem;margin-bottom:1.5rem}
 .foot-logo{height:30px;width:auto}

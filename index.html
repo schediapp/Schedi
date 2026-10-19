@@ -390,7 +390,7 @@
         html.schedi-light #navModeTenant.bg-slate-800 { background-color: #e2e8f0 !important; }
             </style>
 <style id="schediNewDashStyle">
-/* schedi-newdash: owner portal preview only. Every selector includes schedi-newdash. */
+/* schedi-newdash: owner portal. Every selector includes schedi-newdash. */
 html.schedi-newdash-boot #tenantDashboard { visibility: hidden; }
 html.schedi-newdash-ready #tenantDashboard { visibility: visible; }
 body.schedi-newdash { background: #06080d; }
@@ -631,7 +631,9 @@ html.schedi-light body.schedi-newdash #rosterApptModal .sd-pill-amber { color: #
 #tenantPortalSection.schedi-newdash .sd-pay-card { color: var(--sd-brand-2); border-color: rgba(16, 185, 129, 0.4); background: rgba(16, 185, 129, 0.14); }
 #tenantPortalSection.schedi-newdash .sd-pay-unpaid { color: var(--sd-rose); border-color: rgba(244, 63, 94, 0.35); background: rgba(244, 63, 94, 0.1); }
 #tenantPortalSection.schedi-newdash .sd-pay.is-icon { padding: 3px; }
-#tenantPortalSection.schedi-newdash .sd-pay.is-icon .sd-pay-word { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); border: 0; }
+#tenantPortalSection.schedi-newdash .sd-pay.is-icon .sd-pay-word,
+#tenantPortalSection.schedi-newdash .sd-pay.is-icon .sd-pay-amt { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); border: 0; }
+#tenantPortalSection.schedi-newdash .sd-pay-amt { flex: none; white-space: nowrap; }
 #tenantPortalSection.schedi-newdash .sd-pay-filters { display: flex; flex-wrap: wrap; gap: 6px; }
 #tenantPortalSection.schedi-newdash .sd-chip { min-height: 36px; border-radius: 999px; border: 1px solid var(--sd-line); background: transparent; color: var(--sd-text); font-weight: 800; font-size: 12px; padding: 4px 10px; display: inline-flex; align-items: center; }
 #tenantPortalSection.schedi-newdash .sd-chip svg { width: 14px; height: 14px; display: block; flex: none; margin-right: 4px; }
@@ -641,7 +643,7 @@ html.schedi-light body.schedi-newdash #rosterApptModal .sd-pill-amber { color: #
    Cash App #00D64F — Cash App green. Press kits have also used #00D632; #00D64F is the mark used here.
    Zelle #6D1ED4 — Zelle style guide (brand.zelle.com).
    PayPal #003087 light / #0070E0 dark — Left Blue / Right Blue, PayPal Brand Identity Quick Guide.
-   Square — black and white, like the Square logo (Square brand guidelines). */
+   Square uses the same muted chip as the other historical methods. */
 #tenantPortalSection.schedi-newdash .sd-pay-venmo,
 #tenantPortalSection.schedi-newdash .sd-chip.sd-pay-venmo {
     color: #b9ddff;
@@ -654,13 +656,23 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-chip.sd-pay-venmo {
     background: rgba(0, 140, 255, 0.12);
     border-color: #008CFF;
 }
-#tenantPortalSection.schedi-newdash .sd-pay-cashapp,
-#tenantPortalSection.schedi-newdash .sd-chip.sd-pay-cashapp,
-html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-cashapp,
+#tenantPortalSection.schedi-newdash .sd-pay.sd-pay-cashapp,
+#tenantPortalSection.schedi-newdash .sd-chip.sd-pay-cashapp {
+    color: #e2e8f0;
+    background: rgba(148, 163, 184, 0.16);
+    border-color: #94a3b8;
+}
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay.sd-pay-cashapp,
 html.schedi-light #tenantPortalSection.schedi-newdash .sd-chip.sd-pay-cashapp {
-    color: #0b1220;
-    background: #00D64F;
-    border-color: #00A83C;
+    color: #0f172a;
+    background: rgba(15, 23, 42, 0.06);
+    border-color: #64748b;
+}
+#tenantPortalSection.schedi-newdash .sd-chip.is-on.sd-pay-cashapp,
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-chip.is-on.sd-pay-cashapp {
+    background: rgba(16, 185, 129, 0.16);
+    color: var(--sd-brand-2);
+    border-color: rgba(16, 185, 129, 0.45);
 }
 #tenantPortalSection.schedi-newdash .sd-pay-zelle,
 #tenantPortalSection.schedi-newdash .sd-chip.sd-pay-zelle,
@@ -684,15 +696,15 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-chip.sd-pay-paypal {
 }
 #tenantPortalSection.schedi-newdash .sd-pay-square,
 #tenantPortalSection.schedi-newdash .sd-chip.sd-pay-square {
-    color: #000000;
-    background: #ffffff;
-    border-color: #ffffff;
+    color: #e2e8f0;
+    background: rgba(148, 163, 184, 0.16);
+    border-color: #94a3b8;
 }
 html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-square,
 html.schedi-light #tenantPortalSection.schedi-newdash .sd-chip.sd-pay-square {
-    color: #ffffff;
-    background: #000000;
-    border-color: #000000;
+    color: #0f172a;
+    background: rgba(15, 23, 42, 0.06);
+    border-color: #64748b;
 }
 #tenantPortalSection.schedi-newdash .sd-chip-count { margin-left: 4px; color: var(--sd-muted); font-weight: 700; }
 #tenantPortalSection.schedi-newdash .sd-chip.is-on .sd-chip-count,
@@ -705,8 +717,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-chip.sd-pay-square {
 #tenantPortalSection.schedi-newdash .sd-client-list { display: flex; flex-direction: column; }
 #tenantPortalSection.schedi-newdash .sd-client { display: block; padding: 12px 0; border-top: 1px solid var(--sd-line); }
 #tenantPortalSection.schedi-newdash .sd-client:first-child { border-top: 0; }
-#tenantPortalSection.schedi-newdash .sd-client-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 8px; }
-#tenantPortalSection.schedi-newdash .sd-client-copy { flex: 1 1 16rem; min-width: 0; }
+#tenantPortalSection.schedi-newdash .sd-client-head { display: flex; flex-wrap: nowrap; align-items: center; justify-content: flex-start; gap: 8px; }
+#tenantPortalSection.schedi-newdash .sd-client-copy { flex: 1 1 auto; min-width: 0; }
 #tenantPortalSection.schedi-newdash .sd-client-main { min-width: 0; }
 #tenantPortalSection.schedi-newdash .sd-client-name { font-weight: 800; font-size: 14px; color: var(--sd-text); background: transparent; border: 0; padding: 0; text-align: left; cursor: pointer; }
 #tenantPortalSection.schedi-newdash .sd-client-contact,
@@ -714,7 +726,15 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-chip.sd-pay-square {
 #tenantPortalSection.schedi-newdash .sd-client-notes { margin-top: 4px; overflow-wrap: anywhere; }
 #tenantPortalSection.schedi-newdash .sd-client-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
 #tenantPortalSection.schedi-newdash .sd-tag { display: inline-flex; align-items: center; border-radius: 999px; padding: 2px 8px; font-size: 11px; font-weight: 800; color: var(--sd-brand-2); background: rgba(16, 185, 129, 0.14); border: 1px solid rgba(16, 185, 129, 0.35); }
-#tenantPortalSection.schedi-newdash .sd-client-actions { display: flex; flex: 0 0 auto; flex-wrap: wrap; align-items: center; gap: 6px; }
+#tenantPortalSection.schedi-newdash .sd-client-actions { display: flex; flex: 0 0 auto; flex-wrap: nowrap; align-items: center; justify-content: flex-end; gap: 6px; margin-left: auto; }
+#tenantPortalSection.schedi-newdash .sd-client-actions .sd-more { flex: 0 0 auto; align-self: center; }
+#tenantPortalSection.schedi-newdash .sd-client-actions .sd-client-edit-btn { flex: 0 0 auto; align-self: center; white-space: nowrap; }
+#tenantPortalSection.schedi-newdash .sd-client-actions .sd-more-menu button {
+    min-height: 40px;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+}
 #tenantPortalSection.schedi-newdash .sd-client-actions button,
 #tenantPortalSection.schedi-newdash .sd-client-actions-form button { min-height: 36px; border-radius: 12px; padding: 6px 12px; font-weight: 800; font-size: 12px; cursor: pointer; }
 #tenantPortalSection.schedi-newdash .sd-client-edit-btn,
@@ -820,13 +840,18 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-chip.sd-pay-square {
 #tenantPortalSection.schedi-newdash .sd-client-noshow { margin-top: 8px; line-height: 1.45; font-weight: 700; }
 #tenantPortalSection.schedi-newdash .sd-client-usual { margin: 0 0 10px; font-weight: 800; color: var(--sd-text); }
 #tenantPortalSection.schedi-newdash .sd-client-totals,
+#tenantPortalSection.schedi-newdash .sd-client-history-totals,
 #tenantPortalSection.schedi-newdash .sd-client-stats {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
     margin: 0 0 10px;
 }
+#tenantPortalSection.schedi-newdash .sd-client-history-totals {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
 #tenantPortalSection.schedi-newdash .sd-client-totals p,
+#tenantPortalSection.schedi-newdash .sd-client-history-totals p,
 #tenantPortalSection.schedi-newdash .sd-client-stat {
     margin: 0;
     padding: 10px;
@@ -836,6 +861,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-chip.sd-pay-square {
     min-width: 0;
 }
 #tenantPortalSection.schedi-newdash .sd-client-totals span,
+#tenantPortalSection.schedi-newdash .sd-client-history-totals span,
 #tenantPortalSection.schedi-newdash .sd-client-stat p {
     display: block;
     color: var(--sd-muted);
@@ -843,6 +869,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-chip.sd-pay-square {
     font-weight: 800;
 }
 #tenantPortalSection.schedi-newdash .sd-client-totals strong,
+#tenantPortalSection.schedi-newdash .sd-client-history-totals strong,
 #tenantPortalSection.schedi-newdash .sd-client-stat strong {
     display: block;
     margin-top: 4px;
@@ -962,6 +989,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-more-menu button.sd-ac
     background: #fff1f2;
     color: #be123c;
 }
+#tenantPortalSection.schedi-newdash .sd-more-menu button.sd-act-delete { color: #fb7185; }
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-more-menu button.sd-act-delete { color: #be123c; }
 body.schedi-newdash .roster-actions > button.sd-act,
 body.schedi-newdash .roster-sheet-actions > button.sd-act {
     background: #1e293b;
@@ -1097,6 +1126,13 @@ html.schedi-light body.schedi-newdash .roster-sheet-actions > button.sd-act.sd-a
     box-shadow: var(--sd-shadow);
 }
 #tenantPortalSection.schedi-newdash #rosterListWrap { border: 1px solid var(--sd-line); border-radius: 16px; }
+/* The roster card's blur would trap the fixed ⋮ menu inside the scrolled card. */
+#tenantPortalSection.schedi-newdash #tenantSectionRoster,
+#tenantPortalSection.schedi-newdash #tenantSectionClients {
+    background: var(--sd-panel);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
 #tenantPortalSection.schedi-newdash #schediDashTabbar { display: none; }
 #tenantPortalSection.schedi-newdash #schediDashAddMenu {
     position: fixed;
@@ -1413,7 +1449,7 @@ body.schedi-newdash #ownerRecurringModal .sd-choice {
 }
 html.schedi-light body.schedi-newdash #ownerRecurringModal .sd-choice { color: #0f172a; }
 body.schedi-newdash #ownerRecurringModal .sd-preview {
-    margin: 0;
+    margin: 12px 0 0;
     padding: 8px 12px;
     border-radius: 12px;
     border: 1px solid rgba(148, 163, 184, 0.35);
@@ -1471,6 +1507,20 @@ body.schedi-newdash .sd-form-head {
 }
 html.schedi-light body.schedi-newdash .sd-form-head { background: #ffffff; border-bottom-color: #e2e8f0; }
 body.schedi-newdash .sd-form-head h3 { margin: 0; min-width: 0; overflow-wrap: break-word; }
+body.schedi-newdash .sd-kind-badge {
+    display: inline-flex;
+    align-items: center;
+    margin: 0 0 6px;
+    border-radius: 999px;
+    padding: 3px 8px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    color: #6ee7b7;
+    background: rgba(16, 185, 129, 0.14);
+    border: 1px solid rgba(16, 185, 129, 0.35);
+}
+html.schedi-light body.schedi-newdash .sd-kind-badge { color: #047857; background: rgba(16, 185, 129, 0.12); }
 body.schedi-newdash .sd-form-close,
 #tenantPortalSection.schedi-newdash .sd-form-close {
     width: 48px;
@@ -1587,6 +1637,132 @@ body.schedi-newdash #ownerRecurringModal .sd-form-save {
     body.schedi-newdash #comparePlansModal .sd-form-sheet,
     body.schedi-newdash #rosterApptModal .sd-form-sheet {
         animation: none;
+    }
+}
+body.schedi-newdash #clientHistoryModal { overflow: hidden; }
+body.schedi-newdash #clientHistoryModal .sd-form-sheet {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-height: min(92vh, 860px);
+    overflow: hidden;
+    padding: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+}
+body.schedi-newdash #clientHistoryModal .sd-form-sheet > * + * { margin-top: 0; }
+@media (max-width: 859px) {
+    body.schedi-newdash #clientHistoryModal {
+        flex-direction: column;
+        align-items: stretch !important;
+        justify-content: flex-end;
+        padding: 0 !important;
+    }
+    body.schedi-newdash #clientHistoryModal > .sd-form-sheet {
+        width: 100%;
+        max-width: none;
+        min-height: 0;
+        max-height: 94dvh;
+        margin: 0 !important;
+        border-radius: 20px 20px 0 0;
+    }
+}
+body.schedi-newdash #clientHistoryModal {
+    --sd-bg: #06080d;
+    --sd-panel: #0f172a;
+    --sd-line: rgba(255, 255, 255, 0.08);
+    --sd-text: #f1f5f9;
+    --sd-muted: #94a3b8;
+    --sd-brand-2: #34d399;
+    --sd-amber: #fbbf24;
+    --sd-rose: #fb7185;
+    color: var(--sd-text);
+}
+html.schedi-light body.schedi-newdash #clientHistoryModal {
+    --sd-bg: #f4f7fb;
+    --sd-panel: #ffffff;
+    --sd-line: #d7dee8;
+    --sd-text: #0f172a;
+    --sd-muted: #475569;
+    --sd-brand-2: #047857;
+    --sd-amber: #b45309;
+    --sd-rose: #be123c;
+    color: var(--sd-text);
+}
+body.schedi-newdash #clientHistoryModal .sd-pill { display: inline-flex; align-items: center; border-radius: 999px; padding: 3px 8px; font-size: 11px; font-weight: 800; border: 1px solid transparent; white-space: nowrap; }
+body.schedi-newdash #clientHistoryModal .sd-pill-ok { color: var(--sd-brand-2); background: rgba(16, 185, 129, 0.14); border-color: rgba(16, 185, 129, 0.3); }
+body.schedi-newdash #clientHistoryModal .sd-pill-amber { color: var(--sd-amber); background: rgba(245, 158, 11, 0.12); border-color: rgba(245, 158, 11, 0.3); }
+body.schedi-newdash #clientHistoryModal .sd-pill-rose { color: var(--sd-rose); background: rgba(244, 63, 94, 0.1); border-color: rgba(244, 63, 94, 0.28); }
+body.schedi-newdash #clientHistoryModal .sd-pill-grey { color: #e2e8f0; background: rgba(148, 163, 184, 0.2); border-color: rgba(148, 163, 184, 0.45); }
+html.schedi-light body.schedi-newdash #clientHistoryModal .sd-pill-grey { color: #334155; background: rgba(100, 116, 139, 0.16); border-color: rgba(100, 116, 139, 0.4); }
+html.schedi-light body.schedi-newdash #clientHistoryModal .sd-pill-amber { color: #92400e; }
+html.schedi-light body.schedi-newdash #clientHistoryModal .text-sky-300,
+html.schedi-light body.schedi-newdash #clientHistoryModal .text-sky-400 { color: #0369a1 !important; }
+html.schedi-light body.schedi-newdash #clientHistoryModal .text-rose-300,
+html.schedi-light body.schedi-newdash #clientHistoryModal .text-rose-400 { color: #be123c !important; }
+html.schedi-light body.schedi-newdash #clientHistoryModal .text-amber-300,
+html.schedi-light body.schedi-newdash #clientHistoryModal .text-amber-400 { color: #92400e !important; }
+body.schedi-newdash #clientHistoryModal .sd-pay { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; border-radius: 999px; padding: 2px 8px; font-size: 11px; font-weight: 800; line-height: 1.3; border: 1px solid var(--sd-line); color: var(--sd-text); background: rgba(148, 163, 184, 0.14); white-space: nowrap; }
+body.schedi-newdash #clientHistoryModal .sd-pay svg { width: 14px; height: 14px; display: block; flex: none; }
+body.schedi-newdash #clientHistoryModal .sd-pay-amt { flex: none; white-space: nowrap; }
+body.schedi-newdash #clientHistoryModal .sd-pay-card { color: var(--sd-brand-2); border-color: rgba(16, 185, 129, 0.4); background: rgba(16, 185, 129, 0.14); }
+body.schedi-newdash #clientHistoryModal .sd-pay-unpaid { color: var(--sd-rose); border-color: rgba(244, 63, 94, 0.35); background: rgba(244, 63, 94, 0.1); }
+body.schedi-newdash #clientHistoryModal .sd-pay-venmo { color: #b9ddff; background: rgba(0, 140, 255, 0.16); border-color: #008CFF; }
+html.schedi-light body.schedi-newdash #clientHistoryModal .sd-pay-venmo { color: #0057B8; background: rgba(0, 140, 255, 0.12); border-color: #008CFF; }
+body.schedi-newdash #clientHistoryModal .sd-pay.sd-pay-cashapp { color: #e2e8f0; background: rgba(148, 163, 184, 0.16); border-color: #94a3b8; }
+html.schedi-light body.schedi-newdash #clientHistoryModal .sd-pay.sd-pay-cashapp { color: #0f172a; background: rgba(15, 23, 42, 0.06); border-color: #64748b; }
+body.schedi-newdash #clientHistoryModal .sd-pay-zelle,
+html.schedi-light body.schedi-newdash #clientHistoryModal .sd-pay-zelle { color: #ffffff; background: #6D1ED4; border-color: #6D1ED4; }
+body.schedi-newdash #clientHistoryModal .sd-pay-paypal { color: #ffffff; background: #0070E0; border-color: #0070E0; }
+html.schedi-light body.schedi-newdash #clientHistoryModal .sd-pay-paypal { color: #ffffff; background: #003087; border-color: #003087; }
+body.schedi-newdash #clientHistoryModal .sd-pay-square { color: #e2e8f0; background: rgba(148, 163, 184, 0.16); border-color: #94a3b8; }
+html.schedi-light body.schedi-newdash #clientHistoryModal .sd-pay-square { color: #0f172a; background: rgba(15, 23, 42, 0.06); border-color: #64748b; }
+body.schedi-newdash #clientHistoryModal .sd-pay-cash { color: var(--sd-text); }
+body.schedi-newdash #clientHistoryModal .sd-client-history-totals { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 12px 0 10px; }
+body.schedi-newdash #clientHistoryModal .sd-client-history-totals p { margin: 0; padding: 10px; border: 1px solid var(--sd-line); border-radius: 14px; background: var(--sd-bg); min-width: 0; }
+body.schedi-newdash #clientHistoryModal .sd-client-history-totals span { display: block; color: var(--sd-muted); font-size: 11px; font-weight: 800; }
+body.schedi-newdash #clientHistoryModal .sd-client-history-totals strong { display: block; margin-top: 4px; color: var(--sd-text); font-size: 16px; overflow-wrap: anywhere; }
+body.schedi-newdash #clientHistoryModal .sd-client-history-group h3 { margin: 16px 0 8px; font-size: 13px; font-weight: 800; color: var(--sd-text); }
+body.schedi-newdash #clientHistoryModal .sd-client-visit { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; padding: 10px 0; border-top: 1px solid var(--sd-line); }
+body.schedi-newdash #clientHistoryModal .sd-client-visit-main { min-width: 0; }
+body.schedi-newdash #clientHistoryModal .sd-client-visit-when,
+body.schedi-newdash #clientHistoryModal .sd-client-visit-svc,
+body.schedi-newdash #clientHistoryModal .sd-client-visit-meta { margin: 0; overflow-wrap: anywhere; }
+body.schedi-newdash #clientHistoryModal .sd-client-visit-when { color: var(--sd-muted); font-size: 12px; font-weight: 700; }
+body.schedi-newdash #clientHistoryModal .sd-client-visit-svc { color: var(--sd-text); font-size: 14px; font-weight: 800; }
+body.schedi-newdash #clientHistoryModal .sd-client-visit-meta { color: var(--sd-muted); font-size: 12px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+body.schedi-newdash #clientHistoryModal .sd-client-empty { margin: 0 0 8px; color: var(--sd-muted); font-size: 13px; }
+body.schedi-newdash #rosterDeleteModal,
+body.schedi-newdash #ownerConfirmModal { overflow: hidden; }
+body.schedi-newdash #rosterDeleteModal .sd-form-sheet,
+body.schedi-newdash #ownerConfirmModal .sd-form-sheet {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-height: min(92vh, 860px);
+    overflow: hidden;
+    padding: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+}
+body.schedi-newdash #rosterDeleteModal .sd-form-sheet > * + *,
+body.schedi-newdash #ownerConfirmModal .sd-form-sheet > * + * { margin-top: 0; }
+@media (max-width: 859px) {
+    body.schedi-newdash #rosterDeleteModal,
+    body.schedi-newdash #ownerConfirmModal {
+        flex-direction: column;
+        align-items: stretch !important;
+        justify-content: flex-end;
+        padding: 0 !important;
+    }
+    body.schedi-newdash #rosterDeleteModal > .sd-form-sheet,
+    body.schedi-newdash #ownerConfirmModal > .sd-form-sheet {
+        width: 100%;
+        max-width: none;
+        min-height: 0;
+        max-height: 94dvh;
+        margin: 0 !important;
+        border-radius: 20px 20px 0 0;
     }
 }
 body.schedi-newdash #svcIconGrid [role="option"] { min-height: 64px; }
@@ -1785,6 +1961,18 @@ html.schedi-light #tenantPortalSection.schedi-newdash button.bg-indigo-400,
 html.schedi-light #tenantPortalSection.schedi-newdash button.bg-rose-600,
 html.schedi-light #tenantPortalSection.schedi-newdash button.bg-rose-500,
 html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !important; }
+#tenantPortalSection.schedi-newdash #tenantSectionHours > .flex {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+}
+#tenantPortalSection.schedi-newdash #hoursWeekLayoutBtn {
+    align-self: flex-start;
+    width: auto;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+}
 @media (min-width: 640px) {
     #tenantPortalSection.schedi-newdash #hoursWeekLayoutBtn { align-self: flex-end; }
 }
@@ -2479,15 +2667,15 @@ html.schedi-light body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.
 }
 body.schedi-newdash .sd-pay-choice.sd-pay-square,
 body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.sd-pay-square {
-    color: #000000;
-    background: #ffffff;
-    border-color: #ffffff;
+    color: #e2e8f0;
+    background: rgba(148, 163, 184, 0.16);
+    border-color: #94a3b8;
 }
 html.schedi-light body.schedi-newdash .sd-pay-choice.sd-pay-square,
 html.schedi-light body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.sd-pay-square {
-    color: #ffffff;
-    background: #000000;
-    border-color: #000000;
+    color: #0f172a;
+    background: rgba(15, 23, 42, 0.06);
+    border-color: #64748b;
 }
 body.schedi-newdash #rosterPaidMethodConfirmBtn:disabled {
     opacity: 0.45;
@@ -3007,8 +3195,9 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
     #tenantPortalSection.schedi-newdash .sd-client-edit input,
     #tenantPortalSection.schedi-newdash .sd-client-edit textarea { min-height: 44px; }
     #tenantPortalSection.schedi-newdash .sd-client-edit textarea { min-height: 88px; }
-    #tenantPortalSection.schedi-newdash .sd-client-copy { flex-basis: 100%; }
-    #tenantPortalSection.schedi-newdash .sd-client-actions { width: auto; }
+    #tenantPortalSection.schedi-newdash .sd-client-copy { flex: 1 1 auto; min-width: 0; }
+    #tenantPortalSection.schedi-newdash .sd-client-head { flex-wrap: nowrap; align-items: center; }
+    #tenantPortalSection.schedi-newdash .sd-client-actions { width: auto; margin-left: auto; align-self: center; }
     #tenantPortalSection.schedi-newdash .sd-client-actions button { flex: 0 0 auto; }
     #tenantPortalSection.schedi-newdash .sd-client-name { min-height: 44px; }
     #tenantPortalSection.schedi-newdash .sd-client-panel { top: 0; left: 0; }
@@ -3445,11 +3634,36 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
         text-transform: none;
     }
     #tenantPortalSection.schedi-newdash .sd-roster-check input {
+        appearance: none;
+        -webkit-appearance: none;
         width: 22px;
         height: 22px;
         margin: 0;
-        accent-color: var(--sd-brand);
+        border-radius: 6px;
+        border: 1.5px solid #64748b;
+        background-color: transparent;
+        background-position: center;
+        background-repeat: no-repeat;
+        background-size: 14px 14px;
         cursor: pointer;
+        flex: none;
+    }
+    #tenantPortalSection.schedi-newdash .sd-roster-check input:checked {
+        border-color: #10b981;
+        background-color: #10b981;
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path d='M3.5 8.3 6.4 11.2 12.6 4.8' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+    }
+    #tenantPortalSection.schedi-newdash .sd-roster-check input:focus-visible {
+        outline: 2px solid #10b981;
+        outline-offset: 2px;
+    }
+    html.schedi-light #tenantPortalSection.schedi-newdash .sd-roster-check input {
+        background-color: #ffffff;
+        border-color: #94a3b8;
+    }
+    html.schedi-light #tenantPortalSection.schedi-newdash .sd-roster-check input:checked {
+        border-color: #059669;
+        background-color: #059669;
     }
     #tenantPortalSection.schedi-newdash .sd-roster-all {
         display: none;
@@ -3516,9 +3730,215 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
         #tenantPortalSection.schedi-newdash #rosterListWrap.has-bulk { padding-bottom: 76px; }
     }
     #tenantPortalSection.schedi-newdash .roster-cell-collected { text-align: right; vertical-align: middle; white-space: nowrap; }
+    /* Unpaid list price sits beside the status chips, including 1024–1440. */
+    #tenantPortalSection.schedi-newdash .roster-cell-price {
+        white-space: nowrap;
+        vertical-align: middle;
+        text-align: left;
+        font-variant-numeric: tabular-nums;
+    }
+    #tenantPortalSection.schedi-newdash .roster-status-price { white-space: nowrap; }
+    #tenantPortalSection.schedi-newdash .roster-status-card { display: none; }
+    #tenantPortalSection.schedi-newdash .roster-client-name {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+        min-width: 0;
+    }
+    #tenantPortalSection.schedi-newdash .roster-client-name-text {
+        min-width: 0;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    #tenantPortalSection.schedi-newdash .roster-client-meta {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1px;
+        min-width: 0;
+        max-width: 100%;
+    }
+    #tenantPortalSection.schedi-newdash .roster-client-phone { white-space: nowrap; }
+    #tenantPortalSection.schedi-newdash .roster-client-sep { display: none; }
+    #tenantPortalSection.schedi-newdash .roster-client-email {
+        display: block;
+        max-width: 100%;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    /* Below ~1100 each appointment is a card, with the same surface as Today. */
+    @media (max-width: 1099px) {
+        #tenantPortalSection.schedi-newdash #rosterListWrap { overflow-x: visible; border: 0; background: transparent; }
+        #tenantPortalSection.schedi-newdash #rosterListWrap > table,
+        #tenantPortalSection.schedi-newdash #rosterListWrap > table > tbody { display: block; width: 100%; }
+        #tenantPortalSection.schedi-newdash #rosterListWrap > table > thead { display: none; }
+        #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row {
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr);
+            column-gap: 10px;
+            row-gap: 8px;
+            align-items: center;
+            width: auto;
+            margin: 0 0 10px;
+            padding: 16px;
+            background: var(--sd-panel);
+            border: 1px solid var(--sd-line);
+            border-radius: 18px;
+            box-shadow: var(--sd-shadow);
+        }
+        #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row:last-child { margin-bottom: 0; }
+        #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td {
+            display: block;
+            width: auto;
+            max-width: none;
+            min-width: 0;
+            padding: 0;
+        }
+        #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-check { grid-column: 1; grid-row: 1; align-self: center; }
+        #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-client { grid-column: 2; grid-row: 1; align-self: center; font-size: 14px; }
+        #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-ref { grid-column: 2; font-size: 11px; }
+        #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-service,
+        #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-when,
+        #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-pay,
+        #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-actions { grid-column: 1 / -1; }
+        #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-price,
+        #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-collected { display: none; }
+        #tenantPortalSection.schedi-newdash .roster-status-table { display: none; }
+        #tenantPortalSection.schedi-newdash .roster-status-card { display: block; }
+        #tenantPortalSection.schedi-newdash .roster-status-card .roster-status-line {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 4px;
+        }
+        #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-actions { text-align: left; }
+        #tenantPortalSection.schedi-newdash #tenantRosterTableBody .roster-actions {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 8px;
+            width: 100%;
+        }
+        #tenantPortalSection.schedi-newdash #tenantRosterTableBody .roster-actions > button {
+            min-height: 44px;
+            flex: 0 1 auto;
+        }
+        #tenantPortalSection.schedi-newdash #tenantRosterTableBody .roster-actions > .sd-more { margin-left: auto; }
+    }
+    @media (min-width: 1100px) {
+        #tenantPortalSection.schedi-newdash #rosterListWrap { overflow-x: auto; }
+        #tenantPortalSection.schedi-newdash #rosterListWrap > table {
+            width: 100%;
+            table-layout: fixed;
+        }
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-check { width: 40px; }
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-ref { width: 68px; white-space: nowrap; }
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-when { width: 96px; }
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-when > span { white-space: nowrap; }
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-price { width: 64px; }
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-collected { width: 68px; }
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-pay { width: 168px; }
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-actions { width: 160px; }
+        #tenantPortalSection.schedi-newdash #rosterListWrap th.roster-cell-client,
+        #tenantPortalSection.schedi-newdash #rosterListWrap td.roster-cell-client { padding-left: 8px; padding-right: 8px; }
+        #tenantPortalSection.schedi-newdash #rosterListWrap th.roster-cell-service,
+        #tenantPortalSection.schedi-newdash #rosterListWrap td.roster-cell-service { padding-left: 6px; padding-right: 6px; }
+        #tenantPortalSection.schedi-newdash #rosterListWrap th.roster-cell-pay,
+        #tenantPortalSection.schedi-newdash #rosterListWrap td.roster-cell-pay,
+        #tenantPortalSection.schedi-newdash #rosterListWrap th.roster-cell-price,
+        #tenantPortalSection.schedi-newdash #rosterListWrap td.roster-cell-price,
+        #tenantPortalSection.schedi-newdash #rosterListWrap th.roster-cell-collected,
+        #tenantPortalSection.schedi-newdash #rosterListWrap td.roster-cell-collected,
+        #tenantPortalSection.schedi-newdash #rosterListWrap th.roster-cell-actions,
+        #tenantPortalSection.schedi-newdash #rosterListWrap td.roster-cell-actions { padding-left: 4px; padding-right: 4px; }
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-client { overflow: hidden; }
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-service { overflow: hidden; }
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-service .sd-svc-line {
+            display: flex;
+            width: 100%;
+            min-width: 0;
+        }
+        #tenantPortalSection.schedi-newdash #rosterListWrap .sd-svc-name {
+            min-width: 0;
+            flex: 1 1 auto;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            overflow-wrap: normal;
+            word-break: normal;
+        }
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-when { overflow-wrap: break-word; }
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-actions {
+            display: flex;
+            flex-wrap: nowrap;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 2px;
+        }
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-actions > button { white-space: nowrap; }
+    }
+    @media (min-width: 1280px) {
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-service { width: 116px; }
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-pay { width: 210px; }
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-status-line {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            align-content: flex-start;
+            gap: 4px;
+            min-width: 0;
+            max-width: 100%;
+        }
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-status-line > * { flex: none; }
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-status-line > .sd-pay {
+            flex: 0 1 auto;
+            min-width: min(100%, max-content);
+            max-width: 100%;
+            overflow: hidden;
+        }
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-status-line > .sd-pay .sd-pay-word {
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-status-line > .sd-pay .sd-pay-amt {
+            flex: none;
+            white-space: nowrap;
+        }
+    }
+    @media (min-width: 1360px) {
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-pay { width: 240px; }
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-service { width: 168px; }
+    }
+    @media (max-width: 1099px) {
+        #tenantPortalSection.schedi-newdash .sd-client-page-head {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        #tenantPortalSection.schedi-newdash .sd-client-page-head .sd-client-tools {
+            width: 100%;
+            flex-wrap: wrap;
+            justify-content: flex-start;
+        }
+    }
+    @media (min-width: 1024px) and (max-width: 1279px) {
+        #tenantPortalSection.schedi-newdash #rosterListWrap th.p-3,
+        #tenantPortalSection.schedi-newdash #rosterListWrap td.p-3 {
+            padding-left: 6px;
+            padding-right: 6px;
+        }
+    }
     #tenantPortalSection.schedi-newdash .roster-paid-amt { display: flex; flex-direction: column; align-items: flex-end; justify-content: center; line-height: 1.15; }
     #tenantPortalSection.schedi-newdash .roster-paid-kicker { display: none; }
-    #tenantPortalSection.schedi-newdash .roster-paid-figure {
+    #tenantPortalSection.schedi-newdash .roster-paid-figure,
+    #tenantPortalSection.schedi-newdash .roster-cell-price .roster-status-price {
         font-size: 16px;
         font-weight: 700;
         font-variant-numeric: tabular-nums;
@@ -3549,43 +3969,13 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
             display: flex;
             align-items: center;
             box-sizing: border-box;
-            padding-left: 2px;
-            padding-right: 2px;
+            padding-left: 16px;
+            padding-right: 16px;
         }
         #tenantPortalSection.schedi-newdash .sd-roster-all .sd-roster-check {
             justify-content: flex-start;
             gap: 8px;
         }
-        #tenantPortalSection.schedi-newdash .sd-roster-all .sd-roster-check input { margin-left: 11px; }
-        #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row { column-gap: 8px; align-items: center; }
-        #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-check {
-            width: 44px;
-            flex: 0 0 44px;
-            padding: 0;
-        }
-        #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-ref {
-            width: auto;
-            flex: 1 1 calc(100% - 52px);
-            max-width: calc(100% - 52px);
-            min-width: 0;
-        }
-        #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-collected {
-            width: 100%;
-            flex: 1 0 100%;
-            text-align: left;
-            white-space: normal;
-        }
-        #tenantPortalSection.schedi-newdash .roster-paid-amt { align-items: flex-start; }
-        #tenantPortalSection.schedi-newdash .roster-paid-kicker {
-            display: block;
-            font-size: 10px;
-            font-weight: 800;
-            letter-spacing: 0.04em;
-            text-transform: uppercase;
-            color: var(--sd-muted);
-            line-height: 1.2;
-        }
-        #tenantPortalSection.schedi-newdash .roster-paid-figure { font-size: 1.375rem; font-weight: 800; line-height: 1.1; }
     }
     #tenantPortalSection.schedi-newdash .sd-hours-week-wrap { min-width: 0; }
     #tenantPortalSection.schedi-newdash .sd-hours-week-head { display: none; }
@@ -3907,17 +4297,21 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
         #tenantPortalSection.schedi-newdash .sd-hours-week-add,
         #tenantPortalSection.schedi-newdash .sd-hours-week-copy { min-height: 44px; font-size: 14px; }
     }
-    @media (min-width: 640px) and (max-width: 1023px) {
-        #tenantPortalSection.schedi-newdash .sd-hours-week-scroll {
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-        }
+    @media (min-width: 640px) and (max-width: 1099px) {
+        #tenantPortalSection.schedi-newdash .sd-hours-week-scroll { overflow-x: visible; }
         #tenantPortalSection.schedi-newdash .sd-hours-week.roster-week-grid,
         #tenantPortalSection.schedi-newdash .sd-hours-week-head {
-            grid-template-columns: repeat(7, minmax(148px, 1fr));
+            grid-template-columns: 1fr;
         }
+        #tenantPortalSection.schedi-newdash .sd-hours-week-head { display: none; }
+        #tenantPortalSection.schedi-newdash .sd-hours-week-short { display: none; }
+        #tenantPortalSection.schedi-newdash .sd-hours-week-long { display: inline; }
+        #tenantPortalSection.schedi-newdash .sd-hours-week-day .sd-hours-times {
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        }
+        #tenantPortalSection.schedi-newdash .sd-hours-week-split { white-space: nowrap; }
     }
-    @media (min-width: 1024px) {
+    @media (min-width: 1100px) {
         #tenantPortalSection.schedi-newdash .sd-hours-week-scroll { overflow-x: visible; }
         #tenantPortalSection.schedi-newdash .sd-hours-week.roster-week-grid,
         #tenantPortalSection.schedi-newdash .sd-hours-week-head {
@@ -4233,6 +4627,20 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-theme-seg { background
 }
 #tenantPortalSection.schedi-newdash .sd-theme-seg .sd-theme-opt i { font-size: 22px; width: 22px; text-align: center; }
 #tenantPortalSection.schedi-newdash #schediDashMoreSheet .sd-theme-seg { width: calc(100% - 16px); margin: 8px; }
+#tenantPortalSection.schedi-newdash #schediDashMoreSheet .sd-sheet-bar {
+    min-height: 72px;
+    padding: 12px 12px 16px;
+    margin-bottom: 4px;
+}
+#tenantPortalSection.schedi-newdash #schediDashMoreSheet .sd-sheet-card > button.sd-danger {
+    margin-top: 16px;
+    margin-bottom: 8px;
+}
+#tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-svc-edit,
+#tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-svc-delete {
+    min-height: 36px;
+    box-sizing: border-box;
+}
 @media (max-width: 859px) {
     #tenantPortalSection.schedi-newdash #schediDashMoreSheet .sd-sheet-card { max-height: min(88vh, 760px); }
     #tenantPortalSection.schedi-newdash #schediDashMoreSheet .sd-sheet-bar h3 { font-size: 22px; font-weight: 800; }
@@ -4264,6 +4672,9 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-theme-seg { background
         font-size: 16px;
         font-weight: 700;
         justify-content: center;
+        white-space: nowrap;
+        flex: 0 0 auto;
+        width: auto;
     }
     #tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-svc-title { font-size: 18px; font-weight: 700; line-height: 1.3; }
     #tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-svc-price,
@@ -4355,18 +4766,27 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-theme-seg { background
 }
 @media (max-width: 420px) {
     #tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-svc-foot {
-        flex-direction: column;
-        align-items: stretch;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: center;
+        justify-content: flex-start;
         gap: 8px;
     }
+    #tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-svc-duration { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     #tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-svc-actions {
         display: flex;
-        flex-direction: column;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: center;
+        justify-content: flex-end;
         gap: 8px;
-        width: 100%;
+        width: auto;
+        margin-left: auto;
     }
     #tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-svc-actions > button {
-        width: 100%;
+        width: auto;
+        flex: 0 0 auto;
+        white-space: nowrap;
         margin-left: 0;
         margin-right: 0;
     }
@@ -4376,6 +4796,59 @@ html.schedi-light #tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-sv
 html.schedi-light #tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-svc-edit {
     background-color: #ffffff !important;
     border: 1px solid #cbd5e1;
+}
+#tenantPortalSection.schedi-newdash #tenantSectionServices .sd-svc-add {
+    white-space: nowrap;
+    flex: 0 0 auto;
+    width: auto;
+    max-width: 100%;
+}
+@media (min-width: 768px) and (max-width: 1099px) {
+    #tenantPortalSection.schedi-newdash #tenantServicesGrid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+@media (min-width: 1100px) {
+    #tenantPortalSection.schedi-newdash #tenantServicesGrid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+@media (min-width: 860px) and (max-width: 1099px) {
+    #tenantPortalSection.schedi-newdash .sd-today-head {
+        flex-wrap: wrap;
+        align-items: flex-start;
+    }
+    #tenantPortalSection.schedi-newdash .sd-today-actions {
+        flex: 1 1 100%;
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+    }
+    #tenantPortalSection.schedi-newdash .sd-today-actions .sd-share {
+        flex: 0 1 auto;
+        min-width: 0;
+    }
+    #tenantPortalSection.schedi-newdash .sd-today-actions .sd-add-desktop {
+        flex: 0 0 auto;
+        white-space: nowrap;
+    }
+}
+@media (min-width: 1280px) {
+    #tenantPortalSection.schedi-newdash #webPushCard,
+    #tenantPortalSection.schedi-newdash #tenantSectionNotifications form {
+        max-width: none;
+        width: 100%;
+    }
+    #tenantPortalSection.schedi-newdash #tenantSectionNotifications form {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 16px;
+        align-items: stretch;
+    }
+    #tenantPortalSection.schedi-newdash #tenantSectionNotifications form > * { margin-top: 0; }
+    #tenantPortalSection.schedi-newdash #tenantSectionNotifications form > .flex,
+    #tenantPortalSection.schedi-newdash #tenantSectionNotifications form > p {
+        grid-column: 1 / -1;
+    }
 }
 @media (min-width: 860px) {
     #tenantPortalSection.schedi-newdash #tenantMoreCard .sd-more-actions {
@@ -4478,6 +4951,7 @@ body.schedi-newdash .owner-time-extras .sd-pay-switch-title {
     font-size: 17px;
     font-weight: 700;
     line-height: 1.3;
+    white-space: nowrap;
     color: #f8fafc;
 }
 html.schedi-light body.schedi-newdash .owner-time-extras .sd-pay-switch-title { color: #0f172a; }
@@ -4546,6 +5020,78 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
 }
 
 </style>
+<style id="schediClassicRoster">
+/* Classic owner portal (no schedi-newdash). Real schedi.app sessions never get that class, but the roster still emits these widgets. */
+#tenantPortalSection:not(.schedi-newdash) .sd-svc-line { display: inline-flex; align-items: center; gap: 6px; min-width: 0; max-width: 100%; vertical-align: middle; }
+#tenantPortalSection:not(.schedi-newdash) .sd-svc-mark { display: inline-flex; width: 18px; height: 18px; align-items: center; justify-content: center; flex: 0 0 auto; color: #34d399; }
+#tenantPortalSection:not(.schedi-newdash) .sd-svc-mark svg,
+#tenantPortalSection:not(.schedi-newdash) .sd-svc-mark img { width: 16px; height: 16px; display: block; object-fit: cover; border-radius: 4px; }
+#tenantPortalSection:not(.schedi-newdash) .sd-pay,
+#tenantPortalSection:not(.schedi-newdash) .sd-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    max-width: 100%;
+    min-height: 28px;
+    border-radius: 999px;
+    border: 1px solid #334155;
+    background: rgba(148, 163, 184, 0.14);
+    color: #e2e8f0;
+    font-weight: 800;
+    font-size: 12px;
+    line-height: 1.3;
+    padding: 2px 10px;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+#tenantPortalSection:not(.schedi-newdash) .sd-pay svg,
+#tenantPortalSection:not(.schedi-newdash) .sd-chip svg { width: 14px; height: 14px; display: block; flex: none; }
+#tenantPortalSection:not(.schedi-newdash) .sd-pay-filters { display: flex; flex-wrap: wrap; gap: 6px; }
+#tenantPortalSection:not(.schedi-newdash) .sd-chip-count { margin-left: 4px; color: #94a3b8; font-weight: 700; }
+#tenantPortalSection:not(.schedi-newdash) .sd-chip.is-on { background: rgba(16, 185, 129, 0.16); color: #34d399; border-color: rgba(16, 185, 129, 0.45); }
+#tenantPortalSection:not(.schedi-newdash) .sd-chip.is-on .sd-chip-count { color: inherit; }
+#tenantPortalSection:not(.schedi-newdash) .sd-pay-unpaid { color: #fb7185; border-color: rgba(244, 63, 94, 0.35); background: rgba(244, 63, 94, 0.1); }
+#tenantPortalSection:not(.schedi-newdash) .sd-pay-card { color: #34d399; border-color: rgba(16, 185, 129, 0.4); background: rgba(16, 185, 129, 0.14); }
+#tenantPortalSection:not(.schedi-newdash) .sd-roster-search { display: flex; align-items: center; min-width: 0; }
+#tenantPortalSection:not(.schedi-newdash) .sd-roster-search-toggle { display: none; }
+#tenantPortalSection:not(.schedi-newdash) .sd-roster-search-field {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: min(280px, 46vw);
+    min-height: 40px;
+    padding: 0 8px 0 12px;
+    border-radius: 12px;
+    border: 1px solid #334155;
+    background: #0f172a;
+    color: #94a3b8;
+}
+#tenantPortalSection:not(.schedi-newdash) .sd-roster-search-field input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    background: transparent;
+    color: #f8fafc;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 8px 0;
+    -webkit-appearance: none;
+    appearance: none;
+}
+#tenantPortalSection:not(.schedi-newdash) .sd-roster-search-field input:focus { outline: none; }
+#tenantPortalSection:not(.schedi-newdash) .sd-roster-all { display: none; }
+#tenantPortalSection:not(.schedi-newdash) .sd-roster-check { display: inline-flex; align-items: center; justify-content: center; }
+#tenantPortalSection:not(.schedi-newdash) .sd-roster-check input { width: 16px; height: 16px; margin: 0; accent-color: #10b981; }
+#tenantPortalSection:not(.schedi-newdash) .roster-paid-amt { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.15; }
+#tenantPortalSection:not(.schedi-newdash) .roster-paid-kicker { display: none; }
+#tenantPortalSection:not(.schedi-newdash) .roster-paid-figure { font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; color: #f8fafc; }
+#tenantPortalSection:not(.schedi-newdash) .roster-paid-note { font-size: 10px; font-weight: 700; color: #94a3b8; }
+html.schedi-light #tenantPortalSection:not(.schedi-newdash) .sd-pay,
+html.schedi-light #tenantPortalSection:not(.schedi-newdash) .sd-chip { color: #0f172a; border-color: #cbd5e1; background: #f8fafc; }
+html.schedi-light #tenantPortalSection:not(.schedi-newdash) .sd-roster-search-field { background: #ffffff; border-color: #cbd5e1; color: #64748b; }
+html.schedi-light #tenantPortalSection:not(.schedi-newdash) .sd-roster-search-field input,
+html.schedi-light #tenantPortalSection:not(.schedi-newdash) .roster-paid-figure { color: #0f172a; }
+</style>
 <style id="schediNewBookManage">
 body.schedi-newbook { background: #06080d; color: #e7edf5; }
 html.schedi-light body.schedi-newbook { background: #f4f7fb; color: #0f172a; }
@@ -4587,16 +5133,8 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
     var previewHost = host === 'localhost' || host === '127.0.0.1' || host === '::1' || host.slice(-12) === '.workers.dev';
     var demo = previewHost && (path === '/portal-preview' || q.get('demo') === '1');
     window.__SCHEDI_DEMO = demo;
-    var dash;
-    if (q.get('newdash') === '0') dash = false;
-    else if (previewHost && (q.get('newdash') === '1' || demo)) dash = true;
-    else {
-        var stored = null;
-        try { stored = localStorage.getItem('schediNewDash'); } catch (errStore) { stored = null; }
-        if (stored === '0') dash = false;
-        else if (stored === '1') dash = true;
-        else dash = host !== 'schedi.app' && host !== 'www.schedi.app';
-    }
+    // Signed-in owners get the new dashboard at every width. ?classic=1 and ?newdash=0 keep the classic portal.
+    var dash = q.get('classic') !== '1' && q.get('newdash') !== '0';
     window.__SCHEDI_NEWDASH = dash;
     if (dash) document.documentElement.classList.add('schedi-newdash-boot');
     if (!demo) return;
@@ -4972,7 +5510,7 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                         </button>
                         <button type="button" onclick="openManualBookingModal()" class="px-4 py-2 rounded-xl bg-brand-500 hover:bg-brand-600 text-slate-950 font-bold text-xs shadow-md glow-emerald flex items-center space-x-1.5">
                             <i class="fa-solid fa-calendar-plus"></i>
-                            <span>Add Manual Appointment</span>
+                            <span>Add appointment</span>
                         </button>
                         </div>
                     </div>
@@ -5029,13 +5567,14 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                                             <input type="checkbox" id="rosterSelectAll" aria-label="Select all" onchange="setRosterSelectAll(this.checked)">
                                         </label>
                                     </th>
-                                    <th class="p-3">Ref ID</th>
-                                    <th class="p-3">Client Name</th>
-                                    <th class="p-3">Service</th>
-                                    <th class="p-3">Date & Time</th>
-                                    <th class="p-3">Payment</th>
+                                    <th class="roster-cell-ref p-3">Ref ID</th>
+                                    <th class="roster-cell-client p-3">Client Name</th>
+                                    <th class="roster-cell-service p-3">Service</th>
+                                    <th class="roster-cell-when p-3">Date & Time</th>
+                                    <th class="roster-cell-pay p-3">Payment</th>
+                                    <th class="roster-cell-price p-3">Price</th>
                                     <th class="roster-cell-collected p-3 text-right">Paid</th>
-                                    <th class="p-3 text-right">Actions</th>
+                                    <th class="roster-cell-actions p-3 text-right">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="tenantRosterTableBody" class="divide-y divide-slate-800/80">
@@ -5088,7 +5627,7 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                         </div>
                         <button type="button" onclick="openAddServiceModal()" class="sd-svc-add px-4 py-2 rounded-xl bg-brand-500 hover:bg-brand-600 text-slate-950 font-bold text-xs shadow-md glow-emerald flex items-center space-x-1.5">
                             <i class="fa-solid fa-plus"></i>
-                            <span>Add New Service</span>
+                            <span>Add service</span>
                         </button>
                     </div>
 
@@ -5484,7 +6023,7 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
 
                 <!-- TENANT TAB 5: EMAIL CONFIRMATIONS -->
                 <div id="tenantSectionNotifications" class="glass-card rounded-2xl p-6 space-y-6 hidden">
-                    <div id="webPushCard" class="hidden p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-3 max-w-xl" style="max-width:36rem" aria-labelledby="webPushTitle">
+                    <div id="webPushCard" class="hidden p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-3 max-w-xl" aria-labelledby="webPushTitle">
                         <div class="flex items-start justify-between gap-3">
                             <div class="flex items-start space-x-3 min-w-0">
                                 <i id="webPushIcon" class="fa-solid fa-bell text-brand-400 text-lg mt-0.5" aria-hidden="true"></i>
@@ -5620,8 +6159,8 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                     html.schedi-light #clientImportModal .text-emerald-400 { color: #047857 !important; }
                 </style>
                 <div id="tenantSectionClients" class="glass-card rounded-2xl p-4 sm:p-6 space-y-4 hidden">
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div>
+                    <div class="sd-client-page-head flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div class="min-w-0">
                             <h3 class="text-lg font-bold text-white">Clients</h3>
                             <p class="text-xs text-slate-400">Your saved clients. Only you can see this list. Schedi never emails or texts clients you import.</p>
                         </div>
@@ -6194,11 +6733,15 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
 
     
     <div id="rosterPaidMethodModal" role="dialog" aria-modal="true" aria-labelledby="rosterPaidMethodTitle" tabindex="-1" class="fixed inset-0 z-[60] bg-slate-950/80 backdrop-blur-md flex items-start sm:items-center justify-center p-3 sm:p-4 overflow-y-auto overscroll-contain hidden">
-        <div class="max-w-sm w-full glass-card rounded-2xl p-5 sm:p-6 space-y-4 fade-in border border-emerald-500/25 my-4 min-w-0">
-            <div>
-                <h3 id="rosterPaidMethodTitle" class="text-lg font-bold text-white">How was it paid?</h3>
-                <p class="text-sm text-slate-300 mt-1">Choose how this appointment was paid. The client is emailed a payment receipt.</p>
+        <div class="max-w-sm w-full glass-card rounded-2xl fade-in border border-emerald-500/25 my-4 min-w-0 sd-form-sheet">
+            <div class="sd-form-head">
+                <div class="min-w-0">
+                    <h3 id="rosterPaidMethodTitle" class="text-lg font-bold text-white">How was it paid?</h3>
+                    <p class="text-sm text-slate-300 mt-1">Choose how this appointment was paid. The client is emailed a payment receipt.</p>
+                </div>
+                <button type="button" class="sd-form-close" onclick="closeRosterPaidMethodModal()" aria-label="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
             </div>
+            <div class="space-y-4 sd-form-scroll">
             <p id="rosterPaidMethodCode" class="hidden text-xs text-slate-300 rounded-xl bg-slate-900 border border-slate-800 px-3 py-2"></p>
             <input type="hidden" id="rosterPaidMethodAppId" value="">
             <div class="grid grid-cols-1 gap-2" id="rosterPaidMethodOptions" role="radiogroup" aria-labelledby="rosterPaidMethodTitle"></div>
@@ -6206,23 +6749,44 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                 <button type="button" onclick="closeRosterPaidMethodModal()" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-sm transition-all">Cancel</button>
                 <button type="button" id="rosterPaidMethodConfirmBtn" onclick="confirmRosterMarkPaid()" class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm border border-emerald-400/40 transition-all">Mark paid</button>
             </div>
+            </div>
         </div>
     </div>
-<div id="rosterDeleteModal" role="dialog" aria-modal="true" aria-labelledby="rosterDeleteTitle" tabindex="-1" class="fixed inset-0 z-[60] bg-slate-950/80 backdrop-blur-md flex items-start sm:items-center justify-center p-3 sm:p-4 overflow-y-auto overscroll-contain hidden">
-        <div class="max-w-sm w-full glass-card rounded-2xl p-5 sm:p-6 space-y-4 fade-in border border-rose-500/30 my-4 min-w-0">
-            <div class="flex items-start gap-3">
-                <div class="w-10 h-10 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-400 shrink-0">
-                    <i class="fa-solid fa-trash"></i>
-                </div>
-                <div class="min-w-0">
+<div id="rosterDeleteModal" role="dialog" aria-modal="true" aria-labelledby="rosterDeleteTitle" tabindex="-1" class="fixed inset-0 z-[60] bg-slate-950/80 backdrop-blur-md flex items-start sm:items-center justify-center p-3 sm:p-4 overflow-y-auto overscroll-contain hidden" onclick="if (event.target === this) closeRosterDeleteModal()">
+        <div class="max-w-sm w-full glass-card rounded-2xl fade-in border border-rose-500/30 my-4 min-w-0 sd-form-sheet">
+            <div class="sd-form-head">
+                <div class="min-w-0 flex items-start gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-400 shrink-0">
+                        <i class="fa-solid fa-trash"></i>
+                    </div>
                     <h3 id="rosterDeleteTitle" class="text-lg font-bold text-white">Delete appointment?</h3>
-                    <p id="rosterDeleteBody" class="text-sm text-slate-300 mt-2 leading-relaxed">Delete this appointment? This removes it permanently and frees the time slot. The client is not notified.</p>
+                </div>
+                <button type="button" class="sd-form-close" onclick="closeRosterDeleteModal()" aria-label="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+            </div>
+            <div class="space-y-4 sd-form-scroll">
+                <p id="rosterDeleteBody" class="text-sm text-slate-300 leading-relaxed">Delete this appointment? This removes it permanently and frees the time slot. The client is not notified.</p>
+                <input type="hidden" id="rosterDeleteAppId" value="">
+                <div class="pt-1 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+                    <button type="button" onclick="closeRosterDeleteModal()" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-sm transition-all">Cancel</button>
+                    <button type="button" id="rosterDeleteConfirmBtn" onclick="confirmRosterDeleteFromModal()" class="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-sm border border-rose-400/40 shadow-lg shadow-rose-900/30 transition-all">Delete</button>
                 </div>
             </div>
-            <input type="hidden" id="rosterDeleteAppId" value="">
-            <div class="pt-1 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
-                <button type="button" onclick="closeRosterDeleteModal()" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-sm transition-all">Cancel</button>
-                <button type="button" id="rosterDeleteConfirmBtn" onclick="confirmRosterDeleteFromModal()" class="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-sm border border-rose-400/40 shadow-lg shadow-rose-900/30 transition-all">Delete</button>
+        </div>
+    </div>
+    <div id="ownerConfirmModal" role="dialog" aria-modal="true" aria-labelledby="ownerConfirmTitle" tabindex="-1" class="fixed inset-0 z-[70] bg-slate-950/80 backdrop-blur-md flex items-start sm:items-center justify-center p-3 sm:p-4 overflow-y-auto overscroll-contain hidden" onclick="if (event.target === this) closeOwnerConfirm(false)">
+        <div class="max-w-sm w-full glass-card rounded-2xl fade-in border border-rose-500/30 my-4 min-w-0 sd-form-sheet">
+            <div class="sd-form-head">
+                <div class="min-w-0">
+                    <h3 id="ownerConfirmTitle" class="text-lg font-bold text-white">Are you sure?</h3>
+                </div>
+                <button type="button" class="sd-form-close" onclick="closeOwnerConfirm(false)" aria-label="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+            </div>
+            <div class="space-y-4 sd-form-scroll">
+                <p id="ownerConfirmBody" class="text-sm text-slate-300 leading-relaxed"></p>
+                <div class="pt-1 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+                    <button type="button" id="ownerConfirmDismiss" onclick="closeOwnerConfirm(false)" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-sm transition-all">Cancel</button>
+                    <button type="button" id="ownerConfirmBtn" onclick="closeOwnerConfirm(true)" class="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-sm border border-rose-400/40 shadow-lg shadow-rose-900/30 transition-all">Confirm</button>
+                </div>
             </div>
         </div>
     </div>
@@ -6237,6 +6801,19 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                 <button type="button" onclick="closeRosterApptModal()" aria-label="Close" class="sd-form-close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
             </div>
             <div id="rosterApptBody" class="space-y-4 text-xs sd-form-scroll"></div>
+        </div>
+    </div>
+
+    <div id="clientHistoryModal" role="dialog" aria-modal="true" aria-labelledby="clientHistoryTitle" tabindex="-1" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-start sm:items-center justify-center p-3 sm:p-4 overscroll-contain hidden" onclick="if (event.target === this) closeClientHistory()">
+        <div class="max-w-md w-full glass-card rounded-2xl fade-in min-w-0 sd-form-sheet">
+            <div class="sd-form-head">
+                <div class="min-w-0">
+                    <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Client history</p>
+                    <h3 id="clientHistoryTitle" class="text-lg font-bold text-white break-words"></h3>
+                </div>
+                <button type="button" onclick="closeClientHistory()" aria-label="Close" class="sd-form-close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+            </div>
+            <div id="clientHistoryBody" class="sd-form-scroll"></div>
         </div>
     </div>
 
@@ -6265,8 +6842,11 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
     <div id="manualBookingModal" role="dialog" aria-modal="true" aria-labelledby="manModalTitle" tabindex="-1" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-start sm:items-center justify-center p-3 sm:p-4 overflow-y-auto overscroll-contain hidden">
         <div class="max-w-md w-full glass-card rounded-2xl p-5 sm:p-6 space-y-4 fade-in my-4 min-w-0 sd-form-sheet">
             <div class="sd-form-head">
-                <h3 id="manModalTitle" class="text-lg font-bold text-white">Log Manual Walk-In / Phone Booking</h3>
-                <button type="button" class="sd-form-close" onclick="closeManualBookingModal()" aria-label="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+                <div class="min-w-0">
+                    <p id="manKindBadge" class="sd-kind-badge">Appointment</p>
+                    <h3 id="manModalTitle" class="text-lg font-bold text-white">Add appointment</h3>
+                </div>
+                <button type="button" class="sd-form-close" onpointerdown="window.__manualBookingDismissed=true" onclick="closeManualBookingModal()" aria-label="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
             </div>
             <form id="manualBookingForm" onsubmit="handleManualBookingSubmit(event)" class="space-y-3 text-xs sd-form-scroll">
                 <input type="hidden" id="manEditId" value="">
@@ -6309,7 +6889,7 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-3">
+                <div class="grid grid-cols-1 gap-3">
                     <div>
                         <label class="block font-semibold text-slate-300 mb-1">Appointment Date *</label>
                         <input type="date" id="manDate" required class="w-full px-3 py-2 rounded-xl glass-input">
@@ -6345,8 +6925,8 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                 </div>
             </form>
             <div class="sd-form-bar">
-                <button type="button" class="sd-form-cancel" onclick="closeManualBookingModal()">Cancel</button>
-                <button type="submit" id="manSubmitBtn" class="sd-form-save" form="manualBookingForm">Log Appointment</button>
+                <button type="button" class="sd-form-cancel" onpointerdown="window.__manualBookingDismissed=true" onclick="closeManualBookingModal()">Cancel</button>
+                <button type="submit" id="manSubmitBtn" class="sd-form-save" form="manualBookingForm" onpointerdown="window.__manualBookingDismissed=false">Log Appointment</button>
             </div>
         </div>
     </div>
@@ -7912,13 +8492,12 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
 
         function rosterAmountCollectedHtml(app, tenant) {
             var row = rosterAmountCollected(app, tenant);
-            if (row.empty) {
-                return '<div class="roster-paid-amt"><span class="roster-paid-kicker">Paid</span><span class="roster-paid-figure is-muted">—</span></div>';
-            }
+            if (row.empty) return '';
             var note = '';
             if (row.refunded && row.net === 0) note = 'Refunded';
-            else if (row.refund > 0) note = 'Refund $' + row.refund.toFixed(2);
-            return '<div class="roster-paid-amt"><span class="roster-paid-kicker">Paid</span><span class="roster-paid-figure' + (row.net === 0 ? ' is-muted' : '') + '">$' + row.net.toFixed(2) + '</span>' +
+            else if (row.refund > 0) note = 'Refund ' + (formatBookingAmountLabel(row.refund) || '$0');
+            var label = formatBookingAmountLabel(row.net) || '$0';
+            return '<div class="roster-paid-amt"><span class="roster-paid-kicker">Paid</span><span class="roster-paid-figure' + (row.net === 0 ? ' is-muted' : '') + '">' + label + '</span>' +
                 (note ? '<span class="roster-paid-note">' + esc(note) + '</span>' : '') + '</div>';
         }
 
@@ -7947,8 +8526,7 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
         }
 
         function rosterAcceptedBadge(app) {
-            // Display only: label accepted / auto-confirmed bookings until they are marked paid.
-            if (!app || bookingPaymentState(app) === 'paid') return '';
+            if (!app) return '';
             var label = String(app.status || '').toLowerCase() === 'accepted' ? 'Accepted' : 'Confirmed';
             return '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-sky-500/20 text-sky-300 border border-sky-500/30 mr-1 mb-1 inline-block whitespace-nowrap">' + label + '</span>';
         }
@@ -7971,7 +8549,7 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
             var hint = '';
             if (awaiting && st === 'pending') hint = ' · Accept to keep it; unpaid requests are released after 24h';
             else if (awaiting) hint = ' · Client can pay any time before the appointment';
-            return '<div class="text-[10px] text-slate-300 mt-1">' + badge + 'Deposit $' + dep.toFixed(2) + ' · ' + (paid ? 'Paid' : 'Unpaid') + ' · Balance $' + roundMoney(bal).toFixed(2) + hint + '</div>';
+            return '<div class="text-[10px] text-slate-300 mt-1">' + badge + 'Deposit ' + formatBookingAmountLabel(dep) + ' · ' + (paid ? 'Paid' : 'Unpaid') + ' · Balance ' + formatBookingAmountLabel(roundMoney(bal)) + hint + '</div>';
         }
 
         function cancellationFeeRosterLine(app) {
@@ -8583,7 +9161,7 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                     + schediHelpVideosHtml('owner')
                     + '<div class="space-y-5 text-sm text-slate-300 leading-relaxed">'
                     + '<section><h2 class="text-base font-bold text-white mb-1">Sign in</h2><ol class="list-decimal pl-5 space-y-1"><li>Open Schedi and sign in to the Business Portal.</li><li>Enter the owner email and password.</li></ol></section>'
-                    + '<section><h2 class="text-base font-bold text-white mb-1">Add a service</h2><ol class="list-decimal pl-5 space-y-1"><li>Open Manage Services.</li><li>Click Add New Service.</li><li>Enter the name, duration, optional price, and description, then save. Leave price blank if you do not want a price shown.</li><li>Use Edit or Delete on a service you already added.</li><li>Free keeps one service. A second service is not saved.</li></ol></section>'
+                    + '<section><h2 class="text-base font-bold text-white mb-1">Add a service</h2><ol class="list-decimal pl-5 space-y-1"><li>Open Manage Services.</li><li>Click Add service.</li><li>Enter the name, duration, optional price, and description, then save. Leave price blank if you do not want a price shown.</li><li>Use Edit or Delete on a service you already added.</li><li>Free keeps one service. A second service is not saved.</li></ol></section>'
                     + '<section><h2 class="text-base font-bold text-white mb-1">Set hours</h2><ol class="list-decimal pl-5 space-y-1"><li>Open Hours &amp; Blocked Times.</li><li>Check Open for a day, then set Start and End.</li><li>Choose Start times every 15 minutes, 30 minutes, or 1 hour.</li><li>Click Save Operating Hours.</li><li>On the calendar, tap a date to set custom hours or close that day.</li><li>Drag across days, or hold a date and tap the last day, to mark time off. Use Add Recurring Outage for a repeating break such as lunch.</li></ol></section>'
                     + '<section><h2 class="text-base font-bold text-white mb-1">Payments</h2><ol class="list-decimal pl-5 space-y-1"><li>Open Payment Options.</li><li>Free only allows Pay at Appointment.</li><li>Starter can use Cash App, Venmo, Zelle, PayPal, and Pay at Appointment. Card checkout is not offered.</li><li>Pro can also turn on Credit / Debit Card (Stripe).</li><li>On Pro, Appointment deposit can be a percent of the service price or a fixed amount. It stays off until you turn it on. Percent deposits skip services with no price; card checkout also needs a price. Free and Starter cannot collect a card deposit.</li><li>Cancellation fee stays off until you turn it on. Set the hours (default 24) and a percent or a fixed amount. Pro charges a card already used for that visit. Free and Starter only show the rule.</li><li>Click Save Payment Gateways.</li></ol></section>'
                     + '<section><h2 class="text-base font-bold text-white mb-1">Appointments</h2><ol class="list-decimal pl-5 space-y-1"><li>Open Appointments Roster.</li><li>Free bookings are confirmed as soon as the client reserves.</li><li>Starter and Pro bookings stay pending. Click Accept or Deny. Deny frees that time.</li><li>Mark paid, Reschedule, and Cancel are on the same row.</li><li>Add Manual Appointment records a visit you took in person.</li></ol></section>'
@@ -10174,7 +10752,12 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                 return;
             }
             var switching = !!String(tenant.stripeSubscriptionId || '').trim() && tenant.subscriptionStatus !== 'paused' && normalizePlan(tenant) !== plan && normalizePlan(tenant) !== 'free';
-            if (switching && !window.confirm('Switch to ' + (plan === 'pro' ? 'Pro ($49/mo)' : 'Starter ($29/mo)') + '? Stripe starts the new plan when you pay, and unused time on your current plan is credited to your next invoice.')) {
+            if (switching && !await openOwnerConfirm({
+                title: 'Switch plan?',
+                body: 'Switch to ' + (plan === 'pro' ? 'Pro ($49/mo)' : 'Starter ($29/mo)') + '? Stripe starts the new plan when you pay, and unused time on your current plan is credited to your next invoice.',
+                confirmLabel: 'Switch plan',
+                danger: false
+            })) {
                 return;
             }
             var btn = document.getElementById(plan === 'pro' ? 'subscribeProBtn' : 'subscribeStarterBtn');
@@ -10274,7 +10857,11 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
         window.cancelSchediSubscription = async function() {
             var tenant = getTenant();
             if (!tenant) return;
-            if (!window.confirm('Cancel at the end of the current paid period? You keep access until then and are not charged again.')) return;
+            if (!await openOwnerConfirm({
+                title: 'Cancel this plan?',
+                body: 'Cancel at the end of the current paid period? You keep access until then and are not charged again.',
+                confirmLabel: 'Cancel plan'
+            })) return;
             var data = await postSchediBillingAction('/cancel', 'cancelBillingBtn', 'Scheduling cancellation...');
             if (!data) return;
             tenant.cancelAtPeriodEnd = true;
@@ -11940,7 +12527,7 @@ function schediQrCardPixels(text, color) {
         function clientMetricsHtml(stats) {
             stats = stats || {};
             var visits = '<span class="sd-client-visits" title="Completed visits, or confirmed visits whose start has passed. Pending, denied, no-shows, and cancellations are not counted."><strong>' + String(stats.visits || 0) + '</strong> done</span>';
-            var figure = stats.paidKnown ? ('$' + Number(stats.paid || 0).toFixed(2)) : '\u2014';
+            var figure = stats.paidKnown ? (formatBookingAmountLabel(stats.paid) || '$0') : '\u2014';
             var muted = !stats.paidKnown || Number(stats.paid) === 0;
             var paid = '<span class="sd-client-paid"><span class="sd-client-paid-kicker">Paid</span><span class="sd-client-paid-figure' + (muted ? ' is-muted' : '') + '">' + figure + '</span></span>';
             var chip = stats.method ? clientMethodChipHtml(stats.method) : '';
@@ -12042,8 +12629,13 @@ function schediQrCardPixels(text, color) {
                     + '<div class="sd-client-head"><div class="sd-client-copy"><div class="sd-client-main min-w-0 text-sm break-words"><button type="button" class="sd-client-name font-bold text-white text-left" data-client-id="' + esc(x.id) + '" onclick="openClientDetail(' + jsArg(x.id) + ')" aria-expanded="' + (open ? 'true' : 'false') + '" aria-controls="sdClientPanel">' + esc(x.name) + '</button>' + clientSourceTag(x) + '</div>'
                     + summary
                     + '</div><div class="sd-client-actions">'
-                    + (editing ? '' : ('<button type="button" class="sd-client-edit-btn px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold text-[11px] border border-slate-700" onclick="startOwnerClientEdit(' + jsArg(x.id) + ')" aria-label="Edit ' + esc(x.name) + '">Edit</button>'))
-                    + '<button type="button" class="sd-client-remove px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-bold text-[11px] border border-rose-500/30" onclick="deleteOwnerClient(' + jsArg(x.id) + ')">Remove</button>'
+                    + (editing ? '' : ('<button type="button" class="sd-client-edit-btn px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold text-[11px] border border-slate-700" onclick="startOwnerClientEdit(' + jsArg(x.id) + ')" aria-label="Edit ' + esc(x.name) + '">Edit</button>'
+                    + '<details class="sd-more"><summary aria-label="More actions for ' + esc(x.name) + '"><i class="fa-solid fa-ellipsis-vertical" aria-hidden="true"></i></summary>'
+                    + '<div class="sd-more-menu" role="menu">'
+                    + '<button type="button" role="menuitem" onclick="closeSchediTodayMenus(event); bookClientAgain(' + jsArg(x.id) + ')">Book appointment</button>'
+                    + '<button type="button" role="menuitem" onclick="closeSchediTodayMenus(event); openClientHistory(' + jsArg(x.id) + ')">View history</button>'
+                    + '<button type="button" class="sd-act-no sd-act-delete" role="menuitem" onclick="closeSchediTodayMenus(event); deleteOwnerClient(' + jsArg(x.id) + ')">Remove</button>'
+                    + '</div></details>'))
                     + '</div></div>'
                     + metrics
                     + editor
@@ -12148,10 +12740,23 @@ function schediQrCardPixels(text, color) {
             return '';
         }
 
-        function clientHistoryModel(client, appointments, today, paymentState, payKind) {
+        function clientHistoryClock(tenant) {
+            var tz = 'America/New_York';
+            try { tz = getTenantTimezone(tenant) || tz; } catch (errTz) {}
+            try {
+                var parts = reportNowParts(tz, new Date());
+                if (parts && /^\d{4}-\d{2}-\d{2}$/.test(String(parts.date || ''))) return parts;
+            } catch (errNow) {}
+            var now = new Date();
+            return { date: localISODate(now), minutes: now.getHours() * 60 + now.getMinutes() };
+        }
+
+        function clientHistoryModel(client, appointments, today, paymentState, payKind, asOfMinutes) {
             var payOf = typeof paymentState === 'function' ? paymentState : function () { return 'unpaid'; };
             var kindOf = typeof payKind === 'function' ? payKind : function () { return 'unpaid'; };
             var todayIso = clientHistoryIso(today);
+            var clock = Number(asOfMinutes);
+            var splitToday = isFinite(clock);
             var matched = [];
             (appointments || []).forEach(function (app) {
                 if (clientBookingMatches(client, app)) matched.push(app);
@@ -12160,7 +12765,8 @@ function schediQrCardPixels(text, color) {
             var past = [];
             matched.forEach(function (app) {
                 var date = clientHistoryIso(app && app.date);
-                if (date && todayIso && date >= todayIso) upcoming.push(app);
+                var started = splitToday && date === todayIso && clientHistoryMinutes(app && app.time) < clock;
+                if (date && todayIso && date >= todayIso && !started) upcoming.push(app);
                 else past.push(app);
             });
             function bySooner(a, b) {
@@ -12265,12 +12871,15 @@ function schediQrCardPixels(text, color) {
             return found;
         }
 
-        function clientHistoryGroupHtml(title, apps, tenant) {
+        function clientHistoryGroupHtml(title, apps, tenant, priceOf) {
+            var priceFn = typeof priceOf === 'function' ? priceOf : function (app) {
+                return clientHistoryPrice(app) || '—';
+            };
             var rows = (apps || []).map(function (app) {
                 var when = rosterPrettyDate(app && app.date) || String((app && app.date) || '');
                 if (app && app.time) when = when ? (when + ' · ' + app.time) : String(app.time);
-                var price = clientHistoryPrice(app);
-                var chips = appointmentStatusChipsHtml(app, { priceHtml: '<span>' + esc(price || '—') + '</span>' });
+                var price = priceFn(app);
+                var chips = appointmentStatusChipsHtml(app, price ? { priceHtml: '<span>' + esc(price) + '</span>' } : { price: false });
                 return '<article class="sd-client-visit"><div class="sd-client-visit-main">'
                     + '<p class="sd-client-visit-when">' + esc(when || 'Date not set') + '</p>'
                     + '<p class="sd-client-visit-svc"><span class="sd-svc-line">' + serviceMarkHtml(tenant, app && app.serviceName) + '<span>' + esc((app && app.serviceName) || 'Appointment') + '</span></span></p>'
@@ -12296,9 +12905,8 @@ function schediQrCardPixels(text, color) {
                 return;
             }
             var tenant = getTenant();
-            var today = '';
-            try { today = rosterTodayIso(tenant); } catch (errToday) { today = localISODate(new Date()); }
-            var model = clientHistoryModel(client, (tenant && tenant.appointments) || [], today, bookingPaymentState, appointmentPayKind);
+            var clock = clientHistoryClock(tenant);
+            var model = clientHistoryModel(client, (tenant && tenant.appointments) || [], clock.date, bookingPaymentState, appointmentPayKind, clock.minutes);
             var contact = [client.phone, client.email].filter(Boolean).join(' · ');
             var noShow = (model.noShow && model.noShow.available)
                 ? String(model.noShow.label || '0')
@@ -12335,7 +12943,7 @@ function schediQrCardPixels(text, color) {
         }
 
         function clientPanelBlocked() {
-            var ids = ['manualBookingModal', 'ownerRecurringModal', 'clientImportModal', 'denyConfirmModal', 'rosterPaidMethodModal'];
+            var ids = ['manualBookingModal', 'ownerRecurringModal', 'clientImportModal', 'denyConfirmModal', 'rosterPaidMethodModal', 'clientHistoryModal'];
             for (var i = 0; i < ids.length; i++) {
                 var node = document.getElementById(ids[i]);
                 if (node && !node.classList.contains('hidden')) return true;
@@ -12474,6 +13082,72 @@ function schediQrCardPixels(text, color) {
             openManualBookingModal({ clientName: x.name || '', clientPhone: x.phone || '', clientEmail: x.email || '' });
         };
 
+        function clientHistorySheetPrice(app) {
+            return formatBookingAmountLabel(app && app.amount);
+        }
+
+        function clientHistoryDoneCount(client, appointments, clock) {
+            var n = 0;
+            (appointments || []).forEach(function (app) {
+                if (!clientBookingMatches(client, app)) return;
+                if (appointmentCompletionOf(app, clock) === 'done') n += 1;
+            });
+            return n;
+        }
+
+        function clientHistoryPaidLabel(client, appointments, tenant) {
+            var stats = clientListStats(client, appointments, {
+                collectedOf: function (app) { return rosterAmountCollected(app, tenant); }
+            });
+            if (!stats || !stats.paidKnown) return '\u2014';
+            return formatBookingAmountLabel(stats.paid) || '$0';
+        }
+
+        window.openClientHistory = function (clientId) {
+            var client = clientById(clientId);
+            var modal = document.getElementById('clientHistoryModal');
+            var title = document.getElementById('clientHistoryTitle');
+            var body = document.getElementById('clientHistoryBody');
+            if (!client || !modal || !title || !body) return;
+            var tenant = getTenant();
+            var clock = clientHistoryClock(tenant);
+            var apps = (tenant && tenant.appointments) || [];
+            var model = clientHistoryModel(client, apps, clock.date, bookingPaymentState, appointmentPayKind, clock.minutes);
+            var paid = clientHistoryPaidLabel(client, apps, tenant);
+            var visits = clientHistoryDoneCount(client, apps, clock) + ' done · ' + model.upcoming.length + ' upcoming';
+            title.textContent = client.name || 'Client';
+            body.innerHTML = '<div class="sd-client-history-totals">'
+                + '<p><span>Visits</span><strong>' + esc(visits) + '</strong></p>'
+                + '<p><span>Total paid</span><strong>' + esc(paid) + '</strong></p>'
+                + '</div>'
+                + clientHistoryGroupHtml('Upcoming', model.upcoming, tenant, clientHistorySheetPrice)
+                + clientHistoryGroupHtml('Past', model.past, tenant, clientHistorySheetPrice);
+            body.scrollTop = 0;
+            modal.classList.remove('hidden');
+            modal.scrollTop = 0;
+            var closeBtn = modal.querySelector('.sd-form-close');
+            if (closeBtn && closeBtn.focus) {
+                try { closeBtn.focus(); } catch (errFocus) {}
+            }
+        };
+
+        window.closeClientHistory = function () {
+            var modal = document.getElementById('clientHistoryModal');
+            if (modal) modal.classList.add('hidden');
+        };
+        document.addEventListener('keydown', function (event) {
+            if (!event || event.key !== 'Escape') return;
+            var modal = document.getElementById('clientHistoryModal');
+            if (!modal || modal.classList.contains('hidden')) return;
+            var above = document.getElementById('ownerConfirmModal');
+            if (above && !above.classList.contains('hidden')) return;
+            above = document.getElementById('rosterDeleteModal');
+            if (above && !above.classList.contains('hidden')) return;
+            event.preventDefault();
+            if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+            window.closeClientHistory();
+        });
+
         (function bindClientPanel() {
             var panel = document.getElementById('sdClientPanel');
             if (!panel || panel._clientBound) return;
@@ -12548,7 +13222,11 @@ function schediQrCardPixels(text, color) {
             var c = t && ownerClientCache[t.id];
             if (!c) return;
             var x = c.clients.find(function (k) { return k && k.id === clientId; });
-            if (!x || !window.confirm('Remove ' + (x.name || 'this client') + ' from your clients? Appointments are not changed.')) return;
+            if (!x || !await openOwnerConfirm({
+                title: 'Remove ' + (x.name || 'this client') + '?',
+                body: 'Remove ' + (x.name || 'this client') + ' from your clients? Appointments are not changed.',
+                confirmLabel: 'Remove client'
+            })) return;
             var data = await clientsApi({ action: 'delete', tenantId: t.id, clientId: clientId });
             if (!data.ok && data.error !== 'not_found') { showToast('Could not remove the client. Try again.', 'error'); return; }
             c.clients = c.clients.filter(function (k) { return k && k.id !== clientId; });
@@ -12953,7 +13631,7 @@ function schediQrCardPixels(text, color) {
                 cash: '<circle cx="8" cy="5" r="2" fill="currentColor"/><path d="M3.8 13.2c.7-2.3 2.2-3.4 4.2-3.4s3.5 1.1 4.2 3.4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>',
                 unpaid: '<circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M5.2 8h5.6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>'
             };
-            return '<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">' + (body[kind] || body.unpaid) + '</svg>';
+            return '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">' + (body[kind] || body.unpaid) + '</svg>';
         }
 
         function rosterBrandPayClass(kind) {
@@ -12988,12 +13666,11 @@ function schediQrCardPixels(text, color) {
         function appointmentPayMarkup(app, iconOnly) {
             var kind = appointmentPayKind(app);
             var label = ROSTER_PAY_WORDS[kind] || ROSTER_PAY_WORDS.unpaid;
-            if (kind !== 'unpaid') {
-                var money = appointmentPaidChipMoney(app);
-                if (money) label = label + ' · ' + money;
-            }
-            return '<span class="sd-pay sd-pay-' + kind + (iconOnly ? ' is-icon' : '') + '" title="' + esc(label) + '" aria-label="' + esc(label) + '">' +
-                payKindSvg(kind) + '<span class="sd-pay-word">' + esc(label) + '</span></span>';
+            var money = kind === 'unpaid' ? '' : appointmentPaidChipMoney(app);
+            var full = money ? (label + ' · ' + money) : label;
+            var amount = money ? '<span class="sd-pay-amt"> · ' + esc(money) + '</span>' : '';
+            return '<span class="sd-pay sd-pay-' + kind + (iconOnly ? ' is-icon' : '') + '" title="' + esc(full) + '" aria-label="' + esc(full) + '">' +
+                payKindSvg(kind) + '<span class="sd-pay-word">' + esc(label) + '</span>' + amount + '</span>';
         }
 
         function rosterPassesPayFilter(app) {
@@ -13001,8 +13678,29 @@ function schediQrCardPixels(text, color) {
             return appointmentPayKind(app) === rosterPayFilter;
         }
 
+        // Enabled methods, plus any method that already appears on a visible appointment.
+        // Cash, All, and Unpaid stay. A disabled method is not offered for a new payment.
+        function rosterPayFilterRows(tenant, apps) {
+            var enabled = {};
+            ownerMarkPaidMethods(tenant).forEach(function (row) { enabled[row[0]] = true; });
+            var seen = {};
+            (apps || []).forEach(function (app) {
+                if (!app) return;
+                seen[appointmentPayKind(app)] = true;
+            });
+            return ROSTER_PAY_FILTERS.filter(function (row) {
+                var id = row[0];
+                if (id === 'all' || id === 'unpaid' || id === 'cash') return true;
+                return enabled[id] === true || seen[id] === true;
+            });
+        }
+
         function renderRosterPayFilter(tenant) {
             var apps = (tenant && tenant.appointments) || [];
+            var filters = rosterPayFilterRows(tenant, apps);
+            var allowed = {};
+            filters.forEach(function (row) { allowed[row[0]] = true; });
+            if (!allowed[rosterPayFilter]) rosterPayFilter = 'all';
             var counts = { all: 0 };
             ROSTER_PAY_FILTERS.forEach(function (row) { counts[row[0]] = 0; });
             apps.forEach(function (app) {
@@ -13013,7 +13711,7 @@ function schediQrCardPixels(text, color) {
             });
             var box = document.getElementById('rosterPayFilter');
             if (box) {
-                box.innerHTML = ROSTER_PAY_FILTERS.map(function (row) {
+                box.innerHTML = filters.map(function (row) {
                     var on = rosterPayFilter === row[0];
                     var icon = row[0] === 'all' ? '' : payKindSvg(row[0]);
                     return '<button type="button" class="sd-chip' + rosterBrandPayClass(row[0]) + (on ? ' is-on' : '') + '" data-pay-filter="' + row[0] + '" aria-pressed="' + (on ? 'true' : 'false') + '">' +
@@ -13030,7 +13728,7 @@ function schediQrCardPixels(text, color) {
             }
             var sel = document.getElementById('rosterPayFilterSelect');
             if (sel) {
-                sel.innerHTML = ROSTER_PAY_FILTERS.map(function (row) {
+                sel.innerHTML = filters.map(function (row) {
                     return '<option value="' + row[0] + '"' + (rosterPayFilter === row[0] ? ' selected' : '') + '>' +
                         esc(row[1]) + ' (' + counts[row[0]] + ')</option>';
                 }).join('');
@@ -13042,12 +13740,13 @@ function schediQrCardPixels(text, color) {
         }
 
         window.setRosterPayFilter = function (kind) {
+            var tenant = (typeof getTenant === 'function') ? getTenant() : null;
+            var rows = rosterPayFilterRows(tenant, (tenant && tenant.appointments) || []);
             var next = 'all';
-            for (var i = 0; i < ROSTER_PAY_FILTERS.length; i++) {
-                if (ROSTER_PAY_FILTERS[i][0] === kind) next = kind;
+            for (var i = 0; i < rows.length; i++) {
+                if (rows[i][0] === kind) next = kind;
             }
             rosterPayFilter = next;
-            var tenant = (typeof getTenant === 'function') ? getTenant() : null;
             if (tenant && typeof renderTenantRoster === 'function') renderTenantRoster(tenant);
         };
 
@@ -13363,18 +14062,19 @@ function schediQrCardPixels(text, color) {
             if (schedule) {
                 schedule.innerHTML = todayApps.length ? todayApps.map(function (app) {
                     var id = esc(jsArg(app.id));
-                    var payAction = rosterPayMenuLabel(app) === 'Mark unpaid'
+                    var cardStatus = String(app.status || '').toLowerCase();
+                    var acceptedCard = cardStatus !== 'pending' && cardStatus !== 'requested';
+                    var payAction = !acceptedCard ? '' : (rosterPayMenuLabel(app) === 'Mark unpaid'
                         ? '<button type="button" role="menuitem" onclick="closeSchediTodayMenus(event); markAppointmentUnpaid(' + id + ')">Mark unpaid</button>'
-                        : '<button type="button" class="sd-act-ok" role="menuitem" onclick="closeSchediTodayMenus(event); markAppointmentPaid(' + id + ')">Mark paid</button>';
-                    var noShowAction = appointmentIsNoShow(app)
+                        : '<button type="button" class="sd-act-ok" role="menuitem" onclick="closeSchediTodayMenus(event); markAppointmentPaid(' + id + ')">Mark paid</button>');
+                    var noShowAction = !acceptedCard ? '' : (appointmentIsNoShow(app)
                         ? '<button type="button" role="menuitem" onclick="closeSchediTodayMenus(event); undoAppointmentNoShow(' + id + ')"><i class="fa-solid fa-rotate-left mr-1" aria-hidden="true"></i>Undo no-show</button>'
-                        : '<button type="button" role="menuitem" onclick="closeSchediTodayMenus(event); markAppointmentNoShow(' + id + ')">Mark no-show</button>';
+                        : '<button type="button" role="menuitem" onclick="closeSchediTodayMenus(event); markAppointmentNoShow(' + id + ')">Mark no-show</button>');
                     return '<article class="sd-card sd-row">' +
                         '<div class="sd-time">' + esc(app.time || '') + '</div>' +
                         '<div class="sd-row-main"><div class="sd-row-head"><h4><span class="sd-row-title">' + esc(app.clientName || 'Client') + (app.walkIn ? ' · Walk-in' : '') + '</span></h4>' +
-                        '<div class="sd-row-chips">' + appointmentStatusChipsHtml(app, { payment: false, price: false, pendingLabel: 'New request' }) + '</div></div>' +
+                        '<div class="sd-row-chips">' + appointmentStatusChipsHtml(app, { pendingLabel: 'New request' }) + '</div></div>' +
                         '<p class="sd-meta"><span class="sd-svc-line">' + serviceMarkHtml(tenant, app.serviceName) + '<span>' + esc(app.serviceName || 'Appointment') + '</span></span></p></div>' +
-                        '<div class="sd-row-side">' + appointmentPayMarkup(app, false) + '</div>' +
                         '<details class="sd-more"><summary aria-label="More actions" aria-expanded="false"><i class="fa-solid fa-ellipsis-vertical" aria-hidden="true"></i></summary>' +
                         '<div class="sd-more-menu" role="menu">' +
                         payAction +
@@ -13382,7 +14082,7 @@ function schediQrCardPixels(text, color) {
                         noShowAction +
                         '<button type="button" class="sd-act-no" role="menuitem" onclick="closeSchediTodayMenus(event); deleteAppointment(' + id + ')">Cancel</button>' +
                         '<button type="button" role="menuitem" onclick="closeSchediTodayMenus(event); openEditAppointment(' + id + ')">Edit</button>' +
-                        '<button type="button" class="sd-act-no" role="menuitem" onclick="closeSchediTodayMenus(event); openRosterDeleteModal(' + id + ')">Delete</button>' +
+                        '<button type="button" class="sd-act-no sd-act-delete" role="menuitem" onclick="closeSchediTodayMenus(event); openRosterDeleteModal(' + id + ')">Delete</button>' +
                         '</div></details></article>';
                 }).join('') : '<p class="sd-empty">Nothing on the book today.</p>';
             }
@@ -14309,17 +15009,17 @@ function schediQrCardPixels(text, color) {
                 _rosterRevision: 1,
                 appointments: [
                     { id: 'HB-1001', clientName: 'Maya Chen', clientPhone: '(555) 201-0142', clientEmail: 'maya@example.com', serviceName: 'Cut & style', date: today, time: '09:00 AM', status: 'accepted', paymentStatus: 'PAID VIA CARD', paidMethod: 'card', stripePaymentMethodId: 'pm_harbor_demo', amount: 65, durationMins: 45 },
-                    { id: 'HB-1002', clientName: 'Luis Ortega', clientPhone: '(555) 201-2288', clientEmail: 'luis@example.com', serviceName: 'Beard trim', date: today, time: '11:30 AM', status: 'pending', paymentStatus: 'PENDING CASH APP', paymentMethod: 'cashapp', amount: 28, durationMins: 20 },
+                    { id: 'HB-1002', clientName: 'Luis Ortega', clientPhone: '(555) 201-2288', clientEmail: 'luis@example.com', serviceName: 'Beard trim', date: day(1), time: '11:30 AM', status: 'pending', paymentStatus: 'PENDING CASH APP', paymentMethod: 'cashapp', amount: 28, durationMins: 20 },
                     { id: 'HB-1003', clientName: 'Jordan Lee', clientPhone: '(555) 201-7730', clientEmail: '', serviceName: 'Gloss', date: today, time: '01:30 PM', status: 'accepted', paymentStatus: 'PAY AT APPOINTMENT', amount: 80, durationMins: 75, walkIn: true },
-                    { id: 'HB-1004', clientName: 'Priya Shah', clientPhone: '(555) 201-9094', clientEmail: 'priya@example.com', serviceName: 'Consultation', date: today, time: '04:00 PM', status: 'pending', paymentStatus: 'PENDING ZELLE', paymentMethod: 'zelle', durationMins: 30 },
+                    { id: 'HB-1004', clientName: 'Priya Shah', clientPhone: '(555) 201-9094', clientEmail: 'priya@example.com', serviceName: 'Consultation', date: day(2), time: '04:00 PM', status: 'pending', paymentStatus: 'PENDING ZELLE', paymentMethod: 'zelle', durationMins: 30 },
                     { id: 'HB-1005', clientName: 'Avery Kim', clientPhone: '(555) 201-6621', clientEmail: 'avery@example.com', serviceName: 'Cut & style', date: day(-1), time: '02:00 PM', status: 'accepted', paymentStatus: 'PENDING VENMO', paymentMethod: 'venmo', amount: 55, durationMins: 45, noShow: true },
                     { id: 'HB-1006', clientName: 'Noah Brooks', clientPhone: '(555) 201-1180', clientEmail: 'noah@example.com', serviceName: 'Cut & style', date: tomorrow, time: '10:00 AM', status: 'accepted', paymentStatus: 'PAID', paidMethod: 'cash', amount: 65, refundAmount: 20, durationMins: 45 },
                     { id: 'HB-1007', clientName: 'Elena Vasquez', clientPhone: '(555) 201-4419', clientEmail: 'elena@example.com', serviceName: 'Color', date: day(2), time: '01:00 PM', status: 'accepted', paymentStatus: 'PAY AT APPOINTMENT', amount: 120, durationMins: 90, seriesId: 'series-harbor-elena', recurrence: { frequency: 'weekly', count: 4, index: 2, total: 4, dates: [day(-5), day(2), day(9), day(16)] } },
                     { id: 'HB-1008', clientName: 'Sam Okonkwo', clientPhone: '(555) 201-3304', clientEmail: 'sam@example.com', serviceName: 'Cut & style', date: day(-4), time: '11:00 AM', status: 'accepted', paymentStatus: 'PAID IN CASH', paidMethod: 'cash', amount: 65, durationMins: 45, noShow: true },
-                    { id: 'HB-1009', clientName: 'Casey Ng', clientPhone: '(555) 201-4410', clientEmail: 'casey@example.com', serviceName: 'Beard trim', date: day(-2), time: '03:00 PM', status: 'accepted', paymentStatus: 'PAID', paidMethod: 'cashapp', paymentMethod: 'cashapp', durationMins: 20 },
-                    { id: 'HB-1010', clientName: 'Drew Patel', clientPhone: '(555) 201-4411', clientEmail: 'drew@example.com', serviceName: 'Consultation', date: day(-3), time: '05:00 PM', status: 'accepted', paymentStatus: 'PAID', paidMethod: 'zelle', paymentMethod: 'zelle', durationMins: 30 },
-                    { id: 'HB-1011', clientName: 'Quinn Brooks', clientPhone: '(555) 201-4412', clientEmail: 'quinn@example.com', serviceName: 'Cut & style', date: day(1), time: '03:30 PM', status: 'accepted', paymentStatus: 'PAID', paidMethod: 'venmo', paymentMethod: 'venmo', durationMins: 45 },
-                    { id: 'HB-1012', clientName: 'Harper Diaz', clientPhone: '(555) 201-4413', clientEmail: 'harper@example.com', serviceName: 'Gloss', date: day(2), time: '04:30 PM', status: 'accepted', paymentStatus: 'PAID SQUARE', paidMethod: 'square', paymentMethod: 'square', paymentOptionLabel: 'Square', durationMins: 75 },
+                    { id: 'HB-1009', clientName: 'Casey Ng', clientPhone: '(555) 201-4410', clientEmail: 'casey@example.com', serviceName: 'Beard trim', date: day(-2), time: '03:00 PM', status: 'accepted', paymentStatus: 'PAID', paidMethod: 'cashapp', paymentMethod: 'cashapp', amount: 28, durationMins: 20 },
+                    { id: 'HB-1010', clientName: 'Drew Patel', clientPhone: '(555) 201-4411', clientEmail: 'drew@example.com', serviceName: 'Consultation', date: day(-3), time: '05:00 PM', status: 'accepted', paymentStatus: 'PAID', paidMethod: 'zelle', paymentMethod: 'zelle', amount: 45, durationMins: 30 },
+                    { id: 'HB-1011', clientName: 'Quinn Brooks', clientPhone: '(555) 201-4412', clientEmail: 'quinn@example.com', serviceName: 'Cut & style', date: day(1), time: '03:30 PM', status: 'accepted', paymentStatus: 'PAID', paidMethod: 'venmo', paymentMethod: 'venmo', amount: 65, durationMins: 45 },
+                    { id: 'HB-1012', clientName: 'Harper Diaz', clientPhone: '(555) 201-4413', clientEmail: 'harper@example.com', serviceName: 'Gloss', date: day(2), time: '04:30 PM', status: 'accepted', paymentStatus: 'PAID SQUARE', paidMethod: 'square', paymentMethod: 'square', paymentOptionLabel: 'Square', amount: 80, durationMins: 75 },
                     { id: 'HB-1013', clientName: 'Maya Chen', clientPhone: '(555) 999-0142', clientEmail: 'Maya@Example.com', serviceName: 'Beard trim', date: day(-16), time: '10:00 AM', status: 'accepted', paymentStatus: 'PAID VIA CARD', paidMethod: 'card', amount: 28, durationMins: 20 },
                     { id: 'HB-1014', clientName: 'Maya Chen', clientPhone: '(555) 201-0142', clientEmail: 'maya@example.com', serviceName: 'Gloss', date: day(-22), time: '02:00 PM', status: 'accepted', paymentStatus: 'PAID IN CASH', paidMethod: 'cash', amount: 80, durationMins: 75, noShow: true },
                     { id: 'HB-1015', clientName: 'Maya Chen', clientPhone: '(555) 201-0142', clientEmail: 'maya@example.com', serviceName: 'Cut & style', date: day(-30), time: '09:30 AM', status: 'cancelled', paymentStatus: 'PAID', paidMethod: 'card', amount: 65, durationMins: 45 },
@@ -14338,7 +15038,7 @@ function schediQrCardPixels(text, color) {
                     { id: 'HB-1028', clientName: 'Nina Park', clientPhone: '(555) 201-6601', clientEmail: 'nina@example.com', serviceName: 'Cut & style', date: day(-6), time: '10:00 AM', status: 'completed', paymentStatus: 'PAID', paidMethod: 'cash', amount: 65, durationMins: 45 },
                     { id: 'HB-1029', clientName: 'Nina Park', clientPhone: '(555) 201-6601', clientEmail: 'nina@example.com', serviceName: 'Beard trim', date: day(-8), time: '09:00 AM', status: 'cancelled', cancelled: true, cancelledBy: 'client', paymentStatus: 'PAID', paidMethod: 'card', amount: 28, durationMins: 20 },
                     { id: 'HB-1030', clientName: 'Nina Park', clientPhone: '(555) 201-6601', clientEmail: 'nina@example.com', serviceName: 'Color', date: day(5), time: '09:00 AM', status: 'completed', paymentStatus: 'PAID', paidMethod: 'card', amount: 120, durationMins: 90 },
-                    { id: 'HB-1031', clientName: 'Owen Blake', clientPhone: '(555) 201-6602', clientEmail: 'owen@example.com', serviceName: 'Consultation', date: day(-1), time: '09:00 AM', status: 'pending', paymentStatus: 'PENDING ZELLE', paymentMethod: 'zelle', durationMins: 30 }
+                    { id: 'HB-1031', clientName: 'Owen Blake', clientPhone: '(555) 201-6602', clientEmail: 'owen@example.com', serviceName: 'Consultation', date: day(1), time: '09:00 AM', status: 'pending', paymentStatus: 'PENDING ZELLE', paymentMethod: 'zelle', durationMins: 30 }
                 ]
             };
         }
@@ -14732,7 +15432,6 @@ function schediQrCardPixels(text, color) {
                 if (st === 'accepted') request = 'accepted';
                 else if (st === 'confirmed' || st === 'booked' || st === '') request = 'confirmed';
             }
-            if ((request === 'accepted' || request === 'confirmed') && bookingPaymentState(app) === 'paid') request = '';
             var outcomes = [];
             if (noShow) outcomes.push('noshow');
             if (cancelled) outcomes.push('cancelled');
@@ -14773,7 +15472,9 @@ function schediQrCardPixels(text, color) {
 
         function appointmentStatusPriceHtml(app) {
             if (!hasPricedAmount(app && app.amount)) return '';
-            return '<span class="text-[10px] font-bold text-slate-300">$' + (Number(app.amount) || 0) + '</span>';
+            var label = formatBookingAmountLabel(app.amount);
+            if (!label) return '';
+            return '<span class="roster-status-price text-[10px] font-bold text-slate-300">' + label + '</span>';
         }
 
         function appointmentStatusLabels(app, opts) {
@@ -14818,8 +15519,16 @@ function schediQrCardPixels(text, color) {
         }
 
         // Status/payment badges for one appointment (list Payment column and the details pop-up).
-        function rosterStatusCellHtml(app) {
-            return appointmentStatusChipsHtml(app) + depositRosterLine(app) + cancellationFeeRosterLine(app);
+        function rosterStatusCellHtml(app, opts) {
+            var chipOpts = (opts && opts.price === false) ? { price: false } : undefined;
+            return '<div class="roster-status-line">' + appointmentStatusChipsHtml(app, chipOpts) + '</div>' + depositRosterLine(app) + cancellationFeeRosterLine(app);
+        }
+
+        // Table price column. Paid and unpaid rows use the same figure so the column lines up.
+        function rosterListPriceHtml(app) {
+            var parts = appointmentStatusParts(app);
+            if (!parts.showPrice) return '';
+            return appointmentStatusPriceHtml(app);
         }
 
         // Action buttons for one appointment's state. big = details pop-up (44px buttons that close the pop-up first).
@@ -14841,19 +15550,62 @@ function schediQrCardPixels(text, color) {
                     out.push(btn('acceptAppointment', 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30', 'Accept'));
                     out.push(btn('denyAppointment', 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30', 'Deny'));
                 }
-                if (bookingPaymentState(app) === 'paid') {
+                var decided = st !== 'pending' && st !== 'requested';
+                if (decided && bookingPaymentState(app) === 'paid') {
                     out.push(btn('markAppointmentUnpaid', 'sd-act', 'Mark unpaid'));
-                } else {
+                } else if (decided) {
                     out.push(btn('markAppointmentPaid', 'sd-act sd-act-ok', '<i class="fa-solid fa-circle-check mr-1"></i>Mark paid'));
                 }
                 out.push(btn('openEditAppointment', 'sd-act', 'Edit'));
                 out.push(btn('openTenantRescheduleModal', 'sd-act sd-act-ok', '<i class="fa-solid fa-calendar-days mr-1"></i>Reschedule'));
-                if (appointmentIsNoShow(app)) out.push(btn('undoAppointmentNoShow', 'sd-act', '<i class="fa-solid fa-rotate-left mr-1" aria-hidden="true"></i>Undo no-show'));
-                else out.push(btn('markAppointmentNoShow', 'sd-act', 'Mark no-show'));
+                if (decided && appointmentIsNoShow(app)) out.push(btn('undoAppointmentNoShow', 'sd-act', '<i class="fa-solid fa-rotate-left mr-1" aria-hidden="true"></i>Undo no-show'));
+                else if (decided) out.push(btn('markAppointmentNoShow', 'sd-act', 'Mark no-show'));
                 out.push(btn('deleteAppointment', 'sd-act sd-act-no', '<i class="fa-solid fa-xmark mr-1"></i>Cancel'));
             }
             out.push(btn('openRosterDeleteModal', 'sd-act sd-act-no', '<i class="fa-solid fa-trash mr-1"></i>Delete'));
             return out.join('\n');
+        }
+
+        // List row: the primary action stays visible. Everything else is in the same borderless kebab Today uses.
+        function rosterListActionsHtml(app) {
+            var rawId = jsArg(app.id);
+            var id = esc(rawId);
+            var st = String(app.status || '').toLowerCase();
+            function menuBtn(fn, cls, inner) {
+                return '<button type="button" role="menuitem" class="' + cls + '" onclick="closeSchediTodayMenus(event); ' + fn + '(' + id + ')">' + inner + '</button>';
+            }
+            function primaryBtn(fn, cls, inner) {
+                return '<button type="button" onclick="' + esc(fn + '(' + rawId + ')') + '" class="px-2.5 py-1 rounded-lg text-xs ' + cls + ' font-bold transition-all">' + inner + '</button>';
+            }
+            var primary = [];
+            var menu = [];
+            if (appointmentIsCancelled(app)) {
+                primary.push('<span class="text-[11px] font-bold text-rose-300 self-center">Cancelled</span>');
+            } else if (st === 'denied') {
+                primary.push('<span class="text-[11px] font-bold text-rose-300 self-center">Denied</span>');
+            } else if (st === 'pending') {
+                primary.push(primaryBtn('acceptAppointment', 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30', 'Accept'));
+                primary.push(primaryBtn('denyAppointment', 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30', 'Deny'));
+                menu.push(menuBtn('openEditAppointment', '', 'Edit'));
+                menu.push(menuBtn('openTenantRescheduleModal', 'sd-act-ok', '<i class="fa-solid fa-calendar-days mr-1"></i>Reschedule'));
+                menu.push(menuBtn('deleteAppointment', 'sd-act-no', '<i class="fa-solid fa-xmark mr-1"></i>Cancel'));
+            } else {
+                var decided = st !== 'pending' && st !== 'requested';
+                if (decided && bookingPaymentState(app) === 'paid') {
+                    menu.push(menuBtn('markAppointmentUnpaid', '', 'Mark unpaid'));
+                } else if (decided) {
+                    primary.push(primaryBtn('markAppointmentPaid', 'sd-act sd-act-ok', '<i class="fa-solid fa-circle-check mr-1"></i>Mark paid'));
+                }
+                menu.push(menuBtn('openEditAppointment', '', 'Edit'));
+                menu.push(menuBtn('openTenantRescheduleModal', 'sd-act-ok', '<i class="fa-solid fa-calendar-days mr-1"></i>Reschedule'));
+                if (decided && appointmentIsNoShow(app)) menu.push(menuBtn('undoAppointmentNoShow', '', '<i class="fa-solid fa-rotate-left mr-1" aria-hidden="true"></i>Undo no-show'));
+                else if (decided) menu.push(menuBtn('markAppointmentNoShow', '', 'Mark no-show'));
+                menu.push(menuBtn('deleteAppointment', 'sd-act-no', '<i class="fa-solid fa-xmark mr-1"></i>Cancel'));
+            }
+            menu.push(menuBtn('openRosterDeleteModal', 'sd-act-no sd-act-delete', '<i class="fa-solid fa-trash mr-1"></i>Delete'));
+            return primary.join('\n') +
+                '<details class="sd-more"><summary aria-label="More actions" aria-expanded="false"><i class="fa-solid fa-ellipsis-vertical" aria-hidden="true"></i></summary>' +
+                '<div class="sd-more-menu" role="menu">' + menu.join('') + '</div></details>';
         }
 
         var ROSTER_SHEET_ACTIONS = ['acceptAppointment', 'denyAppointment', 'markAppointmentPaid', 'markAppointmentUnpaid', 'openEditAppointment', 'openTenantRescheduleModal', 'markAppointmentNoShow', 'undoAppointmentNoShow', 'deleteAppointment', 'openRosterDeleteModal'];
@@ -15299,7 +16051,7 @@ function schediQrCardPixels(text, color) {
 
             try { renderRosterPayFilter(tenant); } catch (errFilter) {}
             if (!tenant || !tenant.appointments || tenant.appointments.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-500">No client appointments logged yet.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-slate-500">No client appointments logged yet.</td></tr>`;
                 renderRosterCalendar(tenant);
                 try { if (window.renderSchediToday) window.renderSchediToday(tenant); } catch (errToday) {}
                 try { renderRosterSearchResults(tenant && tenant.appointments); } catch (errSearch) {}
@@ -15310,7 +16062,7 @@ function schediQrCardPixels(text, color) {
             var payRows = tenant.appointments.filter(rosterPassesPayFilter);
             var rosterRows = rosterListRows(tenant);
             if (!payRows.length) {
-                tbody.innerHTML = '<tr><td colspan="8" class="p-4 text-center text-slate-500">No appointments use this payment method.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="9" class="p-4 text-center text-slate-500">No appointments use this payment method.</td></tr>';
                 renderRosterCalendar(tenant);
                 try { if (window.renderSchediToday) window.renderSchediToday(tenant); } catch (errToday) {}
                 try { renderRosterSearchResults(tenant && tenant.appointments); } catch (errSearch) {}
@@ -15318,7 +16070,7 @@ function schediQrCardPixels(text, color) {
                 return;
             }
             if (!rosterRows.length) {
-                tbody.innerHTML = '<tr><td colspan="8" class="p-4 text-center text-slate-500">No appointments match this search.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="9" class="p-4 text-center text-slate-500">No appointments match this search.</td></tr>';
                 renderRosterCalendar(tenant);
                 try { if (window.renderSchediToday) window.renderSchediToday(tenant); } catch (errToday) {}
                 try { renderRosterSearchResults(tenant && tenant.appointments); } catch (errSearch) {}
@@ -15334,23 +16086,26 @@ function schediQrCardPixels(text, color) {
                     </td>
                     <td class="roster-cell-ref p-3 font-mono font-bold text-white">#${esc(app.id)}${app.payCode ? ('<br>' + payCodeChipHtml(app)) : ''}</td>
                     <td class="roster-cell-client p-3">
-                        <div class="font-bold text-white">${esc(app.clientName)}${app.walkIn === true ? ' <span class="ml-1 align-middle inline-block px-1.5 py-0.5 rounded-md bg-slate-800 border border-slate-700 text-slate-300 text-[10px] font-semibold whitespace-nowrap"><i class="fa-solid fa-person-walking mr-1"></i>Walk-in</span>' : ''}</div>
-                        <div class="text-[10px] text-slate-400">${esc(app.clientPhone)} • ${esc(app.clientEmail)}</div>
+                        <div class="roster-client-name font-bold text-white"><span class="roster-client-name-text">${esc(app.clientName)}</span>${app.walkIn === true ? '<span class="align-middle inline-block px-1.5 py-0.5 rounded-md bg-slate-800 border border-slate-700 text-slate-300 text-[10px] font-semibold whitespace-nowrap"><i class="fa-solid fa-person-walking mr-1"></i>Walk-in</span>' : ''}</div>
+                        <div class="roster-client-meta text-[10px] text-slate-400">${app.clientPhone ? `<span class="roster-client-phone">${esc(app.clientPhone)}</span>` : ''}${app.clientPhone && app.clientEmail ? '<span class="roster-client-sep"> • </span>' : ''}${app.clientEmail ? `<span class="roster-client-email" title="${esc(app.clientEmail)}">${esc(app.clientEmail)}</span>` : ''}</div>
                     </td>
-                    <td class="roster-cell-service p-3 font-semibold text-slate-300"><span class="sd-svc-line">${serviceMarkHtml(tenant, app.serviceName)}<span>${esc(app.serviceName)}</span></span></td>
+                    <td class="roster-cell-service p-3 font-semibold text-slate-300"><span class="sd-svc-line">${serviceMarkHtml(tenant, app.serviceName)}<span class="sd-svc-name" title="${esc(app.serviceName)}">${esc(app.serviceName)}</span></span></td>
                     <td class="roster-cell-when p-3">
                         <span class="text-brand-400 font-bold">${esc(app.date)}</span>
                         <div class="text-[10px] text-slate-400">${esc(app.time)}${(app.seriesId || (app.recurrence && app.recurrence.frequency && app.recurrence.frequency !== 'once')) ? (' · <span class="text-sky-400">' + esc(recurrenceLabel((app.recurrence && app.recurrence.frequency) || 'weekly')) + (app.recurrence && app.recurrence.index && app.recurrence.total ? (' ' + app.recurrence.index + '/' + app.recurrence.total) : '') + '</span>') : ''}</div>
                     </td>
                     <td class="roster-cell-pay p-3">
-                        ${rosterStatusCellHtml(app)}
+                        ${schediNewDashOn() ? `<div class="roster-status-table">${rosterStatusCellHtml(app, { price: false })}</div><div class="roster-status-card">${rosterStatusCellHtml(app)}</div>` : rosterStatusCellHtml(app, { price: false })}
+                    </td>
+                    <td class="roster-cell-price p-3">
+                        ${rosterListPriceHtml(app)}
                     </td>
                     <td class="roster-cell-collected p-3">
                         ${rosterAmountCollectedHtml(app, tenant)}
                     </td>
                     <td class="roster-cell-actions p-3 text-right">
                         <div class="roster-actions inline-flex flex-wrap justify-end gap-2">
-                        ${rosterActionsHtml(app, false)}
+                        ${schediNewDashOn() ? rosterListActionsHtml(app) : rosterActionsHtml(app, false)}
                         </div>
                     </td>
                 </tr>
@@ -17220,6 +17975,7 @@ function schediQrCardPixels(text, color) {
                             </div>
                             <p id="shiftError_${day}" class="sd-hours-error" role="alert"></p>
                             <p class="sd-hours-week-closed-note">Not applied while closed</p>
+                            <button type="button" class="sd-hours-week-copy" onclick="openHoursCopySheet('${day}')">Copy to…</button>
                         </div>
                     `;
                     }).join('');
@@ -17978,9 +18734,13 @@ function schediQrCardPixels(text, color) {
             showToast(`Added recurring outage rule: "${title}" (${duration})`, 'success');
         }
 
-        window.deleteBlockedTimeRule = function(ruleId) {
+        window.deleteBlockedTimeRule = async function(ruleId) {
             if (!canManageBlockedTimes()) return;
-            if (!window.confirm('Remove this recurring block? This cannot be undone.')) return;
+            if (!await openOwnerConfirm({
+                title: 'Remove this recurring block?',
+                body: 'Remove this recurring block? This cannot be undone.',
+                confirmLabel: 'Remove block'
+            })) return;
             const tenant = getTenant();
             if (!tenant) return;
             ensureBlockedArrays(tenant);
@@ -18114,7 +18874,7 @@ function schediQrCardPixels(text, color) {
                 el.value = '';
             } else {
                 el.innerHTML = opts.map(function (t) {
-                    var label = (current && !showAll && t === current.time && current.date === (document.getElementById(c.date) || {}).value) ? (t + ' (current)') : t;
+                    var label = t;
                     return '<option value="' + esc(t) + '">' + esc(label) + '</option>';
                 }).join('');
                 el.value = (want && opts.indexOf(want) !== -1) ? want : opts[0];
@@ -18297,9 +19057,13 @@ function schediQrCardPixels(text, color) {
             showToast('Added date block' + (note ? (': "' + note + '"') : '') + ' (' + startDate + (endDate !== startDate ? (' → ' + endDate) : '') + ')', 'success');
         }
 
-        window.deleteDateBlock = function(blockId) {
+        window.deleteDateBlock = async function(blockId) {
             if (!canManageBlockedTimes()) return;
-            if (!window.confirm('Remove this date block? This cannot be undone.')) return;
+            if (!await openOwnerConfirm({
+                title: 'Remove this date block?',
+                body: 'Remove this date block? This cannot be undone.',
+                confirmLabel: 'Remove block'
+            })) return;
             const tenant = getTenant();
             if (!tenant) return;
             ensureBlockedArrays(tenant);
@@ -18491,9 +19255,13 @@ function schediQrCardPixels(text, color) {
             showToast('Special hours saved for ' + dateKey + ' (' + label + ')', 'success');
         }
 
-        window.deleteSpecialHours = function(dateKey) {
+        window.deleteSpecialHours = async function(dateKey) {
             if (!canManageBlockedTimes()) return;
-            if (!window.confirm('Remove special hours for ' + dateKey + '? That day will use your weekly hours again.')) return;
+            if (!await openOwnerConfirm({
+                title: 'Remove special hours?',
+                body: 'Remove special hours for ' + dateKey + '? That day will use your weekly hours again.',
+                confirmLabel: 'Remove hours'
+            })) return;
             var tenant = getTenant();
             if (!tenant) return;
             ensureSpecialHours(tenant);
@@ -20687,7 +21455,7 @@ function schediQrCardPixels(text, color) {
         }
 
         function serviceSvg(inner) {
-            return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + inner + '</svg>';
+            return '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + inner + '</svg>';
         }
 
         var SERVICE_ICON_SVG = {
@@ -21089,7 +21857,7 @@ function schediQrCardPixels(text, color) {
             showToast(`Saved service: "${name}"`, 'success');
         }
 
-        window.deleteService = function(svcId) {
+        window.deleteService = async function(svcId) {
             const tenant = getTenant();
             if (!tenant) return;
 
@@ -21099,7 +21867,11 @@ function schediQrCardPixels(text, color) {
             }
 
             const doomed = tenant.services.find(s => s.id === svcId);
-            if (!window.confirm(`Delete the service "${doomed ? doomed.name : svcId}"? This cannot be undone.`)) return;
+            if (!await openOwnerConfirm({
+                title: 'Delete this service?',
+                body: 'Delete the service "' + (doomed ? doomed.name : svcId) + '"? This cannot be undone.',
+                confirmLabel: 'Delete service'
+            })) return;
 
             revokeServicePreview(svcId);
             tenant.services = tenant.services.filter(s => s.id !== svcId);
@@ -21208,6 +21980,11 @@ function schediQrCardPixels(text, color) {
             offCls.forEach(function (c) { btn.classList.toggle(c, !on); });
             onCls.forEach(function (c) { btn.classList.toggle(c, on); });
             if (hint) hint.classList.toggle('hidden', !on);
+            var editing = !!String((document.getElementById('manEditId') || {}).value || '');
+            var title = document.getElementById('manModalTitle');
+            var badge = document.getElementById('manKindBadge');
+            if (!editing && title) title.textContent = on ? 'Walk-in' : (title.textContent === 'Edit appointment' ? 'Edit appointment' : 'Add appointment');
+            if (badge) badge.textContent = on ? 'Walk-in' : 'Appointment';
             var tenant = getTenant();
             var extras = document.getElementById('manTimeExtras');
             var showAll = extras ? extras.querySelector('.owner-time-showall') : null;
@@ -21234,13 +22011,17 @@ function schediQrCardPixels(text, color) {
         };
 
         window.openManualBookingModal = function(prefill) {
+            window.__manualBookingDismissed = false;
             const tenant = getTenant();
             if (!tenant) return;
             var clientName = prefill && prefill.clientName ? String(prefill.clientName) : '';
             var clientPhone = prefill && prefill.clientPhone ? String(prefill.clientPhone) : '';
             var clientEmail = prefill && prefill.clientEmail ? String(prefill.clientEmail) : '';
             document.getElementById('manEditId').value = '';
-            document.getElementById('manModalTitle').textContent = clientName ? 'Add appointment' : 'Log Manual Walk-In / Phone Booking';
+            var addKind = (prefill && prefill.kind === 'walkin') ? 'walkin' : 'appointment';
+            document.getElementById('manModalTitle').textContent = addKind === 'walkin' ? 'Walk-in' : (clientName ? 'Add appointment' : 'Add appointment');
+            var addBadge = document.getElementById('manKindBadge');
+            if (addBadge) addBadge.textContent = addKind === 'walkin' ? 'Walk-in' : 'Appointment';
             var manDelNew = document.getElementById('manDeleteBtn');
             if (manDelNew) manDelNew.classList.add('hidden');
             var manSubNew = document.getElementById('manSubmitBtn');
@@ -21257,7 +22038,8 @@ function schediQrCardPixels(text, color) {
             if (clientName) bookedDate = addIsoDays(bookedDate, 1) || bookedDate;
             document.getElementById('manDate').value = bookedDate;
             populateOwnerTimeSelect('manTime', tenant, '09:00 AM');
-            setManualWalkIn(false, false);
+            if (addKind === 'walkin') setManualWalkIn(true, true);
+            else setManualWalkIn(false, false);
             var freshDep = document.getElementById('manDepositBox');
             if (freshDep) freshDep.classList.add('hidden');
             var freshPay = document.getElementById('manPaymentStatus');
@@ -21268,15 +22050,19 @@ function schediQrCardPixels(text, color) {
             document.getElementById('manualBookingModal').scrollTop = 0;
             var freshScroll = document.querySelector('#manualBookingModal .sd-form-scroll');
             if (freshScroll) freshScroll.scrollTop = 0;
+            captureManualBookingSnapshot();
         };
 
         window.openEditAppointment = function(appId) {
+            window.__manualBookingDismissed = false;
             const tenant = getTenant();
             if (!tenant) return;
             const app = (tenant.appointments || []).find(function (a) { return a && a.id === appId; });
             if (!app) return;
             document.getElementById('manEditId').value = app.id;
             document.getElementById('manModalTitle').textContent = 'Edit appointment';
+            var editBadge = document.getElementById('manKindBadge');
+            if (editBadge) editBadge.textContent = app.walkIn === true ? 'Walk-in' : 'Appointment';
             var manDel = document.getElementById('manDeleteBtn');
             if (manDel) manDel.classList.remove('hidden');
             var manSub = document.getElementById('manSubmitBtn');
@@ -21304,7 +22090,7 @@ function schediQrCardPixels(text, color) {
                 var depPaid = app.depositPaid === true ? 'Paid' : 'Unpaid';
                 var depBal = Number(app.balanceDue);
                 if (!isFinite(depBal)) depBal = Math.max(0, roundMoney((Number(app.amount) || 0) - Number(app.depositAmount)));
-                depText.textContent = 'Deposit $' + Number(app.depositAmount).toFixed(2) + ' · ' + depPaid + '. Remaining balance $' + roundMoney(depBal).toFixed(2) + ' due at the appointment. Clients cannot change this.';
+                depText.textContent = 'Deposit ' + formatBookingAmountLabel(app.depositAmount) + ' · ' + depPaid + '. Remaining balance ' + formatBookingAmountLabel(roundMoney(depBal)) + ' due at the appointment. Clients cannot change this.';
                 depBox.classList.remove('hidden');
             } else if (depBox) {
                 depBox.classList.add('hidden');
@@ -21313,14 +22099,55 @@ function schediQrCardPixels(text, color) {
             document.getElementById('manualBookingModal').scrollTop = 0;
             var editScroll = document.querySelector('#manualBookingModal .sd-form-scroll');
             if (editScroll) editScroll.scrollTop = 0;
+            captureManualBookingSnapshot();
         };
 
+        var manualBookingOpenedSnapshot = '';
+
+        function manualBookingFormSnapshot() {
+            function val(id) {
+                var node = document.getElementById(id);
+                return node ? String(node.value || '') : '';
+            }
+            return [
+                val('manClientName'),
+                val('manClientPhone'),
+                val('manClientEmail'),
+                val('manServiceSelect'),
+                val('manCustomServiceName'),
+                val('manDurationMins'),
+                val('manPrice'),
+                val('manDate'),
+                val('manTime'),
+                val('manPaymentStatus'),
+                manualWalkInOn() ? '1' : '0'
+            ].join('\u0001');
+        }
+
+        function captureManualBookingSnapshot() {
+            manualBookingOpenedSnapshot = manualBookingFormSnapshot();
+        }
+
+        function manualBookingFieldsUntouched() {
+            return !!manualBookingOpenedSnapshot && manualBookingOpenedSnapshot === manualBookingFormSnapshot();
+        }
+
         window.closeManualBookingModal = function() {
-            document.getElementById('manualBookingModal').classList.add('hidden');
+            window.__manualBookingDismissed = true;
+            var modal = document.getElementById('manualBookingModal');
+            if (modal) modal.classList.add('hidden');
         }
 
         window.handleManualBookingSubmit = function(e) {
             e.preventDefault();
+            if (window.__manualBookingDismissed) return;
+            var bookingModal = document.getElementById('manualBookingModal');
+            if (!bookingModal || bookingModal.classList.contains('hidden')) return;
+            var earlyEditId = (document.getElementById('manEditId') || {}).value || '';
+            if (earlyEditId && manualBookingFieldsUntouched()) {
+                closeManualBookingModal();
+                return;
+            }
             const tenant = getTenant();
             if (!tenant) return;
 
@@ -22488,7 +23315,7 @@ function schediQrCardPixels(text, color) {
             openDenyConfirmModal(appId);
         };
 
-        var _rosterPaidMethodSelected = 'cash';
+        var _rosterPaidMethodSelected = '';
 
         window.openRosterPaidMethodModal = function(appId) {
             var tenant = getTenant();
@@ -22499,7 +23326,7 @@ function schediQrCardPixels(text, color) {
                 showToast('Appointment #' + appId + ' is already marked paid.', 'info');
                 return;
             }
-            _rosterPaidMethodSelected = inferPaidMethodFromBooking(app);
+            _rosterPaidMethodSelected = '';
             document.getElementById('rosterPaidMethodAppId').value = app.id;
             var codeEl = document.getElementById('rosterPaidMethodCode');
             if (codeEl) {
@@ -22538,7 +23365,7 @@ function schediQrCardPixels(text, color) {
                 var brand = on ? rosterBrandPayClass(row.kind) : '';
                 return '<button type="button" ' + attr + '="' + esc(row.id) + '" class="sd-pay-choice' + extra + brand + (on ? ' is-on' : '') + '" role="radio" aria-checked="' + (on ? 'true' : 'false') + '" tabindex="' + (on ? '0' : '-1') + '">' +
                     payKindSvg(row.kind) + '<span>' + esc(row.label) + '</span>' +
-                    (on ? '<span class="sd-paid-check" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M3.2 8.2 6.4 11.4 12.8 4.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>' : '') +
+                    (on ? '<span class="sd-paid-check" aria-hidden="true"><svg viewBox="0 0 16 16" width="16" height="16"><path d="M3.2 8.2 6.4 11.4 12.8 4.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>' : '') +
                     '</button>';
             }).join('');
             if (!chosen) {
@@ -22829,13 +23656,18 @@ function schediQrCardPixels(text, color) {
             showToast('No-show cleared', 'info');
         };
 
-        window.deleteAppointment = function(appId) {
+        window.deleteAppointment = async function(appId) {
             const tenant = getTenant();
             if (!tenant) return;
 
             const doomed = tenant.appointments.find(a => a.id === appId);
             const who = doomed ? doomed.clientName : appId;
-            if (!window.confirm(`Cancel the appointment for ${who}? This cannot be undone.`)) return;
+            if (!await openOwnerConfirm({
+                title: 'Cancel ' + who + '?',
+                body: 'Cancel the appointment for ' + who + '? This cannot be undone.',
+                confirmLabel: 'Cancel appointment',
+                dismissLabel: 'Keep appointment'
+            })) return;
 
             if (doomed) markAppointmentCancelled(doomed, 'owner');
             saveState();
@@ -22844,6 +23676,53 @@ function schediQrCardPixels(text, color) {
             showToast(`Cancelled appointment #${appId}`, 'info');
             if (doomed) sendClientCancellationEmail(tenant, doomed);
         }
+
+        var ownerConfirmResolve = null;
+        window.openOwnerConfirm = function (opts) {
+            opts = opts || {};
+            return new Promise(function (resolve) {
+                if (ownerConfirmResolve) {
+                    var previous = ownerConfirmResolve;
+                    ownerConfirmResolve = null;
+                    previous(false);
+                }
+                ownerConfirmResolve = resolve;
+                var title = document.getElementById('ownerConfirmTitle');
+                var body = document.getElementById('ownerConfirmBody');
+                var btn = document.getElementById('ownerConfirmBtn');
+                var dismiss = document.getElementById('ownerConfirmDismiss');
+                var modal = document.getElementById('ownerConfirmModal');
+                if (title) title.textContent = opts.title || 'Are you sure?';
+                if (body) body.textContent = opts.body || '';
+                if (dismiss) dismiss.textContent = opts.dismissLabel || 'Cancel';
+                if (btn) {
+                    btn.textContent = opts.confirmLabel || 'Confirm';
+                    btn.className = 'px-4 py-2.5 rounded-xl font-bold text-sm border transition-all ' + (opts.danger === false
+                        ? 'bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-400/40'
+                        : 'bg-rose-600 hover:bg-rose-500 text-white border-rose-400/40 shadow-lg shadow-rose-900/30');
+                }
+                if (modal) {
+                    modal.classList.remove('hidden');
+                    modal.scrollTop = 0;
+                    var closeBtn = modal.querySelector('.sd-form-close');
+                    if (closeBtn && closeBtn.focus) closeBtn.focus();
+                }
+            });
+        };
+        window.closeOwnerConfirm = function (accepted) {
+            var modal = document.getElementById('ownerConfirmModal');
+            if (modal) modal.classList.add('hidden');
+            var resolve = ownerConfirmResolve;
+            ownerConfirmResolve = null;
+            if (resolve) resolve(accepted === true);
+        };
+        document.addEventListener('keydown', function (event) {
+            if (!event || event.key !== 'Escape') return;
+            var modal = document.getElementById('ownerConfirmModal');
+            if (!modal || modal.classList.contains('hidden')) return;
+            event.preventDefault();
+            window.closeOwnerConfirm(false);
+        });
 
         window.openRosterDeleteModal = function(appId) {
             var id = String(appId || '').trim();
