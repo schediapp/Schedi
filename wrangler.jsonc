@@ -20,8 +20,17 @@
   "kv_namespaces": [
     {
       "binding": "AUTH_KV",
-      // Same namespace as schedi-email-worker. Visit gauges use the pv1: prefix.
+      // Same namespace as schedi-email-worker. Sign-in sessions only. Visit counts
+      // go to PAGE_VISITS so they do not spend this namespace's write quota.
       "id": "d53378ec0cfb4d089d73add2ff01c62d"
+    }
+  ],
+  // Created on the first writeDataPoint after deploy. No separate create command.
+  // The email worker reads it with the SQL API (ANALYTICS_API_TOKEN + CF_ACCOUNT_ID).
+  "analytics_engine_datasets": [
+    {
+      "binding": "PAGE_VISITS",
+      "dataset": "schedi_page_visits"
     }
   ],
   "observability": {
@@ -51,7 +60,9 @@
       // sessions. There is no separate preview namespace, so /hq cannot store a
       // session and stays on the login screen. Never add INDEXNOW_* or
       // BING_SITE_VERIFICATION to this environment.
-      "kv_namespaces": []
+      "kv_namespaces": [],
+      // Do not inherit the production dataset. Preview hosts are not counted.
+      "analytics_engine_datasets": []
     }
   }
 }

@@ -1,26 +1,25 @@
-// Booking-page visit gauges in the existing AUTH_KV namespace (same id on
-// schedi-web and schedi-email-worker). One key per business, per day, per
-// isolate holds a running total. The isolate adds hits in memory and writes
-// that total at most once a minute, so a burst is one KV put rather than a
-// put per view.
+// Booking-page visits in Workers Analytics Engine (dataset schedi_page_visits).
+// schedi-web writes one data point per counted view during the request.
+// schedi-email-worker reads totals with the SQL API for the signed-in owner.
 //
-// The value is only the integer count. No cookie, IP, user agent, or referrer
-// is stored. Keys expire after 400 days.
+// A data point is the business slug and the local day (YYYY-MM-DD). No cookie,
+// IP, user agent, or referrer is stored. writeDataPoint returns immediately and
+// the runtime sends it with the request, so there is no waitUntil timer and no
+// in-memory lock that a cancelled flush can wedge.
 //
-// KV free tier is about 1,000 writes, 1,000 lists, and 100,000 reads per day.
-// Steady traffic is roughly one write per business per isolate per minute
-// while people are actually opening the page, not one write per hit. Opening
-// Reports lists that business's keys and reads them once. Workers Paid raises
-// the write ceiling (about 1 million writes per month) if a day ever passes
-// the free quota. No new binding, database, or paid product.
+// Workers Free includes 100,000 data points written per day and 10,000 SQL
+// reads per day. 20 businesses at 50 views a day is 1,000 writes (1% of that
+// write allowance) and one SQL read each time an owner opens Reports.
+// AUTH_KV is not used for visits, so sign-in sessions keep its write quota.
+// Points are kept for three months. Cloudflare is not billing Analytics Engine
+// yet; the figures above are the published free allowances.
 
 export const PAGE_VISIT_TRACKING_START = "2026-10-19";
-export const PAGE_VISIT_FLUSH_MS = 5000;
-export const PAGE_VISIT_HOLD_MS = 60_000;
-export const PAGE_VISIT_TTL_SECONDS = 400 * 24 * 60 * 60;
+export const PAGE_VISITS_DATASET = "schedi_page_visits";
 
 const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]{0,40})$/;
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
+const ACCOUNT_RE = /^[a-f0-9]{32}$/i;
 const NOT_A_BUSINESS = new Set([
   "index.html",
   "agency",
@@ -60,14 +59,13 @@ const NOT_A_BUSINESS = new Set([
 const BOT_UA =
   /googlebot|bingbot|duckduckbot|baiduspider|yandexbot|sogou |exabot|facebot|facebookexternalhit|twitterbot|linkedinbot|slackbot|discordbot|telegrambot|pinterestbot|redditbot|applebot|amazonbot|petalbot|ahrefs|semrush|mj12bot|dotbot|rogerbot|embedly|quora link preview|gptbot|chatgpt-user|oai-searchbot|claudebot|anthropic-ai|ccbot|perplexitybot|bytespider|adsbot-google|mediapartners-google|feedfetcher|storebot-google|google-inspectiontool|chrome-lighthouse|pagespeed|gtmetrix|pingdom|uptimerobot|statuscake|site24x7|headlesschrome|phantomjs|selenium|puppeteer|playwright|wget\/|curl\/|python-requests|python-urllib|go-http-client|java\/|libwww|httpie|scrapy|crawler|spider|slurp|archiver|blexbot|zoominfobot|dataforseo|serpstat|seekport|screaming frog|linkdex|megaindex|seznambot|qwantify|naverbot|yeti\/|previewbot|linkchecker/i;
 
-export interface VisitKv {
-  get(key: string): Promise<string | null>;
-  put?(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>;
-  list?(options: { prefix?: string; cursor?: string; limit?: number }): Promise<{
-    keys: { name: string }[];
-    list_complete?: boolean;
-    cursor?: string;
-  }>;
+export interface PageVisitDataset {
+  writeDataPoint(point: { indexes?: string[]; blobs?: string[]; doubles?: number[] }): void;
+}
+
+export interface PageVisitQueryEnv {
+  CF_ACCOUNT_ID?: string;
+  ANALYTICS_API_TOKEN?: string;
 }
 
 export type VisitRequest = {
@@ -82,39 +80,14 @@ export type VisitRequest = {
   secPurpose: string;
 };
 
-type Timing = { flushMs: number; holdMs: number };
+export class PageVisitQueryError extends Error {
+  readonly code: "visits_unconfigured" | "visits_unavailable";
 
-const totals = new Map<string, number>();
-const dirty = new Set<string>();
-let loop: Promise<void> | null = null;
-let lastFlushAt = 0;
-let isolateId = createIsolateId();
-let timing: Timing = { flushMs: PAGE_VISIT_FLUSH_MS, holdMs: PAGE_VISIT_HOLD_MS };
-
-function createIsolateId(): string {
-  const bytes = new Uint8Array(6);
-  crypto.getRandomValues(bytes);
-  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
-}
-
-export function resetPageVisitBufferForTests(): void {
-  totals.clear();
-  dirty.clear();
-  loop = null;
-  lastFlushAt = 0;
-  isolateId = createIsolateId();
-  timing = { flushMs: PAGE_VISIT_FLUSH_MS, holdMs: PAGE_VISIT_HOLD_MS };
-}
-
-export function setPageVisitIsolateForTests(id: string): void {
-  isolateId = id.replace(/[^a-z0-9]/gi, "").slice(0, 24) || "iso";
-  totals.clear();
-  dirty.clear();
-  lastFlushAt = 0;
-}
-
-export function pageVisitFlushForTests(): Promise<void> {
-  return loop || Promise.resolve();
+  constructor(code: "visits_unconfigured" | "visits_unavailable") {
+    super(code);
+    this.name = "PageVisitQueryError";
+    this.code = code;
+  }
 }
 
 export function isBotUserAgent(userAgent: string): boolean {
@@ -232,140 +205,134 @@ function safeTimeZone(timeZone: string | undefined): string {
   }
 }
 
-function sleep(ms: number): Promise<void> {
-  if (ms <= 0) return Promise.resolve();
-  return new Promise((resolve) => setTimeout(resolve, ms));
+function shiftIso(iso: string, days: number): string {
+  const dt = new Date(Date.UTC(Number(iso.slice(0, 4)), Number(iso.slice(5, 7)) - 1, Number(iso.slice(8, 10))));
+  dt.setUTCDate(dt.getUTCDate() + days);
+  return dt.toISOString().slice(0, 10);
 }
 
-function gaugeKey(slug: string, day: string): string {
-  return `pv1:${slug}:${day}:${isolateId}`;
+function sqlString(value: string): string {
+  return "'" + value.replace(/'/g, "") + "'";
 }
 
-async function flushNow(kv: VisitKv): Promise<void> {
-  if (typeof kv.put !== "function") {
-    dirty.clear();
-    return;
-  }
-  const batch: Array<{ id: string; slug: string; day: string; count: number }> = [];
-  for (const id of Array.from(dirty)) {
-    dirty.delete(id);
-    const count = totals.get(id) || 0;
-    const tab = id.indexOf("\t");
-    if (tab < 1 || count <= 0) continue;
-    batch.push({ id, slug: id.slice(0, tab), day: id.slice(tab + 1), count });
-  }
-  for (const row of batch) {
-    try {
-      await kv.put(gaugeKey(row.slug, row.day), String(row.count), { expirationTtl: PAGE_VISIT_TTL_SECONDS });
-      if ((totals.get(row.id) || 0) !== row.count) dirty.add(row.id);
-    } catch (err) {
-      dirty.add(row.id);
-      console.error(
-        JSON.stringify({
-          message: "page visit flush failed",
-          slug: row.slug,
-          error: err instanceof Error ? err.message : String(err),
-        }),
-      );
-    }
-  }
-  lastFlushAt = Date.now();
+// Local days are stored in blob2. The timestamp filter is only the required
+// lower bound, widened by two days so a business timezone still matches.
+export function pageVisitQuery(slug: string, from: string, to: string): string | null {
+  if (!SLUG_RE.test(slug) || !DAY_RE.test(from) || !DAY_RE.test(to) || from > to) return null;
+  const start = shiftIso(from, -2);
+  const end = shiftIso(to, 2);
+  return [
+    "SELECT blob2 AS day, SUM(_sample_interval) AS visits",
+    "FROM " + PAGE_VISITS_DATASET,
+    "WHERE blob1 = " + sqlString(slug),
+    "AND blob2 >= " + sqlString(from),
+    "AND blob2 <= " + sqlString(to),
+    "AND timestamp >= toDateTime(" + sqlString(start + " 00:00:00") + ")",
+    "AND timestamp < toDateTime(" + sqlString(end + " 00:00:00") + ")",
+    "GROUP BY day",
+    "FORMAT JSON",
+  ].join(" ");
 }
 
-async function runLoop(kv: VisitKv, firstDelay: number): Promise<void> {
-  await sleep(firstDelay);
-  while (dirty.size) {
-    if (lastFlushAt && timing.holdMs > 0) {
-      const since = Date.now() - lastFlushAt;
-      if (since < timing.holdMs) await sleep(timing.holdMs - since);
-    }
-    if (!dirty.size) return;
-    await flushNow(kv);
+export function noteBookingVisit(dataset: PageVisitDataset | undefined, slug: string, day: string): void {
+  if (!dataset || typeof dataset.writeDataPoint !== "function") return;
+  if (!SLUG_RE.test(slug) || !DAY_RE.test(day) || day < PAGE_VISIT_TRACKING_START) return;
+  try {
+    dataset.writeDataPoint({
+      indexes: [slug],
+      blobs: [slug, day],
+      doubles: [1],
+    });
+  } catch (err) {
+    console.error(
+      JSON.stringify({
+        message: "page visit write failed",
+        slug,
+        error: err instanceof Error ? err.message : String(err),
+      }),
+    );
   }
 }
 
-function arm(kv: VisitKv, ctx: { waitUntil?(promise: Promise<unknown>): void } | null | undefined): void {
-  if (loop) return;
-  const since = lastFlushAt ? Date.now() - lastFlushAt : Number.POSITIVE_INFINITY;
-  const firstDelay = lastFlushAt && since < timing.holdMs ? Math.max(0, timing.holdMs - since) : timing.flushMs;
-  const job = runLoop(kv, firstDelay).finally(() => {
-    loop = null;
-    if (dirty.size) arm(kv, null);
-  });
-  loop = job;
-  if (ctx && typeof ctx.waitUntil === "function") ctx.waitUntil(job);
+function datasetMissing(status: number, body: string): boolean {
+  if (status === 404) return true;
+  return /dataset[^\n]{0,80}(not found|does not exist)|(?:unknown|no such|missing) dataset/i.test(body);
 }
 
-export function noteBookingVisit(
-  kv: VisitKv | undefined,
-  ctx: { waitUntil?(promise: Promise<unknown>): void } | null | undefined,
-  slug: string,
-  day: string,
-  options?: { flushMs?: number; holdMs?: number },
-): void {
-  if (!kv || typeof kv.put !== "function") return;
-  if (!SLUG_RE.test(slug) || !DAY_RE.test(day)) return;
-  if (options) {
-    if (options.flushMs != null && options.flushMs >= 0 && options.flushMs <= 120000) timing.flushMs = options.flushMs;
-    if (options.holdMs != null && options.holdMs >= 0 && options.holdMs <= 120000) timing.holdMs = options.holdMs;
+function visitRows(payload: unknown): Record<string, number> {
+  const data = payload && typeof payload === "object" && Array.isArray((payload as { data?: unknown }).data)
+    ? (payload as { data: Array<{ day?: unknown; visits?: unknown }> }).data
+    : [];
+  const days: Record<string, number> = {};
+  for (const row of data) {
+    const day = String(row && row.day != null ? row.day : "");
+    if (!DAY_RE.test(day) || day < PAGE_VISIT_TRACKING_START) continue;
+    const count = Number(row.visits);
+    if (!Number.isFinite(count) || count <= 0) continue;
+    days[day] = (days[day] || 0) + Math.round(count);
   }
-  const id = `${slug}\t${day}`;
-  totals.set(id, (totals.get(id) || 0) + 1);
-  dirty.add(id);
-  arm(kv, ctx);
+  return days;
 }
 
 export async function readBookingVisits(
-  kv: VisitKv | undefined,
+  env: PageVisitQueryEnv | undefined,
   slug: string,
   from: string,
   to: string,
+  fetchImpl: typeof fetch = fetch,
 ): Promise<Record<string, number>> {
-  const days: Record<string, number> = {};
-  if (!kv || typeof kv.list !== "function" || typeof kv.get !== "function") return days;
-  if (!SLUG_RE.test(slug)) return days;
-  const prefix = `pv1:${slug}:`;
-  let cursor: string | undefined;
-  for (let page = 0; page < 20; page += 1) {
-    const listed: { keys?: { name?: string }[]; list_complete?: boolean; cursor?: string } = await kv.list({
-      prefix,
-      cursor,
-      limit: 1000,
-    });
-    for (const item of listed.keys || []) {
-      const name = String(item && item.name ? item.name : "");
-      if (!name.startsWith(prefix)) continue;
-      const rest = name.slice(prefix.length);
-      const day = rest.slice(0, 10);
-      if (!DAY_RE.test(day) || rest.charAt(10) !== ":") continue;
-      if (from && day < from) continue;
-      if (to && day > to) continue;
-      const raw = await kv.get(name);
-      const count = Number(raw);
-      if (!Number.isFinite(count) || count <= 0) continue;
-      days[day] = (days[day] || 0) + Math.round(count);
-    }
-    if (listed.list_complete === false && listed.cursor) {
-      cursor = listed.cursor;
-      continue;
-    }
-    break;
+  const query = pageVisitQuery(slug, from, to);
+  if (!query) return {};
+  const account = String(env?.CF_ACCOUNT_ID || "").trim();
+  const token = String(env?.ANALYTICS_API_TOKEN || "").trim();
+  if (!ACCOUNT_RE.test(account) || !token || token.length > 4096 || /[\s]/.test(token)) {
+    throw new PageVisitQueryError("visits_unconfigured");
   }
-  return days;
+  const url = "https://api.cloudflare.com/client/v4/accounts/" + account + "/analytics_engine/sql";
+  let response: Response;
+  try {
+    response = await fetchImpl(url, {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer " + token,
+        "content-type": "text/plain; charset=utf-8",
+      },
+      body: query,
+    });
+  } catch (err) {
+    console.error(
+      JSON.stringify({
+        message: "page visit query failed",
+        error: err instanceof Error ? err.message : String(err),
+      }),
+    );
+    throw new PageVisitQueryError("visits_unavailable");
+  }
+  const body = await response.text();
+  if (datasetMissing(response.status, body)) return {};
+  if (!response.ok) {
+    console.error(JSON.stringify({ message: "page visit query failed", status: response.status }));
+    if (response.status === 401 || response.status === 403) throw new PageVisitQueryError("visits_unconfigured");
+    throw new PageVisitQueryError("visits_unavailable");
+  }
+  let payload: unknown = {};
+  try {
+    payload = body ? JSON.parse(body) : {};
+  } catch {
+    throw new PageVisitQueryError("visits_unavailable");
+  }
+  if (payload && typeof payload === "object" && (payload as { success?: unknown }).success === false) {
+    const encoded = JSON.stringify(payload);
+    if (datasetMissing(response.status, encoded)) return {};
+    throw new PageVisitQueryError("visits_unavailable");
+  }
+  return visitRows(payload);
 }
 
 export function totalVisitDays(days: Record<string, number>): number {
   let total = 0;
   for (const day of Object.keys(days)) total += Number(days[day]) || 0;
   return total;
-}
-
-function shiftIso(iso: string, days: number): string {
-  const match = DAY_RE.exec(iso);
-  if (!match) return "";
-  const dt = new Date(Date.UTC(Number(iso.slice(0, 4)), Number(iso.slice(5, 7)) - 1, Number(iso.slice(8, 10))));
-  dt.setUTCDate(dt.getUTCDate() + days);
-  return dt.toISOString().slice(0, 10);
 }
 
 export function parseVisitRange(fromRaw: string, toRaw: string): { from: string; to: string } | null {
@@ -383,13 +350,14 @@ export function parseVisitRange(fromRaw: string, toRaw: string): { from: string;
 }
 
 type VisitSession = { role?: string; tenantId?: string } | null;
+type SessionKv = { get(key: string): Promise<string | null> };
 
 export async function handlePageVisitsRequest(
   request: Request,
-  env: { AUTH_KV?: VisitKv },
+  env: PageVisitQueryEnv & { AUTH_KV?: SessionKv },
   origin: string,
   json: (body: unknown, status: number, origin: string) => Response,
-  readSession: (env: { AUTH_KV?: VisitKv }, token: string) => Promise<VisitSession>,
+  readSession: (env: { AUTH_KV?: SessionKv }, token: string) => Promise<VisitSession>,
 ): Promise<Response> {
   if (request.method !== "POST") return json({ ok: false, error: "method_not_allowed" }, 405, origin);
   let body: { session?: unknown; from?: unknown; to?: unknown; tenantId?: unknown } = {};
@@ -410,7 +378,13 @@ export async function handlePageVisitsRequest(
   }
   const range = parseVisitRange(String(body.from || ""), String(body.to || ""));
   if (!range) return json({ ok: false, error: "invalid_range" }, 400, origin);
-  const stored = await readBookingVisits(env.AUTH_KV, tenantId, range.from, range.to);
+  let stored: Record<string, number>;
+  try {
+    stored = await readBookingVisits(env, tenantId, range.from, range.to);
+  } catch (err) {
+    const code = err instanceof PageVisitQueryError ? err.code : "visits_unavailable";
+    return json({ ok: false, error: code }, 503, origin);
+  }
   const days: Record<string, number> = {};
   for (const day of Object.keys(stored)) {
     if (day < PAGE_VISIT_TRACKING_START || day < range.from || day > range.to) continue;

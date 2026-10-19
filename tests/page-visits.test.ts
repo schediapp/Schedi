@@ -5,13 +5,12 @@ import {
   isBotUserAgent,
   noteBookingVisit,
   PAGE_VISIT_TRACKING_START,
-  pageVisitFlushForTests,
+  PAGE_VISITS_DATASET,
+  PageVisitQueryError,
   readBookingVisits,
-  resetPageVisitBufferForTests,
-  setPageVisitIsolateForTests,
   shouldCountBookingVisit,
   visitDay,
-  type VisitKv,
+  type PageVisitDataset,
   type VisitRequest,
 } from "../worker/page-visits";
 
@@ -19,34 +18,24 @@ const SHELL = "<!DOCTYPE html><html><head><title>Schedi</title></head><body>app<
 const CHROME =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 const EXP = Date.now() + 60 * 60 * 1000;
+const ACCOUNT = "a".repeat(32);
 
-function memoryKv(seed: Record<string, string> = {}): VisitKv & { store: Map<string, string>; puts: string[] } {
+function memoryKv(seed: Record<string, string> = {}) {
   const store = new Map(Object.entries(seed));
-  const puts: string[] = [];
   return {
     store,
-    puts,
     async get(key: string) {
       return store.get(key) ?? null;
     },
-    async put(key: string, value: string) {
-      puts.push(key + "=" + value);
-      store.set(key, value);
-    },
-    async list(options: { prefix?: string; cursor?: string; limit?: number }) {
-      const prefix = options.prefix || "";
-      const names = Array.from(store.keys())
-        .filter((key) => key.startsWith(prefix))
-        .sort();
-      const start = options.cursor ? Number(options.cursor) : 0;
-      const limit = options.limit || names.length;
-      const slice = names.slice(start, start + limit);
-      const next = start + slice.length;
-      return {
-        keys: slice.map((name) => ({ name })),
-        list_complete: next >= names.length,
-        cursor: next >= names.length ? undefined : String(next),
-      };
+  };
+}
+
+function dataset(): PageVisitDataset & { points: Array<{ indexes?: string[]; blobs?: string[]; doubles?: number[] }> } {
+  const points: Array<{ indexes?: string[]; blobs?: string[]; doubles?: number[] }> = [];
+  return {
+    points,
+    writeDataPoint(point) {
+      points.push(point);
     },
   };
 }
@@ -99,8 +88,8 @@ function tenantDoc(timezone = "America/New_York") {
 }
 
 afterEach(() => {
-  resetPageVisitBufferForTests();
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
 });
 
 describe("visit counting rules", () => {
@@ -144,41 +133,105 @@ describe("visit counting rules", () => {
   });
 });
 
-describe("visit gauge aggregation", () => {
-  it("batches a burst into one gauge and sums isolates without double counting", async () => {
-    const kv = memoryKv();
-    setPageVisitIsolateForTests("isoa");
-    noteBookingVisit(kv, null, "bright-cuts", "2026-10-19", { flushMs: 0, holdMs: 0 });
-    noteBookingVisit(kv, null, "bright-cuts", "2026-10-19", { flushMs: 0, holdMs: 0 });
-    noteBookingVisit(kv, null, "bright-cuts", "2026-10-20", { flushMs: 0, holdMs: 0 });
-    await pageVisitFlushForTests();
-    expect(kv.puts).toHaveLength(2);
-    expect(kv.store.get("pv1:bright-cuts:2026-10-19:isoa")).toBe("2");
-    expect(kv.store.get("pv1:bright-cuts:2026-10-20:isoa")).toBe("1");
-
-    noteBookingVisit(kv, null, "bright-cuts", "2026-10-19", { flushMs: 0, holdMs: 0 });
-    await pageVisitFlushForTests();
-    expect(kv.store.get("pv1:bright-cuts:2026-10-19:isoa")).toBe("3");
-
-    setPageVisitIsolateForTests("isob");
-    noteBookingVisit(kv, null, "bright-cuts", "2026-10-19", { flushMs: 0, holdMs: 0 });
-    noteBookingVisit(kv, null, "bright-cuts", "2026-10-19", { flushMs: 0, holdMs: 0 });
-    await pageVisitFlushForTests();
-    const days = await readBookingVisits(kv, "bright-cuts", "2026-10-19", "2026-10-19");
-    expect(days).toEqual({ "2026-10-19": 5 });
-    const wider = await readBookingVisits(kv, "bright-cuts", "2026-10-01", "2026-10-31");
-    expect(wider).toEqual({ "2026-10-19": 5, "2026-10-20": 1 });
-    for (const value of kv.store.values()) expect(value).toMatch(/^\d+$/);
+describe("analytics engine writes", () => {
+  it("writes one point per view and keeps only the slug and day", () => {
+    const visits = dataset();
+    noteBookingVisit(visits, "bright-cuts", "2026-10-19");
+    noteBookingVisit(visits, "bright-cuts", "2026-10-19");
+    noteBookingVisit(visits, "bright-cuts", "2026-10-20");
+    expect(visits.points).toEqual([
+      { indexes: ["bright-cuts"], blobs: ["bright-cuts", "2026-10-19"], doubles: [1] },
+      { indexes: ["bright-cuts"], blobs: ["bright-cuts", "2026-10-19"], doubles: [1] },
+      { indexes: ["bright-cuts"], blobs: ["bright-cuts", "2026-10-20"], doubles: [1] },
+    ]);
+    const dumped = JSON.stringify(visits.points);
+    expect(dumped).not.toMatch(/mozilla|cookie|203\.0\.113|@/i);
+    noteBookingVisit(visits, "../other", "2026-10-19");
+    noteBookingVisit(visits, "bright-cuts", "2026-10-18");
+    expect(visits.points).toHaveLength(3);
   });
 
-  it("pages the key list when a business has more gauges than one page", async () => {
-    const seed: Record<string, string> = {};
-    for (let i = 0; i < 3; i += 1) seed[`pv1:acme:2026-10-19:iso${i}`] = "2";
-    const kv = memoryKv(seed);
-    const original = kv.list.bind(kv);
-    kv.list = async (options) => original({ ...options, limit: 2 });
-    const days = await readBookingVisits(kv, "acme", "2026-10-19", "2026-10-19");
-    expect(days).toEqual({ "2026-10-19": 6 });
+  it("keeps accepting views after a write throws", () => {
+    const points: unknown[] = [];
+    let failed = false;
+    const visits: PageVisitDataset = {
+      writeDataPoint(point) {
+        if (!failed) {
+          failed = true;
+          throw new Error("binding rejected the point");
+        }
+        points.push(point);
+      },
+    };
+    const timers = vi.spyOn(globalThis, "setTimeout");
+    noteBookingVisit(visits, "bright-cuts", "2026-10-19");
+    noteBookingVisit(visits, "bright-cuts", "2026-10-19");
+    expect(points).toHaveLength(1);
+    expect(timers).not.toHaveBeenCalled();
+  });
+
+  it("sums the SQL sample interval for that business only", async () => {
+    const fetchImpl = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+      const sql = String(init?.body || "");
+      expect(sql).toContain("FROM " + PAGE_VISITS_DATASET);
+      expect(sql).toContain("SUM(_sample_interval)");
+      expect(sql).toContain("blob1 = 'bright-cuts'");
+      expect(sql).toContain("blob2 >= '2026-10-19'");
+      expect(sql).toContain("blob2 <= '2026-10-19'");
+      expect(sql).toContain("timestamp >= toDateTime('2026-10-17 00:00:00')");
+      expect(sql).not.toContain("other-shop");
+      return new Response(
+        JSON.stringify({ data: [{ day: "2026-10-19", visits: "5" }, { day: "2026-10-18", visits: 9 }] }),
+        { status: 200 },
+      );
+    });
+    const days = await readBookingVisits(
+      { CF_ACCOUNT_ID: ACCOUNT, ANALYTICS_API_TOKEN: "test-token" },
+      "bright-cuts",
+      "2026-10-19",
+      "2026-10-19",
+      fetchImpl as typeof fetch,
+    );
+    expect(days).toEqual({ "2026-10-19": 5 });
+  });
+
+  it("treats a missing dataset as zero and a bad token as unconfigured", async () => {
+    const missing = vi.fn(async () => new Response("dataset does not exist", { status: 404 }));
+    await expect(
+      readBookingVisits(
+        { CF_ACCOUNT_ID: ACCOUNT, ANALYTICS_API_TOKEN: "test-token" },
+        "bright-cuts",
+        "2026-10-19",
+        "2026-10-20",
+        missing as typeof fetch,
+      ),
+    ).resolves.toEqual({});
+
+    const outage = vi.fn(async () => new Response("unknown error while reading dataset", { status: 500 }));
+    await expect(
+      readBookingVisits(
+        { CF_ACCOUNT_ID: ACCOUNT, ANALYTICS_API_TOKEN: "test-token" },
+        "bright-cuts",
+        "2026-10-19",
+        "2026-10-20",
+        outage as typeof fetch,
+      ),
+    ).rejects.toMatchObject({ code: "visits_unavailable" });
+
+    const denied = vi.fn(async () => new Response("denied", { status: 403 }));
+    await expect(
+      readBookingVisits(
+        { CF_ACCOUNT_ID: ACCOUNT, ANALYTICS_API_TOKEN: "test-token" },
+        "bright-cuts",
+        "2026-10-19",
+        "2026-10-20",
+        denied as typeof fetch,
+      ),
+    ).rejects.toMatchObject({ code: "visits_unconfigured" });
+    await expect(readBookingVisits({}, "bright-cuts", "2026-10-19", "2026-10-20", denied as typeof fetch)).rejects.toBeInstanceOf(
+      PageVisitQueryError,
+    );
+    expect(denied).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -193,7 +246,11 @@ describe("published page GET", () => {
     };
   }
 
-  async function serve(path: string, kv: ReturnType<typeof memoryKv>, init: RequestInit = {}) {
+  async function serve(
+    path: string,
+    visits: ReturnType<typeof dataset>,
+    init: RequestInit = {},
+  ) {
     vi.stubGlobal(
       "fetch",
       vi.fn(async (input: RequestInfo | URL) => {
@@ -207,8 +264,7 @@ describe("published page GET", () => {
     const env: SchediEnv = {
       FIREBASE_PROJECT_ID: "siteforge-97699",
       ASSETS: shellAssets(),
-      AUTH_KV: kv,
-      PAGE_VISIT_FLUSH_MS: "0",
+      PAGE_VISITS: visits,
     };
     const headers = new Headers(init.headers);
     if (!headers.has("user-agent")) headers.set("user-agent", CHROME);
@@ -216,40 +272,38 @@ describe("published page GET", () => {
     if (!headers.has("sec-fetch-mode")) headers.set("sec-fetch-mode", "navigate");
     const response = await handleRequest(new Request("https://schedi.app" + path, { ...init, headers }), env, ctx);
     await response.arrayBuffer().catch(() => undefined);
-    await Promise.all(ctx.pending);
-    await pageVisitFlushForTests();
+    expect(ctx.pending).toEqual([]);
     return response;
   }
 
   it("counts real GETs of a published page and ignores bots, the owner portal, and assets", async () => {
-    const kv = memoryKv();
+    const visits = dataset();
     const day = visitDay(new Date(), "America/New_York");
-    const first = await serve("/bright-cuts", kv, { headers: { referer: "https://www.google.com/search?q=secret-query" } });
+    const first = await serve("/bright-cuts", visits, { headers: { referer: "https://www.google.com/search?q=secret-query" } });
     expect(first.status).toBe(200);
-    await serve("/bright-cuts/", kv, { headers: { "x-forwarded-for": "203.0.113.8", "user-agent": CHROME + " UniqueBrowserToken" } });
-    await serve("/bright-cuts", kv);
-    expect(kv.puts.map((entry) => entry.slice(entry.lastIndexOf("=") + 1))).toEqual(["1", "2", "3"]);
-    const stored = Array.from(kv.store.entries());
-    expect(stored).toHaveLength(1);
-    expect(stored[0][0]).toMatch(new RegExp("^pv1:bright-cuts:" + day + ":[a-z0-9]+$"));
-    expect(stored[0][1]).toBe("3");
-    const dumped = JSON.stringify(stored);
+    await serve("/bright-cuts/", visits, { headers: { "x-forwarded-for": "203.0.113.8", "user-agent": CHROME + " UniqueBrowserToken" } });
+    await serve("/bright-cuts", visits);
+    expect(visits.points).toHaveLength(3);
+    for (const point of visits.points) {
+      expect(point.blobs).toEqual(["bright-cuts", day]);
+      expect(point.doubles).toEqual([1]);
+    }
+    const dumped = JSON.stringify(visits.points);
     expect(dumped).not.toContain("UniqueBrowserToken");
     expect(dumped).not.toContain("203.0.113.8");
     expect(dumped).not.toContain("secret-query");
     expect(dumped).not.toContain("hidden@example.com");
 
-    const before = kv.puts.length;
-    await serve("/bright-cuts", kv, { headers: { "user-agent": "Mozilla/5.0 (compatible; Googlebot/2.1)" } });
-    await serve("/bright-cuts", kv, { headers: { referer: "https://schedi.app/login" } });
-    await serve("/bright-cuts?demo=1", kv);
-    await serve("/bright-cuts", kv, { headers: { "sec-purpose": "prefetch" } });
-    await serve("/bright-cuts", kv, { method: "HEAD" });
-    await serve("/bright-cuts/logo.png", kv);
-    await serve("/bright-cuts/manage/abc", kv);
-    await serve("/missing-shop", kv);
-    expect(kv.store.get(stored[0][0])).toBe("3");
-    expect(kv.puts.length).toBe(before);
+    const before = visits.points.length;
+    await serve("/bright-cuts", visits, { headers: { "user-agent": "Mozilla/5.0 (compatible; Googlebot/2.1)" } });
+    await serve("/bright-cuts", visits, { headers: { referer: "https://schedi.app/login" } });
+    await serve("/bright-cuts?demo=1", visits);
+    await serve("/bright-cuts", visits, { headers: { "sec-purpose": "prefetch" } });
+    await serve("/bright-cuts", visits, { method: "HEAD" });
+    await serve("/bright-cuts/logo.png", visits);
+    await serve("/bright-cuts/manage/abc", visits);
+    await serve("/missing-shop", visits);
+    expect(visits.points).toHaveLength(before);
   });
 });
 
@@ -258,10 +312,13 @@ describe("owner page-visits API", () => {
     return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
   }
 
-  function envFor(kv: VisitKv) {
+  function envFor(kv: ReturnType<typeof memoryKv>, extra: { CF_ACCOUNT_ID?: string; ANALYTICS_API_TOKEN?: string } = {}) {
     return {
       AUTH_KV: kv,
       AUTH_PEPPER: "test-pepper",
+      CF_ACCOUNT_ID: ACCOUNT,
+      ANALYTICS_API_TOKEN: "test-analytics-token",
+      ...extra,
     };
   }
 
@@ -270,10 +327,23 @@ describe("owner page-visits API", () => {
       "session:owner-token": JSON.stringify({ role: "owner", email: "owner@example.com", tenantId: "acme", exp: EXP }),
       "session:other-token": JSON.stringify({ role: "owner", email: "other@example.com", tenantId: "other", exp: EXP }),
       "session:agency-token": JSON.stringify({ role: "agency", email: "hq@example.com", exp: EXP }),
-      "pv1:acme:2026-10-19:isoa": "4",
-      "pv1:acme:2026-10-18:isoa": "9",
-      "pv1:other:2026-10-19:isoa": "100",
     });
+    const seen: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const headers = new Headers(init?.headers);
+        expect(headers.get("authorization")).toBe("Bearer test-analytics-token");
+        expect(String(input)).toBe("https://api.cloudflare.com/client/v4/accounts/" + ACCOUNT + "/analytics_engine/sql");
+        const sql = String(init?.body || "");
+        seen.push(sql);
+        expect(sql).toContain("blob1 = 'acme'");
+        expect(sql).not.toContain("other");
+        return new Response(JSON.stringify({ data: [{ day: "2026-10-19", visits: 4 }, { day: "2026-10-18", visits: 9 }] }), {
+          status: 200,
+        });
+      }),
+    );
     const { readSession } = await import("../workers/schedi-email-worker/src/owner-auth.js");
     const ok = await handlePageVisitsRequest(
       new Request("https://schedi.app/api/page-visits", {
@@ -293,6 +363,7 @@ describe("owner page-visits API", () => {
     expect(body.days).toEqual({ "2026-10-19": 4 });
     expect(body.total).toBe(4);
     expect(JSON.stringify(body)).not.toContain("100");
+    expect(seen).toHaveLength(1);
 
     const denied = await handlePageVisitsRequest(
       new Request("https://schedi.app/api/page-visits", {
@@ -305,6 +376,7 @@ describe("owner page-visits API", () => {
       readSession,
     );
     expect(denied.status).toBe(403);
+    expect(seen).toHaveLength(1);
 
     const agency = await handlePageVisitsRequest(
       new Request("https://schedi.app/api/page-visits", {
@@ -341,19 +413,46 @@ describe("owner page-visits API", () => {
       readSession,
     );
     expect(bad.status).toBe(400);
+
+    const unconfigured = await handlePageVisitsRequest(
+      new Request("https://schedi.app/api/page-visits", {
+        method: "POST",
+        body: JSON.stringify({ session: "owner-token", from: "2026-10-19", to: "2026-10-19" }),
+      }),
+      envFor(kv, { CF_ACCOUNT_ID: "", ANALYTICS_API_TOKEN: "" }),
+      "https://schedi.app",
+      json,
+      readSession,
+    );
+    expect(unconfigured.status).toBe(503);
+    const failure = (await unconfigured.json()) as { error?: string };
+    expect(failure.error).toBe("visits_unconfigured");
+    expect(JSON.stringify(failure)).not.toContain("test-analytics-token");
+    expect(seen).toHaveLength(1);
   });
 
   it("is mounted on the email worker for the owner and rejects other callers", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => {
-      throw new Error("unexpected network");
-    }));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        if (!url.includes("/analytics_engine/sql")) throw new Error("unexpected network " + url);
+        expect(String(init?.body || "")).toContain("blob1 = 'acme'");
+        return new Response(JSON.stringify({ data: [{ day: "2026-10-19", visits: 2 }] }), { status: 200 });
+      }),
+    );
     const { default: worker } = await import("../workers/schedi-email-worker/src/index.js");
     const kv = memoryKv({
       "session:owner-token": JSON.stringify({ role: "owner", email: "owner@example.com", tenantId: "acme", exp: EXP }),
       "session:agency-token": JSON.stringify({ role: "agency", email: "hq@example.com", exp: EXP }),
-      "pv1:acme:2026-10-19:isoa": "2",
     });
-    const env = { AUTH_KV: kv, AUTH_PEPPER: "test-pepper", FIREBASE_PROJECT_ID: "siteforge-97699" };
+    const env = {
+      AUTH_KV: kv,
+      AUTH_PEPPER: "test-pepper",
+      FIREBASE_PROJECT_ID: "siteforge-97699",
+      CF_ACCOUNT_ID: ACCOUNT,
+      ANALYTICS_API_TOKEN: "test-analytics-token",
+    };
     const owner = await worker.fetch(
       new Request("https://schedi.app/api/page-visits", {
         method: "POST",

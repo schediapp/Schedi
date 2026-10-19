@@ -61,6 +61,10 @@ Prefer injecting the secret from a build/config step rather than hardcoding a lo
 | `SQUARE_APPLICATION_SECRET` | `npx wrangler secret put SQUARE_APPLICATION_SECRET` |
 | `SQUARE_WEBHOOK_SIGNATURE_KEY` | `npx wrangler secret put SQUARE_WEBHOOK_SIGNATURE_KEY` |
 | `SQUARE_TOKEN_KEY` | `npx wrangler secret put SQUARE_TOKEN_KEY` (32-byte AES key, base64) |
+| `ANALYTICS_API_TOKEN` | `npx wrangler secret put ANALYTICS_API_TOKEN` (Account Analytics Read) |
+| `CF_ACCOUNT_ID` | `npx wrangler secret put CF_ACCOUNT_ID` (32-character account id) |
+
+`ANALYTICS_API_TOKEN` and `CF_ACCOUNT_ID` are how Reports reads booking-page visits. Writes happen on `schedi-web` (`PAGE_VISITS` → dataset `schedi_page_visits` in the root `wrangler.jsonc`). The dataset is created the first time a counted view is written. There is no separate dataset create command, and visits are not stored in `AUTH_KV`.
 
 Twilio secrets are optional. If any of the three is missing, SMS is skipped and booking/reminder email still sends. Do not put Twilio credentials in HTML. See `/workspace/schedi-sms-twilio-notes.md` for 10DLC.
 

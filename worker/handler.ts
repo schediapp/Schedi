@@ -6,7 +6,7 @@ import { publicDuplicateRedirect } from "./canonical";
 import { marketingPage, publicPaths } from "./content";
 import { indexNowKey } from "./indexnow";
 import { localBusinessScript, tenantFromFirestore, type TenantSeo } from "./local-business";
-import { noteBookingVisit, PAGE_VISIT_FLUSH_MS, PAGE_VISIT_HOLD_MS, shouldCountBookingVisit, visitDay } from "./page-visits";
+import { noteBookingVisit, type PageVisitDataset, shouldCountBookingVisit, visitDay } from "./page-visits";
 import {
   agencySessionToken,
   hasAgencySession,
@@ -37,10 +37,10 @@ export interface AssetFetcher {
 export interface SchediEnv {
   ASSETS?: AssetFetcher;
   FIREBASE_PROJECT_ID?: string;
-  /** Same AUTH_KV namespace as schedi-email-worker. Required to serve /hq. Also stores booking-page visit gauges. */
+  /** Same AUTH_KV namespace as schedi-email-worker. Required to serve /hq. Visit counts do not use it. */
   AUTH_KV?: AgencyKv;
-  /** Test-only flush delay for visit gauges. Unset in production. */
-  PAGE_VISIT_FLUSH_MS?: string;
+  /** Workers Analytics Engine dataset schedi_page_visits. One point per counted booking-page view. */
+  PAGE_VISITS?: PageVisitDataset;
   /** IndexNow key file. Never hardcoded. 32–128 hex characters. */
   INDEXNOW_KEY?: string;
   INDEXNOW_ENABLED?: string;
@@ -712,18 +712,12 @@ async function serveSpa(
   headers.set("Cache-Control", "no-store");
   headers.delete("Content-Length");
   if (!indexableTenant) headers.set("X-Robots-Tag", "noindex, follow");
-  if (method === "GET" && slug && tenant) countPublishedVisit(request, env, ctx, slug, tenant.timezone);
+  if (method === "GET" && slug && tenant) countPublishedVisit(request, env, slug, tenant.timezone);
   if (method === "HEAD") return new Response(null, { status: 200, headers });
   return new Response(body, { status: 200, headers });
 }
 
-function countPublishedVisit(
-  request: Request,
-  env: SchediEnv,
-  ctx: SchediContext,
-  slug: string,
-  timezone: string | undefined,
-): void {
+function countPublishedVisit(request: Request, env: SchediEnv, slug: string, timezone: string | undefined): void {
   const url = new URL(request.url);
   const count = shouldCountBookingVisit({
     method: request.method,
@@ -737,12 +731,7 @@ function countPublishedVisit(
     secPurpose: request.headers.get("sec-purpose") || request.headers.get("purpose") || "",
   });
   if (!count) return;
-  const rawDelay = Number(env.PAGE_VISIT_FLUSH_MS);
-  const flushMs = Number.isFinite(rawDelay) && rawDelay >= 0 && rawDelay <= 120000 ? rawDelay : PAGE_VISIT_FLUSH_MS;
-  noteBookingVisit(env.AUTH_KV, ctx, slug, visitDay(new Date(), timezone), {
-    flushMs,
-    holdMs: flushMs === 0 ? 0 : PAGE_VISIT_HOLD_MS,
-  });
+  noteBookingVisit(env.PAGE_VISITS, slug, visitDay(new Date(), timezone));
 }
 
 function hqDemoRequest(request: Request): boolean {
