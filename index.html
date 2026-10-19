@@ -6064,7 +6064,7 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                             <button type="button" id="rosterSearchToggle" class="sd-roster-search-toggle" onclick="rosterSearchToggle()" aria-expanded="false" aria-controls="rosterSearchField" aria-label="Search appointments"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i></button>
                             <div id="rosterSearchField" class="sd-roster-search-field">
                                 <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
-                                <input id="rosterSearchInput" type="search" placeholder="Name, phone, date, HB-1003" autocomplete="off" aria-label="Search appointments" aria-controls="rosterSearchResults" oninput="rosterSearchSchedule()">
+                                <input id="rosterSearchInput" type="text" role="searchbox" placeholder="Name, phone, date, HB-1003" autocomplete="off" aria-label="Search appointments" aria-controls="rosterSearchResults" oninput="rosterSearchSchedule()">
                                 <button type="button" id="rosterSearchClear" class="sd-roster-search-clear" hidden aria-label="Clear search" onclick="rosterSearchClear()">&times;</button>
                             </div>
                             <div id="rosterSearchResults" class="sd-roster-results" hidden role="listbox" aria-label="Search results"></div>

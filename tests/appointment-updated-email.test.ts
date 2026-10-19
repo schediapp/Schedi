@@ -7,7 +7,9 @@ const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const root = new URL("..", import.meta.url).pathname;
 
 function extractFunction(source: string, name: string): string {
-  const start = source.indexOf("function " + name);
+  const assigned = source.indexOf("window." + name + " = function");
+  const declared = source.indexOf("function " + name);
+  const start = assigned >= 0 ? assigned : declared;
   if (start < 0) throw new Error("missing " + name);
   const brace = source.indexOf("{", start);
   let depth = 0;
@@ -55,6 +57,7 @@ const page = pageFns([
   "clientEmailDateCardHtml",
   "clientEmailRowsHtml",
   "clientEmailButtonHtml",
+  "appointmentChangeValueHtml",
   "ownerContactPhrase",
   "businessReplyTo",
   "buildAppointmentUpdatedEmail",
@@ -417,22 +420,30 @@ describe.skipIf(!chrome)("appointment updated dashboard browser", () => {
           const style = getComputedStyle(button);
           return style.display !== "none" && style.visibility !== "hidden" && !button.hidden;
         }).length : 0;
-        return { display: cancel.display, width: cancel.width, visibleClears, type: input.type };
+        return { display: cancel.display, width: cancel.width, visibleClears, type: input.type, role: input.getAttribute("role") };
       });
-      expect(search.type).toBe("search");
-      expect(search.display).toBe("none");
+      expect(search.type).toBe("text");
+      expect(search.role).toBe("searchbox");
       expect(search.visibleClears).toBe(1);
 
-      const darkHover = await tab.$("#tenantRosterTableBody tr.roster-row");
-      await darkHover?.hover();
-      const darkBg = await tab.evaluate(() => getComputedStyle(document.querySelector("#tenantRosterTableBody tr.roster-row:hover") as Element).backgroundColor);
-      expect(darkBg.replace(/\s/g, "")).toBe("rgba(16,185,129,0.12)");
+      await tab.evaluate(() => {
+        const input = document.getElementById("rosterSearchInput") as HTMLInputElement;
+        input.value = "";
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+      await tab.waitForFunction(() => document.getElementById("rosterSearchClear")?.hidden === true);
+      const rowColor = async (want: string) => {
+        await tab.hover("#tenantRosterTableBody tr.roster-row td");
+        await tab.waitForFunction((expected) => {
+          const row = document.querySelector("#tenantRosterTableBody tr.roster-row");
+          if (!row || !row.matches(":hover")) return false;
+          return getComputedStyle(row).backgroundColor.replace(/\s/g, "") === expected;
+        }, {}, want);
+      };
+      await rowColor("rgba(16,185,129,0.12)");
 
       await tab.evaluate(() => (window as unknown as { setSchediTheme: (theme: string) => void }).setSchediTheme("light"));
-      const lightHover = await tab.$("#tenantRosterTableBody tr.roster-row");
-      await lightHover?.hover();
-      const lightBg = await tab.evaluate(() => getComputedStyle(document.querySelector("#tenantRosterTableBody tr.roster-row:hover") as Element).backgroundColor);
-      expect(lightBg.replace(/\s/g, "")).toBe("rgba(5,150,105,0.1)");
+      await rowColor("rgba(5,150,105,0.1)");
 
       const emailBox = await tab.evaluate(() => {
         const open = (window as unknown as { openEditAppointment: (id: string) => void }).openEditAppointment;
