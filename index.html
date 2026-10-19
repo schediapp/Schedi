@@ -224,18 +224,6 @@
         #rosterAlertsBtn { min-width: 2.5rem; }
         #rosterAlertsBtn.wp-btn-on i { color: #34d399; }
         html.schedi-light #rosterAlertsBtn.wp-btn-on i { color: #047857; }
-        #webPushCard { min-width: 0; max-width: 100%; }
-        #webPushHint, #webPushHintText, .wp-iphone-help { overflow-wrap: anywhere; }
-        .wp-iphone-help { color: #34d399; font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
-        html.schedi-light .wp-iphone-help { color: #047857; }
-        #webPushHint.is-strong .wp-iphone-help { display: block; margin-top: 6px; font-size: 13px; line-height: 1.35; }
-        .schedi-help-guide, .schedi-help-guide-body, .schedi-help-guide ol, .schedi-help-guide ul, .schedi-help-guide li, .schedi-help-guide p, .schedi-help-guide a, .schedi-help-guide h3, .schedi-help-guide h4 {
-            min-width: 0;
-            max-width: 100%;
-            overflow-wrap: anywhere;
-        }
-        .schedi-help-guide { box-sizing: border-box; }
-        #legalSection .grid, #schediDashHelpBody .grid { min-width: 0; }
         .roster-nav-step { width: 6.5rem; flex: 0 0 6.5rem; text-align: center; white-space: nowrap; }
         @media (max-width: 639px) { .roster-nav-step { width: 100%; padding-left: 4px; padding-right: 4px; } }
         @media (max-width: 639px) {
@@ -373,6 +361,20 @@
         html.schedi-light #bookingDecisionModal .bdm-later:hover { background-color: #cbd5e1 !important; }
         html.schedi-light #bookingDecisionModal .bdm-kicker { color: #047857 !important; }
         html.schedi-light #bookingDecisionModal .divide-slate-800\/80 > * { border-color: #e2e8f0 !important; }
+    </style>
+    <style id="schediBookingAlertsHelpStyle">
+        #webPushCard { min-width: 0; max-width: 100%; }
+        #webPushHint, #webPushHintText, .wp-iphone-help { overflow-wrap: anywhere; }
+        .wp-iphone-help { color: #34d399; font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
+        html.schedi-light .wp-iphone-help { color: #047857; }
+        #webPushHint.is-strong .wp-iphone-help { display: block; margin-top: 6px; font-size: 13px; line-height: 1.35; }
+        .schedi-help-guide, .schedi-help-guide-body, .schedi-help-guide ol, .schedi-help-guide ul, .schedi-help-guide li, .schedi-help-guide p, .schedi-help-guide a, .schedi-help-guide h3, .schedi-help-guide h4 {
+            min-width: 0;
+            max-width: 100%;
+            overflow-wrap: anywhere;
+        }
+        .schedi-help-guide { box-sizing: border-box; }
+        #legalSection .grid, #schediDashHelpBody .grid { min-width: 0; }
     </style>
     <style id="schedi-portal-phone-fit">
         /* Landing refresh: always-visible Log in on the signup screen (CSS only; portal/session logic untouched). */
