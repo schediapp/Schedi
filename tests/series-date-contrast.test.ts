@@ -20,6 +20,20 @@ function contrast(fg: string, bg: string): number {
   return (lighter + 0.05) / (darker + 0.05);
 }
 
+function extractFunction(source: string, name: string): string {
+  const start = source.indexOf("function " + name);
+  const brace = source.indexOf("{", start);
+  let depth = 0;
+  for (let i = brace; i < source.length; i++) {
+    if (source[i] === "{") depth++;
+    else if (source[i] === "}") {
+      depth--;
+      if (depth === 0) return source.slice(start, i + 1);
+    }
+  }
+  throw new Error("could not extract " + name);
+}
+
 function seriesCss(source: string): string {
   const start = source.indexOf("/* series-date-contrast */");
   const end = source.indexOf("/* /series-date-contrast */");
@@ -44,7 +58,7 @@ describe("series date list contrast", () => {
     // (#cbd5e1 on the #0f1728 row is 12.05:1) and stays that way.
     for (const source of [html, hq]) {
       const css = seriesCss(source);
-      const darkRemove = rule(css, "#customDatesList .series-date-remove {");
+      const darkRemove = rule(css, "#customDatesList .series-date-remove,");
       expect(darkRemove).toContain("color: #cbd5e1");
       expect(darkRemove).toContain("background: transparent");
       expect(darkRemove).toContain("border: 1px solid #334155");
@@ -83,16 +97,16 @@ describe("series date list contrast", () => {
         expect(contrast("#be123c", "#fff1f2")).toBeGreaterThanOrEqual(4.5);
       }
 
-      const listAt = source.indexOf("function renderCustomDatesPicker");
-      expect(listAt).toBeGreaterThan(0);
-      const list = source.slice(listAt, source.indexOf("window.toggleCustomDate", listAt));
-      expect(list).toContain("series-date-row");
-      expect(list).toContain("series-date-label");
-      expect(list).toContain("series-date-time");
-      expect(list).toContain("series-date-warn");
-      expect(list).toContain('class="series-date-remove ml-auto px-2 py-1 rounded-lg"');
-      expect(list).toContain(">Remove</button>");
-      expect(list).not.toContain("text-slate-300 hover:text-white");
+      const rowFn = extractFunction(source, "seriesDateRowHtml");
+      expect(rowFn).toContain("series-date-row");
+      expect(rowFn).toContain("series-date-label");
+      expect(rowFn).toContain("series-date-time");
+      expect(rowFn).toContain("series-date-warn");
+      expect(rowFn).toContain("Not available at ");
+      expect(rowFn).toContain(">Use this time</button>");
+      expect(rowFn).toContain('class="series-date-remove ml-auto px-2 py-1 rounded-lg"');
+      expect(rowFn).toContain(">Remove</button>");
+      expect(rowFn).not.toContain("text-slate-300 hover:text-white");
     }
   });
 });
