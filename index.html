@@ -1439,7 +1439,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash #schediDashAddMenu button.
     #tenantPortalSection.schedi-newdash #schediDashTabbar {
         --sd-tab-slot: 0;
         display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
+        grid-template-columns: repeat(5, minmax(0, 1fr));
         position: fixed;
         z-index: 40;
         left: 0;
@@ -1464,7 +1464,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash #schediDashAddMenu button.
         top: 0;
         bottom: 0;
         left: 0;
-        width: 25%;
+        width: 20%;
         pointer-events: none;
         transform: translateX(calc(var(--sd-tab-slot, 0) * 100%));
         transition: transform 200ms ease-out;
@@ -1518,13 +1518,39 @@ html.schedi-light #tenantPortalSection.schedi-newdash #schediDashAddMenu button.
     }
     #tenantPortalSection.schedi-newdash #schediDashTabbar > button span { white-space: nowrap; }
     html.schedi-light #tenantPortalSection.schedi-newdash #schediDashTabbar > button { color: #3f4b5e; }
-    #tenantPortalSection.schedi-newdash #schediDashTabbar > button i {
+    #tenantPortalSection.schedi-newdash #schediDashTabbar > button:not(.sd-fab) i {
         font-size: 22px;
         line-height: 1;
         color: inherit;
     }
-    #tenantPortalSection.schedi-newdash #schediDashTabbar > button.is-on { color: #34d399; }
-    html.schedi-light #tenantPortalSection.schedi-newdash #schediDashTabbar > button.is-on { color: #047857; }
+    #tenantPortalSection.schedi-newdash #schediDashTabbar > button:not(.sd-fab).is-on { color: #34d399; }
+    html.schedi-light #tenantPortalSection.schedi-newdash #schediDashTabbar > button:not(.sd-fab).is-on { color: #047857; }
+    #tenantPortalSection.schedi-newdash #schediDashTabbar .sd-fab {
+        z-index: 2;
+        align-self: start;
+        width: 52px;
+        height: 52px;
+        min-height: 52px;
+        margin: -6px auto 0;
+        padding: 0;
+        border: 0;
+        border-radius: 999px;
+        background: #10b981;
+        color: #ffffff;
+        box-shadow: 0 6px 16px rgba(16, 185, 129, 0.5), 0 0 22px rgba(16, 185, 129, 0.35);
+        font-size: 22px;
+        justify-content: center;
+    }
+    #tenantPortalSection.schedi-newdash #schediDashTabbar .sd-fab i {
+        font-size: 22px;
+        line-height: 1;
+        color: #ffffff;
+    }
+    html.schedi-light #tenantPortalSection.schedi-newdash #schediDashTabbar .sd-fab {
+        background: #10b981;
+        color: #ffffff;
+        border: 0;
+    }
 }
 @media (max-width: 859px) and (prefers-reduced-motion: reduce) {
     #tenantPortalSection.schedi-newdash #schediDashTabbar .sd-tab-indicator,
@@ -5759,6 +5785,7 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                         <span class="sd-tab-indicator" aria-hidden="true"></span>
                         <button type="button" data-dash-go="today" aria-current="page"><i class="fa-solid fa-clock" aria-hidden="true"></i><span>Agenda</span></button>
                         <button type="button" data-dash-go="clients"><i class="fa-solid fa-users" aria-hidden="true"></i><span>Clients</span></button>
+                        <button type="button" class="sd-fab" data-dash-add-open="1" onclick="schediDashToggleAdd(event)" aria-label="Add appointment"><i class="fa-solid fa-plus" aria-hidden="true"></i></button>
                         <button type="button" data-dash-go="appointments"><i class="fa-solid fa-calendar-week" aria-hidden="true"></i><span>Calendar</span></button>
                         <button type="button" id="schediDashMoreBtn" onclick="schediDashToggleMore()"><i class="fa-solid fa-bars" aria-hidden="true"></i><span>More</span></button>
                     </nav>
@@ -14319,8 +14346,8 @@ function schediQrCardPixels(text, color) {
         function schediDashTabSlot(page) {
             if (page === 'today') return 0;
             if (page === 'clients') return 1;
-            if (page === 'appointments') return 2;
-            return 3;
+            if (page === 'appointments') return 3;
+            return 4;
         }
 
         function schediDashSetPage(page) {

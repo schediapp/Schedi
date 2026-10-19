@@ -74,10 +74,13 @@ describe("owner dashboard voice", () => {
     expect(nav).not.toContain("Plan &amp; billing");
 
     const bar = html.slice(html.indexOf('id="schediDashTabbar"'), html.indexOf('id="schediDashAccountMenu"'));
-    expect(bar).not.toContain("sd-fab");
-    expect(bar).not.toContain("fa-plus");
+    expect(bar).toContain("sd-fab");
+    expect(bar).toContain("fa-plus");
+    expect(bar).toContain('aria-label="Add appointment"');
+    expect(bar).toContain("schediDashToggleAdd");
     expect(bar.indexOf(">Agenda<")).toBeLessThan(bar.indexOf(">Clients<"));
-    expect(bar.indexOf(">Clients<")).toBeLessThan(bar.indexOf(">Calendar<"));
+    expect(bar.indexOf(">Clients<")).toBeLessThan(bar.indexOf("sd-fab"));
+    expect(bar.indexOf("sd-fab")).toBeLessThan(bar.indexOf(">Calendar<"));
     expect(bar.indexOf(">Calendar<")).toBeLessThan(bar.indexOf(">More<"));
 
     const account = html.slice(html.indexOf('id="schediDashAccountMenu"'), html.indexOf('id="schediDashAddMenu"'));
@@ -185,7 +188,7 @@ describe.skipIf(!chrome)("owner dashboard voice layout", () => {
           nextTag: first?.querySelector(".sd-next-tag")?.textContent || "",
           editBesideMenu: !!first?.querySelector(".sd-more") && (first.textContent || "").includes("Edit"),
           bar: document.getElementById("schediDashTabbar")?.textContent || "",
-          fab: !!document.querySelector(".sd-fab"),
+          fab: (document.querySelector("#schediDashTabbar .sd-fab") as HTMLButtonElement | null)?.getAttribute("aria-label") || "",
         };
       });
       expect(copy.lead).toBe("Maya Chen is first, at 09:00 AM.");
@@ -208,7 +211,7 @@ describe.skipIf(!chrome)("owner dashboard voice layout", () => {
       expect(copy.next).toBe(true);
       expect(copy.nextTag).toBe("Next");
       expect(copy.editBesideMenu).toBe(true);
-      expect(copy.fab).toBe(false);
+      expect(copy.fab).toBe("Add appointment");
       expect(copy.bar).toContain("Agenda");
       expect(copy.bar).toContain("Clients");
       expect(copy.bar).toContain("Calendar");
