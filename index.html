@@ -13905,10 +13905,14 @@ function schediQrCardPixels(text, color) {
 
         function schediNewBookOn() {
             try {
-                var flag = new URLSearchParams(window.location.search || '').get('newbook');
-                return flag === '1' || flag === 'true' || flag === 'on';
+                var q = new URLSearchParams(window.location.search || '');
+                var classic = q.get('classicbook');
+                if (classic === '1' || classic === 'true' || classic === 'on') return false;
+                var flag = q.get('newbook');
+                if (flag === '0' || flag === 'false' || flag === 'off') return false;
+                return true;
             } catch (errBook) {
-                return false;
+                return true;
             }
         }
 
@@ -25576,8 +25580,8 @@ function schediQrCardPixels(text, color) {
             
             const configStr = JSON.stringify(rawConfig);
             const appIdStr = (typeof window !== 'undefined' && window.__app_id) ? window.__app_id : (typeof __app_id !== 'undefined' ? __app_id : 'siteforge-97699');
-            var schediNewBook = false;
-            try { schediNewBook = schediNewBookOn(); } catch (newBookErr) { schediNewBook = false; }
+            var schediNewBook = true;
+            try { schediNewBook = schediNewBookOn(); } catch (newBookErr) { schediNewBook = true; }
 
             // srcdoc iframes are about:srcdoc. The shell at /{slug} already has the beacon.
             // Only the document.write fallback, which replaces that shell, should include it.
@@ -26241,13 +26245,16 @@ function schediQrCardPixels(text, color) {
         var SCHEDI_DEMO = ${(typeof window !== 'undefined' && window.__SCHEDI_DEMO) ? 'true' : 'false'};
         var SCHEDI_SQUARE_PUBLIC_ENABLED = false;
         try {
-            var newBookFlag = new URLSearchParams(location.search || '').get('newbook');
+            var bookQuery = new URLSearchParams(location.search || '');
+            var newBookFlag = bookQuery.get('newbook');
+            var classicBook = bookQuery.get('classicbook');
             if (newBookFlag === '1' || newBookFlag === 'true' || newBookFlag === 'on') SCHEDI_NEWBOOK = true;
             if (newBookFlag === '0' || newBookFlag === 'false' || newBookFlag === 'off') SCHEDI_NEWBOOK = false;
-            var demoFlag = new URLSearchParams(location.search || '').get('demo');
+            if (classicBook === '1' || classicBook === 'true' || classicBook === 'on') SCHEDI_NEWBOOK = false;
+            var demoFlag = bookQuery.get('demo');
             if (demoFlag === '1' || demoFlag === 'true' || demoFlag === 'on') SCHEDI_DEMO = true;
         } catch (newBookErr) {}
-        if (SCHEDI_NEWBOOK) document.documentElement.classList.add('schedi-newbook');
+        document.documentElement.classList.toggle('schedi-newbook', SCHEDI_NEWBOOK === true);
         var PUBLIC_DEPOSIT_METHODS = ['card', 'cashapp', 'zelle', 'venmo', 'paypal'];
         function publicDepositMethodMap() {
             var stored = tenantData && tenantData.deposit && tenantData.deposit.methods;
