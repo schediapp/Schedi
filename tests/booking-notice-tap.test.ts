@@ -47,10 +47,10 @@ describe("booking notice contrast and repeat taps", () => {
       expect(css).toContain("background: #0e2134 !important");
       expect(css).toContain("color: #e0f2fe !important");
       expect(css).toContain("html.schedi-light #noPricePayNote");
-      expect(css).toContain("background: #e0f2fe !important");
-      expect(css).toContain("color: #0c4a6e !important");
+      expect(css).toContain("background: #3f4756 !important");
+      expect(css).toContain("color: #ffffff !important");
       expect(contrast("#e0f2fe", "#0e2134")).toBeGreaterThanOrEqual(4.5);
-      expect(contrast("#0c4a6e", "#e0f2fe")).toBeGreaterThanOrEqual(4.5);
+      expect(contrast("#ffffff", "#3f4756")).toBeGreaterThanOrEqual(4.5);
       expect(contrast("#78350f", "#fffbeb")).toBeGreaterThanOrEqual(4.5);
       expect(contrast("#1e1b4b", "#eef2ff")).toBeGreaterThanOrEqual(4.5);
       expect(contrast("#047857", "#eef2ff")).toBeGreaterThanOrEqual(4.5);
@@ -215,6 +215,8 @@ describe.skipIf(!chrome)("booking page phone taps and notice paint", () => {
         expect(pair, name).toBeTruthy();
         expect(rgbContrast(pair!.color, pair!.background), name + " " + pair!.color + " on " + pair!.background).toBeGreaterThanOrEqual(4.5);
       }
+      expect(light.note!.color).toBe("rgb(255, 255, 255)");
+      expect(light.note!.background).toBe("rgb(63, 71, 86)");
 
       await page.evaluate(() => document.documentElement.classList.remove("schedi-light"));
       const darkNote = await page.evaluate(() => {
@@ -223,6 +225,8 @@ describe.skipIf(!chrome)("booking page phone taps and notice paint", () => {
         return { color: cs.color, background: cs.backgroundColor };
       });
       expect(rgbContrast(darkNote.color, darkNote.background)).toBeGreaterThanOrEqual(4.5);
+      expect(darkNote.color).toBe("rgb(224, 242, 254)");
+      expect(darkNote.background).toBe("rgb(14, 33, 52)");
       await page.evaluate(() => document.documentElement.classList.add("schedi-light"));
 
       const covered = await page.evaluate(() => {
