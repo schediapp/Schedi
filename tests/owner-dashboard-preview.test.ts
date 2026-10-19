@@ -1232,7 +1232,8 @@ describe("owner dashboard preview", () => {
     expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-more-menu button.sd-act-delete { color: #fb7185; }");
     expect(css).toContain("html.schedi-light #tenantPortalSection.schedi-newdash .sd-more-menu button.sd-act-delete { color: #be123c; }");
     expect(css).toContain("body.schedi-newdash .roster-sheet-actions > button.sd-act");
-    expect(today).toContain('<article class="sd-card sd-row">');
+    expect(today).toContain('<article class="sd-card sd-row');
+    expect(today).toContain(" is-next");
     expect(today).not.toContain('role="button"');
     expect(today).not.toContain('tabindex="0"');
     expect(today).not.toContain('aria-haspopup="menu"');
