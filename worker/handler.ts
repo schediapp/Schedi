@@ -20,6 +20,7 @@ import {
   renderMarketingBoot,
   renderMarketingTheme,
   THEME_SCRIPT_PATH,
+  renderDisallowAllRobots,
   renderLlms,
   renderMarketingPage,
   renderNotFound,
@@ -166,6 +167,11 @@ function isPreviewHost(hostname: string): boolean {
   const host = hostname.toLowerCase().replace(/\.+$/, "");
   if (host === "localhost" || host === "127.0.0.1" || host === "::1") return true;
   return host.endsWith(".workers.dev");
+}
+
+function isProductionHost(hostname: string): boolean {
+  const host = hostname.toLowerCase().replace(/\.+$/, "");
+  return host === "schedi.app" || host === "www.schedi.app";
 }
 
 function wantsPortal(url: URL): boolean {
@@ -522,7 +528,8 @@ export async function handleRequest(request: Request, env: SchediEnv, ctx: Sched
 
   const collapsed = collapse(url.pathname);
   if (collapsed === "/robots.txt") {
-    return textResponse(renderRobots(), 200, "text/plain; charset=utf-8", { "Cache-Control": "public, max-age=3600" }, method);
+    const robots = isProductionHost(url.hostname) ? renderRobots() : renderDisallowAllRobots();
+    return textResponse(robots, 200, "text/plain; charset=utf-8", { "Cache-Control": "public, max-age=3600" }, method);
   }
   if (collapsed === "/sitemap.xml") {
     return textResponse(
@@ -599,7 +606,19 @@ export async function handleRequest(request: Request, env: SchediEnv, ctx: Sched
 
   const page = marketingPage(lower === "" ? "/" : lower);
   if (page) {
-    return marketingResponse(renderMarketingPage(page, env.BING_SITE_VERIFICATION), method, url, 200);
+    const productionHost = isProductionHost(url.hostname);
+    const response = marketingResponse(
+      renderMarketingPage(
+        page,
+        env.BING_SITE_VERIFICATION,
+        productionHost ? undefined : { robots: "noindex, nofollow" },
+      ),
+      method,
+      url,
+      200,
+    );
+    if (!productionHost) response.headers.set("X-Robots-Tag", "noindex, nofollow");
+    return response;
   }
 
   const spa = classifySpa(stripped);

@@ -56,6 +56,11 @@ export function renderRobots(): string {
   ].join("\n");
 }
 
+/** Non-production hosts. Production keeps renderRobots(). */
+export function renderDisallowAllRobots(): string {
+  return ["User-agent: *", "Disallow: /", ""].join("\n");
+}
+
 export function renderLlms(): string {
   const pages = publicPaths()
     .map((path) => `- ${APEX_ORIGIN}${path === "/" ? "/" : path}`)
@@ -563,8 +568,14 @@ figure img,figure video{max-width:100%;height:auto;border-radius:12px}
 @media (max-width:400px){.theme-btn{padding:.375rem .5rem}.theme-btn-label{display:none}.hide-xs{display:none}.show-xs{display:inline}.brand img{height:28px}.btn-sm{padding:.48rem .7rem;font-size:.86rem}.login .ico{display:none}.bar{gap:.4rem}}
 `;
 
-export function renderMarketingPage(page: MarketingPage, bingToken?: string): string {
+export function renderMarketingPage(
+  page: MarketingPage,
+  bingToken?: string,
+  options?: { robots?: string },
+): string {
   const canonical = canonicalUrl(page.path);
+  const robots =
+    options?.robots ?? (page.listing === "scaffold" ? "noindex, follow" : "index, follow");
   const title = escapeHtml(page.title);
   const description = escapeHtml(page.description);
   const rich = page.layout === "home" || page.layout === "pricing";
@@ -612,7 +623,7 @@ export function renderMarketingPage(page: MarketingPage, bingToken?: string): st
 <title>${title}</title>
 <meta name="description" content="${description}">
 <link rel="canonical" href="${canonical}">
-<meta name="robots" content="${page.listing === "scaffold" ? "noindex, follow" : "index, follow"}">
+<meta name="robots" content="${robots}">
 ${bingVerificationMeta(bingToken)}
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Schedi">

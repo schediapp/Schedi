@@ -280,6 +280,109 @@ describe("answer pages and crawler files", () => {
   });
 });
 
+describe("preview hosts stay out of the index", () => {
+  it("noindexes marketing pages off schedi.app and keeps production indexable", async () => {
+    const env = envWith(shellAssets());
+    const marketingPaths = ["/", "/pricing", "/compare", "/features", "/for/barbers"];
+
+    for (const path of marketingPaths) {
+      const production = await handleRequest(new Request(`https://schedi.app${path}`), env, ctx());
+      expect(production.status, path).toBe(200);
+      expect(production.headers.get("x-robots-tag"), path).toBeNull();
+      const productionHtml = await production.text();
+      expect(productionHtml, path).toContain('name="robots" content="index, follow"');
+      expect(productionHtml, path).not.toContain("noindex");
+      const canonical = path === "/" ? "https://schedi.app/" : `https://schedi.app${path}`;
+      expect(productionHtml, path).toContain(`rel="canonical" href="${canonical}"`);
+    }
+
+    const productionRobots = await handleRequest(new Request("https://schedi.app/robots.txt"), env, ctx());
+    expect(productionRobots.status).toBe(200);
+    const productionRobotsText = await productionRobots.text();
+    expect(productionRobotsText).toBe(renderRobots());
+    expect(productionRobotsText).toContain("Sitemap: https://schedi.app/sitemap.xml");
+    expect(productionRobotsText).toContain("Allow: /");
+    expect(productionRobotsText).toContain("Disallow: /portal");
+
+    const productionSitemap = await handleRequest(new Request("https://schedi.app/sitemap.xml"), env, ctx());
+    expect(await productionSitemap.text()).toContain("https://schedi.app/pricing");
+    const productionLlms = await handleRequest(new Request("https://schedi.app/llms.txt"), env, ctx());
+    expect(await productionLlms.text()).toContain("https://schedi.app/compare");
+
+    const wwwRobots = await handleRequest(new Request("https://www.schedi.app/robots.txt"), env, ctx());
+    expect(wwwRobots.status).toBe(301);
+    expect(wwwRobots.headers.get("location")).toBe("https://schedi.app/robots.txt");
+
+    const hosts = [
+      "https://schedi-web-preview.example.workers.dev",
+      "http://localhost:8787",
+      "https://preview.example.test",
+    ];
+    for (const origin of hosts) {
+      for (const path of marketingPaths) {
+        const preview = await handleRequest(new Request(`${origin}${path}`), env, ctx());
+        expect(preview.status, `${origin}${path}`).toBe(200);
+        expect(preview.headers.get("x-robots-tag"), `${origin}${path}`).toBe("noindex, nofollow");
+        const html = await preview.text();
+        expect(html, `${origin}${path}`).toContain('name="robots" content="noindex, nofollow"');
+        expect(html, `${origin}${path}`).not.toContain("index, follow");
+        const canonical = path === "/" ? "https://schedi.app/" : `https://schedi.app${path}`;
+        expect(html, `${origin}${path}`).toContain(`rel="canonical" href="${canonical}"`);
+      }
+      const robots = await handleRequest(new Request(`${origin}/robots.txt`), env, ctx());
+      expect(robots.status, origin).toBe(200);
+      expect(await robots.text(), origin).toBe("User-agent: *\nDisallow: /\n");
+      const sitemap = await handleRequest(new Request(`${origin}/sitemap.xml`), env, ctx());
+      expect(sitemap.status, origin).toBe(200);
+      expect(await sitemap.text(), origin).toContain("https://schedi.app/compare");
+      const llms = await handleRequest(new Request(`${origin}/llms.txt`), env, ctx());
+      expect(llms.status, origin).toBe(200);
+      expect(await llms.text(), origin).toContain("Prices as listed on each vendor's site on Oct 19, 2026.");
+    }
+
+    const previewHead = await handleRequest(
+      new Request("https://schedi-web-preview.example.workers.dev/pricing", { method: "HEAD" }),
+      env,
+      ctx(),
+    );
+    expect(previewHead.status).toBe(200);
+    expect(previewHead.headers.get("x-robots-tag")).toBe("noindex, nofollow");
+    expect(await previewHead.text()).toBe("");
+
+    const previewLogin = await handleRequest(
+      new Request("https://schedi-web-preview.example.workers.dev/login"),
+      env,
+      ctx(),
+    );
+    expect(previewLogin.status).toBe(200);
+    expect(previewLogin.headers.get("x-robots-tag")).toBe("noindex, follow");
+    const loginHtml = await previewLogin.text();
+    expect(loginHtml).toContain('content="noindex, follow"');
+    expect(loginHtml).not.toContain("nofollow");
+
+    const previewPortal = await handleRequest(
+      new Request("https://schedi-web-preview.example.workers.dev/portal"),
+      env,
+      ctx(),
+    );
+    expect(previewPortal.status).toBe(200);
+    expect(previewPortal.headers.get("location")).toBeNull();
+    expect(previewPortal.headers.get("x-robots-tag")).toBe("noindex, follow");
+
+    const productionPortal = await handleRequest(new Request("https://schedi.app/portal"), env, ctx());
+    expect(productionPortal.status).toBe(302);
+    expect(productionPortal.headers.get("location")).toBe("https://schedi.app/login");
+
+    const booking = await handleRequest(
+      new Request("https://schedi-web-preview.example.workers.dev/bright-cuts"),
+      envWith(shellAssets(), { FIREBASE_PROJECT_ID: "" }),
+      ctx(),
+    );
+    expect(booking.status).toBe(200);
+    expect(booking.headers.get("x-robots-tag")).toBe("noindex, follow");
+  });
+});
+
 describe("canonical redirects", () => {
   it("sends duplicates to one canonical URL and keeps preview hosts", async () => {
     const env = envWith(shellAssets());
