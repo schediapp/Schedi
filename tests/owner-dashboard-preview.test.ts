@@ -585,7 +585,8 @@ describe("owner dashboard preview", () => {
     expect(extractFunction(html, "appointmentOutcomeChipHtml")).toContain("noShowPillHtml");
     expect(extractFunction(html, "appointmentPayMarkup")).toContain("sd-pay-");
     expect(extractFunction(html, "renderRosterPayFilter")).toContain("rosterBrandPayClass");
-    expect(html).toContain('colspan="8"');
+    expect(html).toContain('colspan="9"');
+    expect(html).not.toContain('colspan="8"');
     expect(html).not.toContain('colspan="7"');
     expect(html).toContain(">Paid</th>");
     expect(css).toContain("font-variant-numeric: tabular-nums");
@@ -1660,6 +1661,9 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
         };
         const unpaidBefore = document.getElementById("schediStatUnpaid")?.textContent || "";
         w.markAppointmentPaid("HB-1003");
+        const cash = document.querySelector('#rosterPaidMethodOptions [data-paid-method="cash"]') as HTMLButtonElement | null;
+        if (!cash) throw new Error("cash method missing");
+        cash.click();
         await w.confirmRosterMarkPaid();
         const row = [...document.querySelectorAll("#schediTodaySchedule article")].find((node) => node.textContent?.includes("Jordan"));
         const pill = row?.querySelector(".sd-pay");
@@ -4029,9 +4033,10 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
           await page.waitForSelector('[data-booking-id="HB-1005"] .roster-cell-pay', { timeout: 10000 });
           const list = await page.evaluate(() => {
             const text = (selector: string) => (document.querySelector(selector)?.textContent || "").replace(/\s+/g, " ").trim();
+            const row = (id: string) => [text(`[data-booking-id="${id}"] .roster-cell-pay`), text(`[data-booking-id="${id}"] .roster-cell-price`)].filter(Boolean).join(" ");
             return {
-              avery: text('[data-booking-id="HB-1005"] .roster-cell-pay'),
-              elena: text('[data-booking-id="HB-1026"] .roster-cell-pay'),
+              avery: row("HB-1005"),
+              elena: row("HB-1026"),
               denied: text('[data-booking-id="HB-1021"] .roster-cell-pay'),
             };
           });

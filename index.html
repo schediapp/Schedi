@@ -3530,6 +3530,20 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
         #tenantPortalSection.schedi-newdash #rosterListWrap.has-bulk { padding-bottom: 76px; }
     }
     #tenantPortalSection.schedi-newdash .roster-cell-collected { text-align: right; vertical-align: middle; white-space: nowrap; }
+    /* Unpaid list price sits beside the status chips, including 1024–1440. */
+    #tenantPortalSection.schedi-newdash .roster-cell-price {
+        white-space: nowrap;
+        vertical-align: middle;
+        font-variant-numeric: tabular-nums;
+    }
+    #tenantPortalSection.schedi-newdash .roster-status-price { white-space: nowrap; }
+    @media (min-width: 1024px) and (max-width: 1279px) {
+        #tenantPortalSection.schedi-newdash #rosterListWrap th.p-3,
+        #tenantPortalSection.schedi-newdash #rosterListWrap td.p-3 {
+            padding-left: 6px;
+            padding-right: 6px;
+        }
+    }
     #tenantPortalSection.schedi-newdash .roster-paid-amt { display: flex; flex-direction: column; align-items: flex-end; justify-content: center; line-height: 1.15; }
     #tenantPortalSection.schedi-newdash .roster-paid-kicker { display: none; }
     #tenantPortalSection.schedi-newdash .roster-paid-figure {
@@ -5122,6 +5136,7 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                                     <th class="p-3">Service</th>
                                     <th class="p-3">Date & Time</th>
                                     <th class="p-3">Payment</th>
+                                    <th class="roster-cell-price p-3">Price</th>
                                     <th class="roster-cell-collected p-3 text-right">Paid</th>
                                     <th class="p-3 text-right">Actions</th>
                                 </tr>
@@ -14868,7 +14883,7 @@ function schediQrCardPixels(text, color) {
 
         function appointmentStatusPriceHtml(app) {
             if (!hasPricedAmount(app && app.amount)) return '';
-            return '<span class="text-[10px] font-bold text-slate-300">$' + (Number(app.amount) || 0) + '</span>';
+            return '<span class="roster-status-price text-[10px] font-bold text-slate-300">$' + (Number(app.amount) || 0) + '</span>';
         }
 
         function appointmentStatusLabels(app, opts) {
@@ -14913,8 +14928,17 @@ function schediQrCardPixels(text, color) {
         }
 
         // Status/payment badges for one appointment (list Payment column and the details pop-up).
-        function rosterStatusCellHtml(app) {
-            return appointmentStatusChipsHtml(app) + depositRosterLine(app) + cancellationFeeRosterLine(app);
+        function rosterStatusCellHtml(app, opts) {
+            var chipOpts = (opts && opts.price === false) ? { price: false } : undefined;
+            return '<div class="roster-status-line">' + appointmentStatusChipsHtml(app, chipOpts) + '</div>' + depositRosterLine(app) + cancellationFeeRosterLine(app);
+        }
+
+        // Table price column. Paid chips already include the amount, so only the standalone price is shown here.
+        function rosterListPriceHtml(app) {
+            var parts = appointmentStatusParts(app);
+            var paidMoney = (parts.showPayment && parts.payment && parts.payment !== 'unpaid') ? appointmentPaidChipMoney(app) : '';
+            if (paidMoney || !parts.showPrice) return '';
+            return appointmentStatusPriceHtml(app);
         }
 
         // Action buttons for one appointment's state. big = details pop-up (44px buttons that close the pop-up first).
@@ -15395,7 +15419,7 @@ function schediQrCardPixels(text, color) {
 
             try { renderRosterPayFilter(tenant); } catch (errFilter) {}
             if (!tenant || !tenant.appointments || tenant.appointments.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-500">No client appointments logged yet.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-slate-500">No client appointments logged yet.</td></tr>`;
                 renderRosterCalendar(tenant);
                 try { if (window.renderSchediToday) window.renderSchediToday(tenant); } catch (errToday) {}
                 try { renderRosterSearchResults(tenant && tenant.appointments); } catch (errSearch) {}
@@ -15406,7 +15430,7 @@ function schediQrCardPixels(text, color) {
             var payRows = tenant.appointments.filter(rosterPassesPayFilter);
             var rosterRows = rosterListRows(tenant);
             if (!payRows.length) {
-                tbody.innerHTML = '<tr><td colspan="8" class="p-4 text-center text-slate-500">No appointments use this payment method.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="9" class="p-4 text-center text-slate-500">No appointments use this payment method.</td></tr>';
                 renderRosterCalendar(tenant);
                 try { if (window.renderSchediToday) window.renderSchediToday(tenant); } catch (errToday) {}
                 try { renderRosterSearchResults(tenant && tenant.appointments); } catch (errSearch) {}
@@ -15414,7 +15438,7 @@ function schediQrCardPixels(text, color) {
                 return;
             }
             if (!rosterRows.length) {
-                tbody.innerHTML = '<tr><td colspan="8" class="p-4 text-center text-slate-500">No appointments match this search.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="9" class="p-4 text-center text-slate-500">No appointments match this search.</td></tr>';
                 renderRosterCalendar(tenant);
                 try { if (window.renderSchediToday) window.renderSchediToday(tenant); } catch (errToday) {}
                 try { renderRosterSearchResults(tenant && tenant.appointments); } catch (errSearch) {}
@@ -15439,7 +15463,10 @@ function schediQrCardPixels(text, color) {
                         <div class="text-[10px] text-slate-400">${esc(app.time)}${(app.seriesId || (app.recurrence && app.recurrence.frequency && app.recurrence.frequency !== 'once')) ? (' · <span class="text-sky-400">' + esc(recurrenceLabel((app.recurrence && app.recurrence.frequency) || 'weekly')) + (app.recurrence && app.recurrence.index && app.recurrence.total ? (' ' + app.recurrence.index + '/' + app.recurrence.total) : '') + '</span>') : ''}</div>
                     </td>
                     <td class="roster-cell-pay p-3">
-                        ${rosterStatusCellHtml(app)}
+                        ${rosterStatusCellHtml(app, { price: false })}
+                    </td>
+                    <td class="roster-cell-price p-3">
+                        ${rosterListPriceHtml(app)}
                     </td>
                     <td class="roster-cell-collected p-3">
                         ${rosterAmountCollectedHtml(app, tenant)}

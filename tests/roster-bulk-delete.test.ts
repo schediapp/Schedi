@@ -132,7 +132,7 @@ describe("roster bulk delete", () => {
     expect(html).toContain('class="roster-select"');
     expect(html).toContain('id="rosterBulkBar"');
     expect(html).toContain("Delete selected");
-    expect(html).toContain('colspan="8"');
+    expect(html).toContain('colspan="9"');
     const calendar = extractFunction(html, "renderRosterCalendar");
     expect(calendar).not.toContain("roster-select");
     expect(calendar).not.toContain("rosterSelectAll");
