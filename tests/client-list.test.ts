@@ -280,7 +280,7 @@ describe("client list sorting and totals", () => {
     expect(menu.indexOf("Book appointment")).toBeGreaterThan(-1);
     expect(menu.indexOf("Book appointment")).toBeLessThan(menu.indexOf("View history"));
     expect(menu.indexOf("View history")).toBeLessThan(menu.indexOf(">Remove</button>"));
-    expect(menu).toContain('class="sd-act-no" role="menuitem"');
+    expect(menu).toContain('class="sd-act-no sd-act-delete" role="menuitem"');
     const svc36 = css.indexOf("#tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-svc-edit,\n#tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-svc-delete {\n    min-height: 36px;");
     const svc48 = css.indexOf("    #tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-svc-edit,\n    #tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-svc-delete {\n        min-height: 48px;");
     expect(svc36).toBeGreaterThan(-1);

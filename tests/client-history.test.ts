@@ -51,6 +51,7 @@ const api = new Function(`${lib}; return { clientNormEmail, clientBookingMatches
     today: string,
     paymentState: (app: Record<string, unknown>) => string,
     payKind: (app: Record<string, unknown>) => string,
+    asOfMinutes?: number,
   ) => {
     upcoming: { id?: string; date?: string }[];
     past: { id?: string; date?: string }[];
@@ -149,6 +150,22 @@ describe("client history matching", () => {
     expect(api.clientPayWord("square")).toBe("Square");
   });
 
+  it("puts a same-day visit in the past once its start time has passed", () => {
+    const rows = [
+      { id: "early", date: "2026-10-16", time: "09:00 AM", status: "accepted", clientEmail: "maya@example.com", amount: 65, pay: "paid", kind: "card" },
+      { id: "later", date: "2026-10-16", time: "04:00 PM", status: "accepted", clientEmail: "maya@example.com", amount: 28, pay: "unpaid", kind: "unpaid" },
+      { id: "untimed", date: "2026-10-16", status: "accepted", clientEmail: "maya@example.com", amount: 10, pay: "unpaid", kind: "unpaid" },
+      { id: "tomorrow", date: "2026-10-17", time: "09:00 AM", status: "accepted", clientEmail: "maya@example.com", amount: 10, pay: "unpaid", kind: "unpaid" },
+    ];
+    const noon = 12 * 60;
+    const split = api.clientHistoryModel(maya, rows, "2026-10-16", payState, payKind, noon);
+    expect(split.past.map((row) => row.id)).toEqual(["early"]);
+    expect(split.upcoming.map((row) => row.id)).toEqual(["later", "untimed", "tomorrow"]);
+    const open = api.clientHistoryModel(maya, rows, "2026-10-16", payState, payKind);
+    expect(open.upcoming.map((row) => row.id)).toEqual(["early", "later", "untimed", "tomorrow"]);
+    expect(open.past).toEqual([]);
+  });
+
   it("keeps the panel, Book again, and recurring action in the owner script", () => {
     const owner = html.slice(0, html.indexOf(BOOKING_TEMPLATE_SHA_MARKER));
     expect(owner).toContain('id="sdClientPanel"');
@@ -162,6 +179,13 @@ describe("client history matching", () => {
     expect(owner).toContain('id="clientHistoryModal"');
     expect(owner).toContain("window.openClientHistory = function");
     expect(owner).toContain("clientHistorySheetPrice");
+    expect(owner).toContain("done · ");
+    expect(owner).toContain("body.schedi-newdash #clientHistoryModal .sd-pay { display: inline-flex;");
+    expect(owner).toContain("body.schedi-newdash #clientHistoryModal .sd-client-history-totals span { display: block;");
+    expect(owner).toContain("body.schedi-newdash #clientHistoryModal .sd-client-history-group h3 { margin: 16px 0 8px; font-size: 13px; font-weight: 800;");
+    const closer = owner.slice(owner.indexOf("window.closeClientHistory = function"), owner.indexOf("bindClientPanel"));
+    expect(closer).toContain("event.key !== 'Escape'");
+    expect(closer).toContain("window.closeClientHistory()");
     expect(owner).toContain("openManualBookingModal({ clientName:");
     expect(owner).toContain("No usual method yet.");
     expect(owner).toContain("No-shows: ");

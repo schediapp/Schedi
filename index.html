@@ -989,6 +989,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-more-menu button.sd-ac
     background: #fff1f2;
     color: #be123c;
 }
+#tenantPortalSection.schedi-newdash .sd-more-menu button.sd-act-delete { color: #fb7185; }
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-more-menu button.sd-act-delete { color: #be123c; }
 body.schedi-newdash .roster-actions > button.sd-act,
 body.schedi-newdash .roster-sheet-actions > button.sd-act {
     background: #1e293b;
@@ -1665,6 +1667,71 @@ body.schedi-newdash #clientHistoryModal .sd-form-sheet > * + * { margin-top: 0; 
         border-radius: 20px 20px 0 0;
     }
 }
+body.schedi-newdash #clientHistoryModal {
+    --sd-bg: #06080d;
+    --sd-panel: #0f172a;
+    --sd-line: rgba(255, 255, 255, 0.08);
+    --sd-text: #f1f5f9;
+    --sd-muted: #94a3b8;
+    --sd-brand-2: #34d399;
+    --sd-amber: #fbbf24;
+    --sd-rose: #fb7185;
+    color: var(--sd-text);
+}
+html.schedi-light body.schedi-newdash #clientHistoryModal {
+    --sd-bg: #f4f7fb;
+    --sd-panel: #ffffff;
+    --sd-line: #d7dee8;
+    --sd-text: #0f172a;
+    --sd-muted: #475569;
+    --sd-brand-2: #047857;
+    --sd-amber: #b45309;
+    --sd-rose: #be123c;
+    color: var(--sd-text);
+}
+body.schedi-newdash #clientHistoryModal .sd-pill { display: inline-flex; align-items: center; border-radius: 999px; padding: 3px 8px; font-size: 11px; font-weight: 800; border: 1px solid transparent; white-space: nowrap; }
+body.schedi-newdash #clientHistoryModal .sd-pill-ok { color: var(--sd-brand-2); background: rgba(16, 185, 129, 0.14); border-color: rgba(16, 185, 129, 0.3); }
+body.schedi-newdash #clientHistoryModal .sd-pill-amber { color: var(--sd-amber); background: rgba(245, 158, 11, 0.12); border-color: rgba(245, 158, 11, 0.3); }
+body.schedi-newdash #clientHistoryModal .sd-pill-rose { color: var(--sd-rose); background: rgba(244, 63, 94, 0.1); border-color: rgba(244, 63, 94, 0.28); }
+body.schedi-newdash #clientHistoryModal .sd-pill-grey { color: #e2e8f0; background: rgba(148, 163, 184, 0.2); border-color: rgba(148, 163, 184, 0.45); }
+html.schedi-light body.schedi-newdash #clientHistoryModal .sd-pill-grey { color: #334155; background: rgba(100, 116, 139, 0.16); border-color: rgba(100, 116, 139, 0.4); }
+html.schedi-light body.schedi-newdash #clientHistoryModal .sd-pill-amber { color: #92400e; }
+html.schedi-light body.schedi-newdash #clientHistoryModal .text-sky-300,
+html.schedi-light body.schedi-newdash #clientHistoryModal .text-sky-400 { color: #0369a1 !important; }
+html.schedi-light body.schedi-newdash #clientHistoryModal .text-rose-300,
+html.schedi-light body.schedi-newdash #clientHistoryModal .text-rose-400 { color: #be123c !important; }
+html.schedi-light body.schedi-newdash #clientHistoryModal .text-amber-300,
+html.schedi-light body.schedi-newdash #clientHistoryModal .text-amber-400 { color: #92400e !important; }
+body.schedi-newdash #clientHistoryModal .sd-pay { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; border-radius: 999px; padding: 2px 8px; font-size: 11px; font-weight: 800; line-height: 1.3; border: 1px solid var(--sd-line); color: var(--sd-text); background: rgba(148, 163, 184, 0.14); white-space: nowrap; }
+body.schedi-newdash #clientHistoryModal .sd-pay svg { width: 14px; height: 14px; display: block; flex: none; }
+body.schedi-newdash #clientHistoryModal .sd-pay-amt { flex: none; white-space: nowrap; }
+body.schedi-newdash #clientHistoryModal .sd-pay-card { color: var(--sd-brand-2); border-color: rgba(16, 185, 129, 0.4); background: rgba(16, 185, 129, 0.14); }
+body.schedi-newdash #clientHistoryModal .sd-pay-unpaid { color: var(--sd-rose); border-color: rgba(244, 63, 94, 0.35); background: rgba(244, 63, 94, 0.1); }
+body.schedi-newdash #clientHistoryModal .sd-pay-venmo { color: #b9ddff; background: rgba(0, 140, 255, 0.16); border-color: #008CFF; }
+html.schedi-light body.schedi-newdash #clientHistoryModal .sd-pay-venmo { color: #0057B8; background: rgba(0, 140, 255, 0.12); border-color: #008CFF; }
+body.schedi-newdash #clientHistoryModal .sd-pay.sd-pay-cashapp { color: #e2e8f0; background: rgba(148, 163, 184, 0.16); border-color: #94a3b8; }
+html.schedi-light body.schedi-newdash #clientHistoryModal .sd-pay.sd-pay-cashapp { color: #0f172a; background: rgba(15, 23, 42, 0.06); border-color: #64748b; }
+body.schedi-newdash #clientHistoryModal .sd-pay-zelle,
+html.schedi-light body.schedi-newdash #clientHistoryModal .sd-pay-zelle { color: #ffffff; background: #6D1ED4; border-color: #6D1ED4; }
+body.schedi-newdash #clientHistoryModal .sd-pay-paypal { color: #ffffff; background: #0070E0; border-color: #0070E0; }
+html.schedi-light body.schedi-newdash #clientHistoryModal .sd-pay-paypal { color: #ffffff; background: #003087; border-color: #003087; }
+body.schedi-newdash #clientHistoryModal .sd-pay-square { color: #e2e8f0; background: rgba(148, 163, 184, 0.16); border-color: #94a3b8; }
+html.schedi-light body.schedi-newdash #clientHistoryModal .sd-pay-square { color: #0f172a; background: rgba(15, 23, 42, 0.06); border-color: #64748b; }
+body.schedi-newdash #clientHistoryModal .sd-pay-cash { color: var(--sd-text); }
+body.schedi-newdash #clientHistoryModal .sd-client-history-totals { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 12px 0 10px; }
+body.schedi-newdash #clientHistoryModal .sd-client-history-totals p { margin: 0; padding: 10px; border: 1px solid var(--sd-line); border-radius: 14px; background: var(--sd-bg); min-width: 0; }
+body.schedi-newdash #clientHistoryModal .sd-client-history-totals span { display: block; color: var(--sd-muted); font-size: 11px; font-weight: 800; }
+body.schedi-newdash #clientHistoryModal .sd-client-history-totals strong { display: block; margin-top: 4px; color: var(--sd-text); font-size: 16px; overflow-wrap: anywhere; }
+body.schedi-newdash #clientHistoryModal .sd-client-history-group h3 { margin: 16px 0 8px; font-size: 13px; font-weight: 800; color: var(--sd-text); }
+body.schedi-newdash #clientHistoryModal .sd-client-visit { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; padding: 10px 0; border-top: 1px solid var(--sd-line); }
+body.schedi-newdash #clientHistoryModal .sd-client-visit-main { min-width: 0; }
+body.schedi-newdash #clientHistoryModal .sd-client-visit-when,
+body.schedi-newdash #clientHistoryModal .sd-client-visit-svc,
+body.schedi-newdash #clientHistoryModal .sd-client-visit-meta { margin: 0; overflow-wrap: anywhere; }
+body.schedi-newdash #clientHistoryModal .sd-client-visit-when { color: var(--sd-muted); font-size: 12px; font-weight: 700; }
+body.schedi-newdash #clientHistoryModal .sd-client-visit-svc { color: var(--sd-text); font-size: 14px; font-weight: 800; }
+body.schedi-newdash #clientHistoryModal .sd-client-visit-meta { color: var(--sd-muted); font-size: 12px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+body.schedi-newdash #clientHistoryModal .sd-client-empty { margin: 0 0 8px; color: var(--sd-muted); font-size: 13px; }
 body.schedi-newdash #rosterDeleteModal,
 body.schedi-newdash #ownerConfirmModal { overflow: hidden; }
 body.schedi-newdash #rosterDeleteModal .sd-form-sheet,
@@ -12567,7 +12634,7 @@ function schediQrCardPixels(text, color) {
                     + '<div class="sd-more-menu" role="menu">'
                     + '<button type="button" role="menuitem" onclick="closeSchediTodayMenus(event); bookClientAgain(' + jsArg(x.id) + ')">Book appointment</button>'
                     + '<button type="button" role="menuitem" onclick="closeSchediTodayMenus(event); openClientHistory(' + jsArg(x.id) + ')">View history</button>'
-                    + '<button type="button" class="sd-act-no" role="menuitem" onclick="closeSchediTodayMenus(event); deleteOwnerClient(' + jsArg(x.id) + ')">Remove</button>'
+                    + '<button type="button" class="sd-act-no sd-act-delete" role="menuitem" onclick="closeSchediTodayMenus(event); deleteOwnerClient(' + jsArg(x.id) + ')">Remove</button>'
                     + '</div></details>'))
                     + '</div></div>'
                     + metrics
@@ -12673,10 +12740,23 @@ function schediQrCardPixels(text, color) {
             return '';
         }
 
-        function clientHistoryModel(client, appointments, today, paymentState, payKind) {
+        function clientHistoryClock(tenant) {
+            var tz = 'America/New_York';
+            try { tz = getTenantTimezone(tenant) || tz; } catch (errTz) {}
+            try {
+                var parts = reportNowParts(tz, new Date());
+                if (parts && /^\d{4}-\d{2}-\d{2}$/.test(String(parts.date || ''))) return parts;
+            } catch (errNow) {}
+            var now = new Date();
+            return { date: localISODate(now), minutes: now.getHours() * 60 + now.getMinutes() };
+        }
+
+        function clientHistoryModel(client, appointments, today, paymentState, payKind, asOfMinutes) {
             var payOf = typeof paymentState === 'function' ? paymentState : function () { return 'unpaid'; };
             var kindOf = typeof payKind === 'function' ? payKind : function () { return 'unpaid'; };
             var todayIso = clientHistoryIso(today);
+            var clock = Number(asOfMinutes);
+            var splitToday = isFinite(clock);
             var matched = [];
             (appointments || []).forEach(function (app) {
                 if (clientBookingMatches(client, app)) matched.push(app);
@@ -12685,7 +12765,8 @@ function schediQrCardPixels(text, color) {
             var past = [];
             matched.forEach(function (app) {
                 var date = clientHistoryIso(app && app.date);
-                if (date && todayIso && date >= todayIso) upcoming.push(app);
+                var started = splitToday && date === todayIso && clientHistoryMinutes(app && app.time) < clock;
+                if (date && todayIso && date >= todayIso && !started) upcoming.push(app);
                 else past.push(app);
             });
             function bySooner(a, b) {
@@ -12824,9 +12905,8 @@ function schediQrCardPixels(text, color) {
                 return;
             }
             var tenant = getTenant();
-            var today = '';
-            try { today = rosterTodayIso(tenant); } catch (errToday) { today = localISODate(new Date()); }
-            var model = clientHistoryModel(client, (tenant && tenant.appointments) || [], today, bookingPaymentState, appointmentPayKind);
+            var clock = clientHistoryClock(tenant);
+            var model = clientHistoryModel(client, (tenant && tenant.appointments) || [], clock.date, bookingPaymentState, appointmentPayKind, clock.minutes);
             var contact = [client.phone, client.email].filter(Boolean).join(' · ');
             var noShow = (model.noShow && model.noShow.available)
                 ? String(model.noShow.label || '0')
@@ -13006,6 +13086,15 @@ function schediQrCardPixels(text, color) {
             return formatBookingAmountLabel(app && app.amount);
         }
 
+        function clientHistoryDoneCount(client, appointments, clock) {
+            var n = 0;
+            (appointments || []).forEach(function (app) {
+                if (!clientBookingMatches(client, app)) return;
+                if (appointmentCompletionOf(app, clock) === 'done') n += 1;
+            });
+            return n;
+        }
+
         window.openClientHistory = function (clientId) {
             var client = clientById(clientId);
             var modal = document.getElementById('clientHistoryModal');
@@ -13013,13 +13102,14 @@ function schediQrCardPixels(text, color) {
             var body = document.getElementById('clientHistoryBody');
             if (!client || !modal || !title || !body) return;
             var tenant = getTenant();
-            var today = '';
-            try { today = rosterTodayIso(tenant); } catch (errToday) { today = localISODate(new Date()); }
-            var model = clientHistoryModel(client, (tenant && tenant.appointments) || [], today, bookingPaymentState, appointmentPayKind);
+            var clock = clientHistoryClock(tenant);
+            var apps = (tenant && tenant.appointments) || [];
+            var model = clientHistoryModel(client, apps, clock.date, bookingPaymentState, appointmentPayKind, clock.minutes);
             var paid = formatBookingAmountLabel(model.paidRevenue) || '$0';
+            var visits = clientHistoryDoneCount(client, apps, clock) + ' done · ' + model.upcoming.length + ' upcoming';
             title.textContent = client.name || 'Client';
             body.innerHTML = '<div class="sd-client-history-totals">'
-                + '<p><span>Visits</span><strong>' + esc(String(model.visitCount)) + '</strong></p>'
+                + '<p><span>Visits</span><strong>' + esc(visits) + '</strong></p>'
                 + '<p><span>Total paid</span><strong>' + esc(paid) + '</strong></p>'
                 + '</div>'
                 + clientHistoryGroupHtml('Upcoming', model.upcoming, tenant, clientHistorySheetPrice)
@@ -13037,6 +13127,18 @@ function schediQrCardPixels(text, color) {
             var modal = document.getElementById('clientHistoryModal');
             if (modal) modal.classList.add('hidden');
         };
+        document.addEventListener('keydown', function (event) {
+            if (!event || event.key !== 'Escape') return;
+            var modal = document.getElementById('clientHistoryModal');
+            if (!modal || modal.classList.contains('hidden')) return;
+            var above = document.getElementById('ownerConfirmModal');
+            if (above && !above.classList.contains('hidden')) return;
+            above = document.getElementById('rosterDeleteModal');
+            if (above && !above.classList.contains('hidden')) return;
+            event.preventDefault();
+            if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+            window.closeClientHistory();
+        });
 
         (function bindClientPanel() {
             var panel = document.getElementById('sdClientPanel');
@@ -13972,7 +14074,7 @@ function schediQrCardPixels(text, color) {
                         noShowAction +
                         '<button type="button" class="sd-act-no" role="menuitem" onclick="closeSchediTodayMenus(event); deleteAppointment(' + id + ')">Cancel</button>' +
                         '<button type="button" role="menuitem" onclick="closeSchediTodayMenus(event); openEditAppointment(' + id + ')">Edit</button>' +
-                        '<button type="button" class="sd-act-no" role="menuitem" onclick="closeSchediTodayMenus(event); openRosterDeleteModal(' + id + ')">Delete</button>' +
+                        '<button type="button" class="sd-act-no sd-act-delete" role="menuitem" onclick="closeSchediTodayMenus(event); openRosterDeleteModal(' + id + ')">Delete</button>' +
                         '</div></details></article>';
                 }).join('') : '<p class="sd-empty">Nothing on the book today.</p>';
             }
@@ -15492,7 +15594,7 @@ function schediQrCardPixels(text, color) {
                 else if (decided) menu.push(menuBtn('markAppointmentNoShow', '', 'Mark no-show'));
                 menu.push(menuBtn('deleteAppointment', 'sd-act-no', '<i class="fa-solid fa-xmark mr-1"></i>Cancel'));
             }
-            menu.push(menuBtn('openRosterDeleteModal', 'sd-act-no', '<i class="fa-solid fa-trash mr-1"></i>Delete'));
+            menu.push(menuBtn('openRosterDeleteModal', 'sd-act-no sd-act-delete', '<i class="fa-solid fa-trash mr-1"></i>Delete'));
             return primary.join('\n') +
                 '<details class="sd-more"><summary aria-label="More actions" aria-expanded="false"><i class="fa-solid fa-ellipsis-vertical" aria-hidden="true"></i></summary>' +
                 '<div class="sd-more-menu" role="menu">' + menu.join('') + '</div></details>';

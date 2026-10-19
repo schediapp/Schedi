@@ -991,7 +991,7 @@ describe("owner dashboard preview", () => {
     expect(today).toContain('role="menuitem" onclick="closeSchediTodayMenus(event); markAppointmentUnpaid(');
     expect(today).toContain('class="sd-act-ok" role="menuitem" onclick="closeSchediTodayMenus(event); openTenantRescheduleModal(');
     expect(today).toContain('class="sd-act-no" role="menuitem" onclick="closeSchediTodayMenus(event); deleteAppointment(');
-    expect(today).toContain('class="sd-act-no" role="menuitem" onclick="closeSchediTodayMenus(event); openRosterDeleteModal(');
+    expect(today).toContain('class="sd-act-no sd-act-delete" role="menuitem" onclick="closeSchediTodayMenus(event); openRosterDeleteModal(');
     expect(today).toContain('role="menuitem" onclick="closeSchediTodayMenus(event); markAppointmentNoShow(');
     expect(today).toContain('role="menuitem" onclick="closeSchediTodayMenus(event); undoAppointmentNoShow(');
     expect(today).toContain('fa-rotate-left');
@@ -1020,6 +1020,8 @@ describe("owner dashboard preview", () => {
     expect(css).toContain("color: #be123c");
     expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-more-menu button.sd-act-ok:hover");
     expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-more-menu button.sd-act-no:active");
+    expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-more-menu button.sd-act-delete { color: #fb7185; }");
+    expect(css).toContain("html.schedi-light #tenantPortalSection.schedi-newdash .sd-more-menu button.sd-act-delete { color: #be123c; }");
     expect(css).toContain("body.schedi-newdash .roster-sheet-actions > button.sd-act");
     expect(today).toContain('<article class="sd-card sd-row">');
     expect(today).not.toContain('role="button"');
@@ -3123,9 +3125,10 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
           }, menuRoot);
           expect(menuLabels).toEqual(["Edit", "Reschedule", "Mark no-show", "Cancel", "Delete"]);
           const menuRest = theme === "dark" ? "rgb(241, 245, 249)" : "rgb(15, 23, 42)";
+          const deleteRest = theme === "dark" ? "rgb(251, 113, 133)" : "rgb(190, 18, 60)";
           const menuRestRows = await read(menuRoot);
           for (const row of menuRestRows) {
-            expect(row.fg).toBe(menuRest);
+            expect(row.fg).toBe(row.label === "Delete" ? deleteRest : menuRest);
             expect(row.bg).toBe("rgba(0, 0, 0, 0)");
           }
           const reschedule = await hover(menuRoot, "Reschedule", { bg: green[theme].bg, fg: green[theme].fg });
@@ -3282,8 +3285,9 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
         });
         expect(menu.map((row) => row.label)).toEqual(["Mark paid", "Reschedule", "Mark no-show", "Cancel", "Edit", "Delete"]);
         const menuRest = theme === "dark" ? "rgb(241, 245, 249)" : "rgb(15, 23, 42)";
+        const deleteRest = theme === "dark" ? "rgb(251, 113, 133)" : "rgb(190, 18, 60)";
         for (const row of menu) {
-          expect(row.fg).toBe(menuRest);
+          expect(row.fg).toBe(row.label === "Delete" ? deleteRest : menuRest);
           expect(row.bg).toBe("rgba(0, 0, 0, 0)");
           expect(row.border).toBe("0px");
         }
@@ -5598,6 +5602,187 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
           expectChip(await readClose("#sdSeriesPreview .sd-form-close"), theme, `series ${width} ${theme}`);
           await page.click("#sdSeriesPreview .sd-form-close");
         }
+      }
+    } finally {
+      await browser.close();
+      await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+    }
+  }, 120000);
+
+  it("gives the history sheet chip styles and closes it on Escape", async () => {
+    const types: Record<string, string> = {
+      ".html": "text/html; charset=utf-8",
+      ".js": "text/javascript; charset=utf-8",
+      ".svg": "image/svg+xml",
+      ".png": "image/png",
+      ".json": "application/json",
+      ".webmanifest": "application/manifest+json",
+    };
+    const server = createServer((req, res) => {
+      const path = new URL(req.url || "/", "http://127.0.0.1").pathname;
+      const file = path === "/" || path === "/portal-preview" ? "/index.html" : path;
+      const full = join(root, file);
+      if (!full.startsWith(root) || !existsSync(full)) {
+        res.writeHead(404);
+        res.end("missing");
+        return;
+      }
+      res.writeHead(200, { "content-type": types[extname(full)] || "application/octet-stream" });
+      res.end(readFileSync(full));
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const address = server.address();
+    const port = typeof address === "object" && address ? address.port : 0;
+    const puppeteer = await import("puppeteer-core");
+    const browser = await puppeteer.default.launch({
+      executablePath: chrome,
+      headless: true,
+      args: ["--no-sandbox", "--disable-dev-shm-usage"],
+    });
+    try {
+      const page = await browser.newPage();
+      await page.goto(`http://127.0.0.1:${port}/portal-preview`, { waitUntil: "domcontentloaded", timeout: 45000 });
+      await page.waitForFunction(() => document.body.classList.contains("schedi-newdash"), { timeout: 20000 });
+      await page.evaluate(() => (window as unknown as { schediDashGo: (tab: string) => void }).schediDashGo("clients"));
+      await page.waitForSelector('.sd-client-name[data-client-id="CL-MAYA"]', { timeout: 10000 });
+      const planted = await page.evaluate(() => {
+        const tenant = (window as unknown as { getTenant: () => { appointments?: Record<string, unknown>[] } }).getTenant();
+        const apps = tenant.appointments || [];
+        const today = String(apps.find((row) => row && row.id === "HB-1001")?.date || "");
+        const fmt = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+        const map: Record<string, string> = {};
+        fmt.formatToParts(new Date()).forEach((part) => {
+          if (part.type !== "literal") map[part.type] = part.value;
+        });
+        let hour = parseInt(map.hour, 10);
+        if (hour === 24) hour = 0;
+        const now = hour * 60 + parseInt(map.minute, 10);
+        const label = (mins: number) => {
+          const h = Math.floor(mins / 60);
+          const m = mins % 60;
+          const ap = h >= 12 ? "PM" : "AM";
+          const h12 = h % 12 || 12;
+          return h12 + ":" + String(m).padStart(2, "0") + " " + ap;
+        };
+        const early = now > 0 ? now - 1 : null;
+        const late = now < 23 * 60 + 59 ? now + 1 : null;
+        if (early != null) {
+          apps.push({ id: "HB-EARLY", clientName: "Maya Chen", clientPhone: "(555) 201-0142", clientEmail: "maya@example.com", serviceName: "Earlier today cut", date: today, time: label(early), status: "accepted", paymentStatus: "PAID VIA CARD", paidMethod: "card", amount: 40, durationMins: 30 });
+        }
+        if (late != null) {
+          apps.push({ id: "HB-LATE", clientName: "Maya Chen", clientPhone: "(555) 201-0142", clientEmail: "maya@example.com", serviceName: "Later today cut", date: today, time: label(late), status: "accepted", paymentStatus: "PAY AT APPOINTMENT", amount: 55, durationMins: 30 });
+        }
+        return { today, early, late };
+      });
+      const readHistory = () => page.evaluate(() => {
+        const modal = document.getElementById("clientHistoryModal");
+        const chip = modal?.querySelector(".sd-pay.sd-pay-card") as HTMLElement | null;
+        const svg = chip?.querySelector("svg");
+        const word = chip?.querySelector(".sd-pay-word");
+        const totals = modal?.querySelector(".sd-client-history-totals p");
+        const span = totals?.querySelector("span");
+        const strong = totals?.querySelector("strong");
+        const heading = modal?.querySelector(".sd-client-history-group h3");
+        const section = (title: string) => {
+          const groups = modal?.querySelectorAll(".sd-client-history-group") || [];
+          for (const group of groups) {
+            const name = group.querySelector("h3")?.textContent || "";
+            if (name === title) return group.textContent || "";
+          }
+          return "";
+        };
+        if (!modal || !chip || !svg || !word || !span || !strong || !heading) return null;
+        const chipStyle = getComputedStyle(chip);
+        const svgBox = svg.getBoundingClientRect();
+        const wordBox = word.getBoundingClientRect();
+        const spanBox = span.getBoundingClientRect();
+        const strongBox = strong.getBoundingClientRect();
+        const headingStyle = getComputedStyle(heading);
+        return {
+          hidden: modal.classList.contains("hidden"),
+          display: chipStyle.display,
+          radius: chipStyle.borderTopLeftRadius,
+          weight: chipStyle.fontWeight,
+          chipColor: chipStyle.color,
+          svgW: Math.round(svgBox.width),
+          svgDisplay: getComputedStyle(svg).display,
+          sameLine: Math.abs(svgBox.top - wordBox.top) < 8 && svgBox.right <= wordBox.left + 2,
+          spanDisplay: getComputedStyle(span).display,
+          strongDisplay: getComputedStyle(strong).display,
+          stacked: strongBox.top >= spanBox.bottom - 1,
+          label: span.textContent || "",
+          value: strong.textContent || "",
+          headingWeight: headingStyle.fontWeight,
+          headingSize: headingStyle.fontSize,
+          headingColor: headingStyle.color,
+          totalsBg: getComputedStyle(totals as Element).backgroundColor,
+          upcoming: section("Upcoming"),
+          past: section("Past"),
+          overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        };
+      });
+      for (const width of [390, 768, 1024, 1280, 1440]) {
+        await page.setViewport({ width, height: 900 });
+        for (const theme of ["dark", "light"] as const) {
+          await page.evaluate((mode) => (window as unknown as { setSchediTheme: (mode: string) => void }).setSchediTheme(mode), theme);
+          await page.evaluate(() => (window as unknown as { openClientHistory: (id: string) => void }).openClientHistory("CL-MAYA"));
+          await page.waitForSelector("#clientHistoryModal:not(.hidden) .sd-pay", { timeout: 5000 });
+          const view = await readHistory();
+          expect(view, `${width} ${theme}`).not.toBeNull();
+          if (!view) continue;
+          expect(view.hidden, `${width} ${theme}`).toBe(false);
+          expect(view.display, `${width} ${theme}`).toBe("flex");
+          expect(view.radius, `${width} ${theme}`).toBe("999px");
+          expect(view.weight, `${width} ${theme}`).toBe("800");
+          expect(view.svgW, `${width} ${theme}`).toBe(14);
+          expect(view.svgDisplay, `${width} ${theme}`).toBe("block");
+          expect(view.sameLine, `${width} ${theme}`).toBe(true);
+          expect(view.chipColor, `${width} ${theme}`).toBe(theme === "dark" ? "rgb(52, 211, 153)" : "rgb(4, 120, 87)");
+          expect(view.spanDisplay, `${width} ${theme}`).toBe("block");
+          expect(view.strongDisplay, `${width} ${theme}`).toBe("block");
+          expect(view.stacked, `${width} ${theme}`).toBe(true);
+          expect(view.label, `${width} ${theme}`).toBe("Visits");
+          expect(view.value, `${width} ${theme}`).toMatch(/^\d+ done · \d+ upcoming$/);
+          expect(view.headingWeight, `${width} ${theme}`).toBe("800");
+          expect(view.headingSize, `${width} ${theme}`).toBe("13px");
+          expect(view.headingColor, `${width} ${theme}`).toBe(theme === "dark" ? "rgb(241, 245, 249)" : "rgb(15, 23, 42)");
+          expect(view.totalsBg, `${width} ${theme}`).toBe(theme === "dark" ? "rgb(6, 8, 13)" : "rgb(244, 247, 251)");
+          expect(view.overflow, `${width} ${theme}`).toBeLessThanOrEqual(1);
+          if (planted.early != null) expect(view.past, `${width} ${theme}`).toContain("Earlier today cut");
+          if (planted.late != null) expect(view.upcoming, `${width} ${theme}`).toContain("Later today cut");
+          if (planted.early != null) expect(view.upcoming, `${width} ${theme}`).not.toContain("Earlier today cut");
+        }
+      }
+      await page.keyboard.press("Escape");
+      await page.waitForSelector("#clientHistoryModal.hidden", { timeout: 5000 });
+      const closed = await page.$eval("#clientHistoryModal", (el) => el.classList.contains("hidden"));
+      expect(closed).toBe(true);
+      for (const theme of ["dark", "light"] as const) {
+        await page.setViewport({ width: 390, height: 900 });
+        await page.evaluate((mode) => (window as unknown as { setSchediTheme: (mode: string) => void }).setSchediTheme(mode), theme);
+        await page.evaluate(() => (window as unknown as { schediDashGo: (tab: string) => void }).schediDashGo("clients"));
+        await page.evaluate(() => {
+          const row = document.querySelector('.sd-client-name[data-client-id="CL-MAYA"]')?.closest(".sd-client");
+          (row?.querySelector("details.sd-more summary") as HTMLElement | null)?.click();
+        });
+        await page.waitForFunction(() => {
+          const menu = document.querySelector('.sd-client-name[data-client-id="CL-MAYA"]')?.closest(".sd-client")?.querySelector(".sd-more-menu") as HTMLElement | null;
+          return !!menu && getComputedStyle(menu).visibility === "visible";
+        }, { timeout: 5000 });
+        const remove = await page.evaluate(() => {
+          const menu = document.querySelector('.sd-client-name[data-client-id="CL-MAYA"]')?.closest(".sd-client")?.querySelector(".sd-more-menu");
+          return Array.from(menu?.querySelectorAll("button") || []).map((node) => {
+            const el = node as HTMLButtonElement;
+            return { label: (el.textContent || "").trim(), fg: getComputedStyle(el).color, bg: getComputedStyle(el).backgroundColor };
+          });
+        });
+        const rest = theme === "dark" ? "rgb(241, 245, 249)" : "rgb(15, 23, 42)";
+        const danger = theme === "dark" ? "rgb(251, 113, 133)" : "rgb(190, 18, 60)";
+        expect(remove.map((row) => row.label)).toEqual(["Book appointment", "View history", "Remove"]);
+        expect(remove.find((row) => row.label === "Remove")?.fg).toBe(danger);
+        expect(remove.find((row) => row.label === "Remove")?.bg).toBe("rgba(0, 0, 0, 0)");
+        expect(remove.find((row) => row.label === "View history")?.fg).toBe(rest);
+        await page.evaluate(() => (window as unknown as { closeSchediTodayMenus: () => void }).closeSchediTodayMenus());
       }
     } finally {
       await browser.close();
