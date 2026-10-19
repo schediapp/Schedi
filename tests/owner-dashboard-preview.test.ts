@@ -9,7 +9,7 @@ import { renderRobots, renderSitemap } from "../worker/render";
 
 const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const root = new URL("..", import.meta.url).pathname;
-const BOOKING_TEMPLATE_SHA = "697772a03d12772000681ca5a430aca0fe99c16e5e73ceb8d2fe9fad543697ac";
+const BOOKING_TEMPLATE_SHA = "3252f4aa785bb8e21f7591af4b6bf99de6a117dfa240f1c6ae4688c608ebac0b";
 const SHELL_STYLE_SHA = "7c1f1bbb7af97aa8c1e95ab8de650f6493512361a409fd083bcbe3a2c04332d6";
 
 function bookingTemplate(source: string): string {
