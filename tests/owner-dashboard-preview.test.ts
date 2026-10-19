@@ -2946,10 +2946,6 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       dark: { bg: "rgba(244, 63, 94, 0.16)", fg: "rgb(251, 113, 133)", border: "rgb(251, 113, 133)" },
       light: { bg: "rgb(255, 241, 242)", fg: "rgb(190, 18, 60)", border: "rgb(253, 164, 175)" },
     };
-    const neutralHover = {
-      dark: { bg: "rgb(51, 65, 85)", fg: "rgb(248, 250, 252)", border: "rgb(71, 85, 105)" },
-      light: { bg: "rgb(241, 245, 249)", fg: "rgb(15, 23, 42)", border: "rgb(203, 213, 225)" },
-    };
     try {
       const page = await browser.newPage();
       const writes: string[] = [];
@@ -3025,6 +3021,17 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
           if (row.icon) expect(row.icon).toBe(rest[theme].fg);
         }
       };
+      const expectPrimary = (rows: { label: string; bg: string; fg: string; border: string; icon: string; h: number; w: number }[], theme: "dark" | "light") => {
+        expect(rows.map((row) => row.label)).toEqual(["Mark paid"]);
+        for (const row of rows) {
+          expect(row.bg).toBe(rest[theme].bg);
+          expect(row.fg).toBe(rest[theme].fg);
+          expect(row.border).toBe(rest[theme].border);
+          expect(row.h).toBeGreaterThanOrEqual(44);
+          expect(row.w).toBeGreaterThan(40);
+          if (row.icon) expect(row.icon).toBe(rest[theme].fg);
+        }
+      };
       for (const width of [340, 390]) {
         await page.setViewport({ width, height: 900 });
         await page.evaluate(() => (window as unknown as { schediDashGo: (tab: string) => void }).schediDashGo("appointments"));
@@ -3036,25 +3043,39 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
             const el = document.querySelector(sel + " > button");
             return !!el && getComputedStyle(el).backgroundColor === bg;
           }, { timeout: 2000 }, list, rest[theme].bg);
-          expectRest(await read(list), theme);
+          expectPrimary(await read(list), theme);
           const paid = await hover(list, "Mark paid", green[theme]);
           expect(paid).toMatchObject({ ...green[theme], icon: green[theme].fg });
-          const edit = await hover(list, "Edit", neutralHover[theme]);
-          expect(edit.bg).toBe(neutralHover[theme].bg);
-          expect(edit.fg).toBe(neutralHover[theme].fg);
-          expect(edit.border).toBe(neutralHover[theme].border);
-          const reschedule = await hover(list, "Reschedule", green[theme]);
-          expect(reschedule).toMatchObject({ ...green[theme], icon: green[theme].fg });
-          const noShow = await hover(list, "Mark no-show", neutralHover[theme]);
-          expect(noShow.fg).toBe(neutralHover[theme].fg);
-          expect(noShow.bg).toBe(neutralHover[theme].bg);
-          const cancel = await hover(list, "Cancel", red[theme]);
-          expect(cancel).toMatchObject({ ...red[theme], icon: red[theme].fg });
-          const remove = await hover(list, "Delete", red[theme]);
-          expect(remove).toMatchObject({ ...red[theme], icon: red[theme].fg });
           await page.mouse.move(2, 2);
+          await page.evaluate((sel) => {
+            const summary = document.querySelector(sel + " summary") as HTMLElement | null;
+            summary?.click();
+          }, list);
+          const menuRoot = list + " .sd-more-menu";
+          await page.waitForFunction((sel) => {
+            const menu = document.querySelector(sel) as HTMLElement | null;
+            return !!menu && getComputedStyle(menu).visibility === "visible";
+          }, { timeout: 5000 }, menuRoot);
+          const menuLabels = await page.evaluate((sel) => {
+            return Array.from(document.querySelectorAll(sel + " > button")).map((el) => (el.textContent || "").replace(/\s+/g, " ").trim());
+          }, menuRoot);
+          expect(menuLabels).toEqual(["Edit", "Reschedule", "Mark no-show", "Cancel", "Delete"]);
+          const menuRest = theme === "dark" ? "rgb(241, 245, 249)" : "rgb(15, 23, 42)";
+          const menuRestRows = await read(menuRoot);
+          for (const row of menuRestRows) {
+            expect(row.fg).toBe(menuRest);
+            expect(row.bg).toBe("rgba(0, 0, 0, 0)");
+          }
+          const reschedule = await hover(menuRoot, "Reschedule", { bg: green[theme].bg, fg: green[theme].fg });
+          expect(reschedule.fg).toBe(green[theme].fg);
+          expect(reschedule.bg).toBe(green[theme].bg);
+          const cancel = await hover(menuRoot, "Cancel", { bg: red[theme].bg, fg: red[theme].fg });
+          expect(cancel.fg).toBe(red[theme].fg);
+          expect(cancel.bg).toBe(red[theme].bg);
+          await page.mouse.move(2, 2);
+          await page.evaluate(() => (window as unknown as { closeSchediTodayMenus: () => void }).closeSchediTodayMenus());
           await page.waitForFunction((sel, color) => {
-            const el = document.querySelector(sel + " button");
+            const el = document.querySelector(sel + " > button");
             return !!el && getComputedStyle(el).color === color;
           }, { timeout: 2000 }, list, rest[theme].fg);
         }
@@ -3626,10 +3647,6 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       headless: true,
       args: ["--no-sandbox", "--disable-dev-shm-usage"],
     });
-    const rest = {
-      dark: { bg: "rgb(30, 41, 59)", fg: "rgb(226, 232, 240)", border: "rgb(51, 65, 85)" },
-      light: { bg: "rgb(255, 255, 255)", fg: "rgb(15, 23, 42)", border: "rgb(203, 213, 225)" },
-    };
     const menuFg = { dark: "rgb(241, 245, 249)", light: "rgb(15, 23, 42)" };
     try {
       const page = await browser.newPage();
@@ -3791,32 +3808,29 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
             (window as unknown as { schediDashGo: (tab: string) => void }).schediDashGo("appointments");
           }, theme);
           await page.waitForSelector('[data-booking-id="HB-1005"] .roster-actions', { timeout: 10000 });
-          const button = await page.evaluate((bg, fg, border) => {
+          const button = await page.evaluate((fg) => {
             const root = document.querySelector('[data-booking-id="HB-1005"] .roster-actions');
-            const hit = Array.from(root?.querySelectorAll(":scope > button") || []).find((el) => (el.textContent || "").includes("Undo no-show")) as HTMLButtonElement | undefined;
+            const hit = Array.from(root?.querySelectorAll(".sd-more-menu button") || []).find((el) => (el.textContent || "").includes("Undo no-show")) as HTMLButtonElement | undefined;
             if (!hit) return null;
-            hit.scrollIntoView({ block: "center" });
             const style = getComputedStyle(hit);
             const icon = hit.querySelector("i");
-            const box = hit.getBoundingClientRect();
             return {
               cls: hit.className,
               icon: icon ? icon.className : "",
               bg: style.backgroundColor,
               fg: style.color,
-              border: style.borderTopColor,
-              h: Math.round(box.height),
-              matches: style.backgroundColor === bg && style.color === fg && style.borderTopColor === border,
+              border: style.borderTopWidth,
+              direct: hit.parentElement === root,
+              matches: style.backgroundColor === "rgba(0, 0, 0, 0)" && style.color === fg && style.borderTopWidth === "0px",
             };
-          }, rest[theme].bg, rest[theme].fg, rest[theme].border);
-          expect(button?.cls).toContain("sd-act");
+          }, theme === "dark" ? "rgb(241, 245, 249)" : "rgb(15, 23, 42)");
           expect(button?.cls).not.toContain("sd-act-ok");
           expect(button?.cls).not.toContain("sd-act-no");
           expect(button?.icon).toContain("fa-rotate-left");
-          expect(button?.h).toBeGreaterThanOrEqual(44);
+          expect(button?.direct).toBe(false);
           expect(button?.matches).toBe(true);
-          expect(button?.bg).toBe(rest[theme].bg);
-          expect(button?.fg).toBe(rest[theme].fg);
+          expect(button?.bg).toBe("rgba(0, 0, 0, 0)");
+          expect(button?.border).toBe("0px");
         }
       }
       await page.setViewport({ width: 390, height: 900 });
@@ -5610,7 +5624,7 @@ describe.skipIf(!chrome)("classic owner roster icons", () => {
           const box = svg.getBoundingClientRect();
           return { w: box.width, h: box.height };
         }).filter((box) => box.w > 0 || box.h > 0);
-        const paid = document.querySelector("#tenantRosterTableBody .roster-paid-amt") as HTMLElement | null;
+        const paid = document.querySelector('[data-booking-id="NX-8910"] .roster-paid-figure') as HTMLElement | null;
         const count = document.querySelector("#rosterPayFilter .sd-chip-count") as HTMLElement | null;
         const input = document.getElementById("rosterSearchInput") as HTMLElement | null;
         const toggle = document.getElementById("rosterSearchToggle");
@@ -5622,7 +5636,7 @@ describe.skipIf(!chrome)("classic owner roster icons", () => {
           side: side ? getComputedStyle(side).display : "",
           tab: tab ? getComputedStyle(tab).display : "",
           svgs,
-          paid: paid ? paid.innerText.replace(/\s+/g, " ").trim() : "",
+          paid: paid ? (paid.textContent || "").replace(/\s+/g, " ").trim() : "",
           countGap: count ? getComputedStyle(count).marginLeft : "",
           inputBg: input ? getComputedStyle(input).backgroundColor : "",
           toggle: toggle ? getComputedStyle(toggle).display : "",
@@ -5641,7 +5655,7 @@ describe.skipIf(!chrome)("classic owner roster icons", () => {
         expect(svg.w).toBeLessThanOrEqual(48);
         expect(svg.h).toBeLessThanOrEqual(48);
       });
-      expect(dark.paid).toBe("$75.00");
+      expect(dark.paid).toBe("$75");
       expect(dark.paid).not.toContain("Paid$");
       expect(dark.labels.some((label) => /Card/.test(label) && /All/.test(label))).toBe(false);
       expect(dark.countGap).not.toBe("0px");
@@ -5669,7 +5683,7 @@ describe.skipIf(!chrome)("classic owner roster icons", () => {
         expect(svg.w).toBeLessThanOrEqual(48);
         expect(svg.h).toBeLessThanOrEqual(48);
       });
-      expect(light.paid).toBe("$75.00");
+      expect(light.paid).toBe("$75");
       expect(light.toggle).toBe("none");
       const classic = await page.goto(`http://127.0.0.1:${port}/login?classic=1`, { waitUntil: "domcontentloaded", timeout: 45000 });
       expect(classic?.headers()["content-security-policy"]).toBe(policy);

@@ -1097,6 +1097,12 @@ html.schedi-light body.schedi-newdash .roster-sheet-actions > button.sd-act.sd-a
     box-shadow: var(--sd-shadow);
 }
 #tenantPortalSection.schedi-newdash #rosterListWrap { border: 1px solid var(--sd-line); border-radius: 16px; }
+/* The roster card's blur would trap the fixed ⋮ menu inside the scrolled card. */
+#tenantPortalSection.schedi-newdash #tenantSectionRoster {
+    background: var(--sd-panel);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
 #tenantPortalSection.schedi-newdash #schediDashTabbar { display: none; }
 #tenantPortalSection.schedi-newdash #schediDashAddMenu {
     position: fixed;
@@ -3471,11 +3477,36 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
         text-transform: none;
     }
     #tenantPortalSection.schedi-newdash .sd-roster-check input {
+        appearance: none;
+        -webkit-appearance: none;
         width: 22px;
         height: 22px;
         margin: 0;
-        accent-color: var(--sd-brand);
+        border-radius: 6px;
+        border: 1.5px solid #64748b;
+        background-color: transparent;
+        background-position: center;
+        background-repeat: no-repeat;
+        background-size: 14px 14px;
         cursor: pointer;
+        flex: none;
+    }
+    #tenantPortalSection.schedi-newdash .sd-roster-check input:checked {
+        border-color: #10b981;
+        background-color: #10b981;
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path d='M3.5 8.3 6.4 11.2 12.6 4.8' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+    }
+    #tenantPortalSection.schedi-newdash .sd-roster-check input:focus-visible {
+        outline: 2px solid #10b981;
+        outline-offset: 2px;
+    }
+    html.schedi-light #tenantPortalSection.schedi-newdash .sd-roster-check input {
+        background-color: #ffffff;
+        border-color: #94a3b8;
+    }
+    html.schedi-light #tenantPortalSection.schedi-newdash .sd-roster-check input:checked {
+        border-color: #059669;
+        background-color: #059669;
     }
     #tenantPortalSection.schedi-newdash .sd-roster-all {
         display: none;
@@ -3549,21 +3580,60 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
         font-variant-numeric: tabular-nums;
     }
     #tenantPortalSection.schedi-newdash .roster-status-price { white-space: nowrap; }
-    /* Below ~1100 the roster is stacked cards so Paid and the actions stay on screen. */
+    #tenantPortalSection.schedi-newdash .roster-status-card { display: none; }
+    #tenantPortalSection.schedi-newdash .roster-client-name {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+        min-width: 0;
+    }
+    #tenantPortalSection.schedi-newdash .roster-client-name-text {
+        min-width: 0;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    #tenantPortalSection.schedi-newdash .roster-client-meta {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1px;
+        min-width: 0;
+        max-width: 100%;
+    }
+    #tenantPortalSection.schedi-newdash .roster-client-phone { white-space: nowrap; }
+    #tenantPortalSection.schedi-newdash .roster-client-sep { display: none; }
+    #tenantPortalSection.schedi-newdash .roster-client-email {
+        display: block;
+        max-width: 100%;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    /* Below ~1100 each appointment is a card, with the same surface as Today. */
     @media (max-width: 1099px) {
-        #tenantPortalSection.schedi-newdash #rosterListWrap { overflow-x: visible; }
+        #tenantPortalSection.schedi-newdash #rosterListWrap { overflow-x: visible; border: 0; background: transparent; }
         #tenantPortalSection.schedi-newdash #rosterListWrap > table,
         #tenantPortalSection.schedi-newdash #rosterListWrap > table > tbody { display: block; width: 100%; }
         #tenantPortalSection.schedi-newdash #rosterListWrap > table > thead { display: none; }
         #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row {
             display: grid;
-            grid-template-columns: auto minmax(0, 1fr) auto;
+            grid-template-columns: auto minmax(0, 1fr);
             column-gap: 10px;
-            row-gap: 6px;
+            row-gap: 8px;
             align-items: center;
-            width: 100%;
-            padding: 12px 2px;
+            width: auto;
+            margin: 0 0 10px;
+            padding: 16px;
+            background: var(--sd-panel);
+            border: 1px solid var(--sd-line);
+            border-radius: 18px;
+            box-shadow: var(--sd-shadow);
         }
+        #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row:last-child { margin-bottom: 0; }
         #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td {
             display: block;
             width: auto;
@@ -3571,43 +3641,37 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
             min-width: 0;
             padding: 0;
         }
-        #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-check { grid-column: 1; grid-row: 1; }
-        #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-ref { grid-column: 2; grid-row: 1; width: auto; flex: none; max-width: none; }
-        #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-price { grid-column: 3; grid-row: 1; text-align: right; }
-        #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-client,
+        #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-check { grid-column: 1; grid-row: 1; align-self: center; }
+        #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-client { grid-column: 2; grid-row: 1; align-self: center; font-size: 14px; }
+        #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-ref { grid-column: 2; font-size: 11px; }
         #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-service,
         #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-when,
         #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-pay,
-        #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-collected,
         #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-actions { grid-column: 1 / -1; }
-        #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-client,
-        #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-service,
-        #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-when { overflow-wrap: anywhere; }
-        #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-collected {
-            text-align: left;
-            white-space: normal;
+        #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-price,
+        #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-collected { display: none; }
+        #tenantPortalSection.schedi-newdash .roster-status-table { display: none; }
+        #tenantPortalSection.schedi-newdash .roster-status-card { display: block; }
+        #tenantPortalSection.schedi-newdash .roster-status-card .roster-status-line {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 4px;
         }
         #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-actions { text-align: left; }
         #tenantPortalSection.schedi-newdash #tenantRosterTableBody .roster-actions {
             display: flex;
             flex-wrap: wrap;
+            align-items: center;
             justify-content: flex-start;
             gap: 8px;
+            width: 100%;
         }
         #tenantPortalSection.schedi-newdash #tenantRosterTableBody .roster-actions > button {
             min-height: 44px;
-            flex: 1 1 auto;
+            flex: 0 1 auto;
         }
-        #tenantPortalSection.schedi-newdash .roster-paid-amt { align-items: flex-start; }
-        #tenantPortalSection.schedi-newdash .roster-paid-kicker {
-            display: block;
-            font-size: 10px;
-            font-weight: 800;
-            letter-spacing: 0.04em;
-            text-transform: uppercase;
-            color: var(--sd-muted);
-            line-height: 1.2;
-        }
+        #tenantPortalSection.schedi-newdash #tenantRosterTableBody .roster-actions > .sd-more { margin-left: auto; }
     }
     @media (min-width: 1100px) {
         #tenantPortalSection.schedi-newdash #rosterListWrap { overflow-x: auto; }
@@ -3616,27 +3680,61 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
             table-layout: fixed;
         }
         #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-check { width: 40px; }
-        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-ref { width: 78px; white-space: nowrap; }
-        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-when { width: 104px; }
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-ref { width: 68px; white-space: nowrap; }
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-when { width: 96px; }
         #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-when > span { white-space: nowrap; }
-        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-price { width: 56px; }
-        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-collected { width: 72px; }
-        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-pay { width: 176px; }
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-price { width: 64px; }
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-collected { width: 68px; }
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-pay { width: 168px; }
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-actions { width: 160px; }
+        #tenantPortalSection.schedi-newdash #rosterListWrap th.roster-cell-client,
+        #tenantPortalSection.schedi-newdash #rosterListWrap td.roster-cell-client { padding-left: 8px; padding-right: 8px; }
         #tenantPortalSection.schedi-newdash #rosterListWrap th.roster-cell-pay,
-        #tenantPortalSection.schedi-newdash #rosterListWrap td.roster-cell-pay { padding-left: 6px; padding-right: 6px; }
-        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-actions { width: 240px; }
+        #tenantPortalSection.schedi-newdash #rosterListWrap td.roster-cell-pay,
+        #tenantPortalSection.schedi-newdash #rosterListWrap th.roster-cell-price,
+        #tenantPortalSection.schedi-newdash #rosterListWrap td.roster-cell-price,
+        #tenantPortalSection.schedi-newdash #rosterListWrap th.roster-cell-collected,
+        #tenantPortalSection.schedi-newdash #rosterListWrap td.roster-cell-collected,
         #tenantPortalSection.schedi-newdash #rosterListWrap th.roster-cell-actions,
-        #tenantPortalSection.schedi-newdash #rosterListWrap td.roster-cell-actions { padding-left: 6px; padding-right: 6px; }
-        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-client,
+        #tenantPortalSection.schedi-newdash #rosterListWrap td.roster-cell-actions { padding-left: 4px; padding-right: 4px; }
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-client { overflow: hidden; }
         #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-service,
-        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-pay,
         #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-when { overflow-wrap: anywhere; }
         #tenantPortalSection.schedi-newdash #rosterListWrap .roster-actions {
             display: flex;
-            flex-wrap: wrap;
+            flex-wrap: nowrap;
+            align-items: center;
             justify-content: flex-end;
-            gap: 6px;
+            gap: 2px;
         }
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-actions > button { white-space: nowrap; }
+    }
+    @media (min-width: 1280px) {
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-service { width: 84px; }
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-pay { width: 232px; }
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-status-line {
+            display: flex;
+            flex-wrap: nowrap;
+            align-items: center;
+            gap: 4px;
+            min-width: 0;
+            max-width: 100%;
+        }
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-status-line > * { flex: none; }
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-status-line > .sd-pay {
+            flex: 0 1 auto;
+            min-width: 0;
+            overflow: hidden;
+        }
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-status-line > .sd-pay .sd-pay-word {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+    }
+    @media (min-width: 1360px) {
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-pay { width: 260px; }
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-service { width: 112px; }
     }
     @media (max-width: 1099px) {
         #tenantPortalSection.schedi-newdash .sd-client-page-head {
@@ -3658,7 +3756,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
     }
     #tenantPortalSection.schedi-newdash .roster-paid-amt { display: flex; flex-direction: column; align-items: flex-end; justify-content: center; line-height: 1.15; }
     #tenantPortalSection.schedi-newdash .roster-paid-kicker { display: none; }
-    #tenantPortalSection.schedi-newdash .roster-paid-figure {
+    #tenantPortalSection.schedi-newdash .roster-paid-figure,
+    #tenantPortalSection.schedi-newdash .roster-cell-price .roster-status-price {
         font-size: 16px;
         font-weight: 700;
         font-variant-numeric: tabular-nums;
@@ -3689,43 +3788,13 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
             display: flex;
             align-items: center;
             box-sizing: border-box;
-            padding-left: 2px;
-            padding-right: 2px;
+            padding-left: 16px;
+            padding-right: 16px;
         }
         #tenantPortalSection.schedi-newdash .sd-roster-all .sd-roster-check {
             justify-content: flex-start;
             gap: 8px;
         }
-        #tenantPortalSection.schedi-newdash .sd-roster-all .sd-roster-check input { margin-left: 11px; }
-        #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row { column-gap: 8px; align-items: center; }
-        #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-check {
-            width: 44px;
-            flex: 0 0 44px;
-            padding: 0;
-        }
-        #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-ref {
-            width: auto;
-            flex: 1 1 calc(100% - 52px);
-            max-width: calc(100% - 52px);
-            min-width: 0;
-        }
-        #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-collected {
-            width: 100%;
-            flex: 1 0 100%;
-            text-align: left;
-            white-space: normal;
-        }
-        #tenantPortalSection.schedi-newdash .roster-paid-amt { align-items: flex-start; }
-        #tenantPortalSection.schedi-newdash .roster-paid-kicker {
-            display: block;
-            font-size: 10px;
-            font-weight: 800;
-            letter-spacing: 0.04em;
-            text-transform: uppercase;
-            color: var(--sd-muted);
-            line-height: 1.2;
-        }
-        #tenantPortalSection.schedi-newdash .roster-paid-figure { font-size: 1.375rem; font-weight: 800; line-height: 1.1; }
     }
     #tenantPortalSection.schedi-newdash .sd-hours-week-wrap { min-width: 0; }
     #tenantPortalSection.schedi-newdash .sd-hours-week-head { display: none; }
@@ -8135,13 +8204,12 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
 
         function rosterAmountCollectedHtml(app, tenant) {
             var row = rosterAmountCollected(app, tenant);
-            if (row.empty) {
-                return '<div class="roster-paid-amt"><span class="roster-paid-kicker">Paid</span><span class="roster-paid-figure is-muted">—</span></div>';
-            }
+            if (row.empty) return '';
             var note = '';
             if (row.refunded && row.net === 0) note = 'Refunded';
-            else if (row.refund > 0) note = 'Refund $' + row.refund.toFixed(2);
-            return '<div class="roster-paid-amt"><span class="roster-paid-kicker">Paid</span><span class="roster-paid-figure' + (row.net === 0 ? ' is-muted' : '') + '">$' + row.net.toFixed(2) + '</span>' +
+            else if (row.refund > 0) note = 'Refund ' + (formatBookingAmountLabel(row.refund) || '$0');
+            var label = formatBookingAmountLabel(row.net) || '$0';
+            return '<div class="roster-paid-amt"><span class="roster-paid-kicker">Paid</span><span class="roster-paid-figure' + (row.net === 0 ? ' is-muted' : '') + '">' + label + '</span>' +
                 (note ? '<span class="roster-paid-note">' + esc(note) + '</span>' : '') + '</div>';
         }
 
@@ -15017,7 +15085,9 @@ function schediQrCardPixels(text, color) {
 
         function appointmentStatusPriceHtml(app) {
             if (!hasPricedAmount(app && app.amount)) return '';
-            return '<span class="roster-status-price text-[10px] font-bold text-slate-300">$' + (Number(app.amount) || 0) + '</span>';
+            var label = formatBookingAmountLabel(app.amount);
+            if (!label) return '';
+            return '<span class="roster-status-price text-[10px] font-bold text-slate-300">' + label + '</span>';
         }
 
         function appointmentStatusLabels(app, opts) {
@@ -15108,6 +15178,48 @@ function schediQrCardPixels(text, color) {
             }
             out.push(btn('openRosterDeleteModal', 'sd-act sd-act-no', '<i class="fa-solid fa-trash mr-1"></i>Delete'));
             return out.join('\n');
+        }
+
+        // List row: the primary action stays visible. Everything else is in the same borderless kebab Today uses.
+        function rosterListActionsHtml(app) {
+            var rawId = jsArg(app.id);
+            var id = esc(rawId);
+            var st = String(app.status || '').toLowerCase();
+            function menuBtn(fn, cls, inner) {
+                return '<button type="button" role="menuitem" class="' + cls + '" onclick="closeSchediTodayMenus(event); ' + fn + '(' + id + ')">' + inner + '</button>';
+            }
+            function primaryBtn(fn, cls, inner) {
+                return '<button type="button" onclick="' + esc(fn + '(' + rawId + ')') + '" class="px-2.5 py-1 rounded-lg text-xs ' + cls + ' font-bold transition-all">' + inner + '</button>';
+            }
+            var primary = [];
+            var menu = [];
+            if (appointmentIsCancelled(app)) {
+                primary.push('<span class="text-[11px] font-bold text-rose-300 self-center">Cancelled</span>');
+            } else if (st === 'denied') {
+                primary.push('<span class="text-[11px] font-bold text-rose-300 self-center">Denied</span>');
+            } else if (st === 'pending') {
+                primary.push(primaryBtn('acceptAppointment', 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30', 'Accept'));
+                primary.push(primaryBtn('denyAppointment', 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30', 'Deny'));
+                menu.push(menuBtn('openEditAppointment', '', 'Edit'));
+                menu.push(menuBtn('openTenantRescheduleModal', 'sd-act-ok', '<i class="fa-solid fa-calendar-days mr-1"></i>Reschedule'));
+                menu.push(menuBtn('deleteAppointment', 'sd-act-no', '<i class="fa-solid fa-xmark mr-1"></i>Cancel'));
+            } else {
+                var decided = st !== 'pending' && st !== 'requested';
+                if (decided && bookingPaymentState(app) === 'paid') {
+                    menu.push(menuBtn('markAppointmentUnpaid', '', 'Mark unpaid'));
+                } else if (decided) {
+                    primary.push(primaryBtn('markAppointmentPaid', 'sd-act sd-act-ok', '<i class="fa-solid fa-circle-check mr-1"></i>Mark paid'));
+                }
+                menu.push(menuBtn('openEditAppointment', '', 'Edit'));
+                menu.push(menuBtn('openTenantRescheduleModal', 'sd-act-ok', '<i class="fa-solid fa-calendar-days mr-1"></i>Reschedule'));
+                if (decided && appointmentIsNoShow(app)) menu.push(menuBtn('undoAppointmentNoShow', '', '<i class="fa-solid fa-rotate-left mr-1" aria-hidden="true"></i>Undo no-show'));
+                else if (decided) menu.push(menuBtn('markAppointmentNoShow', '', 'Mark no-show'));
+                menu.push(menuBtn('deleteAppointment', 'sd-act-no', '<i class="fa-solid fa-xmark mr-1"></i>Cancel'));
+            }
+            menu.push(menuBtn('openRosterDeleteModal', 'sd-act-no', '<i class="fa-solid fa-trash mr-1"></i>Delete'));
+            return primary.join('\n') +
+                '<details class="sd-more"><summary aria-label="More actions" aria-expanded="false"><i class="fa-solid fa-ellipsis-vertical" aria-hidden="true"></i></summary>' +
+                '<div class="sd-more-menu" role="menu">' + menu.join('') + '</div></details>';
         }
 
         var ROSTER_SHEET_ACTIONS = ['acceptAppointment', 'denyAppointment', 'markAppointmentPaid', 'markAppointmentUnpaid', 'openEditAppointment', 'openTenantRescheduleModal', 'markAppointmentNoShow', 'undoAppointmentNoShow', 'deleteAppointment', 'openRosterDeleteModal'];
@@ -15588,8 +15700,8 @@ function schediQrCardPixels(text, color) {
                     </td>
                     <td class="roster-cell-ref p-3 font-mono font-bold text-white">#${esc(app.id)}${app.payCode ? ('<br>' + payCodeChipHtml(app)) : ''}</td>
                     <td class="roster-cell-client p-3">
-                        <div class="font-bold text-white">${esc(app.clientName)}${app.walkIn === true ? ' <span class="ml-1 align-middle inline-block px-1.5 py-0.5 rounded-md bg-slate-800 border border-slate-700 text-slate-300 text-[10px] font-semibold whitespace-nowrap"><i class="fa-solid fa-person-walking mr-1"></i>Walk-in</span>' : ''}</div>
-                        <div class="text-[10px] text-slate-400">${esc(app.clientPhone)} • ${esc(app.clientEmail)}</div>
+                        <div class="roster-client-name font-bold text-white"><span class="roster-client-name-text">${esc(app.clientName)}</span>${app.walkIn === true ? '<span class="align-middle inline-block px-1.5 py-0.5 rounded-md bg-slate-800 border border-slate-700 text-slate-300 text-[10px] font-semibold whitespace-nowrap"><i class="fa-solid fa-person-walking mr-1"></i>Walk-in</span>' : ''}</div>
+                        <div class="roster-client-meta text-[10px] text-slate-400">${app.clientPhone ? `<span class="roster-client-phone">${esc(app.clientPhone)}</span>` : ''}${app.clientPhone && app.clientEmail ? '<span class="roster-client-sep"> • </span>' : ''}${app.clientEmail ? `<span class="roster-client-email" title="${esc(app.clientEmail)}">${esc(app.clientEmail)}</span>` : ''}</div>
                     </td>
                     <td class="roster-cell-service p-3 font-semibold text-slate-300"><span class="sd-svc-line">${serviceMarkHtml(tenant, app.serviceName)}<span>${esc(app.serviceName)}</span></span></td>
                     <td class="roster-cell-when p-3">
@@ -15597,7 +15709,7 @@ function schediQrCardPixels(text, color) {
                         <div class="text-[10px] text-slate-400">${esc(app.time)}${(app.seriesId || (app.recurrence && app.recurrence.frequency && app.recurrence.frequency !== 'once')) ? (' · <span class="text-sky-400">' + esc(recurrenceLabel((app.recurrence && app.recurrence.frequency) || 'weekly')) + (app.recurrence && app.recurrence.index && app.recurrence.total ? (' ' + app.recurrence.index + '/' + app.recurrence.total) : '') + '</span>') : ''}</div>
                     </td>
                     <td class="roster-cell-pay p-3">
-                        ${rosterStatusCellHtml(app, { price: false })}
+                        ${schediNewDashOn() ? `<div class="roster-status-table">${rosterStatusCellHtml(app, { price: false })}</div><div class="roster-status-card">${rosterStatusCellHtml(app)}</div>` : rosterStatusCellHtml(app, { price: false })}
                     </td>
                     <td class="roster-cell-price p-3">
                         ${rosterListPriceHtml(app)}
@@ -15607,7 +15719,7 @@ function schediQrCardPixels(text, color) {
                     </td>
                     <td class="roster-cell-actions p-3 text-right">
                         <div class="roster-actions inline-flex flex-wrap justify-end gap-2">
-                        ${rosterActionsHtml(app, false)}
+                        ${schediNewDashOn() ? rosterListActionsHtml(app) : rosterActionsHtml(app, false)}
                         </div>
                     </td>
                 </tr>
