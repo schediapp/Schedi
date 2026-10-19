@@ -609,22 +609,23 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-demo-note { color: #03
 #tenantPortalSection.schedi-newdash .sd-btn-no { background: rgba(244, 63, 94, 0.1); color: var(--sd-rose); border-color: rgba(244, 63, 94, 0.35); }
 #tenantPortalSection.schedi-newdash .sd-today-grid {
     display: grid;
-    grid-template-columns: minmax(0, 1.45fr) minmax(220px, 0.7fr);
-    gap: 18px 20px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
     align-items: start;
     min-width: 0;
 }
+#tenantPortalSection.schedi-newdash .sd-glance,
 #tenantPortalSection.schedi-newdash .sd-agenda,
-#tenantPortalSection.schedi-newdash .sd-today-side,
 #tenantPortalSection.schedi-newdash .sd-wait,
 #tenantPortalSection.schedi-newdash .sd-ready { min-width: 0; }
-#tenantPortalSection.schedi-newdash .sd-today-side { display: flex; flex-direction: column; gap: 16px; }
-#tenantPortalSection.schedi-newdash .sd-ready { grid-column: 1 / -1; }
 #tenantPortalSection.schedi-newdash .sd-agenda-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; margin-bottom: 12px; }
 #tenantPortalSection.schedi-newdash .sd-agenda-copy { min-width: 0; }
+#tenantPortalSection.schedi-newdash .sd-glance h3,
 #tenantPortalSection.schedi-newdash .sd-agenda h3,
 #tenantPortalSection.schedi-newdash .sd-wait h3,
 #tenantPortalSection.schedi-newdash .sd-ready h3 { margin: 0; font-size: 15px; font-weight: 800; color: var(--sd-text); }
+#tenantPortalSection.schedi-newdash .sd-glance > h3,
+#tenantPortalSection.schedi-newdash .sd-wait > h3 { margin-bottom: 10px; }
 #tenantPortalSection.schedi-newdash .sd-next-line { margin: 4px 0 0; color: var(--sd-muted); font-size: 13px; font-weight: 700; overflow-wrap: anywhere; }
 #tenantPortalSection.schedi-newdash .sd-timeline {
     display: flex;
@@ -658,7 +659,6 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-demo-note { color: #03
     padding: 12px 14px 14px;
     min-width: 0;
 }
-#tenantPortalSection.schedi-newdash .sd-pulse-kicker { margin: 0 0 8px; color: var(--sd-faint); font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
 #tenantPortalSection.schedi-newdash .sd-pulse-row { display: flex; align-items: flex-start; min-width: 0; }
 #tenantPortalSection.schedi-newdash .sd-pulse-row p {
     flex: 1 1 0;
@@ -5721,6 +5721,20 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                             </div>
                         </div>
                         <div class="sd-today-grid">
+                            <section class="sd-glance" aria-labelledby="schediGlanceHeading">
+                                <h3 id="schediGlanceHeading">At a glance</h3>
+                                <div class="sd-pulse" aria-live="polite">
+                                    <div class="sd-pulse-row">
+                                        <p><strong id="schediStatPeople">0</strong><span>people today</span></p>
+                                        <p><strong id="schediStatOwed">$0</strong><span>still to collect</span></p>
+                                        <p><strong id="schediStatWeekVisits">0</strong><span>visits this week</span></p>
+                                    </div>
+                                </div>
+                            </section>
+                            <section class="sd-wait" aria-labelledby="schediWaitHeading">
+                                <h3 id="schediWaitHeading">Waiting on you</h3>
+                                <div id="schediTodayRequests" class="sd-stack"></div>
+                            </section>
                             <section class="sd-agenda" aria-labelledby="schediAgendaHeading">
                                 <div class="sd-agenda-head">
                                     <div class="sd-agenda-copy">
@@ -5731,21 +5745,7 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                                 </div>
                                 <div id="schediTodaySchedule" class="sd-timeline"></div>
                             </section>
-                            <div class="sd-today-side">
-                                <div class="sd-pulse" aria-live="polite">
-                                    <p class="sd-pulse-kicker">At a glance</p>
-                                    <div class="sd-pulse-row">
-                                        <p><strong id="schediStatPeople">0</strong><span>people today</span></p>
-                                        <p><strong id="schediStatOwed">$0</strong><span>still to collect</span></p>
-                                        <p><strong id="schediStatWeekVisits">0</strong><span>visits this week</span></p>
-                                    </div>
-                                </div>
-                                <section class="sd-wait" aria-labelledby="schediWaitHeading">
-                                    <h3 id="schediWaitHeading">Waiting on you</h3>
-                                    <div id="schediTodayRequests" class="sd-stack"></div>
-                                </section>
-                            </div>
-                            <section class="sd-ready" aria-labelledby="schediSetupTitle">
+                            <section class="sd-ready" id="schediReady" aria-labelledby="schediSetupTitle">
                                 <div class="sd-ready-head">
                                     <h3 id="schediSetupTitle">Get your page ready</h3>
                                     <p id="schediSetupCount" class="sd-ready-count">0 of 6</p>
@@ -14870,10 +14870,12 @@ function schediQrCardPixels(text, color) {
             }
             var steps = schediSetupSteps(tenant);
             var done = steps.filter(function (step) { return step.done; }).length;
+            var ready = document.getElementById('schediReady');
             var title = document.getElementById('schediSetupTitle');
             var countEl = document.getElementById('schediSetupCount');
             var pips = document.getElementById('schediSetupPips');
             var list = document.getElementById('schediSetupList');
+            if (ready) ready.hidden = done === steps.length;
             if (title) title.textContent = 'Get your page ready';
             if (countEl) countEl.textContent = done + ' of ' + steps.length;
             if (pips) {

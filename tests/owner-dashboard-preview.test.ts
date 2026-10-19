@@ -740,19 +740,31 @@ describe("owner dashboard preview", () => {
     expect(html.indexOf("id=\"tenantServiceModal\"")).toBeLessThan(html.indexOf("return `<!DOCTYPE html>"));
   });
 
-  it("places Add appointment in the agenda, ahead of the pulse, on a phone", () => {
+  it("places Add appointment in Coming up, after the glance and the queue", () => {
     const panel = html.slice(html.indexOf('id="schediTodayPanel"'), html.indexOf('id="schediDashTabbar"'));
     const desktopBtn = panel.indexOf("sd-add-desktop");
     const phoneBtn = panel.indexOf("sd-add-phone");
     const schedule = panel.indexOf('id="schediTodaySchedule"');
+    const glance = panel.indexOf('id="schediGlanceHeading"');
     const pulse = panel.indexOf('class="sd-pulse"');
+    const waiting = panel.indexOf(">Waiting on you<");
+    const coming = panel.indexOf('id="schediAgendaHeading"');
+    const ready = panel.indexOf('id="schediReady"');
     expect(desktopBtn).toBeGreaterThan(-1);
-    expect(phoneBtn).toBeGreaterThan(desktopBtn);
+    expect(glance).toBeGreaterThan(desktopBtn);
+    expect(pulse).toBeGreaterThan(glance);
+    expect(waiting).toBeGreaterThan(pulse);
+    expect(coming).toBeGreaterThan(waiting);
+    expect(phoneBtn).toBeGreaterThan(coming);
     expect(schedule).toBeGreaterThan(phoneBtn);
-    expect(pulse).toBeGreaterThan(schedule);
+    expect(ready).toBeGreaterThan(schedule);
     expect(panel.slice(phoneBtn, schedule)).not.toContain("sd-pulse");
     expect(panel.slice(phoneBtn, schedule)).not.toContain("Waiting on you");
+    expect(panel.slice(glance, pulse)).toContain(">At a glance<");
     const css = dashCss(html);
+    const grid = css.slice(css.indexOf("#tenantPortalSection.schedi-newdash .sd-today-grid {"), css.indexOf("#tenantPortalSection.schedi-newdash .sd-glance,"));
+    expect(grid).toContain("grid-template-columns: minmax(0, 1fr);");
+    expect(grid).not.toContain("1.45fr");
     expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-btn.sd-add-phone { display: none; }");
     const phone = css.slice(css.indexOf("@media (max-width: 859px)"));
     expect(phone).toContain("#tenantPortalSection.schedi-newdash .sd-btn.sd-add-desktop { display: none; }");

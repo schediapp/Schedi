@@ -25,18 +25,22 @@ function extractFunction(source: string, name: string): string {
 describe("owner dashboard voice", () => {
   it("rebuilds the today screen, nav, and account words away from the old mockup", () => {
     const panel = html.slice(html.indexOf('id="schediTodayPanel"'), html.indexOf('id="schediDashTabbar"'));
-    const coming = panel.indexOf(">Coming up<");
-    const schedule = panel.indexOf('id="schediTodaySchedule"');
+    const glance = panel.indexOf('id="schediGlanceHeading"');
     const pulse = panel.indexOf('class="sd-pulse"');
     const waiting = panel.indexOf(">Waiting on you<");
     const requests = panel.indexOf('id="schediTodayRequests"');
-    const ready = panel.indexOf(">Get your page ready<");
-    expect(coming).toBeGreaterThan(-1);
-    expect(schedule).toBeGreaterThan(coming);
-    expect(pulse).toBeGreaterThan(schedule);
+    const coming = panel.indexOf('id="schediAgendaHeading"');
+    const schedule = panel.indexOf('id="schediTodaySchedule"');
+    const ready = panel.indexOf('id="schediReady"');
+    expect(glance).toBeGreaterThan(-1);
+    expect(panel.slice(glance, pulse)).toContain(">At a glance<");
+    expect(pulse).toBeGreaterThan(glance);
     expect(waiting).toBeGreaterThan(pulse);
     expect(requests).toBeGreaterThan(waiting);
-    expect(ready).toBeGreaterThan(requests);
+    expect(coming).toBeGreaterThan(requests);
+    expect(panel.slice(coming, schedule)).toContain(">Coming up<");
+    expect(schedule).toBeGreaterThan(coming);
+    expect(ready).toBeGreaterThan(schedule);
     expect(panel).toContain("What's next");
     expect(panel).toContain("people today");
     expect(panel).toContain("still to collect");
@@ -117,6 +121,7 @@ describe("owner dashboard voice", () => {
     expect(render).toContain(">Accept</button>");
     expect(render.indexOf("details class=\"sd-more\"")).toBeLessThan(render.indexOf(">Edit</button>"));
     expect(render).toContain("Get your page ready");
+    expect(render).toContain("ready.hidden = done === steps.length");
     expect(render).not.toContain("Finish setting up");
     expect(render).not.toContain("schediStatToday");
     expect(render).not.toContain("schediStatReview");
@@ -167,9 +172,11 @@ describe.skipIf(!chrome)("owner dashboard voice layout", () => {
         const first = document.querySelector("#schediTodaySchedule article");
         return {
           lead: document.getElementById("schediNextLine")?.textContent || "",
+          glance: document.getElementById("schediGlanceHeading")?.textContent || "",
           heading: document.getElementById("schediAgendaHeading")?.textContent || "",
           waiting: document.getElementById("schediWaitHeading")?.textContent || "",
           ready: document.getElementById("schediSetupTitle")?.textContent || "",
+          readyHidden: document.getElementById("schediReady")?.hidden === true,
           count: document.getElementById("schediSetupCount")?.textContent || "",
           pips: document.querySelectorAll("#schediSetupPips li").length,
           donePips: document.querySelectorAll("#schediSetupPips li.is-done").length,
@@ -182,9 +189,11 @@ describe.skipIf(!chrome)("owner dashboard voice layout", () => {
         };
       });
       expect(copy.lead).toBe("Maya Chen is first, at 09:00 AM.");
+      expect(copy.glance).toBe("At a glance");
       expect(copy.heading).toBe("Coming up");
       expect(copy.waiting).toBe("Waiting on you");
       expect(copy.ready).toBe("Get your page ready");
+      expect(copy.readyHidden).toBe(false);
       expect(copy.count).toBe("5 of 6");
       expect(copy.pips).toBe(6);
       expect(copy.donePips).toBe(5);
@@ -205,6 +214,29 @@ describe.skipIf(!chrome)("owner dashboard voice layout", () => {
       expect(copy.bar).toContain("Calendar");
       expect(copy.bar).toContain("More");
 
+      const finished = await page.evaluate(() => {
+        const win = window as unknown as {
+          getTenant: () => { logoUrl?: string };
+          renderSchediToday: (tenant: { logoUrl?: string }) => void;
+        };
+        const tenant = win.getTenant();
+        const previous = tenant.logoUrl;
+        tenant.logoUrl = "https://example.com/logo.png";
+        win.renderSchediToday(tenant);
+        const ready = document.getElementById("schediReady");
+        const hidden = ready?.hidden === true && getComputedStyle(ready).display === "none";
+        const stillThere = ["schediGlanceHeading", "schediWaitHeading", "schediAgendaHeading"].map((id) => {
+          const el = document.getElementById(id);
+          return !!el && getComputedStyle(el).display !== "none";
+        });
+        tenant.logoUrl = previous;
+        win.renderSchediToday(tenant);
+        return { hidden, stillThere, restored: document.getElementById("schediReady")?.hidden === false };
+      });
+      expect(finished.hidden).toBe(true);
+      expect(finished.stillThere).toEqual([true, true, true]);
+      expect(finished.restored).toBe(true);
+
       for (const width of [390, 1280, 1920]) {
         await page.setViewport({ width, height: 900, deviceScaleFactor: 1 });
         for (const theme of ["dark", "light"] as const) {
@@ -216,17 +248,32 @@ describe.skipIf(!chrome)("owner dashboard voice layout", () => {
             const pulse = document.querySelector(".sd-pulse-row") as HTMLElement | null;
             const panel = document.getElementById("schediTodayPanel") as HTMLElement | null;
             const side = document.getElementById("schediDashSidebar");
+            const box = (id: string) => document.getElementById(id)?.getBoundingClientRect();
+            const glance = box("schediGlanceHeading");
+            const waiting = box("schediWaitHeading");
+            const coming = box("schediAgendaHeading");
+            const ready = box("schediReady");
             return {
               page: document.documentElement.scrollWidth - document.documentElement.clientWidth,
               pulse: pulse ? pulse.scrollWidth - pulse.clientWidth : 0,
               panel: panel ? panel.scrollWidth - panel.clientWidth : 0,
               side: side ? getComputedStyle(side).display : "",
+              order: [glance?.top, waiting?.top, coming?.top, ready?.top],
+              left: [glance?.left, waiting?.left, coming?.left, ready?.left],
             };
           });
           expect(fit.page, `${width} ${theme}`).toBeLessThanOrEqual(1);
           expect(fit.pulse, `${width} ${theme}`).toBeLessThanOrEqual(1);
           expect(fit.panel, `${width} ${theme}`).toBeLessThanOrEqual(1);
           expect(fit.side, `${width} ${theme}`).toBe(width === 390 ? "none" : "flex");
+          const tops = fit.order.map((value) => value ?? Number.NaN);
+          expect(tops[0], `${width} ${theme} glance`).toBeLessThan(tops[1]);
+          expect(tops[1], `${width} ${theme} waiting`).toBeLessThan(tops[2]);
+          expect(tops[2], `${width} ${theme} coming`).toBeLessThan(tops[3]);
+          const lefts = fit.left.map((value) => value ?? Number.NaN);
+          expect(Math.abs(lefts[0] - lefts[1]), `${width} ${theme} column`).toBeLessThan(2);
+          expect(Math.abs(lefts[1] - lefts[2]), `${width} ${theme} column`).toBeLessThan(2);
+          expect(Math.abs(lefts[2] - lefts[3]), `${width} ${theme} column`).toBeLessThan(2);
         }
       }
     } finally {
