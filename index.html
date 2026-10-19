@@ -25713,6 +25713,61 @@ function schediQrCardPixels(text, color) {
         /* Month title sits on the dark slate-900 bar. Light mode otherwise remaps .text-white to near-black. */
         html.schedi-light #monthTitleLabel { color: #f8fafc !important; }
         /* /booking-day-contrast */
+        /* series-date-contrast */
+        #customDatesList .series-date-remove {
+            color: #cbd5e1;
+            background: transparent;
+            border: 1px solid #334155;
+        }
+        #customDatesList .series-date-remove:hover,
+        #customDatesList .series-date-remove:focus-visible {
+            color: #ffffff;
+            border-color: #94a3b8;
+            outline: 2px solid #34d399;
+            outline-offset: 2px;
+        }
+        html.schedi-light #customDatesList .series-date-row,
+        html.schedi-light.schedi-newbook #customDatesList .series-date-row {
+            background: #f8fafc !important;
+            border-color: #cbd5e1 !important;
+            color: #0f172a;
+        }
+        html.schedi-light #customDatesList .series-date-row.is-unavailable,
+        html.schedi-light.schedi-newbook #customDatesList .series-date-row.is-unavailable {
+            background: #fff1f2 !important;
+            border-color: #fecdd3 !important;
+        }
+        html.schedi-light #customDatesList .series-date-label,
+        html.schedi-light.schedi-newbook #customDatesList .series-date-label {
+            color: #0f172a !important;
+        }
+        html.schedi-light #customDatesList .series-date-time,
+        html.schedi-light.schedi-newbook #customDatesList .series-date-time {
+            color: #0f172a !important;
+            background: #ffffff !important;
+            border-color: #475569 !important;
+        }
+        html.schedi-light #customDatesList .series-date-remove,
+        html.schedi-light.schedi-newbook #customDatesList .series-date-remove {
+            color: #334155 !important;
+            background: #ffffff !important;
+            border-color: #334155 !important;
+        }
+        html.schedi-light #customDatesList .series-date-remove:hover,
+        html.schedi-light #customDatesList .series-date-remove:focus-visible,
+        html.schedi-light.schedi-newbook #customDatesList .series-date-remove:hover,
+        html.schedi-light.schedi-newbook #customDatesList .series-date-remove:focus-visible {
+            color: #0f172a !important;
+            background: #e2e8f0 !important;
+            border-color: #0f172a !important;
+            outline: 2px solid #047857;
+            outline-offset: 2px;
+        }
+        html.schedi-light #customDatesList .series-date-warn,
+        html.schedi-light.schedi-newbook #customDatesList .series-date-warn {
+            color: #be123c !important;
+        }
+        /* /series-date-contrast */
         .biz-header { border-radius: 1rem; overflow: hidden; border: 1px solid rgba(255,255,255,0.08); background: rgba(17, 24, 39, 0.8); }
         html.schedi-light .biz-header { background: #ffffff; border-color: #d7dee8; }
         .biz-cover { background: #0f172a; }
@@ -27971,11 +28026,11 @@ function paintBizHeader() {
                     var ok = times.indexOf(cur) !== -1;
                     var opts = (ok ? [] : ['<option value="' + escHtml(cur) + '" selected>' + escHtml(cur) + ' (not available)</option>'])
                         .concat(times.map(function (t) { return '<option value="' + escHtml(t) + '"' + (t === cur ? ' selected' : '') + '>' + escHtml(t) + '</option>'; }));
-                    return '<li class="flex flex-wrap items-center gap-2 p-2 rounded-xl border ' + (ok ? 'border-slate-800 bg-slate-900/80' : 'border-rose-500/40 bg-rose-950/20') + '">'
-                        + '<span class="font-bold text-white min-w-[7rem]">' + escHtml(prettyDatePub(d)) + '</span>'
-                        + (times.length ? ('<select onchange="setCustomDateTime(' + JSON.stringify(d).split('"').join("'") + ', this.value)" class="glass-input px-2 py-1 rounded-lg text-xs font-mono" aria-label="Time on ' + escHtml(prettyDatePub(d)) + '">' + opts.join('') + '</select>') : '')
-                        + (ok ? '' : '<span class="text-rose-300 font-semibold">' + (times.length ? 'That time is not open. Pick another time.' : 'No open times that day. Remove it or pick another day.') + '</span>')
-                        + '<button type="button" onclick="toggleCustomDate(' + JSON.stringify(d).split('"').join("'") + ')" class="ml-auto px-2 py-1 rounded-lg border border-slate-700 text-slate-300 hover:text-white" aria-label="Remove ' + escHtml(prettyDatePub(d)) + '">Remove</button>'
+                    return '<li class="series-date-row flex flex-wrap items-center gap-2 p-2 rounded-xl border ' + (ok ? 'border-slate-800 bg-slate-900/80' : 'is-unavailable border-rose-500/40 bg-rose-950/20') + '">'
+                        + '<span class="series-date-label font-bold text-white min-w-[7rem]">' + escHtml(prettyDatePub(d)) + '</span>'
+                        + (times.length ? ('<select onchange="setCustomDateTime(' + JSON.stringify(d).split('"').join("'") + ', this.value)" class="series-date-time glass-input px-2 py-1 rounded-lg text-xs font-mono" aria-label="Time on ' + escHtml(prettyDatePub(d)) + '">' + opts.join('') + '</select>') : '')
+                        + (ok ? '' : '<span class="series-date-warn text-rose-300 font-semibold">' + (times.length ? 'That time is not open. Pick another time.' : 'No open times that day. Remove it or pick another day.') + '</span>')
+                        + '<button type="button" onclick="toggleCustomDate(' + JSON.stringify(d).split('"').join("'") + ')" class="series-date-remove ml-auto px-2 py-1 rounded-lg" aria-label="Remove ' + escHtml(prettyDatePub(d)) + '">Remove</button>'
                         + '</li>';
                 }).join('');
             }
