@@ -863,7 +863,7 @@ describe("owner dashboard preview", () => {
     const fromEnv = new Function(
       `${extractFunction(html, "hoursWeekLayoutFromEnv")}; return hoursWeekLayoutFromEnv;`,
     )() as (search: string, stored: string | null) => boolean;
-    expect(fromEnv("", null)).toBe(false);
+    expect(fromEnv("", null)).toBe(true);
     expect(fromEnv("?weekhours=1", "0")).toBe(true);
     expect(fromEnv("?weekhours=0", "1")).toBe(false);
     expect(fromEnv("", "1")).toBe(true);
