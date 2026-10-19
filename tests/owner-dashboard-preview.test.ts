@@ -3490,6 +3490,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       "Mark paid": "rosterPaidMethodModal",
       "Reschedule": "tenantRescheduleModal",
       Edit: "manualBookingModal",
+      Cancel: "ownerConfirmModal",
       Delete: "rosterDeleteModal",
       "Mark unpaid": "unpaidStripeModal",
     };
@@ -3497,6 +3498,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       "Mark paid": "closeRosterPaidMethodModal",
       Reschedule: "closeTenantRescheduleModal",
       Edit: "closeManualBookingModal",
+      Cancel: "closeOwnerConfirm",
       Delete: "closeRosterDeleteModal",
       "Mark unpaid": "closeUnpaidStripeModal",
     };
