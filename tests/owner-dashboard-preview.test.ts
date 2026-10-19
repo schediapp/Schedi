@@ -3823,9 +3823,11 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       for (const width of [340, 390]) {
         await page.setViewport({ width, height: 900 });
         await page.evaluate(() => {
-          const tenant = (window as unknown as { getTenant: () => { appointments: { id?: string; status?: string; noShow?: boolean }[] } }).getTenant();
+          const tenant = (window as unknown as { getTenant: () => { appointments: { id?: string; date?: string; status?: string; noShow?: boolean }[] } }).getTenant();
+          const today = tenant.appointments.find((app) => app && app.id === "HB-1001")?.date || "";
           const row = tenant.appointments.find((app) => app && app.id === "HB-1004");
           if (!row) throw new Error("missing HB-1004");
+          if (today) row.date = today;
           row.status = "no_show";
           row.noShow = true;
           (window as unknown as { schediDashGo: (tab: string) => void }).schediDashGo("today");
