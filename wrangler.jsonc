@@ -20,6 +20,7 @@
   "kv_namespaces": [
     {
       "binding": "AUTH_KV",
+      // Same namespace as schedi-email-worker. Visit gauges use the pv1: prefix.
       "id": "d53378ec0cfb4d089d73add2ff01c62d"
     }
   ],

@@ -79,6 +79,11 @@ const names = [
   "appointmentReportNoShow",
   "appointmentReportRange",
   "appointmentReportSampleVisits",
+  "reportEscapeText",
+  "reportPrettyLong",
+  "appointmentReportVisitWeeks",
+  "appointmentReportVisitSummary",
+  "appointmentReportVisitCard",
   "reportClockMinutes",
   "reportNowParts",
   "reportAppointmentStarted",
@@ -97,11 +102,24 @@ const names = [
 ];
 
 const lib = names.map((name) => extractFunction(html, name)).join("\n");
-const api = new Function(`${lib}; return { reportTodayIso, reportShiftIso, appointmentReportRange, appointmentReportSampleVisits, appointmentReportModel, appointmentReportCsv, appointmentReportChartSvg, appointmentReportNoShow, bookingPaymentState, appointmentCompletionOf, appointmentCompletionSummary };`)() as {
+const api = new Function(`${lib}; return { reportTodayIso, reportShiftIso, appointmentReportRange, appointmentReportSampleVisits, appointmentReportModel, appointmentReportCsv, appointmentReportChartSvg, appointmentReportNoShow, bookingPaymentState, appointmentCompletionOf, appointmentCompletionSummary, appointmentReportVisitSummary, appointmentReportVisitCard, appointmentReportVisitWeeks, reportPrettyLong };`)() as {
   reportTodayIso: (tz: string, now: Date) => string;
   reportShiftIso: (iso: string, days: number) => string;
   appointmentReportRange: (preset: string, today: string, from?: string, to?: string) => { from: string; to: string; label: string; clamped?: boolean };
   appointmentReportSampleVisits: (from: string, to: string) => { total: number; days: number; sample: boolean };
+  reportPrettyLong: (iso: string) => string;
+  appointmentReportVisitWeeks: (from: string, to: string, days: Record<string, number>) => { start: string; visits: number }[];
+  appointmentReportVisitSummary: (
+    state: { status?: string; total?: number; days?: Record<string, number>; trackingStart?: string } | null,
+    range: { from?: string; to?: string },
+    bookings: number,
+  ) => { value: string; note: string; conversion: string; weeks: { start: string; visits: number }[]; partial: boolean; total: number; status: string };
+  appointmentReportVisitCard: (
+    sample: boolean,
+    range: { from: string; to: string },
+    bookings: number,
+    state: { status?: string; total?: number; days?: Record<string, number>; trackingStart?: string } | null,
+  ) => string;
   appointmentCompletionOf: (row: unknown, asOf?: { date: string; minutes: number }) => string;
   appointmentCompletionSummary: (rows: unknown[], asOf?: { date: string; minutes: number }) => { done: number; notDone: number; percent: number | null; label: string; detail: string };
   appointmentReportModel: (rows: unknown[], range: { from: string; to: string }, pay: (row: unknown) => string, asOf?: { date: string; minutes: number }) => {
@@ -307,6 +325,13 @@ describe("reports tab markup", () => {
     expect(owner).toContain("Last 90 days");
     expect(owner).toContain(">Custom<");
     expect(owner).toContain("Sample data");
+    expect(owner).toContain("https://schedi.app/api/page-visits");
+    expect(owner).toContain("Counting starts ");
+    expect(owner).toContain("Visits by week");
+    expect(owner).toContain("of visits became a booking");
+    expect(owner).not.toContain("The booking page does not send visit counts yet.");
+    expect(extractFunction(owner, "renderTenantReport")).toContain("appointmentReportVisitCard");
+    expect(extractFunction(owner, "renderTenantReport")).toContain("ensurePageVisits");
     expect(owner).toContain("Mark no-show");
     expect(owner).toContain("Undo no-show");
     expect(owner).toContain("undoAppointmentNoShow");
@@ -323,6 +348,90 @@ describe("reports tab markup", () => {
     expect(template).not.toContain("sd-report-stats");
     expect(owner).not.toMatch(/Reports[\s\S]{0,400}Pro only/);
     expect(unscopedSelectors(dashCss(html))).toEqual([]);
+  });
+});
+
+describe("page visit report card", () => {
+  const ready = {
+    status: "ready",
+    total: 0,
+    days: {} as Record<string, number>,
+    trackingStart: "2026-10-19",
+  };
+
+  it("keeps the demo sample card and renders a real zero", () => {
+    const range = { from: "2026-10-19", to: "2026-10-25" };
+    const sample = api.appointmentReportVisitCard(true, range, 4, null);
+    expect(sample).toContain("Sample data");
+    expect(sample).toContain("Sample counts for this date range. Nothing is collected from visitors.");
+    expect(sample).toContain("sd-report-value");
+    expect(sample).not.toContain("Counting starts");
+    const none = api.appointmentReportVisitSummary({ ...ready }, range, 4);
+    expect(none.value).toBe("0");
+    expect(none.note).toBe("No visits in this range.");
+    expect(none.conversion).toBe("");
+    const html = api.appointmentReportVisitCard(false, range, 4, { ...ready });
+    expect(html).toContain(">0<");
+    expect(html).toContain("No visits in this range.");
+    expect(html).not.toContain("Sample data");
+    expect(html).not.toContain("Unavailable");
+  });
+
+  it("notes days before counting and shows visits-to-bookings conversion", () => {
+    expect(api.reportPrettyLong("2026-10-19")).toBe("Oct 19, 2026");
+    const before = api.appointmentReportVisitSummary(
+      { ...ready, total: 0 },
+      { from: "2026-10-01", to: "2026-10-10" },
+      3,
+    );
+    expect(before.value).toBe("0");
+    expect(before.note).toBe("Counting starts Oct 19, 2026. This range is before counting began.");
+    expect(before.partial).toBe(true);
+    const mixed = api.appointmentReportVisitSummary(
+      { status: "ready", total: 8, trackingStart: "2026-10-19", days: { "2026-10-19": 3, "2026-10-20": 5 } },
+      { from: "2026-10-01", to: "2026-10-20" },
+      2,
+    );
+    expect(mixed.value).toBe("8");
+    expect(mixed.note).toContain("Counting starts Oct 19, 2026.");
+    expect(mixed.note).toContain("Earlier days in this range are not included.");
+    expect(mixed.conversion).toBe("25% of visits became a booking.");
+    expect(mixed.note).toContain("25% of visits became a booking.");
+    const card = api.appointmentReportVisitCard(false, { from: "2026-10-01", to: "2026-10-20" }, 2, {
+      status: "ready",
+      total: 8,
+      trackingStart: "2026-10-19",
+      days: { "2026-10-19": 3, "2026-10-20": 5 },
+    });
+    expect(card).toContain(">8<");
+    expect(card).toContain("25% of visits became a booking.");
+  });
+
+  it("draws a weekly visit trend from the stored days", () => {
+    const summary = api.appointmentReportVisitSummary(
+      {
+        status: "ready",
+        total: 9,
+        trackingStart: "2026-10-19",
+        days: { "2026-10-19": 4, "2026-10-20": 5, "2026-10-12": 99 },
+      },
+      { from: "2026-10-19", to: "2026-10-25" },
+      3,
+    );
+    expect(summary.weeks.map((week) => week.visits)).toEqual([9, 0]);
+    expect(summary.conversion).toBe("33% of visits became a booking.");
+    const svg = api.appointmentReportChartSvg(summary.weeks, "visits", (n) => String(n), "Visits by week");
+    expect(svg).toContain('aria-label="Visits by week.');
+    expect(svg.match(/<rect /g)).toHaveLength(2);
+    expect(svg).toContain("Oct 18: 9");
+  });
+
+  it("says when visit counts are still loading or failed", () => {
+    const range = { from: "2026-10-19", to: "2026-10-19" };
+    expect(api.appointmentReportVisitSummary({ status: "loading" }, range, 0).note).toBe("Loading visit counts.");
+    expect(api.appointmentReportVisitSummary({ status: "error" }, range, 0).value).toBe("Unavailable");
+    expect(api.appointmentReportVisitSummary({ status: "signed_out" }, range, 0).note).toContain("Sign in again");
+    expect(api.appointmentReportVisitSummary(null, { from: "", to: "" }, 0).value).toBe("—");
   });
 });
 

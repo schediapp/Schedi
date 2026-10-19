@@ -119,6 +119,12 @@ export function agencySessionToken(request: Request): string {
 
 export interface AgencyKv {
   get(key: string): Promise<string | null>;
+  put?(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>;
+  list?(options: { prefix?: string; cursor?: string; limit?: number }): Promise<{
+    keys: { name: string }[];
+    list_complete?: boolean;
+    cursor?: string;
+  }>;
 }
 
 export async function hasAgencySession(kv: AgencyKv | undefined, token: string): Promise<boolean> {

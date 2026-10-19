@@ -22753,6 +22753,147 @@ function schediQrCardPixels(text, color) {
             return '';
         }
 
+        var schediPageVisitState = { key: '', status: 'idle', total: 0, days: {}, trackingStart: '2026-10-19' };
+
+        function reportEscapeText(value) {
+            return String(value == null ? '' : value).replace(/[&<>"']/g, function (ch) {
+                return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch];
+            });
+        }
+
+        function reportPrettyLong(iso) {
+            var short = reportPrettyShort(iso);
+            var year = /^(\d{4})-/.exec(String(iso || ''));
+            if (!short || !year) return short || '';
+            return short + ', ' + year[1];
+        }
+
+        function appointmentReportVisitWeeks(from, to, days) {
+            var weeks = [];
+            if (!from || !to) return weeks;
+            var cursor = reportWeekStart(from);
+            var guard = 0;
+            var map = days || {};
+            while (cursor && cursor <= to && guard < 60) {
+                var end = reportShiftIso(cursor, 6);
+                var n = 0;
+                var day = cursor < from ? from : cursor;
+                var last = end > to ? to : end;
+                var inner = 0;
+                while (day && last && day <= last && inner < 8) {
+                    n += Math.max(0, Math.round(Number(map[day]) || 0));
+                    day = reportShiftIso(day, 1);
+                    inner += 1;
+                }
+                weeks.push({ start: cursor, visits: n });
+                cursor = reportShiftIso(cursor, 7);
+                guard += 1;
+            }
+            return weeks;
+        }
+
+        function appointmentReportVisitSummary(state, range, bookings) {
+            var from = range && range.from || '';
+            var to = range && range.to || '';
+            var status = state && state.status || 'loading';
+            var trackingStart = String((state && state.trackingStart) || '2026-10-19');
+            var emptyWeeks = [];
+            if (!from || !to) {
+                return { value: '—', note: 'Pick a date range.', conversion: '', weeks: emptyWeeks, partial: false, total: 0, status: status };
+            }
+            if (status === 'error') {
+                return { value: 'Unavailable', note: 'Visit counts could not be loaded. Try this report again.', conversion: '', weeks: emptyWeeks, partial: false, total: 0, status: status };
+            }
+            if (status === 'signed_out') {
+                return { value: 'Unavailable', note: 'Sign in again to load visit counts.', conversion: '', weeks: emptyWeeks, partial: false, total: 0, status: status };
+            }
+            if (status !== 'ready') {
+                return { value: '…', note: 'Loading visit counts.', conversion: '', weeks: emptyWeeks, partial: false, total: 0, status: status };
+            }
+            var total = Math.max(0, Math.round(Number(state.total) || 0));
+            var partial = !!(trackingStart && from < trackingStart);
+            var before = partial && !!to && to < trackingStart;
+            var when = reportPrettyLong(trackingStart);
+            var note;
+            if (before) note = 'Counting starts ' + when + '. This range is before counting began.';
+            else if (partial && !total) note = 'Counting starts ' + when + '. Earlier days in this range are not included. No visits since counting started.';
+            else if (partial) note = 'Counting starts ' + when + '. Earlier days in this range are not included.';
+            else if (!total) note = 'No visits in this range.';
+            else note = 'Booking page views in this range.';
+            var conversion = '';
+            if (!before && total > 0) {
+                var booked = Math.max(0, Math.round(Number(bookings) || 0));
+                var pct = Math.round((booked / total) * 100);
+                conversion = pct + '% of visits became a booking.';
+                note = note + ' ' + conversion;
+            }
+            return {
+                value: String(total),
+                note: note,
+                conversion: conversion,
+                weeks: appointmentReportVisitWeeks(from, to, (state && state.days) || {}),
+                partial: partial,
+                total: total,
+                status: status
+            };
+        }
+
+        function appointmentReportVisitCard(sample, range, bookings, state) {
+            function card(kicker, value, note, extra) {
+                return '<div class="sd-report-card p-3 rounded-xl bg-slate-900 border border-slate-800"><div class="sd-report-kicker text-slate-500">' + kicker + (extra || '') + '</div><div class="sd-report-value text-lg font-black text-white">' + value + '</div>' + (note ? '<p class="sd-report-note text-slate-500 mt-1">' + note + '</p>' : '') + '</div>';
+            }
+            if (sample) {
+                var visits = appointmentReportSampleVisits(range.from, range.to);
+                return card('Page visits', String(visits.total), 'Sample counts for this date range. Nothing is collected from visitors.', ' <span class="sd-sample-badge">Sample data</span>');
+            }
+            var summary = appointmentReportVisitSummary(state, range, bookings);
+            return card('Page visits', reportEscapeText(summary.value), reportEscapeText(summary.note));
+        }
+
+        function ensurePageVisits(tenant, range) {
+            if (window.__SCHEDI_DEMO === true) return;
+            var id = String((tenant && (tenant.id || tenant.slug)) || '');
+            var from = range && range.from || '';
+            var to = range && range.to || '';
+            if (!id || !from || !to) return;
+            var key = id + '|' + from + '|' + to;
+            var session = '';
+            try { session = localStorage.getItem('schedi.authSession') || ''; } catch (errSession) { session = ''; }
+            if (schediPageVisitState.key === key) {
+                if (schediPageVisitState.status === 'loading' || schediPageVisitState.status === 'ready' || schediPageVisitState.status === 'error') return;
+                if (schediPageVisitState.status === 'signed_out' && !session) return;
+            }
+            if (!session) {
+                schediPageVisitState = { key: key, status: 'signed_out', total: 0, days: {}, trackingStart: '2026-10-19' };
+                return;
+            }
+            schediPageVisitState = { key: key, status: 'loading', total: 0, days: {}, trackingStart: '2026-10-19' };
+            fetch('https://schedi.app/api/page-visits', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ session: session, from: from, to: to })
+            }).then(function (res) {
+                return res.json().then(function (data) { return { ok: res.ok, data: data || {} }; }).catch(function () { return { ok: false, data: {} }; });
+            }).then(function (out) {
+                if (schediPageVisitState.key !== key) return;
+                var data = out.data || {};
+                if (!out.ok || !data.ok) schediPageVisitState.status = 'error';
+                else {
+                    schediPageVisitState.status = 'ready';
+                    schediPageVisitState.total = Number(data.total) || 0;
+                    schediPageVisitState.days = (data.days && typeof data.days === 'object') ? data.days : {};
+                    schediPageVisitState.trackingStart = String(data.trackingStart || '2026-10-19');
+                }
+                var current = (typeof getTenant === 'function') ? getTenant() : null;
+                if (current) renderTenantReport(current);
+            }).catch(function () {
+                if (schediPageVisitState.key !== key) return;
+                schediPageVisitState.status = 'error';
+                var current = (typeof getTenant === 'function') ? getTenant() : null;
+                if (current) renderTenantReport(current);
+            });
+        }
+
         function renderTenantReport(tenant) {
             var body = document.getElementById('tenantReportBody');
             if (!body) return;
@@ -22769,7 +22910,9 @@ function schediQrCardPixels(text, color) {
             var asOf = reportNowParts(getTenantTimezone(tenant), new Date());
             var model = appointmentReportModel(appointmentReportRows(tenant), range, bookingPaymentState, asOf);
             var sample = window.__SCHEDI_DEMO === true;
-            var visits = sample ? appointmentReportSampleVisits(range.from, range.to) : null;
+            if (!sample) ensurePageVisits(tenant, range);
+            var visitState = sample ? null : schediPageVisitState;
+            var visitSummary = sample ? null : appointmentReportVisitSummary(visitState, range, model.total);
             var byClient = {};
             model.rows.forEach(function (app) {
                 if (reportIsCancelled(app) || reportIsDenied(app)) return;
@@ -22787,9 +22930,7 @@ function schediQrCardPixels(text, color) {
             function card(kicker, value, note, extra) {
                 return '<div class="sd-report-card p-3 rounded-xl bg-slate-900 border border-slate-800"><div class="sd-report-kicker text-slate-500">' + kicker + (extra || '') + '</div><div class="sd-report-value text-lg font-black text-white">' + value + '</div>' + (note ? '<p class="sd-report-note text-slate-500 mt-1">' + note + '</p>' : '') + '</div>';
             }
-            var visitCard = sample
-                ? card('Page visits', String(visits.total), 'Sample counts for this date range. Nothing is collected from visitors.', ' <span class="sd-sample-badge">Sample data</span>')
-                : card('Page visits', 'Unavailable', 'The booking page does not send visit counts yet.');
+            var visitCard = appointmentReportVisitCard(sample, range, model.total, visitState);
             var noShow = model.noShow;
             var noShowCard = card('No-shows', esc(noShow.label), esc(noShow.reason));
             var completion = model.completion || appointmentCompletionSummary([], asOf);
@@ -22802,6 +22943,10 @@ function schediQrCardPixels(text, color) {
             }
             var completionCard = '<div class="sd-report-card p-3 rounded-xl bg-slate-900 border border-slate-800"><div class="sd-report-kicker text-slate-500">Completion rate</div><div class="sd-report-value text-lg font-black text-white">' + esc(completion.label) + '</div><p class="sd-report-note text-slate-500 mt-1">' + esc(completion.detail) + '</p>' + completionBar + '</div>';
             var countLabel = function (n) { return String(n); };
+            var visitChart = '';
+            if (!sample && visitState && visitState.status === 'ready' && visitSummary && visitSummary.weeks.length) {
+                visitChart = '<div class="sd-report-chart"><h4>Visits by week</h4><p class="sd-report-note">Booking page views in this range. Weeks start on Sunday.</p>' + appointmentReportChartSvg(visitSummary.weeks, 'visits', countLabel, 'Visits by week') + '</div>';
+            }
             var bookingAvgChart = appointmentReportChartSvg(model.weeks, 'bookings', countLabel, 'Average appointments per week');
             var revenueAvgChart = appointmentReportChartSvg(model.weeks, 'revenue', reportMoney, 'Average revenue per week');
             var bookingChart = appointmentReportChartSvg(model.weeks, 'bookings', countLabel, 'Bookings by week');
@@ -22819,6 +22964,7 @@ function schediQrCardPixels(text, color) {
                 + card('Unpaid', String(model.unpaid), 'Still on the calendar and not marked paid.')
                 + '</div>'
                 + '<div class="sd-report-charts">'
+                + visitChart
                 + '<div class="sd-report-chart"><h4>Average appointments per week</h4><p class="sd-report-avg">' + appointmentReportAvgLabel(model.avgBookings) + '</p><p class="sd-report-note">Total bookings divided by the weeks in this range, including weeks with none.</p>' + bookingAvgChart + '</div>'
                 + '<div class="sd-report-chart"><h4>Average revenue per week</h4><p class="sd-report-avg">' + reportMoney(model.avgRevenue) + '</p><p class="sd-report-note">Revenue divided by the same weeks.</p>' + revenueAvgChart + '</div>'
                 + '<div class="sd-report-chart"><h4>Bookings by week</h4><p class="sd-report-note">Weeks start on Sunday. Every appointment in the range is counted.</p>' + bookingChart + '</div>'

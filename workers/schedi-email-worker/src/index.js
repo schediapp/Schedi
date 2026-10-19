@@ -50,6 +50,7 @@ import {
   patchPrivateTenant,
 } from './tenant-private.js';
 import { handleSquareHttp, runSquareReconcile } from './square.js';
+import { handlePageVisitsRequest } from '../../../worker/page-visits.ts';
 
 const ALLOWED_ORIGINS = new Set([
   'https://schedi.app',
@@ -2957,6 +2958,14 @@ export default {
     }
     if (path === '/api/push-test') {
       return handlePushTestHttp(request, env, origin, { isAllowedOrigin, rateLimitOk });
+    }
+    if (path === '/api/page-visits') {
+      if (request.method === 'OPTIONS') {
+        if (origin && !isAllowedOrigin(origin)) return new Response(null, { status: 403 });
+        return new Response(null, { status: 204, headers: corsHeaders(origin) });
+      }
+      if (origin && !isAllowedOrigin(origin)) return json({ ok: false, error: 'origin_not_allowed' }, 403, origin);
+      return handlePageVisitsRequest(request, env, origin, json, readSession);
     }
     if (path === '/api/clients') {
       return handleClientsHttp(request, env, origin, { isAllowedOrigin });

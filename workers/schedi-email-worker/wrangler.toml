@@ -76,6 +76,11 @@ zone_name = "schedi.app"
 pattern = "schedi.app/api/push-test"
 zone_name = "schedi.app"
 
+# Owner Reports reads booking-page visit totals. Writes stay on schedi-web (AUTH_KV).
+[[routes]]
+pattern = "schedi.app/api/page-visits"
+zone_name = "schedi.app"
+
 [[routes]]
 pattern = "schedi.app/api/clients"
 zone_name = "schedi.app"

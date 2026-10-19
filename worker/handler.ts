@@ -6,6 +6,7 @@ import { publicDuplicateRedirect } from "./canonical";
 import { marketingPage, publicPaths } from "./content";
 import { indexNowKey } from "./indexnow";
 import { localBusinessScript, tenantFromFirestore, type TenantSeo } from "./local-business";
+import { noteBookingVisit, PAGE_VISIT_FLUSH_MS, PAGE_VISIT_HOLD_MS, shouldCountBookingVisit, visitDay } from "./page-visits";
 import {
   agencySessionToken,
   hasAgencySession,
@@ -36,8 +37,10 @@ export interface AssetFetcher {
 export interface SchediEnv {
   ASSETS?: AssetFetcher;
   FIREBASE_PROJECT_ID?: string;
-  /** Same AUTH_KV namespace as schedi-email-worker. Required to serve /hq. */
+  /** Same AUTH_KV namespace as schedi-email-worker. Required to serve /hq. Also stores booking-page visit gauges. */
   AUTH_KV?: AgencyKv;
+  /** Test-only flush delay for visit gauges. Unset in production. */
+  PAGE_VISIT_FLUSH_MS?: string;
   /** IndexNow key file. Never hardcoded. 32–128 hex characters. */
   INDEXNOW_KEY?: string;
   INDEXNOW_ENABLED?: string;
@@ -313,7 +316,8 @@ async function lookupTenant(slug: string, env: SchediEnv, ctx: SchediContext): P
     `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/artifacts/${projectId}/public/data/tenants/${slug}` +
     `?mask.fieldPaths=name&mask.fieldPaths=industry&mask.fieldPaths=slug&mask.fieldPaths=seoPublic` +
     `&mask.fieldPaths=address&mask.fieldPaths=location&mask.fieldPaths=businessAddress&mask.fieldPaths=businessLocation` +
-    `&mask.fieldPaths=city&mask.fieldPaths=businessCity&mask.fieldPaths=state&mask.fieldPaths=businessState&mask.fieldPaths=services`;
+    `&mask.fieldPaths=city&mask.fieldPaths=businessCity&mask.fieldPaths=state&mask.fieldPaths=businessState&mask.fieldPaths=services` +
+    `&mask.fieldPaths=timezone&mask.fieldPaths=timeZone`;
   const cacheKey = new Request(`https://schedi-meta.invalid/tenant/${projectId}/${slug}`);
   try {
     const cached = await cacheMatch(cacheKey);
@@ -708,8 +712,37 @@ async function serveSpa(
   headers.set("Cache-Control", "no-store");
   headers.delete("Content-Length");
   if (!indexableTenant) headers.set("X-Robots-Tag", "noindex, follow");
+  if (method === "GET" && slug && tenant) countPublishedVisit(request, env, ctx, slug, tenant.timezone);
   if (method === "HEAD") return new Response(null, { status: 200, headers });
   return new Response(body, { status: 200, headers });
+}
+
+function countPublishedVisit(
+  request: Request,
+  env: SchediEnv,
+  ctx: SchediContext,
+  slug: string,
+  timezone: string | undefined,
+): void {
+  const url = new URL(request.url);
+  const count = shouldCountBookingVisit({
+    method: request.method,
+    hostname: url.hostname,
+    pathname: url.pathname,
+    searchParams: url.searchParams,
+    userAgent: request.headers.get("user-agent") || "",
+    referer: request.headers.get("referer") || "",
+    secFetchDest: request.headers.get("sec-fetch-dest") || "",
+    secFetchMode: request.headers.get("sec-fetch-mode") || "",
+    secPurpose: request.headers.get("sec-purpose") || request.headers.get("purpose") || "",
+  });
+  if (!count) return;
+  const rawDelay = Number(env.PAGE_VISIT_FLUSH_MS);
+  const flushMs = Number.isFinite(rawDelay) && rawDelay >= 0 && rawDelay <= 120000 ? rawDelay : PAGE_VISIT_FLUSH_MS;
+  noteBookingVisit(env.AUTH_KV, ctx, slug, visitDay(new Date(), timezone), {
+    flushMs,
+    holdMs: flushMs === 0 ? 0 : PAGE_VISIT_HOLD_MS,
+  });
 }
 
 function hqDemoRequest(request: Request): boolean {
