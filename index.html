@@ -8876,8 +8876,8 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
         function isReservedBusinessSlug(slug) {
             var first = String(slug || '').toLowerCase();
             if (!first) return true;
-            if (first === 'index.html' || first === 'agency' || first === 'admin' || first === 'hq' || first === 'signup' || first === 'terms' || first === 'privacy' || first === 'help' || first === 'auth' || first === 'reset' || first === 'billing' || first === 'api' || first === 'www' || first === 'schedi' || first === 'index' || first === 'login' || first === 'portal-preview') return true;
-                        return false;
+            if (first === 'index.html' || first === 'agency' || first === 'admin' || first === 'hq' || first === 'signup' || first === 'terms' || first === 'privacy' || first === 'help' || first === 'auth' || first === 'reset' || first === 'billing' || first === 'api' || first === 'www' || first === 'schedi' || first === 'index' || first === 'login' || first === 'features' || first === 'compare' || first === 'for' || first === 'pricing' || first === 'portal' || first === 'portal-preview' || first === 'faq') return true;
+            return false;
         }
 
         function getPublicSlugFromPath() {
@@ -24450,27 +24450,64 @@ function schediQrCardPixels(text, color) {
             const clientHelpHref = bookingHelpSlug
                 ? ('https://schedi.app/help/booking?from=' + encodeURIComponent(bookingHelpSlug))
                 : 'https://schedi.app/help/booking';
-            const metaDesc = esc(
-                'Book an appointment with ' + tenant.name + '. ' + tenant.industry +
-                ' services with live online scheduling and instant confirmation.'
-            );
+            var tradeLabel = String(tenant.industry || '').replace(/\s+/g, ' ').trim();
+            var metaPlain = (!tradeLabel || /^services?$/i.test(tradeLabel))
+                ? ('Book an appointment with ' + tenant.name + '. Live online scheduling.')
+                : ('Book an appointment with ' + tenant.name + '. ' + tradeLabel + ' appointments with live online scheduling.');
+            const metaDesc = esc(metaPlain);
 
-            const jsonLd = JSON.stringify({
+            const bookingCanonical = bookingHelpSlug ? ('https://schedi.app/' + bookingHelpSlug) : '';
+            const canonicalTag = bookingCanonical ? ('<link rel="canonical" href="' + bookingCanonical + '">') : '';
+            const ogUrlTag = bookingCanonical ? ('<meta property="og:url" content="' + bookingCanonical + '">') : '';
+            const ld = {
                 '@context': 'https://schema.org',
                 '@type': 'LocalBusiness',
                 name: tenant.name,
-                description: 'Online appointment scheduling for ' + tenant.name + '.',
-                openingHoursSpecification: Object.keys(tenant.operatingHours || {})
-                    .filter(function (d) { return tenant.operatingHours[d].open; })
-                    .map(function (d) {
-                        return {
-                            '@type': 'OpeningHoursSpecification',
-                            dayOfWeek: { Mon: 'Monday', Tue: 'Tuesday', Wed: 'Wednesday', Thu: 'Thursday', Fri: 'Friday', Sat: 'Saturday', Sun: 'Sunday' }[d],
-                            opens: tenant.operatingHours[d].start,
-                            closes: tenant.operatingHours[d].end
-                        };
-                    })
-            }).replace(/</g, '\\u003C');
+                description: 'Online appointment scheduling for ' + tenant.name + '.'
+            };
+            if (bookingCanonical) ld.url = bookingCanonical;
+            var street = [tenant.address, tenant.location, tenant.businessAddress, tenant.businessLocation].map(function (v) {
+                return String(v || '').trim();
+            }).filter(Boolean)[0] || '';
+            var locality = String(tenant.city || tenant.businessCity || '').trim();
+            var region = String(tenant.state || tenant.businessState || '').trim();
+            var address = {};
+            if (street) address.streetAddress = street;
+            if (locality) address.addressLocality = locality;
+            if (region) address.addressRegion = region;
+            if (Object.keys(address).length) {
+                address['@type'] = 'PostalAddress';
+                ld.address = address;
+            }
+            var catalog = [];
+            (Array.isArray(tenant.services) ? tenant.services : []).forEach(function (service) {
+                if (!service) return;
+                var serviceName = String(service.name || '').trim();
+                if (!serviceName) return;
+                var offer = { '@type': 'Offer', itemOffered: { '@type': 'Service', name: serviceName } };
+                var rawPrice = service.price;
+                var price = Number(rawPrice);
+                if (rawPrice !== '' && rawPrice !== null && rawPrice !== undefined && isFinite(price) && price >= 0) {
+                    offer.price = String(Math.round(price * 100) / 100);
+                    offer.priceCurrency = 'USD';
+                }
+                catalog.push(offer);
+            });
+            if (catalog.length) {
+                ld.hasOfferCatalog = { '@type': 'OfferCatalog', name: 'Services', itemListElement: catalog };
+            }
+            var hours = Object.keys(tenant.operatingHours || {}).filter(function (d) {
+                return tenant.operatingHours[d] && tenant.operatingHours[d].open;
+            }).map(function (d) {
+                return {
+                    '@type': 'OpeningHoursSpecification',
+                    dayOfWeek: { Mon: 'Monday', Tue: 'Tuesday', Wed: 'Wednesday', Thu: 'Thursday', Fri: 'Friday', Sat: 'Saturday', Sun: 'Sunday' }[d],
+                    opens: tenant.operatingHours[d].start,
+                    closes: tenant.operatingHours[d].end
+                };
+            });
+            if (hours.length) ld.openingHoursSpecification = hours;
+            const jsonLd = JSON.stringify(ld).replace(/</g, '\\u003C');
 
             let rawConfig = (typeof window !== 'undefined' && window.__firebase_config)
                 ? window.__firebase_config
@@ -24506,7 +24543,8 @@ function schediQrCardPixels(text, color) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Book an Appointment | ${safeName}</title>
     <meta name="description" content="${metaDesc}">
-    <link rel="canonical" href="https://example.com/${esc(tenant.slug)}/">
+    ${canonicalTag}
+    ${ogUrlTag}
     <meta name="robots" content="index, follow">
     <meta name="theme-color" content="#10b981">
 

@@ -2,7 +2,10 @@
 // Marketing routes are rendered here so crawlers see distinct HTML.
 // App and tenant routes keep the SPA shell. Unknown marketing paths are real 404s.
 
+import { publicDuplicateRedirect } from "./canonical";
 import { marketingPage, publicPaths } from "./content";
+import { indexNowKey } from "./indexnow";
+import { localBusinessScript, tenantFromFirestore, type TenantSeo } from "./local-business";
 import {
   agencySessionToken,
   hasAgencySession,
@@ -17,6 +20,8 @@ import {
   renderMarketingBoot,
   renderMarketingTheme,
   THEME_SCRIPT_PATH,
+  renderDisallowAllRobots,
+  renderLlms,
   renderMarketingPage,
   renderNotFound,
   renderRobots,
@@ -33,6 +38,12 @@ export interface SchediEnv {
   FIREBASE_PROJECT_ID?: string;
   /** Same AUTH_KV namespace as schedi-email-worker. Required to serve /hq. */
   AUTH_KV?: AgencyKv;
+  /** IndexNow key file. Never hardcoded. 32–128 hex characters. */
+  INDEXNOW_KEY?: string;
+  INDEXNOW_ENABLED?: string;
+  INDEXNOW_HOST?: string;
+  /** Optional Bing Webmaster meta token. Omitted from HTML when unset or invalid. */
+  BING_SITE_VERIFICATION?: string;
 }
 
 export interface SchediContext {
@@ -69,6 +80,10 @@ const RESERVED = new Set([
   "for",
   "pricing",
   "login",
+  "features",
+  "compare",
+  "faq",
+  "portal-preview",
   "marketing-boot.js",
   "marketing-theme.js",
 ]);
@@ -154,6 +169,11 @@ function isPreviewHost(hostname: string): boolean {
   return host.endsWith(".workers.dev");
 }
 
+function isProductionHost(hostname: string): boolean {
+  const host = hostname.toLowerCase().replace(/\.+$/, "");
+  return host === "schedi.app" || host === "www.schedi.app";
+}
+
 function wantsPortal(url: URL): boolean {
   if (stripTrailing(collapse(url.pathname)) !== "/") return false;
   const portal = url.searchParams.get("portal");
@@ -178,7 +198,7 @@ function hasFileExtension(pathname: string): boolean {
 
 function isStaticFile(pathname: string): boolean {
   if (pathname === HERO_PATH || pathname === "/marketing-boot.js" || pathname === THEME_SCRIPT_PATH) return false;
-  if (pathname === "/robots.txt" || pathname === "/sitemap.xml") return false;
+  if (pathname === "/robots.txt" || pathname === "/sitemap.xml" || pathname.toLowerCase() === "/llms.txt") return false;
   if (STATIC_TYPES[pathname]) return true;
   if (pathname.startsWith("/assets/")) return true;
   if (hasFileExtension(pathname)) return true;
@@ -235,8 +255,11 @@ function escapeHtml(value: string): string {
 
 function bookingDescription(name: string, industry: string): string {
   const who = name.replace(/\s+/g, " ").trim() || "this business";
-  const what = industry.replace(/\s+/g, " ").trim() || "Local";
-  return `Book an appointment with ${who}. ${what} services with live online scheduling and instant confirmation.`;
+  const trade = industry.replace(/\s+/g, " ").trim();
+  if (!trade || /^services?$/i.test(trade)) {
+    return `Book an appointment with ${who}. Live online scheduling.`;
+  }
+  return `Book an appointment with ${who}. ${trade} appointments with live online scheduling.`;
 }
 
 function bookingTitle(name: string): string {
@@ -281,40 +304,22 @@ function injectNoindex(html: string): string {
   return tag + html;
 }
 
-type TenantRecord = { name: string; industry: string; slug: string; seoPublic: boolean };
+export { tenantFromFirestore };
 
-export function tenantFromFirestore(document: unknown): TenantRecord | null {
-  if (!document || typeof document !== "object") return null;
-  const fields = (document as { fields?: Record<string, Record<string, unknown>> }).fields;
-  if (!fields) return null;
-  const read = (key: string) => {
-    const field = fields[key];
-    if (!field || typeof field.stringValue !== "string") return "";
-    return field.stringValue;
-  };
-  const name = read("name").trim();
-  if (!name) return null;
-  const seo = fields.seoPublic;
-  return {
-    name,
-    industry: read("industry").trim(),
-    slug: read("slug").trim().toLowerCase(),
-    seoPublic: !!(seo && seo.booleanValue === true),
-  };
-}
-
-async function lookupTenant(slug: string, env: SchediEnv, ctx: SchediContext): Promise<TenantRecord | null> {
+async function lookupTenant(slug: string, env: SchediEnv, ctx: SchediContext): Promise<TenantSeo | null> {
   const projectId = env.FIREBASE_PROJECT_ID || "";
   if (!projectId || !/^[a-z0-9-]+$/i.test(projectId)) return null;
   const endpoint =
     `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/artifacts/${projectId}/public/data/tenants/${slug}` +
-    `?mask.fieldPaths=name&mask.fieldPaths=industry&mask.fieldPaths=slug&mask.fieldPaths=seoPublic`;
+    `?mask.fieldPaths=name&mask.fieldPaths=industry&mask.fieldPaths=slug&mask.fieldPaths=seoPublic` +
+    `&mask.fieldPaths=address&mask.fieldPaths=location&mask.fieldPaths=businessAddress&mask.fieldPaths=businessLocation` +
+    `&mask.fieldPaths=city&mask.fieldPaths=businessCity&mask.fieldPaths=state&mask.fieldPaths=businessState&mask.fieldPaths=services`;
   const cacheKey = new Request(`https://schedi-meta.invalid/tenant/${projectId}/${slug}`);
   try {
     const cached = await cacheMatch(cacheKey);
     if (cached) {
       if (cached.status === 404) return null;
-      return (await cached.json()) as TenantRecord;
+      return (await cached.json()) as TenantSeo;
     }
     const res = await fetch(endpoint);
     if (res.status === 404) {
@@ -506,36 +511,25 @@ export async function handleRequest(request: Request, env: SchediEnv, ctx: Sched
   // /portal-preview is the sample dashboard. Preview hosts still serve it.
   // Production goes straight to /login, keeping classic/newdash and dropping
   // demo, biz, and tenant so the sample link cannot land on the error card.
+  // This runs before the marketing canonical redirect, which would otherwise
+  // drop biz, tenant, dash, demo, and newdash on the way to /login.
   if ((method === "GET" || method === "HEAD") && !isPreviewHost(url.hostname)) {
     if (isPortalPreviewPath(url.pathname)) return redirect(ownerLoginLocation(url, true), 302);
     if (exactAppPath(url.pathname) === "/portal" && !hasNamedBusiness(url)) {
       return redirect(ownerLoginLocation(url, false), 302);
     }
   }
-  if (isWww(url.hostname)) {
-    const dest = new URL(url.toString());
-    dest.protocol = "https:";
-    dest.hostname = "schedi.app";
-    dest.port = "";
-    return redirect(dest.toString(), 301);
-  }
+  const canonicalLocation = publicDuplicateRedirect(url);
+  if (canonicalLocation) return redirect(canonicalLocation, 301);
   if (method !== "GET" && method !== "HEAD") {
     if (isApiOrBilling(url.pathname)) return apiNotFound(method);
     return textResponse("Method not allowed\n", 405, "text/plain; charset=utf-8", { Allow: "GET, HEAD" }, method);
   }
 
   const collapsed = collapse(url.pathname);
-  if (collapsed === "/index.html") {
-    const dest = new URL(url.toString());
-    dest.protocol = "https:";
-    dest.hostname = "schedi.app";
-    dest.port = "";
-    dest.pathname = "/";
-    return redirect(dest.toString(), 308);
-  }
-
   if (collapsed === "/robots.txt") {
-    return textResponse(renderRobots(), 200, "text/plain; charset=utf-8", { "Cache-Control": "public, max-age=3600" }, method);
+    const robots = isProductionHost(url.hostname) ? renderRobots() : renderDisallowAllRobots();
+    return textResponse(robots, 200, "text/plain; charset=utf-8", { "Cache-Control": "public, max-age=3600" }, method);
   }
   if (collapsed === "/sitemap.xml") {
     return textResponse(
@@ -545,6 +539,13 @@ export async function handleRequest(request: Request, env: SchediEnv, ctx: Sched
       { "Cache-Control": "public, max-age=3600" },
       method,
     );
+  }
+  if (collapsed.toLowerCase() === "/llms.txt") {
+    return textResponse(renderLlms(), 200, "text/plain; charset=utf-8", { "Cache-Control": "public, max-age=3600" }, method);
+  }
+  const indexNow = indexNowKey(env);
+  if (indexNow && collapsed.toLowerCase() === `/${indexNow}.txt`) {
+    return textResponse(indexNow, 200, "text/plain; charset=utf-8", { "Cache-Control": "public, max-age=3600" }, method);
   }
   if (collapsed === THEME_SCRIPT_PATH) {
     return textResponse(
@@ -605,15 +606,19 @@ export async function handleRequest(request: Request, env: SchediEnv, ctx: Sched
 
   const page = marketingPage(lower === "" ? "/" : lower);
   if (page) {
-    if (collapsed !== page.path) {
-      const dest = new URL(url.toString());
-      dest.protocol = "https:";
-      dest.hostname = "schedi.app";
-      dest.port = "";
-      dest.pathname = page.path;
-      return redirect(dest.toString(), 301);
-    }
-    return marketingResponse(renderMarketingPage(page), method, url, 200);
+    const productionHost = isProductionHost(url.hostname);
+    const response = marketingResponse(
+      renderMarketingPage(
+        page,
+        env.BING_SITE_VERIFICATION,
+        productionHost ? undefined : { robots: "noindex, nofollow" },
+      ),
+      method,
+      url,
+      200,
+    );
+    if (!productionHost) response.headers.set("X-Robots-Tag", "noindex, nofollow");
+    return response;
   }
 
   const spa = classifySpa(stripped);
@@ -623,10 +628,6 @@ export async function handleRequest(request: Request, env: SchediEnv, ctx: Sched
   }
 
   return notFound(method, url);
-}
-
-function isWww(hostname: string): boolean {
-  return hostname.toLowerCase().replace(/\.+$/, "") === "www.schedi.app";
 }
 
 function notFound(method: string, pageUrl: URL): Response {
@@ -682,19 +683,23 @@ async function serveSpa(
     return textResponse("App shell unavailable\n", 503, "text/plain; charset=utf-8", { "Cache-Control": "no-store" }, method);
   }
   let indexableTenant = indexable;
-  let tenant: TenantRecord | null = null;
+  let tenant: TenantSeo | null = null;
   if (slug) {
     tenant = await lookupTenant(slug, env, ctx);
     indexableTenant = !!(tenant && tenant.seoPublic);
   }
   let body = method === "HEAD" ? null : stripPublicShell(await shell.text());
   if (body != null && tenant && slug) {
+    const canonical = `https://schedi.app/${slug}`;
     body = injectBookingMeta(body, {
       name: tenant.name,
       title: bookingTitle(tenant.name),
       description: bookingDescription(tenant.name, tenant.industry),
-      canonical: `https://schedi.app/${slug}/`,
+      canonical,
     });
+    const script = localBusinessScript(tenant, canonical);
+    if (body.includes("</head>")) body = body.replace("</head>", `${script}</head>`);
+    else body = script + body;
   }
   if (body != null && !indexableTenant) body = injectNoindex(body);
   if (body != null) body = injectWebAnalytics(body, new URL(request.url));

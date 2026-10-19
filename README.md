@@ -54,6 +54,43 @@ Git tracks that shell only. `site/index.html` is a symlink to `../index.html`, w
 
 On 13 Oct 2026 the public non-video files the shell references, plus the favicon and both manifests, were about 1.2 MB. The help-video mp4s are separate and larger. That non-video set is under 40 MB, so it stays out of git.
 
+## Preview Worker
+
+Marketing pages and tenant booking pages are the same `schedi-web` Worker (`worker/index.ts`, config `wrangler.jsonc`). There is no separate build step: `npx wrangler deploy` bundles the TypeScript. Do not run a production route attach for a preview.
+
+`env.preview` sets the Worker name to `schedi-web-preview`, turns on `workers.dev`, and sets `"routes": []` so the preview does not inherit `schedi.app` / `www.schedi.app`. Wrangler warns that an environment inherits top-level routes and can hijack those hostnames; the empty `routes` array is the fix.
+
+Assemble assets the same way as production (do not upload git's `site/` folder alone), then:
+
+```bash
+npx wrangler deploy --config wrangler.jsonc --env preview
+```
+
+The preview hostname stays on `*.workers.dev`. It does not 301 to `https://schedi.app`. Canonical link tags on marketing and tenant pages still point at `https://schedi.app`.
+
+`env.preview.vars.FIREBASE_PROJECT_ID` is `siteforge-97699`, so tenant booking pages can still read public Firestore fields. `env.preview` sets `"kv_namespaces": []` and does not bind `AUTH_KV`. The production id `d53378ec0cfb4d089d73add2ff01c62d` holds live agency sessions, and there is no separate preview namespace. Without `AUTH_KV`, `/hq` cannot save or check an agency session, so the preview shows only the HQ login screen.
+
+Do not set `INDEXNOW_KEY`, `INDEXNOW_ENABLED`, `INDEXNOW_HOST`, or `BING_SITE_VERIFICATION` on the preview Worker. Preview deploys must not ping IndexNow.
+
+## IndexNow and Bing
+
+Generate an IndexNow key with `openssl rand -hex 32` (32 to 128 hex characters). Put it on the production Worker only:
+
+```bash
+npx wrangler secret put INDEXNOW_KEY
+npx wrangler secret put BING_SITE_VERIFICATION
+```
+
+Do not commit the key. The production Worker serves it at `https://schedi.app/<key>.txt` when `INDEXNOW_KEY` is set. After a production deploy, or when sitemap URLs change:
+
+```bash
+INDEXNOW_ENABLED=true INDEXNOW_HOST=schedi.app INDEXNOW_KEY=<hex> node scripts/indexnow.mjs
+```
+
+The script fetches `https://schedi.app/sitemap.xml` and POSTs `{host, key, keyLocation, urlList}` to `https://api.indexnow.org/indexnow`. It exits without a network call unless both the flag and the host are set. `BING_SITE_VERIFICATION` is optional. When it is a safe token, marketing HTML includes `<meta name="msvalidate.01">`. When it is unset, the tag is omitted.
+
+Bing Webmaster Tools: verify `schedi.app` with a DNS CNAME (Cloudflare), the meta tag, or an import from Google Search Console, then submit `https://schedi.app/sitemap.xml`.
+
 A production deploy assembles the assets directory instead of uploading `site/` from git by itself:
 
 1. Start from the deploy directory that already contains `assets/`, `favicon.ico`, `manifest.json`, `manifest.webmanifest`, and `_headers` next to the shell.
