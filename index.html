@@ -5068,6 +5068,26 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
     margin: 0;
     accent-color: #10b981;
 }
+/* Signed-out sign-in. The section padding above reserves the sidebar, which
+   shifts the card right. On desktop, center it in the viewport instead.
+   The signed-in dashboard keeps the sidebar gutter because the login box is hidden. */
+@media (min-width: 860px) {
+    #tenantPortalSection.schedi-newdash:has(> #tenantLoginBox:not(.hidden)) {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
+        min-height: 100vh;
+        min-height: 100dvh;
+        padding: 48px 24px;
+    }
+    #tenantPortalSection.schedi-newdash:has(> #tenantLoginBox:not(.hidden)) > #tenantLoginBox {
+        width: min(100%, 28rem);
+        max-width: 28rem;
+        margin: 0;
+        flex: 0 0 auto;
+    }
+}
 
 </style>
 <style id="schediClassicRoster">
@@ -5141,6 +5161,20 @@ html.schedi-light #tenantPortalSection:not(.schedi-newdash) .sd-chip { color: #0
 html.schedi-light #tenantPortalSection:not(.schedi-newdash) .sd-roster-search-field { background: #ffffff; border-color: #cbd5e1; color: #64748b; }
 html.schedi-light #tenantPortalSection:not(.schedi-newdash) .sd-roster-search-field input,
 html.schedi-light #tenantPortalSection:not(.schedi-newdash) .roster-paid-figure { color: #0f172a; }
+/* Classic sign-in stays in the column under the header, centered on desktop. */
+@media (min-width: 860px) {
+    #tenantPortalSection:not(.schedi-newdash):has(> #tenantLoginBox:not(.hidden)) {
+        display: flex;
+        justify-content: center;
+        width: 100%;
+    }
+    #tenantPortalSection:not(.schedi-newdash):has(> #tenantLoginBox:not(.hidden)) > #tenantLoginBox {
+        width: min(100%, 28rem);
+        max-width: 28rem;
+        margin-left: auto;
+        margin-right: auto;
+    }
+}
 </style>
 <style id="schediNewBookManage">
 body.schedi-newbook { background: #06080d; color: #e7edf5; }
