@@ -3821,6 +3821,17 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
         text-overflow: ellipsis;
         white-space: nowrap;
     }
+    #tenantPortalSection.schedi-newdash .roster-ref-id {
+        display: block;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        overflow-wrap: normal;
+        word-break: keep-all;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        font-variant-numeric: tabular-nums;
+    }
     /* Below ~1100 each appointment is a card, with the same surface as Today. */
     @media (max-width: 1099px) {
         #tenantPortalSection.schedi-newdash #rosterListWrap { overflow-x: visible; border: 0; background: transparent; }
@@ -3851,7 +3862,14 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
         }
         #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-check { grid-column: 1; grid-row: 1; align-self: center; }
         #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-client { grid-column: 2; grid-row: 1; align-self: center; font-size: 14px; }
-        #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-ref { grid-column: 2; font-size: 11px; }
+        #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-ref {
+            grid-column: 2;
+            grid-row: 2;
+            width: auto;
+            max-width: 100%;
+            overflow: hidden;
+            font-size: 11px;
+        }
         #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-service,
         #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-when,
         #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-pay,
@@ -3885,10 +3903,17 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
         #tenantPortalSection.schedi-newdash #rosterListWrap { overflow-x: auto; }
         #tenantPortalSection.schedi-newdash #rosterListWrap > table {
             width: 100%;
+            min-width: 1120px;
             table-layout: fixed;
         }
         #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-check { width: 40px; }
-        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-ref { width: 68px; white-space: nowrap; }
+        #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-ref {
+            width: 11rem;
+            overflow: hidden;
+            white-space: nowrap;
+            overflow-wrap: normal;
+            word-break: keep-all;
+        }
         #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-when { width: 96px; }
         #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-when > span { white-space: nowrap; }
         #tenantPortalSection.schedi-newdash #rosterListWrap .roster-cell-price { width: 64px; }
@@ -4976,6 +5001,9 @@ html.schedi-light #tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-sv
 #tenantPortalSection.schedi-newdash .sd-pay-switch:checked::after { transform: translateX(22px); }
 #tenantPortalSection.schedi-newdash .sd-pay-switch:disabled { opacity: 0.45; cursor: not-allowed; }
 #tenantPortalSection.schedi-newdash .sd-pay-switch:focus-visible { outline: 2px solid #10b981; outline-offset: 2px; }
+#tenantPortalSection.schedi-newdash .sd-gateway-paypal { color: #0070E0; }
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-gateway-paypal { color: #003087; }
+#tenantPortalSection.schedi-newdash #webPushCard.wp-card-hit { box-shadow: 0 0 0 2px #10b981; }
 html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-switch { background: #cbd5e1; }
 html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-switch:checked { background: #059669; }
 body.schedi-newdash .owner-time-extras { margin-top: 8px; }
@@ -5727,7 +5755,7 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                             <h3 class="text-lg font-bold text-white">Daily Shifts & Operating Hours</h3>
                             <p class="text-xs text-slate-400">Set individual day operating hours or create recurring outage time blocks.</p>
                         </div>
-                        <button type="button" id="hoursWeekLayoutBtn" onclick="toggleHoursWeekLayout()" aria-pressed="false" class="px-4 py-2 rounded-xl font-bold text-xs bg-slate-900 border border-slate-800 text-slate-400 sm:self-end">Week layout</button>
+                        <button type="button" id="hoursWeekLayoutBtn" onclick="toggleHoursWeekLayout()" aria-pressed="true" class="px-4 py-2 rounded-xl font-bold text-xs bg-brand-500/20 border border-brand-500/30 text-brand-400 sm:self-end">Week layout</button>
                     </div>
                     <div id="hoursWeekSummary" class="sd-hours-summary" aria-live="polite"></div>
 
@@ -5999,7 +6027,7 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                         <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-3">
                             <label class="sd-pay-switch-row">
                                 <span class="sd-pay-switch-copy">
-                                    <i class="fa-brands fa-paypal text-blue-400 text-lg" aria-hidden="true"></i>
+                                    <i class="fa-brands fa-paypal sd-gateway-paypal text-lg" aria-hidden="true"></i>
                                     <span>
                                         <span class="sd-pay-switch-title font-bold text-white" id="tenantPayPaypalLabel">PayPal</span>
                                         <span class="sd-pay-switch-note text-slate-400">PayPal.me slug, URL, or email for clients to pay</span>
@@ -16129,6 +16157,12 @@ function schediQrCardPixels(text, color) {
             else paintRosterBulkBar();
         };
 
+        function rosterRefCellHtml(app) {
+            var label = '#' + String(app && app.id || '');
+            var chip = app && app.payCode ? ('<br>' + payCodeChipHtml(app)) : '';
+            return '<span class="roster-ref-id" title="' + esc(label) + '">' + esc(label) + '</span>' + chip;
+        }
+
         function renderTenantRoster(tenant) {
             const tbody = document.getElementById('tenantRosterTableBody');
             if (!tbody) return;
@@ -16168,7 +16202,7 @@ function schediQrCardPixels(text, color) {
                             <input type="checkbox" class="roster-select" data-roster-id="${esc(app.id)}" aria-label="Select ${esc(app.clientName || ('appointment ' + app.id))}"${rosterSelectedIds[String(app.id)] ? ' checked' : ''} onchange="setRosterRowSelected(this.getAttribute('data-roster-id'), this.checked)">
                         </label>
                     </td>
-                    <td class="roster-cell-ref p-3 font-mono font-bold text-white">#${esc(app.id)}${app.payCode ? ('<br>' + payCodeChipHtml(app)) : ''}</td>
+                    <td class="roster-cell-ref p-3 font-mono font-bold text-white">${rosterRefCellHtml(app)}</td>
                     <td class="roster-cell-client p-3">
                         <div class="roster-client-name font-bold text-white"><span class="roster-client-name-text">${esc(app.clientName)}</span>${app.walkIn === true ? '<span class="align-middle inline-block px-1.5 py-0.5 rounded-md bg-slate-800 border border-slate-700 text-slate-300 text-[10px] font-semibold whitespace-nowrap"><i class="fa-solid fa-person-walking mr-1"></i>Walk-in</span>' : ''}</div>
                         <div class="roster-client-meta text-[10px] text-slate-400">${app.clientPhone ? `<span class="roster-client-phone">${esc(app.clientPhone)}</span>` : ''}${app.clientPhone && app.clientEmail ? '<span class="roster-client-sep"> • </span>' : ''}${app.clientEmail ? `<span class="roster-client-email" title="${esc(app.clientEmail)}">${esc(app.clientEmail)}</span>` : ''}</div>
@@ -17623,9 +17657,19 @@ function schediQrCardPixels(text, color) {
         }
 
         var hoursWeekLayoutChoice = null;
+        var HOURS_LAYOUT_EPOCH = 'schediWeekHoursEpoch';
+        var HOURS_LAYOUT_EPOCH_VALUE = '2';
 
         function hoursWeekStored() {
             try { return localStorage.getItem('schediWeekHours'); } catch (errStore) { return null; }
+        }
+
+        function hoursWeekMigrateStored() {
+            try {
+                if (localStorage.getItem(HOURS_LAYOUT_EPOCH) === HOURS_LAYOUT_EPOCH_VALUE) return;
+                localStorage.removeItem('schediWeekHours');
+                localStorage.setItem(HOURS_LAYOUT_EPOCH, HOURS_LAYOUT_EPOCH_VALUE);
+            } catch (errStore) {}
         }
 
         function hoursWeekLayoutFromEnv(search, stored) {
@@ -17635,11 +17679,12 @@ function schediQrCardPixels(text, color) {
             if (flag === '0') return false;
             if (stored === '1') return true;
             if (stored === '0') return false;
-            return false;
+            return true;
         }
 
         function hoursWeekLayoutOn() {
             if (hoursWeekLayoutChoice === true || hoursWeekLayoutChoice === false) return hoursWeekLayoutChoice;
+            hoursWeekMigrateStored();
             var search = '';
             try { search = location.search || ''; } catch (errSearch) { search = ''; }
             return hoursWeekLayoutFromEnv(search, hoursWeekStored());
@@ -28122,6 +28167,26 @@ ${schediWebAnalytics}
    Desktop and Android browsers, and iPhone/iPad when Schedi is on the Home Screen.
    The Android app has its own push code above, so this stays off inside the app. */
 (function () {
+    function el(id) { return document.getElementById(id); }
+    window.schediOpenBookingAlerts = function () {
+        var newDash = window.__SCHEDI_NEWDASH === true || document.body.classList.contains('schedi-newdash');
+        if (newDash && typeof window.schediDashGo === 'function') window.schediDashGo('emails');
+        else {
+            if (typeof window.switchTenantTab === 'function') window.switchTenantTab('notifications');
+            if (typeof window.rosterFirstScrollTo === 'function') { try { window.rosterFirstScrollTo('notifications'); } catch (e) {} }
+        }
+        var card = el('webPushCard');
+        if (card) card.classList.remove('hidden');
+        if (typeof window.schediWebPushExplain === 'function') window.schediWebPushExplain();
+        setTimeout(function () {
+            if (!card) return;
+            card.classList.add('wp-card-hit');
+            try { card.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
+            var sw = el('webPushSwitch');
+            if (sw && !sw.disabled) { try { sw.focus({ preventScroll: true }); } catch (e2) {} }
+            setTimeout(function () { card.classList.remove('wp-card-hit'); }, 2600);
+        }, 80);
+    };
     if (window.__SCHEDI_DEMO) return;
     var C = window.Capacitor;
     if (C && typeof C.isNativePlatform === 'function' && C.isNativePlatform()) return;
@@ -28182,7 +28247,6 @@ ${schediWebAnalytics}
         }
         return 'Works while your browser is open, even when the Schedi tab is closed. Turn it on in each browser or device you use.';
     }
-    function el(id) { return document.getElementById(id); }
     function render() {
         var st = state();
         var key = st + '|' + busy;
@@ -28272,7 +28336,11 @@ ${schediWebAnalytics}
         var o = owner();
         if (!o || busy) return;
         var st = state();
-        if (st === 'ios-install' || st === 'unsupported') { window.schediWebPushRender(); return; }
+        if (st === 'ios-install' || st === 'unsupported') {
+            window.schediWebPushRender();
+            if (typeof showToast === 'function') showToast(hint(st), 'info');
+            return;
+        }
         busy = true; render();
         // Ask right away, inside the click. Safari only shows the prompt during the user's tap.
         var ask = Notification.permission === 'granted' ? Promise.resolve('granted') : Promise.resolve(Notification.requestPermission());
@@ -28336,15 +28404,11 @@ ${schediWebAnalytics}
             render();
         });
     };
-    window.schediOpenBookingAlerts = function () {
-        if (typeof window.switchTenantTab === 'function') window.switchTenantTab('notifications');
-        if (typeof window.rosterFirstScrollTo === 'function') { try { window.rosterFirstScrollTo('notifications'); } catch (e) {} }
-        setTimeout(function () {
-            var card = el('webPushCard');
-            if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            var sw = el('webPushSwitch');
-            if (sw && !sw.disabled) { try { sw.focus({ preventScroll: true }); } catch (e) {} }
-        }, 80);
+    window.schediWebPushExplain = function () {
+        var st = state();
+        if (st === 'blocked' || st === 'unsupported' || st === 'ios-install') {
+            if (typeof showToast === 'function') showToast(hint(st), 'info');
+        }
     };
 
     // Once per page load (at most every 12 hours): keep the server's copy of this device's token current.
