@@ -3039,10 +3039,12 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
         for (const theme of ["dark", "light"] as const) {
           await page.evaluate((mode) => (window as unknown as { setSchediTheme: (mode: string) => void }).setSchediTheme(mode), theme);
           await page.evaluate((sel) => document.querySelector(sel)?.scrollIntoView({ block: "center" }), list);
-          await page.waitForFunction((sel, bg) => {
+          await page.waitForFunction((sel, bg, fg) => {
             const el = document.querySelector(sel + " > button");
-            return !!el && getComputedStyle(el).backgroundColor === bg;
-          }, { timeout: 2000 }, list, rest[theme].bg);
+            if (!el) return false;
+            const style = getComputedStyle(el);
+            return style.backgroundColor === bg && style.color === fg;
+          }, { timeout: 2000 }, list, rest[theme].bg, rest[theme].fg);
           expectPrimary(await read(list), theme);
           const paid = await hover(list, "Mark paid", green[theme]);
           expect(paid).toMatchObject({ ...green[theme], icon: green[theme].fg });
@@ -5609,9 +5611,8 @@ describe.skipIf(!chrome)("classic owner roster icons", () => {
       }, { timeout: 20000 });
       await page.evaluate(() => (window as unknown as { schediDashGo: (page: string) => void }).schediDashGo("appointments"));
       await page.waitForFunction(() => {
-        const row = document.querySelector("#tenantRosterTableBody .sd-pay svg");
-        const box = row?.getBoundingClientRect();
-        return !!box && box.width > 0;
+        const nodes = [...document.querySelectorAll("#tenantRosterTableBody .sd-pay svg")];
+        return nodes.some((svg) => svg.getBoundingClientRect().width > 0);
       }, { timeout: 20000 });
       const measure = () => page.evaluate(() => {
         const section = document.getElementById("tenantPortalSection");
