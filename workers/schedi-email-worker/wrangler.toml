@@ -76,6 +76,19 @@ zone_name = "schedi.app"
 pattern = "schedi.app/api/push-test"
 zone_name = "schedi.app"
 
+# Owner Reports reads booking-page visit totals. schedi-web writes them to the
+# Workers Analytics Engine dataset schedi_page_visits (binding PAGE_VISITS in
+# the repo-root wrangler.jsonc). This worker does not write visits and does not
+# store them in AUTH_KV. The dataset is created on the first counted view.
+# Before counts can load in production, from this directory:
+#   1. Create an API token with Account / Account Analytics / Read.
+#   2. npx wrangler secret put ANALYTICS_API_TOKEN
+#   3. npx wrangler secret put CF_ACCOUNT_ID
+# CF_ACCOUNT_ID is the 32-character account id. Do not commit either value.
+[[routes]]
+pattern = "schedi.app/api/page-visits"
+zone_name = "schedi.app"
+
 [[routes]]
 pattern = "schedi.app/api/clients"
 zone_name = "schedi.app"

@@ -8,6 +8,7 @@ export type TenantSeo = {
   industry: string;
   slug: string;
   seoPublic: boolean;
+  timezone?: string;
   streetAddress?: string;
   city?: string;
   region?: string;
@@ -80,6 +81,7 @@ export function tenantFromFirestore(document: unknown): TenantSeo | null {
   );
   const city = text(decodeFirestore(fields.city), decodeFirestore(fields.businessCity));
   const region = text(decodeFirestore(fields.state), decodeFirestore(fields.businessState));
+  const timezone = text(decodeFirestore(fields.timezone), decodeFirestore(fields.timeZone));
   const tenant: TenantSeo = {
     name,
     industry: text(decodeFirestore(fields.industry)),
@@ -87,6 +89,7 @@ export function tenantFromFirestore(document: unknown): TenantSeo | null {
     seoPublic: !!(seo && seo.booleanValue === true),
     services,
   };
+  if (timezone) tenant.timezone = timezone;
   if (street) tenant.streetAddress = street;
   if (city) tenant.city = city;
   if (region) tenant.region = region;
