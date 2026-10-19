@@ -15995,7 +15995,7 @@ function paintBizHeader() {
             for (var day = 1; day <= days; day++) {
                 var iso = customViewYear + '-' + String(customViewMonth + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
                 var isFirst = iso === selectedDateStr;
-                var isPicked = !!customDates[iso];
+                var isPicked = Object.prototype.hasOwnProperty.call(customDates, iso);
                 var resolved = resolveHoursForDate(tenantData, iso);
                 var closed = resolved.closed || !!isDateFullyBlocked(iso);
                 var disabled = iso <= today && !isPicked || isFirst || (closed && !isPicked) || (full && !isPicked) || iso < selectedDateStr;
