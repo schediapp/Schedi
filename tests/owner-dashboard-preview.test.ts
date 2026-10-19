@@ -578,10 +578,15 @@ describe("owner dashboard preview", () => {
     expect(css).toContain("#003087");
     expect(css).toContain("#0070E0");
     expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-chip.sd-pay-square");
-    expect(css).toContain("background: rgba(148, 163, 184, 0.16)");
-    expect(css).not.toContain("background: #000000");
-    expect(css).not.toContain("color: #000000");
+    expect(css).toContain("background: #000000");
     expect(css).toContain("background: #ffffff");
+    const squareChip = css.slice(
+      css.indexOf("#tenantPortalSection.schedi-newdash .sd-pay-square,"),
+      css.indexOf("#tenantPortalSection.schedi-newdash .sd-chip-count"),
+    );
+    expect(squareChip).toContain("background: rgba(148, 163, 184, 0.16)");
+    expect(squareChip).not.toContain("#000000");
+    expect(squareChip).not.toContain("#ffffff");
     expect(css).toContain("rgba(0, 140, 255, 0.16)");
     expect(extractFunction(html, "noShowPillHtml")).toContain("sd-pill-rose");
     expect(extractFunction(html, "rosterApptChip")).toContain("appointmentStatusChipsHtml");
@@ -1455,7 +1460,7 @@ describe("owner dashboard preview", () => {
     expect(addKind).toContain("setManualWalkIn(true, true)");
     expect(addKind).toContain("requestAnimationFrame");
     expect(html).toContain("schediDashAddKind(addKind.getAttribute('data-dash-add'), addKind)");
-    expect(html).toContain('class="sd-form-close" onclick="closeManualBookingModal()" aria-label="Close"');
+    expect(html).toContain('class="sd-form-close" onpointerdown="window.__manualBookingDismissed=true" onclick="closeManualBookingModal()" aria-label="Close"');
     expect(html).toContain('class="sd-form-close" onclick="closeOwnerRecurringModal()" aria-label="Close"');
     expect(html).toContain('form="manualBookingForm"');
     expect(html).toContain('form="ownerRecurringForm"');
