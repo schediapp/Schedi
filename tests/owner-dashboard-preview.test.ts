@@ -740,17 +740,31 @@ describe("owner dashboard preview", () => {
     expect(html.indexOf("id=\"tenantServiceModal\"")).toBeLessThan(html.indexOf("return `<!DOCTYPE html>"));
   });
 
-  it("places Add appointment directly above New requests on a phone", () => {
+  it("places Add appointment in Coming up, after the glance and the queue", () => {
     const panel = html.slice(html.indexOf('id="schediTodayPanel"'), html.indexOf('id="schediDashTabbar"'));
     const desktopBtn = panel.indexOf("sd-add-desktop");
     const phoneBtn = panel.indexOf("sd-add-phone");
-    const requests = panel.indexOf(">New requests<");
+    const schedule = panel.indexOf('id="schediTodaySchedule"');
+    const glance = panel.indexOf('id="schediGlanceHeading"');
+    const pulse = panel.indexOf('class="sd-pulse"');
+    const waiting = panel.indexOf(">Waiting on you<");
+    const coming = panel.indexOf('id="schediAgendaHeading"');
+    const ready = panel.indexOf('id="schediReady"');
     expect(desktopBtn).toBeGreaterThan(-1);
-    expect(phoneBtn).toBeGreaterThan(desktopBtn);
-    expect(requests).toBeGreaterThan(phoneBtn);
-    expect(panel.slice(phoneBtn, requests)).not.toContain("sd-stats");
-    expect(panel.slice(phoneBtn, requests)).not.toContain("Today's schedule");
+    expect(glance).toBeGreaterThan(desktopBtn);
+    expect(pulse).toBeGreaterThan(glance);
+    expect(waiting).toBeGreaterThan(pulse);
+    expect(coming).toBeGreaterThan(waiting);
+    expect(phoneBtn).toBeGreaterThan(coming);
+    expect(schedule).toBeGreaterThan(phoneBtn);
+    expect(ready).toBeGreaterThan(schedule);
+    expect(panel.slice(phoneBtn, schedule)).not.toContain("sd-pulse");
+    expect(panel.slice(phoneBtn, schedule)).not.toContain("Waiting on you");
+    expect(panel.slice(glance, pulse)).toContain(">At a glance<");
     const css = dashCss(html);
+    const grid = css.slice(css.indexOf("#tenantPortalSection.schedi-newdash .sd-today-grid {"), css.indexOf("#tenantPortalSection.schedi-newdash .sd-glance,"));
+    expect(grid).toContain("grid-template-columns: minmax(0, 1fr);");
+    expect(grid).not.toContain("1.45fr");
     expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-btn.sd-add-phone { display: none; }");
     const phone = css.slice(css.indexOf("@media (max-width: 859px)"));
     expect(phone).toContain("#tenantPortalSection.schedi-newdash .sd-btn.sd-add-desktop { display: none; }");
@@ -940,9 +954,10 @@ describe("owner dashboard preview", () => {
     expect(html).toContain("frequency: 'Weekly (Fridays)'");
     expect(html).toContain('id="hoursWeekLayoutBtn"');
     expect(html).toContain('id="hoursWeekSummary"');
-    expect(css).toContain("#tenantPortalSection.schedi-newdash[data-dash=\"hours\"] #tenantHoursShiftBlock");
-    expect(css).toContain("#tenantPortalSection.schedi-newdash[data-dash=\"profile\"] #tenantHoursShiftBlock { display: block !important; }");
-    expect(css).not.toContain("#tenantHoursShiftBlock { display: none");
+    expect(css).toContain("#tenantPortalSection.schedi-newdash[data-dash=\"hours\"] #tenantHoursShiftBlock { display: block !important; }");
+    expect(css).toContain("#tenantPortalSection.schedi-newdash[data-dash=\"profile\"] #tenantHoursIntro");
+    expect(css).toContain("#tenantPortalSection.schedi-newdash[data-dash=\"profile\"] #hoursWeekSummary");
+    expect(css).toContain("#tenantPortalSection.schedi-newdash[data-dash=\"profile\"] #tenantHoursShiftBlock { display: none !important; }");
     expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-hours-summary-line:not(:last-child)::after { content: \" · \"; font-weight: 700; }");
     expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-hours-summary-line:not(:last-child)::after { content: none; }");
     const summary = new Function(
@@ -1170,7 +1185,10 @@ describe("owner dashboard preview", () => {
     expect(css).toContain("body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.is-on.sd-pay-zelle");
     expect(css).toContain("body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.is-on.sd-pay-venmo");
     expect(css).toContain("body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.is-on.sd-pay-paypal");
+    expect(css).toContain("body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.is-on.sd-pay-card");
     expect(css).toContain("body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.is-on.sd-pay-square");
+    expect(css).toContain("background: #635BFF");
+    expect(css).toContain("background: #4338ca");
     expect(css).toContain("body.schedi-newdash #rosterPaidMethodConfirmBtn:disabled");
   });
 
@@ -1230,7 +1248,8 @@ describe("owner dashboard preview", () => {
     expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-more-menu button.sd-act-delete { color: #fb7185; }");
     expect(css).toContain("html.schedi-light #tenantPortalSection.schedi-newdash .sd-more-menu button.sd-act-delete { color: #be123c; }");
     expect(css).toContain("body.schedi-newdash .roster-sheet-actions > button.sd-act");
-    expect(today).toContain('<article class="sd-card sd-row">');
+    expect(today).toContain('<article class="sd-card sd-row');
+    expect(today).toContain(" is-next");
     expect(today).not.toContain('role="button"');
     expect(today).not.toContain('tabindex="0"');
     expect(today).not.toContain('aria-haspopup="menu"');
@@ -1436,7 +1455,7 @@ describe("owner dashboard preview", () => {
       ${extractFunction(html, "inferPaidMethodFromBooking")}
       ${extractFunction(html, "appointmentPayKind")}
       ${extractFunction(html, "payKindSvg")}
-      var ROSTER_PAY_WORDS = { unpaid: "Unpaid", card: "Card (Stripe)", cashapp: "Cash App", zelle: "Zelle", venmo: "Venmo", paypal: "PayPal", square: "Square", cash: "In person / Cash" };
+      var ROSTER_PAY_WORDS = { unpaid: "Unpaid", card: "Card", cashapp: "Cash App", zelle: "Zelle", venmo: "Venmo", paypal: "PayPal", square: "Square", cash: "In person / Cash" };
       ${extractFunction(html, "appointmentPaidChipMoney")}
       ${extractFunction(html, "appointmentPayMarkup")}
       ${extractFunction(html, "noShowPillHtml")}
@@ -1476,12 +1495,12 @@ describe("owner dashboard preview", () => {
     expect(api.appointmentStatusLabels({ status: "accepted", paymentStatus: "DEPOSIT PAID", depositPaid: true, depositAmount: 36, amount: 120 })).toEqual(["Accepted", "Deposit paid · $36"]);
     expect(api.appointmentStatusLabels({ status: "accepted", paymentStatus: "PAID", refundAmount: 20, amount: 65 })).toEqual(["Accepted", "Refunded · $45"]);
     const deposit = api.appointmentStatusChipsHtml({ status: "accepted", paymentStatus: "DEPOSIT PAID", paidMethod: "card", depositPaid: true, amount: 120 });
-    expect(deposit).toContain("Card (Stripe) · $120");
+    expect(deposit).toContain("Card · $120");
     expect(deposit.indexOf("Accepted")).toBeLessThan(deposit.indexOf("sd-pay-card"));
     expect(deposit.indexOf("sd-pay-card")).toBeLessThan(deposit.indexOf("$120"));
     expect(deposit).not.toContain("text-slate-300");
     const depositRecorded = api.appointmentStatusChipsHtml({ status: "accepted", paymentStatus: "DEPOSIT PAID", paidMethod: "card", depositPaid: true, depositAmount: 36, amount: 120 });
-    expect(depositRecorded).toContain('aria-label="Card (Stripe) · $36"');
+    expect(depositRecorded).toContain('aria-label="Card · $36"');
     expect(depositRecorded).not.toContain("$120");
     expect(depositRecorded).not.toContain("text-slate-300");
     const zelle = api.appointmentStatusChipsHtml({ status: "accepted", paymentStatus: "PAID ZELLE", paidMethod: "zelle", amount: 65 });
@@ -1542,11 +1561,15 @@ describe("owner dashboard preview", () => {
       return ownerMarkPaidMethods;
     `)() as (tenant: { paymentGateways?: Record<string, boolean> }) => string[][];
     expect(methods({ paymentGateways: { card: false, cashapp: true, zelle: true, venmo: true, paypal: false, later: true } }).map((row) => row[0])).toEqual(["cashapp", "zelle", "venmo", "cash"]);
-    expect(methods({ paymentGateways: { card: true, square: true, later: false } }).map((row) => row[0])).toEqual(["card", "square", "cash"]);
+    expect(methods({ paymentGateways: { card: true, square: true, later: false } }).map((row) => row[0])).toEqual(["card", "cash"]);
+    expect(methods({ paymentGateways: { card: false, square: true, paypal: true } }).map((row) => row[0])).toEqual(["paypal", "cash"]);
     expect(methods({ paymentGateways: {} }).map((row) => row[0])).toEqual(["cash"]);
     const paint = extractFunction(html, "paintRosterPaidMethodOptions");
     expect(paint).toContain("ownerMarkPaidMethods");
+    expect(paint).toContain("Card (Stripe)");
     expect(paint).not.toContain("OWNER_PAY_METHODS.map");
+    expect(extractFunction(html, "ownerMarkPaidMethods")).toContain("row[0] === 'square'");
+    expect(html).toContain("['card', 'Card', 'Card']");
     expect(html).toContain("if (!method || !allowed) return;");
     const logChoices = new Function(`
       var OWNER_PAY_METHODS = [
@@ -1569,12 +1592,12 @@ describe("owner dashboard preview", () => {
       return ownerLogPayChoices;
     `)() as (tenant: { paymentGateways?: Record<string, boolean> }, status: string) => { method: string }[];
     expect(logChoices({ paymentGateways: { card: false, cashapp: true, zelle: true, venmo: true, paypal: false } }, "PAY AT APPOINTMENT").map((row) => row.method)).toEqual(["cashapp", "zelle", "venmo", "cash", "later"]);
-    expect(logChoices({ paymentGateways: { card: true, square: true } }, "PAY AT APPOINTMENT").map((row) => row.method)).toEqual(["card", "square", "cash", "later"]);
+    expect(logChoices({ paymentGateways: { card: true, square: true } }, "PAY AT APPOINTMENT").map((row) => row.method)).toEqual(["card", "cash", "later"]);
     expect(logChoices({ paymentGateways: {} }, "PAID SQUARE").map((row) => row.method)).toEqual(["square", "cash", "later"]);
     expect(logChoices({ paymentGateways: { card: false } }, "PAID VIA CARD").map((row) => row.method)).toEqual(["card", "cash", "later"]);
     const filterRows = new Function(`
       var OWNER_PAY_METHODS = [
-        ["card", "Card", "Card (Stripe)"], ["cashapp", "Cash App", "Cash App"], ["zelle", "Zelle", "Zelle"],
+        ["card", "Card", "Card"], ["cashapp", "Cash App", "Cash App"], ["zelle", "Zelle", "Zelle"],
         ["venmo", "Venmo", "Venmo"], ["paypal", "PayPal", "PayPal"], ["square", "Square", "Square"],
         ["cash", "In person / Cash", "In person / Cash"]
       ];
@@ -1636,6 +1659,9 @@ describe("owner dashboard preview", () => {
     expect(bar).toContain("left: 0;");
     expect(bar).toContain("right: 0;");
     expect(bar).toContain("bottom: 0;");
+    expect(bar).toContain("width: 100vw;");
+    expect(bar).toContain("max-width: 100vw;");
+    expect(dashCss(html)).toContain("#tenantPortalSection.schedi-newdash .sd-pay { position: relative;");
     expect(bar).toContain("background: #0b1220;");
     expect(bar).toContain("border-top: 1px solid rgba(148, 163, 184, 0.32);");
     expect(bar).toContain("border-radius: 0;");
@@ -1660,30 +1686,39 @@ describe("owner dashboard preview", () => {
     expect(bar).toContain("transform: translateX(calc(var(--sd-tab-slot, 0) * 100%));");
     expect(bar).toContain("transition: transform 200ms ease-out;");
     expect(bar).toContain("transition: color 200ms ease-out;");
+    expect(bar).toContain("grid-template-columns: repeat(5, minmax(0, 1fr));");
+    expect(bar).toContain("width: 20%;");
     expect(bar).toContain("width: 52px;");
     expect(bar).toContain("height: 52px;");
     expect(bar).toContain("margin: -6px auto 0;");
+    expect(bar).toContain(".sd-fab");
     expect(bar).not.toContain("margin: -20px");
     expect(bar).toContain("background: #10b981;");
     expect(bar).toContain("prefers-reduced-motion: reduce");
     expect(bar).toContain("transition: none;");
     const nav = html.slice(html.indexOf('id="schediDashTabbar"'), html.indexOf('id="schediDashAccountMenu"'));
     expect(nav).toContain('class="sd-tab-indicator"');
+    expect(nav).toContain("sd-fab");
     expect(nav).toContain('aria-label="Add appointment"');
+    expect(nav).toContain("schediDashToggleAdd");
     expect(nav).not.toContain("<span>Add");
+    expect(nav.indexOf(">Agenda<")).toBeLessThan(nav.indexOf(">Clients<"));
+    expect(nav.indexOf(">Clients<")).toBeLessThan(nav.indexOf("sd-fab"));
+    expect(nav.indexOf("sd-fab")).toBeLessThan(nav.indexOf(">Calendar<"));
+    expect(nav.indexOf(">Calendar<")).toBeLessThan(nav.indexOf(">More<"));
     const setPage = extractFunction(html, "schediDashSetPage");
     expect(setPage).toContain("setAttribute('aria-current', 'page')");
     expect(setPage).toContain("'--sd-tab-slot'");
     expect(setPage).toContain("schediDashTabSlot(current)");
     const slot = new Function(`${extractFunction(html, "schediDashTabSlot")}; return schediDashTabSlot;`)() as (page: string) => number;
     expect(slot("today")).toBe(0);
-    expect(slot("appointments")).toBe(1);
-    expect(slot("clients")).toBe(3);
+    expect(slot("clients")).toBe(1);
+    expect(slot("appointments")).toBe(3);
     expect(slot("hours")).toBe(4);
     expect(slot("services")).toBe(4);
     expect(slot("payments")).toBe(4);
-    expect(Object.values({ today: 0, appointments: 1, clients: 3, hours: 4 }).includes(2)).toBe(false);
-    expect([slot("today"), slot("appointments"), slot("clients"), slot("hours"), slot("reports")]).not.toContain(2);
+    expect(slot("reports")).toBe(4);
+    expect([slot("today"), slot("clients"), slot("appointments"), slot("hours"), slot("reports")]).not.toContain(2);
   });
 
   it("holds the add chooser highlight and pins the form close and actions", () => {
@@ -1906,9 +1941,9 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       page.on("pageerror", (error) => errors.push(String(error)));
       await page.goto(`http://127.0.0.1:${port}/portal-preview`, { waitUntil: "domcontentloaded", timeout: 45000 });
       await page.waitForFunction(() => {
-        const today = document.getElementById("schediStatToday");
-        const review = document.getElementById("schediStatReview");
-        return today?.textContent === "2" && review?.textContent === "3" && document.body.textContent?.includes("Maya Chen");
+        const people = document.getElementById("schediStatPeople");
+        const waiting = document.querySelectorAll("#schediTodayRequests .sd-request").length;
+        return people?.textContent === "2" && waiting === 3 && document.body.textContent?.includes("Maya Chen");
       }, { timeout: 20000 });
       const stats = await page.evaluate(() => {
         const tenant = (window as unknown as { getTenant: () => { appointments: { id: string; date?: string; status?: string; amount?: number }[] } }).getTenant();
@@ -1920,28 +1955,30 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
         const start = iso(cursor);
         cursor.setDate(cursor.getDate() + 6);
         const end = iso(cursor);
-        let money = 0;
+        let visits = 0;
         tenant.appointments.forEach((app) => {
           const status = String(app.status || "").toLowerCase();
           if (status === "cancelled" || status === "canceled" || status === "denied") return;
           if (!app.date || app.date < start || app.date > end) return;
-          if (app.amount == null || app.amount === ("" as unknown as number)) return;
-          const amount = Number(app.amount);
-          if (Number.isFinite(amount)) money += amount;
+          visits += 1;
         });
         return {
-          week: document.getElementById("schediStatWeek")?.textContent,
-          weekExpected: "$" + money,
-          unpaid: document.getElementById("schediStatUnpaid")?.textContent,
+          week: document.getElementById("schediStatWeekVisits")?.textContent,
+          weekExpected: String(visits),
+          owed: document.getElementById("schediStatOwed")?.textContent,
+          people: document.getElementById("schediStatPeople")?.textContent,
           setup: document.getElementById("schediSetupTitle")?.textContent,
+          setupCount: document.getElementById("schediSetupCount")?.textContent,
           dash: document.body.classList.contains("schedi-newdash"),
           demo: document.getElementById("schediDemoNote")?.hidden === false,
         };
       });
       expect(stats.dash).toBe(true);
       expect(stats.demo).toBe(true);
-      expect(stats.setup).toBe("Finish setting up 5 of 6");
-      expect(stats.unpaid).toBe("7");
+      expect(stats.setup).toBe("Get your page ready");
+      expect(stats.setupCount).toBe("5 of 6");
+      expect(stats.people).toBe("2");
+      expect(stats.owed).toMatch(/^\$\d+/);
       expect(stats.week).toBe(stats.weekExpected);
       const pendingDates = await page.evaluate(() => {
         const tenant = (window as unknown as { getTenant: () => { appointments: { id?: string; date?: string; status?: string }[] } }).getTenant();
@@ -1955,7 +1992,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
         const button = [...document.querySelectorAll("button")].find((node) => node.textContent === "Accept");
         if (!button) return "missing";
         (button as HTMLButtonElement).click();
-        return document.getElementById("schediStatReview")?.textContent || "";
+        return String(document.querySelectorAll("#schediTodayRequests .sd-request").length);
       });
       expect(accept).toBe("2");
       const decline = await page.evaluate(() => {
@@ -1976,7 +2013,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
         (document.getElementById("denyConfirmKeep") as HTMLButtonElement).click();
         return {
           hidden: document.getElementById("denyConfirmModal")?.classList.contains("hidden") === true,
-          review: document.getElementById("schediStatReview")?.textContent || "",
+          review: String(document.querySelectorAll("#schediTodayRequests .sd-request").length),
         };
       });
       expect(kept).toEqual({ hidden: true, review: "2" });
@@ -1984,7 +2021,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
         const button = [...document.querySelectorAll("#schediTodayRequests button")].find((node) => node.textContent === "Decline");
         (button as HTMLButtonElement).click();
         (document.getElementById("denyConfirmBtn") as HTMLButtonElement).click();
-        return document.getElementById("schediStatReview")?.textContent || "";
+        return String(document.querySelectorAll("#schediTodayRequests .sd-request").length);
       });
       expect(declined).toBe("1");
       const paidFlip = await page.evaluate(async () => {
@@ -1997,7 +2034,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
           setRosterPayFilter: (kind: string) => void;
           openClientDetail: (id: string) => void;
         };
-        const unpaidBefore = document.getElementById("schediStatUnpaid")?.textContent || "";
+        const unpaidBefore = document.getElementById("schediStatOwed")?.textContent || "";
         w.markAppointmentPaid("HB-1003");
         const cash = document.querySelector('#rosterPaidMethodOptions [data-paid-method="cash"]') as HTMLButtonElement | null;
         if (!cash) throw new Error("cash method missing");
@@ -2024,7 +2061,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
         const saved = w.getTenant().appointments.find((item) => item.id === "HB-1003");
         return {
           unpaidBefore,
-          unpaid: document.getElementById("schediStatUnpaid")?.textContent || "",
+          unpaid: document.getElementById("schediStatOwed")?.textContent || "",
           pill: pill?.textContent || "",
           pillClass: pill?.className || "",
           maya: maya?.querySelector(".sd-pay")?.textContent || "",
@@ -2039,10 +2076,11 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
           method: saved?.paidMethod || "",
         };
       });
-      expect(Number(paidFlip.unpaid)).toBe(Number(paidFlip.unpaidBefore) - 1);
+      const owedNumber = (value: string) => Number(String(value).replace(/[^0-9.]/g, ""));
+      expect(owedNumber(paidFlip.unpaidBefore) - owedNumber(paidFlip.unpaid)).toBe(80);
       expect(paidFlip.pill).toContain("In person / Cash · $80");
       expect(paidFlip.pillClass).toContain("sd-pay-cash");
-      expect(paidFlip.maya).toContain("Card (Stripe) · $65");
+      expect(paidFlip.maya).toContain("Card · $65");
       expect(paidFlip.chips.join(" ")).toMatch(/Card/);
       expect(paidFlip.chips.join(" ")).toMatch(/Cash App/);
       expect(paidFlip.chips.join(" ")).toMatch(/PayPal/);
@@ -2402,20 +2440,45 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       expect(flagged.tabbar).toBe("grid");
       await page.evaluate(() => (window as unknown as { schediDashGo: (tab: string) => void }).schediDashGo("profile"));
       const profile = await visible(".sd-hours-week-day");
-      expect(profile.shown).toBe(7);
-      expect(profile.block).toBe("block");
-      const profileFields = await page.evaluate(() => ({
-        dash: document.getElementById("tenantPortalSection")?.getAttribute("data-dash"),
-        booking: getComputedStyle(document.getElementById("tenantProfileFields") as Element).display,
-        timeOff: getComputedStyle(document.getElementById("tenantHoursTimeOff") as Element).display,
-      }));
+      expect(profile.shown).toBe(0);
+      expect(profile.block).toBe("none");
+      expect(profile.blockH).toBe(0);
+      const profileFields = await page.evaluate(() => {
+        const shown = (id: string) => {
+          const el = document.getElementById(id);
+          if (!el) return "missing";
+          const style = getComputedStyle(el);
+          const box = el.getBoundingClientRect();
+          return style.display !== "none" && box.height > 0 ? "shown" : "hidden";
+        };
+        return {
+          dash: document.getElementById("tenantPortalSection")?.getAttribute("data-dash"),
+          booking: shown("tenantProfileFields"),
+          address: shown("tenantAddress"),
+          intro: shown("tenantHoursIntro"),
+          summary: shown("hoursWeekSummary"),
+          weekBtn: shown("hoursWeekLayoutBtn"),
+          rules: shown("tenantSlotInterval"),
+          timeOff: getComputedStyle(document.getElementById("tenantHoursTimeOff") as Element).display,
+          save: (document.getElementById("tenantHoursSaveBtn")?.textContent || "").trim(),
+        };
+      });
       expect(profileFields.dash).toBe("profile");
-      expect(profileFields.booking).not.toBe("none");
+      expect(profileFields.booking).toBe("shown");
+      expect(profileFields.address).toBe("shown");
+      expect(profileFields.intro).toBe("hidden");
+      expect(profileFields.summary).toBe("hidden");
+      expect(profileFields.weekBtn).toBe("hidden");
+      expect(profileFields.rules).toBe("hidden");
       expect(profileFields.timeOff).toBe("none");
-      await page.$eval("#hoursWeekLayoutBtn", (el) => (el as HTMLButtonElement).click());
-      const profileDays = await visible(".sd-hours-day");
-      expect(profileDays.shown).toBe(7);
-      expect(profileDays.blockH).toBeGreaterThan(0);
+      expect(profileFields.save).toBe("Save booking page");
+      await page.evaluate(() => (window as unknown as { schediDashGo: (tab: string) => void }).schediDashGo("hours"));
+      await page.waitForSelector(".sd-hours-week-day", { timeout: 10000 });
+      const hoursAgain = await visible(".sd-hours-week-day");
+      expect(hoursAgain.shown).toBe(7);
+      expect(hoursAgain.pressed).toBe("true");
+      expect(hoursAgain.block).toBe("block");
+      expect(await page.$eval("#tenantHoursSaveBtn", (el) => (el.textContent || "").trim())).toBe("Save Operating Hours");
       expect(errors).toEqual([]);
     } finally {
       await browser.close();
@@ -3062,7 +3125,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       venmo: { dark: "rgb(0, 140, 255)", light: "rgb(0, 140, 255)", fg: "rgb(11, 18, 32)" },
       paypal: { dark: "rgb(0, 112, 224)", light: "rgb(0, 48, 135)", fg: "rgb(255, 255, 255)" },
       square: { dark: "rgb(255, 255, 255)", light: "rgb(0, 0, 0)", fg: "rgb(0, 0, 0)", lightFg: "rgb(255, 255, 255)" },
-      card: { dark: "rgb(5, 150, 105)", light: "rgb(4, 120, 87)", fg: "rgb(255, 255, 255)" },
+      card: { dark: "rgb(99, 91, 255)", light: "rgb(67, 56, 202)", fg: "rgb(255, 255, 255)" },
       cash: { dark: "rgb(5, 150, 105)", light: "rgb(4, 120, 87)", fg: "rgb(255, 255, 255)" },
     };
     try {
@@ -3090,6 +3153,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
             const box = el.getBoundingClientRect();
             return {
               method: el.getAttribute("data-paid-method") || "",
+              label: (el.querySelector("span")?.textContent || "").trim(),
               radio: el.getAttribute("role"),
               checked: el.getAttribute("aria-checked"),
               bg: style.backgroundColor,
@@ -3176,13 +3240,45 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
         tenant.paymentGateways.cashapp = false;
         tenant.paymentGateways.paypal = false;
         tenant.paymentGateways.later = false;
-        (window as unknown as { openRosterPaidMethodModal: (id: string) => void }).openRosterPaidMethodModal("HB-1004");
+        (window as unknown as { openRosterPaidMethodModal: (id: string) => void }).openRosterPaidMethodModal("HB-1003");
       });
-      await page.waitForSelector('#rosterPaidMethodOptions [data-paid-method="square"]', { timeout: 10000 });
+      await page.waitForSelector('#rosterPaidMethodOptions [data-paid-method="card"]', { timeout: 10000 });
       const gated = await read();
-      expect(gated.options.map((row) => row.method)).toEqual(["card", "zelle", "venmo", "square", "cash"]);
-      expect(gated.options.find((row) => row.method === "square")?.checked).toBe("false");
+      expect(gated.options.map((row) => row.method)).toEqual(["card", "zelle", "venmo", "cash"]);
+      expect(gated.options.some((row) => row.method === "square")).toBe(false);
+      expect(gated.options.find((row) => row.method === "card")?.label).toBe("Card (Stripe)");
       expect(gated.options.find((row) => row.method === "cash")?.checked).toBe("false");
+      await page.evaluate(() => {
+        const card = document.querySelector('#rosterPaidMethodOptions [data-paid-method="card"]') as HTMLButtonElement | null;
+        card?.click();
+      });
+      for (const theme of ["dark", "light"] as const) {
+        await page.evaluate((mode) => (window as unknown as { setSchediTheme: (mode: string) => void }).setSchediTheme(mode), theme);
+        const picked = await read();
+        const card = picked.options.find((row) => row.method === "card");
+        expect(card?.checked).toBe("true");
+        expect(card?.bg).toBe(brands.card[theme]);
+        expect(card?.fg).toBe(brands.card.fg);
+        expect(picked.options.find((row) => row.method === "zelle")?.bg).toBe(muted[theme].bg);
+      }
+      await page.click("#rosterPaidMethodConfirmBtn");
+      await page.waitForFunction(() => document.getElementById("rosterPaidMethodModal")?.classList.contains("hidden"), { timeout: 10000 });
+      const cardPaid = await page.evaluate(() => {
+        const row = [...document.querySelectorAll("#schediTodaySchedule article")].find((node) => node.textContent?.includes("Jordan"));
+        const pill = row?.querySelector(".sd-pay") as HTMLElement | null;
+        const style = pill ? getComputedStyle(pill) : null;
+        return { text: pill?.textContent || "", cls: pill?.className || "", color: style?.color || "" };
+      });
+      expect(cardPaid.text).toContain("Card · $80");
+      expect(cardPaid.cls).toContain("sd-pay-card");
+      expect(cardPaid.color).toBe("rgb(67, 56, 202)");
+      await page.evaluate(() => (window as unknown as { setSchediTheme: (mode: string) => void }).setSchediTheme("dark"));
+      const cardPaidDark = await page.evaluate(() => {
+        const row = [...document.querySelectorAll("#schediTodaySchedule article")].find((node) => node.textContent?.includes("Jordan"));
+        const pill = row?.querySelector(".sd-pay") as HTMLElement | null;
+        return getComputedStyle(pill as Element).color;
+      });
+      expect(cardPaidDark).toBe("rgb(196, 192, 255)");
       expect(writes).toEqual([]);
     } finally {
       await browser.close();
@@ -4771,7 +4867,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
           expect(metrics.borderLeft).toBe("0px");
           expect(metrics.bg).toBe(theme === "dark" ? "rgb(11, 18, 32)" : "rgb(255, 255, 255)");
           expect(metrics.borderColor).toBe(theme === "dark" ? "rgba(148, 163, 184, 0.32)" : "rgb(226, 232, 240)");
-          expect(metrics.labels).toEqual(["Today", "Calendar", "", "Clients", "More"]);
+          expect(metrics.labels).toEqual(["Agenda", "Clients", "", "Calendar", "More"]);
           const slot = metrics.right / 5;
           metrics.widths.forEach((box, index) => {
             expect(Math.abs(box.center - (slot * index + slot / 2))).toBeLessThan(2);
@@ -4785,7 +4881,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
           expect(metrics.labelWeight).toBe("700");
           expect(metrics.labelFont.toLowerCase()).toContain("inter");
           expect(metrics.inactive).toBe(theme === "dark" ? "rgb(163, 177, 198)" : "rgb(63, 75, 94)");
-          expect(metrics.activeLabel).toBe("Today");
+          expect(metrics.activeLabel).toBe("Agenda");
           expect(metrics.activeColor).toBe(theme === "dark" ? "rgb(52, 211, 153)" : "rgb(4, 120, 87)");
           expect(metrics.pill).toBe("rgba(16, 185, 129, 0.15)");
           expect(metrics.pillRadius).toBe("14px");
@@ -4844,7 +4940,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       const startColor = "rgb(52, 211, 153)";
       const endColor = "rgb(163, 177, 198)";
       expect(motion.colors.some((color) => color !== startColor && color !== endColor)).toBe(true);
-      await page.waitForFunction(() => document.getElementById("schediDashTabbar")?.style.getPropertyValue("--sd-tab-slot") === "3", { timeout: 2000 });
+      await page.waitForFunction(() => document.getElementById("schediDashTabbar")?.style.getPropertyValue("--sd-tab-slot") === "1", { timeout: 2000 });
       const settled = await page.evaluate(() => {
         const bar = document.getElementById("schediDashTabbar") as HTMLElement;
         const clients = bar.querySelector('[data-dash-go="clients"]') as HTMLElement;
@@ -4857,7 +4953,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
           fabOn: fab.classList.contains("is-on"),
         };
       });
-      expect(settled).toEqual({ slot: "3", current: "page", today: "", fab: "", fabOn: false });
+      expect(settled).toEqual({ slot: "1", current: "page", today: "", fab: "", fabOn: false });
       await page.emulateMediaFeatures([{ name: "prefers-reduced-motion", value: "reduce" }]);
       await page.waitForFunction(() => getComputedStyle(document.querySelector("#schediDashTabbar .sd-tab-indicator") as Element).transitionDuration === "0s", { timeout: 2000 });
       const reduced = await page.evaluate(() => new Promise<{ jumped: boolean; duration: string }>((resolve) => {
@@ -4888,6 +4984,111 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
         };
       });
       expect(more).toEqual({ slot: "4", current: "page", on: true });
+    } finally {
+      await browser.close();
+      await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+    }
+  }, 120000);
+
+  it("keeps Agenda, Clients, Add, Calendar, and More visible at 390 on every tab", async () => {
+    const types: Record<string, string> = {
+      ".html": "text/html; charset=utf-8",
+      ".js": "text/javascript; charset=utf-8",
+      ".svg": "image/svg+xml",
+      ".png": "image/png",
+      ".json": "application/json",
+      ".webmanifest": "application/manifest+json",
+    };
+    const server = createServer((req, res) => {
+      const path = new URL(req.url || "/", "http://127.0.0.1").pathname;
+      const file = path === "/" || path === "/portal-preview" ? "/index.html" : path;
+      const full = join(root, file);
+      if (!full.startsWith(root) || !existsSync(full)) {
+        res.writeHead(404);
+        res.end("missing");
+        return;
+      }
+      res.writeHead(200, { "content-type": types[extname(full)] || "application/octet-stream" });
+      res.end(readFileSync(full));
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const address = server.address();
+    const port = typeof address === "object" && address ? address.port : 0;
+    const puppeteer = await import("puppeteer-core");
+    const browser = await puppeteer.default.launch({
+      executablePath: chrome,
+      headless: true,
+      args: ["--no-sandbox", "--disable-dev-shm-usage"],
+    });
+    const page = await browser.newPage();
+    const readBar = () => page.evaluate(() => {
+      const bar = document.getElementById("schediDashTabbar") as HTMLElement;
+      const view = window.visualViewport;
+      const buttons = Array.from(bar.querySelectorAll(":scope > button")) as HTMLButtonElement[];
+      const items = buttons.map((btn) => {
+        const box = btn.getBoundingClientRect();
+        const hit = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+        return {
+          label: btn.getAttribute("aria-label") || (btn.querySelector("span")?.textContent || "").trim(),
+          left: box.left,
+          right: box.right,
+          top: box.top,
+          bottom: box.bottom,
+          hit: !!(hit && (hit === btn || btn.contains(hit))),
+        };
+      });
+      return {
+        inner: window.innerWidth,
+        visual: view?.width ?? window.innerWidth,
+        visualHeight: view?.height ?? window.innerHeight,
+        scroll: document.documentElement.scrollWidth,
+        dash: document.getElementById("tenantPortalSection")?.getAttribute("data-dash") || "",
+        view: (window as unknown as { rosterCalendarView?: string }).rosterCalendarView || "",
+        items,
+      };
+    });
+    const expectBar = async (where: string) => {
+      const bar = await readBar();
+      expect(bar.inner, where).toBe(390);
+      expect(bar.visual, where).toBe(390);
+      expect(bar.scroll, where).toBeLessThanOrEqual(390);
+      expect(bar.items.map((item) => item.label), where).toEqual(["Agenda", "Clients", "Add appointment", "Calendar", "More"]);
+      bar.items.forEach((item) => {
+        expect(item.left, `${where} ${item.label}`).toBeGreaterThanOrEqual(-1);
+        expect(item.right, `${where} ${item.label}`).toBeLessThanOrEqual(bar.visual + 1);
+        expect(item.top, `${where} ${item.label}`).toBeGreaterThanOrEqual(-1);
+        expect(item.bottom, `${where} ${item.label}`).toBeLessThanOrEqual(bar.visualHeight + 1);
+        expect(item.hit, `${where} ${item.label}`).toBe(true);
+      });
+    };
+    try {
+      await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+      await page.goto(`http://127.0.0.1:${port}/portal-preview`, { waitUntil: "domcontentloaded", timeout: 45000 });
+      await page.waitForFunction(() => document.getElementById("schediStatPeople")?.textContent === "2", { timeout: 20000 });
+      await expectBar("today");
+      await page.click('#schediDashTabbar [data-dash-go="clients"]');
+      await page.waitForFunction(() => document.getElementById("tenantPortalSection")?.getAttribute("data-dash") === "clients");
+      await expectBar("clients");
+      await page.click('#schediDashTabbar [data-dash-go="appointments"]');
+      await page.waitForFunction(() => document.getElementById("tenantPortalSection")?.getAttribute("data-dash") === "appointments");
+      await expectBar("calendar list");
+      await page.click("#rosterViewWeek");
+      await page.waitForFunction(() => (window as unknown as { rosterCalendarView?: string }).rosterCalendarView === "week");
+      await expectBar("calendar week");
+      await page.click("#rosterViewMonth");
+      await page.waitForFunction(() => (window as unknown as { rosterCalendarView?: string }).rosterCalendarView === "month");
+      await expectBar("calendar month");
+      for (const name of ["services", "hours", "payments", "emails", "profile", "reports", "account", "billing"]) {
+        await page.click("#schediDashMoreBtn");
+        await page.waitForSelector("#schediDashMoreSheet:not([hidden])");
+        await page.click(`#schediDashMoreSheet [data-dash-go="${name}"]`);
+        await page.waitForFunction((pageName) => {
+          const section = document.getElementById("tenantPortalSection");
+          const sheet = document.getElementById("schediDashMoreSheet");
+          return section?.getAttribute("data-dash") === pageName && !!sheet?.hidden;
+        }, {}, name);
+        await expectBar(name);
+      }
     } finally {
       await browser.close();
       await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
@@ -5308,7 +5509,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       venmo: { dark: "rgb(0, 140, 255)", light: "rgb(0, 140, 255)", fg: "rgb(11, 18, 32)" },
       paypal: { dark: "rgb(0, 112, 224)", light: "rgb(0, 48, 135)", fg: "rgb(255, 255, 255)" },
       square: { dark: "rgb(255, 255, 255)", light: "rgb(0, 0, 0)", fg: "rgb(0, 0, 0)", lightFg: "rgb(255, 255, 255)" },
-      card: { dark: "rgb(5, 150, 105)", light: "rgb(4, 120, 87)", fg: "rgb(255, 255, 255)" },
+      card: { dark: "rgb(99, 91, 255)", light: "rgb(67, 56, 202)", fg: "rgb(255, 255, 255)" },
       cash: { dark: "rgb(5, 150, 105)", light: "rgb(4, 120, 87)", fg: "rgb(255, 255, 255)" },
       later: { dark: "rgb(5, 150, 105)", light: "rgb(4, 120, 87)", fg: "rgb(255, 255, 255)" },
     };

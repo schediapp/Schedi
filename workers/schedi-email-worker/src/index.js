@@ -50,6 +50,8 @@ import {
   patchPrivateTenant,
 } from './tenant-private.js';
 import { handleSquareHttp, runSquareReconcile } from './square.js';
+import { applyCardCheckoutPayment, centsByBooking } from './card-payment.js';
+import { handleConnectBookingPaid } from './connect-booking-paid.js';
 import { handlePageVisitsRequest } from '../../../worker/page-visits.ts';
 
 const ALLOWED_ORIGINS = new Set([
@@ -2018,7 +2020,7 @@ async function handleStripeWebhook(request, env) {
   const type = String(event.type || '');
   const obj = (event.data && event.data.object) || {};
   try {
-    if (type === 'checkout.session.completed') {
+    if (type === 'checkout.session.completed' || type === 'checkout.session.async_payment_succeeded') {
       const earlyMeta = obj.metadata || {};
       if (obj.mode === 'payment' && earlyMeta.kind === 'booking_payment') {
         if (obj.payment_status && obj.payment_status !== 'paid') {
@@ -2026,14 +2028,20 @@ async function handleStripeWebhook(request, env) {
         }
         let card = { stripeCustomerId: '', stripePaymentMethodId: '' };
         try { card = await cardFromCheckout(env, obj); } catch (_) { card = { stripeCustomerId: '', stripePaymentMethodId: '' }; }
+        const intent = obj.payment_intent;
         const paid = await markBookingCheckoutPaid(env, {
           tenantId: earlyMeta.tenantId,
           bookingIds: earlyMeta.bookingIds,
           purpose: earlyMeta.purpose,
           card: card,
+          amountCents: obj.amount_total,
+          paymentIntentId: typeof intent === 'string' ? intent : (intent && intent.id) || '',
+          splits: earlyMeta.splits,
         });
-        return json({ ok: true, result: paid }, paid.ok || paid.ignored ? 200 : 500, '');
+        return json({ ok: true, result: paid }, paid.ok || paid.duplicate || paid.ignored ? 200 : 500, '');
       }
+    }
+    if (type === 'checkout.session.completed') {
       if (obj.mode && obj.mode !== 'subscription') return json({ ok: true, ignored: true }, 200, '');
       if (obj.payment_status && obj.payment_status !== 'paid' && obj.payment_status !== 'no_payment_required') {
         return json({ ok: true, ignored: true, reason: 'unpaid' }, 200, '');
@@ -2554,7 +2562,7 @@ function formatConfirmEmailCalParts(dateStr) {
 }
 
 
-async function markBookingCheckoutPaid(env, { tenantId, bookingIds, purpose, card }) {
+async function markBookingCheckoutPaid(env, { tenantId, bookingIds, purpose, card, amountCents, paymentIntentId, splits }) {
   const id = safeTenantId(tenantId);
   const ids = parseBookingIdList(bookingIds);
   if (!id || !ids.length) return { ok: false, ignored: true, reason: 'no_booking' };
@@ -2564,41 +2572,46 @@ async function markBookingCheckoutPaid(env, { tenantId, bookingIds, purpose, car
   if (tenantPlanName(tenant) !== 'pro') return { ok: false, ignored: true, reason: 'not_pro' };
   const appts = Array.isArray(tenant.appointments) ? tenant.appointments.slice() : [];
   const payPurpose = purpose === 'card' ? 'card' : 'deposit';
+  const amounts = centsByBooking(ids, amountCents, splits);
   let changed = false;
+  let matched = 0;
+  let duplicates = 0;
   const paidNow = [];
   for (let i = 0; i < appts.length; i++) {
     const booking = appts[i];
     if (!booking || !ids.includes(String(booking.id || ''))) continue;
+    matched += 1;
     const price = bookingPriceForCharge(tenant, booking);
     const quote = quoteDepositForPrice(tenant, price);
-    const next = Object.assign({}, booking);
-    if (price !== null) next.amount = price;
-    else delete next.amount;
-    if (payPurpose === 'deposit') {
-      const deposit = Number(booking.depositAmount) > 0 ? roundMoney(booking.depositAmount) : quote.deposit;
-      next.depositAmount = deposit;
-      next.depositPaid = true;
-      if (price !== null) next.balanceDue = roundMoney(Math.max(0, price - deposit));
-      else delete next.balanceDue;
-      next.paymentMethod = 'card';
-      next.paymentOptionLabel = 'Card deposit';
-      next.paymentStatus = 'DEPOSIT PAID';
-      next.paidMethod = next.paidMethod || 'card';
-      if (String(booking.paymentStatus || '') !== 'DEPOSIT PAID' || booking.depositPaid !== true) paidNow.push(next);
-    } else {
-      next.paymentMethod = 'card';
-      next.paymentOptionLabel = next.paymentOptionLabel || 'Card';
-      next.paymentStatus = 'PAID VIA CARD';
-      next.paidMethod = 'card';
+    const cents = Object.prototype.hasOwnProperty.call(amounts, String(booking.id)) ? amounts[String(booking.id)] : null;
+    const applied = applyCardCheckoutPayment(booking, {
+      purpose: payPurpose,
+      amountCents: cents,
+      paymentIntentId: paymentIntentId,
+      stripeCustomerId: card && card.stripeCustomerId,
+      stripePaymentMethodId: card && card.stripePaymentMethodId,
+      catalogPrice: price,
+      quotedDeposit: quote.deposit,
+    });
+    if (applied.duplicate) {
+      duplicates += 1;
+      continue;
     }
-    appts[i] = next;
+    appts[i] = applied.booking;
     changed = true;
+    if (payPurpose === 'deposit') paidNow.push(applied.booking);
   }
-  if (!changed) return { ok: false, ignored: true, reason: 'booking_not_found' };
+  if (!changed) {
+    if (matched && duplicates === matched) return { ok: true, duplicate: true, tenantId: id, purpose: payPurpose };
+    return { ok: false, ignored: true, reason: 'booking_not_found' };
+  }
   tenant.appointments = appts;
   const cards = {};
-  if (card && (card.stripeCustomerId || card.stripePaymentMethodId)) {
-    for (const bid of ids) cards[String(bid)] = card;
+  const intentId = typeof paymentIntentId === 'string' ? paymentIntentId : '';
+  if (card && (card.stripeCustomerId || card.stripePaymentMethodId) || intentId) {
+    for (const bid of ids) {
+      cards[String(bid)] = Object.assign({}, card || {}, { stripePaymentIntentId: intentId });
+    }
   }
   await persistTenantAppointments(env, idToken, id, appts, { cards: cards });
   if (payPurpose === 'deposit') {
@@ -2840,6 +2853,23 @@ async function handleBillingRequest(request, env, origin, path, url) {
   if (path === '/billing/webhook') {
     if (request.method !== 'POST') return json({ ok: false, error: 'method_not_allowed' }, 405, origin);
     return handleStripeWebhook(request, env);
+  }
+  if (path === '/billing/connect-booking-paid') {
+    return handleConnectBookingPaid(request, env, {
+      json: (body, status) => json(body, status, ''),
+      markPaid: (payload) => markBookingCheckoutPaid(env, {
+        tenantId: payload.tenantId,
+        bookingIds: payload.bookingIds,
+        purpose: payload.purpose,
+        card: {
+          stripeCustomerId: payload.stripeCustomerId || '',
+          stripePaymentMethodId: payload.stripePaymentMethodId || '',
+        },
+        amountCents: payload.amountCents,
+        paymentIntentId: payload.paymentIntentId,
+        splits: payload.splits,
+      }),
+    });
   }
   if (path === '/billing/checkout') {
     if (request.method !== 'POST') return json({ ok: false, error: 'method_not_allowed' }, 405, origin);

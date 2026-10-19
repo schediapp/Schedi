@@ -15,7 +15,7 @@ export async function POST(request: Request) {
   const payload = await request.text();
   try {
     const event = constructVerifiedEvent(getStripe(), payload, signature);
-    applyStripeEvent(getStore(), event);
+    await applyStripeEvent(getStore(), event);
     return NextResponse.json({ received: true });
   } catch (error) {
     const message = errorMessage(error);

@@ -500,7 +500,16 @@ html.schedi-light #tenantPortalSection.schedi-newdash {
 #tenantPortalSection.schedi-newdash .sd-brand-mobile { display: none; }
 #tenantPortalSection.schedi-newdash .sd-top-spacer { flex: 1; }
 #tenantPortalSection.schedi-newdash .sd-biz { margin: 2px 8px 10px; font-size: 12px; font-weight: 700; color: var(--sd-muted); }
-#tenantPortalSection.schedi-newdash .sd-nav { display: flex; flex-direction: column; gap: 4px; }
+#tenantPortalSection.schedi-newdash .sd-nav { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+#tenantPortalSection.schedi-newdash .sd-nav-group { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+#tenantPortalSection.schedi-newdash .sd-nav-label {
+    margin: 0 8px 4px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--sd-faint);
+}
 #tenantPortalSection.schedi-newdash .sd-nav-foot { margin-top: auto; padding-top: 12px; border-top: 1px solid var(--sd-line); }
 #tenantPortalSection.schedi-newdash .sd-nav button,
 #tenantPortalSection.schedi-newdash #schediDashMoreSheet .sd-sheet-card > button,
@@ -598,22 +607,91 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-demo-note { color: #03
 #tenantPortalSection.schedi-newdash .sd-btn-brand { background: var(--sd-brand); color: var(--sd-ink); border-color: transparent; }
 #tenantPortalSection.schedi-newdash .sd-btn-ok { background: rgba(16, 185, 129, 0.16); color: var(--sd-brand-2); border-color: rgba(16, 185, 129, 0.35); }
 #tenantPortalSection.schedi-newdash .sd-btn-no { background: rgba(244, 63, 94, 0.1); color: var(--sd-rose); border-color: rgba(244, 63, 94, 0.35); }
-#tenantPortalSection.schedi-newdash .sd-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
-#tenantPortalSection.schedi-newdash .sd-stat,
+#tenantPortalSection.schedi-newdash .sd-today-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+    align-items: start;
+    min-width: 0;
+}
+#tenantPortalSection.schedi-newdash .sd-glance,
+#tenantPortalSection.schedi-newdash .sd-agenda,
+#tenantPortalSection.schedi-newdash .sd-wait,
+#tenantPortalSection.schedi-newdash .sd-ready { min-width: 0; }
+#tenantPortalSection.schedi-newdash .sd-agenda-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; margin-bottom: 12px; }
+#tenantPortalSection.schedi-newdash .sd-agenda-copy { min-width: 0; }
+#tenantPortalSection.schedi-newdash .sd-glance h3,
+#tenantPortalSection.schedi-newdash .sd-agenda h3,
+#tenantPortalSection.schedi-newdash .sd-wait h3,
+#tenantPortalSection.schedi-newdash .sd-ready h3 { margin: 0; font-size: 15px; font-weight: 800; color: var(--sd-text); }
+#tenantPortalSection.schedi-newdash .sd-glance > h3,
+#tenantPortalSection.schedi-newdash .sd-wait > h3 { margin-bottom: 10px; }
+#tenantPortalSection.schedi-newdash .sd-next-line { margin: 4px 0 0; color: var(--sd-muted); font-size: 13px; font-weight: 700; overflow-wrap: anywhere; }
+#tenantPortalSection.schedi-newdash .sd-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 0 0 0 4px;
+    padding: 0 0 0 14px;
+    border-left: 2px solid rgba(16, 185, 129, 0.4);
+    min-width: 0;
+}
+#tenantPortalSection.schedi-newdash .sd-timeline .sd-row.is-next {
+    box-shadow: inset 3px 0 0 var(--sd-brand), var(--sd-shadow);
+}
+#tenantPortalSection.schedi-newdash .sd-next-tag {
+    flex: none;
+    align-self: center;
+    border-radius: 999px;
+    padding: 2px 7px;
+    background: var(--sd-brand);
+    color: var(--sd-ink);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+#tenantPortalSection.schedi-newdash .sd-pulse {
+    background: var(--sd-panel);
+    border: 1px solid var(--sd-line);
+    border-radius: 18px;
+    box-shadow: var(--sd-shadow);
+    padding: 12px 14px 14px;
+    min-width: 0;
+}
+#tenantPortalSection.schedi-newdash .sd-pulse-row { display: flex; align-items: flex-start; min-width: 0; }
+#tenantPortalSection.schedi-newdash .sd-pulse-row p {
+    flex: 1 1 0;
+    min-width: 0;
+    margin: 0;
+    padding: 0 8px;
+    border-left: 1px solid var(--sd-line);
+}
+#tenantPortalSection.schedi-newdash .sd-pulse-row p:first-child { padding-left: 0; border-left: 0; }
+#tenantPortalSection.schedi-newdash .sd-pulse-row strong {
+    display: block;
+    font-size: 1.35rem;
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+    color: var(--sd-text);
+    overflow-wrap: anywhere;
+}
+#tenantPortalSection.schedi-newdash .sd-pulse-row span { display: block; margin-top: 2px; color: var(--sd-muted); font-size: 12px; font-weight: 700; line-height: 1.25; overflow-wrap: anywhere; }
 #tenantPortalSection.schedi-newdash .sd-card,
-#tenantPortalSection.schedi-newdash .sd-setup {
+#tenantPortalSection.schedi-newdash .sd-ready {
     background: var(--sd-panel);
     border: 1px solid var(--sd-line);
     border-radius: 18px;
     box-shadow: var(--sd-shadow);
 }
-#tenantPortalSection.schedi-newdash .sd-stat { padding: 14px 16px; }
-#tenantPortalSection.schedi-newdash .sd-stat p,
-#tenantPortalSection.schedi-newdash .sd-stat span { margin: 0; color: var(--sd-muted); font-size: 12px; font-weight: 700; }
-#tenantPortalSection.schedi-newdash .sd-stat strong { display: block; margin: 6px 0 2px; font-size: 1.7rem; letter-spacing: -0.03em; color: var(--sd-text); }
+#tenantPortalSection.schedi-newdash .sd-ready { padding: 14px 16px 16px; }
+#tenantPortalSection.schedi-newdash .sd-ready-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+#tenantPortalSection.schedi-newdash .sd-ready-count { margin: 0; color: var(--sd-brand-2); font-size: 13px; font-weight: 800; white-space: nowrap; }
+#tenantPortalSection.schedi-newdash .sd-pips { display: flex; gap: 6px; list-style: none; margin: 0 0 12px; padding: 0; }
+#tenantPortalSection.schedi-newdash .sd-pips li { flex: 1 1 0; height: 6px; border-radius: 999px; background: rgba(148, 163, 184, 0.28); }
+#tenantPortalSection.schedi-newdash .sd-pips li.is-done { background: var(--sd-brand); }
 #tenantPortalSection.schedi-newdash .sd-block { margin-top: 18px; }
-#tenantPortalSection.schedi-newdash .sd-block > h3,
-#tenantPortalSection.schedi-newdash .sd-setup h3 { margin: 0 0 10px; font-size: 15px; font-weight: 800; color: var(--sd-text); }
+#tenantPortalSection.schedi-newdash .sd-block > h3 { margin: 0 0 10px; font-size: 15px; font-weight: 800; color: var(--sd-text); }
 #tenantPortalSection.schedi-newdash .sd-stack { display: flex; flex-direction: column; gap: 8px; }
 #tenantPortalSection.schedi-newdash .sd-card { padding: 12px 14px; }
 #tenantPortalSection.schedi-newdash .sd-request { display: flex; justify-content: space-between; gap: 12px; align-items: center; border-left: 3px solid var(--sd-amber); }
@@ -655,7 +733,8 @@ html.schedi-light body.schedi-newdash #rosterApptModal .text-amber-400,
 html.schedi-light body.schedi-newdash #rosterApptModal .sd-pill-amber { color: #92400e !important; }
 #tenantPortalSection.schedi-newdash .sd-visit { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; padding: 8px 0; border-top: 1px solid var(--sd-line); }
 #tenantPortalSection.schedi-newdash .sd-visit p { margin: 0; min-width: 0; }
-#tenantPortalSection.schedi-newdash .sd-pay { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; border-radius: 999px; padding: 2px 8px; font-size: 11px; font-weight: 800; line-height: 1.3; border: 1px solid var(--sd-line); color: var(--sd-text); background: rgba(148, 163, 184, 0.14); white-space: nowrap; }
+/* Icon chips hide their words with position:absolute. The chip is that containing block. Otherwise the words sit at the end of a nowrap month line, widen the phone layout viewport, and the fixed tab bar stretches until More is off the screen. */
+#tenantPortalSection.schedi-newdash .sd-pay { position: relative; display: inline-flex; align-items: center; gap: 4px; max-width: 100%; border-radius: 999px; padding: 2px 8px; font-size: 11px; font-weight: 800; line-height: 1.3; border: 1px solid var(--sd-line); color: var(--sd-text); background: rgba(148, 163, 184, 0.14); white-space: nowrap; }
 #tenantPortalSection.schedi-newdash .sd-pay svg { width: 14px; height: 14px; display: block; flex: none; }
 #tenantPortalSection.schedi-newdash .sd-pay-card,
 #tenantPortalSection.schedi-newdash .sd-chip.sd-pay-card,
@@ -1157,7 +1236,7 @@ html.schedi-light body.schedi-newdash .roster-sheet-actions > button.sd-act.sd-a
     border-color: #fda4af;
 }
 #tenantPortalSection.schedi-newdash .sd-empty { margin: 0; color: var(--sd-muted); font-size: 13px; padding: 8px 2px; }
-#tenantPortalSection.schedi-newdash .sd-setup { padding: 14px 16px 16px; }
+#tenantPortalSection.schedi-newdash .sd-ready .sd-stack { margin-top: 0; }
 #tenantPortalSection.schedi-newdash .sd-progress { height: 6px; border-radius: 999px; background: rgba(148, 163, 184, 0.2); overflow: hidden; margin-bottom: 12px; }
 #tenantPortalSection.schedi-newdash .sd-progress > span { display: block; height: 100%; width: 0; background: var(--sd-brand); }
 #tenantPortalSection.schedi-newdash .sd-check {
@@ -1199,9 +1278,13 @@ html.schedi-light body.schedi-newdash .roster-sheet-actions > button.sd-act.sd-a
 #tenantPortalSection.schedi-newdash[data-dash="account"] #tenantMoreCard,
 #tenantPortalSection.schedi-newdash[data-dash="billing"] #tenantBillingCard { display: block !important; }
 #tenantPortalSection.schedi-newdash[data-dash="hours"] #tenantProfileFields,
-#tenantPortalSection.schedi-newdash[data-dash="profile"] #tenantHoursTimeOff { display: none !important; }
-#tenantPortalSection.schedi-newdash[data-dash="hours"] #tenantHoursShiftBlock,
-#tenantPortalSection.schedi-newdash[data-dash="profile"] #tenantHoursShiftBlock { display: block !important; }
+#tenantPortalSection.schedi-newdash[data-dash="profile"] #tenantHoursTimeOff,
+#tenantPortalSection.schedi-newdash[data-dash="profile"] #tenantHoursIntro,
+#tenantPortalSection.schedi-newdash[data-dash="profile"] #hoursWeekSummary,
+#tenantPortalSection.schedi-newdash[data-dash="profile"] #tenantHoursShiftBlock { display: none !important; }
+#tenantPortalSection.schedi-newdash[data-dash="hours"] #tenantHoursShiftBlock { display: block !important; }
+#tenantPortalSection.schedi-newdash[data-dash="profile"] #tenantProfileFields { border-top: 0; padding-top: 0; }
+#tenantPortalSection.schedi-newdash[data-dash="profile"] #tenantSectionHours > form { border-bottom: 0; padding-bottom: 0; }
 #tenantPortalSection.schedi-newdash #tenantSectionRoster,
 #tenantPortalSection.schedi-newdash #tenantSectionServices,
 #tenantPortalSection.schedi-newdash #tenantSectionHours,
@@ -1337,7 +1420,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash #schediDashAddMenu button.
     #tenantPortalSection.schedi-newdash #schediDashTop { left: 0; }
     #tenantPortalSection.schedi-newdash .sd-brand-mobile { display: inline-flex; }
     #tenantPortalSection.schedi-newdash .sd-user-name { display: none; }
-    #tenantPortalSection.schedi-newdash .sd-stats { grid-template-columns: 1fr 1fr; }
+    #tenantPortalSection.schedi-newdash .sd-today-grid { grid-template-columns: minmax(0, 1fr); }
+    #tenantPortalSection.schedi-newdash .sd-agenda-head { flex-direction: column; align-items: stretch; }
     #tenantPortalSection.schedi-newdash .sd-today-head,
     #tenantPortalSection.schedi-newdash .sd-request { display: flex; flex-wrap: wrap; }
     #tenantPortalSection.schedi-newdash .sd-row {
@@ -1366,6 +1450,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash #schediDashAddMenu button.
         left: 0;
         right: 0;
         bottom: 0;
+        width: 100vw;
+        max-width: 100vw;
         margin: 0;
         padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
         background: #0b1220;
@@ -2835,6 +2921,20 @@ html.schedi-light body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.
     background: #003087;
     border-color: #003087;
     box-shadow: 0 0 0 2px #0070E0;
+}
+body.schedi-newdash .sd-pay-choice.is-on.sd-pay-card,
+body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.is-on.sd-pay-card {
+    color: #ffffff;
+    background: #635BFF;
+    border-color: #635BFF;
+    box-shadow: 0 0 0 2px #a5a0ff;
+}
+html.schedi-light body.schedi-newdash .sd-pay-choice.is-on.sd-pay-card,
+html.schedi-light body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.is-on.sd-pay-card {
+    color: #ffffff;
+    background: #4338ca;
+    border-color: #4338ca;
+    box-shadow: 0 0 0 2px #635BFF;
 }
 body.schedi-newdash .sd-pay-choice.is-on.sd-pay-square,
 body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.is-on.sd-pay-square {
@@ -5601,19 +5701,26 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                         </a>
                         <p id="schediDashBizName" class="sd-biz">Business</p>
                         <nav class="sd-nav" aria-label="Dashboard">
-                            <button type="button" data-dash-go="today"><i class="fa-solid fa-sun" aria-hidden="true"></i><span>Today</span></button>
-                            <button type="button" data-dash-go="appointments"><i class="fa-solid fa-calendar-days" aria-hidden="true"></i><span>Appointments</span></button>
-                            <button type="button" data-dash-go="services"><i class="fa-solid fa-briefcase" aria-hidden="true"></i><span>Services</span></button>
-                            <button type="button" data-dash-go="hours"><i class="fa-solid fa-clock" aria-hidden="true"></i><span>Hours</span></button>
-                            <button type="button" data-dash-go="payments"><i class="fa-solid fa-credit-card" aria-hidden="true"></i><span>Payments</span></button>
-                            <button type="button" data-dash-go="emails"><i class="fa-solid fa-envelope" aria-hidden="true"></i><span>Emails</span></button>
-                            <button type="button" data-dash-go="reports"><i class="fa-solid fa-chart-column" aria-hidden="true"></i><span>Reports</span></button>
-                            <button type="button" data-dash-go="clients"><i class="fa-solid fa-address-book" aria-hidden="true"></i><span>Clients</span></button>
+                            <div class="sd-nav-group">
+                                <p class="sd-nav-label">Schedule</p>
+                                <button type="button" data-dash-go="today"><i class="fa-solid fa-clock" aria-hidden="true"></i><span>Agenda</span></button>
+                                <button type="button" data-dash-go="appointments"><i class="fa-solid fa-calendar-week" aria-hidden="true"></i><span>Calendar</span></button>
+                                <button type="button" data-dash-go="clients"><i class="fa-solid fa-users" aria-hidden="true"></i><span>Clients</span></button>
+                            </div>
+                            <div class="sd-nav-group">
+                                <p class="sd-nav-label">Setup</p>
+                                <button type="button" data-dash-go="services"><i class="fa-solid fa-briefcase" aria-hidden="true"></i><span>Services</span></button>
+                                <button type="button" data-dash-go="hours"><i class="fa-solid fa-business-time" aria-hidden="true"></i><span>Hours</span></button>
+                                <button type="button" data-dash-go="payments"><i class="fa-solid fa-wallet" aria-hidden="true"></i><span>Payments</span></button>
+                                <button type="button" data-dash-go="emails"><i class="fa-solid fa-paper-plane" aria-hidden="true"></i><span>Emails</span></button>
+                                <button type="button" data-dash-go="profile"><i class="fa-solid fa-store" aria-hidden="true"></i><span>Your page</span></button>
+                            </div>
+                            <div class="sd-nav-group">
+                                <p class="sd-nav-label">Insights</p>
+                                <button type="button" data-dash-go="reports"><i class="fa-solid fa-chart-line" aria-hidden="true"></i><span>Reports</span></button>
+                                <button type="button" data-dash-go="billing"><i class="fa-solid fa-gem" aria-hidden="true"></i><span>Subscription</span></button>
+                            </div>
                         </nav>
-                        <div class="sd-nav sd-nav-foot">
-                            <button type="button" data-dash-go="profile"><i class="fa-solid fa-store" aria-hidden="true"></i><span>Business profile</span></button>
-                            <button type="button" data-dash-go="billing"><i class="fa-solid fa-receipt" aria-hidden="true"></i><span>Plan &amp; billing</span></button>
-                        </div>
                         <div class="sd-side-foot">
                             <div class="sd-theme">
                                 <button type="button" class="sd-theme-opt sd-theme-light" data-theme-toggle="1" onclick="toggleSchediTheme()" title="Switch to light theme" aria-label="Switch to light theme"><i class="fa-solid fa-sun" aria-hidden="true"></i><span>Light</span></button>
@@ -5649,8 +5756,8 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                     <section id="schediTodayPanel" aria-labelledby="schediTodayHeading">
                         <div class="sd-today-head">
                             <div class="sd-today-titles">
-                                <p class="sd-kicker">Your day</p>
-                                <h2 id="schediTodayHeading">Today</h2>
+                                <p class="sd-kicker">What's next</p>
+                                <h2 id="schediTodayHeading">Coming up</h2>
                                 <p id="schediTodayDate" class="sd-date"></p>
                                 <p id="schediTodayLink" class="sd-linkline" hidden></p>
                             </div>
@@ -5660,41 +5767,53 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                                 <button type="button" class="sd-btn sd-btn-brand sd-add-desktop" data-dash-add-open="1" onclick="schediDashToggleAdd(event)"><i class="fa-solid fa-plus" aria-hidden="true"></i><span>Add appointment</span></button>
                             </div>
                         </div>
-                        <div class="sd-stats" aria-live="polite">
-                            <article class="sd-stat"><p>Today</p><strong id="schediStatToday">0</strong><span>appointments</span></article>
-                            <article class="sd-stat"><p>To review</p><strong id="schediStatReview">0</strong><span>new requests</span></article>
-                            <article class="sd-stat"><p>This week</p><strong id="schediStatWeek">$0</strong><span>booked revenue</span></article>
-                            <article class="sd-stat"><p>Unpaid</p><strong id="schediStatUnpaid">0</strong><span>needs follow-up</span></article>
-                        </div>
-                        <button type="button" class="sd-btn sd-btn-brand sd-add-phone" data-dash-add-open="1" onclick="schediDashToggleAdd(event)"><i class="fa-solid fa-plus" aria-hidden="true"></i><span>Add appointment</span></button>
-                        <div class="sd-block">
-                            <h3>New requests</h3>
-                            <div id="schediTodayRequests" class="sd-stack"></div>
-                        </div>
-                        <div class="sd-block">
-                            <h3>Today's schedule</h3>
-                            <div id="schediTodaySchedule" class="sd-stack"></div>
-                        </div>
-                        <div class="sd-block sd-setup">
-                            <div class="sd-setup-head">
-                                <h3 id="schediSetupTitle">Finish setting up 0 of 6</h3>
-                                <div class="sd-progress" aria-hidden="true"><span id="schediSetupBar"></span></div>
-                            </div>
-                            <div id="schediSetupList" class="sd-stack"></div>
+                        <div class="sd-today-grid">
+                            <section class="sd-glance" aria-labelledby="schediGlanceHeading">
+                                <h3 id="schediGlanceHeading">At a glance</h3>
+                                <div class="sd-pulse" aria-live="polite">
+                                    <div class="sd-pulse-row">
+                                        <p><strong id="schediStatPeople">0</strong><span>people today</span></p>
+                                        <p><strong id="schediStatOwed">$0</strong><span>still to collect</span></p>
+                                        <p><strong id="schediStatWeekVisits">0</strong><span>visits this week</span></p>
+                                    </div>
+                                </div>
+                            </section>
+                            <section class="sd-wait" aria-labelledby="schediWaitHeading">
+                                <h3 id="schediWaitHeading">Waiting on you</h3>
+                                <div id="schediTodayRequests" class="sd-stack"></div>
+                            </section>
+                            <section class="sd-agenda" aria-labelledby="schediAgendaHeading">
+                                <div class="sd-agenda-head">
+                                    <div class="sd-agenda-copy">
+                                        <h3 id="schediAgendaHeading">Coming up</h3>
+                                        <p id="schediNextLine" class="sd-next-line">Nothing is lined up yet.</p>
+                                    </div>
+                                    <button type="button" class="sd-btn sd-btn-brand sd-add-phone" data-dash-add-open="1" onclick="schediDashToggleAdd(event)"><i class="fa-solid fa-plus" aria-hidden="true"></i><span>Add appointment</span></button>
+                                </div>
+                                <div id="schediTodaySchedule" class="sd-timeline"></div>
+                            </section>
+                            <section class="sd-ready" id="schediReady" aria-labelledby="schediSetupTitle">
+                                <div class="sd-ready-head">
+                                    <h3 id="schediSetupTitle">Get your page ready</h3>
+                                    <p id="schediSetupCount" class="sd-ready-count">0 of 6</p>
+                                </div>
+                                <ol id="schediSetupPips" class="sd-pips" aria-hidden="true"></ol>
+                                <div id="schediSetupList" class="sd-stack"></div>
+                            </section>
                         </div>
                     </section>
                     <nav id="schediDashTabbar" aria-label="Portal">
                         <span class="sd-tab-indicator" aria-hidden="true"></span>
-                        <button type="button" data-dash-go="today" aria-current="page"><i class="fa-solid fa-sun" aria-hidden="true"></i><span>Today</span></button>
-                        <button type="button" data-dash-go="appointments"><i class="fa-solid fa-calendar-days" aria-hidden="true"></i><span>Calendar</span></button>
+                        <button type="button" data-dash-go="today" aria-current="page"><i class="fa-solid fa-clock" aria-hidden="true"></i><span>Agenda</span></button>
+                        <button type="button" data-dash-go="clients"><i class="fa-solid fa-users" aria-hidden="true"></i><span>Clients</span></button>
                         <button type="button" class="sd-fab" data-dash-add-open="1" onclick="schediDashToggleAdd(event)" aria-label="Add appointment"><i class="fa-solid fa-plus" aria-hidden="true"></i></button>
-                        <button type="button" data-dash-go="clients"><i class="fa-solid fa-address-book" aria-hidden="true"></i><span>Clients</span></button>
-                        <button type="button" id="schediDashMoreBtn" onclick="schediDashToggleMore()"><i class="fa-solid fa-ellipsis" aria-hidden="true"></i><span>More</span></button>
+                        <button type="button" data-dash-go="appointments"><i class="fa-solid fa-calendar-week" aria-hidden="true"></i><span>Calendar</span></button>
+                        <button type="button" id="schediDashMoreBtn" onclick="schediDashToggleMore()"><i class="fa-solid fa-bars" aria-hidden="true"></i><span>More</span></button>
                     </nav>
                     <div id="schediDashAccountMenu" class="sd-popover" hidden role="menu" aria-label="Account">
                         <button type="button" role="menuitem" data-dash-go="profile"><i class="fa-solid fa-store" aria-hidden="true"></i><span>Business profile</span></button>
-                        <button type="button" role="menuitem" data-dash-go="account"><i class="fa-solid fa-key" aria-hidden="true"></i><span>Account &amp; password</span></button>
-                        <button type="button" role="menuitem" data-dash-go="billing"><i class="fa-solid fa-receipt" aria-hidden="true"></i><span>Plan &amp; billing</span></button>
+                        <button type="button" role="menuitem" data-dash-go="account"><i class="fa-solid fa-key" aria-hidden="true"></i><span>Login &amp; security</span></button>
+                        <button type="button" role="menuitem" data-dash-go="billing"><i class="fa-solid fa-gem" aria-hidden="true"></i><span>Subscription</span></button>
                         <button type="button" role="menuitem" class="sd-danger" onclick="schediDashClosePopovers(); handleTenantLogout()"><i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i><span>Sign out</span></button>
                     </div>
                     <div id="schediDashAddMenu" class="sd-popover" hidden role="menu" aria-label="Add appointment">
@@ -5705,15 +5824,17 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                     <div id="schediDashMoreSheet" class="sd-sheet" hidden>
                         <div class="sd-sheet-card" role="dialog" aria-label="More">
                             <div class="sd-sheet-bar"><h3>More</h3><button type="button" class="sd-form-close" onclick="schediDashToggleMore(false)" aria-label="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button></div>
+                            <p class="sd-nav-label">Setup</p>
                             <button type="button" data-dash-go="services"><i class="fa-solid fa-briefcase" aria-hidden="true"></i><span>Services</span></button>
-                            <button type="button" data-dash-go="hours"><i class="fa-solid fa-clock" aria-hidden="true"></i><span>Hours</span></button>
-                            <button type="button" data-dash-go="payments"><i class="fa-solid fa-credit-card" aria-hidden="true"></i><span>Payments</span></button>
-                            <button type="button" data-dash-go="emails"><i class="fa-solid fa-envelope" aria-hidden="true"></i><span>Emails</span></button>
-                            <button type="button" data-dash-go="reports"><i class="fa-solid fa-chart-column" aria-hidden="true"></i><span>Reports</span></button>
-                            <button type="button" data-dash-go="profile"><i class="fa-solid fa-store" aria-hidden="true"></i><span>Business profile</span></button>
+                            <button type="button" data-dash-go="hours"><i class="fa-solid fa-business-time" aria-hidden="true"></i><span>Hours</span></button>
+                            <button type="button" data-dash-go="payments"><i class="fa-solid fa-wallet" aria-hidden="true"></i><span>Payments</span></button>
+                            <button type="button" data-dash-go="emails"><i class="fa-solid fa-paper-plane" aria-hidden="true"></i><span>Emails</span></button>
+                            <button type="button" data-dash-go="profile"><i class="fa-solid fa-store" aria-hidden="true"></i><span>Your page</span></button>
+                            <p class="sd-nav-label">Insights</p>
+                            <button type="button" data-dash-go="reports"><i class="fa-solid fa-chart-line" aria-hidden="true"></i><span>Reports</span></button>
                             <div class="sd-sheet-rule"></div>
-                            <button type="button" data-dash-go="account"><i class="fa-solid fa-key" aria-hidden="true"></i><span>Account &amp; password</span></button>
-                            <button type="button" data-dash-go="billing"><i class="fa-solid fa-receipt" aria-hidden="true"></i><span>Plan &amp; billing</span></button>
+                            <button type="button" data-dash-go="account"><i class="fa-solid fa-key" aria-hidden="true"></i><span>Login &amp; security</span></button>
+                            <button type="button" data-dash-go="billing"><i class="fa-solid fa-gem" aria-hidden="true"></i><span>Subscription</span></button>
                             <button type="button" onclick="location.assign(ownerHelpHref())"><i class="fa-solid fa-circle-question" aria-hidden="true"></i><span>Help</span></button>
                             <div class="sd-theme sd-theme-seg" role="group" aria-label="Theme">
                                 <button type="button" class="sd-theme-opt sd-theme-light" data-theme-set="light" onclick="setSchediTheme('light')" aria-pressed="false"><i class="fa-solid fa-sun" aria-hidden="true"></i><span>Light</span></button>
@@ -5966,7 +6087,7 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
 
                 <!-- TENANT TAB 3: HOURS & SHIFTS + RECURRING BLOCK TIME -->
                 <div id="tenantSectionHours" class="glass-card rounded-2xl p-6 space-y-6 hidden">
-                    <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                    <div id="tenantHoursIntro" class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                         <div>
                             <h3 class="text-lg font-bold text-white">Daily Shifts & Operating Hours</h3>
                             <p class="text-xs text-slate-400">Set individual day operating hours or create recurring outage time blocks.</p>
@@ -6081,7 +6202,7 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                             </div>
                         </div>
                         <div id="tenantHoursSaveRow" class="flex justify-end">
-                            <button type="submit" class="px-5 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-slate-950 font-bold text-xs shadow-md glow-emerald">
+                            <button type="submit" id="tenantHoursSaveBtn" class="px-5 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-slate-950 font-bold text-xs shadow-md glow-emerald">
                                 Save Operating Hours
                             </button>
                         </div>
@@ -14005,7 +14126,7 @@ function schediQrCardPixels(text, color) {
 
         var rosterPayFilter = 'all';
         var OWNER_PAY_METHODS = [
-            ['card', 'Card', 'Card (Stripe)'],
+            ['card', 'Card', 'Card'],
             ['cashapp', 'Cash App', 'Cash App'],
             ['zelle', 'Zelle', 'Zelle'],
             ['venmo', 'Venmo', 'Venmo'],
@@ -14244,9 +14365,9 @@ function schediQrCardPixels(text, color) {
         }
 
         function schediDashTabSlot(page) {
-            if (page === 'appointments') return 1;
-            if (page === 'clients') return 3;
             if (page === 'today') return 0;
+            if (page === 'clients') return 1;
+            if (page === 'appointments') return 3;
             return 4;
         }
 
@@ -14269,6 +14390,8 @@ function schediQrCardPixels(text, color) {
             }
             var tabbar = document.getElementById('schediDashTabbar');
             if (tabbar) tabbar.style.setProperty('--sd-tab-slot', String(schediDashTabSlot(current)));
+            var hoursSave = document.getElementById('tenantHoursSaveBtn');
+            if (hoursSave) hoursSave.textContent = current === 'profile' ? 'Save booking page' : 'Save Operating Hours';
             try { paintOwnerHelpLinks(); } catch (errHelp) {}
         }
 
@@ -14408,12 +14531,12 @@ function schediQrCardPixels(text, color) {
             var interval = Number(tenant && tenant.slotInterval);
             var calendar = hours && (interval === 15 || interval === 30 || interval === 60);
             return [
-                { label: 'Add a service', done: services, page: 'services' },
-                { label: 'Set your hours', done: hours, page: 'hours' },
-                { label: 'Choose how clients pay', done: pay, page: 'payments' },
-                { label: 'Add your logo', done: logo, page: 'profile' },
-                { label: 'Booking calendar', done: calendar, page: 'appointments' },
-                { label: 'Avoid double-booking', done: calendarSyncConnected(tenant && tenant.calendarSync), page: 'hours' }
+                { label: 'Put a service on the page', done: services, page: 'services' },
+                { label: 'Set the hours you take people', done: hours, page: 'hours' },
+                { label: 'Pick the ways you get paid', done: pay, page: 'payments' },
+                { label: 'Show your logo on the page', done: logo, page: 'profile' },
+                { label: 'Turn the booking calendar on', done: calendar, page: 'appointments' },
+                { label: 'Connect a calendar to keep times free', done: calendarSyncConnected(tenant && tenant.calendarSync), page: 'hours' }
             ];
         }
 
@@ -14704,15 +14827,12 @@ function schediQrCardPixels(text, color) {
             try { today = rosterTodayIso(tenant); } catch (errToday) { today = localISODate(new Date()); }
             var heading = document.getElementById('schediTodayHeading');
             var dateEl = document.getElementById('schediTodayDate');
-            if (heading) heading.textContent = 'Today';
-            if (dateEl) {
-                var pretty = '';
-                try {
-                    var dt = parseIsoDateLocal(today);
-                    pretty = dt ? dt.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' }) : today;
-                } catch (errPretty) { pretty = today; }
-                dateEl.textContent = pretty;
-            }
+            var pretty = '';
+            try {
+                var dt = parseIsoDateLocal(today);
+                pretty = dt ? dt.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' }) : today;
+            } catch (errPretty) { pretty = today; }
+            if (heading) heading.textContent = pretty || 'Coming up';
             var linkEl = document.getElementById('schediTodayLink');
             if (linkEl) {
                 linkEl.textContent = '';
@@ -14724,23 +14844,39 @@ function schediQrCardPixels(text, color) {
             var weekStart = '';
             try { weekStart = rosterWeekStart(today); } catch (errWeek) { weekStart = ''; }
             var weekEnd = weekStart ? addIsoDays(weekStart, 6) : '';
-            var weekMoney = 0;
+            var weekVisits = 0;
             apps.forEach(function (app) {
                 if (!weekStart || String(app.date || '') < weekStart || String(app.date || '') > weekEnd) return;
-                if (hasPricedAmount(app.amount)) weekMoney += Number(app.amount) || 0;
+                weekVisits += 1;
             });
             var unpaid = apps.filter(function (app) {
                 if (String(app.status || '').toLowerCase() === 'pending') return false;
                 return bookingPaymentState(app) === 'unpaid';
             });
-            var statToday = document.getElementById('schediStatToday');
-            var statReview = document.getElementById('schediStatReview');
-            var statWeek = document.getElementById('schediStatWeek');
-            var statUnpaid = document.getElementById('schediStatUnpaid');
-            if (statToday) statToday.textContent = String(todayApps.length);
-            if (statReview) statReview.textContent = String(pending.length);
-            if (statWeek) statWeek.textContent = formatBookingAmountLabel(weekMoney) || '$0';
-            if (statUnpaid) statUnpaid.textContent = String(unpaid.length);
+            var owed = 0;
+            unpaid.forEach(function (app) {
+                if (hasPricedAmount(app.amount)) owed += Number(app.amount) || 0;
+            });
+            var people = {};
+            todayApps.forEach(function (app) {
+                var who = String(app.clientName || '').trim().toLowerCase();
+                if (who) people[who] = true;
+            });
+            var statPeople = document.getElementById('schediStatPeople');
+            var statOwed = document.getElementById('schediStatOwed');
+            var statWeek = document.getElementById('schediStatWeekVisits');
+            if (statPeople) statPeople.textContent = String(Object.keys(people).length);
+            if (statOwed) statOwed.textContent = formatBookingAmountLabel(owed) || '$0';
+            if (statWeek) statWeek.textContent = String(weekVisits);
+            if (dateEl) {
+                if (!todayApps.length) dateEl.textContent = 'The book is open.';
+                else dateEl.textContent = todayApps.length === 1 ? '1 visit on the book.' : (todayApps.length + ' visits on the book.');
+            }
+            var lead = document.getElementById('schediNextLine');
+            if (lead) {
+                if (!todayApps.length) lead.textContent = 'Nothing is lined up yet.';
+                else lead.textContent = (todayApps[0].clientName || 'Someone') + ' is first, at ' + (todayApps[0].time || 'a time still to set') + '.';
+            }
             var requests = document.getElementById('schediTodayRequests');
             if (requests) {
                 requests.innerHTML = pending.length ? pending.map(function (app) {
@@ -14752,11 +14888,11 @@ function schediQrCardPixels(text, color) {
                         '<button type="button" class="sd-btn sd-btn-no" onclick="denyAppointment(' + esc(jsArg(app.id)) + ')">Decline</button>' +
                         '<button type="button" class="sd-btn sd-btn-ok" onclick="acceptAppointment(' + esc(jsArg(app.id)) + ')">Accept</button>' +
                         '</div></article>';
-                }).join('') : '<p class="sd-empty">No new requests.</p>';
+                }).join('') : '<p class="sd-empty">Nobody is waiting on a yes.</p>';
             }
             var schedule = document.getElementById('schediTodaySchedule');
             if (schedule) {
-                schedule.innerHTML = todayApps.length ? todayApps.map(function (app) {
+                schedule.innerHTML = todayApps.length ? todayApps.map(function (app, index) {
                     var id = esc(jsArg(app.id));
                     var cardStatus = String(app.status || '').toLowerCase();
                     var acceptedCard = cardStatus !== 'pending' && cardStatus !== 'requested';
@@ -14766,9 +14902,9 @@ function schediQrCardPixels(text, color) {
                     var noShowAction = !acceptedCard ? '' : (appointmentIsNoShow(app)
                         ? '<button type="button" role="menuitem" onclick="closeSchediTodayMenus(event); undoAppointmentNoShow(' + id + ')"><i class="fa-solid fa-rotate-left mr-1" aria-hidden="true"></i>Undo no-show</button>'
                         : '<button type="button" role="menuitem" onclick="closeSchediTodayMenus(event); markAppointmentNoShow(' + id + ')">Mark no-show</button>');
-                    return '<article class="sd-card sd-row">' +
+                    return '<article class="sd-card sd-row' + (index === 0 ? ' is-next' : '') + '">' +
                         '<div class="sd-time">' + esc(app.time || '') + '</div>' +
-                        '<div class="sd-row-main"><div class="sd-row-head"><h4><span class="sd-row-title">' + esc(app.clientName || 'Client') + (app.walkIn ? ' · Walk-in' : '') + '</span></h4>' +
+                        '<div class="sd-row-main"><div class="sd-row-head">' + (index === 0 ? '<span class="sd-next-tag">Next</span>' : '') + '<h4><span class="sd-row-title">' + esc(app.clientName || 'Client') + (app.walkIn ? ' · Walk-in' : '') + '</span></h4>' +
                         '<div class="sd-row-chips">' + appointmentStatusChipsHtml(app, { pendingLabel: 'New request' }) + '</div></div>' +
                         '<p class="sd-meta"><span class="sd-svc-line">' + serviceMarkHtml(tenant, app.serviceName) + '<span>' + esc(app.serviceName || 'Appointment') + '</span></span></p></div>' +
                         '<details class="sd-more"><summary aria-label="More actions" aria-expanded="false"><i class="fa-solid fa-ellipsis-vertical" aria-hidden="true"></i></summary>' +
@@ -14780,15 +14916,23 @@ function schediQrCardPixels(text, color) {
                         '<button type="button" role="menuitem" onclick="closeSchediTodayMenus(event); openEditAppointment(' + id + ')">Edit</button>' +
                         '<button type="button" class="sd-act-no sd-act-delete" role="menuitem" onclick="closeSchediTodayMenus(event); openRosterDeleteModal(' + id + ')">Delete</button>' +
                         '</div></details></article>';
-                }).join('') : '<p class="sd-empty">Nothing on the book today.</p>';
+                }).join('') : '<p class="sd-empty">The book is clear.</p>';
             }
             var steps = schediSetupSteps(tenant);
             var done = steps.filter(function (step) { return step.done; }).length;
+            var ready = document.getElementById('schediReady');
             var title = document.getElementById('schediSetupTitle');
-            var bar = document.getElementById('schediSetupBar');
+            var countEl = document.getElementById('schediSetupCount');
+            var pips = document.getElementById('schediSetupPips');
             var list = document.getElementById('schediSetupList');
-            if (title) title.textContent = 'Finish setting up ' + done + ' of ' + steps.length;
-            if (bar) bar.style.width = (steps.length ? Math.round((done / steps.length) * 100) : 0) + '%';
+            if (ready) ready.hidden = done === steps.length;
+            if (title) title.textContent = 'Get your page ready';
+            if (countEl) countEl.textContent = done + ' of ' + steps.length;
+            if (pips) {
+                pips.innerHTML = steps.map(function (step) {
+                    return '<li class="' + (step.done ? 'is-done' : '') + '"></li>';
+                }).join('');
+            }
             if (list) {
                 list.innerHTML = steps.map(function (step) {
                     return '<button type="button" class="sd-check' + (step.done ? ' is-done' : '') + '" data-dash-go="' + step.page + '">' +
@@ -24623,6 +24767,7 @@ function schediQrCardPixels(text, color) {
         function ownerMarkPaidMethods(tenant) {
             var pg = (tenant && tenant.paymentGateways) || {};
             return OWNER_PAY_METHODS.filter(function (row) {
+                if (row[0] === 'square') return false;
                 if (row[0] === 'cash') return true;
                 return pg[row[0]] === true;
             });
@@ -24682,7 +24827,7 @@ function schediQrCardPixels(text, color) {
                 _rosterPaidMethodSelected = '';
             }
             paintOwnerPayRadios(box, {
-                choices: methods.map(function (row) { return { id: row[0], label: row[1], kind: row[0] }; }),
+                choices: methods.map(function (row) { return { id: row[0], label: row[0] === 'card' ? 'Card (Stripe)' : row[1], kind: row[0] }; }),
                 selected: chosen,
                 attr: 'data-paid-method',
                 extraClass: 'roster-paid-opt',
