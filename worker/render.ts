@@ -1,9 +1,11 @@
+import { OWNER_SUBSCRIPTION_POLICY_TERMS } from "../src/lib/subscription-policy";
 import {
   APEX_ORIGIN,
-  MARKETING_PAGES,
   PLAN_COMPARE_ROWS,
   VERTICALS,
   escapeHtml,
+  marketingPlanValue,
+  publicPaths,
   type MarketingPage,
 } from "./content";
 
@@ -29,9 +31,11 @@ export function canonicalUrl(path: string): string {
   return `${APEX_ORIGIN}${path}`;
 }
 
-export function renderRobots(): string {
+const ROBOT_AGENTS = ["*", "GPTBot", "PerplexityBot", "ClaudeBot", "Google-Extended", "Bingbot"];
+
+function robotGroup(agent: string): string {
   return [
-    "User-agent: *",
+    `User-agent: ${agent}`,
     "Allow: /",
     "Disallow: /portal",
     "Disallow: /portal-preview",
@@ -41,14 +45,64 @@ export function renderRobots(): string {
     "Disallow: /billing",
     "Disallow: /api",
     "",
+  ].join("\n");
+}
+
+export function renderRobots(): string {
+  return [
+    ...ROBOT_AGENTS.map(robotGroup),
     `Sitemap: ${APEX_ORIGIN}/sitemap.xml`,
     "",
   ].join("\n");
 }
 
+/** Non-production hosts. Production keeps renderRobots(). */
+export function renderDisallowAllRobots(): string {
+  return ["User-agent: *", "Disallow: /", ""].join("\n");
+}
+
+export function renderLlms(): string {
+  const pages = publicPaths()
+    .map((path) => `- ${APEX_ORIGIN}${path === "/" ? "/" : path}`)
+    .join("\n");
+  return [
+    "# Schedi",
+    "",
+    "Schedi is booking software for a service business run by one owner. Clients book on a public page. The owner manages the roster, services, prices, durations, weekly hours, and time off from a back office. It is built around one owner's schedule, not a team's.",
+    "",
+    "Plans (USD, billed monthly):",
+    "- Free: $0. One service, up to 5 bookings a week (Monday through Sunday), pay at the appointment, instant confirmation, and a Schedi badge on the booking page. No repeating appointments and no accept or deny.",
+    "- Starter: $29 a month. Unlimited services and bookings. Cash App, Venmo, Zelle, PayPal, or pay at the appointment. Accept or deny each request. Starter does not include card checkout or repeating appointments.",
+    "- Pro: $49 a month. Everything in Starter, plus repeating appointments weekly, biweekly, or monthly.",
+    "- Card checkout (Stripe), appointment deposits, and a cancellation fee on a card are coming soon. They are not available to clients today.",
+    "",
+    "Billing:",
+    ...OWNER_SUBSCRIPTION_POLICY_TERMS.map((line) => `- ${line}`),
+    "",
+    "Schedi does not calculate drive time and does not manage multiple cleaners or crews.",
+    "",
+    "Prices as listed on each vendor's site on Oct 19, 2026.",
+    "",
+    "Pages:",
+    pages,
+    "",
+    "Questions with a published answer on https://schedi.app/pricing and https://schedi.app/help:",
+    "- How much does Schedi cost?",
+    "- What do I get on the Free plan?",
+    "- What does the Starter plan add?",
+    "- What does the Pro plan add?",
+    "- What payment methods can my clients use?",
+    "- Can I approve or decline bookings before they're confirmed?",
+    "- Can clients book repeating appointments?",
+    "- Is there a contract, and what are the cancellation and refund terms?",
+    "- Who is Schedi for?",
+    "",
+  ].join("\n");
+}
+
 export function renderSitemap(): string {
-  const urls = MARKETING_PAGES.map((page) => {
-    const loc = escapeHtml(canonicalUrl(page.path));
+  const urls = publicPaths().map((path) => {
+    const loc = escapeHtml(canonicalUrl(path));
     return `  <url><loc>${loc}</loc></url>`;
   }).join("\n");
   return `<?xml version="1.0" encoding="UTF-8"?>
@@ -82,6 +136,31 @@ export function renderMarketingBoot(): string {
   return `/* no-op */\n`;
 }
 
+function monthlyOffer(name: string, price: string, description?: string): Record<string, unknown> {
+  const offer: Record<string, unknown> = {
+    "@type": "Offer",
+    name,
+    price,
+    priceCurrency: "USD",
+    priceSpecification: {
+      "@type": "UnitPriceSpecification",
+      price,
+      priceCurrency: "USD",
+      billingDuration: 1,
+      unitCode: "MON",
+      unitText: "month",
+    },
+  };
+  if (description) offer.description = description;
+  return offer;
+}
+
+export function bingVerificationMeta(token: string | undefined): string {
+  const value = String(token || "").trim();
+  if (!/^[A-Za-z0-9._-]{8,128}$/.test(value)) return "";
+  return `<meta name="msvalidate.01" content="${escapeHtml(value)}">`;
+}
+
 function jsonLd(page: MarketingPage): string {
   const graph: Record<string, unknown>[] = [];
   if (page.faqs.length) {
@@ -110,21 +189,13 @@ function jsonLd(page: MarketingPage): string {
       operatingSystem: "Web",
       url: `${APEX_ORIGIN}/`,
       offers: [
-        { "@type": "Offer", name: "Free", price: "0", priceCurrency: "USD" },
-        {
-          "@type": "Offer",
-          name: "Starter",
-          price: "29",
-          priceCurrency: "USD",
-          description: "Billed monthly",
-        },
-        {
-          "@type": "Offer",
-          name: "Pro",
-          price: "49",
-          priceCurrency: "USD",
-          description: "Billed monthly. Adds client card payments and deposits.",
-        },
+        monthlyOffer("Free", "0"),
+        monthlyOffer("Starter", "29", "Billed monthly"),
+        monthlyOffer(
+          "Pro",
+          "49",
+          "Billed monthly. Adds repeating appointments. Card checkout (Stripe), appointment deposits, and a cancellation fee on a card are coming soon.",
+        ),
       ],
     });
   }
@@ -161,7 +232,9 @@ function siteHeader(): string {
       <img class="logo-light" src="/assets/logo-light.svg" alt="Schedi" width="120" height="32" loading="lazy" decoding="async">
     </a>
     <nav class="nav" aria-label="Primary">
+      <a class="nav-link" href="/features">Features</a>
       <a class="nav-link" href="/pricing">Pricing</a>
+      <a class="nav-link" href="/compare">Compare</a>
       <a class="nav-link" href="/help">Help</a>
       <button type="button" class="theme-btn" title="Switch theme" aria-label="Switch theme"><svg class="ico i-sun" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg><svg class="ico i-moon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg><span class="theme-btn-label">Light</span></button>
       <a class="btn btn-ghost btn-sm login" href="${LOGIN_HREF}">${icon("login")}<span>Log in</span></a>
@@ -189,7 +262,9 @@ function footer(): string {
       <nav aria-label="Site">
         <p>Schedi</p>
         <a href="/">Home</a>
+        <a href="/features">Features</a>
         <a href="/pricing">Pricing</a>
+        <a href="/compare">Compare</a>
         <a href="/help">Help</a>
         <a href="/signup">Sign up</a>
         <a href="${LOGIN_HREF}">Log in</a>
@@ -198,7 +273,7 @@ function footer(): string {
         <a href="https://www.instagram.com/schediapp/" rel="noopener noreferrer">Instagram</a>
       </nav>
     </div>
-    <p class="muted small">&copy; Schedi. Made for barbers, salons, cleaners, trainers, and every small team that runs on appointments.</p>
+    <p class="muted small">&copy; Schedi. Made for barbers, salons, cleaners, and other service businesses run by one owner.</p>
   </div>
 </footer>`;
 }
@@ -218,7 +293,7 @@ type PlanKey = "free" | "starter" | "pro";
 const PLANS: { key: PlanKey; name: string; blurb: string; cta: string; popular?: boolean }[] = [
   { key: "free", name: "Free", blurb: "Try Schedi with one service and get your link today.", cta: "Start free" },
   { key: "starter", name: "Starter", blurb: "For growing businesses that take Cash App, Venmo, Zelle, or PayPal.", cta: "Choose Starter" },
-  { key: "pro", name: "Pro", blurb: "Take cards and deposits, and set up repeating visits.", cta: "Choose Pro", popular: true },
+  { key: "pro", name: "Pro", blurb: "Repeating visits for one owner. Card checkout stays hidden until Stripe card payments and payouts are active.", cta: "Choose Pro", popular: true },
 ];
 
 export function planCardsHtml(): string {
@@ -227,8 +302,16 @@ export function planCardsHtml(): string {
   const cards = PLANS.map((plan) => {
     const items = rows
       .map((row) => {
-        const v = row[plan.key];
+        const raw = row[plan.key];
+        const v = marketingPlanValue(row, raw);
         const label = escapeHtml(row.label);
+        if (row.comingSoon && v === "Coming soon") {
+          return `<li class="soon"><span>${label}: <strong>Coming soon</strong></span></li>`;
+        }
+        if (row.comingSoon) {
+          if (v === "No") return `<li class="off">${icon("minus")}<span>${label}</span></li>`;
+          return `<li><span>${label}: <strong>${escapeHtml(v)}</strong></span></li>`;
+        }
         if (v === "No") return `<li class="off">${icon("minus")}<span>${label}</span></li>`;
         if (v === "Yes") return `<li>${icon("check")}<span>${label}</span></li>`;
         return `<li>${icon("check")}<span>${label}: <strong>${escapeHtml(v)}</strong></span></li>`;
@@ -245,14 +328,14 @@ export function planCardsHtml(): string {
     </article>`;
   }).join("\n");
   return `<div class="plans">${cards}</div>
-  <p class="muted center small">Monthly prices. Upgrade, switch, or stay on Free anytime from your Business Portal. Nothing is charged until checkout finishes.</p>`;
+  <p class="muted center small">Monthly prices. Upgrade, switch, or stay on Free anytime from your Business Portal. Nothing is charged until checkout finishes. Card checkout and appointment deposits stay hidden until Stripe card payments and payouts are active.</p>`;
 }
 
 const FEATURES: { icon: string; title: string; text: string }[] = [
   { icon: "link", title: "One link for everything", text: "Share schedi.app/your-business in your bio, a text, or on a printed QR code." },
   { icon: "calendar", title: "Open times, always current", text: "Set your hours once. Clients only see times you're actually free." },
   { icon: "bell", title: "Reminder emails", text: "Clients get a friendly reminder the morning of their visit, so fewer no-shows." },
-  { icon: "wallet", title: "Get paid your way", text: "Pay at the appointment, Cash App, Venmo, Zelle, PayPal, or cards on Pro." },
+  { icon: "wallet", title: "Get paid your way", text: "Pay at the appointment, or with Cash App, Venmo, Zelle, or PayPal." },
   { icon: "repeat", title: "Repeating visits", text: "Weekly, biweekly, or monthly regulars book once on Pro." },
   { icon: "shield", title: "You stay in control", text: "Accept or decline new requests, and keep every booking in one place." },
 ];
@@ -444,8 +527,10 @@ h3{font-size:1.1rem;margin:1rem 0 .3rem;font-weight:700}
 .feat li{display:flex;gap:.5rem;align-items:flex-start}
 .feat li .ico{color:var(--brand2);margin-top:.15rem}
 .feat li.off{color:var(--muted);opacity:.65}.feat li.off .ico{color:var(--muted)}
-.band{display:flex;justify-content:space-between;align-items:center;gap:1.5rem;flex-wrap:wrap;padding:2.25rem;border-radius:24px;background:linear-gradient(135deg,rgba(16,185,129,.18),rgba(14,165,233,.08));border:1px solid color-mix(in srgb,var(--brand) 40%,transparent)}
-.band h2{margin:0 0 .3rem}.band p{margin:0;color:var(--muted)}
+.band{display:flex;flex-direction:column;align-items:center;text-align:center;gap:1rem;padding:2.5rem 1.75rem;border-radius:24px;background:linear-gradient(135deg,rgba(16,185,129,.18),rgba(14,165,233,.08));border:1px solid color-mix(in srgb,var(--brand) 40%,transparent)}
+.band h2,.band p{width:100%;max-width:36rem;margin:0}
+.band p{color:var(--muted)}
+.band .ctas{width:100%;justify-content:center}
 #copy{max-width:760px;margin:0 auto;padding:1rem 0 2rem}
 #copy section{margin-top:1.5rem}
 #copy ol{padding-left:1.25rem}
@@ -479,12 +564,18 @@ figure img,figure video{max-width:100%;height:auto;border-radius:12px}
 .site-footer nav p{margin:0 0 .25rem;font-weight:800;color:var(--head)}
 .site-footer a{color:var(--muted);text-decoration:none}.site-footer a:hover{color:var(--brand2)}
 @media (max-width:900px){.hero-grid{grid-template-columns:1fr;gap:2.5rem}.grid3,.steps{grid-template-columns:1fr 1fr}.plans{grid-template-columns:1fr;max-width:460px;margin-left:auto;margin-right:auto}.plan.popular{order:-1}.blurb{min-height:0}.foot-top{grid-template-columns:1fr 1fr}.foot-top>div:first-child{grid-column:1/-1}}
-@media (max-width:640px){.wrap{width:calc(100% - 2rem)}.nav-link{display:none}.hero-sec{padding:2.5rem 0 2.5rem}.grid3,.steps{grid-template-columns:1fr}.ctas .btn{flex:1 1 100%}.sec{padding:3rem 0}.band{padding:1.5rem}.toast{left:.25rem;bottom:.5rem}th,td{padding:.55rem .5rem}table{font-size:.82rem}}
+@media (max-width:640px){.wrap{width:calc(100% - 2rem)}.nav-link{display:none}.hero-sec{padding:2.5rem 0 2.5rem}.grid3,.steps{grid-template-columns:1fr}.ctas .btn{flex:1 1 100%}.sec{padding:3rem 0}.band{padding:1.5rem}.band .ctas{flex-direction:column;align-items:stretch}.band .ctas .btn{width:100%}.toast{left:.25rem;bottom:.5rem}th,td{padding:.55rem .5rem}table{font-size:.82rem}}
 @media (max-width:400px){.theme-btn{padding:.375rem .5rem}.theme-btn-label{display:none}.hide-xs{display:none}.show-xs{display:inline}.brand img{height:28px}.btn-sm{padding:.48rem .7rem;font-size:.86rem}.login .ico{display:none}.bar{gap:.4rem}}
 `;
 
-export function renderMarketingPage(page: MarketingPage): string {
+export function renderMarketingPage(
+  page: MarketingPage,
+  bingToken?: string,
+  options?: { robots?: string },
+): string {
   const canonical = canonicalUrl(page.path);
+  const robots =
+    options?.robots ?? (page.listing === "scaffold" ? "noindex, follow" : "index, follow");
   const title = escapeHtml(page.title);
   const description = escapeHtml(page.description);
   const rich = page.layout === "home" || page.layout === "pricing";
@@ -532,7 +623,8 @@ export function renderMarketingPage(page: MarketingPage): string {
 <title>${title}</title>
 <meta name="description" content="${description}">
 <link rel="canonical" href="${canonical}">
-<meta name="robots" content="index, follow">
+<meta name="robots" content="${robots}">
+${bingVerificationMeta(bingToken)}
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Schedi">
 <meta property="og:title" content="${title}">
