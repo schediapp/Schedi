@@ -584,13 +584,11 @@ describe("owner dashboard preview", () => {
       css.indexOf("#tenantPortalSection.schedi-newdash .sd-pay-square,"),
       css.indexOf("#tenantPortalSection.schedi-newdash .sd-chip-count"),
     );
-    expect(squareChip).toContain("background: #111111");
-    expect(squareChip).toContain("border-color: #f8fafc");
+    expect(squareChip).toContain("background: rgba(255, 255, 255, 0.14)");
     expect(squareChip).toContain("color: #f8fafc");
-    expect(squareChip).toContain("color: #111111");
-    expect(squareChip).toContain("background: rgba(17, 17, 17, 0.08)");
-    expect(squareChip).not.toContain("#000000");
-    expect(squareChip).not.toContain("#ffffff");
+    expect(squareChip).toContain("border-color: #e2e8f0");
+    expect(squareChip).toContain("background: #000000");
+    expect(squareChip).toContain("color: #ffffff");
     const cashChip = css.slice(
       css.indexOf("#tenantPortalSection.schedi-newdash .sd-pay.sd-pay-cashapp,"),
       css.indexOf("#tenantPortalSection.schedi-newdash .sd-pay-zelle,"),
@@ -5930,11 +5928,11 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
         },
       },
       square: {
-        dark: { color: "rgb(248, 250, 252)", bg: "rgb(17, 17, 17)", border: "rgb(248, 250, 252)" },
-        light: { color: "rgb(17, 17, 17)", bg: "rgba(17, 17, 17, 0.08)", border: "rgb(17, 17, 17)" },
+        dark: { color: "rgb(248, 250, 252)", bg: "rgba(255, 255, 255, 0.14)", border: "rgb(226, 232, 240)" },
+        light: { color: "rgb(255, 255, 255)", bg: "rgb(0, 0, 0)", border: "rgb(0, 0, 0)" },
         on: {
-          dark: { color: "rgb(248, 250, 252)", bg: "rgb(38, 38, 38)", border: "rgb(248, 250, 252)" },
-          light: { color: "rgb(17, 17, 17)", bg: "rgba(17, 17, 17, 0.16)", border: "rgb(17, 17, 17)" },
+          dark: { color: "rgb(248, 250, 252)", bg: "rgba(255, 255, 255, 0.22)", border: "rgb(226, 232, 240)" },
+          light: { color: "rgb(255, 255, 255)", bg: "rgb(0, 0, 0)", border: "rgb(0, 0, 0)" },
         },
       },
       card: {

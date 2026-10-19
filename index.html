@@ -649,7 +649,7 @@ body.schedi-newdash #clientHistoryModal .sd-pay.sd-pay-unpaid { color: var(--sd-
 /* Paid-method chips are brand-tinted in both themes, with text that clears WCAG AA at 11px.
    Dark text is the bright brand color on a tint. Light text is a darker brand shade on a tint.
    Cash App #00D64F. Venmo #008CFF. Zelle #6D1ED4. PayPal #003087 light / #0070E0 dark.
-   Square is a charcoal chip: near-black fill with an off-white border in dark mode, near-black text and border in light mode.
+   Square stays a light chip in dark mode. In light mode it is a solid black chip with white text.
    Card uses Stripe blurple #635BFF. In-person cash stays the neutral slate chip. Unpaid stays red. */
 #tenantPortalSection.schedi-newdash .sd-pay-venmo,
 #tenantPortalSection.schedi-newdash .sd-chip.sd-pay-venmo,
@@ -747,25 +747,25 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-chip.is-on.sd-pay-payp
 #tenantPortalSection.schedi-newdash .sd-chip.sd-pay-square,
 body.schedi-newdash #clientHistoryModal .sd-pay.sd-pay-square {
     color: #f8fafc;
-    background: #111111;
-    border-color: #f8fafc;
+    background: rgba(255, 255, 255, 0.14);
+    border-color: #e2e8f0;
 }
 html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-square,
 html.schedi-light #tenantPortalSection.schedi-newdash .sd-chip.sd-pay-square,
 html.schedi-light body.schedi-newdash #clientHistoryModal .sd-pay.sd-pay-square {
-    color: #111111;
-    background: rgba(17, 17, 17, 0.08);
-    border-color: #111111;
+    color: #ffffff;
+    background: #000000;
+    border-color: #000000;
 }
 #tenantPortalSection.schedi-newdash .sd-chip.is-on.sd-pay-square {
-    background: #262626;
+    background: rgba(255, 255, 255, 0.22);
     color: #f8fafc;
-    border-color: #f8fafc;
+    border-color: #e2e8f0;
 }
 html.schedi-light #tenantPortalSection.schedi-newdash .sd-chip.is-on.sd-pay-square {
-    background: rgba(17, 17, 17, 0.16);
-    color: #111111;
-    border-color: #111111;
+    background: #000000;
+    color: #ffffff;
+    border-color: #000000;
 }
 #tenantPortalSection.schedi-newdash .sd-chip-count { margin-left: 4px; color: var(--sd-muted); font-weight: 700; }
 #tenantPortalSection.schedi-newdash .sd-chip.is-on .sd-chip-count,
