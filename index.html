@@ -1278,9 +1278,13 @@ html.schedi-light body.schedi-newdash .roster-sheet-actions > button.sd-act.sd-a
 #tenantPortalSection.schedi-newdash[data-dash="account"] #tenantMoreCard,
 #tenantPortalSection.schedi-newdash[data-dash="billing"] #tenantBillingCard { display: block !important; }
 #tenantPortalSection.schedi-newdash[data-dash="hours"] #tenantProfileFields,
-#tenantPortalSection.schedi-newdash[data-dash="profile"] #tenantHoursTimeOff { display: none !important; }
-#tenantPortalSection.schedi-newdash[data-dash="hours"] #tenantHoursShiftBlock,
-#tenantPortalSection.schedi-newdash[data-dash="profile"] #tenantHoursShiftBlock { display: block !important; }
+#tenantPortalSection.schedi-newdash[data-dash="profile"] #tenantHoursTimeOff,
+#tenantPortalSection.schedi-newdash[data-dash="profile"] #tenantHoursIntro,
+#tenantPortalSection.schedi-newdash[data-dash="profile"] #hoursWeekSummary,
+#tenantPortalSection.schedi-newdash[data-dash="profile"] #tenantHoursShiftBlock { display: none !important; }
+#tenantPortalSection.schedi-newdash[data-dash="hours"] #tenantHoursShiftBlock { display: block !important; }
+#tenantPortalSection.schedi-newdash[data-dash="profile"] #tenantProfileFields { border-top: 0; padding-top: 0; }
+#tenantPortalSection.schedi-newdash[data-dash="profile"] #tenantSectionHours > form { border-bottom: 0; padding-bottom: 0; }
 #tenantPortalSection.schedi-newdash #tenantSectionRoster,
 #tenantPortalSection.schedi-newdash #tenantSectionServices,
 #tenantPortalSection.schedi-newdash #tenantSectionHours,
@@ -6069,7 +6073,7 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
 
                 <!-- TENANT TAB 3: HOURS & SHIFTS + RECURRING BLOCK TIME -->
                 <div id="tenantSectionHours" class="glass-card rounded-2xl p-6 space-y-6 hidden">
-                    <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                    <div id="tenantHoursIntro" class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                         <div>
                             <h3 class="text-lg font-bold text-white">Daily Shifts & Operating Hours</h3>
                             <p class="text-xs text-slate-400">Set individual day operating hours or create recurring outage time blocks.</p>
@@ -6184,7 +6188,7 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                             </div>
                         </div>
                         <div id="tenantHoursSaveRow" class="flex justify-end">
-                            <button type="submit" class="px-5 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-slate-950 font-bold text-xs shadow-md glow-emerald">
+                            <button type="submit" id="tenantHoursSaveBtn" class="px-5 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-slate-950 font-bold text-xs shadow-md glow-emerald">
                                 Save Operating Hours
                             </button>
                         </div>
@@ -14372,6 +14376,8 @@ function schediQrCardPixels(text, color) {
             }
             var tabbar = document.getElementById('schediDashTabbar');
             if (tabbar) tabbar.style.setProperty('--sd-tab-slot', String(schediDashTabSlot(current)));
+            var hoursSave = document.getElementById('tenantHoursSaveBtn');
+            if (hoursSave) hoursSave.textContent = current === 'profile' ? 'Save booking page' : 'Save Operating Hours';
             try { paintOwnerHelpLinks(); } catch (errHelp) {}
         }
 

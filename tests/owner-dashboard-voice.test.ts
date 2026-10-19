@@ -109,9 +109,10 @@ describe("owner dashboard voice", () => {
     expect(steps).not.toContain("Set your hours");
     expect(steps).not.toContain("Avoid double-booking");
     expect(steps).toContain("page: 'services'");
-    expect(steps).toContain("page: 'hours'");
+    expect(steps).toContain("{ label: 'Set the hours you take people', done: hours, page: 'hours' }");
+    expect(steps).toContain("{ label: 'Connect a calendar to keep times free', done: calendarSyncConnected(tenant && tenant.calendarSync), page: 'hours' }");
     expect(steps).toContain("page: 'payments'");
-    expect(steps).toContain("page: 'profile'");
+    expect(steps).toContain("{ label: 'Show your logo on the page', done: logo, page: 'profile' }");
     expect(steps).toContain("page: 'appointments'");
 
     const render = extractFunction(html, "renderSchediToday");

@@ -954,9 +954,10 @@ describe("owner dashboard preview", () => {
     expect(html).toContain("frequency: 'Weekly (Fridays)'");
     expect(html).toContain('id="hoursWeekLayoutBtn"');
     expect(html).toContain('id="hoursWeekSummary"');
-    expect(css).toContain("#tenantPortalSection.schedi-newdash[data-dash=\"hours\"] #tenantHoursShiftBlock");
-    expect(css).toContain("#tenantPortalSection.schedi-newdash[data-dash=\"profile\"] #tenantHoursShiftBlock { display: block !important; }");
-    expect(css).not.toContain("#tenantHoursShiftBlock { display: none");
+    expect(css).toContain("#tenantPortalSection.schedi-newdash[data-dash=\"hours\"] #tenantHoursShiftBlock { display: block !important; }");
+    expect(css).toContain("#tenantPortalSection.schedi-newdash[data-dash=\"profile\"] #tenantHoursIntro");
+    expect(css).toContain("#tenantPortalSection.schedi-newdash[data-dash=\"profile\"] #hoursWeekSummary");
+    expect(css).toContain("#tenantPortalSection.schedi-newdash[data-dash=\"profile\"] #tenantHoursShiftBlock { display: none !important; }");
     expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-hours-summary-line:not(:last-child)::after { content: \" · \"; font-weight: 700; }");
     expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-hours-summary-line:not(:last-child)::after { content: none; }");
     const summary = new Function(
@@ -2432,20 +2433,45 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       expect(flagged.tabbar).toBe("grid");
       await page.evaluate(() => (window as unknown as { schediDashGo: (tab: string) => void }).schediDashGo("profile"));
       const profile = await visible(".sd-hours-week-day");
-      expect(profile.shown).toBe(7);
-      expect(profile.block).toBe("block");
-      const profileFields = await page.evaluate(() => ({
-        dash: document.getElementById("tenantPortalSection")?.getAttribute("data-dash"),
-        booking: getComputedStyle(document.getElementById("tenantProfileFields") as Element).display,
-        timeOff: getComputedStyle(document.getElementById("tenantHoursTimeOff") as Element).display,
-      }));
+      expect(profile.shown).toBe(0);
+      expect(profile.block).toBe("none");
+      expect(profile.blockH).toBe(0);
+      const profileFields = await page.evaluate(() => {
+        const shown = (id: string) => {
+          const el = document.getElementById(id);
+          if (!el) return "missing";
+          const style = getComputedStyle(el);
+          const box = el.getBoundingClientRect();
+          return style.display !== "none" && box.height > 0 ? "shown" : "hidden";
+        };
+        return {
+          dash: document.getElementById("tenantPortalSection")?.getAttribute("data-dash"),
+          booking: shown("tenantProfileFields"),
+          address: shown("tenantAddress"),
+          intro: shown("tenantHoursIntro"),
+          summary: shown("hoursWeekSummary"),
+          weekBtn: shown("hoursWeekLayoutBtn"),
+          rules: shown("tenantSlotInterval"),
+          timeOff: getComputedStyle(document.getElementById("tenantHoursTimeOff") as Element).display,
+          save: (document.getElementById("tenantHoursSaveBtn")?.textContent || "").trim(),
+        };
+      });
       expect(profileFields.dash).toBe("profile");
-      expect(profileFields.booking).not.toBe("none");
+      expect(profileFields.booking).toBe("shown");
+      expect(profileFields.address).toBe("shown");
+      expect(profileFields.intro).toBe("hidden");
+      expect(profileFields.summary).toBe("hidden");
+      expect(profileFields.weekBtn).toBe("hidden");
+      expect(profileFields.rules).toBe("hidden");
       expect(profileFields.timeOff).toBe("none");
-      await page.$eval("#hoursWeekLayoutBtn", (el) => (el as HTMLButtonElement).click());
-      const profileDays = await visible(".sd-hours-day");
-      expect(profileDays.shown).toBe(7);
-      expect(profileDays.blockH).toBeGreaterThan(0);
+      expect(profileFields.save).toBe("Save booking page");
+      await page.evaluate(() => (window as unknown as { schediDashGo: (tab: string) => void }).schediDashGo("hours"));
+      await page.waitForSelector(".sd-hours-week-day", { timeout: 10000 });
+      const hoursAgain = await visible(".sd-hours-week-day");
+      expect(hoursAgain.shown).toBe(7);
+      expect(hoursAgain.pressed).toBe("true");
+      expect(hoursAgain.block).toBe("block");
+      expect(await page.$eval("#tenantHoursSaveBtn", (el) => (el.textContent || "").trim())).toBe("Save Operating Hours");
       expect(errors).toEqual([]);
     } finally {
       await browser.close();
