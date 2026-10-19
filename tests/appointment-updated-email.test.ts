@@ -57,7 +57,7 @@ const page = pageFns([
   "clientEmailDateCardHtml",
   "clientEmailRowsHtml",
   "clientEmailButtonHtml",
-  "appointmentChangeValueHtml",
+  "appointmentUpdatedChangeRowHtml",
   "ownerContactPhrase",
   "businessReplyTo",
   "buildAppointmentUpdatedEmail",
@@ -177,36 +177,61 @@ describe("appointment edit mail plan", () => {
 });
 
 describe("appointment updated email", () => {
-  it("summarises the change in the original client voice and passes the worker allowlist", () => {
+  it("summarises the change as a before and after list and passes the worker allowlist", () => {
     const before = confirmed();
     const after = confirmed({ serviceName: "Color", amount: 90, notesToClient: "Use the side door." });
     const mail = page.buildAppointmentUpdatedEmail(tenant, after, before);
+    const builder = extractFunction(html, "buildAppointmentUpdatedEmail");
     expect(mail.subject).toBe("Appointment updated — Harbor Studio");
+    expect(mail.text).toContain("changed a few things on your booking. The date and time stayed the same.");
     expect(mail.text).toContain("What changed");
-    expect(mail.text).toContain("Service: Cut & style → Color");
-    expect(mail.text).toContain("Price: $65 → $90");
-    expect(mail.text).toContain("Note: — → Use the side door.");
+    expect(mail.text).toContain("Before: Cut & style");
+    expect(mail.text).toContain("Now: Color");
+    expect(mail.text).toContain("Before: $65");
+    expect(mail.text).toContain("Now: $90");
+    expect(mail.text).toContain("Before: —");
+    expect(mail.text).toContain("Now: Use the side door.");
+    expect(mail.text).toContain("Manage my booking");
     expect(mail.text).toContain("https://schedi.app/harbor/manage/manage-token-0001");
     expect(mail.text).not.toContain("Add to calendar");
-    expect(mail.html).toContain("Appointment updated");
-    expect(mail.html).toContain("What changed");
-    expect(mail.html).toContain("has a few changes.");
-    expect(mail.html).toContain("Manage / reschedule / cancel");
-    expect(mail.html).toContain("https://schedi.app/assets/email-calendar-check.png");
-    expect(mail.html).not.toContain("email-calendar-reschedule.png");
-    expect(mail.html).toContain("18 Harbor Lane, Brooklyn, NY");
+    expect(mail.text).not.toContain("18 Harbor Lane");
+    expect(mail.html).toContain("WHAT CHANGED");
+    expect(mail.html).toContain(">Before<");
+    expect(mail.html).toContain(">Now<");
+    expect(mail.html).toContain("<s>Cut &amp; style</s>");
+    expect(mail.html).toContain(">Color<");
+    expect(mail.html).toContain("Manage my booking");
+    expect(mail.html).toContain("https://schedi.app/harbor/manage/manage-token-0001");
+    for (const banned of [
+      "Reschedule or cancel",
+      "Manage / reschedule / cancel",
+      "Here's everything you need",
+      "Can you still make it",
+      "See you tomorrow",
+      "email-calendar-check.png",
+      "email-calendar-reschedule.png",
+      "18 Harbor Lane",
+    ]) {
+      expect(mail.html).not.toContain(banned);
+      expect(mail.text).not.toContain(banned);
+    }
+    for (const shared of ["clientEmailShellHtml", "clientEmailDateCardHtml", "clientEmailRowsHtml", "clientEmailButtonHtml"]) {
+      expect(builder).not.toContain(shared);
+    }
     expect(mailContentProblem(mail.html, mail.text, { paymentLinks: new Set() })).toBe("");
   });
 
   it("uses the singular line for one change and omits a hidden address", () => {
     const hidden = { ...tenant, addressDisplay: "hide" };
     const mail = page.buildAppointmentUpdatedEmail(hidden, confirmed({ serviceName: "Color", location: "Studio B" }), confirmed({ location: "Front desk" }));
-    expect(mail.text).toContain("has one change.");
-    expect(mail.text).toContain("Service: Cut & style → Color");
-    expect(mail.text).not.toContain("Location:");
+    expect(mail.text).toContain("changed one thing on your booking. The date and time stayed the same.");
+    expect(mail.text).toContain("Before: Cut & style");
+    expect(mail.text).toContain("Now: Color");
+    expect(mail.text).not.toContain("Location");
     expect(mail.text).not.toContain("Harbor Lane");
     expect(mail.html).not.toContain("Harbor Lane");
     expect(mail.html).not.toContain("Studio B");
+    expect(mail.html).toContain("Manage my booking");
     expect(mailContentProblem(mail.html, mail.text, { paymentLinks: new Set() })).toBe("");
   });
 });

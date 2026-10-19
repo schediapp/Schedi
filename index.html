@@ -22458,10 +22458,14 @@ function schediQrCardPixels(text, color) {
             return dispatchTenantMail(tenant, booking, buildRescheduleEmail(tenant, booking, prev), 'booking_reschedule', { to: to });
         }
 
-        function appointmentChangeValueHtml(from, to) {
-            var left = from ? esc(from) : '—';
-            var right = to ? esc(to) : '—';
-            return '<span style="color:#94a3b8;font-weight:500;text-decoration:line-through;">' + left + '</span> <span style="color:#34d399;">&rarr;</span> ' + right;
+        function appointmentUpdatedChangeRowHtml(row) {
+            var from = row && row.from ? esc(row.from) : '—';
+            var to = row && row.to ? esc(row.to) : '—';
+            return '<tr>'
+                + '<td style="padding:12px 12px 12px 0;border-bottom:1px solid #e2e8f0;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:700;color:#0f172a;vertical-align:top;">' + esc(row && row.label) + '</td>'
+                + '<td style="padding:12px;border-bottom:1px solid #e2e8f0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#64748b;vertical-align:top;"><s>' + from + '</s></td>'
+                + '<td style="padding:12px 0 12px 12px;border-bottom:1px solid #e2e8f0;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:700;color:#047857;vertical-align:top;">' + to + '</td>'
+                + '</tr>';
         }
 
         function buildAppointmentUpdatedEmail(tenant, booking, before) {
@@ -22469,51 +22473,46 @@ function schediQrCardPixels(text, color) {
             var rows = appointmentUpdatedVisibleRows(appointmentClientChanges(before, booking).rows, tenant);
             var note = seriesManagePlainNote(booking);
             var manageUrl = appointmentManageUrl(tenant, booking);
-            var friendlyDate = formatFriendlyLocalDateEmail(booking.date || '');
-            var durMins = (booking && Number(booking.durationMins) > 0)
-                ? Math.round(Number(booking.durationMins))
-                : durationMinsForBooking(tenant, booking);
-            var lengthLabel = durMins > 0 ? (durMins + ' min') : '';
-            var price = confirmEmailPriceLabel(booking && booking.amount);
-            var address = clientFacingAddress(tenant);
             var headline = 'Appointment updated';
             var subject = 'Appointment updated — ' + biz;
             var sub = rows.length === 1
-                ? ('Your appointment with ' + biz + ' has one change.')
-                : ('Your appointment with ' + biz + ' has a few changes.');
-            var text = headline + '\n' + sub + '\n\nWhat changed\n';
+                ? (biz + ' changed one thing on your booking. The date and time stayed the same.')
+                : (biz + ' changed a few things on your booking. The date and time stayed the same.');
+            var text = headline + '\n\n' + sub + '\n\nWhat changed\nBefore | Now\n';
             for (var i = 0; i < rows.length; i++) {
-                text += rows[i].label + ': ' + (rows[i].from || '—') + ' → ' + (rows[i].to || '—') + '\n';
+                text += rows[i].label + '\nBefore: ' + (rows[i].from || '—') + '\nNow: ' + (rows[i].to || '—') + '\n';
             }
-            text += '\nWhen: ' + friendlyDate + (booking.time ? (' at ' + booking.time) : '') + '\n' +
-                (lengthLabel ? ('Length: ' + lengthLabel + '\n') : '') +
-                'Service: ' + (booking.serviceName || 'Appointment') + '\n' +
-                (price !== null ? ('Price: ' + price + '\n') : '') +
-                (address ? ('Where: ' + address + '\n') : '') +
-                'Booking ref: #' + (booking.id || '') + '\n' +
+            text += '\nBooking ' + (booking.id || '') + '\n' +
                 (note ? ('\n' + note + '\n') : '') +
-                (manageUrl ? ('\nManage / reschedule / cancel:\n' + manageUrl + '\n') : '') +
+                (manageUrl ? ('\nManage my booking\n' + manageUrl + '\n') : '') +
                 '\nQuestions? Contact ' + ownerContactPhrase(tenant, false) + '.\n\n— ' + biz;
-            var whenLine = booking.time ? ('<strong style="color:#34d399;font-weight:600">' + esc(booking.time) + '</strong>') : '';
-            if (lengthLabel) whenLine += (whenLine ? ' &nbsp;·&nbsp; ' : '') + esc(lengthLabel);
-            var changeBits = [];
-            for (var r = 0; r < rows.length; r++) changeBits.push([rows[r].label, appointmentChangeValueHtml(rows[r].from, rows[r].to)]);
-            var detailBits = [['Service', esc(booking.serviceName || 'Appointment')]];
-            if (price !== null) detailBits.push(['Price', esc(price)]);
-            if (address) detailBits.push(['Where', esc(address)]);
-            detailBits.push(['Booking ref', esc('#' + (booking.id || ''))]);
-            var bodyHtml = '<tr><td style="padding:18px 28px 0;font-family:Arial,Helvetica,sans-serif;font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#94a3b8;">What changed</td></tr>'
-                + clientEmailRowsHtml(changeBits)
-                + clientEmailDateCardHtml({ date: booking.date, label: 'When', whenHtml: whenLine })
-                + clientEmailRowsHtml(detailBits)
-                + clientEmailButtonHtml(manageUrl, 'Manage / reschedule / cancel', 'Cancel or reschedule without signing in.')
-                + (note ? ('<tr><td style="padding:10px 28px 0;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#64748b;line-height:1.45;">' + esc(note) + '</td></tr>') : '');
-            var html = clientEmailShellHtml({
-                headline: headline,
-                sub: sub,
-                bodyHtml: bodyHtml,
-                footerLeft: 'Questions? Contact ' + ownerContactPhrase(tenant, true) + '.'
-            });
+            var href = String(manageUrl || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+            var listRows = '';
+            for (var r = 0; r < rows.length; r++) listRows += appointmentUpdatedChangeRowHtml(rows[r]);
+            var manageHtml = href
+                ? ('<p style="margin:22px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:15px;"><a href="' + href + '" style="color:#047857;font-weight:700;text-decoration:underline;">Manage my booking</a></p>')
+                : '';
+            var html = '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + esc(headline) + '</title></head>'
+                + '<body style="margin:0;padding:24px 12px;background-color:#f8fafc;">'
+                + '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"><tr><td align="center">'
+                + '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:560px;">'
+                + '<tr><td style="padding:0 0 18px;font-family:Arial,Helvetica,sans-serif;font-size:13px;font-weight:700;letter-spacing:0.08em;color:#047857;">SCHEDI</td></tr>'
+                + '<tr><td style="font-family:Arial,Helvetica,sans-serif;font-size:28px;line-height:1.2;font-weight:700;color:#0f172a;">' + esc(headline) + '</td></tr>'
+                + '<tr><td style="padding:10px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.5;color:#334155;">' + esc(sub) + '</td></tr>'
+                + '<tr><td style="padding:22px 0 8px;font-family:Arial,Helvetica,sans-serif;font-size:12px;font-weight:700;letter-spacing:0.08em;color:#047857;">WHAT CHANGED</td></tr>'
+                + '<tr><td><table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">'
+                + '<tr>'
+                + '<th align="left" style="padding:0 12px 8px 0;font-family:Arial,Helvetica,sans-serif;font-size:11px;font-weight:700;color:#64748b;">Field</th>'
+                + '<th align="left" style="padding:0 12px 8px;font-family:Arial,Helvetica,sans-serif;font-size:11px;font-weight:700;color:#64748b;">Before</th>'
+                + '<th align="left" style="padding:0 0 8px 12px;font-family:Arial,Helvetica,sans-serif;font-size:11px;font-weight:700;color:#64748b;">Now</th>'
+                + '</tr>'
+                + listRows
+                + '</table></td></tr>'
+                + '<tr><td style="padding:16px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#64748b;">Booking ' + esc(booking.id || '') + '</td></tr>'
+                + (note ? ('<tr><td style="padding:8px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.45;color:#64748b;">' + esc(note) + '</td></tr>') : '')
+                + '<tr><td>' + manageHtml + '</td></tr>'
+                + '<tr><td style="padding:22px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.45;color:#64748b;">Questions? Contact ' + ownerContactPhrase(tenant, true) + '.</td></tr>'
+                + '</table></td></tr></table></body></html>';
             return { subject: subject, text: text, html: html, replyTo: businessReplyTo(tenant) };
         }
 
