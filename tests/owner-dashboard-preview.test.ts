@@ -577,7 +577,10 @@ describe("owner dashboard preview", () => {
     expect(css).toContain("#6D1ED4");
     expect(css).toContain("#003087");
     expect(css).toContain("#0070E0");
-    expect(css).toContain("background: #000000");
+    expect(css).toContain("#tenantPortalSection.schedi-newdash .sd-chip.sd-pay-square");
+    expect(css).toContain("background: rgba(148, 163, 184, 0.16)");
+    expect(css).not.toContain("background: #000000");
+    expect(css).not.toContain("color: #000000");
     expect(css).toContain("background: #ffffff");
     expect(css).toContain("rgba(0, 140, 255, 0.16)");
     expect(extractFunction(html, "noShowPillHtml")).toContain("sd-pill-rose");
@@ -1313,6 +1316,50 @@ describe("owner dashboard preview", () => {
     expect(logChoices({ paymentGateways: { card: true, square: true } }, "PAY AT APPOINTMENT").map((row) => row.method)).toEqual(["card", "square", "cash", "later"]);
     expect(logChoices({ paymentGateways: {} }, "PAID SQUARE").map((row) => row.method)).toEqual(["square", "cash", "later"]);
     expect(logChoices({ paymentGateways: { card: false } }, "PAID VIA CARD").map((row) => row.method)).toEqual(["card", "cash", "later"]);
+    const filterRows = new Function(`
+      var OWNER_PAY_METHODS = [
+        ["card", "Card", "Card (Stripe)"], ["cashapp", "Cash App", "Cash App"], ["zelle", "Zelle", "Zelle"],
+        ["venmo", "Venmo", "Venmo"], ["paypal", "PayPal", "PayPal"], ["square", "Square", "Square"],
+        ["cash", "In person / Cash", "In person / Cash"]
+      ];
+      var ROSTER_PAY_FILTERS = [["all", "All"]].concat(OWNER_PAY_METHODS.map(function (row) {
+        return [row[0], row[1]];
+      })).concat([["unpaid", "Unpaid"]]);
+      function bookingPaymentState(app) {
+        var up = String((app && app.paymentStatus) || "").toUpperCase();
+        if (up.indexOf("PAID") !== -1 && up.indexOf("UNPAID") === -1) return "paid";
+        return "unpaid";
+      }
+      function appointmentPayKind(app) {
+        if (bookingPaymentState(app) !== "paid") return "unpaid";
+        var explicit = String((app && app.paidMethod) || "").toLowerCase();
+        if (explicit) return explicit;
+        var status = String((app && app.paymentStatus) || "").toUpperCase();
+        if (status.indexOf("CARD") !== -1 || status.indexOf("STRIPE") !== -1) return "card";
+        if (status.indexOf("SQUARE") !== -1) return "square";
+        if (status.indexOf("PAYPAL") !== -1) return "paypal";
+        return "cash";
+      }
+      ${extractFunction(html, "ownerMarkPaidMethods")}
+      ${extractFunction(html, "rosterPayFilterRows")}
+      return rosterPayFilterRows;
+    `)() as (tenant: { paymentGateways?: Record<string, boolean> }, apps: { paymentStatus?: string; paidMethod?: string }[]) => string[][];
+    const harbor = { paymentGateways: { card: false, cashapp: true, zelle: true, venmo: true, paypal: false } };
+    const harborApps = [
+      { paymentStatus: "PAID VIA CARD", paidMethod: "card" },
+      { paymentStatus: "PAID SQUARE", paidMethod: "square" },
+      { paymentStatus: "PAID PAYPAL", paidMethod: "paypal" },
+      { paymentStatus: "PAY AT APPOINTMENT" },
+    ];
+    expect(filterRows(harbor, harborApps).map((row) => row[0])).toEqual(["all", "card", "cashapp", "zelle", "venmo", "paypal", "square", "cash", "unpaid"]);
+    expect(filterRows({ paymentGateways: { cashapp: true } }, []).map((row) => row[0])).toEqual(["all", "cashapp", "cash", "unpaid"]);
+    expect(filterRows({ paymentGateways: {} }, [{ paymentStatus: "PAID VIA CARD", paidMethod: "card" }]).map((row) => row[0])).toEqual(["all", "card", "cash", "unpaid"]);
+    expect(extractFunction(html, "renderRosterPayFilter")).toContain("rosterPayFilterRows");
+    expect(extractFunction(html, "manualBookingFieldsUntouched")).toContain("manualBookingOpenedSnapshot");
+    const submit = html.slice(html.indexOf("window.handleManualBookingSubmit = function"), html.indexOf("function appointmentReportRows"));
+    expect(submit).toContain("if (window.__manualBookingDismissed) return;");
+    expect(submit).toContain("manualBookingFieldsUntouched()");
+    expect(submit.indexOf("manualBookingFieldsUntouched()")).toBeLessThan(submit.indexOf("Updated appointment"));
     expect(extractFunction(html, "paintManualPayChoices")).toContain("paintStatusPayChoices('manPaymentChoices'");
     expect(extractFunction(html, "paintOwnerRecurPayChoices")).toContain("paintStatusPayChoices('ownerRecurPaymentChoices'");
     expect(extractFunction(html, "paintStatusPayChoices")).toContain("ownerLogPayChoices");

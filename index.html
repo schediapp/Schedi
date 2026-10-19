@@ -641,7 +641,7 @@ html.schedi-light body.schedi-newdash #rosterApptModal .sd-pill-amber { color: #
    Cash App #00D64F — Cash App green. Press kits have also used #00D632; #00D64F is the mark used here.
    Zelle #6D1ED4 — Zelle style guide (brand.zelle.com).
    PayPal #003087 light / #0070E0 dark — Left Blue / Right Blue, PayPal Brand Identity Quick Guide.
-   Square — black and white, like the Square logo (Square brand guidelines). */
+   Square uses the same muted chip as the other historical methods. */
 #tenantPortalSection.schedi-newdash .sd-pay-venmo,
 #tenantPortalSection.schedi-newdash .sd-chip.sd-pay-venmo {
     color: #b9ddff;
@@ -684,15 +684,15 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-chip.sd-pay-paypal {
 }
 #tenantPortalSection.schedi-newdash .sd-pay-square,
 #tenantPortalSection.schedi-newdash .sd-chip.sd-pay-square {
-    color: #000000;
-    background: #ffffff;
-    border-color: #ffffff;
+    color: #e2e8f0;
+    background: rgba(148, 163, 184, 0.16);
+    border-color: #94a3b8;
 }
 html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-square,
 html.schedi-light #tenantPortalSection.schedi-newdash .sd-chip.sd-pay-square {
-    color: #ffffff;
-    background: #000000;
-    border-color: #000000;
+    color: #0f172a;
+    background: rgba(15, 23, 42, 0.06);
+    border-color: #64748b;
 }
 #tenantPortalSection.schedi-newdash .sd-chip-count { margin-left: 4px; color: var(--sd-muted); font-weight: 700; }
 #tenantPortalSection.schedi-newdash .sd-chip.is-on .sd-chip-count,
@@ -1799,6 +1799,18 @@ html.schedi-light #tenantPortalSection.schedi-newdash button.bg-indigo-400,
 html.schedi-light #tenantPortalSection.schedi-newdash button.bg-rose-600,
 html.schedi-light #tenantPortalSection.schedi-newdash button.bg-rose-500,
 html.schedi-light body.schedi-newdash #denyConfirmBtn { color: #ffffff !important; }
+#tenantPortalSection.schedi-newdash #tenantSectionHours > .flex {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+}
+#tenantPortalSection.schedi-newdash #hoursWeekLayoutBtn {
+    align-self: flex-start;
+    width: auto;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+}
 @media (min-width: 640px) {
     #tenantPortalSection.schedi-newdash #hoursWeekLayoutBtn { align-self: flex-end; }
 }
@@ -2493,15 +2505,15 @@ html.schedi-light body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.
 }
 body.schedi-newdash .sd-pay-choice.sd-pay-square,
 body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.sd-pay-square {
-    color: #000000;
-    background: #ffffff;
-    border-color: #ffffff;
+    color: #e2e8f0;
+    background: rgba(148, 163, 184, 0.16);
+    border-color: #94a3b8;
 }
 html.schedi-light body.schedi-newdash .sd-pay-choice.sd-pay-square,
 html.schedi-light body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.sd-pay-square {
-    color: #ffffff;
-    background: #000000;
-    border-color: #000000;
+    color: #0f172a;
+    background: rgba(15, 23, 42, 0.06);
+    border-color: #64748b;
 }
 body.schedi-newdash #rosterPaidMethodConfirmBtn:disabled {
     opacity: 0.45;
@@ -2582,17 +2594,17 @@ html.schedi-light body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.
 }
 body.schedi-newdash .sd-pay-choice.is-on.sd-pay-square,
 body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.is-on.sd-pay-square {
-    color: #000000;
-    background: #ffffff;
-    border-color: #e2e8f0;
-    box-shadow: 0 0 0 2px #ffffff;
+    color: #ffffff;
+    background: #059669;
+    border-color: #047857;
+    box-shadow: 0 0 0 2px #34d399;
 }
 html.schedi-light body.schedi-newdash .sd-pay-choice.is-on.sd-pay-square,
 html.schedi-light body.schedi-newdash #rosterPaidMethodOptions .roster-paid-opt.is-on.sd-pay-square {
     color: #ffffff;
-    background: #000000;
-    border-color: #000000;
-    box-shadow: 0 0 0 2px #334155;
+    background: #047857;
+    border-color: #065f46;
+    box-shadow: 0 0 0 2px #34d399;
 }
 body.schedi-newdash select,
 body.schedi-newdash select option { color-scheme: dark; }
@@ -3537,6 +3549,88 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
         font-variant-numeric: tabular-nums;
     }
     #tenantPortalSection.schedi-newdash .roster-status-price { white-space: nowrap; }
+    /* Below ~1100 the roster is stacked cards so Paid and the actions stay on screen. */
+    @media (max-width: 1099px) {
+        #tenantPortalSection.schedi-newdash #rosterListWrap { overflow-x: visible; }
+        #tenantPortalSection.schedi-newdash #rosterListWrap > table,
+        #tenantPortalSection.schedi-newdash #rosterListWrap > table > tbody { display: block; width: 100%; }
+        #tenantPortalSection.schedi-newdash #rosterListWrap > table > thead { display: none; }
+        #tenantPortalSection.schedi-newdash .sd-roster-all {
+            display: flex;
+            align-items: center;
+            box-sizing: border-box;
+            padding-left: 2px;
+            padding-right: 2px;
+        }
+        #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row {
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr) auto;
+            column-gap: 10px;
+            row-gap: 6px;
+            align-items: center;
+            width: 100%;
+            padding: 12px 2px;
+        }
+        #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td {
+            display: block;
+            width: auto;
+            max-width: none;
+            min-width: 0;
+            padding: 0;
+        }
+        #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-check { grid-column: 1; grid-row: 1; }
+        #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-ref { grid-column: 2; grid-row: 1; width: auto; flex: none; max-width: none; }
+        #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-price { grid-column: 3; grid-row: 1; text-align: right; }
+        #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-client,
+        #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-service,
+        #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-when,
+        #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-pay,
+        #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-collected,
+        #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-actions { grid-column: 1 / -1; }
+        #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-client,
+        #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-service,
+        #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-when { overflow-wrap: anywhere; }
+        #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-collected {
+            text-align: left;
+            white-space: normal;
+        }
+        #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td.roster-cell-actions { text-align: left; }
+        #tenantPortalSection.schedi-newdash #tenantRosterTableBody .roster-actions {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-start;
+            gap: 8px;
+        }
+        #tenantPortalSection.schedi-newdash #tenantRosterTableBody .roster-actions > button {
+            min-height: 44px;
+            flex: 1 1 auto;
+        }
+        #tenantPortalSection.schedi-newdash .roster-paid-amt { align-items: flex-start; }
+        #tenantPortalSection.schedi-newdash .roster-paid-kicker {
+            display: block;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: var(--sd-muted);
+            line-height: 1.2;
+        }
+    }
+    @media (min-width: 1100px) {
+        #tenantPortalSection.schedi-newdash #rosterListWrap { overflow-x: auto; }
+        #tenantPortalSection.schedi-newdash #rosterListWrap > table { width: 100%; }
+    }
+    @media (max-width: 1099px) {
+        #tenantPortalSection.schedi-newdash .sd-client-page-head {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        #tenantPortalSection.schedi-newdash .sd-client-page-head .sd-client-tools {
+            width: 100%;
+            flex-wrap: wrap;
+            justify-content: flex-start;
+        }
+    }
     @media (min-width: 1024px) and (max-width: 1279px) {
         #tenantPortalSection.schedi-newdash #rosterListWrap th.p-3,
         #tenantPortalSection.schedi-newdash #rosterListWrap td.p-3 {
@@ -5074,7 +5168,7 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                         </button>
                         <button type="button" onclick="openManualBookingModal()" class="px-4 py-2 rounded-xl bg-brand-500 hover:bg-brand-600 text-slate-950 font-bold text-xs shadow-md glow-emerald flex items-center space-x-1.5">
                             <i class="fa-solid fa-calendar-plus"></i>
-                            <span>Add Manual Appointment</span>
+                            <span>Add appointment</span>
                         </button>
                         </div>
                     </div>
@@ -5723,8 +5817,8 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                     html.schedi-light #clientImportModal .text-emerald-400 { color: #047857 !important; }
                 </style>
                 <div id="tenantSectionClients" class="glass-card rounded-2xl p-4 sm:p-6 space-y-4 hidden">
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div>
+                    <div class="sd-client-page-head flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div class="min-w-0">
                             <h3 class="text-lg font-bold text-white">Clients</h3>
                             <p class="text-xs text-slate-400">Your saved clients. Only you can see this list. Schedi never emails or texts clients you import.</p>
                         </div>
@@ -6377,7 +6471,7 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                     <p id="manKindBadge" class="sd-kind-badge">Appointment</p>
                     <h3 id="manModalTitle" class="text-lg font-bold text-white">Add appointment</h3>
                 </div>
-                <button type="button" class="sd-form-close" onclick="closeManualBookingModal()" aria-label="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+                <button type="button" class="sd-form-close" onpointerdown="window.__manualBookingDismissed=true" onclick="closeManualBookingModal()" aria-label="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
             </div>
             <form id="manualBookingForm" onsubmit="handleManualBookingSubmit(event)" class="space-y-3 text-xs sd-form-scroll">
                 <input type="hidden" id="manEditId" value="">
@@ -6456,8 +6550,8 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                 </div>
             </form>
             <div class="sd-form-bar">
-                <button type="button" class="sd-form-cancel" onclick="closeManualBookingModal()">Cancel</button>
-                <button type="submit" id="manSubmitBtn" class="sd-form-save" form="manualBookingForm">Log Appointment</button>
+                <button type="button" class="sd-form-cancel" onpointerdown="window.__manualBookingDismissed=true" onclick="closeManualBookingModal()">Cancel</button>
+                <button type="submit" id="manSubmitBtn" class="sd-form-save" form="manualBookingForm" onpointerdown="window.__manualBookingDismissed=false">Log Appointment</button>
             </div>
         </div>
     </div>
@@ -13111,8 +13205,29 @@ function schediQrCardPixels(text, color) {
             return appointmentPayKind(app) === rosterPayFilter;
         }
 
+        // Enabled methods, plus any method that already appears on a visible appointment.
+        // Cash, All, and Unpaid stay. A disabled method is not offered for a new payment.
+        function rosterPayFilterRows(tenant, apps) {
+            var enabled = {};
+            ownerMarkPaidMethods(tenant).forEach(function (row) { enabled[row[0]] = true; });
+            var seen = {};
+            (apps || []).forEach(function (app) {
+                if (!app) return;
+                seen[appointmentPayKind(app)] = true;
+            });
+            return ROSTER_PAY_FILTERS.filter(function (row) {
+                var id = row[0];
+                if (id === 'all' || id === 'unpaid' || id === 'cash') return true;
+                return enabled[id] === true || seen[id] === true;
+            });
+        }
+
         function renderRosterPayFilter(tenant) {
             var apps = (tenant && tenant.appointments) || [];
+            var filters = rosterPayFilterRows(tenant, apps);
+            var allowed = {};
+            filters.forEach(function (row) { allowed[row[0]] = true; });
+            if (!allowed[rosterPayFilter]) rosterPayFilter = 'all';
             var counts = { all: 0 };
             ROSTER_PAY_FILTERS.forEach(function (row) { counts[row[0]] = 0; });
             apps.forEach(function (app) {
@@ -13123,7 +13238,7 @@ function schediQrCardPixels(text, color) {
             });
             var box = document.getElementById('rosterPayFilter');
             if (box) {
-                box.innerHTML = ROSTER_PAY_FILTERS.map(function (row) {
+                box.innerHTML = filters.map(function (row) {
                     var on = rosterPayFilter === row[0];
                     var icon = row[0] === 'all' ? '' : payKindSvg(row[0]);
                     return '<button type="button" class="sd-chip' + rosterBrandPayClass(row[0]) + (on ? ' is-on' : '') + '" data-pay-filter="' + row[0] + '" aria-pressed="' + (on ? 'true' : 'false') + '">' +
@@ -13140,7 +13255,7 @@ function schediQrCardPixels(text, color) {
             }
             var sel = document.getElementById('rosterPayFilterSelect');
             if (sel) {
-                sel.innerHTML = ROSTER_PAY_FILTERS.map(function (row) {
+                sel.innerHTML = filters.map(function (row) {
                     return '<option value="' + row[0] + '"' + (rosterPayFilter === row[0] ? ' selected' : '') + '>' +
                         esc(row[1]) + ' (' + counts[row[0]] + ')</option>';
                 }).join('');
@@ -13152,12 +13267,13 @@ function schediQrCardPixels(text, color) {
         }
 
         window.setRosterPayFilter = function (kind) {
+            var tenant = (typeof getTenant === 'function') ? getTenant() : null;
+            var rows = rosterPayFilterRows(tenant, (tenant && tenant.appointments) || []);
             var next = 'all';
-            for (var i = 0; i < ROSTER_PAY_FILTERS.length; i++) {
-                if (ROSTER_PAY_FILTERS[i][0] === kind) next = kind;
+            for (var i = 0; i < rows.length; i++) {
+                if (rows[i][0] === kind) next = kind;
             }
             rosterPayFilter = next;
-            var tenant = (typeof getTenant === 'function') ? getTenant() : null;
             if (tenant && typeof renderTenantRoster === 'function') renderTenantRoster(tenant);
         };
 
@@ -21363,6 +21479,7 @@ function schediQrCardPixels(text, color) {
         };
 
         window.openManualBookingModal = function(prefill) {
+            window.__manualBookingDismissed = false;
             const tenant = getTenant();
             if (!tenant) return;
             var clientName = prefill && prefill.clientName ? String(prefill.clientName) : '';
@@ -21401,9 +21518,11 @@ function schediQrCardPixels(text, color) {
             document.getElementById('manualBookingModal').scrollTop = 0;
             var freshScroll = document.querySelector('#manualBookingModal .sd-form-scroll');
             if (freshScroll) freshScroll.scrollTop = 0;
+            captureManualBookingSnapshot();
         };
 
         window.openEditAppointment = function(appId) {
+            window.__manualBookingDismissed = false;
             const tenant = getTenant();
             if (!tenant) return;
             const app = (tenant.appointments || []).find(function (a) { return a && a.id === appId; });
@@ -21448,14 +21567,55 @@ function schediQrCardPixels(text, color) {
             document.getElementById('manualBookingModal').scrollTop = 0;
             var editScroll = document.querySelector('#manualBookingModal .sd-form-scroll');
             if (editScroll) editScroll.scrollTop = 0;
+            captureManualBookingSnapshot();
         };
 
+        var manualBookingOpenedSnapshot = '';
+
+        function manualBookingFormSnapshot() {
+            function val(id) {
+                var node = document.getElementById(id);
+                return node ? String(node.value || '') : '';
+            }
+            return [
+                val('manClientName'),
+                val('manClientPhone'),
+                val('manClientEmail'),
+                val('manServiceSelect'),
+                val('manCustomServiceName'),
+                val('manDurationMins'),
+                val('manPrice'),
+                val('manDate'),
+                val('manTime'),
+                val('manPaymentStatus'),
+                manualWalkInOn() ? '1' : '0'
+            ].join('\u0001');
+        }
+
+        function captureManualBookingSnapshot() {
+            manualBookingOpenedSnapshot = manualBookingFormSnapshot();
+        }
+
+        function manualBookingFieldsUntouched() {
+            return !!manualBookingOpenedSnapshot && manualBookingOpenedSnapshot === manualBookingFormSnapshot();
+        }
+
         window.closeManualBookingModal = function() {
-            document.getElementById('manualBookingModal').classList.add('hidden');
+            window.__manualBookingDismissed = true;
+            var modal = document.getElementById('manualBookingModal');
+            if (modal) modal.classList.add('hidden');
         }
 
         window.handleManualBookingSubmit = function(e) {
             e.preventDefault();
+            if (window.__manualBookingDismissed) return;
+            var bookingModal = document.getElementById('manualBookingModal');
+            if (!bookingModal || bookingModal.classList.contains('hidden')) return;
+            var earlyEditId = (document.getElementById('manEditId') || {}).value || '';
+            if (earlyEditId && manualBookingFieldsUntouched()) {
+                closeManualBookingModal();
+                return;
+            }
             const tenant = getTenant();
             if (!tenant) return;
 
