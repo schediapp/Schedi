@@ -918,6 +918,22 @@ export async function migratePrivateBookings(env, deps) {
   return { ok: true, tenants: tenants.length, stripped: moved, mailRemoved: mailRemoved + topMailRemoved };
 }
 
+function runSeriesMail(deps, env, tenant, bookings, ctx) {
+  if (typeof deps.sendSeriesConfirmed !== 'function') return Promise.resolve();
+  const list = (bookings || []).filter(Boolean);
+  if (!list.length) return Promise.resolve();
+  const task = Promise.resolve()
+    .then(() => deps.sendSeriesConfirmed(env, tenant, list))
+    .catch((err) => {
+      console.warn('series-mail failed', err && err.message ? err.message : err);
+    });
+  if (ctx && typeof ctx.waitUntil === 'function') {
+    ctx.waitUntil(task);
+    return Promise.resolve();
+  }
+  return task;
+}
+
 function runOwnerCancelNotify(deps, env, tenant, bookings, ctx) {
   if (typeof deps.notifyOwnerOfCancellations !== 'function') return Promise.resolve();
   const list = (bookings || []).filter(Boolean);
@@ -1072,6 +1088,20 @@ export async function handlePrivateBookingHttp(request, env, origin, path, deps,
       }
     } catch (errN) {
       console.warn('owner-cancel sync diff failed', errN && errN.message ? errN.message : errN);
+    }
+    // A series the owner just added (roster or client panel) gets one client email.
+    // Visits that already existed are not mailed again.
+    try {
+      const beforeIds = new Set((before || []).filter((a) => a && a.id).map((a) => String(a.id)));
+      const priorSeries = new Set((before || []).filter((a) => a && a.seriesId).map((a) => String(a.seriesId)));
+      const fresh = (saved || []).filter((a) => a && a.id && !beforeIds.has(String(a.id)) && a.seriesId && !priorSeries.has(String(a.seriesId)));
+      if (fresh.length) {
+        let tenant = null;
+        try { tenant = await deps.getTenantById(env, idToken, tenantId); } catch (_) { tenant = null; }
+        if (tenant) await runSeriesMail(deps, env, tenant, fresh, ctx);
+      }
+    } catch (errS) {
+      console.warn('series-mail sync diff failed', errS && errS.message ? errS.message : errS);
     }
     return respond(json, {
       ok: true,
@@ -1235,6 +1265,8 @@ export async function handlePrivateBookingHttp(request, env, origin, path, deps,
     }
     const saved = existing.concat(created);
     const persisted = await persistTenantAppointments(env, idToken, tenant.id, saved);
+    // One client email for the series, only after the visits are saved. Owner alerts below are unchanged.
+    await runSeriesMail(deps, env, tenant, created, ctx);
     if (typeof deps.notifyOwnerOfNewBookings === 'function') {
       const notifyTask = Promise.resolve()
         .then(() => deps.notifyOwnerOfNewBookings(env, tenant, created))

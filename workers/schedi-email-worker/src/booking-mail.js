@@ -17,6 +17,7 @@
  */
 import { readSession } from './owner-auth.js';
 import { loadPrivateAppointments } from './private-bookings.js';
+import { deliverSeriesConfirmations, isSeriesBooking } from './series-mail.js';
 import { rateLimitOk } from './rate-limit.js';
 
 const OWNER_CONTACT_TOKEN = '{{schedi_owner_contact}}';
@@ -374,6 +375,30 @@ export async function handleBookingMailPost(request, env, origin, deps) {
   if (booking && booking.walkIn === true && type === 'owner_booking_alert'
     && !deps.ownerNotifyEnabledForTenant(Object.assign({ id: tenantId }, tenant), env)) {
     return json({ ok: true, skipped: true, reason: 'owner_notify_not_enabled' }, 200, origin);
+  }
+
+  // A recurring series gets one client email ("Your visits are booked") when it is created.
+  // The page still queues a per-visit booking_confirmation, and would queue one per occurrence
+  // if it looped the visits. Those are not delivered. This sends the series note once instead,
+  // so the client gets that single email. Owner alerts use another type and are unchanged.
+  // A text-only request is left on the existing path.
+  if (!isSmsOnly && type === 'booking_confirmation' && booking && (isSeriesBooking(booking) || booking.seriesId)) {
+    let visits = [booking];
+    try {
+      const all = await loadPrivateAppointments(env, tenantId);
+      const sid = String(booking.seriesId || '');
+      const mates = (all || []).filter((a) => a && sid && String(a.seriesId || '') === sid);
+      if (mates.length) visits = mates;
+    } catch (_) {}
+    const seriesSized = visits.length > 1 || isSeriesBooking(booking);
+    if (seriesSized) {
+      const sent = await deliverSeriesConfirmations(env, Object.assign({ id: tenantId }, tenant), visits, {
+        sendResend: deps.sendResend,
+      });
+      if (sent && sent.ok && sent.id) return json({ ok: true, id: sent.id, series: true }, 200, origin);
+      if (sent && sent.skipped) return json({ ok: true, skipped: true, reason: sent.reason || 'series_confirmation' }, 200, origin);
+      return json({ ok: false, error: (sent && sent.error) || 'series_mail_failed' }, 502, origin);
+    }
   }
 
   const notifyTo = ownerNotifyAddress(tenant);
