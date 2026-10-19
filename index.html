@@ -656,13 +656,23 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-chip.sd-pay-venmo {
     background: rgba(0, 140, 255, 0.12);
     border-color: #008CFF;
 }
-#tenantPortalSection.schedi-newdash .sd-pay-cashapp,
-#tenantPortalSection.schedi-newdash .sd-chip.sd-pay-cashapp,
-html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-cashapp,
+#tenantPortalSection.schedi-newdash .sd-pay.sd-pay-cashapp,
+#tenantPortalSection.schedi-newdash .sd-chip.sd-pay-cashapp {
+    color: #e2e8f0;
+    background: rgba(148, 163, 184, 0.16);
+    border-color: #94a3b8;
+}
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay.sd-pay-cashapp,
 html.schedi-light #tenantPortalSection.schedi-newdash .sd-chip.sd-pay-cashapp {
-    color: #0b1220;
-    background: #00D64F;
-    border-color: #00A83C;
+    color: #0f172a;
+    background: rgba(15, 23, 42, 0.06);
+    border-color: #64748b;
+}
+#tenantPortalSection.schedi-newdash .sd-chip.is-on.sd-pay-cashapp,
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-chip.is-on.sd-pay-cashapp {
+    background: rgba(16, 185, 129, 0.16);
+    color: var(--sd-brand-2);
+    border-color: rgba(16, 185, 129, 0.45);
 }
 #tenantPortalSection.schedi-newdash .sd-pay-zelle,
 #tenantPortalSection.schedi-newdash .sd-chip.sd-pay-zelle,
@@ -716,7 +726,14 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-chip.sd-pay-square {
 #tenantPortalSection.schedi-newdash .sd-client-notes { margin-top: 4px; overflow-wrap: anywhere; }
 #tenantPortalSection.schedi-newdash .sd-client-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
 #tenantPortalSection.schedi-newdash .sd-tag { display: inline-flex; align-items: center; border-radius: 999px; padding: 2px 8px; font-size: 11px; font-weight: 800; color: var(--sd-brand-2); background: rgba(16, 185, 129, 0.14); border: 1px solid rgba(16, 185, 129, 0.35); }
-#tenantPortalSection.schedi-newdash .sd-client-actions { display: flex; flex: 0 0 auto; flex-wrap: wrap; align-items: center; gap: 6px; }
+#tenantPortalSection.schedi-newdash .sd-client-actions { display: flex; flex: 0 0 auto; flex-wrap: nowrap; align-items: center; gap: 6px; }
+#tenantPortalSection.schedi-newdash .sd-client-actions .sd-more { flex: 0 0 auto; }
+#tenantPortalSection.schedi-newdash .sd-client-actions .sd-more-menu button {
+    min-height: 40px;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+}
 #tenantPortalSection.schedi-newdash .sd-client-actions button,
 #tenantPortalSection.schedi-newdash .sd-client-actions-form button { min-height: 36px; border-radius: 12px; padding: 6px 12px; font-weight: 800; font-size: 12px; cursor: pointer; }
 #tenantPortalSection.schedi-newdash .sd-client-edit-btn,
@@ -1100,7 +1117,8 @@ html.schedi-light body.schedi-newdash .roster-sheet-actions > button.sd-act.sd-a
 }
 #tenantPortalSection.schedi-newdash #rosterListWrap { border: 1px solid var(--sd-line); border-radius: 16px; }
 /* The roster card's blur would trap the fixed ⋮ menu inside the scrolled card. */
-#tenantPortalSection.schedi-newdash #tenantSectionRoster {
+#tenantPortalSection.schedi-newdash #tenantSectionRoster,
+#tenantPortalSection.schedi-newdash #tenantSectionClients {
     background: var(--sd-panel);
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
@@ -4172,17 +4190,21 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
         #tenantPortalSection.schedi-newdash .sd-hours-week-add,
         #tenantPortalSection.schedi-newdash .sd-hours-week-copy { min-height: 44px; font-size: 14px; }
     }
-    @media (min-width: 640px) and (max-width: 1023px) {
-        #tenantPortalSection.schedi-newdash .sd-hours-week-scroll {
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-        }
+    @media (min-width: 640px) and (max-width: 1099px) {
+        #tenantPortalSection.schedi-newdash .sd-hours-week-scroll { overflow-x: visible; }
         #tenantPortalSection.schedi-newdash .sd-hours-week.roster-week-grid,
         #tenantPortalSection.schedi-newdash .sd-hours-week-head {
-            grid-template-columns: repeat(7, minmax(148px, 1fr));
+            grid-template-columns: 1fr;
         }
+        #tenantPortalSection.schedi-newdash .sd-hours-week-head { display: none; }
+        #tenantPortalSection.schedi-newdash .sd-hours-week-short { display: none; }
+        #tenantPortalSection.schedi-newdash .sd-hours-week-long { display: inline; }
+        #tenantPortalSection.schedi-newdash .sd-hours-week-day .sd-hours-times {
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        }
+        #tenantPortalSection.schedi-newdash .sd-hours-week-split { white-space: nowrap; }
     }
-    @media (min-width: 1024px) {
+    @media (min-width: 1100px) {
         #tenantPortalSection.schedi-newdash .sd-hours-week-scroll { overflow-x: visible; }
         #tenantPortalSection.schedi-newdash .sd-hours-week.roster-week-grid,
         #tenantPortalSection.schedi-newdash .sd-hours-week-head {
@@ -4538,6 +4560,9 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-theme-seg { background
         font-size: 16px;
         font-weight: 700;
         justify-content: center;
+        white-space: nowrap;
+        flex: 0 0 auto;
+        width: auto;
     }
     #tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-svc-title { font-size: 18px; font-weight: 700; line-height: 1.3; }
     #tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-svc-price,
@@ -4650,6 +4675,59 @@ html.schedi-light #tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-sv
 html.schedi-light #tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-svc-edit {
     background-color: #ffffff !important;
     border: 1px solid #cbd5e1;
+}
+#tenantPortalSection.schedi-newdash #tenantSectionServices .sd-svc-add {
+    white-space: nowrap;
+    flex: 0 0 auto;
+    width: auto;
+    max-width: 100%;
+}
+@media (min-width: 768px) and (max-width: 1099px) {
+    #tenantPortalSection.schedi-newdash #tenantServicesGrid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+@media (min-width: 1100px) {
+    #tenantPortalSection.schedi-newdash #tenantServicesGrid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+@media (min-width: 860px) and (max-width: 1099px) {
+    #tenantPortalSection.schedi-newdash .sd-today-head {
+        flex-wrap: wrap;
+        align-items: flex-start;
+    }
+    #tenantPortalSection.schedi-newdash .sd-today-actions {
+        flex: 1 1 100%;
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+    }
+    #tenantPortalSection.schedi-newdash .sd-today-actions .sd-share {
+        flex: 0 1 auto;
+        min-width: 0;
+    }
+    #tenantPortalSection.schedi-newdash .sd-today-actions .sd-add-desktop {
+        flex: 0 0 auto;
+        white-space: nowrap;
+    }
+}
+@media (min-width: 1280px) {
+    #tenantPortalSection.schedi-newdash #webPushCard,
+    #tenantPortalSection.schedi-newdash #tenantSectionNotifications form {
+        max-width: none;
+        width: 100%;
+    }
+    #tenantPortalSection.schedi-newdash #tenantSectionNotifications form {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 16px;
+        align-items: stretch;
+    }
+    #tenantPortalSection.schedi-newdash #tenantSectionNotifications form > * { margin-top: 0; }
+    #tenantPortalSection.schedi-newdash #tenantSectionNotifications form > .flex,
+    #tenantPortalSection.schedi-newdash #tenantSectionNotifications form > p {
+        grid-column: 1 / -1;
+    }
 }
 @media (min-width: 860px) {
     #tenantPortalSection.schedi-newdash #tenantMoreCard .sd-more-actions {
@@ -5428,7 +5506,7 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                         </div>
                         <button type="button" onclick="openAddServiceModal()" class="sd-svc-add px-4 py-2 rounded-xl bg-brand-500 hover:bg-brand-600 text-slate-950 font-bold text-xs shadow-md glow-emerald flex items-center space-x-1.5">
                             <i class="fa-solid fa-plus"></i>
-                            <span>Add New Service</span>
+                            <span>Add service</span>
                         </button>
                     </div>
 
@@ -5824,7 +5902,7 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
 
                 <!-- TENANT TAB 5: EMAIL CONFIRMATIONS -->
                 <div id="tenantSectionNotifications" class="glass-card rounded-2xl p-6 space-y-6 hidden">
-                    <div id="webPushCard" class="hidden p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-3 max-w-xl" style="max-width:36rem" aria-labelledby="webPushTitle">
+                    <div id="webPushCard" class="hidden p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-3 max-w-xl" aria-labelledby="webPushTitle">
                         <div class="flex items-start justify-between gap-3">
                             <div class="flex items-start space-x-3 min-w-0">
                                 <i id="webPushIcon" class="fa-solid fa-bell text-brand-400 text-lg mt-0.5" aria-hidden="true"></i>
@@ -8949,7 +9027,7 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                     + schediHelpVideosHtml('owner')
                     + '<div class="space-y-5 text-sm text-slate-300 leading-relaxed">'
                     + '<section><h2 class="text-base font-bold text-white mb-1">Sign in</h2><ol class="list-decimal pl-5 space-y-1"><li>Open Schedi and sign in to the Business Portal.</li><li>Enter the owner email and password.</li></ol></section>'
-                    + '<section><h2 class="text-base font-bold text-white mb-1">Add a service</h2><ol class="list-decimal pl-5 space-y-1"><li>Open Manage Services.</li><li>Click Add New Service.</li><li>Enter the name, duration, optional price, and description, then save. Leave price blank if you do not want a price shown.</li><li>Use Edit or Delete on a service you already added.</li><li>Free keeps one service. A second service is not saved.</li></ol></section>'
+                    + '<section><h2 class="text-base font-bold text-white mb-1">Add a service</h2><ol class="list-decimal pl-5 space-y-1"><li>Open Manage Services.</li><li>Click Add service.</li><li>Enter the name, duration, optional price, and description, then save. Leave price blank if you do not want a price shown.</li><li>Use Edit or Delete on a service you already added.</li><li>Free keeps one service. A second service is not saved.</li></ol></section>'
                     + '<section><h2 class="text-base font-bold text-white mb-1">Set hours</h2><ol class="list-decimal pl-5 space-y-1"><li>Open Hours &amp; Blocked Times.</li><li>Check Open for a day, then set Start and End.</li><li>Choose Start times every 15 minutes, 30 minutes, or 1 hour.</li><li>Click Save Operating Hours.</li><li>On the calendar, tap a date to set custom hours or close that day.</li><li>Drag across days, or hold a date and tap the last day, to mark time off. Use Add Recurring Outage for a repeating break such as lunch.</li></ol></section>'
                     + '<section><h2 class="text-base font-bold text-white mb-1">Payments</h2><ol class="list-decimal pl-5 space-y-1"><li>Open Payment Options.</li><li>Free only allows Pay at Appointment.</li><li>Starter can use Cash App, Venmo, Zelle, PayPal, and Pay at Appointment. Card checkout is not offered.</li><li>Pro can also turn on Credit / Debit Card (Stripe).</li><li>On Pro, Appointment deposit can be a percent of the service price or a fixed amount. It stays off until you turn it on. Percent deposits skip services with no price; card checkout also needs a price. Free and Starter cannot collect a card deposit.</li><li>Cancellation fee stays off until you turn it on. Set the hours (default 24) and a percent or a fixed amount. Pro charges a card already used for that visit. Free and Starter only show the rule.</li><li>Click Save Payment Gateways.</li></ol></section>'
                     + '<section><h2 class="text-base font-bold text-white mb-1">Appointments</h2><ol class="list-decimal pl-5 space-y-1"><li>Open Appointments Roster.</li><li>Free bookings are confirmed as soon as the client reserves.</li><li>Starter and Pro bookings stay pending. Click Accept or Deny. Deny frees that time.</li><li>Mark paid, Reschedule, and Cancel are on the same row.</li><li>Add Manual Appointment records a visit you took in person.</li></ol></section>'
@@ -12417,8 +12495,9 @@ function schediQrCardPixels(text, color) {
                     + '<div class="sd-client-head"><div class="sd-client-copy"><div class="sd-client-main min-w-0 text-sm break-words"><button type="button" class="sd-client-name font-bold text-white text-left" data-client-id="' + esc(x.id) + '" onclick="openClientDetail(' + jsArg(x.id) + ')" aria-expanded="' + (open ? 'true' : 'false') + '" aria-controls="sdClientPanel">' + esc(x.name) + '</button>' + clientSourceTag(x) + '</div>'
                     + summary
                     + '</div><div class="sd-client-actions">'
-                    + (editing ? '' : ('<button type="button" class="sd-client-edit-btn px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold text-[11px] border border-slate-700" onclick="startOwnerClientEdit(' + jsArg(x.id) + ')" aria-label="Edit ' + esc(x.name) + '">Edit</button>'))
-                    + '<button type="button" class="sd-client-remove px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-bold text-[11px] border border-rose-500/30" onclick="deleteOwnerClient(' + jsArg(x.id) + ')">Remove</button>'
+                    + (editing ? '' : ('<button type="button" class="sd-client-edit-btn px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold text-[11px] border border-slate-700" onclick="startOwnerClientEdit(' + jsArg(x.id) + ')" aria-label="Edit ' + esc(x.name) + '">Edit</button>'
+                    + '<details class="sd-more"><summary aria-label="More actions for ' + esc(x.name) + '"><i class="fa-solid fa-ellipsis-vertical" aria-hidden="true"></i></summary>'
+                    + '<div class="sd-more-menu" role="menu"><button type="button" class="sd-act-no" role="menuitem" onclick="closeSchediTodayMenus(event); deleteOwnerClient(' + jsArg(x.id) + ')">Remove</button></div></details>'))
                     + '</div></div>'
                     + metrics
                     + editor
@@ -14739,7 +14818,7 @@ function schediQrCardPixels(text, color) {
                     { id: 'HB-1028', clientName: 'Nina Park', clientPhone: '(555) 201-6601', clientEmail: 'nina@example.com', serviceName: 'Cut & style', date: day(-6), time: '10:00 AM', status: 'completed', paymentStatus: 'PAID', paidMethod: 'cash', amount: 65, durationMins: 45 },
                     { id: 'HB-1029', clientName: 'Nina Park', clientPhone: '(555) 201-6601', clientEmail: 'nina@example.com', serviceName: 'Beard trim', date: day(-8), time: '09:00 AM', status: 'cancelled', cancelled: true, cancelledBy: 'client', paymentStatus: 'PAID', paidMethod: 'card', amount: 28, durationMins: 20 },
                     { id: 'HB-1030', clientName: 'Nina Park', clientPhone: '(555) 201-6601', clientEmail: 'nina@example.com', serviceName: 'Color', date: day(5), time: '09:00 AM', status: 'completed', paymentStatus: 'PAID', paidMethod: 'card', amount: 120, durationMins: 90 },
-                    { id: 'HB-1031', clientName: 'Owen Blake', clientPhone: '(555) 201-6602', clientEmail: 'owen@example.com', serviceName: 'Consultation', date: day(-1), time: '09:00 AM', status: 'pending', paymentStatus: 'PENDING ZELLE', paymentMethod: 'zelle', durationMins: 30 }
+                    { id: 'HB-1031', clientName: 'Owen Blake', clientPhone: '(555) 201-6602', clientEmail: 'owen@example.com', serviceName: 'Consultation', date: day(1), time: '09:00 AM', status: 'pending', paymentStatus: 'PENDING ZELLE', paymentMethod: 'zelle', durationMins: 30 }
                 ]
             };
         }
