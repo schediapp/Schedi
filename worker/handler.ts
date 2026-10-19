@@ -454,28 +454,63 @@ function isHqSpaPath(pathname: string): boolean {
   return HQ_PATHS.has(first.toLowerCase());
 }
 
-function isPortalPreviewPath(pathname: string): boolean {
+function exactAppPath(pathname: string): string | null {
   let stripped = stripTrailing(collapse(pathname));
   try {
     stripped = decodeURIComponent(stripped);
   } catch {
-    return false;
+    return null;
   }
-  return stripped.toLowerCase() === "/portal-preview";
+  return stripped.toLowerCase();
+}
+
+function isPortalPreviewPath(pathname: string): boolean {
+  return exactAppPath(pathname) === "/portal-preview";
+}
+
+function hasNamedBusiness(url: URL): boolean {
+  for (const key of ["biz", "tenant"]) {
+    for (const value of url.searchParams.getAll(key)) {
+      if (value.trim()) return true;
+    }
+  }
+  return false;
+}
+
+// Owner sign-in. dropPreviewParams removes demo/biz/tenant from the sample
+// dashboard link and keeps classic, newdash, dash, and anything else.
+function ownerLoginLocation(url: URL, dropPreviewParams: boolean): string {
+  const dest = new URL(url.toString());
+  dest.protocol = "https:";
+  dest.hostname = "schedi.app";
+  dest.port = "";
+  dest.pathname = "/login";
+  if (dropPreviewParams) {
+    dest.searchParams.delete("demo");
+    dest.searchParams.delete("biz");
+    dest.searchParams.delete("tenant");
+  }
+  return dest.toString();
 }
 
 export async function handleRequest(request: Request, env: SchediEnv, ctx: SchediContext): Promise<Response> {
   const url = new URL(request.url);
   const method = request.method.toUpperCase();
-  // The sample owner dashboard is preview-only. Production sends that path to the real portal.
-  if ((method === "GET" || method === "HEAD") && !isPreviewHost(url.hostname) && isPortalPreviewPath(url.pathname)) {
-    const dest = new URL(url.toString());
-    dest.protocol = "https:";
-    dest.hostname = "schedi.app";
-    dest.port = "";
-    dest.pathname = "/portal";
-    dest.search = "";
-    return redirect(dest.toString(), 302);
+  // Production /portal with no business is not a booking page. The SPA would
+  // treat "portal" as a slug and show "Booking page not found". Send that
+  // request to /login and keep classic, newdash, dash, and other params.
+  // A returning owner already reaches the dashboard from /login: the page
+  // reads schedi.authSession, applySchediAuthMetaOptimistic marks them signed
+  // in, and switchPlatformMode('tenant') hides the login box and paints the
+  // portal. verifySchediAuthSessionRestore then calls openTenantOwnerPortal.
+  // /portal-preview is the sample dashboard. Preview hosts still serve it.
+  // Production goes straight to /login, keeping classic/newdash and dropping
+  // demo, biz, and tenant so the sample link cannot land on the error card.
+  if ((method === "GET" || method === "HEAD") && !isPreviewHost(url.hostname)) {
+    if (isPortalPreviewPath(url.pathname)) return redirect(ownerLoginLocation(url, true), 302);
+    if (exactAppPath(url.pathname) === "/portal" && !hasNamedBusiness(url)) {
+      return redirect(ownerLoginLocation(url, false), 302);
+    }
   }
   if (isWww(url.hostname)) {
     const dest = new URL(url.toString());
@@ -561,8 +596,9 @@ export async function handleRequest(request: Request, env: SchediEnv, ctx: Sched
     return serveSpa(request, env, ctx, method, null, false);
   }
 
-  // /portal and /portal/help stay on the app. A marketing canonical redirect
-  // must not run first: it would drop biz, tenant, dash, demo, and portal.
+  // /portal?biz= or ?tenant=, and /portal/help, stay on the app. A marketing
+  // canonical redirect must not run first: it would drop biz, tenant, dash,
+  // demo, and portal. Preview hosts also serve a bare /portal for the sample.
   if (lower === "/portal" || lower.startsWith("/portal/")) {
     return serveSpa(request, env, ctx, method, null, false);
   }
