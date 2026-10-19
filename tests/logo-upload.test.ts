@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { handleLogoUpload, sanitizeLogoSvg, sniffLogo } from "../workers/schedi-email-worker/src/logo-upload.js";
+import { handleLogoGet, handleLogoUpload, sanitizeLogoSvg, sniffLogo } from "../workers/schedi-email-worker/src/logo-upload.js";
 
 const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const TINY_PNG = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
@@ -81,7 +81,9 @@ describe("logo upload", () => {
     };
     const res = await handleLogoUpload(post(TINY_PNG), env, "https://schedi.app", deps(owner));
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ ok: true, url: "https://logos.example.test/logos/harbor-demo.png" });
+    const body = await res.json() as { ok: boolean; url: string };
+    expect(body.ok).toBe(true);
+    expect(body.url).toMatch(/^https:\/\/schedi\.app\/logos\/harbor-demo\?v=[a-f0-9]{18}$/);
     expect(puts).toEqual([{ key: "logos/harbor-demo.png", type: "image/png" }]);
   });
 
@@ -102,7 +104,7 @@ describe("logo upload", () => {
     });
     const res = await handleLogoUpload(req, env, "https://schedi.app", deps(owner));
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ ok: true, url: "https://logos.example.test/logos/harbor-demo/services/svc-3.png" });
+    expect((await res.json() as { url: string }).url).toMatch(/^https:\/\/schedi\.app\/logos\/harbor-demo\/services\/svc-3\?v=[a-f0-9]{18}$/);
     expect(puts).toEqual(["logos/harbor-demo/services/svc-3.png"]);
     expect(deleted).not.toContain("logos/harbor-demo.png");
     expect(deleted).toEqual([
@@ -137,7 +139,7 @@ describe("logo upload", () => {
     });
     const res = await handleLogoUpload(req, env, "https://schedi.app", deps(owner));
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ ok: true, url: "https://logos.example.test/logos/harbor-demo/qr.png" });
+    expect((await res.json() as { url: string }).url).toMatch(/^https:\/\/schedi\.app\/logos\/harbor-demo\/qr\?v=[a-f0-9]{18}$/);
     expect(puts).toEqual(["logos/harbor-demo/qr.png"]);
     expect(deleted).toEqual(["logos/harbor-demo/qr.jpg", "logos/harbor-demo/qr.webp", "logos/harbor-demo/qr.svg"]);
     expect(deleted.join(" ")).not.toContain("logos/harbor-demo.png");
@@ -157,8 +159,13 @@ describe("logo upload", () => {
     expect(wide.out).toBeLessThanOrEqual(512);
     expect(wide.sw).toBeGreaterThan(0);
     const store = extractFunction(html, "storeLogoBlob");
-    expect(store.indexOf("__SCHEDI_DEMO")).toBeLessThan(store.indexOf("api/logo-upload"));
+    expect(store.indexOf("__SCHEDI_DEMO")).toBeLessThan(store.indexOf("api/business-logo"));
     expect(extractFunction(html, "logoUploadMessage")).toContain("This demo shows your logo here only");
+    expect(html).toContain('id="bizLogoInitials"');
+    expect(html).toContain('id="pubHeaderLogo"');
+    expect(html).toContain("schediDashLogoFailed");
+    expect(html).toContain('id="tenantBannerInitials"');
+    expect(html).toContain("Preview ready");
     expect(html).toContain('id="logoUploadDrop"');
     expect(html).toContain('id="logoCropCanvas"');
     expect(html).toContain("Or paste a link");
@@ -190,5 +197,85 @@ describe("logo upload", () => {
     expect(square.oy).toBeLessThan(0);
     expect((stage / 2 - square.ox) / square.scale).toBeCloseTo(400, 4);
     expect((stage / 2 - square.oy) / square.scale).toBeCloseTo(400, 4);
+  });
+
+  it("keys the file to the signed-in business, replaces it, and removes only that logo", async () => {
+    const objects = new Map<string, { bytes: Uint8Array; type: string }>();
+    const env = {
+      LOGO_BUCKET: {
+        async put(key: string, body: Uint8Array, opts: { httpMetadata: { contentType: string } }) {
+          objects.set(key, { bytes: body, type: opts.httpMetadata.contentType });
+        },
+        async get(key: string) {
+          const hit = objects.get(key);
+          return hit ? { body: hit.bytes, httpMetadata: { contentType: hit.type } } : null;
+        },
+        async delete(key: string) { objects.delete(key); },
+      },
+    };
+    const claimed = new Request("https://schedi.app/api/business-logo", {
+      method: "POST",
+      headers: { Origin: "https://schedi.app" },
+      body: JSON.stringify({ session: "tok", data: TINY_PNG, tenantId: "other-biz" }),
+    });
+    const first = await handleLogoUpload(claimed, env, "https://schedi.app", deps(owner));
+    const firstBody = await first.json() as { url: string };
+    expect(firstBody.url).toMatch(/^https:\/\/schedi\.app\/logos\/harbor-demo\?v=/);
+    expect(objects.has("logos/harbor-demo.png")).toBe(true);
+    expect(objects.has("logos/other-biz.png")).toBe(false);
+    objects.set("logos/harbor-demo/services/svc-3.png", { bytes: new Uint8Array([1]), type: "image/png" });
+
+    const jpeg = new Uint8Array([0xff, 0xd8, 0xff, 0x00, 0x11, 0x22, 0x33, 0x44]);
+    const jpegData = Buffer.from(jpeg).toString("base64");
+    const secondReq = new Request("https://www.schedi.app/api/business-logo", {
+      method: "POST",
+      headers: { Origin: "https://www.schedi.app" },
+      body: JSON.stringify({ session: "tok", data: jpegData }),
+    });
+    const second = await handleLogoUpload(secondReq, env, "https://www.schedi.app", deps(owner));
+    const secondBody = await second.json() as { url: string };
+    expect(secondBody.url).toMatch(/^https:\/\/schedi\.app\/logos\/harbor-demo\?v=[a-f0-9]{18}$/);
+    expect(secondBody.url).not.toBe(firstBody.url);
+    expect(objects.has("logos/harbor-demo.png")).toBe(false);
+    expect(objects.has("logos/harbor-demo.jpg")).toBe(true);
+    expect(objects.has("logos/harbor-demo/services/svc-3.png")).toBe(true);
+
+    const version = new URL(secondBody.url).searchParams.get("v") || "";
+    const served = await handleLogoGet(new Request(secondBody.url), env);
+    expect(served.status).toBe(200);
+    expect(served.headers.get("content-type")).toBe("image/jpeg");
+    expect(served.headers.get("cache-control")).toBe("public, max-age=31536000, immutable");
+    expect(new Uint8Array(await served.arrayBuffer())).toEqual(jpeg);
+    expect(version).toHaveLength(18);
+
+    const stale = await handleLogoGet(new Request("https://schedi.app/logos/harbor-demo"), env);
+    expect(stale.headers.get("cache-control")).toBe("public, max-age=60");
+
+    const removed = await handleLogoUpload(new Request("https://schedi.app/api/business-logo", {
+      method: "DELETE",
+      headers: { Origin: "https://schedi.app" },
+      body: JSON.stringify({ session: "tok", tenantId: "other-biz" }),
+    }), env, "https://schedi.app", deps(owner));
+    expect(removed.status).toBe(200);
+    expect(objects.has("logos/harbor-demo.jpg")).toBe(false);
+    expect(objects.has("logos/harbor-demo/services/svc-3.png")).toBe(true);
+    const missing = await handleLogoGet(new Request("https://schedi.app/logos/harbor-demo?v=" + version), env);
+    expect(missing.status).toBe(404);
+
+    const unconfigured = await handleLogoGet(new Request("https://schedi.app/logos/harbor-demo"), {});
+    expect(unconfigured.status).toBe(404);
+  });
+
+  it("rejects a script SVG and an external reference", async () => {
+    const env = {
+      LOGO_BUCKET: {
+        async put() { throw new Error("should not store"); },
+        async delete() {},
+      },
+    };
+    const svg = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>', "utf8").toString("base64");
+    const res = await handleLogoUpload(post(svg), env, "https://schedi.app", deps(owner));
+    expect(res.status).toBe(400);
+    expect(await res.json()).toMatchObject({ error: "svg_rejected" });
   });
 });

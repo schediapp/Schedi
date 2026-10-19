@@ -1,17 +1,15 @@
 /**
- * POST /api/logo-upload
- * Owner session required. Stores one square logo per business, or one
- * square image per service when serviceId is set
- * (logos/{tenantId}/services/{serviceId}.{ext}).
+ * Owner logo storage.
+ * POST /api/business-logo (and /api/logo-upload) stores one square logo per
+ * business, a service image, or a booking QR. DELETE, or POST { remove: true },
+ * deletes that business's logo only.
+ * GET /logos/{tenantId} serves the file. The public URL includes ?v= so a
+ * replace is a new address and cached copies of the previous file stay put.
  *
- * Needs both of these before a real upload succeeds:
- *   LOGO_BUCKET       R2 binding (bucket name schedi-logos)
- *   LOGO_PUBLIC_BASE  https origin that serves that bucket, no trailing path
- * Until both are set, the handler returns logo_storage_unconfigured and the
- * portal keeps the paste-a-link field.
+ * Needs LOGO_BUCKET (R2). No public bucket hostname. Until the binding is
+ * present, upload returns logo_storage_unconfigured and the page keeps the
+ * paste-a-link field. A missing object is a 404 so the page can fall back.
  */
-import { readSession as readOwnerSession } from './owner-auth.js';
-
 export const LOGO_MAX_BYTES = 2 * 1024 * 1024;
 
 const EXT = {
@@ -76,11 +74,124 @@ function safeServiceId(value) {
   return id;
 }
 
+const READ_EXT = ['png', 'jpg', 'webp', 'svg'];
+
+function logoBucket(env) {
+  const bucket = env && env.LOGO_BUCKET;
+  if (!bucket || typeof bucket.put !== 'function') return null;
+  return bucket;
+}
+
+function logoVersion() {
+  const bytes = new Uint8Array(9);
+  crypto.getRandomValues(bytes);
+  let out = '';
+  for (let i = 0; i < bytes.length; i++) out += bytes[i].toString(16).padStart(2, '0');
+  return out;
+}
+
+function serveOrigin(request) {
+  try {
+    const origin = new URL(request.url).origin;
+    if (origin === 'https://schedi.app' || origin === 'https://www.schedi.app') return 'https://schedi.app';
+    if (/^https:\/\//i.test(origin)) return origin;
+  } catch (_) {}
+  return 'https://schedi.app';
+}
+
+export function parseLogoPath(pathname) {
+  const parts = String(pathname || '').split('/').filter(Boolean);
+  if (parts[0] !== 'logos' || parts.length < 2) return null;
+  const tenantId = safeTenantId(decodePathPart(parts[1]));
+  if (!tenantId) return null;
+  if (parts.length === 2) return { tenantId: tenantId, kind: 'logo' };
+  if (parts.length === 3 && parts[2] === 'qr') return { tenantId: tenantId, kind: 'qr' };
+  if (parts.length === 4 && parts[2] === 'services') {
+    const serviceId = safeServiceId(decodePathPart(parts[3]));
+    if (!serviceId) return null;
+    return { tenantId: tenantId, kind: 'service', serviceId: serviceId };
+  }
+  return null;
+}
+
+function decodePathPart(value) {
+  try { return decodeURIComponent(String(value || '')); } catch (_) { return ''; }
+}
+
+function logoStem(parsed) {
+  if (parsed.kind === 'qr') return 'logos/' + parsed.tenantId + '/qr.';
+  if (parsed.kind === 'service') return 'logos/' + parsed.tenantId + '/services/' + parsed.serviceId + '.';
+  return 'logos/' + parsed.tenantId + '.';
+}
+
+function publicLogoPath(parsed) {
+  if (parsed.kind === 'qr') return '/logos/' + parsed.tenantId + '/qr';
+  if (parsed.kind === 'service') return '/logos/' + parsed.tenantId + '/services/' + parsed.serviceId;
+  return '/logos/' + parsed.tenantId;
+}
+
+function logoReadHeaders(contentType, versioned) {
+  const headers = new Headers();
+  headers.set('X-Content-Type-Options', 'nosniff');
+  headers.set('Cache-Control', versioned ? 'public, max-age=31536000, immutable' : 'public, max-age=60');
+  headers.set('X-Robots-Tag', 'noindex');
+  if (contentType) headers.set('Content-Type', contentType);
+  return headers;
+}
+
+async function deleteStem(bucket, stem, keepExt) {
+  if (!bucket || typeof bucket.delete !== 'function') return;
+  for (const other of Object.values(EXT)) {
+    if (other === keepExt) continue;
+    try { await bucket.delete(stem + other); } catch (_) {}
+  }
+}
+
+async function removeBusinessLogo(bucket, tenantId) {
+  await deleteStem(bucket, 'logos/' + tenantId + '.', '');
+}
+
+export async function handleLogoGet(request, env) {
+  const url = new URL(request.url);
+  const parsed = parseLogoPath(url.pathname);
+  const headers404 = logoReadHeaders('text/plain; charset=utf-8', false);
+  headers404.set('Cache-Control', 'no-store');
+  if (!parsed) return new Response(request.method === 'HEAD' ? null : 'Not found\n', { status: 404, headers: headers404 });
+  const bucket = env && env.LOGO_BUCKET;
+  if (!bucket || typeof bucket.get !== 'function') return new Response(request.method === 'HEAD' ? null : 'Not found\n', { status: 404, headers: headers404 });
+  const stem = logoStem(parsed);
+  let found = null;
+  let foundExt = '';
+  for (let i = 0; i < READ_EXT.length; i++) {
+    const ext = READ_EXT[i];
+    let obj = null;
+    try { obj = await bucket.get(stem + ext); } catch (_) { obj = null; }
+    if (obj) { found = obj; foundExt = ext; break; }
+  }
+  if (!found) return new Response(request.method === 'HEAD' ? null : 'Not found\n', { status: 404, headers: headers404 });
+  const versioned = /^[a-f0-9]{18}$/.test(String(url.searchParams.get('v') || ''));
+  const storedType = found.httpMetadata && found.httpMetadata.contentType;
+  const type = storedType || (
+    foundExt === 'png' ? 'image/png'
+      : foundExt === 'jpg' ? 'image/jpeg'
+        : foundExt === 'webp' ? 'image/webp'
+          : 'image/svg+xml'
+  );
+  const headers = logoReadHeaders(type || 'application/octet-stream', versioned);
+  if (foundExt === 'svg' || String(type).indexOf('svg') !== -1) {
+    headers.set('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline'; sandbox");
+  }
+  if (request.method === 'HEAD') return new Response(null, { status: 200, headers: headers });
+  const body = found.body != null ? found.body : found;
+  return new Response(body, { status: 200, headers: headers });
+}
+
 export async function handleLogoUpload(request, env, origin, deps) {
   const respond = deps.json;
   const allowed = deps.isAllowedOrigin;
-  const readSession = deps.readSession || readOwnerSession;
-  if (request.method !== 'POST') return respond({ ok: false, error: 'method_not_allowed' }, 405, origin);
+  const readSession = deps && deps.readSession;
+  if (typeof readSession !== 'function') return respond({ ok: false, error: 'session_required' }, 401, origin);
+  if (request.method !== 'POST' && request.method !== 'DELETE') return respond({ ok: false, error: 'method_not_allowed' }, 405, origin);
   if (origin && !allowed(origin)) return respond({ ok: false, error: 'origin_not_allowed' }, 403, origin);
   let body = {};
   try { body = await request.json(); } catch (_) { body = {}; }
@@ -88,6 +199,12 @@ export async function handleLogoUpload(request, env, origin, deps) {
   if (!session || session.role !== 'owner') return respond({ ok: false, error: 'session_required' }, 401, origin);
   const tenantId = safeTenantId(session.tenantId);
   if (!tenantId) return respond({ ok: false, error: 'session_required' }, 401, origin);
+  const bucket = logoBucket(env);
+  if (!bucket) return respond({ ok: false, error: 'logo_storage_unconfigured' }, 503, origin);
+  if (request.method === 'DELETE' || (body && body.remove === true)) {
+    await removeBusinessLogo(bucket, tenantId);
+    return respond({ ok: true, url: '' }, 200, origin);
+  }
   const bytes = decodeBase64(body && body.data);
   if (!bytes) return respond({ ok: false, error: 'too_large' }, 400, origin);
   const kind = sniffLogo(bytes);
@@ -107,30 +224,27 @@ export async function handleLogoUpload(request, env, origin, deps) {
   }
   const serviceId = purpose === 'qr' ? '' : safeServiceId(body && body.serviceId);
   if (serviceId === null) return respond({ ok: false, error: 'bad_service' }, 400, origin);
-  const bucket = env && env.LOGO_BUCKET;
-  const base = String(env && env.LOGO_PUBLIC_BASE || '').replace(/\/+$/, '');
-  if (!bucket || typeof bucket.put !== 'function' || !/^https:\/\/[^\s]+$/i.test(base)) {
-    return respond({ ok: false, error: 'logo_storage_unconfigured' }, 503, origin);
-  }
   const ext = EXT[kind];
-  const key = purpose === 'qr'
-    ? 'logos/' + tenantId + '/qr.' + ext
+  const parsed = purpose === 'qr'
+    ? { tenantId: tenantId, kind: 'qr' }
     : serviceId
-    ? 'logos/' + tenantId + '/services/' + serviceId + '.' + ext
-    : 'logos/' + tenantId + '.' + ext;
-  await bucket.put(key, payload, {
-    httpMetadata: { contentType: contentType, cacheControl: 'public, max-age=86400' },
-  });
-  if (typeof bucket.delete === 'function') {
-    const stem = purpose === 'qr'
-      ? 'logos/' + tenantId + '/qr.'
-      : serviceId
-      ? 'logos/' + tenantId + '/services/' + serviceId + '.'
-      : 'logos/' + tenantId + '.';
-    for (const other of Object.values(EXT)) {
-      if (other === ext) continue;
-      try { await bucket.delete(stem + other); } catch (_) {}
-    }
+      ? { tenantId: tenantId, kind: 'service', serviceId: serviceId }
+      : { tenantId: tenantId, kind: 'logo' };
+  const key = logoStem(parsed) + ext;
+  const version = logoVersion();
+  try {
+    await bucket.put(key, payload, {
+      httpMetadata: { contentType: contentType, cacheControl: 'public, max-age=60' },
+      customMetadata: { version: version },
+    });
+  } catch (err) {
+    console.error(JSON.stringify({
+      message: 'logo put failed',
+      tenantId: tenantId,
+      error: err && err.message ? String(err.message).slice(0, 200) : 'put_failed',
+    }));
+    return respond({ ok: false, error: 'logo_write_failed' }, 500, origin);
   }
-  return respond({ ok: true, url: base + '/' + key }, 200, origin);
+  await deleteStem(bucket, logoStem(parsed), ext);
+  return respond({ ok: true, url: serveOrigin(request) + publicLogoPath(parsed) + '?v=' + version }, 200, origin);
 }

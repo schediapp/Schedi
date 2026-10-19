@@ -23,6 +23,16 @@
       "id": "d53378ec0cfb4d089d73add2ff01c62d"
     }
   ],
+  // Business logos. Create the bucket before the next production deploy:
+  //   npx wrangler r2 bucket create schedi-logos
+  // The worker serves files at https://schedi.app/logos/{tenantId}?v=...
+  // No LOGO_PUBLIC_BASE and no public r2.dev hostname.
+  "r2_buckets": [
+    {
+      "binding": "LOGO_BUCKET",
+      "bucket_name": "schedi-logos"
+    }
+  ],
   "observability": {
     "enabled": true,
     "logs": {
@@ -50,7 +60,20 @@
       // sessions. There is no separate preview namespace, so /hq cannot store a
       // session and stays on the login screen. Never add INDEXNOW_* or
       // BING_SITE_VERIFICATION to this environment.
-      "kv_namespaces": []
+      "kv_namespaces": [],
+      // Own bucket so a preview upload cannot write production logos.
+      // Create it before the next preview deploy:
+      //   npx wrangler r2 bucket create schedi-logos-preview
+      // If that bucket does not exist yet, delete this r2_buckets block.
+      // The preview site still serves, and upload returns logo_storage_unconfigured.
+      // Preview has no AUTH_KV, so a real owner session cannot be checked here.
+      // Upload then fails closed. Demo mode does not upload.
+      "r2_buckets": [
+        {
+          "binding": "LOGO_BUCKET",
+          "bucket_name": "schedi-logos-preview"
+        }
+      ]
     }
   }
 }

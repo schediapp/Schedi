@@ -5378,7 +5378,7 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                             <div class="sd-account" id="schediDashAccount">
                                 <button type="button" class="sd-user sd-account-btn" id="schediDashUserBtn" onclick="schediDashToggleAccount(event)" aria-haspopup="menu" aria-expanded="false" aria-controls="schediDashAccountMenu">
                                     <span id="schediDashUserInitials" class="sd-avatar" aria-hidden="true">S</span>
-                                    <img id="schediDashUserLogo" class="sd-avatar-img" alt="" hidden>
+                                    <img id="schediDashUserLogo" class="sd-avatar-img" alt="" hidden onerror="schediDashLogoFailed(this)">
                                     <span class="sd-account-copy">
                                         <span id="schediDashUserName" class="sd-user-name">Business</span>
                                         <span id="schediDashUserPlan" class="sd-user-plan">Plan</span>
@@ -5399,7 +5399,7 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                         </div>
                         <button type="button" class="sd-user sd-user-phone" id="schediDashUserBtnPhone" onclick="schediDashToggleAccount(event)" aria-haspopup="menu" aria-expanded="false" aria-controls="schediDashAccountMenu">
                             <span id="schediDashUserInitialsPhone" class="sd-avatar" aria-hidden="true">S</span>
-                            <img id="schediDashUserLogoPhone" class="sd-avatar-img" alt="" hidden>
+                            <img id="schediDashUserLogoPhone" class="sd-avatar-img" alt="" hidden onerror="schediDashLogoFailed(this)">
                         </button>
                     </header>
                     <p id="schediDemoNote" class="sd-demo-note" hidden>Demo · sample business · nothing is saved or sent</p>
@@ -5548,6 +5548,7 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                     <div class="flex items-start justify-between gap-2 min-w-0">
                         <div class="min-w-0 flex-1 space-y-0.5">
                             <div class="flex items-center flex-wrap gap-x-2 gap-y-1">
+                            <span id="tenantBannerMark" class="inline-flex items-center justify-center w-9 h-9 rounded-xl overflow-hidden bg-brand-500/15 text-brand-400 text-xs font-extrabold shrink-0" aria-hidden="true"><span id="tenantBannerInitials">S</span><img id="tenantBannerLogo" alt="" hidden class="w-9 h-9 object-cover" onerror="schediDashLogoFailed(this)"></span>
                             <h2 id="tenantBannerName" class="text-xl font-extrabold text-white">Business Portal</h2>
                             <span id="tenantBannerSlug" class="text-xs font-mono bg-slate-900 px-2 py-0.5 rounded text-brand-400 border border-slate-800">/slug</span>
                         </div>
@@ -5810,6 +5811,7 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                                 </div>
                                 <img id="logoUploadPreview" alt="Logo preview" class="hidden" hidden>
                                 <p id="logoUploadNote" class="text-[11px] text-slate-400" role="status"></p>
+                                <button type="button" id="logoUploadSave" class="hidden px-3 py-2 rounded-xl bg-brand-500 text-slate-950 font-bold text-xs">Save logo</button>
                                 <button type="button" id="logoUploadClear" class="hidden text-[11px] font-bold text-slate-400 underline">Remove logo</button>
                                 <label for="tenantLogoUrl" class="block text-xs font-semibold text-slate-300">Or paste a link</label>
                                 <input type="url" id="tenantLogoUrl" inputmode="url" placeholder="https://…" oninput="onLogoUrlInput()" class="w-full px-3 py-2 rounded-xl glass-input text-xs font-mono">
@@ -11994,7 +11996,7 @@ function schediQrCardPixels(text, color) {
                 return;
             }
             try {
-                res = await fetch('https://schedi.app/api/logo-upload', {
+                res = await fetch('/api/business-logo', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ session: session, data: data, contentType: schediQrPending.type, purpose: 'qr' })
@@ -12155,6 +12157,21 @@ function schediQrCardPixels(text, color) {
             const publicUrl = getTenantPublicBookingUrl(tenant);
 
             if (bannerName) bannerName.textContent = tenant.name;
+            var bannerInitials = document.getElementById('tenantBannerInitials');
+            var bannerLogo = document.getElementById('tenantBannerLogo');
+            if (bannerInitials) bannerInitials.textContent = schediDashInitials(tenant.name || '');
+            var bannerLogoUrl = safeHttpsUrl(tenant.logoUrl || tenant.logo || '');
+            if (bannerLogo) {
+                if (bannerLogoUrl) {
+                    bannerLogo.hidden = false;
+                    bannerLogo.src = bannerLogoUrl;
+                    if (bannerInitials) bannerInitials.hidden = true;
+                } else {
+                    bannerLogo.hidden = true;
+                    bannerLogo.removeAttribute('src');
+                    if (bannerInitials) bannerInitials.hidden = false;
+                }
+            }
             if (bannerSlug) bannerSlug.textContent = '/' + slug;
             if (ownerContact) ownerContact.textContent = (tenant.ownerName || tenant.ownerEmail)
                 ? ('Manager: ' + (tenant.ownerName || '') + (tenant.ownerEmail ? ' (' + tenant.ownerEmail + ')' : ''))
@@ -14250,6 +14267,17 @@ function schediQrCardPixels(text, color) {
             }
             return 'Free';
         }
+
+        window.schediDashLogoFailed = function (img) {
+            if (!img) return;
+            img.hidden = true;
+            img.removeAttribute('src');
+            var lettersId = img.id === 'schediDashUserLogoPhone' ? 'schediDashUserInitialsPhone'
+                : img.id === 'tenantBannerLogo' ? 'tenantBannerInitials'
+                : 'schediDashUserInitials';
+            var letters = document.getElementById(lettersId);
+            if (letters) letters.hidden = false;
+        };
 
         function schediDashPaint() {
             var tenant = (typeof getTenant === 'function') ? getTenant() : null;
@@ -18136,6 +18164,7 @@ function schediQrCardPixels(text, color) {
         var LOGO_STAGE = 280;
         var logoCropState = null;
         var logoObjectUrl = '';
+        var logoPendingSvg = null;
         var logoUploadBound = false;
         var logoUploadTarget = { kind: 'logo' };
         var logoCropHome = null;
@@ -18390,7 +18419,7 @@ function schediQrCardPixels(text, color) {
             var payload = { session: session, data: data, contentType: contentType };
             if (serviceTarget) payload.serviceId = String(serviceTarget.serviceId);
             try {
-                var res = await fetch('https://schedi.app/api/logo-upload', {
+                var res = await fetch('/api/business-logo', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
@@ -18427,9 +18456,14 @@ function schediQrCardPixels(text, color) {
                     if (input) input.value = body.url;
                     tenant.logoUrl = body.url;
                     revokeLogoObjectUrl();
+                    logoPendingSvg = null;
+                    var saveBtn = document.getElementById('logoUploadSave');
+                    if (saveBtn) saveBtn.classList.add('hidden');
                     refreshLogoPreview();
                     setLogoNote('Logo saved.', false);
                     try { await saveState(); } catch (errSave) {}
+                    try { schediDashPaint(); } catch (errPaint) {}
+                    try { renderTenantAdminPortal(); } catch (errBanner) {}
                 }
             } catch (errNet) {
                 if (serviceTarget) setServiceUploadNote(serviceImageMessage(''), true);
@@ -18447,6 +18481,53 @@ function schediQrCardPixels(text, color) {
             else setLogoNote(message, warn);
         }
 
+        async function clearStoredLogo() {
+            revokeLogoObjectUrl();
+            hideLogoCrop();
+            logoPendingSvg = null;
+            var saveBtn = document.getElementById('logoUploadSave');
+            if (saveBtn) saveBtn.classList.add('hidden');
+            var field = document.getElementById('tenantLogoUrl');
+            if (field) field.value = '';
+            if (window.__SCHEDI_DEMO) {
+                setLogoNote(logoUploadMessage('demo'), false);
+                refreshLogoPreview();
+                return;
+            }
+            var tenant = getTenant();
+            var session = '';
+            try { session = localStorage.getItem('schedi.authSession') || ''; } catch (errSession) { session = ''; }
+            if (tenant) {
+                try {
+                    var res = await fetch('/api/business-logo', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ session: session, remove: true })
+                    });
+                    var body = {};
+                    try { body = await res.json(); } catch (errJson) { body = {}; }
+                    if (!res.ok || !body.ok) {
+                        if (body.error !== 'logo_storage_unconfigured') {
+                            setLogoNote(logoUploadMessage(body.error || ''), true);
+                            refreshLogoPreview();
+                            return;
+                        }
+                    }
+                } catch (errNet) {
+                    setLogoNote(logoUploadMessage(''), true);
+                    refreshLogoPreview();
+                    return;
+                }
+                tenant.logoUrl = '';
+                tenant.logo = '';
+                try { await saveState(); } catch (errSave) {}
+                try { schediDashPaint(); } catch (errPaint) {}
+                try { renderTenantAdminPortal(); } catch (errBanner) {}
+            }
+            setLogoNote('Logo removed.', false);
+            refreshLogoPreview();
+        }
+
         function acceptLogoFile(file) {
             var problem = logoFileProblem(file);
             if (problem) {
@@ -18454,9 +18535,24 @@ function schediQrCardPixels(text, color) {
                 return;
             }
             var kind = logoFileKind(file);
+            if (kind !== 'image/svg+xml' || logoUploadIsService()) {
+                logoPendingSvg = null;
+                var savePending = document.getElementById('logoUploadSave');
+                if (savePending) savePending.classList.add('hidden');
+            }
             if (kind === 'image/svg+xml') {
                 hideLogoCrop();
-                storeLogoBlob(file, kind);
+                if (logoUploadIsService()) {
+                    storeLogoBlob(file, kind);
+                    return;
+                }
+                revokeLogoObjectUrl();
+                logoObjectUrl = URL.createObjectURL(file);
+                logoPendingSvg = file;
+                refreshLogoPreview();
+                var saveSvg = document.getElementById('logoUploadSave');
+                if (saveSvg) saveSvg.classList.remove('hidden');
+                setLogoNote('Preview ready. Save the logo, or choose another file.', false);
                 return;
             }
             var url = URL.createObjectURL(file);
@@ -18532,18 +18628,14 @@ function schediQrCardPixels(text, color) {
                 hideLogoCrop();
                 logoUploadTarget = { kind: 'logo' };
             });
-            if (clearBtn) clearBtn.addEventListener('click', function () {
-                revokeLogoObjectUrl();
-                hideLogoCrop();
-                var field = document.getElementById('tenantLogoUrl');
-                if (field) field.value = '';
-                var tenant = getTenant();
-                if (tenant && !window.__SCHEDI_DEMO) {
-                    tenant.logoUrl = '';
-                    tenant.logo = '';
-                }
-                setLogoNote(window.__SCHEDI_DEMO ? logoUploadMessage('demo') : '', false);
-                refreshLogoPreview();
+            if (clearBtn) clearBtn.addEventListener('click', function () { clearStoredLogo(); });
+            var saveLogoBtn = document.getElementById('logoUploadSave');
+            if (saveLogoBtn) saveLogoBtn.addEventListener('click', function () {
+                var pending = logoPendingSvg;
+                if (!pending) return;
+                logoPendingSvg = null;
+                saveLogoBtn.classList.add('hidden');
+                storeLogoBlob(pending, 'image/svg+xml');
             });
             if (useBtn) useBtn.addEventListener('click', function () {
                 var st = logoCropState;
@@ -24619,9 +24711,21 @@ function schediQrCardPixels(text, color) {
         .biz-cover img { width: 100%; height: 140px; object-fit: cover; display: block; }
         .biz-header-body { display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; }
         .biz-header.has-cover .biz-header-body { margin-top: -28px; position: relative; }
-        .biz-logo-wrap { flex: 0 0 auto; }
-        .biz-logo { width: 48px; height: 48px; border-radius: 14px; object-fit: cover; display: block; background: #ffffff; border: 2px solid #ffffff; }
-        .biz-header.has-cover .biz-logo { box-shadow: 0 4px 14px rgba(15, 23, 42, 0.28); }
+        .biz-logo-wrap { flex: 0 0 auto; display: flex; }
+        .biz-logo, .biz-logo-initials { width: 48px; height: 48px; border-radius: 14px; }
+        .biz-logo { object-fit: cover; display: block; background: #ffffff; border: 2px solid #ffffff; }
+        .biz-logo[hidden], .biz-logo-initials[hidden], .pub-header-logo[hidden], .pub-header-initials[hidden] { display: none !important; }
+        .biz-logo-initials, .pub-header-initials {
+            display: inline-flex; align-items: center; justify-content: center;
+            background: rgba(16, 185, 129, 0.18); color: #34d399; font-weight: 800;
+        }
+        .biz-logo-initials { font-size: 16px; }
+        .biz-header.has-cover .biz-logo, .biz-header.has-cover .biz-logo-initials { box-shadow: 0 4px 14px rgba(15, 23, 42, 0.28); }
+        .pub-header-logo, .pub-header-initials { width: 28px; height: 28px; border-radius: 8px; margin-left: 8px; }
+        .pub-header-logo { object-fit: cover; display: block; background: #ffffff; }
+        .pub-header-initials { font-size: 11px; }
+        html.schedi-newbook .biz-logo, html.schedi-newbook .biz-logo-initials,
+        html.schedi-newbook .pub-header-logo, html.schedi-newbook .pub-header-initials { border-radius: 16px; }
         .biz-title { margin: 0; font-size: 1.2rem; font-weight: 800; line-height: 1.25; color: #f8fafc; word-break: break-word; }
         html.schedi-light .biz-title { color: #0f172a; }
         .biz-industry { margin: 2px 0 0; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #cbd5e1; }
@@ -24634,7 +24738,8 @@ function schediQrCardPixels(text, color) {
         html.schedi-light .tz-note { color: #334155; }
         @media (min-width: 640px) {
             .biz-cover img { height: 200px; }
-            .biz-logo { width: 64px; height: 64px; }
+            .biz-logo, .biz-logo-initials { width: 64px; height: 64px; }
+            .biz-logo-initials { font-size: 20px; }
             .biz-title { font-size: 1.5rem; }
             .biz-header-body { align-items: center; padding: 16px 20px; }
         }
@@ -24702,6 +24807,10 @@ function schediQrCardPixels(text, color) {
             <a href="https://schedi.app/" class="inline-flex items-center shrink-0" aria-label="Schedi home">
                 <img id="schediLogo" class="schedi-logo" src="/assets/logo-dark.svg" alt="Schedi" height="28" style="height:28px;width:auto;">
             </a>
+            <span class="inline-flex items-center shrink-0" aria-hidden="true">
+                <img id="pubHeaderLogo" class="pub-header-logo" alt="" hidden onerror="hideBrokenBizImage(this)">
+                <span id="pubHeaderInitials" class="pub-header-initials" hidden></span>
+            </span>
             <span class="flex flex-wrap items-center justify-end gap-2">
                 <button type="button" id="schediThemeBtn" class="schedi-theme-btn" onclick="toggleSchediTheme()" title="Switch to light theme" aria-label="Switch to light theme"><i class="fa-solid fa-sun" aria-hidden="true"></i><span class="schedi-theme-btn-label">Light</span></button>
                 <a href="${clientHelpHref}" target="_blank" rel="noopener" class="text-xs text-slate-300 underline">Help</a>
@@ -24720,8 +24829,9 @@ function schediQrCardPixels(text, color) {
                 <img id="bizCover" alt="" onerror="hideBrokenBizImage(this)">
             </div>
             <div class="biz-header-body">
-                <div id="bizLogoWrap" class="biz-logo-wrap" hidden>
-                    <img id="bizLogo" class="biz-logo" alt="" onerror="hideBrokenBizImage(this)">
+                <div id="bizLogoWrap" class="biz-logo-wrap">
+                    <img id="bizLogo" class="biz-logo" alt="" hidden onerror="hideBrokenBizImage(this)">
+                    <span id="bizLogoInitials" class="biz-logo-initials" aria-hidden="true"></span>
                 </div>
                 <div class="min-w-0">
                     <h1 id="bizTitle" class="biz-title">${safeName}</h1>
@@ -25995,14 +26105,26 @@ function schediQrCardPixels(text, color) {
                 if (wrap) wrap.hidden = true;
                 var header = document.getElementById('bizHeader');
                 if (header) header.classList.remove('has-cover');
-            } else if (img.id === 'bizLogo') {
-                var logoWrap = document.getElementById('bizLogoWrap');
-                if (logoWrap) logoWrap.hidden = true;
+            } else if (img.id === 'bizLogo' || img.id === 'pubHeaderLogo') {
+                img.hidden = true;
+                img.removeAttribute('src');
+                var letters = document.getElementById(img.id === 'bizLogo' ? 'bizLogoInitials' : 'pubHeaderInitials');
+                if (letters) letters.hidden = false;
+                if (img.id === 'bizLogo') {
+                    var logoWrap = document.getElementById('bizLogoWrap');
+                    if (logoWrap) logoWrap.hidden = false;
+                }
             } else {
                 img.hidden = true;
             }
         }
         window.hideBrokenBizImage = hideBizImage;
+        function bizInitials(name) {
+            var parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+            if (!parts.length) return 'S';
+            var letters = parts[0].charAt(0) + (parts.length > 1 ? parts[parts.length - 1].charAt(0) : '');
+            return letters.toUpperCase();
+        }
         function paintBizHeader() {
             var title = document.getElementById('bizTitle');
             if (title) title.textContent = String((tenantData && tenantData.name) || 'Book an appointment');
@@ -26031,18 +26153,27 @@ function schediQrCardPixels(text, color) {
                 hoursEl.hidden = !hoursText;
             }
             var logo = publicHttpsUrl(tenantData && (tenantData.logoUrl || tenantData.logo || tenantData.businessLogo));
-            var logoEl = document.getElementById('bizLogo');
-            var logoWrap = document.getElementById('bizLogoWrap');
-            if (logoEl && logoWrap) {
-                if (logo) {
-                    logoEl.src = logo;
-                    logoEl.alt = String((tenantData && tenantData.name) || 'Business') + ' logo';
-                    logoWrap.hidden = false;
+            var logoName = String((tenantData && tenantData.name) || 'Business');
+            var logoLetters = bizInitials(logoName);
+            function showBizMark(img, letters, wrap) {
+                if (letters) letters.textContent = logoLetters;
+                if (logo && img) {
+                    img.hidden = false;
+                    img.src = logo;
+                    img.alt = logoName + ' logo';
+                    if (letters) letters.hidden = true;
+                    if (wrap) wrap.hidden = false;
                 } else {
-                    logoWrap.hidden = true;
-                    logoEl.removeAttribute('src');
+                    if (img) {
+                        img.hidden = true;
+                        img.removeAttribute('src');
+                    }
+                    if (letters) letters.hidden = false;
+                    if (wrap) wrap.hidden = false;
                 }
             }
+            showBizMark(document.getElementById('bizLogo'), document.getElementById('bizLogoInitials'), document.getElementById('bizLogoWrap'));
+            showBizMark(document.getElementById('pubHeaderLogo'), document.getElementById('pubHeaderInitials'), null);
             var cover = publicHttpsUrl(tenantData && (tenantData.coverUrl || tenantData.coverPhoto || tenantData.coverPhotoUrl));
             var coverWrap = document.getElementById('bizCoverWrap');
             var coverEl = document.getElementById('bizCover');

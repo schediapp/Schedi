@@ -43,7 +43,7 @@ Stripe Tax is not enabled. Client card charges do not set `application_fee_amoun
 
 ## Deploy the public site
 
-`wrangler.jsonc` is the `schedi-web` worker. It serves `site/` as static assets with `run_worker_first`, on `schedi.app/*` and `www.schedi.app/*`. `/api/*` and `/billing/*` stay on their more specific workers. Marketing HTML is rendered in the worker. App and tenant routes use the SPA shell.
+`wrangler.jsonc` is the `schedi-web` worker. It serves `site/` as static assets with `run_worker_first`, on `schedi.app/*` and `www.schedi.app/*`. `/api/*` and `/billing/*` stay on their more specific workers, except `POST /api/business-logo` and `GET /logos/*`, which this worker handles. Marketing HTML is rendered in the worker. App and tenant routes use the SPA shell.
 
 Git tracks that shell only. `site/index.html` is a symlink to `../index.html`, which is the file the booking tests read. The rest of the live asset bucket is not in this repository. It lives in the deploy directory production wrangler already uses:
 
@@ -68,9 +68,47 @@ npx wrangler deploy --config wrangler.jsonc --env preview
 
 The preview hostname stays on `*.workers.dev`. It does not 301 to `https://schedi.app`. Canonical link tags on marketing and tenant pages still point at `https://schedi.app`.
 
-`env.preview.vars.FIREBASE_PROJECT_ID` is `siteforge-97699`, so tenant booking pages can still read public Firestore fields. `env.preview` sets `"kv_namespaces": []` and does not bind `AUTH_KV`. The production id `d53378ec0cfb4d089d73add2ff01c62d` holds live agency sessions, and there is no separate preview namespace. Without `AUTH_KV`, `/hq` cannot save or check an agency session, so the preview shows only the HQ login screen.
+`env.preview.vars.FIREBASE_PROJECT_ID` is `siteforge-97699`, so tenant booking pages can still read public Firestore fields. `env.preview` sets `"kv_namespaces": []` and does not bind `AUTH_KV`. The production id `d53378ec0cfb4d089d73add2ff01c62d` holds live agency sessions, and there is no separate preview namespace. Without `AUTH_KV`, `/hq` cannot save or check an agency session, so the preview shows only the HQ login screen. Logo upload on the preview host also fails closed (`session_required`) for the same reason. Demo mode does not upload.
+
+`wrangler.preview.jsonc` is the same preview worker with its own R2 binding, `LOGO_BUCKET` → `schedi-logos-preview`. `env.preview` in `wrangler.jsonc` carries that same binding. Create the bucket before the next preview deploy (`npx wrangler r2 bucket create schedi-logos-preview`). If the bucket does not exist yet, delete the `r2_buckets` block from the preview config you deploy. The site still serves, and upload returns `logo_storage_unconfigured`. Do not point the preview binding at `schedi-logos`.
 
 Do not set `INDEXNOW_KEY`, `INDEXNOW_ENABLED`, `INDEXNOW_HOST`, or `BING_SITE_VERIFICATION` on the preview Worker. Preview deploys must not ping IndexNow.
+
+## Business logos
+
+Owners upload, replace, and remove a logo on Business profile (new dashboard and `?classic=1`). The browser accepts PNG, JPG, WebP, and SVG up to 2 MB, crops raster files to a square of at most 512 px, and shows a preview before save. SVG is sanitised on the worker (scripts, event handlers, and external references are rejected).
+
+Files live in R2 on `schedi-web`, one object per business: `logos/{tenantId}.{ext}`. Only that business's owner session can write or delete it. The worker serves `https://schedi.app/logos/{tenantId}?v={version}` with `Cache-Control: public, max-age=31536000, immutable` when `v` is present. A replace stores a new `v`, so the old cached URL is left alone. There is no `LOGO_PUBLIC_BASE` and no public r2.dev URL.
+
+Production, before the next `schedi-web` deploy:
+
+```bash
+npx wrangler r2 bucket create schedi-logos
+```
+
+Binding in `wrangler.jsonc` (top level, not inside `env.preview`):
+
+```jsonc
+"r2_buckets": [
+  { "binding": "LOGO_BUCKET", "bucket_name": "schedi-logos" }
+]
+```
+
+No new environment variable and no secret. `AUTH_KV` is the existing owner-session namespace.
+
+Preview bucket, before `npx wrangler deploy --config wrangler.preview.jsonc` or `npx wrangler deploy --config wrangler.jsonc --env preview`:
+
+```bash
+npx wrangler r2 bucket create schedi-logos-preview
+```
+
+Binding: `LOGO_BUCKET` → `schedi-logos-preview` in `wrangler.preview.jsonc` and in `env.preview`.
+
+Then deploy `schedi-web` (this repo's `wrangler.jsonc`). On the next `schedi-email-worker` deploy, its old `schedi.app/api/logo-upload` route is gone so it cannot intercept logo posts. The page calls `POST /api/business-logo` on the same host. `schedi-web` also still accepts `/api/logo-upload` once that email-worker route is removed.
+
+The public booking header (current design and `?newbook=1`) and the dashboard sidebar, phone header, and classic banner show the logo. With no logo, or if the image fails, they show the initials avatar. Booking emails use a status icon (calendar check, reschedule, declined), not a business-logo slot, so those messages stay on that icon.
+
+Do not deploy until both buckets exist. A deploy with a missing `bucket_name` fails. Deleting the preview `r2_buckets` block is the fallback that keeps preview deploys working.
 
 ## IndexNow and Bing
 
