@@ -887,6 +887,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-chip.is-on.sd-pay-squa
 #tenantPortalSection.schedi-newdash .sd-client-list { display: flex; flex-direction: column; }
 #tenantPortalSection.schedi-newdash .sd-client { display: block; padding: 12px 0; border-top: 1px solid var(--sd-line); }
 #tenantPortalSection.schedi-newdash .sd-client:first-child { border-top: 0; }
+#tenantPortalSection.schedi-newdash .sd-client:hover { background: rgba(16, 185, 129, 0.12); }
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-client:hover { background: rgba(5, 150, 105, 0.1); }
 #tenantPortalSection.schedi-newdash .sd-client-head { display: flex; flex-wrap: nowrap; align-items: center; justify-content: flex-start; gap: 8px; }
 #tenantPortalSection.schedi-newdash .sd-client-copy { flex: 1 1 auto; min-width: 0; }
 #tenantPortalSection.schedi-newdash .sd-client-main { min-width: 0; }
@@ -2674,6 +2676,18 @@ body.schedi-newdash .sd-theme {
     font-size: 13px;
     font-weight: 700;
     padding: 8px 0;
+    -webkit-appearance: none;
+    appearance: none;
+}
+#tenantPortalSection.schedi-newdash .sd-roster-search-field input::-webkit-search-cancel-button,
+#tenantPortalSection.schedi-newdash .sd-roster-search-field input::-webkit-search-decoration,
+#tenantPortalSection.schedi-newdash .sd-roster-search-field input::-webkit-search-results-button,
+#tenantPortalSection.schedi-newdash .sd-roster-search-field input::-webkit-search-results-decoration {
+    -webkit-appearance: none;
+    appearance: none;
+    display: none;
+    width: 0;
+    height: 0;
 }
 #tenantPortalSection.schedi-newdash .sd-roster-search-field input:focus { outline: none; }
 #tenantPortalSection.schedi-newdash .sd-roster-search-field:focus-within { box-shadow: 0 0 0 2px #10b981; }
@@ -2717,7 +2731,8 @@ body.schedi-newdash .sd-theme {
     padding: 8px;
     cursor: pointer;
 }
-#tenantPortalSection.schedi-newdash .sd-roster-hit:hover { background: rgba(148, 163, 184, 0.1); }
+#tenantPortalSection.schedi-newdash .sd-roster-hit:hover { background: rgba(16, 185, 129, 0.12); }
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-roster-hit:hover { background: rgba(5, 150, 105, 0.1); }
 #tenantPortalSection.schedi-newdash .sd-roster-hit-main { min-width: 0; display: flex; flex-direction: column; }
 #tenantPortalSection.schedi-newdash .sd-roster-hit-main strong { font-size: 13px; }
 #tenantPortalSection.schedi-newdash .sd-roster-hit-main span { color: var(--sd-muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -3985,6 +4000,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
             box-shadow: var(--sd-shadow);
         }
         #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row:last-child { margin-bottom: 0; }
+        #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row:hover { background: rgba(16, 185, 129, 0.12); }
+        html.schedi-light #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row:hover { background: rgba(5, 150, 105, 0.1); }
         #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row > td {
             display: block;
             width: auto;
@@ -5253,6 +5270,67 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
         flex: 0 0 auto;
     }
 }
+/* Roster filter row beside the sidebar. At 1024 the card is about 680px wide, so the view
+   buttons, search, calendar nav, and payment chips share one stacked column instead of wrapping raggedly. */
+@media (min-width: 860px) and (max-width: 1199px) {
+    #tenantPortalSection.schedi-newdash .sd-roster-bar {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: flex-start;
+        gap: 8px;
+        width: 100%;
+        min-width: 0;
+    }
+    #tenantPortalSection.schedi-newdash .sd-roster-bar .sd-roster-tools {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        min-width: 0;
+    }
+    #tenantPortalSection.schedi-newdash .sd-roster-bar #rosterViewSwitch { flex-wrap: nowrap; }
+    #tenantPortalSection.schedi-newdash .sd-roster-bar .sd-roster-search,
+    #tenantPortalSection.schedi-newdash .sd-roster-bar .sd-roster-search-field {
+        width: 100%;
+        min-width: 0;
+    }
+    #tenantPortalSection.schedi-newdash .sd-roster-bar #rosterCalendarNav.flex {
+        display: flex;
+        width: 100%;
+        min-width: 0;
+        justify-content: space-between;
+        gap: 8px;
+    }
+    #tenantPortalSection.schedi-newdash .sd-roster-bar #rosterCalendarNav .roster-nav-step {
+        width: auto;
+        flex: 0 1 auto;
+    }
+    #tenantPortalSection.schedi-newdash .sd-roster-bar #rosterCalendarLabel {
+        min-width: 0;
+        flex: 1 1 auto;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    #tenantPortalSection.schedi-newdash #rosterPayFilter.sd-pay-filters {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 6px;
+        width: 100%;
+        min-width: 0;
+    }
+    #tenantPortalSection.schedi-newdash #rosterPayFilter.sd-pay-filters .sd-chip {
+        justify-content: center;
+        width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+    }
+}
+#tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row { transition: background-color 120ms ease; }
+#tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row:hover { background: rgba(16, 185, 129, 0.12); }
+html.schedi-light #tenantPortalSection.schedi-newdash #tenantRosterTableBody > tr.roster-row:hover { background: rgba(5, 150, 105, 0.1); }
 
 </style>
 <style id="schediClassicRoster">
@@ -5313,6 +5391,17 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-pay-deposit-methods { 
     -webkit-appearance: none;
     appearance: none;
 }
+#tenantPortalSection:not(.schedi-newdash) .sd-roster-search-field input::-webkit-search-cancel-button,
+#tenantPortalSection:not(.schedi-newdash) .sd-roster-search-field input::-webkit-search-decoration,
+#tenantPortalSection:not(.schedi-newdash) .sd-roster-search-field input::-webkit-search-results-button,
+#tenantPortalSection:not(.schedi-newdash) .sd-roster-search-field input::-webkit-search-results-decoration {
+    -webkit-appearance: none;
+    appearance: none;
+    display: none;
+    width: 0;
+    height: 0;
+}
+#tenantPortalSection:not(.schedi-newdash) #tenantRosterTableBody > tr.roster-row:hover { background: rgba(16, 185, 129, 0.12); }
 #tenantPortalSection:not(.schedi-newdash) .sd-roster-search-field input:focus { outline: none; }
 #tenantPortalSection:not(.schedi-newdash) .sd-roster-all { display: none; }
 #tenantPortalSection:not(.schedi-newdash) .sd-roster-check { display: inline-flex; align-items: center; justify-content: center; }
@@ -5964,7 +6053,7 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                         </div>
                     </div>
 
-                    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="sd-roster-bar flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <div class="sd-roster-tools">
                         <div id="rosterViewSwitch" class="flex flex-wrap gap-2" role="group" aria-label="Appointment view">
                             <button type="button" id="rosterViewList" onclick="setRosterCalendarView('list')" class="px-4 py-2 rounded-xl font-bold text-xs bg-brand-500/20 border border-brand-500/30 text-brand-400" aria-pressed="true">List</button>
@@ -7330,7 +7419,7 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                     </div>
                     <div>
                         <label class="block font-semibold text-slate-300 mb-1">Email (optional)</label>
-                        <input type="email" id="manClientEmail" placeholder="robert@example.com" class="w-full px-3 py-2 rounded-xl glass-input">
+                        <input type="email" id="manClientEmail" placeholder="robert@example.com" oninput="syncManualEmailClientOption()" class="w-full px-3 py-2 rounded-xl glass-input">
                     </div>
                 </div>
 
@@ -7376,6 +7465,13 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                     <label class="block font-semibold text-slate-300 mb-1" id="manPaymentLabel">Payment Method / Status</label>
                     <input type="hidden" id="manPaymentStatus" value="PAY AT APPOINTMENT">
                     <div id="manPaymentChoices" class="sd-pay-choices" role="radiogroup" aria-labelledby="manPaymentLabel"></div>
+                </div>
+                <div id="manEmailClientBox" class="hidden p-3 rounded-xl bg-slate-900 border border-slate-800 text-[11px] text-slate-300 space-y-1">
+                    <label class="flex items-start gap-2 text-slate-200 font-semibold cursor-pointer">
+                        <input type="checkbox" id="manEmailClient" class="mt-0.5 accent-emerald-500" checked>
+                        <span>Email the client about this change</span>
+                    </label>
+                    <p class="text-[11px] text-slate-400 leading-relaxed">On by default. A new date or time uses the reschedule email instead, so they only get one. Internal edits stay quiet.</p>
                 </div>
                 <div id="manDepositBox" class="hidden p-3 rounded-xl bg-slate-900 border border-slate-800 text-[11px] text-slate-300 space-y-1">
                     <div class="font-bold text-white">Deposit</div>
@@ -16940,7 +17036,7 @@ function schediQrCardPixels(text, color) {
                 return;
             }
             tbody.innerHTML = rosterRows.map(app => `
-                <tr data-booking-id="${esc(app.id)}" class="roster-row hover:bg-slate-900/40 transition-all${window.schediRosterHitClass ? window.schediRosterHitClass(app) : ''}">
+                <tr data-booking-id="${esc(app.id)}" class="roster-row${window.schediRosterHitClass ? window.schediRosterHitClass(app) : ''}">
                     <td class="roster-cell-check p-3">
                         <label class="sd-roster-check">
                             <input type="checkbox" class="roster-select" data-roster-id="${esc(app.id)}" aria-label="Select ${esc(app.clientName || ('appointment ' + app.id))}"${rosterSelectedIds[String(app.id)] ? ' checked' : ''} onchange="setRosterRowSelected(this.getAttribute('data-roster-id'), this.checked)">
@@ -22019,6 +22115,231 @@ function schediQrCardPixels(text, color) {
                 + '</td></tr>';
         }
 
+        function readAddressDisplay(tenant) {
+            function addressWord(value) {
+                if (value === true) return 'show';
+                if (value === false) return 'hide';
+                var s = String(value).trim().toLowerCase();
+                if (!s) return null;
+                if (s === '0' || s === 'false' || s === 'hide' || s === 'hidden' || s === 'off' || s === 'no' || s === 'private' || s === 'internal') return 'hide';
+                if (s === '1' || s === 'true' || s === 'show' || s === 'public' || s === 'on' || s === 'yes' || s === 'visible') return 'show';
+                return null;
+            }
+            function readOne(key, value) {
+                if (value == null || value === '') return null;
+                if (key === 'hideAddress') {
+                    if (value === true) return 'hide';
+                    if (value === false) return 'show';
+                    var s = String(value).trim().toLowerCase();
+                    if (s === '1' || s === 'true' || s === 'yes' || s === 'on' || s === 'hide' || s === 'hidden' || s === 'private' || s === 'internal') return 'hide';
+                    if (s === '0' || s === 'false' || s === 'no' || s === 'off' || s === 'show' || s === 'public' || s === 'visible') return 'show';
+                    return null;
+                }
+                return addressWord(value);
+            }
+            if (!tenant || typeof tenant !== 'object') return null;
+            var sources = [tenant, tenant.notifications];
+            var keys = ['addressDisplay', 'showAddress', 'hideAddress'];
+            for (var s = 0; s < sources.length; s++) {
+                var src = sources[s];
+                if (!src || typeof src !== 'object') continue;
+                for (var i = 0; i < keys.length; i++) {
+                    if (!Object.prototype.hasOwnProperty.call(src, keys[i])) continue;
+                    var pref = readOne(keys[i], src[keys[i]]);
+                    if (pref) return pref;
+                }
+            }
+            return null;
+        }
+
+        function clientFacingAddress(tenant) {
+            if (!tenant || typeof tenant !== 'object') return '';
+            if (readAddressDisplay(tenant) === 'hide') return '';
+            return String(tenant.address || tenant.location || tenant.businessAddress || tenant.businessLocation || '').trim();
+        }
+
+        function appointmentIsClientConfirmed(booking) {
+            if (!booking || typeof booking !== 'object') return false;
+            if (booking.walkIn === true) return false;
+            if (booking.cancelled === true || booking.noShow === true) return false;
+            var status = String(booking.status || '').toLowerCase();
+            if (status === 'cancelled' || status === 'canceled' || status === 'denied' || status === 'pending') return false;
+            if (status === 'no_show' || status === 'noshow' || status === 'no-show') return false;
+            return true;
+        }
+
+        function appointmentUpdatedText(booking, keys) {
+            if (!booking) return '';
+            for (var i = 0; i < keys.length; i++) {
+                var value = booking[keys[i]];
+                if (value == null) continue;
+                if (typeof value === 'object') value = value.name || value.label || '';
+                var text = String(value).trim();
+                if (text) return text;
+            }
+            return '';
+        }
+
+        function appointmentUpdatedCents(value) {
+            if (value == null || value === '') return null;
+            var n = Number(value);
+            if (!isFinite(n) || n < 0) return null;
+            return Math.round(n * 100);
+        }
+
+        function appointmentUpdatedPriceFromCents(cents) {
+            if (cents % 100 === 0) return '$' + String(cents / 100);
+            return '$' + (cents / 100).toFixed(2);
+        }
+
+        function appointmentPriceText(amount) {
+            var cents = appointmentUpdatedCents(amount);
+            if (cents == null) return 'No price';
+            return appointmentUpdatedPriceFromCents(cents);
+        }
+
+        function appointmentUpdatedPaid(booking) {
+            var up = String((booking && booking.paymentStatus) || '').toUpperCase();
+            if (/\bUNPAID\b/.test(up) || /\bNOT\s+PAID\b/.test(up)) return false;
+            if (up.indexOf('PAID') !== -1) return true;
+            if (up.indexOf('PENDING') !== -1 || up.indexOf('AWAITING') !== -1) return false;
+            return false;
+        }
+
+        function appointmentUpdatedPayKey(booking) {
+            var known = { card: 1, cashapp: 1, zelle: 1, venmo: 1, paypal: 1, square: 1, cash: 1, later: 1 };
+            function norm(raw) {
+                var method = String(raw || '').toLowerCase().trim();
+                if (method === 'cash-app' || method === 'cash app') method = 'cashapp';
+                if (method === 'in person / cash' || method === 'in person') method = 'cash';
+                return known[method] ? method : '';
+            }
+            var fromMethod = norm(booking && booking.paymentMethod) || norm(booking && booking.paidMethod) || norm(booking && booking.paymentOption);
+            if (fromMethod) return fromMethod;
+            var blob = String((booking && booking.paymentOptionLabel) || '') + ' ' + String((booking && booking.paymentStatus) || '');
+            var lower = blob.toLowerCase();
+            if (lower.indexOf('cash app') !== -1 || lower.indexOf('cashapp') !== -1) return 'cashapp';
+            if (lower.indexOf('zelle') !== -1) return 'zelle';
+            if (lower.indexOf('venmo') !== -1) return 'venmo';
+            if (lower.indexOf('paypal') !== -1) return 'paypal';
+            if (lower.indexOf('square') !== -1) return 'square';
+            if (lower.indexOf('card') !== -1) return 'card';
+            if (lower.indexOf('pay at') !== -1 || lower.indexOf('unpaid') !== -1 || lower.indexOf('later') !== -1) return 'later';
+            if (lower.indexOf('cash') !== -1) return 'cash';
+            return appointmentUpdatedPaid(booking) ? 'cash' : 'later';
+        }
+
+        function appointmentUpdatedPayFact(booking) {
+            var depCents = appointmentUpdatedCents(booking && booking.depositAmount);
+            var dep = depCents != null && depCents > 0 ? depCents : null;
+            var bal = null;
+            if (dep != null && booking && booking.balanceDue != null && booking.balanceDue !== '') bal = appointmentUpdatedCents(booking.balanceDue);
+            return {
+                method: appointmentUpdatedPayKey(booking),
+                paid: appointmentUpdatedPaid(booking),
+                dep: dep,
+                depPaid: !!(booking && booking.depositPaid === true),
+                bal: bal,
+                code: String((booking && (booking.payCode || booking.paymentCode)) || '').trim()
+            };
+        }
+
+        function appointmentPaymentDetail(booking) {
+            var labels = { card: 'Card', cashapp: 'Cash App', zelle: 'Zelle', venmo: 'Venmo', paypal: 'PayPal', square: 'Square', cash: 'Cash', later: 'Pay at appointment' };
+            var fact = appointmentUpdatedPayFact(booking || {});
+            var parts = [labels[fact.method] || 'Pay at appointment', fact.paid ? 'Paid' : 'Unpaid'];
+            if (fact.dep != null) {
+                parts.push('Deposit ' + appointmentUpdatedPriceFromCents(fact.dep) + (fact.depPaid ? ' paid' : ' due'));
+                if (fact.bal != null) parts.push('Balance ' + appointmentUpdatedPriceFromCents(fact.bal));
+            }
+            if (fact.code) parts.push('Code ' + fact.code);
+            return parts.join(' · ');
+        }
+
+        function appointmentUpdatedPaySame(before, after) {
+            var left = appointmentUpdatedPayFact(before || {});
+            var right = appointmentUpdatedPayFact(after || {});
+            return left.method === right.method && left.paid === right.paid && left.dep === right.dep && left.depPaid === right.depPaid && left.bal === right.bal && left.code === right.code;
+        }
+
+        function appointmentClientChanges(before, after) {
+            before = before || {};
+            after = after || {};
+            var schedule = String(before.date || '').trim() !== String(after.date || '').trim()
+                || String(before.time || '').trim() !== String(after.time || '').trim();
+            var fields = [
+                { key: 'service', label: 'Service' },
+                { key: 'staff', label: 'Staff', keys: ['staffName', 'staff', 'providerName', 'provider', 'assignedStaff'] },
+                { key: 'location', label: 'Location', keys: ['location', 'serviceLocation', 'place', 'appointmentAddress'] },
+                { key: 'note', label: 'Note', keys: ['notesToClient', 'noteToClient', 'clientNote', 'clientNotes', 'notes', 'note'] }
+            ];
+            var rows = [];
+            fields.forEach(function (field) {
+                if (field.key === 'service') {
+                    var fromService = String(before.serviceName || '').trim();
+                    var toService = String(after.serviceName || '').trim();
+                    if (fromService !== toService) rows.push({ key: 'service', label: 'Service', from: fromService, to: toService });
+                    return;
+                }
+                var from = appointmentUpdatedText(before, field.keys);
+                var to = appointmentUpdatedText(after, field.keys);
+                if (from !== to) rows.push({ key: field.key, label: field.label, from: from, to: to });
+            });
+            var fromCents = appointmentUpdatedCents(before.amount);
+            var toCents = appointmentUpdatedCents(after.amount);
+            if (fromCents !== toCents) rows.splice(1, 0, { key: 'price', label: 'Price', from: appointmentPriceText(before.amount), to: appointmentPriceText(after.amount) });
+            if (!appointmentUpdatedPaySame(before, after)) rows.push({ key: 'payment', label: 'Payment', from: appointmentPaymentDetail(before), to: appointmentPaymentDetail(after) });
+            return { schedule: schedule, rows: rows };
+        }
+
+        function appointmentUpdatedVisibleRows(rows, tenant) {
+            if (readAddressDisplay(tenant) !== 'hide') return rows;
+            return rows.filter(function (row) { return row.key !== 'location'; });
+        }
+
+        function appointmentEditMailPlan(before, after, opts) {
+            opts = opts || {};
+            if (!opts.notify) return 'none';
+            if (!appointmentIsClientConfirmed(before) || !appointmentIsClientConfirmed(after)) return 'none';
+            var email = String((after && after.clientEmail) || '').trim();
+            if (email.indexOf('@') < 1) return 'none';
+            var changes = appointmentClientChanges(before, after);
+            if (changes.schedule) return 'reschedule';
+            return appointmentUpdatedVisibleRows(changes.rows, opts.tenant).length ? 'updated' : 'none';
+        }
+
+        function appointmentMailSnapshot(booking) {
+            var keys = ['id', 'clientEmail', 'clientName', 'walkIn', 'cancelled', 'noShow', 'status', 'serviceName', 'amount', 'date', 'time', 'durationMins', 'staffName', 'staff', 'providerName', 'provider', 'assignedStaff', 'location', 'serviceLocation', 'place', 'appointmentAddress', 'notesToClient', 'noteToClient', 'clientNote', 'clientNotes', 'notes', 'note', 'paymentStatus', 'paymentMethod', 'paymentOption', 'paymentOptionLabel', 'paidMethod', 'depositAmount', 'depositPaid', 'balanceDue', 'payCode', 'paymentCode', 'manageToken', 'recurrence', 'seriesId'];
+            var out = {};
+            if (!booking) return out;
+            for (var i = 0; i < keys.length; i++) {
+                if (booking[keys[i]] !== undefined) out[keys[i]] = booking[keys[i]];
+            }
+            return out;
+        }
+
+        function syncManualEmailClientOption() {
+            var box = document.getElementById('manEmailClientBox');
+            if (!box) return;
+            var editing = !!String((document.getElementById('manEditId') || {}).value || '');
+            var email = String((document.getElementById('manClientEmail') || {}).value || '').trim();
+            var app = null;
+            if (editing && typeof getTenant === 'function') {
+                var tenant = getTenant();
+                var id = String(document.getElementById('manEditId').value || '');
+                app = tenant && (tenant.appointments || []).find(function (a) { return a && String(a.id) === id; });
+            }
+            var show = editing && !manualWalkInOn() && email.indexOf('@') > 0 && appointmentIsClientConfirmed(app);
+            box.classList.toggle('hidden', !show);
+        }
+
+        function manualEmailClientWantsNotice() {
+            var box = document.getElementById('manEmailClientBox');
+            var input = document.getElementById('manEmailClient');
+            if (!box || box.classList.contains('hidden')) return false;
+            return !!(input && input.checked);
+        }
+
         function buildRescheduleEmail(tenant, booking, prev) {
             var biz = tenant.name || 'your business';
             var note = seriesManagePlainNote(booking);
@@ -22135,6 +22456,71 @@ function schediQrCardPixels(text, color) {
             var to = String((booking && booking.clientEmail) || '').trim();
             if (!to) return { ok: false, reason: 'no-email' };
             return dispatchTenantMail(tenant, booking, buildRescheduleEmail(tenant, booking, prev), 'booking_reschedule', { to: to });
+        }
+
+        function appointmentChangeValueHtml(from, to) {
+            var left = from ? esc(from) : '—';
+            var right = to ? esc(to) : '—';
+            return '<span style="color:#94a3b8;font-weight:500;text-decoration:line-through;">' + left + '</span> <span style="color:#34d399;">&rarr;</span> ' + right;
+        }
+
+        function buildAppointmentUpdatedEmail(tenant, booking, before) {
+            var biz = tenant.name || 'your business';
+            var rows = appointmentUpdatedVisibleRows(appointmentClientChanges(before, booking).rows, tenant);
+            var note = seriesManagePlainNote(booking);
+            var manageUrl = appointmentManageUrl(tenant, booking);
+            var friendlyDate = formatFriendlyLocalDateEmail(booking.date || '');
+            var durMins = (booking && Number(booking.durationMins) > 0)
+                ? Math.round(Number(booking.durationMins))
+                : durationMinsForBooking(tenant, booking);
+            var lengthLabel = durMins > 0 ? (durMins + ' min') : '';
+            var price = confirmEmailPriceLabel(booking && booking.amount);
+            var address = clientFacingAddress(tenant);
+            var headline = 'Appointment updated';
+            var subject = 'Appointment updated — ' + biz;
+            var sub = rows.length === 1
+                ? ('Your appointment with ' + biz + ' has one change.')
+                : ('Your appointment with ' + biz + ' has a few changes.');
+            var text = headline + '\n' + sub + '\n\nWhat changed\n';
+            for (var i = 0; i < rows.length; i++) {
+                text += rows[i].label + ': ' + (rows[i].from || '—') + ' → ' + (rows[i].to || '—') + '\n';
+            }
+            text += '\nWhen: ' + friendlyDate + (booking.time ? (' at ' + booking.time) : '') + '\n' +
+                (lengthLabel ? ('Length: ' + lengthLabel + '\n') : '') +
+                'Service: ' + (booking.serviceName || 'Appointment') + '\n' +
+                (price !== null ? ('Price: ' + price + '\n') : '') +
+                (address ? ('Where: ' + address + '\n') : '') +
+                'Booking ref: #' + (booking.id || '') + '\n' +
+                (note ? ('\n' + note + '\n') : '') +
+                (manageUrl ? ('\nManage / reschedule / cancel:\n' + manageUrl + '\n') : '') +
+                '\nQuestions? Contact ' + ownerContactPhrase(tenant, false) + '.\n\n— ' + biz;
+            var whenLine = booking.time ? ('<strong style="color:#34d399;font-weight:600">' + esc(booking.time) + '</strong>') : '';
+            if (lengthLabel) whenLine += (whenLine ? ' &nbsp;·&nbsp; ' : '') + esc(lengthLabel);
+            var changeBits = [];
+            for (var r = 0; r < rows.length; r++) changeBits.push([rows[r].label, appointmentChangeValueHtml(rows[r].from, rows[r].to)]);
+            var detailBits = [['Service', esc(booking.serviceName || 'Appointment')]];
+            if (price !== null) detailBits.push(['Price', esc(price)]);
+            if (address) detailBits.push(['Where', esc(address)]);
+            detailBits.push(['Booking ref', esc('#' + (booking.id || ''))]);
+            var bodyHtml = '<tr><td style="padding:18px 28px 0;font-family:Arial,Helvetica,sans-serif;font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#94a3b8;">What changed</td></tr>'
+                + clientEmailRowsHtml(changeBits)
+                + clientEmailDateCardHtml({ date: booking.date, label: 'When', whenHtml: whenLine })
+                + clientEmailRowsHtml(detailBits)
+                + clientEmailButtonHtml(manageUrl, 'Manage / reschedule / cancel', 'Cancel or reschedule without signing in.')
+                + (note ? ('<tr><td style="padding:10px 28px 0;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#64748b;line-height:1.45;">' + esc(note) + '</td></tr>') : '');
+            var html = clientEmailShellHtml({
+                headline: headline,
+                sub: sub,
+                bodyHtml: bodyHtml,
+                footerLeft: 'Questions? Contact ' + ownerContactPhrase(tenant, true) + '.'
+            });
+            return { subject: subject, text: text, html: html, replyTo: businessReplyTo(tenant) };
+        }
+
+        async function sendAppointmentUpdatedEmail(tenant, booking, before) {
+            var to = String((booking && booking.clientEmail) || '').trim();
+            if (!to) return { ok: false, reason: 'no-email' };
+            return dispatchTenantMail(tenant, booking, buildAppointmentUpdatedEmail(tenant, booking, before), 'booking_update', { to: to });
         }
 
         async function sendOwnerRescheduleEmail(tenant, booking, prev) {
@@ -23280,6 +23666,7 @@ function schediQrCardPixels(text, color) {
                 }
                 if (tenant) populateOwnerTimeSelect('manTime', tenant, '', true);
             }
+            syncManualEmailClientOption();
         }
 
         window.toggleManualWalkIn = function () {
@@ -23336,6 +23723,8 @@ function schediQrCardPixels(text, color) {
             const app = (tenant.appointments || []).find(function (a) { return a && a.id === appId; });
             if (!app) return;
             document.getElementById('manEditId').value = app.id;
+            var emailClientBox = document.getElementById('manEmailClient');
+            if (emailClientBox) emailClientBox.checked = true;
             document.getElementById('manModalTitle').textContent = 'Edit appointment';
             var editBadge = document.getElementById('manKindBadge');
             if (editBadge) editBadge.textContent = app.walkIn === true ? 'Walk-in' : 'Appointment';
@@ -23489,6 +23878,8 @@ function schediQrCardPixels(text, color) {
             }
 
             if (existing) {
+                var beforeMail = appointmentMailSnapshot(existing);
+                var emailClient = manualEmailClientWantsNotice();
                 existing.clientName = clientName;
                 existing.clientPhone = clientPhone;
                 existing.clientEmail = clientEmail;
@@ -23506,10 +23897,16 @@ function schediQrCardPixels(text, color) {
                 else if (manualChoice) existing.paidMethod = manualChoice.method;
                 if (walkIn) existing.walkIn = true;
                 else delete existing.walkIn;
+                var mailPlan = appointmentEditMailPlan(beforeMail, existing, { notify: emailClient, tenant: tenant });
                 saveState();
                 closeManualBookingModal();
                 refreshOwnerPaymentSurfaces(tenant);
                 renderLivePreviewIframe();
+                if (mailPlan === 'reschedule') {
+                    try { sendClientRescheduleEmail(tenant, existing, { date: beforeMail.date, time: beforeMail.time }); } catch (errUpdateMail) {}
+                } else if (mailPlan === 'updated') {
+                    try { sendAppointmentUpdatedEmail(tenant, existing, beforeMail); } catch (errUpdateMail) {}
+                }
                 showToast('Updated appointment #' + existing.id, 'success');
                 return;
             }
