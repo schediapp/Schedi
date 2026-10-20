@@ -477,11 +477,10 @@ describe("canonical redirects", () => {
 });
 
 describe("copy corrections", () => {
-  it("does not present card checkout or deposits as available today", () => {
+  it("lists live card checkout and deposits, and keeps the card cancellation fee coming soon", () => {
     const banned = [
       "Card checkout and card deposits are Pro settings",
       "Pro can turn on card checkout",
-      "Pro can also turn on Credit",
       "Pro adds card checkout",
       "On Pro you can require a card deposit",
       "On Pro, a card deposit can be required",
@@ -489,6 +488,9 @@ describe("copy corrections", () => {
       "Card checkout is not offered",
       "Take cards and deposits",
       "cards on Pro",
+      "not available to clients today",
+      "not offered to clients today",
+      "are coming soon. They are not available",
       "small team",
     ];
     for (const page of MARKETING_PAGES) {
@@ -519,28 +521,36 @@ describe("copy corrections", () => {
     const proOffer = pricingLd["@graph"]
       .find((node: { "@type"?: string }) => node["@type"] === "SoftwareApplication")
       .offers.find((offer: { name?: string }) => offer.name === "Pro");
+    expect(proOffer.description).toContain("card checkout (Stripe)");
     expect(proOffer.description).toContain("coming soon");
     expect(proOffer.description).not.toMatch(/Can charge/);
 
     const soonItem = (label: string) => `<li class="soon"><span>${label}: <strong>Coming soon</strong></span></li>`;
     const home = renderMarketingPage(MARKETING_PAGES.find((page) => page.path === "/")!);
-    for (const label of ["Card checkout (Stripe)", "Appointment deposits", "Cancellation fee on card"]) {
-      expect(home, label).toContain(soonItem(label));
-      expect(pricingHtml, label).toContain(soonItem(label));
-      expect(home.match(new RegExp(soonItem(label).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g"))?.length, label).toBe(1);
+    for (const label of ["Card checkout (Stripe)", "Appointment deposits"]) {
+      expect(home, label).not.toContain(soonItem(label));
+      expect(pricingHtml, label).not.toContain(soonItem(label));
+      expect(home, label).toContain(`<span>${label}</span>`);
+      expect(pricingHtml, label).toContain(`<span>${label}</span>`);
     }
+    expect(home).toContain(soonItem("Cancellation fee on card"));
+    expect(pricingHtml).toContain(soonItem("Cancellation fee on card"));
+    expect(home.match(/Cancellation fee on card: <strong>Coming soon<\/strong>/g)?.length).toBe(1);
     expect(pricingHtml).toContain(
-      "<th scope=\"row\">Card checkout (Stripe)</th><td>No</td><td>No</td><td>Coming soon</td>",
+      "<th scope=\"row\">Card checkout (Stripe)</th><td>No</td><td>No</td><td>Yes</td>",
     );
     expect(pricingHtml).toContain(
-      "<th scope=\"row\">Appointment deposits</th><td>No</td><td>No</td><td>Coming soon</td>",
+      "<th scope=\"row\">Appointment deposits</th><td>No</td><td>No</td><td>Yes</td>",
     );
     expect(pricingHtml).toContain(
       "<th scope=\"row\">Cancellation fee on card</th><td>Rule only</td><td>Rule only</td><td>Coming soon</td>",
     );
     expect(visible(home)).not.toContain("Can charge");
     expect(pricing).not.toContain("Can charge");
-    expect(renderLlms()).toContain(
+    const llms = renderLlms();
+    expect(llms).toContain("card checkout (Stripe), and appointment deposits");
+    expect(llms).toContain("Charging a cancellation fee on a card is coming soon.");
+    expect(llms).not.toContain(
       "Card checkout (Stripe), appointment deposits, and a cancellation fee on a card are coming soon.",
     );
     const footer = renderMarketingPage(MARKETING_PAGES[0]);

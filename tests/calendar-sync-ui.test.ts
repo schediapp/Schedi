@@ -69,7 +69,10 @@ describe("calendar feed helpers", () => {
     expect(owner).toContain("Reset link");
     expect(owner).toContain("/api/calendar-feeds");
     expect(owner).toContain("Busy on a connected calendar");
-    expect(owner).not.toContain("Coming soon");
+    const calendarSync = owner.slice(owner.indexOf("function calendarSyncConnected"), owner.indexOf("function schediSetupSteps"))
+      + owner.slice(owner.indexOf("function applyCalendarFeedView"), owner.indexOf("function hoursWeekStored"));
+    expect(calendarSync).toContain("Keep busy times off the book");
+    expect(calendarSync).not.toContain("Coming soon");
     expect(owner).not.toContain("app-specific password");
     expect(owner).not.toContain("This preview does not save the password.");
     expect(owner).not.toContain("data-busy-write=");

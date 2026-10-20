@@ -34,12 +34,12 @@ export const AEO_FAQS: Faq[] = [
   {
     question: "What does the Pro plan add?",
     answer:
-      "Pro costs $49 a month and includes everything in Starter, plus repeating appointments. Repeating appointments can be weekly, biweekly, or monthly.",
+      "Pro costs $49 a month and includes everything in Starter, plus repeating appointments, card checkout (Stripe), and appointment deposits. Repeating appointments can be weekly, biweekly, or monthly. Card checkout stays off until Stripe card payments and payouts are active. The deposit stays off until you turn it on. Charging a cancellation fee on a card is coming soon.",
   },
   {
     question: "What payment methods can my clients use?",
     answer:
-      "It depends on your plan. On Free, clients pay at the appointment. On Starter, you can offer Cash App, Venmo, Zelle, PayPal, or pay at the appointment. Pro includes the Starter payment options. Starter does not include card checkout.",
+      "It depends on your plan. On Free, clients pay at the appointment. On Starter, you can offer Cash App, Venmo, Zelle, PayPal, or pay at the appointment. Pro includes the Starter payment options, plus card checkout (Stripe) and appointment deposits. Card checkout stays off until Stripe card payments and payouts are active. The deposit stays off until you turn it on. Starter does not include card checkout. Charging a cancellation fee on a card is coming soon.",
   },
   {
     question: "Can I approve or decline bookings before they're confirmed?",
@@ -96,7 +96,7 @@ export function barberPage(): MarketingPage {
       p("Your hours and time off: set weekly hours, add repeating blocks for things like a daily lunch break, and block vacation days or single dates."),
       p("Branded confirmation email: clients get a confirmation email with your branding when they book."),
       h2("", "Getting paid"),
-      p("On Free, clients pay at the appointment. On Starter, clients can pay with Cash App, Venmo, Zelle, PayPal, or at the appointment."),
+      p("On Free, clients pay at the appointment. On Starter, clients can pay with Cash App, Venmo, Zelle, PayPal, or at the appointment. On Pro, card checkout (Stripe) and appointment deposits are included. Card checkout stays off until Stripe card payments and payouts are active. The deposit stays off until you turn it on. Charging a cancellation fee on a card is coming soon."),
       h2("", "Regulars on a set schedule"),
       p("Pro includes repeating appointments, so a regular who comes in every week, every two weeks, or every month can keep the same slot without rebooking each time."),
       h2("", "Which plan fits a barber"),
@@ -147,7 +147,7 @@ export function cleaningPage(): MarketingPage {
       h2("", "Services and prices"),
       p("List each type of clean with its own price and duration, such as a standard clean, a deep clean, or a move-out clean. The Free plan includes one service. Starter and Pro include unlimited services."),
       h2("", "Getting paid"),
-      p("On Free, clients pay at the appointment. On Starter, clients can pay with Cash App, Venmo, Zelle, PayPal, or at the appointment."),
+      p("On Free, clients pay at the appointment. On Starter, clients can pay with Cash App, Venmo, Zelle, PayPal, or at the appointment. On Pro, card checkout (Stripe) and appointment deposits are included. Card checkout stays off until Stripe card payments and payouts are active. The deposit stays off until you turn it on. Charging a cancellation fee on a card is coming soon."),
       h2("", "Managing your week"),
       p("Your roster shows every booking. You can reschedule or cancel a clean, and add a job by hand when a client calls or texts you directly. Repeating blocks cover regular unavailable time, and vacation or date blocks cover days off. Clients get a branded confirmation email when they book."),
       h2("", "Which plan fits a cleaning business"),
@@ -187,7 +187,7 @@ export function featuresPage(): MarketingPage {
       h2("", "Hours and time off"),
       p("Set weekly hours, add repeating blocks for time you are regularly unavailable (such as a lunch break), and add vacation or date blocks for days off."),
       h2("", "Getting paid"),
-      p("On Free, clients pay at the appointment. On Starter, clients can pay with Cash App, Venmo, Zelle, PayPal, or at the appointment. Starter does not include card checkout. Pro includes the Starter payment options and adds repeating appointments."),
+      p("On Free, clients pay at the appointment. On Starter, clients can pay with Cash App, Venmo, Zelle, PayPal, or at the appointment. Starter does not include card checkout. Pro includes the Starter payment options, card checkout (Stripe), appointment deposits, and repeating appointments. Card checkout stays off until Stripe card payments and payouts are active. The deposit stays off until you turn it on. Charging a cancellation fee on a card is coming soon."),
       h2("", "Repeating appointments"),
       p("Pro ($49 a month) lets a client keep a weekly, biweekly, or monthly slot. Free and Starter do not include repeating appointments. A repeating appointment is not the same thing as a repeating block for your own time off."),
       p(`Read <a href="/pricing">pricing</a>, <a href="/for/barbers">booking software for barbers</a>, <a href="/for/cleaning-services">booking software for cleaning businesses</a>, or <a href="/compare">Schedi vs other booking tools</a>.`),
@@ -205,7 +205,7 @@ export function comparePage(): MarketingPage {
     softwareJsonLd: true,
     faqs: [],
     bodyHtml: [
-      p("Schedi is a booking page and back office for one owner. Free is $0. Starter is $29 a month. Pro is $49 a month and adds repeating appointments. Paid plans have no setup fee and no contract: they are month-to-month, you can cancel anytime, and the first payment is refundable within 15 days. Clients can pay with Cash App, Venmo, Zelle, PayPal, or at the appointment, with no card processing fees through Schedi. On Starter and Pro you accept or deny each request."),
+      p("Schedi is a booking page and back office for one owner. Free is $0. Starter is $29 a month. Pro is $49 a month and adds repeating appointments, card checkout (Stripe), and appointment deposits. Card checkout stays off until Stripe card payments and payouts are active. The deposit stays off until you turn it on. Charging a cancellation fee on a card is coming soon. Paid plans have no setup fee and no contract: they are month-to-month, you can cancel anytime, and the first payment is refundable within 15 days. Clients can pay with Cash App, Venmo, Zelle, PayPal, or at the appointment, with no card processing fees through Schedi. On Starter and Pro you accept or deny each request."),
       p("Prices as listed on each vendor's site on Oct 19, 2026. The source URL is listed in each section."),
       h2("", "Why these six tools"),
       p("Schedi is built for a solo owner. Each section below says what these six tools add."),

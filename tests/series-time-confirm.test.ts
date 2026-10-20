@@ -242,7 +242,7 @@ describe("series replacement times", () => {
       `function cartDurationMins() { return duration; }
        var duration = 60;
        ${runtimeSource([
-         "toMinutes", "fromMinutes", "resolveHoursForDate", "timeWithinResolvedRanges", "getSlotIntervalMins",
+         "toMinutes", "fromMinutes", "closedOnLabel", "resolveHoursForDate", "timeWithinResolvedRanges", "getSlotIntervalMins",
          "parseDurationMins", "overlaps", "appointmentBufferMins", "bufferedOverlap", "dateInBlockedRange",
          "dateBlockConflictReason", "isDateFullyBlocked", "getPubTimezone", "localISODate", "zonedNow",
          "getMinNoticeHoursPub", "slotInsideNotice", "noticeReasonText", "appointmentSpanMins",
