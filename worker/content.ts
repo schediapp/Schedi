@@ -152,8 +152,8 @@ const HELP_VIDEOS: { slug: string; title: string; desc: string; dur: string; v: 
   { slug: "owner-17-import-clients-csv", title: "Import clients from CSV", desc: "Upload a CSV, match columns, preview, and import. Schedi never emails imports.", dur: "0:22", v: 10 },
   { slug: "owner-18-compare-plans", title: "Compare plans", desc: "Open the plan chart from your Schedi subscription card to see what each plan includes.", dur: "0:18", v: 10 },
   { slug: "owner-19-roster-week-month", title: "Week and month roster", desc: "Switch to Week or Month, move with Previous, Next, or Today, tap a booking for details, and tap a busy day.", dur: "0:22", v: 10 },
-  { slug: "owner-20-booking-alerts-iphone", title: "Booking alerts on iPhone", desc: "Turn on a pop-up on your iPhone when a booking comes in.", dur: "", v: 10 },
-  { slug: "owner-21-booking-qr-code", title: "Booking QR code", desc: "How to show, generate, download or print, and save your booking QR code.", dur: "", v: 10 },
+  { slug: "owner-20-booking-alerts-iphone", title: "Booking alerts on iPhone", desc: "Turn on a pop-up on your iPhone when a booking comes in.", dur: "0:20", v: 10 },
+  { slug: "owner-21-booking-qr-code", title: "Booking QR code", desc: "How to show, generate, download or print, and save your booking QR code.", dur: "0:25", v: 10 },
   { slug: "client-booking-demo", title: "How clients book", desc: "Clients pick a service, a day and time, enter their info, and choose how to pay.", dur: "0:29", v: 10 },
 ];
 
@@ -446,18 +446,24 @@ function vertical(input: {
   };
 }
 
+/** Duration sits before the period. An empty duration drops that separator so the period stays on the title. */
+export function helpVideoFigcaption(title: string, dur: string, desc: string): string {
+  const safeTitle = escapeHtml(title);
+  const safeDesc = escapeHtml(desc);
+  const safeDur = dur.trim();
+  const separator = safeDur ? ` (${escapeHtml(safeDur)}). ` : ". ";
+  return `<strong>${safeTitle}</strong>${separator}${safeDesc}`;
+}
+
 function helpVideosHtml(): string {
   const cards = HELP_VIDEOS.map((video) => {
     const poster = `/assets/help-videos/${video.slug}.jpg?v=${video.v}`;
     const file = `/assets/help-videos/${video.slug}.mp4?v=${video.v}`;
-    const title = escapeHtml(video.title);
-    const desc = escapeHtml(video.desc);
-    const timing = video.dur ? ` (${escapeHtml(video.dur)})` : "";
     return `<figure>
       <video class="schedi-help-video" controls playsinline preload="none" poster="${poster}" width="720" height="1280">
         <source src="${file}" type="video/mp4">
       </video>
-      <figcaption><strong>${title}</strong>${timing}. ${desc}</figcaption>
+      <figcaption>${helpVideoFigcaption(video.title, video.dur, video.desc)}</figcaption>
     </figure>`;
   }).join("\n");
   return `<section class="help-clips"><h2>Video tutorials</h2><p>Short videos, about 20 seconds each. They load when you press play.</p><div class="help-clip-grid">${cards}</div></section>`;

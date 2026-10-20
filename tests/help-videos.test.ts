@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { runInNewContext } from "node:vm";
 import { describe, expect, it } from "vitest";
-import { MARKETING_PAGES } from "../worker/content";
+import { helpVideoFigcaption, MARKETING_PAGES } from "../worker/content";
 import { renderMarketingPage } from "../worker/render";
 
 const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
@@ -93,10 +93,24 @@ describe("Help page videos", () => {
     expect(rendered).toContain("/assets/help-videos/owner-21-booking-qr-code.mp4?v=10");
     expect(rendered).toContain("/assets/help-videos/owner-21-booking-qr-code.jpg?v=10");
     expect(rendered).toContain("How to show, generate, download or print, and save your booking QR code.");
+    expect(rendered).toContain("<strong>Booking alerts on iPhone</strong> (0:20). Turn on a pop-up on your iPhone when a booking comes in.");
+    expect(rendered).toContain("<strong>Booking QR code</strong> (0:25). How to show, generate, download or print, and save your booking QR code.");
+    expect(rendered).not.toMatch(/<\/strong> \./);
     expect(rendered).toContain('width="720" height="1280"');
     expect(rendered).toContain("playsinline");
     expect(rendered).toContain("aspect-ratio:9/16");
     expect(rendered).toContain("object-fit:contain");
-    expect(rendered).not.toMatch(/<strong>Booking QR code<\/strong> \(\)/);
+  });
+
+  it("drops the duration separator when a caption has no duration", () => {
+    expect(helpVideoFigcaption("Booking alerts on iPhone", "", "Turn on a pop-up.")).toBe(
+      "<strong>Booking alerts on iPhone</strong>. Turn on a pop-up.",
+    );
+    expect(helpVideoFigcaption("Booking QR code", "   ", "Save your code.")).toBe(
+      "<strong>Booking QR code</strong>. Save your code.",
+    );
+    expect(helpVideoFigcaption("Booking QR code", "0:25", "Save your code.")).toBe(
+      "<strong>Booking QR code</strong> (0:25). Save your code.",
+    );
   });
 });
