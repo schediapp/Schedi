@@ -8243,8 +8243,9 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                     return;
                 }
                 if (!Array.isArray(data.tenants)) {
-                    var kept = (typeof getTenant === 'function') ? getTenant() : null;
-                    if (kept) kept._privateBookingsLoaded = true;
+                    (platformState.tenants || []).forEach(function (t) {
+                        if (t) t._privateBookingsLoaded = true;
+                    });
                     schediSetBookingsLoad('ready');
                     window.__schediRosterLoadedAt = Date.now();
                     try { schediPaintBookingSurfaces(); } catch (errKeep) {}
@@ -10442,10 +10443,16 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                 // Offline / transient: keep optimistic restore from localStorage.
                 try { syncTenantAutoLogoffSelect(); } catch (errSel2) {}
                 try { startTenantOwnerIdleWatch(); } catch (errIdle2) {}
+                if (platformState.isTenantOwnerLoggedIn) {
+                    try { refreshPrivateBookings(); } catch (errBookOff) {}
+                }
                 return !!(platformState.isTenantOwnerLoggedIn || platformState.isAgencyMasterLoggedIn);
             }
             try { syncTenantAutoLogoffSelect(); } catch (errSel3) {}
             try { startTenantOwnerIdleWatch(); } catch (errIdle3) {}
+            if (platformState.isTenantOwnerLoggedIn) {
+                try { refreshPrivateBookings(); } catch (errBookMiss) {}
+            }
             return !!(platformState.isTenantOwnerLoggedIn || platformState.isAgencyMasterLoggedIn);
         }
 
