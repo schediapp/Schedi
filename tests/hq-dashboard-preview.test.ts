@@ -132,6 +132,49 @@ describe.skipIf(!chrome)("agency HQ dashboard browser", () => {
       expect(overview.tab).toContain("Overview");
       expect(errors).toEqual([]);
 
+      const signOutPhone = await page.evaluate(() => {
+        const box = (id: string) => {
+          const el = document.getElementById(id);
+          if (!el) return null;
+          const rect = el.getBoundingClientRect();
+          const style = getComputedStyle(el);
+          return {
+            text: el.textContent || "",
+            visible: style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height >= 44,
+            right: rect.right,
+          };
+        };
+        return { top: box("hqDashSignOut"), side: box("hqDashSideSignOut"), login: getComputedStyle(document.getElementById("agencyMasterLoginBox") as Element).display };
+      });
+      expect(signOutPhone.top && signOutPhone.top.text).toBe("Sign out of HQ");
+      expect(signOutPhone.top && signOutPhone.top.visible).toBe(true);
+      expect(signOutPhone.top && signOutPhone.top.right).toBeLessThanOrEqual(390);
+      expect(signOutPhone.side && signOutPhone.side.visible).toBe(false);
+      expect(signOutPhone.login).toBe("none");
+      await page.setViewport({ width: 1280, height: 800 });
+      const signOutDesk = await page.evaluate(() => {
+        const box = (id: string) => {
+          const el = document.getElementById(id);
+          if (!el) return null;
+          const rect = el.getBoundingClientRect();
+          const style = getComputedStyle(el);
+          return { text: el.textContent || "", visible: style.display !== "none" && rect.width > 0 && rect.height >= 44, right: rect.right };
+        };
+        return { top: box("hqDashSignOut"), side: box("hqDashSideSignOut") };
+      });
+      expect(signOutDesk.top && signOutDesk.top.visible).toBe(true);
+      expect(signOutDesk.side && signOutDesk.side.text).toBe("Sign out of HQ");
+      expect(signOutDesk.side && signOutDesk.side.visible).toBe(true);
+      expect(signOutDesk.side && signOutDesk.side.right).toBeLessThanOrEqual(1280);
+      const beforeSignOut = page.url();
+      await page.click("#hqDashSideSignOut");
+      await page.waitForFunction(() => (document.body.innerText || "").includes("Demo mode does not sign out a real account."));
+      expect(page.url()).toBe(beforeSignOut);
+      const cardStillHidden = await page.evaluate(() => getComputedStyle(document.getElementById("agencyMasterLoginBox") as Element).display);
+      expect(cardStillHidden).toBe("none");
+      await page.evaluate(() => document.getElementById("toastContainer")?.replaceChildren());
+      await page.setViewport({ width: 390, height: 844 });
+
       await page.click('#hqDashTabbar button[data-hqd-go="directory"]');
       await page.waitForFunction(() => !document.getElementById("hqdDirectory")?.hidden);
       const directory = await page.evaluate(() => document.getElementById("hqdDirList")?.innerText || "");

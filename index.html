@@ -26629,16 +26629,49 @@ function schediQrCardPixels(text, color) {
                 return;
             }
             opts = opts || {};
-            try { hqForgetManagedTenant(); } catch (errForgetOut) {}
-            var backToHq = false;
+            var fromHq = false;
             try {
-                backToHq = !!(platformState.isAgencyMasterLoggedIn && platformState.isTenantOwnerLoggedIn && !platformState.ownerSelfSession);
-            } catch (errHqOut) { backToHq = false; }
+                var metaNow = (typeof schediAuthMeta === 'function') ? schediAuthMeta() : null;
+                if (metaNow && metaNow.role === 'agency') fromHq = true;
+                if (!fromHq && platformState.isAgencyMasterLoggedIn && platformState.isTenantOwnerLoggedIn && !platformState.ownerSelfSession) fromHq = true;
+                if (!fromHq && typeof hqStoredManagedTenant === 'function' && hqStoredManagedTenant()) fromHq = true;
+            } catch (errHqOut) { fromHq = false; }
+            try {
+                if (!fromHq && new URLSearchParams(window.location.search || '').get('from') === 'hq') fromHq = true;
+            } catch (errFrom) {}
             try { stopTenantOwnerIdleWatch(); } catch (errIdle) {}
-            if (backToHq) {
-                try { window.location.assign('/hq'); } catch (errGoHq) {}
+            if (fromHq) {
+                var session = '';
+                var meta = null;
+                try { session = (typeof schediAuthSession === 'function' ? schediAuthSession() : '') || ''; } catch (errSess) { session = ''; }
+                try { meta = (typeof schediAuthMeta === 'function') ? schediAuthMeta() : null; } catch (errMeta) { meta = null; }
+                var agencySession = (!meta || !meta.role || meta.role === 'agency') ? session : '';
+                try { hqForgetManagedTenant(); } catch (errForgetOut) {}
+                platformState.isAgencyMasterLoggedIn = false;
+                platformState.isTenantOwnerLoggedIn = false;
+                platformState.ownerSelfSession = false;
+                if (agencySession) {
+                    try { clearPrivateAppointments(); } catch (errA) {}
+                    try { clearPrivateProfiles(); } catch (errP) {}
+                    try { schediClearAuthSession(); } catch (errClear) {}
+                }
+                var goHq = function () {
+                    try {
+                        if (window.location && typeof window.location.replace === 'function') window.location.replace('/hq');
+                        else window.location.assign('/hq');
+                    } catch (errGoHq) {}
+                };
+                try {
+                    return fetch('https://schedi.app/auth/logout', {
+                        method: 'POST',
+                        credentials: 'include',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ session: agencySession })
+                    }).then(goHq, goHq);
+                } catch (errOut) { goHq(); }
                 return;
             }
+            try { hqForgetManagedTenant(); } catch (errForgetOwner) {}
             platformState.isTenantOwnerLoggedIn = false;
             platformState.ownerSelfSession = false;
             syncOwnerChangePassBtn();
@@ -26653,6 +26686,14 @@ function schediQrCardPixels(text, color) {
             if (passInput) passInput.value = '';
             populateTenantSelect();
             updateLivePreviewControlsVisibility();
+            var onLogin = false;
+            try { onLogin = String(window.location.pathname || '').replace(/\/+$/, '') === '/login'; } catch (errPath) { onLogin = false; }
+            if (!onLogin) {
+                try {
+                    if (window.location && typeof window.location.replace === 'function') window.location.replace('/login');
+                    else window.location.assign('/login');
+                } catch (errLogin) {}
+            }
             if (opts.silent !== true) showToast('Signed out of Business Portal', 'info');
         }
 

@@ -928,7 +928,7 @@ describe("HQ route", () => {
     expect(offlineStored.assigned).toEqual([]);
   });
 
-  it("returns Sign out to HQ without clearing the HQ session", () => {
+  it("signs the HQ-opened dashboard out of the agency and sends an owner to /login", async () => {
     function extractAssigned(source: string, name: string) {
       const marker = "window." + name + " = function";
       const start = source.indexOf(marker);
@@ -951,17 +951,44 @@ describe("HQ route", () => {
         contains(name: string) { return names.has(name); },
       };
     }
-    function runLogout(state: { agency: boolean; owner: boolean; self: boolean }) {
+    function runLogout(state: {
+      agency: boolean;
+      owner: boolean;
+      self: boolean;
+      role?: string;
+      pathname?: string;
+      search?: string;
+      stored?: string;
+    }) {
       const assigned: string[] = [];
+      const replaced: string[] = [];
       const cleared: string[] = [];
-      const bag = new Map<string, string>([["schedi.hqManagedTenantId", "lumen"]]);
+      const calls: { url: string; credentials: string; session: string }[] = [];
+      const local = new Map<string, string>();
+      if (state.role) {
+        local.set("schedi.authSession", state.role + "-token");
+        local.set("schedi.authMeta", JSON.stringify({ role: state.role, email: state.role + "@example.com", tenantId: state.role === "owner" ? "lumen" : "" }));
+      }
+      const bag = new Map<string, string>();
+      if (state.stored) bag.set("schedi.hqManagedTenantId", state.stored);
       const sandbox: Record<string, unknown> = {
+        URLSearchParams,
+        Promise,
         platformState: {
           isAgencyMasterLoggedIn: state.agency,
           isTenantOwnerLoggedIn: state.owner,
           ownerSelfSession: state.self,
         },
-        location: { assign(url: string) { assigned.push(String(url)); } },
+        location: {
+          pathname: state.pathname || "/login",
+          search: state.search || "",
+          assign(url: string) { assigned.push(String(url)); },
+          replace(url: string) { replaced.push(String(url)); },
+        },
+        localStorage: {
+          getItem(key: string) { return local.has(key) ? local.get(key)! : null; },
+          removeItem(key: string) { local.delete(key); },
+        },
         sessionStorage: {
           getItem(key: string) { return bag.has(key) ? bag.get(key)! : null; },
           setItem(key: string, value: string) { bag.set(key, String(value)); },
@@ -976,32 +1003,179 @@ describe("HQ route", () => {
         syncOwnerChangePassBtn() {},
         clearPrivateAppointments() { cleared.push("appointments"); },
         clearPrivateProfiles() { cleared.push("profiles"); },
-        schediClearAuthSession() { cleared.push("session"); },
+        schediClearAuthSession() { cleared.push("session"); local.clear(); },
+        schediAuthSession() { return local.get("schedi.authSession") || ""; },
+        schediAuthMeta() {
+          try { return JSON.parse(local.get("schedi.authMeta") || "null"); } catch { return null; }
+        },
         populateTenantSelect() {},
         updateLivePreviewControlsVisibility() {},
         showToast() {},
+        fetch(url: string, init?: { credentials?: string; body?: string }) {
+          const body = JSON.parse(String(init?.body || "{}")) as { session?: string };
+          calls.push({ url: String(url), credentials: String(init?.credentials || ""), session: String(body.session || "") });
+          return Promise.resolve({ ok: true });
+        },
       };
       sandbox.window = sandbox;
       const helpers = publicHtml.slice(
         publicHtml.indexOf("var schediHqPendingTenantId"),
         publicHtml.indexOf("function attachCloudDbSync"),
       );
-      runInNewContext(
-        helpers + "\n" + extractAssigned(publicHtml, "handleTenantLogout") + "\nhandleTenantLogout();",
+      const pending = runInNewContext(
+        helpers + "\n" + extractAssigned(publicHtml, "handleTenantLogout") + "\nvar pending = handleTenantLogout();\npending;",
         sandbox,
         { filename: "hq-sign-out.js" },
-      );
-      return { assigned, cleared, managed: bag.get("schedi.hqManagedTenantId") || "" };
+      ) as Promise<unknown> | undefined;
+      return Promise.resolve(pending).then(() => ({
+        assigned,
+        replaced,
+        cleared,
+        calls,
+        managed: bag.get("schedi.hqManagedTenantId") || "",
+        session: local.get("schedi.authSession") || "",
+      }));
     }
-    expect(runLogout({ agency: true, owner: true, self: false })).toEqual({
-      assigned: ["/hq"],
-      cleared: [],
-      managed: "",
-    });
-    const ownerOut = runLogout({ agency: false, owner: true, self: true });
+
+    expect(publicHtml).toContain(">Managing <strong id=\"sdHqManageName\"></strong> · Back to HQ</a>");
+    expect(publicHtml).toContain("onclick=\"hqForgetManagedTenant()\"");
+
+    const hqOut = await runLogout({ agency: true, owner: true, self: false, role: "agency", stored: "lumen" });
+    expect(hqOut.calls).toEqual([{ url: "https://schedi.app/auth/logout", credentials: "include", session: "agency-token" }]);
+    expect(hqOut.cleared).toContain("session");
+    expect(hqOut.replaced).toEqual(["/hq"]);
+    expect(hqOut.assigned).toEqual([]);
+    expect(hqOut.managed).toBe("");
+    expect(hqOut.session).toBe("");
+
+    const drifted = await runLogout({ agency: true, owner: true, self: true, role: "agency", stored: "lumen" });
+    expect(drifted.calls[0]?.credentials).toBe("include");
+    expect(drifted.replaced).toEqual(["/hq"]);
+    expect(drifted.session).toBe("");
+
+    const fromLink = await runLogout({ agency: false, owner: true, self: true, role: "owner", search: "?tenant=lumen&from=hq" });
+    expect(fromLink.calls).toEqual([{ url: "https://schedi.app/auth/logout", credentials: "include", session: "" }]);
+    expect(fromLink.replaced).toEqual(["/hq"]);
+    expect(fromLink.session).toBe("owner-token");
+
+    const ownerOut = await runLogout({ agency: false, owner: true, self: true, role: "owner", pathname: "/portal" });
+    expect(ownerOut.calls).toEqual([]);
     expect(ownerOut.cleared).toContain("session");
+    expect(ownerOut.replaced).toEqual(["/login"]);
     expect(ownerOut.assigned).toEqual([]);
     expect(ownerOut.managed).toBe("");
+    expect(ownerOut.session).toBe("");
+
+    const alreadyLogin = await runLogout({ agency: false, owner: true, self: true, role: "owner", pathname: "/login" });
+    expect(alreadyLogin.calls).toEqual([]);
+    expect(alreadyLogin.replaced).toEqual([]);
+    expect(alreadyLogin.assigned).toEqual([]);
+    expect(alreadyLogin.session).toBe("");
+  });
+
+  it("hides the classic HQ card and leaves for the sign-in page when the agency check fails", async () => {
+    function extractFunction(source: string, name: string) {
+      const marker = "function " + name;
+      const start = source.indexOf(marker);
+      const brace = source.indexOf("{", start);
+      let depth = 0;
+      for (let i = brace; i < source.length; i++) {
+        if (source[i] === "{") depth += 1;
+        else if (source[i] === "}") {
+          depth -= 1;
+          if (depth === 0) {
+            const from = source.slice(start - 6, start) === "async " ? start - 6 : start;
+            return source.slice(from, i + 1);
+          }
+        }
+      }
+      throw new Error("missing " + name);
+    }
+    expect(hqHtml).toContain("#agencyMasterLoginBox { display: none !important; }");
+    expect(hqHtml).toContain('id="hqDashSignOut" class="hqd-signout" onclick="toggleMasterAgencyAuth()">Sign out of HQ</button>');
+    expect(hqHtml).toContain('id="hqDashSideSignOut" class="hqd-signout" onclick="toggleMasterAgencyAuth()">Sign out of HQ</button>');
+    const agencyRender = hqHtml.slice(hqHtml.indexOf("function renderAgencyDashboard"), hqHtml.indexOf("function hqDirPrefs"));
+    expect(agencyRender).toContain("loginBox.classList.add('hidden')");
+    expect(agencyRender).not.toContain("loginBox.classList.remove");
+
+    function leave(input: { role?: string; session?: string; bounced?: boolean; demo?: boolean }) {
+      const replaced: string[] = [];
+      const cleared: string[] = [];
+      const calls: { url: string; credentials: string; session: string }[] = [];
+      const local = new Map<string, string>();
+      if (input.session) local.set("schedi.authSession", input.session);
+      if (input.role) local.set("schedi.authMeta", JSON.stringify({ role: input.role, email: "hq@example.com", tenantId: "" }));
+      const bag = new Map<string, string>();
+      if (input.bounced) bag.set("schedi.hqAuthBounce", "1");
+      const sandbox: Record<string, unknown> = {
+        Promise,
+        __SCHEDI_HQ_DEMO: input.demo === true,
+        __schediHqLeaving: false,
+        platformState: { isAgencyMasterLoggedIn: true, appointmentCounts: { a: 1 } },
+        location: { replace(url: string) { replaced.push(String(url)); } },
+        sessionStorage: {
+          getItem(key: string) { return bag.has(key) ? bag.get(key)! : null; },
+          setItem(key: string, value: string) { bag.set(key, String(value)); },
+          removeItem(key: string) { bag.delete(key); },
+        },
+        schediAuthSession() { return local.get("schedi.authSession") || ""; },
+        schediAuthMeta() {
+          try { return JSON.parse(local.get("schedi.authMeta") || "null"); } catch { return null; }
+        },
+        schediClearAuthSession() { cleared.push("session"); local.clear(); },
+        clearPrivateAppointments() { cleared.push("appointments"); },
+        clearPrivateProfiles() { cleared.push("profiles"); },
+        fetch(url: string, init?: { credentials?: string; body?: string }) {
+          const body = JSON.parse(String(init?.body || "{}")) as { session?: string };
+          calls.push({ url: String(url), credentials: String(init?.credentials || ""), session: String(body.session || "") });
+          return Promise.resolve({ ok: true });
+        },
+      };
+      sandbox.window = sandbox;
+      const pending = runInNewContext(
+        extractFunction(hqHtml, "schediLeaveAgencyHq") + "\nschediLeaveAgencyHq();",
+        sandbox,
+        { filename: "hq-leave.js" },
+      );
+      return Promise.resolve(pending).then(async () => {
+        await Promise.resolve();
+        return {
+          replaced,
+          cleared,
+          calls,
+          session: local.get("schedi.authSession") || "",
+          bounce: bag.get("schedi.hqAuthBounce") || "",
+          loggedIn: (sandbox.platformState as { isAgencyMasterLoggedIn: boolean }).isAgencyMasterLoggedIn,
+        };
+      });
+    }
+
+    const signedOut = await leave({ role: "agency", session: "agency-token" });
+    expect(signedOut.calls).toEqual([{ url: "https://schedi.app/auth/logout", credentials: "include", session: "agency-token" }]);
+    expect(signedOut.cleared).toEqual(["appointments", "profiles", "session"]);
+    expect(signedOut.replaced).toEqual(["/hq"]);
+    expect(signedOut.session).toBe("");
+    expect(signedOut.loggedIn).toBe(false);
+    expect(signedOut.bounce).toBe("1");
+
+    const ownerKept = await leave({ role: "owner", session: "owner-token" });
+    expect(ownerKept.calls).toEqual([{ url: "https://schedi.app/auth/logout", credentials: "include", session: "" }]);
+    expect(ownerKept.cleared).toEqual([]);
+    expect(ownerKept.session).toBe("owner-token");
+    expect(ownerKept.replaced).toEqual(["/hq"]);
+
+    const once = await leave({ role: "agency", session: "agency-token", bounced: true });
+    expect(once.calls).toEqual([]);
+    expect(once.replaced).toEqual([]);
+    expect(once.bounce).toBe("");
+
+    const demo = await leave({ role: "agency", session: "agency-token", demo: true });
+    expect(demo.calls).toEqual([]);
+    expect(demo.replaced).toEqual([]);
+
+    const profile = hqHtml.slice(hqHtml.indexOf("async function verifySchediAuthSessionRestore"), hqHtml.indexOf("var SCHEDI_OWNER_IDLE_KEY"));
+    expect(profile).toContain("credentials: 'include'");
+    expect(profile).toContain("schediLeaveAgencyHq()");
   });
 
   it("sends HQ back when the server allows a business the public list does not have", async () => {
