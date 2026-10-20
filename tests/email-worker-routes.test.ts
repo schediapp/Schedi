@@ -57,6 +57,13 @@ describe("email worker calendar routes", () => {
     expect(matchedBy(patterns, "schedi.app/api/booking-ics?tenant=harbor&id=1&t=tok")).toBe("schedi.app/api/booking-ics*");
   });
 
+  it("sends the card pay link, query string included, to this worker", () => {
+    expect(patterns).toContain("schedi.app/billing/*");
+    const pay = "schedi.app/billing/card-pay?t=axeldelcidphotography&b=BK-CB126C75&k=abc123&kind=deposit";
+    expect(matchedBy(patterns, pay)).toBe("schedi.app/billing/*");
+    expect(routeMatches("schedi.app/billing/card-pay", pay)).toBe(false);
+  });
+
   it("matches every email-worker route on the same path with a query string", () => {
     const schediWeb = [
       "schedi.app/api/business-logo",

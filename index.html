@@ -28029,7 +28029,7 @@ function schediQrCardPixels(text, color) {
                 </div>
                 <p id="resCheckoutError" role="alert" class="hidden text-rose-300 font-semibold"></p>
                 <a id="resCheckoutBtn" href="#" target="_top" rel="noopener" class="block w-full mt-2 py-2.5 rounded-xl bg-indigo-500 hover:bg-indigo-400 text-white font-black text-center transition-all">
-                    Continue to secure payment
+                    Pay now
                 </a>
             </div>
 
@@ -28348,6 +28348,63 @@ function schediQrCardPixels(text, color) {
             return url;
         }
 
+        function schediCardPayHref(value) {
+            var candidate = String(value || '');
+            if (!/^https:\\/\\/(www\\.)?schedi\\.app\\//.test(candidate)) return false;
+            if (candidate.indexOf('stripe.com') !== -1) return false;
+            if (candidate.indexOf('pay=checkout') !== -1) return true;
+            return candidate.indexOf('/billing/card-pay?') !== -1;
+        }
+
+        function cardPayApiUrl(slug, bookingIds, token, kind) {
+            var safeSlug = String(slug || '').trim().toLowerCase();
+            if (!/^[a-z0-9](?:[a-z0-9-]{0,40})$/.test(safeSlug)) return '';
+            if (kind !== 'deposit' && kind !== 'card') return '';
+            var tok = String(token || '').trim();
+            if (!/^[A-Za-z0-9_-]{16,128}$/.test(tok)) return '';
+            var ids = [];
+            var list = Array.isArray(bookingIds) ? bookingIds : [bookingIds];
+            for (var i = 0; i < list.length; i++) {
+                var id = String(list[i] || '').trim();
+                if (!/^[A-Za-z0-9_-]{4,40}$/.test(id) || ids.indexOf(id) !== -1) continue;
+                ids.push(id);
+                if (ids.length === 12) break;
+            }
+            if (!ids.length) return '';
+            var url = 'https://schedi.app/billing/card-pay?t=' + encodeURIComponent(safeSlug)
+                + '&b=' + encodeURIComponent(ids[0])
+                + '&k=' + encodeURIComponent(tok)
+                + '&kind=' + kind;
+            if (ids.length > 1) url += '&ids=' + encodeURIComponent(ids.slice(1).join(','));
+            return url;
+        }
+
+        function cardNowConfirmNote(quote, emailed) {
+            var note = "You'll pay now by card.";
+            if (quote && quote.required) {
+                var dep = Number(quote.deposit);
+                if (isFinite(dep)) note += ' The deposit is $' + dep.toFixed(2) + '.';
+                var bal = quote.balance;
+                if (bal != null && isFinite(Number(bal))) note += ' $' + Number(bal).toFixed(2) + ' is due at the appointment.';
+                else note += ' The rest is due at the appointment.';
+            }
+            if (emailed) note += ' We emailed you a secure payment link.';
+            return note;
+        }
+
+        function openSchediCardPay(href) {
+            var target = String(href || '');
+            if (target.indexOf('https://schedi.app/billing/card-pay?') !== 0 && target.indexOf('https://www.schedi.app/billing/card-pay?') !== 0) return false;
+            try {
+                if (window.top && window.top !== window) {
+                    window.top.location.assign(target);
+                    return true;
+                }
+            } catch (err) {}
+            window.location.assign(target);
+            return true;
+        }
+
         function visibleCardPayLink(stripeUrl, durable) {
             if (stripeUrl && isStripePayUrl(stripeUrl)) {
                 try {
@@ -28485,7 +28542,7 @@ function schediQrCardPixels(text, color) {
                         type: mailType || 'mail', ownerTenantId: tenantData.id || '', tenantId: tenantData.id || '', bookingId: (booking && booking.id) || '',
                         manageToken: (booking && booking.manageToken) || ''
                     };
-                    if (paymentLink && /^https:\\/\\/(www\\.)?schedi\\.app\\//.test(String(paymentLink)) && String(paymentLink).indexOf('pay=checkout') !== -1) {
+                    if (paymentLink && schediCardPayHref(paymentLink)) {
                         mailObj.paymentLink = String(paymentLink);
                     }
                     if (toOwnerFlag) mailObj.toOwner = true;
@@ -28536,7 +28593,7 @@ function schediQrCardPixels(text, color) {
                     cardLinkLater = true;
                 } else {
                     var candidate = String(booking.cardPayLink || '');
-                    if (/^https:\\/\\/(www\\.)?schedi\\.app\\//.test(candidate) && candidate.indexOf('pay=checkout') !== -1 && candidate.indexOf('stripe.com') === -1) {
+                    if (schediCardPayHref(candidate)) {
                         cardPayUrl = candidate;
                     }
                 }
@@ -31269,9 +31326,12 @@ function paintBizHeader() {
                 var refId = booking.id;
                 var cardPayKind = (payByCard && depositQuote.required) ? 'deposit' : 'card';
                 var startPayNowCheckout = null;
-                var cardPayUrl = (payByCard && !linkLater)
-                    ? durableCardPayLink(String(tenantData.slug || tenantData.id || ''), bookings.map(function (item) { return item.id; }), cardPayKind)
-                    : '';
+                var cardPayIds = bookings.map(function (item) { return item.id; });
+                var cardPayUrl = '';
+                if (payByCard && !linkLater) {
+                    cardPayUrl = cardPayApiUrl(String(tenantData.slug || tenantData.id || ''), cardPayIds, booking.manageToken, cardPayKind)
+                        || durableCardPayLink(String(tenantData.slug || tenantData.id || ''), cardPayIds, cardPayKind);
+                }
                 if (cardPayUrl) bookings.forEach(function (item) { item.cardPayLink = cardPayUrl; });
                 var cardChargeCents = 0;
                 if (payByCard) {
@@ -31419,11 +31479,10 @@ function paintBizHeader() {
                 var headingEl = document.getElementById('confirmationHeading');
                 var noteEl = document.getElementById('confirmationNote');
                 if (payByCard) {
+                    var cardMailOn = !(tenantData.notifications && tenantData.notifications.emailConfirmations === false);
                     var cardNote = linkLater
                         ? "Pay by card: we'll email you a secure payment link once your price is confirmed."
-                        : (depositQuote.required
-                            ? ("You'll pay now by card. The deposit is $" + depositQuote.deposit.toFixed(2) + '. $' + depositQuote.balance.toFixed(2) + ' is due at the appointment.')
-                            : "You'll pay now by card.");
+                        : cardNowConfirmNote(depositQuote, !!(cardPayUrl && cardMailOn));
                     if (bookingIsPendingReview) cardNote += ' The business still needs to accept this time.';
                     if (headingEl) headingEl.textContent = 'Booking Requested';
                     if (noteEl) {
@@ -31563,12 +31622,13 @@ function paintBizHeader() {
 
                         var checkoutBtn = document.getElementById('resCheckoutBtn');
                         if (checkoutBtn) {
-                            checkoutBtn.textContent = 'Continue to secure payment';
+                            checkoutBtn.textContent = 'Pay now';
                             checkoutBtn.target = '_top';
                             checkoutBtn.href = cardPayUrl || '#';
                             function openPayNowCheckout() {
                                 if (checkoutErr) checkoutErr.classList.add('hidden');
                                 checkoutBtn.textContent = 'Opening secure checkout...';
+                                if (openSchediCardPay(cardPayUrl)) return Promise.resolve();
                                 return requestPublicCardCheckout({
                                     tenantId: tenantData.id,
                                     slug: tenantData.slug || tenantData.id,
@@ -31580,7 +31640,8 @@ function paintBizHeader() {
                                 }).then(function (out) {
                                     paintPayLink(out && out.url);
                                     if (out && out.url && assignTopStripe(out.url)) return;
-                                    checkoutBtn.textContent = 'Continue to secure payment';
+                                    if (openSchediCardPay(cardPayUrl)) return;
+                                    checkoutBtn.textContent = 'Pay now';
                                     if (out && out.error === 'already_paid') {
                                         showCheckoutError('That card payment is already paid.');
                                         return;

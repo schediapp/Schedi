@@ -2830,6 +2830,171 @@ async function handleBookingCheckout(request, env, origin) {
   return json({ ok: true, url, purpose, amountCents: totalCents }, 200, origin);
 }
 
+const CONNECT_PUBLIC_CHECKOUT = 'https://schedi-connect-production.up.railway.app/api/public-checkout';
+
+function stripeHostedPayUrl(value) {
+  try {
+    const url = new URL(String(value || ''));
+    const host = url.hostname.toLowerCase();
+    return url.protocol === 'https:' && (host === 'checkout.stripe.com' || host === 'buy.stripe.com' || host === 'pay.stripe.com');
+  } catch (_) {
+    return false;
+  }
+}
+
+function cardPayPage(message, status) {
+  const safe = String(message || 'This payment link did not open. Nothing was charged.')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+  const html = '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Card payment</title></head>'
+    + '<body style="margin:0;padding:32px 16px;background:#020617;color:#e2e8f0;font-family:Arial,Helvetica,sans-serif;">'
+    + '<main style="max-width:28rem;margin:0 auto;padding:24px;border:1px solid #334155;border-radius:16px;background:#0b1325;">'
+    + '<h1 style="margin:0 0 12px;font-size:20px;color:#fff;">Card payment</h1>'
+    + '<p style="margin:0;line-height:1.5;">' + safe + '</p>'
+    + '</main></body></html>';
+  return new Response(html, {
+    status: status || 400,
+    headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' },
+  });
+}
+
+function stripePayRedirect(target) {
+  return new Response(null, {
+    status: 302,
+    headers: {
+      Location: target,
+      'Cache-Control': 'no-store',
+      'Referrer-Policy': 'no-referrer',
+    },
+  });
+}
+
+function cardPayBookingOpen(booking) {
+  if (!booking || booking.cancelled === true) return false;
+  const status = String(booking.status || '').toLowerCase();
+  return status !== 'denied' && status !== 'cancelled' && status !== 'canceled';
+}
+
+async function connectCheckoutUrl(input) {
+  try {
+    const res = await fetch(CONNECT_PUBLIC_CHECKOUT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Origin: 'https://schedi.app' },
+      body: JSON.stringify({
+        slug: input.slug,
+        tenantId: input.tenantId,
+        bookingIds: input.bookingIds,
+        email: input.email || '',
+        serviceName: input.serviceName || 'Appointment',
+        amountCents: input.amountCents,
+        chargeKind: input.chargeKind === 'deposit' ? 'deposit' : 'full',
+        returnOrigin: 'https://schedi.app',
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok && data && data.mode === 'connect' && stripeHostedPayUrl(data.url)) return data.url;
+  } catch (_) {}
+  return '';
+}
+
+function cardPayIdsFor(appts, booking, bookingId, extraRaw) {
+  const ids = [bookingId];
+  if (!booking || !booking.seriesId) return ids;
+  for (const extraId of parseBookingIdList(extraRaw)) {
+    if (ids.includes(extraId)) continue;
+    const other = appts.find((item) => item && String(item.id) === extraId && item.seriesId === booking.seriesId);
+    if (!other || !cardPayBookingOpen(other)) continue;
+    ids.push(extraId);
+  }
+  return ids;
+}
+
+// GET /billing/card-pay?t={slug}&b={bookingId}&k={manageToken}&kind=deposit|card
+// The booking email and the confirmation Pay now button use this URL.
+// It opens Stripe Checkout (Connect when that account is ready, otherwise the platform session).
+// It never sends the client back to the booking form.
+async function handleCardPay(request, env, url) {
+  if (request.method !== 'GET' && request.method !== 'HEAD') {
+    return cardPayPage('Open this payment link in your browser. Nothing was charged.', 405);
+  }
+  const tenantId = safeTenantId(url.searchParams.get('t'));
+  const bookingId = safeBookingId(url.searchParams.get('b'));
+  const token = String(url.searchParams.get('k') || '');
+  const kindHint = String(url.searchParams.get('kind') || '');
+  if (!tenantId || !bookingId || !/^[A-Za-z0-9_-]{16,128}$/.test(token)) {
+    return cardPayPage('This payment link is not valid. Nothing was charged.', 400);
+  }
+  if (kindHint && kindHint !== 'deposit' && kindHint !== 'card') {
+    return cardPayPage('This payment link is not valid. Nothing was charged.', 400);
+  }
+  if (request.method === 'HEAD') {
+    return new Response(null, { status: 200, headers: { 'Cache-Control': 'no-store' } });
+  }
+  const ip = String(request.headers.get('CF-Connecting-IP') || 'unknown').slice(0, 64);
+  if (!(await rateLimitOk(env && env.RL_MAIL, 'cardpay:' + ip, 30, 'cardpay'))) {
+    return cardPayPage('Too many tries. Wait a minute and open the link again. Nothing was charged.', 429);
+  }
+  let tenant = null;
+  let booking = null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (attempt) await new Promise((resolve) => setTimeout(resolve, 400));
+    try {
+      tenant = await getTenantById(env, await firebaseAnonymousToken(env), tenantId);
+    } catch (_) {
+      tenant = null;
+      if (attempt === 2) return cardPayPage('Card checkout is unavailable right now. Nothing was charged.', 502);
+      continue;
+    }
+    if (!tenant) return cardPayPage('This payment link is not valid. Nothing was charged.', 404);
+    const appts = Array.isArray(tenant.appointments) ? tenant.appointments : [];
+    const sameId = appts.find((item) => item && String(item.id) === bookingId) || null;
+    if (sameId && (!sameId.manageToken || !timingSafeEqual(String(sameId.manageToken), token))) {
+      return cardPayPage('This payment link is not valid. Nothing was charged.', 400);
+    }
+    booking = sameId;
+    if (booking) break;
+  }
+  if (!booking || !cardPayBookingOpen(booking)) {
+    return cardPayPage('This booking is not ready to pay yet. Open the link again in a moment. Nothing was charged.', 404);
+  }
+  const appts = Array.isArray(tenant.appointments) ? tenant.appointments : [];
+  const ids = cardPayIdsFor(appts, booking, bookingId, url.searchParams.get('ids'));
+  const inner = new Request(BILLING_APP_ORIGIN + '/billing/booking-checkout', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      tenantId,
+      bookingIds: ids,
+      email: booking.clientEmail || '',
+    }),
+  });
+  const checkoutRes = await handleBookingCheckout(inner, env, BILLING_APP_ORIGIN);
+  const data = await checkoutRes.json().catch(() => ({}));
+  if (data && data.alreadyPaid) {
+    return cardPayPage('This card payment is already paid. Nothing more was charged.', 200);
+  }
+  const amountCents = Number(data && data.amountCents);
+  if (amountCents >= 50) {
+    const connectUrl = await connectCheckoutUrl({
+      slug: publicBookingSlug(tenant, tenantId),
+      tenantId,
+      bookingIds: ids,
+      email: booking.clientEmail || '',
+      serviceName: booking.serviceName || 'Appointment',
+      amountCents,
+      chargeKind: data.purpose === 'deposit' ? 'deposit' : 'full',
+    });
+    if (stripeHostedPayUrl(connectUrl)) return stripePayRedirect(connectUrl);
+  }
+  if (stripeHostedPayUrl(data && data.url)) return stripePayRedirect(data.url);
+  if (data && data.error === 'booking_not_found') {
+    return cardPayPage('This booking is not ready to pay yet. Open the link again in a moment. Nothing was charged.', 404);
+  }
+  const status = checkoutRes.status >= 400 ? checkoutRes.status : 502;
+  return cardPayPage('Card checkout did not open. Nothing was charged. Open the payment link from your email again in a moment.', status);
+}
+
 function bookingCheckoutCorsHeaders() {
   return {
     'Access-Control-Allow-Origin': '*',
@@ -2898,6 +3063,9 @@ async function handleBillingRequest(request, env, origin, path, url) {
     headers.set('Access-Control-Allow-Origin', '*');
     return new Response(checkoutRes.body, { status: checkoutRes.status, headers });
   }
+  if (path === '/billing/card-pay') {
+    return handleCardPay(request, env, url);
+  }
   if (path === '/billing/subscribe') {
     if (request.method !== 'GET') return json({ ok: false, error: 'method_not_allowed' }, 405, origin);
     return handleBillingSubscribe(request, env);
@@ -2927,7 +3095,7 @@ async function handleBillingRequest(request, env, origin, path, url) {
     return handleBillingStatus(request, env, origin, url);
   }
   if (path === '/billing' && request.method === 'GET') {
-    return json({ ok: true, service: 'schedi-billing', endpoints: ['checkout', 'booking-checkout', 'portal', 'status', 'cancel', 'resume', 'webhook'] }, 200, origin);
+    return json({ ok: true, service: 'schedi-billing', endpoints: ['checkout', 'booking-checkout', 'card-pay', 'portal', 'status', 'cancel', 'resume', 'webhook'] }, 200, origin);
   }
   return json({ ok: false, error: 'not_found' }, 404, origin);
 }
