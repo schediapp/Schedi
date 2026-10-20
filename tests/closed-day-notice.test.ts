@@ -179,14 +179,25 @@ describe("public closed-day notices", () => {
 
   it("lists every weekly closed day in the hours summary", () => {
     expect(pageApi.formatPublicHours({ operatingHours: week })).toBe(
-      "Mon–Fri 09:00 AM–05:00 PM · Sat 10:00 AM–02:00 PM · Closed on Sundays",
+      "Mon–Fri 9:00 AM–5:00 PM · Sat 10:00 AM–2:00 PM · Closed on Sundays",
     );
     expect(pageApi.formatPublicHours({ operatingHours: { ...week, Mon: closed } })).toBe(
-      "Tue–Fri 09:00 AM–05:00 PM · Sat 10:00 AM–02:00 PM · Closed on Sundays and Mondays",
+      "Tue–Fri 9:00 AM–5:00 PM · Sat 10:00 AM–2:00 PM · Closed on Sundays and Mondays",
     );
     expect(pageApi.formatPublicHours({
+      operatingHours: {
+        Mon: closed,
+        Tue: day("9:00 AM", "6:30 PM"),
+        Wed: day("9:00 AM", "6:30 PM"),
+        Thu: day("9:00 AM", "6:30 PM"),
+        Fri: day("9:00 AM", "6:30 PM"),
+        Sat: day("8:00 AM", "6:00 PM"),
+        Sun: closed,
+      },
+    })).toBe("Tue–Fri 9:00 AM–6:30 PM · Sat 8:00 AM–6:00 PM · Closed on Sundays and Mondays");
+    expect(pageApi.formatPublicHours({
       operatingHours: { ...week, Mon: closed, Tue: closed },
-    })).toBe("Wed–Fri 09:00 AM–05:00 PM · Sat 10:00 AM–02:00 PM · Closed on Sundays, Mondays, and Tuesdays");
+    })).toBe("Wed–Fri 9:00 AM–5:00 PM · Sat 10:00 AM–2:00 PM · Closed on Sundays, Mondays, and Tuesdays");
     expect(pageApi.formatPublicHours({
       operatingHours: { Mon: closed, Tue: closed, Wed: closed, Thu: closed, Fri: closed, Sat: closed, Sun: closed },
     })).toBe("Closed on Sundays, Mondays, Tuesdays, Wednesdays, Thursdays, Fridays, and Saturdays");
@@ -199,7 +210,7 @@ describe("public closed-day notices", () => {
       Fri: day("09:00 AM", "05:00 PM"),
       Sat: day("09:00 AM", "05:00 PM"),
       Sun: day("09:00 AM", "05:00 PM"),
-    } })).toBe("Mon–Sun 09:00 AM–05:00 PM");
+    } })).toBe("Mon–Sun 9:00 AM–5:00 PM");
   });
 
   it("keeps the same wording in the HQ copy of the booking page", () => {

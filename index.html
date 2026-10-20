@@ -26549,21 +26549,23 @@ function schediQrCardPixels(text, color) {
         .biz-header-body { display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; }
         .biz-header.has-cover .biz-header-body { margin-top: -28px; position: relative; }
         .biz-logo-wrap { flex: 0 0 auto; display: flex; }
-        .biz-logo, .biz-logo-initials { width: 48px; height: 48px; border-radius: 14px; }
+        .biz-logo, .biz-logo-initials, .biz-schedi-mark { width: 48px; height: 48px; border-radius: 14px; }
         .biz-logo { object-fit: cover; display: block; background: transparent; border: 0; }
         .pub-header-logo.logo-plate-dark, .biz-logo.logo-plate-dark { background: #0f172a; box-sizing: border-box; padding: 2px; object-fit: contain; }
         .pub-header-logo.logo-plate-light, .biz-logo.logo-plate-light { background: #ffffff; box-sizing: border-box; padding: 2px; object-fit: contain; }
-        .biz-logo[hidden], .biz-logo-initials[hidden], .pub-header-logo[hidden], .pub-header-initials[hidden] { display: none !important; }
+        .biz-logo[hidden], .biz-logo-initials[hidden], .biz-schedi-mark[hidden], .pub-header-logo[hidden], .pub-header-initials[hidden], #pubHeaderMark[hidden] { display: none !important; }
         .biz-logo-initials, .pub-header-initials {
             display: inline-flex; align-items: center; justify-content: center;
             background: rgba(16, 185, 129, 0.18); color: #34d399; font-weight: 800;
         }
         .biz-logo-initials { font-size: 16px; }
-        .biz-header.has-cover .biz-logo, .biz-header.has-cover .biz-logo-initials { box-shadow: 0 4px 14px rgba(15, 23, 42, 0.28); }
+        .biz-schedi-mark { display: inline-flex; align-items: center; justify-content: center; background: transparent; }
+        .biz-schedi-mark svg { width: 78%; height: 78%; display: block; }
+        .biz-header.has-cover .biz-logo, .biz-header.has-cover .biz-logo-initials, .biz-header.has-cover .biz-schedi-mark { box-shadow: 0 4px 14px rgba(15, 23, 42, 0.28); }
         .pub-header-logo, .pub-header-initials { width: 28px; height: 28px; border-radius: 8px; margin-left: 8px; }
         .pub-header-logo { object-fit: cover; display: block; background: transparent; }
         .pub-header-initials { font-size: 11px; }
-        html.schedi-newbook .biz-logo, html.schedi-newbook .biz-logo-initials,
+        html.schedi-newbook .biz-logo, html.schedi-newbook .biz-logo-initials, html.schedi-newbook .biz-schedi-mark,
         html.schedi-newbook .pub-header-logo, html.schedi-newbook .pub-header-initials { border-radius: 16px; }
         .biz-title { margin: 0; font-size: 1.2rem; font-weight: 800; line-height: 1.25; color: #f8fafc; word-break: break-word; }
         html.schedi-light .biz-title { color: #0f172a; }
@@ -26726,7 +26728,7 @@ function schediQrCardPixels(text, color) {
         /* /booking-notices */
         @media (min-width: 640px) {
             .biz-cover img { height: 200px; }
-            .biz-logo, .biz-logo-initials { width: 64px; height: 64px; }
+            .biz-logo, .biz-logo-initials, .biz-schedi-mark { width: 64px; height: 64px; }
             .biz-logo-initials { font-size: 20px; }
             .biz-title { font-size: 1.5rem; }
             .biz-header-body { align-items: center; padding: 16px 20px; }
@@ -26795,7 +26797,7 @@ function schediQrCardPixels(text, color) {
             <a href="https://schedi.app/" class="inline-flex items-center shrink-0" aria-label="Schedi home">
                 <img id="schediLogo" class="schedi-logo" src="/assets/logo-dark.svg" alt="Schedi" height="28" style="height:28px;width:auto;">
             </a>
-            <span class="inline-flex items-center shrink-0" aria-hidden="true">
+            <span id="pubHeaderMark" class="inline-flex items-center shrink-0" aria-hidden="true" hidden>
                 <img id="pubHeaderLogo" class="pub-header-logo" alt="" hidden onerror="hideBrokenBizImage(this)">
                 <span id="pubHeaderInitials" class="pub-header-initials" hidden></span>
             </span>
@@ -26819,7 +26821,8 @@ function schediQrCardPixels(text, color) {
             <div class="biz-header-body">
                 <div id="bizLogoWrap" class="biz-logo-wrap">
                     <img id="bizLogo" class="biz-logo" alt="" hidden onerror="hideBrokenBizImage(this)">
-                    <span id="bizLogoInitials" class="biz-logo-initials" aria-hidden="true"></span>
+                    <span id="bizLogoInitials" class="biz-logo-initials" aria-hidden="true" hidden></span>
+                    <span id="bizSchediMark" class="biz-schedi-mark" hidden aria-hidden="true"><svg viewBox="0 0 240 256" focusable="false"><rect x="52" y="0" width="22" height="56" rx="11" fill="#059669"/><rect x="166" y="0" width="22" height="56" rx="11" fill="#059669"/><rect x="0" y="28" width="240" height="228" rx="44" fill="#059669"/><path d="M62 150 L104 194 L182 108" fill="none" stroke="#ffffff" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
                 </div>
                 <div class="min-w-0">
                     <h1 id="bizTitle" class="biz-title">${safeName}</h1>
@@ -28108,6 +28111,9 @@ function schediQrCardPixels(text, color) {
             if (b) b.textContent = text;
         }
         function formatPublicHours(tenant) {
+            function publicClockLabel(raw) {
+                return String(raw || '').trim().replace(/^0(\\d)/, '$1');
+            }
             var order = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
             var hours = tenant && tenant.operatingHours;
             if (!hours || typeof hours !== 'object') return '';
@@ -28120,7 +28126,7 @@ function schediQrCardPixels(text, color) {
                     closed.push(day);
                     continue;
                 }
-                var key = String(h.start || '').trim() + '–' + String(h.end || '').trim();
+                var key = publicClockLabel(h.start) + '–' + publicClockLabel(h.end);
                 var last = groups.length ? groups[groups.length - 1] : null;
                 if (last && last.key === key) last.days.push(day);
                 else groups.push({ key: key, days: [day] });
@@ -28143,15 +28149,22 @@ function schediQrCardPixels(text, color) {
                 if (wrap) wrap.hidden = true;
                 var header = document.getElementById('bizHeader');
                 if (header) header.classList.remove('has-cover');
-            } else if (img.id === 'bizLogo' || img.id === 'pubHeaderLogo') {
+            } else if (img.id === 'pubHeaderLogo') {
                 img.hidden = true;
                 img.removeAttribute('src');
-                var letters = document.getElementById(img.id === 'bizLogo' ? 'bizLogoInitials' : 'pubHeaderInitials');
-                if (letters) letters.hidden = false;
-                if (img.id === 'bizLogo') {
-                    var logoWrap = document.getElementById('bizLogoWrap');
-                    if (logoWrap) logoWrap.hidden = false;
-                }
+                var headerLetters = document.getElementById('pubHeaderInitials');
+                if (headerLetters) headerLetters.hidden = true;
+                var headerWrap = document.getElementById('pubHeaderMark');
+                if (headerWrap) headerWrap.hidden = true;
+            } else if (img.id === 'bizLogo') {
+                img.hidden = true;
+                img.removeAttribute('src');
+                var letters = document.getElementById('bizLogoInitials');
+                if (letters) letters.hidden = true;
+                var mark = document.getElementById('bizSchediMark');
+                if (mark) mark.hidden = false;
+                var logoWrap = document.getElementById('bizLogoWrap');
+                if (logoWrap) logoWrap.hidden = false;
             } else {
                 img.hidden = true;
             }
@@ -28323,27 +28336,49 @@ function paintBizHeader() {
             var logo = publicHttpsUrl(tenantData && (tenantData.logoUrl || tenantData.logo || tenantData.businessLogo));
             var logoName = String((tenantData && tenantData.name) || 'Business');
             var logoLetters = bizInitials(logoName);
-            function showBizMark(img, letters, wrap) {
-                if (letters) letters.textContent = logoLetters;
-                if (logo && img) {
-                    img.hidden = false;
-                    img.src = logo;
-                    img.alt = logoName + ' logo';
-                    if (letters) letters.hidden = true;
-                    if (wrap) wrap.hidden = false;
-                    applyLogoPlate(img, tenantData);
-                } else {
-                    if (img) {
-                        img.hidden = true;
-                        img.removeAttribute('src');
-                        applyLogoPlate(img, null);
-                    }
-                    if (letters) letters.hidden = false;
-                    if (wrap) wrap.hidden = false;
-                }
+            function clearBizImage(img) {
+                if (!img) return;
+                img.hidden = true;
+                img.removeAttribute('src');
+                applyLogoPlate(img, null);
             }
-            showBizMark(document.getElementById('bizLogo'), document.getElementById('bizLogoInitials'), document.getElementById('bizLogoWrap'));
-            showBizMark(document.getElementById('pubHeaderLogo'), document.getElementById('pubHeaderInitials'), null);
+            function showUploadedLogo(img) {
+                img.hidden = false;
+                img.src = logo;
+                img.alt = logoName + ' logo';
+                applyLogoPlate(img, tenantData);
+            }
+            var cardImg = document.getElementById('bizLogo');
+            var cardLetters = document.getElementById('bizLogoInitials');
+            var cardMark = document.getElementById('bizSchediMark');
+            var cardWrap = document.getElementById('bizLogoWrap');
+            if (cardLetters) {
+                cardLetters.textContent = logoLetters;
+                cardLetters.hidden = true;
+            }
+            if (logo && cardImg) {
+                showUploadedLogo(cardImg);
+                if (cardMark) cardMark.hidden = true;
+                if (cardWrap) cardWrap.hidden = false;
+            } else {
+                clearBizImage(cardImg);
+                if (cardMark) cardMark.hidden = false;
+                if (cardWrap) cardWrap.hidden = false;
+            }
+            var headerImg = document.getElementById('pubHeaderLogo');
+            var headerLetters = document.getElementById('pubHeaderInitials');
+            var headerWrap = document.getElementById('pubHeaderMark');
+            if (headerLetters) {
+                headerLetters.textContent = '';
+                headerLetters.hidden = true;
+            }
+            if (logo && headerImg) {
+                showUploadedLogo(headerImg);
+                if (headerWrap) headerWrap.hidden = false;
+            } else {
+                clearBizImage(headerImg);
+                if (headerWrap) headerWrap.hidden = true;
+            }
             var title = document.getElementById('bizTitle');
             if (title) title.textContent = String((tenantData && tenantData.name) || 'Book an appointment');
             var industryEl = document.getElementById('bizIndustry');
