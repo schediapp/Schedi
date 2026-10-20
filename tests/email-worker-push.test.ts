@@ -29,6 +29,17 @@ function ownerEnv(tenantId = "acme") {
   };
 }
 
+function agencyEnv() {
+  return {
+    FIREBASE_PROJECT_ID: "siteforge-97699",
+    FIREBASE_APP_ID: "siteforge-97699",
+    AUTH_KV: kv({
+      "session:ag": JSON.stringify({ role: "agency", email: "hq@schedi.app", exp: Date.now() + 3_600_000 }),
+      "session:s1": JSON.stringify({ role: "owner", tenantId: "acme", exp: Date.now() + 3_600_000 }),
+    }),
+  };
+}
+
 const allow = (o: string) => o === "https://schedi.app" || o.endsWith(".schedi.pages.dev");
 
 function req(path: string, body: unknown, origin = "https://schedi.app") {
@@ -173,6 +184,59 @@ describe("POST /api/push-token", () => {
     const none = await push.handlePushTokenHttp(req("/api/push-token", { session: "nope", tenantId: "acme", token: WEB }), ownerEnv(), "https://schedi.app", { isAllowedOrigin: allow });
     expect(none.status).toBe(401);
   });
+
+  it("lets an agency session register and unregister a device for a business it manages", async () => {
+    const be = fakeBackend({ tokens: [APP] });
+    globalThis.fetch = be.fetchMock as any;
+    const deps = { isAllowedOrigin: allow, agencyOwnsTenant: async (_env: unknown, id: string) => id === "acme" };
+    const env = agencyEnv();
+    const registered = await push.handlePushTokenHttp(req("/api/push-token", { action: "register", session: "ag", tenantId: "acme", token: WEB, platform: "web" }), env, "https://schedi.app", deps);
+    expect(registered.status).toBe(200);
+    expect(await registered.json()).toMatchObject({ ok: true, registered: true });
+    expect(be.doc).toEqual({ tokens: [APP, WEB], webTokens: [WEB] });
+    const removed = await push.handlePushTokenHttp(req("/api/push-token", { action: "unregister", session: "ag", tenantId: "acme", token: WEB, platform: "web" }), env, "https://schedi.app", deps);
+    expect(await removed.json()).toMatchObject({ ok: true, registered: false });
+    expect(be.doc).toEqual({ tokens: [APP], webTokens: [] });
+  });
+
+  it("rejects an agency session for a business it does not manage, and when the check fails", async () => {
+    const be = fakeBackend({ tokens: [WEB], webTokens: [WEB] });
+    globalThis.fetch = be.fetchMock as any;
+    const env = agencyEnv();
+    const other = await push.handlePushTokenHttp(req("/api/push-token", { action: "register", session: "ag", tenantId: "other", token: WEB2, platform: "web" }), env, "https://schedi.app", { isAllowedOrigin: allow, agencyOwnsTenant: async (_env: unknown, id: string) => id === "acme" });
+    expect(other.status).toBe(403);
+    expect(await other.json()).toMatchObject({ ok: false, error: "forbidden" });
+    const blown = await push.handlePushTokenHttp(req("/api/push-token", { action: "unregister", session: "ag", tenantId: "acme", token: WEB }), env, "https://schedi.app", { isAllowedOrigin: allow, agencyOwnsTenant: async () => { throw new Error("read_failed"); } });
+    expect(blown.status).toBe(403);
+    expect(be.doc).toEqual({ tokens: [WEB], webTokens: [WEB] });
+    expect(be.fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("reads the private tenant doc when the route does not pass its own check", async () => {
+    const seen: string[] = [];
+    globalThis.fetch = vi.fn(async (url: string, init?: RequestInit) => {
+      seen.push(String(url));
+      if (String(url).includes("/private/data/tenants/acme")) {
+        return new Response(JSON.stringify({ fields: { tenantId: { stringValue: "acme" } } }), { status: 200 });
+      }
+      if (String(url).includes("/private/data/tenants/other")) return new Response("{}", { status: 404 });
+      if (String(url).includes("/pushTokens/")) {
+        if (!init || !init.method || init.method === "GET") return new Response("{}", { status: 404 });
+        return new Response("{}", { status: 200 });
+      }
+      throw new Error("unexpected fetch " + url);
+    }) as any;
+    const env = agencyEnv();
+    const ok = await push.handlePushTokenHttp(req("/api/push-token", { action: "register", session: "ag", tenantId: "acme", token: WEB, platform: "web" }), env, "https://schedi.app", { isAllowedOrigin: allow });
+    expect(ok.status).toBe(200);
+    expect(seen.some((url) => url.includes("/private/data/tenants/acme"))).toBe(true);
+    const missing = await push.handlePushTokenHttp(req("/api/push-token", { action: "register", session: "ag", tenantId: "other", token: WEB, platform: "web" }), env, "https://schedi.app", { isAllowedOrigin: allow });
+    expect(missing.status).toBe(403);
+    const none = await push.handlePushTokenHttp(req("/api/push-token", { session: "nope", tenantId: "acme", token: WEB }), env, "https://schedi.app", { isAllowedOrigin: allow });
+    expect(none.status).toBe(401);
+    const stranger = await push.handlePushTokenHttp(req("/api/push-token", { session: "s1", tenantId: "other", token: WEB }), env, "https://schedi.app", { isAllowedOrigin: allow });
+    expect(stranger.status).toBe(403);
+  });
 });
 
 describe("POST /api/push-test", () => {
@@ -200,6 +264,22 @@ describe("POST /api/push-test", () => {
     globalThis.fetch = fakeBackend({ tokens: [WEB], webTokens: [WEB] }).fetchMock as any;
     const res = await push.handlePushTestHttp(req("/api/push-test", { session: "s1", tenantId: "other", token: WEB }), ownerEnv(), "https://schedi.app", deps);
     expect(res.status).toBe(403);
+  });
+  it("sends a test for an agency session that manages the business, and refuses the rest", async () => {
+    const be = fakeBackend({ tokens: [WEB], webTokens: [WEB] });
+    globalThis.fetch = be.fetchMock as any;
+    const env = agencyEnv();
+    const managed = { ...deps, agencyOwnsTenant: async (_env: unknown, id: string) => id === "acme" };
+    const ok = await push.handlePushTestHttp(req("/api/push-test", { session: "ag", tenantId: "acme", token: WEB }), env, "https://schedi.app", managed);
+    expect(ok.status).toBe(200);
+    expect(be.sent.map((s) => s.token)).toEqual([WEB]);
+    const other = await push.handlePushTestHttp(req("/api/push-test", { session: "ag", tenantId: "other", token: WEB }), env, "https://schedi.app", managed);
+    expect(other.status).toBe(403);
+    const none = await push.handlePushTestHttp(req("/api/push-test", { session: "nope", tenantId: "acme", token: WEB }), env, "https://schedi.app", managed);
+    expect(none.status).toBe(401);
+    const stranger = await push.handlePushTestHttp(req("/api/push-test", { session: "s1", tenantId: "other", token: WEB }), env, "https://schedi.app", managed);
+    expect(stranger.status).toBe(403);
+    expect(be.sent).toHaveLength(1);
   });
 });
 

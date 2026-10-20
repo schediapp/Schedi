@@ -9,7 +9,7 @@
  */
 import { adminAccessToken, adminAuthHeaders } from './firebase-admin.js';
 import { readSession } from './owner-auth.js';
-import { privateTenantsUrl, decodeDoc, encodeValue } from './tenant-private.js';
+import { privateTenantsUrl, decodeDoc, encodeValue, getPrivateTenant } from './tenant-private.js';
 
 const MAX_TOKENS = 20;
 const PORTAL_URL = 'https://schedi.app/login';
@@ -76,7 +76,21 @@ function cors(origin, isAllowedOrigin) {
   return h;
 }
 
-/** Shared request parsing + owner check for /api/push-token and /api/push-test. */
+/**
+ * Agency HQ may register alerts only for a business it manages.
+ * That is a private tenant doc (the same list POST /api/profile action "private" returns).
+ * deps.agencyOwnsTenant overrides the lookup in tests. Anything else, including a thrown read, is refused.
+ */
+async function agencyMayManage(env, tenantId, deps) {
+  const owns = deps && typeof deps.agencyOwnsTenant === 'function'
+    ? deps.agencyOwnsTenant
+    : async (env2, id) => {
+      try { return !!(await getPrivateTenant(env2, id)); } catch (_) { return false; }
+    };
+  try { return (await owns(env, tenantId)) === true; } catch (_) { return false; }
+}
+
+/** Shared request parsing + session check for /api/push-token and /api/push-test. */
 async function readOwnerTokenRequest(request, env, origin, deps) {
   const ok = deps.isAllowedOrigin;
   const out = (body, status) => new Response(JSON.stringify(body), { status, headers: Object.assign({ 'Content-Type': 'application/json' }, cors(origin, ok)) });
@@ -91,7 +105,13 @@ async function readOwnerTokenRequest(request, env, origin, deps) {
   if (!/^[A-Za-z0-9_:\-.]{20,4096}$/.test(token)) return { res: out({ ok: false, error: 'invalid_token' }, 400) };
   const session = await readSession(env, body.session);
   if (!session) return { res: out({ ok: false, error: 'session_required' }, 401) };
-  if (!(session.role === 'agency' || (session.role === 'owner' && session.tenantId === tenantId))) return { res: out({ ok: false, error: 'forbidden' }, 403) };
+  if (session.role === 'owner') {
+    if (session.tenantId !== tenantId) return { res: out({ ok: false, error: 'forbidden' }, 403) };
+  } else if (session.role === 'agency') {
+    if (!(await agencyMayManage(env, tenantId, deps))) return { res: out({ ok: false, error: 'forbidden' }, 403) };
+  } else {
+    return { res: out({ ok: false, error: 'forbidden' }, 403) };
+  }
   return { out, body, tenantId, token, session };
 }
 
@@ -116,7 +136,8 @@ export async function handlePushTokenHttp(request, env, origin, deps) {
 
 /**
  * POST /api/push-test {session, tenantId, token}
- * Owner only. Sends one test alert to this device's token, and only if that token is already
+ * Owner of that business, or an agency session for a business it manages.
+ * Sends one test alert to this device's token, and only if that token is already
  * registered for the business. One test per business per minute.
  */
 export async function handlePushTestHttp(request, env, origin, deps) {

@@ -31568,12 +31568,35 @@ ${schediWebAnalytics}
     // Public key from Firebase console > Project settings > Cloud Messaging > Web Push certificates.
     // Empty uses Firebase's built-in key, which works with the same FCM project.
     function vapidKey() { return String(window.SCHEDI_WEB_PUSH_VAPID_KEY || ''); }
+    // Owner of this business, or HQ signed in through "Log in to portal" for the business being managed.
+    // The agency session has no tenant of its own. The managed id is the portal link, then the id HQ stored, then the open portal.
     function owner() {
         try {
             var session = localStorage.getItem('schedi.authSession') || '';
             var meta = JSON.parse(localStorage.getItem('schedi.authMeta') || 'null') || {};
-            if (!session || meta.role !== 'owner' || !meta.tenantId) return null;
-            return { session: session, tenantId: String(meta.tenantId) };
+            if (!session) return null;
+            if (meta.role === 'owner') {
+                if (!meta.tenantId) return null;
+                return { session: session, tenantId: String(meta.tenantId) };
+            }
+            if (meta.role !== 'agency') return null;
+            var tenantId = '';
+            try {
+                var params = new URLSearchParams(location.search || '');
+                if (params.get('from') === 'hq') tenantId = String(params.get('tenant') || '').trim();
+            } catch (eUrl) { tenantId = ''; }
+            if (!/^[A-Za-z0-9_-]{1,80}$/.test(tenantId)) {
+                try { tenantId = String(sessionStorage.getItem('schedi.hqManagedTenantId') || '').trim(); } catch (eStore) { tenantId = ''; }
+            }
+            if (!/^[A-Za-z0-9_-]{1,80}$/.test(tenantId)) {
+                try {
+                    if (typeof platformState !== 'undefined' && platformState && platformState.isAgencyMasterLoggedIn && platformState.isTenantOwnerLoggedIn && !platformState.ownerSelfSession) {
+                        tenantId = String(platformState.activeTenantId || '').trim();
+                    }
+                } catch (ePs) { tenantId = ''; }
+            }
+            if (!/^[A-Za-z0-9_-]{1,80}$/.test(tenantId)) return null;
+            return { session: session, tenantId: tenantId };
         } catch (e) { return null; }
     }
     function saved() { try { return JSON.parse(localStorage.getItem(STORE) || 'null'); } catch (e) { return null; } }
@@ -31726,7 +31749,7 @@ ${schediWebAnalytics}
         }).then(function (token) {
             if (!token) throw new Error('no_token');
             return post('/api/push-token', { action: 'register', platform: 'web', session: o.session, tenantId: o.tenantId, token: token }).then(function (d) {
-                if (!d.ok) throw new Error(d.status === 401 ? 'session' : 'save');
+                if (!d.ok) throw new Error(d.status === 401 ? 'session' : d.status === 403 ? 'forbidden' : 'save');
                 var prev = saved();
                 if (prev && prev.token && prev.token !== token && prev.tenantId) {
                     post('/api/push-token', { action: 'unregister', platform: 'web', session: o.session, tenantId: prev.tenantId, token: prev.token }).catch(function () {});
@@ -31740,6 +31763,7 @@ ${schediWebAnalytics}
             if (m === 'blocked') showToast('Your browser blocked alerts. See the tip under Booking alerts.', 'error');
             else if (m === 'dismissed') showToast('Alerts are still off. Turn them on whenever you\u2019re ready.', 'info');
             else if (m === 'session') showToast('Please sign in again, then turn on alerts.', 'error');
+            else if (m === 'forbidden') showToast('Booking alerts aren\u2019t available for this business on this sign-in.', 'error');
             else if (m === 'unsupported') showToast('This browser can\u2019t show booking alerts.', 'error');
             else showToast('We couldn\u2019t turn on alerts in this browser. Please try again.', 'error');
         }).then(function () { busy = false; render(); });
@@ -31772,6 +31796,7 @@ ${schediWebAnalytics}
             else if (d.status === 429) showToast('A test alert was just sent. Try again in a minute.', 'info');
             else if (d.error === 'not_registered' || d.error === 'token_expired') { setSaved(null); showToast('Alerts turned off on this device. Turn them on again to keep getting them.', 'info'); }
             else if (d.status === 401) showToast('Please sign in again, then send a test.', 'error');
+            else if (d.status === 403) showToast('Booking alerts aren\u2019t available for this business on this sign-in.', 'error');
             else showToast('We couldn\u2019t send a test alert right now. Please try again soon.', 'error');
         }).catch(function () {
             showToast('We couldn\u2019t send a test alert right now. Please try again soon.', 'error');
