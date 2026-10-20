@@ -7679,7 +7679,7 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
     <script type="module">
         if (!window.__SCHEDI_DEMO) {
         const { initializeApp } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js");
-        const { getAuth, signInAnonymously, signInWithCustomToken } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js");
+        const { initializeAuth, indexedDBLocalPersistence, browserLocalPersistence, browserSessionPersistence, signInAnonymously, signInWithCustomToken } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js");
         const { getFirestore, doc, getDoc, onSnapshot, collection } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
 
         // Safely parse injected configs to prevent [object Object] syntax crashes
@@ -7708,7 +7708,12 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
         } else {
             try {
                 const app = initializeApp(firebaseConfig);
-                const auth = getAuth(app);
+                // Same persistence chain as Firebase's default auth helper, without its
+                // popup/redirect resolver. That resolver loads https://apis.google.com/js/api.js
+                // on phones and Safari.
+                const auth = initializeAuth(app, {
+                    persistence: [indexedDBLocalPersistence, browserLocalPersistence, browserSessionPersistence]
+                });
                 const db = getFirestore(app);
 
                 window.db = db;
@@ -28136,7 +28141,7 @@ function schediQrCardPixels(text, color) {
     <script>var __firebase_config = ${configStr};<\/script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { initializeAuth, indexedDBLocalPersistence, browserLocalPersistence, browserSessionPersistence, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         let firebaseConfig = {};
@@ -28151,7 +28156,11 @@ function schediQrCardPixels(text, color) {
         if (firebaseConfig && firebaseConfig.apiKey) {
             try {
                 const app = initializeApp(firebaseConfig);
-                const auth = getAuth(app);
+                // Anonymous sign-in only. Skip the popup/redirect resolver so phones
+                // do not load https://apis.google.com/js/api.js under the page CSP.
+                const auth = initializeAuth(app, {
+                    persistence: [indexedDBLocalPersistence, browserLocalPersistence, browserSessionPersistence]
+                });
                 const db = getFirestore(app);
 
                 window.db = db;

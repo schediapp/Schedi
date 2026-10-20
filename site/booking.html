@@ -890,7 +890,7 @@
     <script>var __firebase_config = __SCHEDI_FIREBASE_CONFIG__;</script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { initializeAuth, indexedDBLocalPersistence, browserLocalPersistence, browserSessionPersistence, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         let firebaseConfig = {};
@@ -905,7 +905,11 @@
         if (firebaseConfig && firebaseConfig.apiKey) {
             try {
                 const app = initializeApp(firebaseConfig);
-                const auth = getAuth(app);
+                // Anonymous sign-in only. Skip the popup/redirect resolver so phones
+                // do not load https://apis.google.com/js/api.js under the page CSP.
+                const auth = initializeAuth(app, {
+                    persistence: [indexedDBLocalPersistence, browserLocalPersistence, browserSessionPersistence]
+                });
                 const db = getFirestore(app);
 
                 window.db = db;
