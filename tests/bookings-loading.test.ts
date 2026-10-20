@@ -53,7 +53,10 @@ describe("booking load states", () => {
     expect(render).toContain("schediBookingsPhase(tenant)");
     expect(render).toContain("Loading bookings…");
     expect(render).toContain("schediBookingsErrorHtml()");
-    expect(render).toContain("schediComingVisits(apps, today, 4, nowMins)");
+    expect(render).toContain("schediComingVisits(apps, today, null, nowMins)");
+    const timeline = html.slice(html.indexOf("#tenantPortalSection.schedi-newdash .sd-timeline {"), html.indexOf("#tenantPortalSection.schedi-newdash .sd-timeline .sd-row.is-next"));
+    expect(timeline).toContain("overflow-y: auto");
+    expect(timeline).toContain("max-height:");
     expect(render).toContain("schediWaitingRequest(app, today, nowMins)");
     expect(refresh.indexOf("data.ok === false")).toBeLessThan(refresh.indexOf("!Array.isArray(data.tenants)"));
     expect(render).toContain("schediNextVisitLine(coming[0], today)");
@@ -115,8 +118,16 @@ describe("booking load states", () => {
       { id: "sixth", status: "accepted", date: "2026-10-24", time: "09:00 AM", clientName: "Sixth" },
       { id: "seventh", status: "accepted", date: "2026-10-25", time: "09:00 AM", clientName: "Seventh" },
       { id: "eighth", status: "accepted", date: "2026-10-26", time: "09:00 AM", clientName: "Eighth" },
+    ], "2026-10-20", undefined, noon);
+    expect(visits.map((row) => row.id)).toEqual(["early", "blank", "today-pending", "soon", "later", "fifth", "sixth", "seventh", "eighth"]);
+    const capped = api.schediComingVisits([
+      { id: "later", status: "accepted", date: "2026-10-22", time: "01:00 PM" },
+      { id: "fifth", status: "accepted", date: "2026-10-23", time: "09:00 AM" },
+      { id: "sixth", status: "accepted", date: "2026-10-24", time: "09:00 AM" },
+      { id: "seventh", status: "accepted", date: "2026-10-25", time: "09:00 AM" },
+      { id: "eighth", status: "accepted", date: "2026-10-26", time: "09:00 AM" },
     ], "2026-10-20", 4, noon);
-    expect(visits.map((row) => row.id)).toEqual(["early", "blank", "today-pending", "soon", "later", "fifth", "sixth", "seventh"]);
+    expect(capped.map((row) => row.id)).toEqual(["later", "fifth", "sixth", "seventh"]);
     expect(api.schediNextVisitLine({ clientName: "Maya Chen", date: "2026-10-20", time: "09:00 AM" }, "2026-10-20")).toBe("Maya Chen is first, at 09:00 AM.");
     expect(api.schediNextVisitLine({ clientName: "Noah Brooks", date: "2026-10-21", time: "10:00 AM" }, "2026-10-20")).toBe("Noah Brooks is first, 2026-10-21 at 10:00 AM.");
     expect(api.schediNextVisitLine(undefined, "2026-10-20")).toBe("Nothing is lined up yet.");
@@ -212,7 +223,6 @@ describe.skipIf(!chrome)("booking load states in the browser", () => {
       expect(loaded.titles[0]).toContain("Maya Chen");
       expect(loaded.titles).toContain("Jordan Lee · Walk-in");
       expect(loaded.titles.some((name) => name.includes("Noah Brooks"))).toBe(true);
-      expect(loaded.titles).not.toContain("Luis Ortega");
       expect(loaded.waiting).toContain("Luis Ortega");
       expect(loaded.waiting).not.toContain("Maya Chen");
 

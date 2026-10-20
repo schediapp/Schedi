@@ -655,9 +655,14 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-hq-manage strong { col
     flex-direction: column;
     gap: 10px;
     margin: 0 0 0 4px;
-    padding: 0 0 0 14px;
+    padding: 0 4px 8px 14px;
     border-left: 2px solid rgba(16, 185, 129, 0.4);
     min-width: 0;
+    max-height: min(70vh, 720px);
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
 }
 #tenantPortalSection.schedi-newdash .sd-timeline .sd-row.is-next {
     box-shadow: inset 3px 0 0 var(--sd-brand), var(--sd-shadow);
@@ -1485,6 +1490,12 @@ html.schedi-light #tenantPortalSection.schedi-newdash #schediDashAddMenu button.
     #tenantPortalSection.schedi-newdash .sd-today-actions .sd-btn { justify-content: center; }
     #tenantPortalSection.schedi-newdash .sd-btn.sd-add-desktop { display: none; }
     #tenantPortalSection.schedi-newdash .sd-btn.sd-add-phone { display: flex; width: 100%; justify-content: center; margin: 0; }
+    body.schedi-newdash #toastContainer {
+        z-index: 80;
+        left: 12px;
+        right: 12px;
+        bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+    }
     #tenantPortalSection.schedi-newdash #schediDashTabbar {
         --sd-tab-slot: 0;
         display: grid;
@@ -15865,14 +15876,26 @@ function schediQrCardPixels(text, color) {
             var todayRows = (apps || []).filter(function (app) {
                 return !!(app && start && String(app.date || '') === start);
             }).sort(schediSortVisits);
-            var cap = limit == null ? 4 : Number(limit);
-            if (!isFinite(cap) || cap < 1) cap = 4;
             var later = (apps || []).filter(function (app) {
                 if (!app || schediWaitingRequest(app, start, nowMins)) return false;
                 var date = String(app.date || '');
                 return !!date && !!start && date > start;
-            }).sort(schediSortVisits).slice(0, cap);
+            }).sort(schediSortVisits);
+            // null means every upcoming visit. A positive limit is only for callers that still want a short list.
+            if (limit != null) {
+                var cap = Number(limit);
+                if (!isFinite(cap) || cap < 1) cap = 4;
+                later = later.slice(0, cap);
+            }
             return todayRows.concat(later);
+        }
+
+        function schediAcceptableRequest(app, tenant) {
+            var today = '';
+            try { today = rosterTodayIso(tenant); } catch (errToday) { today = ''; }
+            var nowMins = null;
+            try { nowMins = schediNowMinutes(tenant); } catch (errClock) { nowMins = null; }
+            return schediWaitingRequest(app, today, nowMins);
         }
 
         function schediNextVisitLine(app, today) {
@@ -15928,7 +15951,7 @@ function schediQrCardPixels(text, color) {
             try { nowMins = schediNowMinutes(tenant); } catch (errClock) { nowMins = null; }
             var apps = (tenant.appointments || []).filter(function (app) { return app && !appointmentIsCancelled(app) && String(app.status || '').toLowerCase() !== 'denied'; });
             var todayApps = apps.filter(function (app) { return app.date === today; }).sort(function (a, b) { return rosterApptSortKey(a) - rosterApptSortKey(b); });
-            var coming = schediComingVisits(apps, today, 4, nowMins);
+            var coming = schediComingVisits(apps, today, null, nowMins);
             var pending = apps.filter(function (app) { return schediWaitingRequest(app, today, nowMins); });
             var weekStart = '';
             try { weekStart = rosterWeekStart(today); } catch (errWeek) { weekStart = ''; }
@@ -26084,24 +26107,106 @@ function schediQrCardPixels(text, color) {
             return dispatchTenantMail(tenant, booking, buildDecisionEmail(tenant, booking, accepted), accepted ? 'booking_accepted' : 'booking_denied', { to: to });
         }
 
-        window.acceptAppointment = function(appId) {
-            const tenant = getTenant();
-            if (!tenant) return;
+        window.acceptAppointment = async function(appId) {
+            var tenant = null;
+            try { tenant = getTenant(); } catch (errTenant) { tenant = null; }
+            if (!tenant) {
+                showToast('Could not accept this request. Open your business and try again.', 'error');
+                return;
+            }
             if (normalizePlan(tenant) === 'free') {
                 showToast('Free bookings are already confirmed.', 'info');
                 return;
             }
-            const app = tenant.appointments.find(a => a.id === appId);
-            if (!app || String(app.status || '').toLowerCase() !== 'pending') return;
+            if (!Array.isArray(tenant.appointments)) {
+                showToast('Bookings are still loading, so this request was not accepted.', 'error');
+                return;
+            }
+            var app = tenant.appointments.find(function (a) { return a && String(a.id) === String(appId); });
+            if (!app || !schediAcceptableRequest(app, tenant)) {
+                showToast('That request is no longer waiting, so it was not accepted.', 'error');
+                return;
+            }
+            var hadStatus = Object.prototype.hasOwnProperty.call(app, 'status');
+            var previousStatus = hadStatus ? app.status : undefined;
+            var acceptedAt = new Date().toISOString();
+            function restoreRequest(target) {
+                if (!target) return;
+                if (hadStatus) target.status = previousStatus;
+                else delete target.status;
+                delete target.acceptedAt;
+            }
+            function paintAccepted(current) {
+                var shown = current || tenant;
+                try { if (window.renderSchediToday) window.renderSchediToday(shown); } catch (errToday) {}
+                try { renderTenantRoster(shown); } catch (errRoster) {}
+            }
             app.status = 'accepted';
-            app.acceptedAt = new Date().toISOString();
-            saveState();
-            renderTenantRoster(tenant);
+            app.acceptedAt = acceptedAt;
+            paintAccepted(tenant);
+            // Drop a bookings reload that started before this tap. It would paint the old pending row
+            // back over the acceptance.
+            try { schediBookingsTicket += 1; } catch (errTicketEarly) {}
+            var saved = null;
+            try {
+                saved = await saveState({ quietSyncErrors: true });
+            } catch (errSave) {
+                restoreRequest(app);
+                paintAccepted(tenant);
+                showToast('Could not save this acceptance. Check your connection and try again.', 'error');
+                return;
+            }
+            var row = saved && saved.appointments ? saved.appointments[tenant.id] : null;
+            if (row && row.skipped && row.reason === 'not_loaded') {
+                try { await refreshPrivateBookings(); } catch (errReload) {}
+                var reloaded = tenant;
+                try { reloaded = getTenant(tenant.id) || getTenant() || tenant; } catch (errReloaded) { reloaded = tenant; }
+                var again = reloaded && Array.isArray(reloaded.appointments)
+                    ? reloaded.appointments.find(function (a) { return a && String(a.id) === String(appId); })
+                    : null;
+                if (again && schediAcceptableRequest(again, reloaded)) {
+                    again.status = 'accepted';
+                    again.acceptedAt = acceptedAt;
+                    try { row = await pushPrivateAppointments(reloaded); } catch (errPush) { row = { ok: false, error: 'network' }; }
+                    if (row && row.ok) {
+                        tenant = reloaded;
+                        app = again;
+                    } else {
+                        restoreRequest(again);
+                    }
+                }
+            }
+            if (!row || row.ok !== true) {
+                restoreRequest(app);
+                var live = null;
+                try { live = getTenant(tenant.id) || getTenant(); } catch (errLive) { live = null; }
+                if (live && Array.isArray(live.appointments)) {
+                    var liveApp = live.appointments.find(function (a) { return a && String(a.id) === String(appId); });
+                    if (liveApp && liveApp.acceptedAt === acceptedAt) restoreRequest(liveApp);
+                }
+                paintAccepted(live || tenant);
+                if (row && row.skipped) showToast('Bookings are still loading, so this request was not accepted.', 'error');
+                else showToast(schediSyncFailMessage(row || { error: 'network' }, 'this acceptance'), 'error');
+                return;
+            }
+            try { schediBookingsTicket += 1; } catch (errTicket) {}
+            var current = tenant;
+            try { current = getTenant(tenant.id) || tenant; } catch (errCurrent) { current = tenant; }
+            if (current && Array.isArray(current.appointments)) {
+                var savedApp = current.appointments.find(function (a) { return a && String(a.id) === String(appId); });
+                if (savedApp) {
+                    savedApp.status = 'accepted';
+                    savedApp.acceptedAt = acceptedAt;
+                    app = savedApp;
+                    tenant = current;
+                }
+            }
+            paintAccepted(tenant);
             if (Number(app.depositAmount) > 0 && app.depositPaid !== true) {
                 showToast('Accepted #' + appId + '. Confirmation email waits until the card deposit is paid.', 'info');
                 return;
             }
-            sendBookingConfirmationEmail(tenant, app);
+            try { sendBookingConfirmationEmail(tenant, app); } catch (errMail) {}
             showToast('Accepted #' + appId + '. Confirmation email queued.', 'success');
         };
 

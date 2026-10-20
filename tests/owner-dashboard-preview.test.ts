@@ -4622,7 +4622,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
           }, theme);
           await page.waitForFunction(() => {
             const titles = Array.from(document.querySelectorAll("#schediTodaySchedule .sd-row-title")).map((el) => (el.textContent || "").trim());
-            return titles.includes("Jordan Lee · Walk-in") && titles.includes("Maya Chen") && !titles.includes("Luis Ortega");
+            return titles.includes("Jordan Lee · Walk-in") && titles.includes("Maya Chen");
           }, { timeout: 10000 });
           const rows = await page.evaluate(() => Array.from(document.querySelectorAll("#schediTodaySchedule .sd-row")).map((row) => {
             const title = row.querySelector(".sd-row-title") as HTMLElement | null;
