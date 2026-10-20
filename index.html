@@ -12460,16 +12460,45 @@ function schediQrCardPixels(text, color) {
             }).catch(function () { return null; });
         }
 
-        function schediQrLoadImage(url) {
+        function schediQrReleaseLogo(img) {
+            var objectUrl = img && img.__schediQrObjectUrl;
+            if (!objectUrl) return;
+            img.__schediQrObjectUrl = '';
+            try { URL.revokeObjectURL(objectUrl); } catch (errRevokeLogo) {}
+        }
+
+        function schediQrDecodeLogo(src, objectUrl) {
             return new Promise(function (resolve) {
-                var img;
-                if (!url) { resolve(null); return; }
-                img = new Image();
-                img.crossOrigin = 'anonymous';
-                img.onload = function () { resolve(img.naturalWidth ? img : null); };
-                img.onerror = function () { resolve(null); };
-                img.src = url;
+                var img = new Image();
+                img.onload = function () {
+                    if (!img.naturalWidth) {
+                        if (objectUrl) { try { URL.revokeObjectURL(objectUrl); } catch (errDropLogo) {} }
+                        resolve(null);
+                        return;
+                    }
+                    if (objectUrl) img.__schediQrObjectUrl = objectUrl;
+                    resolve(img);
+                };
+                img.onerror = function () {
+                    if (objectUrl) { try { URL.revokeObjectURL(objectUrl); } catch (errDropLogo) {} }
+                    resolve(null);
+                };
+                img.src = src;
             });
+        }
+
+        function schediQrLoadImage(url) {
+            if (!url) return Promise.resolve(null);
+            if (String(url).indexOf('data:image/') === 0) return schediQrDecodeLogo(url, '');
+            return fetch(url).then(function (res) {
+                if (!res.ok) throw new Error('logo');
+                return res.blob();
+            }).then(function (blob) {
+                var objectUrl;
+                if (!blob) throw new Error('logo');
+                objectUrl = URL.createObjectURL(blob);
+                return schediQrDecodeLogo(objectUrl, objectUrl);
+            }).catch(function () { return null; });
         }
 
         function schediQrFitFont(text, weight, start, limit) {
@@ -12726,6 +12755,79 @@ function schediQrCardPixels(text, color) {
             if (preview) preview.hidden = true;
         };
 
+        function schediQrCanvasBlob(canvas) {
+            return new Promise(function (resolve) {
+                try {
+                    canvas.toBlob(function (blob) { resolve(blob || null); }, 'image/png');
+                } catch (errBlob) { resolve(null); }
+            });
+        }
+
+        function schediQrPaintExport(canvas, opts) {
+            var logo = opts.logo;
+            var ok = schediQrDrawCard(canvas, opts);
+            schediQrReleaseLogo(logo);
+            if (!ok) return Promise.resolve(false);
+            return schediQrCanvasBlob(canvas).then(function (blob) {
+                var fresh;
+                if (blob || !logo) return blob;
+                fresh = document.createElement('canvas');
+                opts.logo = null;
+                if (!schediQrDrawCard(fresh, opts)) return null;
+                return schediQrCanvasBlob(fresh);
+            });
+        }
+
+        function schediQrSharePayload(file) {
+            var withTitle = { files: [file], title: 'Booking QR code' };
+            var filesOnly = { files: [file] };
+            try { if (navigator.canShare(withTitle)) return withTitle; } catch (errTitle) {}
+            try { if (navigator.canShare(filesOnly)) return filesOnly; } catch (errFiles) {}
+            return null;
+        }
+
+        function schediQrDownloadBlob(blob) {
+            var href = '';
+            var link;
+            if (!blob) return 'failed';
+            try {
+                href = URL.createObjectURL(blob);
+                link = document.createElement('a');
+                link.href = href;
+                link.download = 'booking-qr.png';
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                setTimeout(function () { try { URL.revokeObjectURL(href); } catch (errDrop) {} }, 1500);
+                return 'downloaded';
+            } catch (errDl) {
+                return 'failed';
+            }
+        }
+
+        function schediQrDeliverFile(blob) {
+            var file = null;
+            var payload = null;
+            var type = 'image/png';
+            if (!blob) return Promise.resolve('failed');
+            if (blob.type && String(blob.type).indexOf('image/') === 0) type = blob.type;
+            try { file = new File([blob], 'booking-qr.png', { type: type }); } catch (errFile) { file = null; }
+            if (file && schediIsMobileHomeScreenTarget() && typeof navigator.share === 'function' && typeof navigator.canShare === 'function') {
+                payload = schediQrSharePayload(file);
+            }
+            if (payload) {
+                return navigator.share(payload).then(function () { return 'shared'; }).catch(function (errShare) {
+                    if (errShare && errShare.name === 'AbortError') return 'aborted';
+                    return schediQrDownloadBlob(blob);
+                });
+            }
+            return Promise.resolve(schediQrDownloadBlob(blob));
+        }
+
+        function schediQrFileKept(delivered) {
+            return delivered === 'shared' || delivered === 'downloaded';
+        }
+
         window.schediQrGenerate = function () {
             var tenant = typeof getTenant === 'function' ? getTenant() : null;
             var slug = tenant ? getTenantPublicBookingSlug(tenant) : '';
@@ -12737,7 +12839,7 @@ function schediQrCardPixels(text, color) {
                 return;
             }
             Promise.all([schediQrFonts(), schediQrLoadImage(schediQrLogoUrl(tenant))]).then(function (ready) {
-                var ok = schediQrDrawCard(canvas, {
+                return schediQrPaintExport(canvas, {
                     url: url,
                     name: name,
                     subtitle: schediQrSubtitle(tenant),
@@ -12746,29 +12848,47 @@ function schediQrCardPixels(text, color) {
                     initials: name ? schediDashInitials(name) : '',
                     caption: 'schedi.app/' + slug
                 });
-                if (!ok) {
+            }).then(function (blob) {
+                if (blob === false) {
                     showToast('That booking link is too long to draw here. Upload a QR image instead.', 'error');
                     return;
                 }
-                canvas.toBlob(function (blob) {
-                    if (!blob) {
-                        showToast('Could not draw that QR code.', 'error');
-                        return;
-                    }
-                    if (blob.size > 2 * 1024 * 1024) {
-                        showToast('That file is over 2 MB. Use a smaller QR image.', 'error');
-                        return;
-                    }
-                    schediQrRevoke();
-                    schediQrBlobUrl = URL.createObjectURL(blob);
-                    schediQrPending = { blob: blob, type: 'image/png' };
-                    schediQrShowFilled(schediQrBlobUrl, false);
-                    if (window.__SCHEDI_DEMO) showToast('Not saved in this demo. The preview stays on this screen only.', 'info');
-                }, 'image/png');
+                if (!blob) {
+                    showToast('Could not draw that QR code.', 'error');
+                    return;
+                }
+                if (blob.size > 2 * 1024 * 1024) {
+                    showToast('That file is over 2 MB. Use a smaller QR image.', 'error');
+                    return;
+                }
+                schediQrRevoke();
+                schediQrBlobUrl = URL.createObjectURL(blob);
+                schediQrPending = { blob: blob, type: 'image/png' };
+                schediQrShowFilled(schediQrBlobUrl, false);
+                if (window.__SCHEDI_DEMO) showToast('Not saved in this demo. The preview stays on this screen only.', 'info');
             }).catch(function () {
                 showToast('Could not draw that QR code.', 'error');
             });
         };
+
+        function schediManagedTenantId(tenant) {
+            var meta = null;
+            var agency = false;
+            var id = '';
+            try {
+                if (typeof schediAuthMeta === 'function') meta = schediAuthMeta();
+            } catch (errMeta) { meta = null; }
+            if (meta && meta.role === 'agency') agency = true;
+            try {
+                if (!agency && platformState && platformState.isAgencyMasterLoggedIn && !platformState.ownerSelfSession) agency = true;
+            } catch (errAgency) {}
+            if (!agency) return '';
+            id = tenant && tenant.id ? String(tenant.id) : '';
+            if (!id) {
+                try { if (platformState && platformState.activeTenantId) id = String(platformState.activeTenantId); } catch (errId) { id = ''; }
+            }
+            return id;
+        }
 
         window.schediQrSave = async function () {
             var tenant;
@@ -12777,33 +12897,50 @@ function schediQrCardPixels(text, color) {
             var res;
             var body;
             var url = '';
+            var delivered = 'failed';
+            var kept = false;
+            var payload;
             if (!schediQrPending) return;
             if (window.__SCHEDI_DEMO) {
                 showToast('Not saved in this demo. The preview stays on this screen only.', 'info');
                 return;
             }
+            try { delivered = await schediQrDeliverFile(schediQrPending.blob); } catch (errDeliver) { delivered = 'failed'; }
+            kept = schediQrFileKept(delivered);
             tenant = typeof getTenant === 'function' ? getTenant() : null;
-            try { session = localStorage.getItem('schedi.authSession') || ''; } catch (errSession) { session = ''; }
+            try {
+                session = typeof schediAuthSession === 'function' ? schediAuthSession() : '';
+                if (!session) session = localStorage.getItem('schedi.authSession') || '';
+            } catch (errSession) { session = ''; }
             try { data = await blobToBase64(schediQrPending.blob); } catch (errRead) { data = ''; }
             if (!tenant || !data) {
-                showToast('Could not read that QR code. Try another file.', 'error');
+                if (kept) showToast('QR code saved on this device.', 'success');
+                else showToast('Could not read that QR code. Try another file.', 'error');
                 return;
             }
             try {
+                payload = { session: session, data: data, contentType: schediQrPending.type, purpose: 'qr' };
+                if (schediManagedTenantId(tenant)) payload.tenantId = schediManagedTenantId(tenant);
                 res = await fetch('/api/business-logo', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ session: session, data: data, contentType: schediQrPending.type, purpose: 'qr' })
+                    body: JSON.stringify(payload)
                 });
                 body = {};
                 try { body = await res.json(); } catch (errJson) { body = {}; }
+                if (body && body.error === 'session_expired') {
+                    showToast('Please sign in again to upload', 'error');
+                    return;
+                }
                 if (body.error === 'logo_storage_unconfigured' || res.status === 503) {
-                    showToast('QR upload is not turned on yet. The preview stays on this screen only.', 'info');
+                    if (kept) showToast('QR code saved on this device.', 'success');
+                    else showToast('QR upload is not turned on yet. The preview stays on this screen only.', 'info');
                     return;
                 }
                 url = safeHttpsUrl(body.url);
                 if (!res.ok || !body.ok || !url) {
-                    showToast('Could not save that QR code. The preview stays on this screen only.', 'error');
+                    if (kept) showToast('QR code saved on this device.', 'success');
+                    else showToast('Could not save that QR code. The preview stays on this screen only.', 'error');
                     return;
                 }
                 tenant.qrUrl = url;
@@ -12812,33 +12949,49 @@ function schediQrCardPixels(text, color) {
                 schediQrShowFilled(url, true);
                 showToast('QR code saved.', 'success');
             } catch (errNet) {
-                showToast('Could not save that QR code. The preview stays on this screen only.', 'error');
+                if (kept) showToast('QR code saved on this device.', 'success');
+                else showToast('Could not save that QR code. The preview stays on this screen only.', 'error');
             }
         };
 
         window.schediQrDownload = async function () {
             var img = document.getElementById('schediQrImage');
             var src = img && img.src ? img.src : '';
-            var res;
-            var blob;
-            var href;
+            var blob = schediQrPending && schediQrPending.blob ? schediQrPending.blob : null;
+            var result = '';
+            if (!blob && src.indexOf('https://') === 0) {
+                try {
+                    var res = await fetch(src);
+                    if (res.ok) blob = await res.blob();
+                } catch (errFetch) { blob = null; }
+            }
+            if (blob) {
+                try { result = await schediQrDeliverFile(blob); } catch (errDeliver) { result = 'failed'; }
+                if (result === 'shared' || result === 'downloaded' || result === 'aborted') return;
+            }
+            if (src.indexOf('blob:') === 0 || src.indexOf('data:') === 0) {
+                if (blob && schediQrDownloadBlob(blob) === 'downloaded') return;
+                result = schediQrDownloadHref(src);
+                if (result === 'downloaded') return;
+            }
+            if (src) window.open(src, '_blank', 'noopener');
+        };
+
+        function schediQrDownloadHref(src) {
             var link;
-            if (!src) return;
+            if (!src) return 'failed';
             try {
-                res = await fetch(src);
-                blob = await res.blob();
-                href = URL.createObjectURL(blob);
                 link = document.createElement('a');
-                link.href = href;
+                link.href = src;
                 link.download = 'booking-qr.png';
                 document.body.appendChild(link);
                 link.click();
                 link.remove();
-                setTimeout(function () { try { URL.revokeObjectURL(href); } catch (errDrop) {} }, 1500);
-            } catch (errDl) {
-                window.open(src, '_blank', 'noopener');
+                return 'downloaded';
+            } catch (errHref) {
+                return 'failed';
             }
-        };
+        }
 
         window.schediQrPrint = function () {
             var img = document.getElementById('schediQrImage');
@@ -19713,6 +19866,7 @@ function schediQrCardPixels(text, color) {
             if (error === 'too_large') return 'That file is over 2 MB. Use a smaller logo, or paste a link.';
             if (error === 'bad_type') return 'Use a PNG, JPG, WebP, or SVG file.';
             if (error === 'svg_rejected') return 'That SVG cannot be used. Export a PNG, or paste a link.';
+            if (error === 'session_expired') return 'Please sign in again to upload';
             if (error === 'session_required') return 'Sign in again, then upload the logo.';
             if (error === 'logo_storage_unconfigured') return 'Logo upload is not turned on yet. Paste a link instead.';
             if (error === 'demo') return 'This demo shows your logo here only. Nothing is saved.';
@@ -19852,6 +20006,7 @@ function schediQrCardPixels(text, color) {
             if (error === 'too_large') return 'That file is over 2 MB. Use a smaller image.';
             if (error === 'bad_type') return 'Use a PNG, JPG, WebP, or SVG file.';
             if (error === 'svg_rejected') return 'That SVG cannot be used. Export a PNG instead.';
+            if (error === 'session_expired') return 'Please sign in again to upload';
             if (error === 'session_required') return 'Sign in again, then upload the image.';
             if (error === 'logo_storage_unconfigured') return 'Image upload is not turned on yet. The icon above still shows.';
             if (error === 'demo') return 'This demo shows the image here only. Nothing is uploaded.';
@@ -19905,7 +20060,10 @@ function schediQrCardPixels(text, color) {
             }
             var tenant = getTenant();
             var session = '';
-            try { session = localStorage.getItem('schedi.authSession') || ''; } catch (errSession) { session = ''; }
+            try {
+                session = typeof schediAuthSession === 'function' ? schediAuthSession() : '';
+                if (!session) session = localStorage.getItem('schedi.authSession') || '';
+            } catch (errSession) { session = ''; }
             var data = '';
             try { data = await blobToBase64(blob); } catch (errRead) { data = ''; }
             if (!tenant || !data) {
@@ -19916,6 +20074,7 @@ function schediQrCardPixels(text, color) {
             }
             var payload = { session: session, data: data, contentType: contentType };
             if (serviceTarget) payload.serviceId = String(serviceTarget.serviceId);
+            if (schediManagedTenantId(tenant)) payload.tenantId = schediManagedTenantId(tenant);
             try {
                 var res = await fetch('/api/business-logo', {
                     method: 'POST',
@@ -19997,13 +20156,19 @@ function schediQrCardPixels(text, color) {
             }
             var tenant = getTenant();
             var session = '';
-            try { session = localStorage.getItem('schedi.authSession') || ''; } catch (errSession) { session = ''; }
+            var removeBody;
+            try {
+                session = typeof schediAuthSession === 'function' ? schediAuthSession() : '';
+                if (!session) session = localStorage.getItem('schedi.authSession') || '';
+            } catch (errSession) { session = ''; }
             if (tenant) {
                 try {
+                    removeBody = { session: session, remove: true };
+                    if (schediManagedTenantId(tenant)) removeBody.tenantId = schediManagedTenantId(tenant);
                     var res = await fetch('/api/business-logo', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ session: session, remove: true })
+                        body: JSON.stringify(removeBody)
                     });
                     var body = {};
                     try { body = await res.json(); } catch (errJson) { body = {}; }
@@ -20166,7 +20331,7 @@ function schediQrCardPixels(text, color) {
         function showLogoUploadFailure(error) {
             var code = String(error || '');
             var text = logoUploadMessage(code);
-            if (code && text.indexOf(code) < 0) text += ' (' + code + ')';
+            if (code && code !== 'session_expired' && text.indexOf(code) < 0) text += ' (' + code + ')';
             refreshLogoPreview();
             setLogoNote(text, true);
             setLogoActionVisible('logoUploadSave', true);

@@ -21,7 +21,7 @@
  * SMS confirm dedup: bookingReminders.smsConfirmSentAt (same doc)
  */
 
-import { handleAuthRequest, saveOwnerSecret, authReady, readSession, passwordMatches } from './owner-auth.js';
+import { handleAuthRequest, saveOwnerSecret, authReady, readSession, readLogoWriteSession, passwordMatches } from './owner-auth.js';
 import { runUnpaidDigest } from './unpaid-digest.js';
 import { runDepositFollowups, runSignupReminders, isAwaitingDeposit, signupAwaitingCheckout } from './flow-gaps.js';
 import { resolveOwnerNotifyAddress } from './owner-notify.js';
@@ -3032,7 +3032,15 @@ export default {
         if (origin && !isAllowedOrigin(origin)) return new Response(null, { status: 403 });
         return new Response(null, { status: 204, headers: corsHeaders(origin) });
       }
-      return handleLogoUpload(request, env, origin, { json, isAllowedOrigin, readSession });
+      return handleLogoUpload(request, env, origin, {
+        json,
+        isAllowedOrigin,
+        readSession: readLogoWriteSession,
+        // Same businesses the agency private-profile action returns as data.tenants.
+        agencyOwnsTenant: async (env2, tenantId) => {
+          try { return !!(await getPrivateTenant(env2, tenantId)); } catch (_) { return false; }
+        },
+      });
     }
     if (path === '/api/webhooks/square' || path === '/api/square/callback' || path === '/api/square/checkout' || path === '/api/square/confirm' || path === '/api/square/connect' || path === '/api/square/status' || path === '/api/square/location' || path === '/api/square/disconnect' || path === '/api/square/refund') {
       return handleSquareHttp(request, env, origin, path, {

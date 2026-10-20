@@ -8,9 +8,12 @@ export interface OwnerSession {
   tenantId?: string;
   email?: string;
   exp?: number;
+  /** Set only for a stored owner session whose exp has passed. Other readers treat that as signed out. */
+  expired?: boolean;
 }
 
-export async function readOwnerSession(kv: AgencyKv | undefined, token: string): Promise<OwnerSession | null> {
+/** Session for a logo write. An expired owner session is returned with expired: true so the page can ask them to sign in. */
+export async function readLogoWriteSession(kv: AgencyKv | undefined, token: string): Promise<OwnerSession | null> {
   const value = String(token || "").trim();
   if (!kv || !value) return null;
   let raw: string | null = null;
@@ -26,7 +29,11 @@ export async function readOwnerSession(kv: AgencyKv | undefined, token: string):
   } catch {
     return null;
   }
-  if (!session || Number(session.exp || 0) < Date.now()) return null;
+  if (!session) return null;
+  if (Number(session.exp || 0) < Date.now()) {
+    if (session.role === "owner") return { role: "owner", tenantId: session.tenantId, expired: true };
+    return null;
+  }
   if (session.role === "owner" && session.tenantId) {
     let notBefore = 0;
     try {
@@ -37,5 +44,11 @@ export async function readOwnerSession(kv: AgencyKv | undefined, token: string):
     const createdAt = Number(session.exp || 0) - 12 * 60 * 60 * 1000;
     if (notBefore && createdAt < notBefore) return null;
   }
+  return session;
+}
+
+export async function readOwnerSession(kv: AgencyKv | undefined, token: string): Promise<OwnerSession | null> {
+  const session = await readLogoWriteSession(kv, token);
+  if (!session || session.expired) return null;
   return session;
 }

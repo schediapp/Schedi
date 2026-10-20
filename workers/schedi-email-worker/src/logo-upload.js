@@ -67,6 +67,27 @@ function safeTenantId(value) {
   return id;
 }
 
+// Agency HQ manages the businesses in artifacts/{app}/public/data/tenants.
+// schedi-web can read that directory without the Firebase admin secret.
+// A listed business is a document that exists there. Anything else is refused.
+export async function agencyListedTenant(env, tenantId) {
+  const id = safeTenantId(tenantId);
+  const projectId = String((env && env.FIREBASE_PROJECT_ID) || '').trim();
+  const appId = String((env && env.FIREBASE_APP_ID) || projectId).trim();
+  if (!id || !/^[a-z0-9-]+$/i.test(projectId) || !/^[a-z0-9-]+$/i.test(appId)) return false;
+  const url = 'https://firestore.googleapis.com/v1/projects/' + projectId
+    + '/databases/(default)/documents/artifacts/' + appId
+    + '/public/data/tenants/' + encodeURIComponent(id)
+    + '?mask.fieldPaths=name';
+  try {
+    const res = await fetch(url);
+    try { await res.arrayBuffer(); } catch (_) {}
+    return res.ok === true;
+  } catch (_) {
+    return false;
+  }
+}
+
 function safeServiceId(value) {
   if (value == null || String(value).trim() === '') return '';
   const id = String(value).trim();
@@ -196,9 +217,24 @@ export async function handleLogoUpload(request, env, origin, deps) {
   let body = {};
   try { body = await request.json(); } catch (_) { body = {}; }
   const session = await readSession(env, body && body.session);
-  if (!session || session.role !== 'owner') return respond({ ok: false, error: 'session_required' }, 401, origin);
-  const tenantId = safeTenantId(session.tenantId);
-  if (!tenantId) return respond({ ok: false, error: 'session_required' }, 401, origin);
+  if (session && session.expired === true && session.role === 'owner') {
+    return respond({ ok: false, error: 'session_expired' }, 401, origin);
+  }
+  if (!session || (session.role !== 'owner' && session.role !== 'agency')) {
+    return respond({ ok: false, error: 'session_required' }, 401, origin);
+  }
+  let tenantId = '';
+  if (session.role === 'owner') {
+    tenantId = safeTenantId(session.tenantId);
+    if (!tenantId) return respond({ ok: false, error: 'session_required' }, 401, origin);
+  } else {
+    tenantId = safeTenantId(body && body.tenantId);
+    if (!tenantId) return respond({ ok: false, error: 'session_required' }, 401, origin);
+    const owns = deps && typeof deps.agencyOwnsTenant === 'function' ? deps.agencyOwnsTenant : agencyListedTenant;
+    let listed = false;
+    try { listed = (await owns(env, tenantId)) === true; } catch (_) { listed = false; }
+    if (!listed) return respond({ ok: false, error: 'forbidden' }, 403, origin);
+  }
   const bucket = logoBucket(env);
   if (!bucket) return respond({ ok: false, error: 'logo_storage_unconfigured' }, 503, origin);
   if (request.method === 'DELETE' || (body && body.remove === true)) {

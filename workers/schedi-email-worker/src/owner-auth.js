@@ -158,17 +158,27 @@ async function createSession(env, payload) {
   return { token: token, expiresAt: exp };
 }
 
-async function readSession(env, token) {
+async function readLogoWriteSession(env, token) {
   const value = String(token || '').trim();
-  if (!value) return null;
+  if (!value || !env || !env.AUTH_KV) return null;
   const session = await readJson(env.AUTH_KV, 'session:' + value);
-  if (!session || Number(session.exp || 0) < Date.now()) return null;
+  if (!session) return null;
+  if (Number(session.exp || 0) < Date.now()) {
+    if (session.role === 'owner') return { role: 'owner', tenantId: session.tenantId, expired: true };
+    return null;
+  }
   if (session.role === 'owner' && session.tenantId) {
     // Set by owner password reset/change (owner-reset.js): sessions created before it are signed out.
     const notBefore = Number((await env.AUTH_KV.get('sessrevoke:' + session.tenantId)) || 0);
     const createdAt = Number(session.exp || 0) - 12 * 60 * 60 * 1000;
     if (notBefore && createdAt < notBefore) return null;
   }
+  return session;
+}
+
+async function readSession(env, token) {
+  const session = await readLogoWriteSession(env, token);
+  if (!session || session.expired) return null;
   return session;
 }
 
@@ -334,4 +344,4 @@ export async function ensureAgencySecret(env, email, password) {
   return saveAgencySecret(env, normalized, password);
 }
 
-export { saveOwnerSecret, deleteOwnerSecret, authReady, readSession, passwordMatches };
+export { saveOwnerSecret, deleteOwnerSecret, authReady, readSession, readLogoWriteSession, passwordMatches };

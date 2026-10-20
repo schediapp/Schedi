@@ -1,10 +1,11 @@
 // Business logos are stored on this worker's LOGO_BUCKET binding and served
-// from /logos/{tenantId}. Writes use the owner session in AUTH_KV. A missing
-// binding fails the upload with logo_storage_unconfigured and leaves the rest
-// of the site up. GET of a missing file is a 404 so the page can show initials.
+// from /logos/{tenantId}. Writes use the owner session in AUTH_KV, or an
+// agency session for a business in that agency's public data/tenants list.
+// A missing binding fails the upload with logo_storage_unconfigured and leaves
+// the rest of the site up. GET of a missing file is a 404 so the page can show initials.
 
 import { handleLogoGet, handleLogoUpload } from "../workers/schedi-email-worker/src/logo-upload.js";
-import { readOwnerSession } from "./owner-session";
+import { readLogoWriteSession } from "./owner-session";
 import type { AgencyKv } from "./public-shell";
 
 export interface LogoBucket {
@@ -16,6 +17,8 @@ export interface LogoBucket {
 export interface LogoEnv {
   AUTH_KV?: AgencyKv;
   LOGO_BUCKET?: LogoBucket;
+  FIREBASE_PROJECT_ID?: string;
+  FIREBASE_APP_ID?: string;
 }
 
 function collapse(pathname: string): string {
@@ -97,6 +100,6 @@ export async function routeBusinessLogo(request: Request, env: LogoEnv): Promise
   return handleLogoUpload(request, env, origin, {
     json: logoJson,
     isAllowedOrigin: logoOriginAllowed,
-    readSession: async (_env: unknown, token: unknown) => readOwnerSession(env.AUTH_KV, String(token || "")),
+    readSession: async (_env: unknown, token: unknown) => readLogoWriteSession(env.AUTH_KV, String(token || "")),
   });
 }
