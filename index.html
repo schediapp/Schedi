@@ -575,6 +575,26 @@ html.schedi-light #tenantPortalSection.schedi-newdash {
     font-weight: 700;
 }
 html.schedi-light #tenantPortalSection.schedi-newdash .sd-demo-note { color: #0369a1; background: #e0f2fe; border-color: #bae6fd; }
+#tenantPortalSection.schedi-newdash .sd-hq-manage {
+    display: block;
+    margin: 0 0 14px;
+    padding: 8px 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(16, 185, 129, 0.35);
+    background: rgba(16, 185, 129, 0.12);
+    color: var(--sd-text);
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.4;
+    text-decoration: none;
+}
+#tenantPortalSection.schedi-newdash .sd-hq-manage strong { font-weight: 800; color: var(--sd-brand-2); }
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-hq-manage {
+    background: #ecfdf5;
+    border-color: #a7f3d0;
+    color: #064e3b;
+}
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-hq-manage strong { color: #047857; }
 #tenantPortalSection.schedi-newdash #schediTodayPanel { display: none; }
 #tenantPortalSection.schedi-newdash[data-dash="today"] #schediTodayPanel { display: block; }
 #tenantPortalSection.schedi-newdash .sd-today-head { display: flex; justify-content: space-between; gap: 16px; align-items: flex-end; margin-bottom: 18px; }
@@ -5841,6 +5861,7 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                             <img id="schediDashUserLogoPhone" class="sd-avatar-img" alt="" hidden onerror="schediDashLogoFailed(this)">
                         </button>
                     </header>
+                    <a id="sdHqManage" class="sd-hq-manage" href="/hq" onclick="hqForgetManagedTenant()" hidden>Managing <strong id="sdHqManageName"></strong> · Back to HQ</a>
                     <p id="schediDemoNote" class="sd-demo-note" hidden>Demo · sample business · nothing is saved or sent</p>
                     <section id="schediTodayPanel" aria-labelledby="schediTodayHeading">
                         <div class="sd-today-head">
@@ -8370,6 +8391,84 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
         // Reset demo control removed from UI. Kept as a no-op so leftover calls cannot wipe data.
         window.resetDemoData = function() { return false; }
 
+        var schediHqPendingTenantId = '';
+        var HQ_RETURN_NOTICE_KEY = 'schedi.hqReturnNotice';
+        var HQ_RETURN_NOTICE = 'That business isn\'t available to open.';
+        var HQ_MANAGED_TENANT_KEY = 'schedi.hqManagedTenantId';
+
+        function hqIsManagingPortal() {
+            return !!(platformState.isAgencyMasterLoggedIn && platformState.isTenantOwnerLoggedIn && !platformState.ownerSelfSession);
+        }
+
+        function hqRememberManagedTenant(id) {
+            var clean = String(id || '').trim();
+            if (!clean) return;
+            try { window.sessionStorage.setItem(HQ_MANAGED_TENANT_KEY, clean); } catch (errRemember) {}
+        }
+
+        function hqStoredManagedTenant() {
+            try { return String(window.sessionStorage.getItem(HQ_MANAGED_TENANT_KEY) || '').trim(); } catch (errRead) { return ''; }
+        }
+
+        function hqForgetManagedTenant() {
+            try { window.sessionStorage.removeItem(HQ_MANAGED_TENANT_KEY); } catch (errForget) {}
+        }
+
+        function hqReturnToDirectory(message) {
+            var note = String(message || HQ_RETURN_NOTICE);
+            try { hqForgetManagedTenant(); } catch (errForgetDir) {}
+            try { window.sessionStorage.setItem(HQ_RETURN_NOTICE_KEY, note); } catch (errStore) {}
+            try { window.location.assign('/hq'); } catch (errGo) {}
+        }
+
+        function consumeHqReturnNotice() {
+            var note = '';
+            try {
+                note = String(window.sessionStorage.getItem(HQ_RETURN_NOTICE_KEY) || '');
+                if (note) window.sessionStorage.removeItem(HQ_RETURN_NOTICE_KEY);
+            } catch (errNote) { note = ''; }
+            if (!note) return;
+            try { showToast(note, 'info'); } catch (errToast) {}
+        }
+
+        // HQ may only manage a business that is actually in the public list.
+        // A missing id goes back to HQ. It must never become the first other business.
+        function settleActiveTenantAfterCloud(loadedTenants) {
+            var rows = Array.isArray(loadedTenants) ? loadedTenants : [];
+            var pending = String(schediHqPendingTenantId || '');
+            var i;
+            if (pending) {
+                var pendingRow = null;
+                for (i = 0; i < rows.length; i++) {
+                    if (rows[i] && String(rows[i].id) === pending) { pendingRow = rows[i]; break; }
+                }
+                if (!pendingRow) {
+                    hqReturnToDirectory(HQ_RETURN_NOTICE);
+                    return 'bail';
+                }
+                platformState.activeTenantId = pendingRow.id;
+                schediHqPendingTenantId = '';
+                return 'open';
+            }
+            var found = null;
+            for (i = 0; i < rows.length; i++) {
+                if (rows[i] && rows[i].id === platformState.activeTenantId) { found = rows[i]; break; }
+            }
+            if (hqIsManagingPortal()) {
+                if (found) {
+                    platformState.activeTenantId = found.id;
+                    try { hqRememberManagedTenant(found.id); } catch (errRememberPin) {}
+                    return 'pinned';
+                }
+                hqReturnToDirectory(HQ_RETURN_NOTICE);
+                return 'bail';
+            }
+            if (!found && rows.length > 0 && rows[0] && rows[0].id) {
+                platformState.activeTenantId = rows[0].id;
+            }
+            return 'default';
+        }
+
         function attachCloudDbSync() {
             if (!window.db || !window.collection) return;
             if (window.__siteforge_sync_attached) return;
@@ -8430,10 +8529,8 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                     }
                     var mintedManageTokens = ensureAppointmentManageTokens(loadedTenants);
                     var assignedPlans = assignMissingPlans(loadedTenants);
-                    const validActive = loadedTenants.find(t => t.id === platformState.activeTenantId);
-                    if (!validActive && loadedTenants.length > 0) {
-                        platformState.activeTenantId = loadedTenants[0].id;
-                    }
+                    var tenantSettle = settleActiveTenantAfterCloud(loadedTenants);
+                    if (tenantSettle === 'bail') return;
                     platformState.tenants = loadedTenants;
                     window.__schediCloudTenantsLoaded = true;
                     try {
@@ -8500,6 +8597,30 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                     } else {
                         var agSnap = hqSectionEl();
                         if (agSnap) agSnap.classList.add('hidden');
+                    }
+                    if (tenantSettle === 'open') {
+                        var hqOpened = (platformState.tenants || []).find(function (t) { return t && t.id === platformState.activeTenantId; });
+                        if (!hqOpened) {
+                            try { hqReturnToDirectory(HQ_RETURN_NOTICE); } catch (errOpenMissing) {}
+                            return;
+                        }
+                        platformState.isAgencyMasterLoggedIn = true;
+                        platformState.isTenantOwnerLoggedIn = true;
+                        platformState.ownerSelfSession = false;
+                        try { openTenantOwnerPortal(hqOpened); } catch (errOpenCloud) {}
+                        platformState.activeTenantId = hqOpened.id;
+                        platformState.isTenantOwnerLoggedIn = true;
+                        platformState.ownerSelfSession = false;
+                        try { hqRememberManagedTenant(hqOpened.id); } catch (errRememberCloud) {}
+                        try { switchPlatformMode('tenant'); } catch (errModeCloud) {}
+                        try { refreshPrivateBookings(); } catch (errCloudB) {}
+                        try { refreshAppointmentCounts(); } catch (errCloudC) {}
+                        try {
+                            var cleanPending = new URL(window.location.href);
+                            cleanPending.searchParams.delete('tenant');
+                            cleanPending.searchParams.delete('from');
+                            window.history.replaceState({}, '', cleanPending.pathname + cleanPending.search + cleanPending.hash);
+                        } catch (errCleanPending) {}
                     }
                     if (platformState.currentMode === 'tenant' || platformState.currentMode === 'preview' || platformState.isTenantOwnerLoggedIn) {
                         renderTenantAdminPortal();
@@ -8578,9 +8699,11 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
             try { applySchediAuthMetaOptimistic(); } catch (errAuthOpt) {}
             if (isAgencyHqRoute()) {
                 switchPlatformMode('agency');
+                try { hqForgetManagedTenant(); } catch (errForgetBoot) {}
             } else {
                 switchPlatformMode('tenant');
             }
+            try { consumeHqReturnNotice(); } catch (errHqNote) {}
             syncAgencyChrome();
             try { syncTenantAutoLogoffSelect(); } catch (errSelBoot) {}
             try { startTenantOwnerIdleWatch(); } catch (errIdleBoot) {}
@@ -10054,6 +10177,9 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                     if (epoch !== schediAuthEpoch) return false;
                     if (schediAuthSession() && schediAuthSession() !== session) return false;
                     schediClearAuthSession();
+                    var hadHqManaged = '';
+                    try { hadHqManaged = hqStoredManagedTenant(); } catch (errHad) { hadHqManaged = ''; }
+                    try { hqForgetManagedTenant(); } catch (errForget401) {}
                     if (platformState.isAgencyMasterLoggedIn) {
                         platformState.isAgencyMasterLoggedIn = false;
                         platformState.appointmentCounts = null;
@@ -10069,6 +10195,13 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                             try { switchPlatformMode('tenant'); } catch (errM2) {}
                         }
                     }
+                    if (hadHqManaged) {
+                        var onHqReject = false;
+                        try { onHqReject = typeof isAgencyHqRoute === 'function' && isAgencyHqRoute(); } catch (errHqRej) { onHqReject = false; }
+                        if (!onHqReject) {
+                            try { window.location.assign('/hq'); } catch (errGo401) {}
+                        }
+                    }
                     return false;
                 }
                 if (res.ok && data && data.ok && Array.isArray(data.tenants)) {
@@ -10079,6 +10212,17 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                     schediPrivateProfiles = next;
                     schediPrivateProfilesLoaded = true;
                     try { applyPrivateProfiles(platformState.tenants); } catch (errApply) {}
+                    var storedManagedId = '';
+                    try { storedManagedId = hqStoredManagedTenant(); } catch (errStored0) { storedManagedId = ''; }
+                    if (storedManagedId && meta.role !== 'agency') {
+                        try { hqForgetManagedTenant(); } catch (errForgetRole) {}
+                        var alreadyHq = false;
+                        try { alreadyHq = typeof isAgencyHqRoute === 'function' && isAgencyHqRoute(); } catch (errAlready) { alreadyHq = false; }
+                        if (!alreadyHq) {
+                            try { window.location.assign('/hq'); } catch (errGoStored) {}
+                        }
+                        return true;
+                    }
                     // Backfill meta for legacy sessionStorage-only sessions (token without meta).
                     if (!meta.role) {
                         if (typeof isAgencyHqRoute === 'function' && isAgencyHqRoute()) {
@@ -10119,8 +10263,58 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                     } else if (meta.role === 'agency') {
                         platformState.isAgencyMasterLoggedIn = true;
                         try { updateMasterAuthUI(); } catch (errUi) {}
-                        if (typeof isAgencyHqRoute === 'function' && isAgencyHqRoute()) {
+                        var hqManagedTenant = null;
+                        var onHqPage = false;
+                        try { onHqPage = typeof isAgencyHqRoute === 'function' && isAgencyHqRoute(); } catch (errHqPage) { onHqPage = false; }
+                        if (onHqPage) {
+                            try { hqForgetManagedTenant(); } catch (errForgetHq) {}
                             try { switchPlatformMode('agency'); } catch (errAg) {}
+                        } else {
+                            var askedTenant = '';
+                            var askedFromUrl = false;
+                            try { askedTenant = String(new URLSearchParams(window.location.search || '').get('tenant') || '').trim(); } catch (errAsk) { askedTenant = ''; }
+                            if (askedTenant) askedFromUrl = true;
+                            if (!askedTenant && storedManagedId) askedTenant = storedManagedId;
+                            var tenantAllowed = false;
+                            if (askedTenant) {
+                                tenantAllowed = data.tenants.some(function (row) { return row && String(row.id) === askedTenant; });
+                            }
+                            if (askedTenant && !askedFromUrl && !tenantAllowed) {
+                                try { hqReturnToDirectory(HQ_RETURN_NOTICE); } catch (errStale) {}
+                                return true;
+                            }
+                            if (tenantAllowed) {
+                                try {
+                                    hqManagedTenant = (platformState.tenants || []).find(function (t) { return t && String(t.id) === askedTenant; }) || null;
+                                } catch (errFindT) { hqManagedTenant = null; }
+                            }
+                            if (askedTenant && tenantAllowed && !hqManagedTenant) {
+                                schediHqPendingTenantId = askedTenant;
+                                try { hqRememberManagedTenant(askedTenant); } catch (errKeep) {}
+                                if (window.__schediCloudTenantsLoaded) {
+                                    try { hqReturnToDirectory(HQ_RETURN_NOTICE); } catch (errMissing) {}
+                                }
+                                return true;
+                            }
+                            if (hqManagedTenant && typeof openTenantOwnerPortal === 'function') {
+                                platformState.activeTenantId = hqManagedTenant.id;
+                                platformState.isTenantOwnerLoggedIn = true;
+                                platformState.ownerSelfSession = false;
+                                try { openTenantOwnerPortal(hqManagedTenant); } catch (errOpenHq) {}
+                                platformState.activeTenantId = hqManagedTenant.id;
+                                platformState.isTenantOwnerLoggedIn = true;
+                                platformState.ownerSelfSession = false;
+                                try { hqRememberManagedTenant(hqManagedTenant.id); } catch (errRemember) {}
+                                try { switchPlatformMode('tenant'); } catch (errSwHq) {}
+                                try {
+                                    var cleanHq = new URL(window.location.href);
+                                    if (cleanHq.searchParams.has('tenant') || cleanHq.searchParams.has('from')) {
+                                        cleanHq.searchParams.delete('tenant');
+                                        cleanHq.searchParams.delete('from');
+                                        window.history.replaceState({}, '', cleanHq.pathname + cleanHq.search + cleanHq.hash);
+                                    }
+                                } catch (errHist) {}
+                            }
                         }
                     }
                     try { refreshPrivateBookings(); } catch (errB) {}
@@ -12731,6 +12925,7 @@ function schediQrCardPixels(text, color) {
             pullBillingStatus(tenant);
             switchTenantTab(platformState.tenantTab);
             try { schediMountNewDash(); } catch (errDash) {}
+            try { syncHqManagingBanner(); } catch (errBan) {}
         }
 
         // ---- Clients list + CSV import (owner portal). Data lives only in the worker store (/api/clients). ----
@@ -25819,7 +26014,16 @@ function schediQrCardPixels(text, color) {
                 return;
             }
             opts = opts || {};
+            try { hqForgetManagedTenant(); } catch (errForgetOut) {}
+            var backToHq = false;
+            try {
+                backToHq = !!(platformState.isAgencyMasterLoggedIn && platformState.isTenantOwnerLoggedIn && !platformState.ownerSelfSession);
+            } catch (errHqOut) { backToHq = false; }
             try { stopTenantOwnerIdleWatch(); } catch (errIdle) {}
+            if (backToHq) {
+                try { window.location.assign('/hq'); } catch (errGoHq) {}
+                return;
+            }
             platformState.isTenantOwnerLoggedIn = false;
             platformState.ownerSelfSession = false;
             syncOwnerChangePassBtn();
@@ -31337,7 +31541,42 @@ function hqSectionEl(){return null;}
 function hqNavButton(){return null;}
 function hqMasterButton(){return null;}
 function syncAgencyChrome(){}
-function syncHqManagingBanner(){}
+function syncHqManagingBanner() {
+    var banner = document.getElementById('sdHqManage');
+    var on = false;
+    var name = '';
+    try {
+        on = !!(platformState && platformState.isAgencyMasterLoggedIn && platformState.isTenantOwnerLoggedIn && !platformState.ownerSelfSession);
+        if (on && typeof getTenant === 'function') {
+            var t = getTenant();
+            if (t) name = String(t.name || t.id || '');
+        }
+    } catch (errBan) { on = false; name = ''; }
+    if (!banner && on) {
+        banner = document.createElement('a');
+        banner.id = 'sdHqManage';
+        banner.className = 'sd-hq-manage';
+        banner.href = '/hq';
+        banner.onclick = function () { try { hqForgetManagedTenant(); } catch (errForgetClick) {} };
+        banner.appendChild(document.createTextNode('Managing '));
+        var created = document.createElement('strong');
+        created.id = 'sdHqManageName';
+        banner.appendChild(created);
+        banner.appendChild(document.createTextNode(' · Back to HQ'));
+        var note = document.getElementById('schediDemoNote');
+        if (note && note.parentNode) note.parentNode.insertBefore(banner, note);
+        else {
+            var host = document.getElementById('tenantDashboard') || document.body;
+            if (host) host.insertBefore(banner, host.firstChild);
+        }
+    }
+    if (!banner) return;
+    banner.href = '/hq';
+    banner.onclick = function () { try { hqForgetManagedTenant(); } catch (errForgetClick) {} };
+    var nameEl = document.getElementById('sdHqManageName');
+    if (nameEl) nameEl.textContent = name;
+    banner.hidden = !on;
+}
 function updateMasterAuthUI(){}
 function renderAgencyDashboard(){}
 function refreshEmailSenderUI(){}
