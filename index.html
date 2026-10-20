@@ -6456,6 +6456,7 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                                     <span>
                                         <span class="sd-pay-switch-title font-bold text-white" id="tenantPayCardLabel">Credit / Debit Card (Stripe)</span>
                                         <span id="tenantPayCardNote" class="sd-pay-switch-note text-slate-400">Accept card as one option. Clients still choose how to pay. Pro only.</span>
+                                        <p id="tenantPayCardSetup" hidden class="sd-pay-switch-note hidden"><a href="https://schedi-connect-production.up.railway.app/portal#stripe-setup">Finish Stripe setup to accept cards</a></p>
                                     </span>
                                 </span>
                                 <input type="checkbox" id="tenantPayCardCheck" class="sd-pay-switch" role="switch" aria-checked="false" aria-labelledby="tenantPayCardLabel">
@@ -11523,6 +11524,7 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
         }
 
         function bookingCardPayLink(tenant, booking) {
+            if (!tenant || tenant.stripeConnectReady !== true) return '';
             if (!booking || String(booking.paymentMethod || '').toLowerCase() !== 'card') return '';
             var existing = String(booking.cardPayLink || '');
             if (/^https:\/\/(www\.)?schedi\.app\/[a-z0-9](?:[a-z0-9-]{0,40})\/\?pay=checkout&booking=/.test(existing)) return existing;
@@ -21575,6 +21577,12 @@ function schediQrCardPixels(text, color) {
             }
             var cardNote = document.getElementById('tenantPayCardNote');
             if (cardNote) cardNote.textContent = normalizePlan(tenant) === 'pro' ? 'Card is one way to pay. Clients still choose Cash App, Zelle, Venmo, PayPal, or pay at the appointment.' : 'Card checkout is on Pro only.';
+            var cardSetup = document.getElementById('tenantPayCardSetup');
+            if (cardSetup) {
+                var cardNeedsConnect = normalizePlan(tenant) === 'pro' && !!tenant.paymentGateways.card && tenant.stripeConnectReady !== true;
+                cardSetup.hidden = !cardNeedsConnect;
+                cardSetup.classList.toggle('hidden', !cardNeedsConnect);
+            }
             var dep = ensureDepositSettings(tenant);
             var depOn = document.getElementById('tenantDepositEnabled');
             var depPercent = document.getElementById('tenantDepositTypePercent');
@@ -28599,7 +28607,7 @@ function schediQrCardPixels(text, color) {
             var clientTo = (booking && booking.clientEmail) ? String(booking.clientEmail).trim() : '';
             var cardPayUrl = '';
             var cardLinkLater = false;
-            if (booking && String(booking.paymentMethod || '').toLowerCase() === 'card') {
+            if (booking && tenantData.stripeConnectReady === true && String(booking.paymentMethod || '').toLowerCase() === 'card') {
                 var cardPayStatus = String(booking.paymentStatus || '').toUpperCase();
                 if (cardPayStatus.indexOf('AWAITING CARD LINK') !== -1) {
                     cardLinkLater = true;
@@ -30950,7 +30958,7 @@ function paintBizHeader() {
             } catch (e2) { fallback(); }
         };
         function cardPayMode(price, depositRequired, cardOn, plan) {
-            if (cardOn !== true || plan !== 'pro') return 'off';
+            if (cardOn !== true || plan !== 'pro' || tenantData.stripeConnectReady !== true) return 'off';
             if (depositRequired === true) return 'now';
             if (price !== null && price !== undefined && Number(price) >= 0.5) return 'now';
             if (price === null || price === undefined) return 'link';

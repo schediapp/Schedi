@@ -1353,7 +1353,7 @@
             var clientTo = (booking && booking.clientEmail) ? String(booking.clientEmail).trim() : '';
             var cardPayUrl = '';
             var cardLinkLater = false;
-            if (booking && String(booking.paymentMethod || '').toLowerCase() === 'card') {
+            if (booking && tenantData.stripeConnectReady === true && String(booking.paymentMethod || '').toLowerCase() === 'card') {
                 var cardPayStatus = String(booking.paymentStatus || '').toUpperCase();
                 if (cardPayStatus.indexOf('AWAITING CARD LINK') !== -1) {
                     cardLinkLater = true;
@@ -3704,7 +3704,7 @@ function paintBizHeader() {
             } catch (e2) { fallback(); }
         };
         function cardPayMode(price, depositRequired, cardOn, plan) {
-            if (cardOn !== true || plan !== 'pro') return 'off';
+            if (cardOn !== true || plan !== 'pro' || tenantData.stripeConnectReady !== true) return 'off';
             if (depositRequired === true) return 'now';
             if (price !== null && price !== undefined && Number(price) >= 0.5) return 'now';
             if (price === null || price === undefined) return 'link';

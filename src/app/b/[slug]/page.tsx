@@ -2,7 +2,7 @@ import { SiteHeader } from "@/components/site-header";
 import { withFreshCapabilities } from "@/lib/live";
 import { formatUsd } from "@/lib/money";
 import { listPaymentOptions } from "@/lib/payment-options";
-import { isCardCheckoutReady, isPublicPageLive } from "@/lib/readiness";
+import { isPublicPageLive } from "@/lib/readiness";
 import { formatSlot, upcomingSlots } from "@/lib/slots";
 import { getStore } from "@/lib/store";
 import { takenSlotTimes } from "@/lib/bookings";
@@ -32,7 +32,6 @@ export default async function BookingPage({
   const business = await withFreshCapabilities(found);
   const services = store.listServices(business.id);
   const live = isPublicPageLive(business.subscriptionStatus);
-  const cardReady = isCardCheckoutReady(business);
   const slots = upcomingSlots(new Date(), takenSlotTimes(store, business.id, new Date()));
 
   return (
@@ -49,11 +48,6 @@ export default async function BookingPage({
               </span>
             ))}
           </div>
-          {live && business.plan === "pro" && !cardReady ? (
-            <p className="note">
-              Card checkout and the deposit stay off until card payments and payouts are active on {business.name}&apos;s Stripe account.
-            </p>
-          ) : null}
         </section>
 
         {!live ? (

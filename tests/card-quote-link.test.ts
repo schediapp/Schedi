@@ -95,6 +95,7 @@ function business(extra: Record<string, unknown> = {}) {
     plan: "pro",
     ownerEmail: "owner@example.com",
     paymentGateways: { card: true },
+    stripeConnectReady: true,
     services: [{ id: "svc1", name: "Consult", durationMins: 60 }],
     ...extra,
   };
@@ -163,7 +164,7 @@ describe("quoted card amount", () => {
     expect(awaitingCardQuote(quoteBooking({ paymentStatus: "PAID" }))).toBe(false);
   });
 
-  it("uses the short Payment Link, and a 409 falls back to the schedi.app link", async () => {
+  it("uses the short Payment Link and refuses when Connect is unavailable", async () => {
     const connect = vi.fn(async () => json({ ok: true, mode: "connect", url: "https://buy.stripe.com/test_quote_abc" }));
     const ok = await createQuotedPayLink(connect, {
       slug: "acme",
@@ -176,26 +177,24 @@ describe("quoted card amount", () => {
     expect(ok).toMatchObject({ url: "https://buy.stripe.com/test_quote_abc", via: "connect", connectStatus: 200 });
 
     const denied = vi.fn(async () => json({ error: "connect_unavailable" }, 409));
-    const fallback = await createQuotedPayLink(denied, {
+    const refused = await createQuotedPayLink(denied, {
       slug: "acme",
       tenantId: TENANT,
       bookingId: "BK-QUOTE1",
       email: "ada@example.com",
       amountCents: 8000,
     });
-    expect(fallback.via).toBe("platform");
-    expect(fallback.connectStatus).toBe(409);
-    expect(fallback.url).toBe("https://schedi.app/acme/?pay=checkout&booking=BK-QUOTE1&kind=card");
+    expect(refused).toMatchObject({ url: "", via: "", connectStatus: 409, error: "connect_not_ready" });
 
     const mail = quotedPayEmail({
       businessName: "Acme",
       serviceName: "Consult",
       amount: 80,
-      url: fallback.url,
+      url: "https://buy.stripe.com/test_quote_abc",
       when: "2026-10-21 at 10:00 AM",
     });
     expect(mail.subject).toBe("Pay by card \u2014 Acme");
-    expect(mail.text).toContain(fallback.url);
+    expect(mail.text).toContain("https://buy.stripe.com/test_quote_abc");
     expect(mail.text).toContain("Nothing is charged until you open it.");
     expect(mail.html).toContain("Nothing is charged until you open it.");
   });
@@ -231,7 +230,7 @@ describe("send_card_link", () => {
     expect(stored.paymentStatus).toBe("AWAITING CARD CHECKOUT");
   });
 
-  it("emails the durable schedi.app link when Connect returns 409", async () => {
+  it("does not email a link when Connect returns 409", async () => {
     const env = envWith();
     putSession(env, "owner-token");
     await seed(env);
@@ -247,13 +246,33 @@ describe("send_card_link", () => {
       {},
     );
     const data = await res.json();
-    expect(res.status).toBe(200);
-    expect(data.via).toBe("platform");
-    expect(data.connectStatus).toBe(409);
-    expect(data.url).toBe("https://schedi.app/acme/?pay=checkout&booking=BK-QUOTE1&kind=card");
-    expect(used.sendResend.mock.calls[0][1].text).toContain(data.url);
+    expect(res.status).toBe(409);
+    expect(data.error).toBe("connect_not_ready");
+    expect(data.message).toBe("Card payments are not ready for this business. Nothing was charged.");
+    expect(used.sendResend).not.toHaveBeenCalled();
     const stored = (await loadPrivateRoster(env, TENANT)).appointments[0];
-    expect(stored.amount).toBe(42.5);
+    expect(stored.amount).toBeUndefined();
+    expect(stored.paymentStatus).toBe("AWAITING CARD LINK");
+  });
+
+  it("refuses before any Stripe call when the connected account is not ready", async () => {
+    const env = envWith();
+    putSession(env, "owner-token");
+    await seed(env);
+    const used = deps(business({ stripeConnectReady: false }));
+    const res = await handlePrivateBookingHttp(
+      post({ action: "send_card_link", session: "owner-token", tenantId: TENANT, bookingId: "BK-QUOTE1", amount: 80 }),
+      env,
+      "https://schedi.app",
+      "/api/bookings",
+      used,
+      {},
+    );
+    const data = await res.json();
+    expect(res.status).toBe(409);
+    expect(data.error).toBe("connect_not_ready");
+    expect(used.fetchImpl).not.toHaveBeenCalled();
+    expect(used.sendResend).not.toHaveBeenCalled();
   });
 
   it("refuses a catalog price, a tiny amount, card turned off, and a missing session", async () => {
@@ -315,7 +334,11 @@ describe("booking page card copy", () => {
       expect(html).toContain("if (cardChargeCents >= 50) startPayNowCheckout = openPayNowCheckout;");
       expect(html).not.toContain("This service has no price set, so card checkout is unavailable.");
       expect(html).toContain("return platformAttempt(0);");
+      expect(html).toContain("tenantData.stripeConnectReady !== true");
+      expect(html).toContain("tenantData.stripeConnectReady === true");
     }
+    expect(indexHtml).toContain("Finish Stripe setup to accept cards");
+    expect(indexHtml).toContain("https://schedi-connect-production.up.railway.app/portal#stripe-setup");
     const syncAt = bookingHtml.indexOf("function syncBookingsToFirestore");
     const sync = bookingHtml.slice(syncAt, bookingHtml.indexOf("document.getElementById('resCode')", syncAt));
     const createdAt = sync.indexOf("var created = !!(out && out.ok && out.data && out.data.ok);");

@@ -1860,6 +1860,7 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
                                 <div>
                                     <div class="font-bold text-white">Credit / Debit Card (Stripe)</div>
                                     <div id="tenantPayCardNote" class="text-[11px] text-slate-400">Accept card as one option. Clients still choose how to pay. Pro only.</div>
+                                    <p id="tenantPayCardSetup" hidden class="text-[11px] hidden"><a href="https://schedi-connect-production.up.railway.app/portal#stripe-setup">Finish Stripe setup to accept cards</a></p>
                                 </div>
                             </div>
                             <input type="checkbox" id="tenantPayCardCheck" class="w-4 h-4 accent-brand-500 rounded cursor-pointer">
@@ -8137,6 +8138,7 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
         }
 
         function bookingCardPayLink(tenant, booking) {
+            if (!tenant || tenant.stripeConnectReady !== true) return '';
             if (!booking || String(booking.paymentMethod || '').toLowerCase() !== 'card') return '';
             var existing = String(booking.cardPayLink || '');
             if (/^https:\/\/(www\.)?schedi\.app\/[a-z0-9](?:[a-z0-9-]{0,40})\/\?pay=checkout&booking=/.test(existing)) return existing;
@@ -10668,6 +10670,12 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
             }
             var cardNote = document.getElementById('tenantPayCardNote');
             if (cardNote) cardNote.textContent = normalizePlan(tenant) === 'pro' ? 'Card is one way to pay. Clients still choose Cash App, Zelle, Venmo, PayPal, or pay at the appointment.' : 'Card checkout is on Pro only.';
+            var cardSetup = document.getElementById('tenantPayCardSetup');
+            if (cardSetup) {
+                var cardNeedsConnect = normalizePlan(tenant) === 'pro' && !!tenant.paymentGateways.card && tenant.stripeConnectReady !== true;
+                cardSetup.hidden = !cardNeedsConnect;
+                cardSetup.classList.toggle('hidden', !cardNeedsConnect);
+            }
             var dep = ensureDepositSettings(tenant);
             var depOn = document.getElementById('tenantDepositEnabled');
             var depPercent = document.getElementById('tenantDepositTypePercent');

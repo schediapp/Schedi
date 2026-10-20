@@ -155,9 +155,9 @@ describe("direct client charges", () => {
     }
   });
 
-  it("does not start a card checkout before both capabilities are active", async () => {
+  it("does not start a card checkout before charges are enabled", async () => {
     const store = memoryStore();
-    const { business, service } = seedProBusiness(store, { payoutsStatus: "pending" });
+    const { business, service } = seedProBusiness(store, { cardPaymentsStatus: "pending", payoutsStatus: "pending" });
     const stripe = createFakeStripe();
     const slot = upcomingSlots(now, new Set())[0]!;
 

@@ -1,12 +1,15 @@
 import type Stripe from "stripe";
 import { confirmBooking, failBooking } from "./bookings";
 import { noticeFromCheckoutSession, recordConnectCardPayment, type ConnectCardPaidNotice } from "./connect-card-payment";
+import { publishStripeConnectReady } from "./connect-ready";
 import type { Store } from "./db";
 import { SchediError } from "./errors";
+import { connectedChargesEnabled, readCapabilityStatuses, type MerchantCapabilityAccount } from "./readiness";
 import { applySubscriptionState } from "./subscription-state";
 
 export interface StripeEventDeps {
   recordPublicCardPayment?: (notice: ConnectCardPaidNotice) => Promise<void>;
+  publishConnectReady?: (slug: string, ready: boolean) => Promise<void>;
 }
 
 /**
@@ -79,6 +82,23 @@ async function applyConnectedEvent(store: Store, event: Stripe.Event, deps?: Str
         if (ignoreMissingPublicBooking(error, intent.metadata)) return;
         throw error;
       }
+      return;
+    }
+    case "account.updated": {
+      const account = event.data.object as Stripe.Account & MerchantCapabilityAccount & { charges_enabled?: boolean | null };
+      const accountId = event.account || account.id;
+      if (!accountId) return;
+      const business = store.getBusinessByStripeAccount(accountId);
+      if (!business) return;
+      const ready = connectedChargesEnabled(account);
+      const statuses = readCapabilityStatuses(account);
+      if (account.charges_enabled === true && statuses.cardPaymentsStatus !== "active") {
+        statuses.cardPaymentsStatus = "active";
+      }
+      if (account.charges_enabled === false) statuses.cardPaymentsStatus = "inactive";
+      store.setCapabilities(business.id, statuses);
+      const publish = deps?.publishConnectReady || publishStripeConnectReady;
+      await publish(business.slug, ready);
       return;
     }
     default:

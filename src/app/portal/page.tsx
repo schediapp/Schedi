@@ -83,6 +83,12 @@ export default async function PortalPage({
               </>
             ) : null}
 
+            {business.plan === "pro" && business.subscriptionStatus === "active" && business.stripeAccountId && !cardReady ? (
+              <p className="banner warn" style={{ margin: "8px 0 16px" }}>
+                <a href="#stripe-setup">Finish Stripe setup to accept cards</a>
+              </p>
+            ) : null}
+
             {business.plan === "pro" && business.subscriptionStatus === "active" && !business.stripeAccountId ? (
               <>
                 <p className="muted" style={{ margin: "8px 0 16px" }}>
@@ -106,11 +112,11 @@ export default async function PortalPage({
             ) : null}
 
             {business.stripeAccountId ? (
-              <>
+              <div id="stripe-setup">
                 <p className="muted" style={{ margin: "8px 0 12px" }}>
                   {cardReady
                     ? `Clients can pay ${business.name} by card, including the deposit when it is on.`
-                    : "Card checkout and the deposit stay hidden until card payments and payouts are both active."}
+                    : "Card stays hidden on the booking page until Stripe can charge this account."}
                 </p>
                 <p className="meta">
                   <span className="pill">Card payments: {business.cardPaymentsStatus ?? "not active"}</span>
@@ -126,7 +132,7 @@ export default async function PortalPage({
                     The connected account exists. Add NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY to load onboarding, the notification banner, account management, payments, and payouts.
                   </p>
                 )}
-              </>
+              </div>
             ) : null}
           </div>
 

@@ -344,4 +344,67 @@ describe("webhook separation", () => {
       ),
     ).resolves.toBeUndefined();
   });
+
+  it("publishes stripeConnectReady when charges are enabled and when they are revoked", async () => {
+    const store = memoryStore();
+    const { business } = seedProBusiness(store);
+    const published: Array<{ slug: string; ready: boolean }> = [];
+    const publishConnectReady = async (slug: string, ready: boolean) => {
+      published.push({ slug, ready });
+    };
+    await applyStripeEvent(
+      store,
+      event({
+        id: "evt_acct_on",
+        type: "account.updated",
+        account: "acct_northwind",
+        data: {
+          object: {
+            id: "acct_northwind",
+            charges_enabled: true,
+            configuration: { merchant: { capabilities: { card_payments: { status: "pending" } } } },
+          },
+        },
+      }),
+      { publishConnectReady },
+    );
+    expect(published).toEqual([{ slug: "northwind", ready: true }]);
+    expect(store.getBusiness(business.id).cardPaymentsStatus).toBe("active");
+    expect(store.getBusiness(business.id).subscriptionStatus).toBe("active");
+
+    await applyStripeEvent(
+      store,
+      event({
+        id: "evt_acct_off",
+        type: "account.updated",
+        account: "acct_northwind",
+        data: {
+          object: {
+            id: "acct_northwind",
+            charges_enabled: false,
+            configuration: { merchant: { capabilities: { card_payments: { status: "active" } } } },
+          },
+        },
+      }),
+      { publishConnectReady },
+    );
+    expect(published).toEqual([
+      { slug: "northwind", ready: true },
+      { slug: "northwind", ready: false },
+    ]);
+    expect(store.getBusiness(business.id).cardPaymentsStatus).toBe("inactive");
+    expect(store.getBusiness(business.id).subscriptionStatus).toBe("active");
+
+    await applyStripeEvent(
+      store,
+      event({
+        id: "evt_acct_unknown",
+        type: "account.updated",
+        account: "acct_missing",
+        data: { object: { id: "acct_missing", charges_enabled: true } },
+      }),
+      { publishConnectReady },
+    );
+    expect(published).toHaveLength(2);
+  });
 });

@@ -66,7 +66,7 @@ describe("public card checkout", () => {
     expect(stripe.calls.some((call) => call.method === "checkout.sessions.create")).toBe(false);
   });
 
-  it("returns null when Connect checkout is not ready, so the SPA can use the platform path", async () => {
+  it("returns null and makes no Stripe call when the connected account cannot take charges", async () => {
     const store = memoryStore();
     const { business } = seedProBusiness(store, { cardPaymentsStatus: "pending" });
     const stripe = stripeWithPaymentLinks();

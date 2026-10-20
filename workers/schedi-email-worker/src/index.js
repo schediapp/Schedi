@@ -2762,49 +2762,31 @@ async function handleBookingCheckout(request, env, origin) {
     }
   }
   if (!splits.length || totalCents < 50) return json({ ok: true, alreadyPaid: true }, 200, origin);
-  const slug = publicBookingSlug(tenant, tenantId);
-  const kind = purpose === 'deposit' ? 'deposit' : 'card';
-  const successUrl = BILLING_APP_ORIGIN + '/' + slug + '/?pay=success&kind=' + kind;
-  const cancelUrl = BILLING_APP_ORIGIN + '/' + slug + '/?pay=cancel&kind=' + kind;
-  const label = purpose === 'deposit'
-    ? ('Appointment deposit — ' + String(tenant.name || 'Schedi')).slice(0, 120)
-    : ('Appointment payment — ' + String(tenant.name || 'Schedi')).slice(0, 120);
-  const params = new URLSearchParams();
-  params.set('mode', 'payment');
-  params.set('line_items[0][price_data][currency]', 'usd');
-  params.set('line_items[0][price_data][unit_amount]', String(totalCents));
-  params.set('line_items[0][price_data][product_data][name]', label);
-  params.set('line_items[0][quantity]', '1');
-  params.set('success_url', successUrl);
-  params.set('cancel_url', cancelUrl);
-  params.set('client_reference_id', tenantId);
-  params.set('metadata[kind]', 'booking_payment');
-  params.set('metadata[purpose]', purpose);
-  params.set('metadata[tenantId]', tenantId);
-  params.set('metadata[bookingIds]', bookingIds.join(','));
-  params.set('metadata[splits]', splits.join(',').slice(0, 480));
-  params.set('payment_intent_data[metadata][kind]', 'booking_payment');
-  params.set('payment_intent_data[metadata][purpose]', purpose);
-  params.set('payment_intent_data[metadata][tenantId]', tenantId);
-  params.set('payment_intent_data[metadata][bookingIds]', bookingIds.join(','));
-  const email = String(selected[0].clientEmail || data.email || '').trim();
-  if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
-    params.set('customer_email', email);
-    params.set('payment_intent_data[receipt_email]', email);
+  if (tenant.stripeConnectReady !== true) {
+    return json({
+      ok: false,
+      error: 'connect_not_ready',
+      message: 'Card payments are not ready for this business. Nothing was charged.',
+    }, 409, origin);
   }
-  params.set('customer_creation', 'always');
-  params.set('payment_intent_data[setup_future_usage]', 'off_session');
-  const emailMark = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) ? '_em' : '';
-  const idem = ('bk_' + tenantId + '_' + bookingIds.join('_') + '_' + purpose + '_' + totalCents + emailMark).slice(0, 200);
-  const created = await stripeRequest(env, '/v1/checkout/sessions', {
-    method: 'POST',
-    params,
-    extraHeaders: { 'Idempotency-Key': idem },
+  const email = String(selected[0].clientEmail || data.email || '').trim();
+  const connectUrl = await connectCheckoutUrl({
+    slug: publicBookingSlug(tenant, tenantId),
+    tenantId,
+    bookingIds,
+    email,
+    serviceName: selected[0].serviceName || 'Appointment',
+    amountCents: totalCents,
+    chargeKind: purpose === 'deposit' ? 'deposit' : 'full',
   });
-  if (!created.ok) return json({ ok: false, error: created.error || 'checkout_failed' }, created.status || 502, origin);
-  const url = created.data && created.data.url;
-  if (!url) return json({ ok: false, error: 'checkout_url_missing' }, 502, origin);
-  return json({ ok: true, url, purpose, amountCents: totalCents }, 200, origin);
+  if (!stripeHostedPayUrl(connectUrl)) {
+    return json({
+      ok: false,
+      error: 'connect_not_ready',
+      message: 'Card payments are not ready for this business. Nothing was charged.',
+    }, 409, origin);
+  }
+  return json({ ok: true, url: connectUrl, purpose, amountCents: totalCents, mode: 'connect' }, 200, origin);
 }
 
 const CONNECT_PUBLIC_CHECKOUT = 'https://schedi-connect-production.up.railway.app/api/public-checkout';
@@ -2889,8 +2871,8 @@ function cardPayIdsFor(appts, booking, bookingId, extraRaw) {
 
 // GET /billing/card-pay?t={slug}&b={bookingId}&k={manageToken}&kind=deposit|card
 // The booking email and the confirmation Pay now button use this URL.
-// It opens Stripe Checkout (Connect when that account is ready, otherwise the platform session).
-// It never sends the client back to the booking form.
+// It redirects only to a connected-account Stripe page. It never charges the platform account
+// and never sends the client back to the booking form.
 async function handleCardPay(request, env, url) {
   if (request.method !== 'GET' && request.method !== 'HEAD') {
     return cardPayPage('Open this payment link in your browser. Nothing was charged.', 405);
@@ -2952,20 +2934,10 @@ async function handleCardPay(request, env, url) {
   if (data && data.alreadyPaid) {
     return cardPayPage('This card payment is already paid. Nothing more was charged.', 200);
   }
-  const amountCents = Number(data && data.amountCents);
-  if (amountCents >= 50) {
-    const connectUrl = await connectCheckoutUrl({
-      slug: publicBookingSlug(tenant, tenantId),
-      tenantId,
-      bookingIds: ids,
-      email: booking.clientEmail || '',
-      serviceName: booking.serviceName || 'Appointment',
-      amountCents,
-      chargeKind: data.purpose === 'deposit' ? 'deposit' : 'full',
-    });
-    if (stripeHostedPayUrl(connectUrl)) return stripePayRedirect(connectUrl);
-  }
   if (stripeHostedPayUrl(data && data.url)) return stripePayRedirect(data.url);
+  if (data && data.error === 'connect_not_ready') {
+    return cardPayPage('Card payments are not ready for this business. Nothing was charged.', 409);
+  }
   if (data && data.error === 'booking_not_found') {
     return cardPayPage('This booking is not ready to pay yet. Open the link again in a moment. Nothing was charged.', 404);
   }
@@ -2999,6 +2971,35 @@ function ownerBillingScheduleDeps(env) {
       });
     },
   };
+}
+
+async function handleConnectReady(request, env, origin) {
+  if (request.method !== 'POST') return json({ ok: false, error: 'method_not_allowed' }, 405, origin);
+  const expected = String((env && env.SCHEDI_CONNECT_PAID_SECRET) || '');
+  const header = String(request.headers.get('x-schedi-connect-secret') || '');
+  if (!expected || !timingSafeEqual(expected, header)) {
+    return json({ ok: false, error: 'unauthorized' }, 401, origin);
+  }
+  let body = {};
+  try {
+    body = await request.json();
+  } catch (_) {
+    return json({ ok: false, error: 'invalid_json' }, 400, origin);
+  }
+  const slug = safeTenantId(body && (body.slug || body.tenantId));
+  if (!slug || typeof body.ready !== 'boolean') {
+    return json({ ok: false, error: 'invalid_tenant' }, 400, origin);
+  }
+  let idToken = '';
+  try {
+    idToken = await firebaseAnonymousToken(env);
+  } catch (_) {
+    return json({ ok: false, error: 'tenant_lookup_failed' }, 502, origin);
+  }
+  const tenant = await getTenantById(env, idToken, slug);
+  if (!tenant) return json({ ok: false, error: 'tenant_not_found' }, 404, origin);
+  await patchTenantFields(env, idToken, slug, { stripeConnectReady: body.ready === true });
+  return json({ ok: true, slug, stripeConnectReady: body.ready === true }, 200, origin);
 }
 
 async function handleBillingRequest(request, env, origin, path, url) {
@@ -3043,6 +3044,9 @@ async function handleBillingRequest(request, env, origin, path, url) {
   }
   if (path === '/billing/card-pay') {
     return handleCardPay(request, env, url);
+  }
+  if (path === '/billing/connect-ready') {
+    return handleConnectReady(request, env, origin);
   }
   if (path === '/billing/subscribe') {
     if (request.method !== 'GET') return json({ ok: false, error: 'method_not_allowed' }, 405, origin);

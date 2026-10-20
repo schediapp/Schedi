@@ -149,20 +149,22 @@ describe("GET /billing/card-pay", () => {
     vi.restoreAllMocks();
   });
 
-  function stubFetch(connect: { status: number; body: unknown }, stripeUrl = STRIPE_URL) {
+  function stubFetch(connect: { status: number; body: unknown }, ready = false) {
     const calls: string[] = [];
-    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input instanceof Request ? input.url : input);
-      calls.push(url);
+      calls.push(url + " " + String(init?.method || "GET"));
       if (url.includes("identitytoolkit.googleapis.com")) return Response.json({ idToken: "tok" });
       if (url.includes("/private/data/tenants/")) return new Response("{}", { status: 404 });
       if (url.includes("/public/data/tenants/")) {
+        if (String(init?.method || "GET").toUpperCase() === "PATCH") return Response.json({ name: "patched" });
         return Response.json({
           fields: (fsValue({
             id: TENANT,
             slug: TENANT,
             name: "Axel Del Cid Photography",
             plan: "pro",
+            stripeConnectReady: ready === true,
             paymentGateways: { card: true },
             deposit: { enabled: true, type: "fixed", amount: 1, percent: 0 },
             services: [{ id: "1", name: "Portrait Photoshoot", durationMins: 60, price: null }],
@@ -170,46 +172,45 @@ describe("GET /billing/card-pay", () => {
         });
       }
       if (url.includes("/api/public-checkout")) return Response.json(connect.body, { status: connect.status });
-      if (url.includes("api.stripe.com/v1/checkout/sessions")) return Response.json({ id: "cs_test_deposit", url: stripeUrl });
+      if (url.includes("api.stripe.com")) return Response.json({ id: "cs_platform", url: STRIPE_URL });
       return new Response("unexpected " + url, { status: 500 });
     }));
     return calls;
   }
 
-  it("redirects an unpriced $1 deposit to Stripe after Connect is unavailable", async () => {
-    const calls = stubFetch({ status: 409, body: { ok: false, error: "connect_unavailable" } });
+  it("refuses a card session when Connect is not ready and does not call Stripe", async () => {
+    const calls = stubFetch({ status: 409, body: { ok: false, error: "connect_unavailable" } }, false);
     const res = await worker.fetch(
       payRequest("?t=" + TENANT + "&b=" + BOOKING + "&k=" + TOKEN + "&kind=deposit"),
       payEnv(),
       { waitUntil() {} },
     );
-    expect(res.status).toBe(302);
-    expect(res.headers.get("location")).toBe(STRIPE_URL);
-    expect(calls.some((url) => url.includes("api.stripe.com/v1/checkout/sessions"))).toBe(true);
-    expect(calls.some((url) => url.includes("/api/public-checkout"))).toBe(true);
-    const stripeCall = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls.find((call) => String(call[0]).includes("api.stripe.com"));
-    const decoded = decodeURIComponent(String(stripeCall?.[1]?.body || ""));
-    expect(decoded).toContain("[unit_amount]=100");
-    expect(decoded).toContain("[purpose]=deposit");
-    expect(decoded).toContain("customer_email=client@example.com");
-    expect(decoded).toContain("payment_intent_data[receipt_email]=client@example.com");
-    const stripeHeaders = (stripeCall?.[1]?.headers || {}) as Record<string, string>;
-    expect(stripeHeaders["Stripe-Account"] || stripeHeaders["stripe-account"]).toBeUndefined();
+    expect(res.status).toBe(409);
+    expect(res.headers.get("location")).toBeNull();
+    expect(await res.text()).toContain("Card payments are not ready for this business. Nothing was charged.");
+    expect(calls.some((url) => url.includes("api.stripe.com"))).toBe(false);
+    expect(calls.some((url) => url.includes("/api/public-checkout"))).toBe(false);
   });
 
-  it("redirects a pay link that has no manage token, the same way an older email does", async () => {
-    stubFetch({ status: 409, body: { ok: false, error: "connect_unavailable" } });
+  it("redirects a pay link that has no manage token straight to the connected account", async () => {
+    const calls = stubFetch({ status: 200, body: { ok: true, mode: "connect", url: CONNECT_URL } }, true);
     const res = await worker.fetch(
       payRequest("?t=" + TENANT + "&b=" + BOOKING + "&kind=deposit"),
       payEnv(),
       { waitUntil() {} },
     );
     expect(res.status).toBe(302);
-    expect(res.headers.get("location")).toBe(STRIPE_URL);
+    expect(res.headers.get("location")).toBe(CONNECT_URL);
+    expect(calls.some((url) => url.includes("api.stripe.com"))).toBe(false);
+    const connectCall = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls.find((call) => String(call[0]).includes("/api/public-checkout"));
+    const posted = JSON.parse(String(connectCall?.[1]?.body || "{}")) as { amountCents?: number; email?: string; chargeKind?: string };
+    expect(posted.amountCents).toBe(100);
+    expect(posted.email).toBe("client@example.com");
+    expect(posted.chargeKind).toBe("deposit");
   });
 
-  it("prefers the connected account payment link when Connect is ready", async () => {
-    stubFetch({ status: 200, body: { ok: true, mode: "connect", url: CONNECT_URL } });
+  it("redirects to the connected account payment link when Connect is ready", async () => {
+    const calls = stubFetch({ status: 200, body: { ok: true, mode: "connect", url: CONNECT_URL } }, true);
     const res = await worker.fetch(
       payRequest("?t=" + TENANT + "&b=" + BOOKING + "&k=" + TOKEN + "&kind=deposit"),
       payEnv(),
@@ -217,10 +218,25 @@ describe("GET /billing/card-pay", () => {
     );
     expect(res.status).toBe(302);
     expect(res.headers.get("location")).toBe(CONNECT_URL);
+    expect(calls.some((url) => url.includes("api.stripe.com"))).toBe(false);
+  });
+
+  it("shows an error and does not call Stripe when the flag is set but Connect refuses", async () => {
+    const calls = stubFetch({ status: 409, body: { ok: false, error: "connect_unavailable" } }, true);
+    const res = await worker.fetch(
+      payRequest("?t=" + TENANT + "&b=" + BOOKING + "&k=" + TOKEN + "&kind=deposit"),
+      payEnv(),
+      { waitUntil() {} },
+    );
+    expect(res.status).toBe(409);
+    expect(res.headers.get("location")).toBeNull();
+    expect(await res.text()).toContain("Card payments are not ready for this business. Nothing was charged.");
+    expect(calls.some((url) => url.includes("api.stripe.com"))).toBe(false);
+    expect(calls.some((url) => url.includes("/api/public-checkout"))).toBe(true);
   });
 
   it("rejects a bad token and a non-Stripe checkout URL without leaving the payment page", async () => {
-    const calls = stubFetch({ status: 409, body: { ok: false, error: "connect_unavailable" } }, "https://evil.example/phish");
+    const calls = stubFetch({ status: 200, body: { ok: true, mode: "connect", url: "https://evil.example/phish" } }, true);
     const bad = await worker.fetch(
       payRequest("?t=" + TENANT + "&b=" + BOOKING + "&k=" + "b".repeat(36) + "&kind=deposit"),
       payEnv(),
@@ -241,6 +257,52 @@ describe("GET /billing/card-pay", () => {
     expect(phish.status).toBeGreaterThanOrEqual(400);
     expect(phish.headers.get("location")).toBeNull();
     expect(await phish.text()).toContain("Nothing was charged.");
+    expect(calls.some((url) => url.includes("api.stripe.com"))).toBe(false);
+  });
+});
+
+describe("POST /billing/connect-ready", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it("patches stripeConnectReady only with the connect secret", async () => {
+    const patches: string[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input instanceof Request ? input.url : input);
+      if (url.includes("identitytoolkit.googleapis.com")) return Response.json({ idToken: "tok" });
+      if (url.includes("/private/data/tenants/")) return new Response("{}", { status: 404 });
+      if (url.includes("/public/data/tenants/")) {
+        if (String(init?.method || "GET").toUpperCase() === "PATCH") {
+          patches.push(String(init?.body || ""));
+          return Response.json({ name: "patched" });
+        }
+        return Response.json({
+          fields: (fsValue({ id: TENANT, slug: TENANT, name: "Axel Del Cid Photography", plan: "pro" }) as { mapValue: { fields: unknown } }).mapValue.fields,
+        });
+      }
+      return new Response("unexpected " + url, { status: 500 });
+    }));
+    const env = payEnv() as ReturnType<typeof payEnv> & { SCHEDI_CONNECT_PAID_SECRET: string };
+    env.SCHEDI_CONNECT_PAID_SECRET = "connect-secret";
+    const denied = await worker.fetch(new Request("https://schedi.app/billing/connect-ready", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-schedi-connect-secret": "nope" },
+      body: JSON.stringify({ slug: TENANT, ready: true }),
+    }), env, { waitUntil() {} });
+    expect(denied.status).toBe(401);
+    expect(patches).toHaveLength(0);
+
+    const ok = await worker.fetch(new Request("https://schedi.app/billing/connect-ready", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-schedi-connect-secret": "connect-secret" },
+      body: JSON.stringify({ slug: TENANT, ready: true }),
+    }), env, { waitUntil() {} });
+    expect(ok.status).toBe(200);
+    expect(await ok.json()).toMatchObject({ ok: true, slug: TENANT, stripeConnectReady: true });
+    expect(patches[0]).toContain("stripeConnectReady");
+    expect(patches[0]).toContain("booleanValue");
   });
 });
 

@@ -39,7 +39,7 @@ const service: Service = {
 };
 
 describe("card checkout gating", () => {
-  it("requires active card payments and active payouts on the merchant configuration", () => {
+  it("requires active card payments on the merchant configuration", () => {
     expect(
       readCapabilityStatuses({
         configuration: {
@@ -55,7 +55,7 @@ describe("card checkout gating", () => {
 
     expect(isCardCheckoutReady(business())).toBe(true);
     expect(isCardCheckoutReady(business({ cardPaymentsStatus: "pending" }))).toBe(false);
-    expect(isCardCheckoutReady(business({ payoutsStatus: "restricted" }))).toBe(false);
+    expect(isCardCheckoutReady(business({ payoutsStatus: "restricted" }))).toBe(true);
     expect(isCardCheckoutReady(business({ plan: "starter" }))).toBe(false);
     expect(isCardCheckoutReady(business({ subscriptionStatus: "past_due" }))).toBe(false);
     expect(isCardCheckoutReady(business({ subscriptionStatus: "canceled" }))).toBe(false);
