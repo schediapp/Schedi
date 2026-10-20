@@ -3,6 +3,9 @@
  * Returns a downloadable .ics when the manage token matches. No token → 404.
  */
 import { adminAuthHeaders } from './firebase-admin.js';
+import { publicBusinessAddress } from './public-address.js';
+
+export { publicBusinessAddress };
 
 function clip(v, n) {
   return String(v == null ? '' : v).trim().slice(0, n || 160);
@@ -92,11 +95,6 @@ function durationMins(booking) {
   const n = Number(booking && booking.durationMins);
   if (Number.isFinite(n) && n > 0) return Math.round(n);
   return 60;
-}
-
-export function publicBusinessAddress(tenant) {
-  if (tenant && tenant.showPublicAddress === false) return '';
-  return String((tenant && (tenant.address || tenant.location || tenant.businessAddress || tenant.businessLocation)) || '').trim();
 }
 
 function buildIcsBody(tenant, booking, manageUrl) {

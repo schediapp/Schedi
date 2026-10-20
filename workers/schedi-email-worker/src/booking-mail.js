@@ -18,6 +18,7 @@
 import { readSession } from './owner-auth.js';
 import { loadPrivateAppointments } from './private-bookings.js';
 import { rateLimitOk } from './rate-limit.js';
+import { appointmentIsClientConfirmed } from './appointment-updated.js';
 
 const OWNER_CONTACT_TOKEN = '{{schedi_owner_contact}}';
 const EM_DASH_SEP = ' \u2014 ';
@@ -31,6 +32,7 @@ const TYPE_RULES = {
   booking_cancellation: { to: 'client', prefixes: ['Appointment cancelled'], client: true, limit: 'once', needCancelled: true },
   owner_booking_cancellation: { to: 'owner', prefixes: ['Client cancelled'], client: true, limit: 'once', needCancelled: true },
   booking_reschedule: { to: 'client', prefixes: ['Booking rescheduled'], client: true, limit: 'daily' },
+  booking_update: { to: 'client', prefixes: ['Appointment updated'], client: false, limit: 'daily' },
   owner_booking_reschedule: { to: 'owner', prefixes: ['Appointment rescheduled'], client: true, limit: 'daily' },
   booking_accepted: { to: 'client', prefixes: ['Appointment accepted'], client: false },
   booking_denied: { to: 'client', prefixes: ['Request not accepted', 'Appointment not accepted'], client: false },
@@ -354,7 +356,11 @@ export async function handleBookingMailPost(request, env, origin, deps) {
 
   // Walk-ins: never email or text the client. The owner still gets the new-booking alert.
   if (booking && booking.walkIn === true) {
-    if (type === 'booking_confirmation') return json({ ok: true, skipped: true, reason: 'walk_in' }, 200, origin);
+    if (type === 'booking_confirmation' || type === 'booking_update') return json({ ok: true, skipped: true, reason: 'walk_in' }, 200, origin);
+  }
+  // Appointment updated is only for a confirmed booking. Pending, denied, cancelled, and no-shows stay quiet.
+  if (type === 'booking_update' && (!booking || !appointmentIsClientConfirmed(booking))) {
+    return json({ ok: true, skipped: true, reason: 'not_confirmed' }, 200, origin);
   }
 
   // Per-tenant limit only after the caller proved a session or a real manage token,
