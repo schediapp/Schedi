@@ -826,6 +826,26 @@ describe("Square pay redirect", () => {
     expect(squareFetch).not.toHaveBeenCalled();
   });
 
+  it("refuses a pay link with no manage token and does not call Square", async () => {
+    const squareFetch = vi.fn();
+    const res = await handleSquareHttp(
+      new Request("https://schedi.app/api/square/pay?t=" + TENANT + "&b=" + BOOKING_ID + "&kind=card"),
+      { AUTH_KV: kv() },
+      "",
+      "/api/square/pay",
+      {
+        json: (body: unknown, status = 200) => jsonResponse(body, status),
+        firebaseAnonymousToken: async () => "tok",
+        getTenantById: async () => ({ id: TENANT, squareReady: true }),
+        loadAppointments: async () => [booking()],
+        squareFetch,
+      },
+    );
+    expect(res.status).toBe(400);
+    expect(await res.text()).toContain("This payment link is not valid. Nothing was charged.");
+    expect(squareFetch).not.toHaveBeenCalled();
+  });
+
   it("does not call Square when the manage token does not match", async () => {
     const squareFetch = vi.fn();
     const res = await handleSquareHttp(

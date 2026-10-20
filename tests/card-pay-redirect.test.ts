@@ -192,21 +192,18 @@ describe("GET /billing/card-pay", () => {
     expect(calls.some((url) => url.includes("/api/public-checkout"))).toBe(false);
   });
 
-  it("redirects a pay link that has no manage token straight to the connected account", async () => {
+  it("refuses a pay link that has no manage token and does not call Connect", async () => {
     const calls = stubFetch({ status: 200, body: { ok: true, mode: "connect", url: CONNECT_URL } }, true);
     const res = await worker.fetch(
       payRequest("?t=" + TENANT + "&b=" + BOOKING + "&kind=deposit"),
       payEnv(),
       { waitUntil() {} },
     );
-    expect(res.status).toBe(302);
-    expect(res.headers.get("location")).toBe(CONNECT_URL);
+    expect(res.status).toBe(400);
+    expect(res.headers.get("location")).toBeNull();
+    expect(await res.text()).toContain("This payment link is not valid. Nothing was charged.");
     expect(calls.some((url) => url.includes("api.stripe.com"))).toBe(false);
-    const connectCall = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls.find((call) => String(call[0]).includes("/api/public-checkout"));
-    const posted = JSON.parse(String(connectCall?.[1]?.body || "{}")) as { amountCents?: number; email?: string; chargeKind?: string };
-    expect(posted.amountCents).toBe(100);
-    expect(posted.email).toBe("client@example.com");
-    expect(posted.chargeKind).toBe("deposit");
+    expect(calls.some((url) => url.includes("/api/public-checkout"))).toBe(false);
   });
 
   it("redirects to the connected account payment link when Connect is ready", async () => {

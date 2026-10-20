@@ -2,7 +2,8 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { ensurePayCodes } from "../workers/schedi-email-worker/src/private-bookings.js";
 import { buildOwnerNotifyEmail } from "../workers/schedi-email-worker/src/owner-notify.js";
-import { applyOwnerEntitlementLock } from "../workers/schedi-email-worker/src/entitlements.js";
+import { applyOwnerEntitlementLock, preserveServerOwnedConnectFields } from "../workers/schedi-email-worker/src/entitlements.js";
+import { sanitizeProfile } from "../workers/schedi-email-worker/src/profile-store.js";
 import { hqLoginDocument } from "../worker/public-shell";
 import {
   SCHEDI_SQUARE_PUBLIC_ENABLED,
@@ -99,6 +100,57 @@ describe("Square public switch", () => {
     expect(locked.pub.paymentGateways.square).toBe(true);
     expect(locked.pub.cardProcessor).toBe("square");
     expect(locked.ignored).not.toContain("paymentGateways.square");
+  });
+
+  it("keeps Connect readiness on the stored values when an owner sends new ones", () => {
+    const stored = {
+      plan: "pro",
+      stripeConnectReady: false,
+      stripeConnectStatus: "in_progress",
+      squareReady: false,
+      squareConnectStatus: "not_started",
+    };
+    const locked = applyOwnerEntitlementLock(
+      {
+        stripeConnectReady: true,
+        stripeConnectStatus: "ready",
+        squareReady: true,
+        squareConnectStatus: "ready",
+        paymentGateways: { card: true },
+      },
+      stored,
+      {},
+    );
+    expect(locked.pub.stripeConnectReady).toBe(false);
+    expect(locked.pub.stripeConnectStatus).toBe("in_progress");
+    expect(locked.pub.squareReady).toBe(false);
+    expect(locked.pub.squareConnectStatus).toBe("not_started");
+    expect(locked.ignored).toEqual([
+      "stripeConnectReady",
+      "squareReady",
+      "stripeConnectStatus",
+      "squareConnectStatus",
+    ]);
+    const agency = preserveServerOwnedConnectFields(
+      { name: "Harbor", stripeConnectReady: true, squareConnectStatus: "ready" },
+      { stripeConnectReady: false, squareConnectStatus: "in_progress" },
+    );
+    expect(agency.pub.stripeConnectReady).toBe(false);
+    expect(agency.pub.squareConnectStatus).toBe("in_progress");
+    expect(agency.pub.name).toBe("Harbor");
+    expect(agency.ignored).toEqual(["stripeConnectReady", "squareConnectStatus"]);
+    const clean = sanitizeProfile({
+      name: "Harbor",
+      stripeConnectReady: true,
+      squareReady: true,
+      stripeConnectStatus: "ready",
+      squareConnectStatus: "ready",
+    }, "harbor");
+    expect(clean.stripeConnectReady).toBeUndefined();
+    expect(clean.squareReady).toBeUndefined();
+    expect(clean.stripeConnectStatus).toBeUndefined();
+    expect(clean.squareConnectStatus).toBeUndefined();
+    expect(clean.name).toBe("Harbor");
   });
 });
 

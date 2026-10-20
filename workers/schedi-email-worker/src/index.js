@@ -2882,14 +2882,12 @@ async function handleCardPay(request, env, url) {
   const token = String(url.searchParams.get('k') || '');
   const kindHint = String(url.searchParams.get('kind') || '');
   const tokenOk = /^[A-Za-z0-9_-]{16,128}$/.test(token);
-  if (!tenantId || !bookingId || (token && !tokenOk)) {
+  // k is the booking's manage token. A slug and booking id are not enough.
+  if (!tenantId || !bookingId || !tokenOk) {
     return cardPayPage('This payment link is not valid. Nothing was charged.', 400);
   }
   if (kindHint && kindHint !== 'deposit' && kindHint !== 'card') {
     return cardPayPage('This payment link is not valid. Nothing was charged.', 400);
-  }
-  if (request.method === 'HEAD') {
-    return new Response(null, { status: 200, headers: { 'Cache-Control': 'no-store' } });
   }
   const ip = String(request.headers.get('CF-Connecting-IP') || 'unknown').slice(0, 64);
   if (!(await rateLimitOk(env && env.RL_MAIL, 'cardpay:' + ip, 30, 'cardpay'))) {
@@ -2909,7 +2907,7 @@ async function handleCardPay(request, env, url) {
     if (!tenant) return cardPayPage('This payment link is not valid. Nothing was charged.', 404);
     const appts = Array.isArray(tenant.appointments) ? tenant.appointments : [];
     const sameId = appts.find((item) => item && String(item.id) === bookingId) || null;
-    if (sameId && tokenOk && (!sameId.manageToken || !timingSafeEqual(String(sameId.manageToken), token))) {
+    if (sameId && (!sameId.manageToken || !timingSafeEqual(String(sameId.manageToken), token))) {
       return cardPayPage('This payment link is not valid. Nothing was charged.', 400);
     }
     booking = sameId;
@@ -2917,6 +2915,9 @@ async function handleCardPay(request, env, url) {
   }
   if (!booking || !cardPayBookingOpen(booking)) {
     return cardPayPage('This booking is not ready to pay yet. Open the link again in a moment. Nothing was charged.', 404);
+  }
+  if (request.method === 'HEAD') {
+    return new Response(null, { status: 200, headers: { 'Cache-Control': 'no-store' } });
   }
   const appts = Array.isArray(tenant.appointments) ? tenant.appointments : [];
   const ids = cardPayIdsFor(appts, booking, bookingId, url.searchParams.get('ids'));

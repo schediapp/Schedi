@@ -15,6 +15,34 @@ export { tenantPlanName };
 /** Public-doc fields owners can't change. Stored values are kept on owner saves. */
 export const OWNER_LOCKED_PUBLIC_KEYS = ['plan'];
 
+/**
+ * Card readiness is written only by the worker and payment webhooks.
+ * Owner and agency profile saves keep the stored values.
+ */
+export const SERVER_OWNED_CONNECT_KEYS = [
+  'stripeConnectReady',
+  'squareReady',
+  'stripeConnectStatus',
+  'squareConnectStatus',
+];
+
+/** Keep server-owned Connect flags. Returns the public object to write. */
+export function preserveServerOwnedConnectFields(incomingPub, storedPub) {
+  const pub = Object.assign({}, incomingPub || {});
+  const ignored = [];
+  const stored = storedPub || {};
+  for (const key of SERVER_OWNED_CONNECT_KEYS) {
+    const has = Object.prototype.hasOwnProperty.call(stored, key);
+    const before = has ? stored[key] : undefined;
+    if (Object.prototype.hasOwnProperty.call(pub, key) && JSON.stringify(pub[key]) !== JSON.stringify(before)) {
+      ignored.push(key);
+    }
+    if (has) pub[key] = before;
+    else delete pub[key];
+  }
+  return { pub, ignored };
+}
+
 function isObj(v) {
   return !!v && typeof v === 'object' && !Array.isArray(v);
 }
@@ -27,9 +55,10 @@ function isObj(v) {
  * @returns {{ pub: object, ignored: string[] }}
  */
 export function applyOwnerEntitlementLock(incomingPub, storedPub, storedPriv) {
-  const pub = Object.assign({}, incomingPub || {});
+  const preserved = preserveServerOwnedConnectFields(incomingPub, storedPub);
+  const pub = preserved.pub;
   const stored = Object.assign({}, storedPub || {}, storedPriv || {});
-  const ignored = [];
+  const ignored = preserved.ignored.slice();
 
   for (const k of OWNER_LOCKED_PUBLIC_KEYS) {
     const has = Object.prototype.hasOwnProperty.call(storedPub || {}, k);

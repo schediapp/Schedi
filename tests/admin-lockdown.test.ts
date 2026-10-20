@@ -184,6 +184,11 @@ describe("firestore rules and dry-run cleanup", () => {
   it("allows single-doc get and list, and blocks client writes", () => {
     expect(rules).toContain("allow get, list: if true");
     expect(rules).toContain("allow create, update, delete: if false");
+    expect(rules).toContain("stripeConnectReady");
+    expect(rules).toContain("squareReady");
+    expect(rules).toContain("stripeConnectStatus");
+    expect(rules).toContain("squareConnectStatus");
+    expect(rules).toContain("server-only");
     expect(rules).toMatch(/private\/data\/tenants[\s\S]*allow read, write: if false/);
     expect(rules).toContain("list stays open");
   });

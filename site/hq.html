@@ -4076,24 +4076,13 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
                         delete booking.depositPaid;
                         delete booking.balanceDue;
                     }
-                    if (choseCard) {
-                        var incomingLink = raw && typeof raw.cardPayLink === 'string' ? String(raw.cardPayLink) : '';
-                        if (/^https:\/\/(www\.)?schedi\.app\/[a-z0-9](?:[a-z0-9-]{0,40})\/\?pay=checkout&booking=/.test(incomingLink)) {
-                            booking.cardPayLink = incomingLink;
-                        } else {
-                            booking.cardPayLink = durableCardPayLink(
-                                tenant.slug || tenant.id,
-                                [booking.id],
-                                Number(booking.depositAmount) > 0 ? 'deposit' : 'card'
-                            );
-                        }
-                    }
                     if (raw && (raw.status === 'pending' || raw.status === 'accepted' || raw.status === 'denied')) booking.status = raw.status;
                     if (raw && raw.manageToken && /^[A-Za-z0-9_-]{16,128}$/.test(String(raw.manageToken))) {
                         booking.manageToken = String(raw.manageToken);
                     } else {
                         booking.manageToken = newManageToken();
                     }
+                    if (choseCard) booking.cardPayLink = bookingCardPayLink(tenant, booking);
                     return booking;
                 }
 
@@ -8141,13 +8130,17 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
         function bookingCardPayLink(tenant, booking) {
             if (!tenant || tenant.stripeConnectReady !== true) return '';
             if (!booking || String(booking.paymentMethod || '').toLowerCase() !== 'card') return '';
-            var existing = String(booking.cardPayLink || '');
-            if (/^https:\/\/(www\.)?schedi\.app\/[a-z0-9](?:[a-z0-9-]{0,40})\/\?pay=checkout&booking=/.test(existing)) return existing;
-            return durableCardPayLink(
-                tenant && (tenant.slug || tenant.id),
-                [booking.id],
-                Number(booking.depositAmount) > 0 ? 'deposit' : 'card'
-            );
+            var token = String(booking.manageToken || '').trim();
+            if (!/^[A-Za-z0-9_-]{16,128}$/.test(token)) return '';
+            var safeSlug = String((tenant.slug || tenant.id) || '').trim().toLowerCase();
+            if (!/^[a-z0-9](?:[a-z0-9-]{0,40})$/.test(safeSlug)) return '';
+            var id = String(booking.id || '').trim();
+            if (!/^[A-Za-z0-9_-]{4,40}$/.test(id)) return '';
+            var kind = Number(booking.depositAmount) > 0 ? 'deposit' : 'card';
+            return 'https://schedi.app/billing/card-pay?t=' + encodeURIComponent(safeSlug)
+                + '&b=' + encodeURIComponent(id)
+                + '&k=' + encodeURIComponent(token)
+                + '&kind=' + kind;
         }
 
         function cardPayEmailBits(url) {

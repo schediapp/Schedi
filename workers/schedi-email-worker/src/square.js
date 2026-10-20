@@ -987,9 +987,6 @@ async function handleSquarePay(request, env, url, deps) {
   if (kindHint && kindHint !== 'deposit' && kindHint !== 'card') {
     return squarePayPage('This payment link is not valid. Nothing was charged.', 400);
   }
-  if (request.method === 'HEAD') {
-    return new Response(null, { status: 200, headers: { 'Cache-Control': 'no-store' } });
-  }
   const ip = clientIp(request);
   if (!(await rateLimitOk(env && env.RL_MAIL, 'sqpay:' + ip, 30, 'sqpay'))) {
     return squarePayPage('Too many tries. Wait a minute and open the link again. Nothing was charged.', 429);
@@ -1005,14 +1002,17 @@ async function handleSquarePay(request, env, url, deps) {
     return squarePayPage('Square checkout is unavailable right now. Nothing was charged.', 502);
   }
   if (!tenant) return squarePayPage('This payment link is not valid. Nothing was charged.', 404);
-  if (tenant.squareReady !== true) {
-    return squarePayPage('Finish Square setup to accept cards. Nothing was charged.', 409);
-  }
   const load = deps.loadAppointments || loadPrivateAppointments;
   const appointments = await load(env, tenantId);
   const booking = (appointments || []).find((item) => item && String(item.id) === bookingId) || null;
   if (!booking || !booking.manageToken || !timingSafeEqual(String(booking.manageToken), token)) {
     return squarePayPage('This payment link is not valid. Nothing was charged.', 400);
+  }
+  if (request.method === 'HEAD') {
+    return new Response(null, { status: 200, headers: { 'Cache-Control': 'no-store' } });
+  }
+  if (tenant.squareReady !== true) {
+    return squarePayPage('Finish Square setup to accept cards. Nothing was charged.', 409);
   }
   if (String(booking.paymentMethod || '').toLowerCase() !== 'square') {
     return squarePayPage('This booking is not set to pay with Square. Nothing was charged.', 400);

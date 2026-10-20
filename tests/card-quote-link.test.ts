@@ -425,6 +425,16 @@ describe("email pay link opens Stripe", () => {
     expect(response.headers.get("location")).toBe(
       "https://schedi.app/billing/card-pay?t=bright-cuts&b=BK-QUOTE01&kind=card&ids=BK-SECOND1",
     );
+    const token = "k".repeat(24);
+    const withToken = await handleRequest(
+      new Request(payUrl + "&k=" + token),
+      pageEnv(),
+      { waitUntil() {} },
+    );
+    expect(withToken.status).toBe(302);
+    expect(withToken.headers.get("location")).toBe(
+      "https://schedi.app/billing/card-pay?t=bright-cuts&b=BK-QUOTE01&kind=card&ids=BK-SECOND1&k=" + token,
+    );
 
     const filled = fillBookingDocument(bookingHtml, {
       slug: "bright-cuts",

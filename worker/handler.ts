@@ -760,6 +760,8 @@ async function serveSpa(
         target.searchParams.set("b", payHandoff.booking);
         if (payHandoff.kind === "deposit" || payHandoff.kind === "card") target.searchParams.set("kind", payHandoff.kind);
         if (payHandoff.bookings) target.searchParams.set("ids", payHandoff.bookings);
+        const payToken = String(pageUrl.searchParams.get("k") || "");
+        if (/^[A-Za-z0-9_-]{16,128}$/.test(payToken)) target.searchParams.set("k", payToken);
         const headers = new Headers();
         headers.set("Location", target.toString());
         headers.set("Cache-Control", "no-store");
