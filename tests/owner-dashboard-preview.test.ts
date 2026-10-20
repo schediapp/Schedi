@@ -9,7 +9,7 @@ import { renderRobots, renderSitemap } from "../worker/render";
 
 const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const root = new URL("..", import.meta.url).pathname;
-const BOOKING_TEMPLATE_SHA = "e8b666984cd2bffc6c37fb46cc4af7735c16681fd43dc4de32608d937efdcda1";
+const BOOKING_TEMPLATE_SHA = "07c4b28bba9d84cb3378020e91b8900cd83432e086bead97d591629b25e232be";
 const SHELL_STYLE_SHA = "7c1f1bbb7af97aa8c1e95ab8de650f6493512361a409fd083bcbe3a2c04332d6";
 
 function bookingTemplate(source: string): string {
@@ -1148,16 +1148,12 @@ describe("owner dashboard preview", () => {
     expect(html).toContain("tenant.allowRecurringBookings = wantRecurring");
     expect(html).toContain("tenant.remindersEnabled = remEl ? !!remEl.checked : true");
     expect(html).toContain("tenant.smsEnabled = smsEl ? !!smsEl.checked : false");
-    const busy = extractFunction(html, "busyAccountHtml");
-    expect(busy).toContain('class="sd-pay-switch" role="switch"');
-    expect(busy).toContain("data-busy-write=");
-    expect(busy).toContain("sd-pay-switch-row");
-    expect(busy).toContain("sd-pay-switch-title");
-    expect(busy).toContain("sd-pay-switch-note");
-    expect(busy).toContain("Add Schedi bookings to my calendar");
-    expect(busy).not.toContain("sd-busy-toggle");
-    expect(busy).toContain('data-busy-cal="');
-    expect(extractFunction(html, "paintBusyCard")).toContain("syncPaySwitchAriaAll()");
+    const busy = extractFunction(html, "paintBusyCard");
+    expect(busy).toContain("Keep busy times off the book");
+    expect(busy).toContain("Secret address in iCal format");
+    expect(busy).not.toContain("data-busy-write=");
+    expect(busy).not.toContain("Coming soon");
+    expect(html).not.toContain("data-busy-write=");
   });
 
   it("mutes unselected mark-paid methods and keeps a single radio choice", () => {
@@ -2891,7 +2887,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
     }
   }, 90000);
 
-  it("sizes email and calendar write switches at 340 and 390 in light and dark", async () => {
+  it("sizes email switches at 340 and 390 in light and dark", async () => {
     const types: Record<string, string> = {
       ".html": "text/html; charset=utf-8",
       ".js": "text/javascript; charset=utf-8",
@@ -2960,35 +2956,12 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
         if (smsRow && smsHidden) smsRow.classList.remove("hidden");
         const sms = boxOf("tenantSmsEnabledCheck");
         if (smsRow && smsHidden) smsRow.classList.add("hidden");
-        const write = document.querySelector('[data-busy-write="google"]') as HTMLInputElement | null;
-        const writeBox = write ? (() => {
-          const style = getComputedStyle(write);
-          const box = write.getBoundingClientRect();
-          const row = write.closest(".sd-pay-switch-row") as HTMLElement | null;
-          const rowBox = row?.getBoundingClientRect();
-          const parent = row?.parentElement?.getBoundingClientRect();
-          const titleEl = row?.querySelector(".sd-pay-switch-title") as HTMLElement | null;
-          const noteEl = row?.querySelector(".sd-pay-switch-note") as HTMLElement | null;
-          return {
-            role: write.getAttribute("role"),
-            checked: write.getAttribute("aria-checked"),
-            on: write.checked,
-            w: Math.round(box.width),
-            h: Math.round(box.height),
-            bg: style.backgroundColor,
-            rowH: rowBox ? Math.round(rowBox.height) : 0,
-            full: !!(rowBox && parent && rowBox.width >= parent.width - 40 && rowBox.width <= parent.width + 1),
-            title: titleEl ? getComputedStyle(titleEl).fontSize : "",
-            note: noteEl ? getComputedStyle(noteEl).fontSize : "",
-          };
-        })() : null;
         return {
           email: boxOf("tenantEmailConfirmCheck"),
           recurring: boxOf("tenantAllowRecurringCheck"),
           reminders: boxOf("tenantRemindersEnabledCheck"),
           sms,
           smsHidden,
-          write: writeBox,
         };
       });
       for (const width of [340, 390]) {
@@ -3019,20 +2992,10 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
           expect(emails.reminders?.checked).toBe("true");
           await page.evaluate(() => (window as unknown as { schediDashGo: (tab: string) => void }).schediDashGo("hours"));
           await page.waitForFunction(() => {
-            const write = document.querySelector('[data-busy-write="google"]') as HTMLInputElement | null;
-            return !!(write && write.checked && write.getAttribute("role") === "switch");
+            const title = document.getElementById("sdBusyTitle");
+            const add = document.querySelector('[data-busy-add="1"]');
+            return !!(title && title.textContent === "Keep busy times off the book" && add);
           }, { timeout: 10000 });
-          const hours = await measure();
-          expect(hours.write?.role).toBe("switch");
-          expect(hours.write?.on).toBe(true);
-          expect(hours.write?.checked).toBe("true");
-          expect(hours.write?.w).toBe(52);
-          expect(hours.write?.h).toBe(30);
-          expect(hours.write?.rowH).toBeGreaterThanOrEqual(56);
-          expect(hours.write?.full).toBe(true);
-          expect(hours.write?.title).toBe("17px");
-          expect(hours.write?.note).toBe("16px");
-          expect(hours.write?.bg).toBe(theme === "dark" ? "rgb(16, 185, 129)" : "rgb(5, 150, 105)");
         }
       }
       await page.evaluate(() => (window as unknown as { schediDashGo: (tab: string) => void }).schediDashGo("emails"));
@@ -3064,21 +3027,25 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
         remindersAria: "false",
         remindersSaved: false,
       });
-      await page.evaluate(() => (window as unknown as { schediDashGo: (tab: string) => void }).schediDashGo("hours"));
-      await page.evaluate(() => {
-        const write = document.querySelector('[data-busy-write="google"]') as HTMLInputElement | null;
-        write?.closest("label")?.click();
-      });
-      const written = await page.evaluate(() => {
-        const write = document.querySelector('[data-busy-write="google"]') as HTMLInputElement;
-        const tenant = (window as unknown as { getTenant: () => { calendarSync: { google: { writeBookings: boolean } } } }).getTenant();
+      const feeds = await page.evaluate(() => {
+        const title = document.getElementById("sdBusyTitle")?.textContent || "";
+        const card = document.getElementById("sdBusyCard")?.textContent || "";
+        const tenant = (window as unknown as { getTenant: () => { calendarSync?: { feedCount?: number; feeds?: { masked?: string }[] } } }).getTenant();
         return {
-          on: write.checked,
-          aria: write.getAttribute("aria-checked"),
-          saved: tenant.calendarSync.google.writeBookings,
+          title,
+          hasSecret: card.includes("Secret address in iCal format"),
+          hasSoon: card.includes("Coming soon"),
+          feedCount: tenant.calendarSync && tenant.calendarSync.feedCount,
+          masked: tenant.calendarSync && tenant.calendarSync.feeds && tenant.calendarSync.feeds[0] && tenant.calendarSync.feeds[0].masked,
         };
       });
-      expect(written).toEqual({ on: false, aria: "false", saved: false });
+      expect(feeds).toEqual({
+        title: "Keep busy times off the book",
+        hasSecret: true,
+        hasSoon: false,
+        feedCount: 1,
+        masked: "calendar.google.com/…/basic.ics",
+      });
     } finally {
       await browser.close();
       await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));

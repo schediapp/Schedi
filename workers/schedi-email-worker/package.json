@@ -11,5 +11,8 @@
   },
   "devDependencies": {
     "wrangler": "^4.0.0"
+  },
+  "dependencies": {
+    "ical.js": "^2.1.0"
   }
 }

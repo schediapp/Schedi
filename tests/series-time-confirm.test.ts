@@ -246,6 +246,7 @@ describe("series replacement times", () => {
          "parseDurationMins", "overlaps", "appointmentBufferMins", "bufferedOverlap", "dateInBlockedRange",
          "dateBlockConflictReason", "isDateFullyBlocked", "getPubTimezone", "localISODate", "zonedNow",
          "getMinNoticeHoursPub", "slotInsideNotice", "noticeReasonText", "appointmentSpanMins",
+         "addDaysISO", "wallTimeToUtcDatePub", "externalBusyReason",
          "slotConflictReason", "openTimesForDate",
        ].map((name) => extractFunction(template, name)).join("\n"))}
        return function (date, mins, buffer) {

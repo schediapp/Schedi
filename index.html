@@ -2541,6 +2541,27 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-busy-field input {
 }
 #tenantPortalSection.schedi-newdash .sd-busy-hint a { color: #7dd3fc; font-weight: 800; }
 html.schedi-light #tenantPortalSection.schedi-newdash .sd-busy-hint a { color: #0369a1; }
+#tenantPortalSection.schedi-newdash .sd-busy-help {
+    margin: 10px 0 0;
+    padding: 0;
+    list-style: none;
+}
+#tenantPortalSection.schedi-newdash .sd-busy-help li {
+    margin: 6px 0 0;
+    color: var(--sd-muted);
+    font-size: 14px;
+    line-height: 1.45;
+}
+#tenantPortalSection.schedi-newdash .sd-busy-help strong { color: var(--sd-text); }
+#tenantPortalSection.schedi-newdash .sd-busy-form,
+#tenantPortalSection.schedi-newdash .sd-busy-subscribe { margin-top: 14px; }
+#tenantPortalSection.schedi-newdash .sd-busy-url {
+    margin: 6px 0 0;
+    overflow-wrap: anywhere;
+    color: var(--sd-text);
+    font-size: 13px;
+    line-height: 1.4;
+}
 #tenantPortalSection.schedi-newdash .sd-busy-error {
     margin: 0;
     color: #fb7185;
@@ -8042,6 +8063,8 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
             delete copy.appointments;
             delete copy.publicSlots;
             delete copy._privateBookingsLoaded;
+            delete copy.externalBusy;
+            delete copy.calendarSync;
             if (!schediHqTagsServer) delete copy.hqTags;
             return copy;
         }
@@ -10677,6 +10700,33 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                     return bufferConflictMessage(tenant);
                 }
             }
+            var connectedBusy = externalBusyConflictReason(tenant, dateStr, start, end);
+            if (connectedBusy) return connectedBusy;
+            return null;
+        }
+
+        function externalBusyConflictReason(tenant, dateStr, startMins, endMins) {
+            var blocks = tenant && Array.isArray(tenant.externalBusy) ? tenant.externalBusy : [];
+            if (!blocks.length || startMins == null || !dateStr) return null;
+            var endMin = endMins;
+            var endDate = dateStr;
+            if (endMin >= 1440) {
+                endMin -= 1440;
+                endDate = addIsoDays(dateStr, 1);
+            }
+            var tz = getTenantTimezone(tenant);
+            var startAt = wallTimeToUtcDate(dateStr, startMins, tz);
+            var endAt = wallTimeToUtcDate(endDate, endMin, tz);
+            if (!startAt || !endAt) return null;
+            var buf = getAppointmentBufferMins(tenant) * 60000;
+            var s = startAt.getTime();
+            var e = endAt.getTime();
+            for (var i = 0; i < blocks.length; i++) {
+                var b0 = Date.parse(blocks[i] && blocks[i].start);
+                var b1 = Date.parse(blocks[i] && blocks[i].end);
+                if (!isFinite(b0) || !isFinite(b1)) continue;
+                if (s < b1 + buf && b0 < e + buf) return 'Busy on a connected calendar';
+            }
             return null;
         }
 
@@ -11013,7 +11063,7 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                 body: JSON.stringify({ action: 'client', slug: route.slug, token: route.token, date: newDate, time: newTime })
             }).then(function (r) { return r.json().then(function (data) { return { ok: r.ok, data: data }; }); }).then(function (out) {
                 if (!out.ok) {
-                    setManageActionMsg((out.data && out.data.error === 'slot_taken') ? 'That time was just taken.' : 'Could not reschedule.', 'error');
+                    setManageActionMsg((out.data && out.data.error === 'slot_taken') ? ((out.data && out.data.message) || 'That time was just taken.') : 'Could not reschedule.', 'error');
                     return;
                 }
                 rememberRosterRevision(found.tenant, out.data);
@@ -12923,6 +12973,7 @@ function schediQrCardPixels(text, color) {
             renderTenantBilling(tenant);
             pullBillingStatus(tenant);
             switchTenantTab(platformState.tenantTab);
+            try { ensureOwnerCalendarFeeds(tenant); } catch (errCal) {}
             try { schediMountNewDash(); } catch (errDash) {}
             try { syncHqManagingBanner(); } catch (errBan) {}
         }
@@ -14738,84 +14789,92 @@ function schediQrCardPixels(text, color) {
         }
         window.closeSchediTodayMenus = closeSchediTodayMenus;
 
-        function calendarSyncProviders() {
-            return [
-                { id: 'google', name: 'Google Calendar' },
-                { id: 'microsoft', name: 'Outlook / Microsoft 365' },
-                { id: 'apple', name: 'Apple iCloud' }
-            ];
-        }
-
-        function calendarSyncNormalize(sync) {
-            var src = sync && typeof sync === 'object' ? sync : {};
-            var out = {};
-            calendarSyncProviders().forEach(function (provider) {
-                var row = src[provider.id] && typeof src[provider.id] === 'object' ? src[provider.id] : {};
-                var calendars = [];
-                var rawCals = Array.isArray(row.calendars) ? row.calendars : [];
-                rawCals.forEach(function (cal) {
-                    var id = String(cal && cal.id || '').trim();
-                    if (!id) return;
-                    calendars.push({
-                        id: id,
-                        name: String(cal && cal.name || 'Calendar'),
-                        checked: !!(cal && cal.checked)
-                    });
-                });
-                var email = String(row.email || '').trim();
-                out[provider.id] = {
-                    connected: !!row.connected && !!email,
-                    email: email,
-                    writeBookings: row.writeBookings !== false,
-                    calendars: calendars
-                };
-            });
-            return out;
-        }
-
         function calendarSyncConnected(sync) {
-            var norm = calendarSyncNormalize(sync);
-            return calendarSyncProviders().some(function (provider) {
-                return !!norm[provider.id].connected;
-            });
+            if (!sync || typeof sync !== 'object') return false;
+            if (Number(sync.feedCount) > 0) return true;
+            var feeds = Array.isArray(sync.feeds) ? sync.feeds : [];
+            return feeds.some(function (feed) { return !!(feed && String(feed.id || '').trim()); });
         }
 
-        function appleConnectError(appleId, password) {
-            var id = String(appleId || '').trim();
-            var secret = String(password || '').replace(/[\s-]/g, '');
-            if (!id) return 'Enter an Apple ID.';
-            var at = id.indexOf('@');
-            var dot = id.lastIndexOf('.');
-            if (at < 1 || dot < at + 2 || dot >= id.length - 1) return 'Enter an Apple ID that looks like an email.';
-            if (!secret) return 'Enter an app-specific password.';
-            if (secret.length < 16) return 'That app-specific password looks too short.';
+        function calendarHostLooksPrivate(host) {
+            var name = String(host || '').toLowerCase();
+            if (!name || name === 'localhost' || name === '0.0.0.0' || name === '::1' || name === '::') return true;
+            if (name.endsWith('.local') || name.endsWith('.internal') || name === 'metadata.google.internal') return true;
+            if (name.indexOf(':') !== -1) {
+                if (name.indexOf('fe80') === 0 || name.indexOf('fc') === 0 || name.indexOf('fd') === 0 || name.indexOf('ff') === 0) return true;
+                return false;
+            }
+            var v4 = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(name);
+            if (!v4) return false;
+            var a = Number(v4[1]);
+            var b = Number(v4[2]);
+            if (a > 255 || b > 255 || Number(v4[3]) > 255 || Number(v4[4]) > 255) return true;
+            if (a === 0 || a === 10 || a === 127) return true;
+            if (a === 169 && b === 254) return true;
+            if (a === 172 && b >= 16 && b <= 31) return true;
+            if (a === 192 && b === 168) return true;
+            if (a === 100 && b >= 64 && b <= 127) return true;
+            if (a >= 224) return true;
+            return false;
+        }
+
+        function calendarFeedUrlError(raw) {
+            var text = String(raw || '').trim();
+            if (!text) return 'Paste a calendar link.';
+            if (/^webcal:\/\//i.test(text)) text = 'https://' + text.slice(9);
+            var url;
+            try { url = new URL(text); } catch (errUrl) { return 'That link is not a valid calendar address.'; }
+            if (url.protocol !== 'https:') return 'Use an https or webcal link.';
+            if (url.port && url.port !== '443' && url.port !== '80') return 'Use a calendar link on port 443 or 80.';
+            if (url.username || url.password) return 'Remove the username and password from the link.';
+            if (calendarHostLooksPrivate(url.hostname)) return 'That address cannot be used.';
             return '';
         }
 
-        function calendarSyncDemoSample(providerId) {
-            if (providerId === 'google') {
-                return {
-                    connected: true,
-                    email: 'demo@harbor.studio',
-                    writeBookings: true,
-                    calendars: [
-                        { id: 'harbor', name: 'Harbor Studio', checked: true },
-                        { id: 'personal', name: 'Personal', checked: false }
-                    ]
-                };
+        function calendarProviderLabel(raw) {
+            var host = '';
+            try {
+                var text = String(raw || '').trim();
+                if (/^webcal:\/\//i.test(text)) text = 'https://' + text.slice(9);
+                host = new URL(text).hostname.toLowerCase();
+            } catch (errHost) { host = ''; }
+            if (host.indexOf('google') !== -1) return 'Google Calendar';
+            if (host.indexOf('icloud') !== -1 || host.indexOf('apple') !== -1) return 'Apple Calendar';
+            if (host.indexOf('outlook') !== -1 || host.indexOf('office') !== -1 || host.indexOf('live.com') !== -1) return 'Outlook';
+            return 'Calendar';
+        }
+
+        function calendarMaskUrl(raw) {
+            var text = String(raw || '').trim();
+            if (/^webcal:\/\//i.test(text)) text = 'https://' + text.slice(9);
+            try {
+                var url = new URL(text);
+                var parts = String(url.pathname || '').split('/').filter(Boolean);
+                var tail = parts.length ? parts[parts.length - 1] : 'ics';
+                if (tail.length > 12) tail = tail.slice(-8);
+                return url.hostname + '/…/' + tail;
+            } catch (errMask) { return 'calendar/…/ics'; }
+        }
+
+        function calendarSyncedLabel(ms) {
+            var n = Number(ms) || 0;
+            if (!n) return 'Not synced yet';
+            var diff = Date.now() - n;
+            if (diff < 0) diff = 0;
+            if (diff < 60000) return 'Synced just now';
+            if (diff < 3600000) {
+                var mins = Math.max(1, Math.floor(diff / 60000));
+                return 'Synced ' + mins + (mins === 1 ? ' min ago' : ' min ago');
             }
-            if (providerId === 'microsoft') {
-                return {
-                    connected: true,
-                    email: 'avery.cole@outlook.com',
-                    writeBookings: true,
-                    calendars: [
-                        { id: 'calendar', name: 'Calendar', checked: true },
-                        { id: 'birthdays', name: 'Birthdays', checked: false }
-                    ]
-                };
-            }
-            return null;
+            try {
+                return 'Synced ' + new Date(n).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+            } catch (errWhen) { return 'Synced'; }
+        }
+
+        function calendarEventCountLabel(count) {
+            var n = Number(count) || 0;
+            if (n === 1) return '1 busy time';
+            return n + ' busy times';
         }
 
         function schediSetupSteps(tenant) {
@@ -16125,14 +16184,13 @@ function schediQrCardPixels(text, color) {
                 cancellationFee: { enabled: true, hours: 24, type: 'fixed', percent: 0, amount: 15 },
                 notifications: { emailConfirmations: true, replyTo: 'demo@harbor.studio', extraNote: 'Street parking is on Harbor Lane.', remindersEnabled: true, reminderHour: 8 },
                 calendarSync: {
-                    google: {
-                        connected: true,
-                        email: 'demo@harbor.studio',
-                        writeBookings: true,
-                        calendars: [
-                            { id: 'harbor', name: 'Harbor Studio', checked: true },
-                            { id: 'personal', name: 'Personal', checked: false }
-                        ]
+                    feedCount: 1,
+                    feeds: [
+                        { id: 'demo-harbor', masked: 'calendar.google.com/…/basic.ics', provider: 'Google Calendar', lastSynced: Date.now(), eventCount: 4, error: '' }
+                    ],
+                    ownerFeed: {
+                        https: 'https://schedi.app/api/owner-feed/demo.ics',
+                        webcal: 'webcal://schedi.app/api/owner-feed/demo.ics'
                     }
                 },
                 operatingHours: {
@@ -18794,168 +18852,261 @@ function schediQrCardPixels(text, color) {
             if (upcoming) upcoming.addEventListener('click', hoursCalOnUpcomingClick);
         }
 
-        var busyAppleFormOpen = false;
-        var busyAppleDraft = { appleId: '', password: '', error: '' };
-
-        function busyAppleFormHtml() {
-            var err = busyAppleDraft.error ? '<p class="sd-busy-error" role="alert">' + esc(busyAppleDraft.error) + '</p>' : '';
-            return '<h4>Apple iCloud</h4><form class="sd-busy-apple" data-busy-apple-form="1">' +
-                '<label class="sd-busy-field"><span>Apple ID</span><input type="text" name="appleId" autocomplete="username" inputmode="email" value="' + esc(busyAppleDraft.appleId) + '"></label>' +
-                '<label class="sd-busy-field"><span>App-specific password</span><input type="password" name="applePassword" autocomplete="off" value="' + esc(busyAppleDraft.password) + '"></label>' +
-                '<p class="sd-busy-hint">Use the 16-character app-specific password, not your Apple ID password. <a href="https://support.apple.com/en-us/102654" target="_blank" rel="noopener noreferrer">how to make one</a></p>' +
-                '<p class="sd-busy-hint">This preview does not save the password.</p>' +
-                err +
-                '<div class="sd-busy-actions"><button type="submit" class="sd-busy-connect">Connect</button><button type="button" class="sd-busy-disconnect" data-busy-apple-cancel="1">Cancel</button></div></form>';
+        var calendarFeedDraft = '';
+        var calendarFeedError = '';
+        var calendarFeedBusy = false;
+        function applyCalendarFeedView(tenant, data) {
+            if (!tenant || !data) return;
+            var feeds = Array.isArray(data.feeds) ? data.feeds.map(function (feed) {
+                return {
+                    id: String(feed && feed.id || ''),
+                    masked: String(feed && feed.masked || ''),
+                    provider: String(feed && feed.provider || 'Calendar'),
+                    lastSynced: Number(feed && feed.lastSynced) || 0,
+                    eventCount: Number(feed && feed.eventCount) || 0,
+                    error: String(feed && feed.error || '')
+                };
+            }).filter(function (feed) { return feed.id; }) : [];
+            var owner = data.ownerFeed && data.ownerFeed.https ? {
+                https: String(data.ownerFeed.https),
+                webcal: String(data.ownerFeed.webcal || '')
+            } : (tenant.calendarSync && tenant.calendarSync.ownerFeed) || null;
+            tenant.calendarSync = { feedCount: feeds.length, feeds: feeds, ownerFeed: owner };
+            if (Array.isArray(data.blocks)) {
+                tenant.externalBusy = data.blocks.map(function (block) {
+                    return { start: String(block && block.start || ''), end: String(block && block.end || '') };
+                }).filter(function (block) { return block.start && block.end; });
+            }
         }
 
-        function busyAccountHtml(provider, row, demo) {
-            var name = esc(provider.name);
-            var id = esc(provider.id);
-            if (!demo) {
-                return '<article class="sd-busy-account"><div class="sd-busy-account-head"><div><h4>' + name + '</h4><p class="sd-busy-status">Not connected</p></div>' +
-                    '<button type="button" class="sd-busy-soon" disabled aria-disabled="true" aria-label="Coming soon, ' + name + '">Coming soon</button></div></article>';
+        function calendarFeedsDemoResult(tenant, action, extra) {
+            var sync = tenant.calendarSync && typeof tenant.calendarSync === 'object' ? tenant.calendarSync : {};
+            var feeds = Array.isArray(sync.feeds) ? sync.feeds.map(function (feed) {
+                return {
+                    id: String(feed.id || ''),
+                    masked: String(feed.masked || ''),
+                    provider: String(feed.provider || 'Calendar'),
+                    lastSynced: Number(feed.lastSynced) || 0,
+                    eventCount: Number(feed.eventCount) || 0,
+                    error: String(feed.error || '')
+                };
+            }) : [];
+            var owner = sync.ownerFeed && sync.ownerFeed.https ? { https: String(sync.ownerFeed.https), webcal: String(sync.ownerFeed.webcal || '') } : null;
+            if (action === 'add') {
+                var err = calendarFeedUrlError(extra && extra.url);
+                if (err) return { ok: false, data: { ok: false, error: 'invalid_url', message: err } };
+                var masked = calendarMaskUrl(extra.url);
+                if (feeds.some(function (feed) { return feed.masked === masked; })) {
+                    return { ok: false, data: { ok: false, error: 'duplicate_feed', message: 'That calendar is already added.' } };
+                }
+                feeds.push({
+                    id: 'demo-' + Date.now().toString(36),
+                    masked: masked,
+                    provider: calendarProviderLabel(extra.url),
+                    lastSynced: Date.now(),
+                    eventCount: 0,
+                    error: ''
+                });
+            } else if (action === 'remove') {
+                var before = feeds.length;
+                feeds = feeds.filter(function (feed) { return feed.id !== String(extra && extra.id || ''); });
+                if (feeds.length === before) return { ok: false, data: { ok: false, error: 'not_found', message: 'That calendar is already gone.' } };
+            } else if (action === 'reset-feed') {
+                var stamp = Date.now().toString(16);
+                owner = {
+                    https: 'https://schedi.app/api/owner-feed/demo' + stamp + '.ics',
+                    webcal: 'webcal://schedi.app/api/owner-feed/demo' + stamp + '.ics'
+                };
             }
-            if (provider.id === 'apple' && busyAppleFormOpen && !row.connected) {
-                return '<article class="sd-busy-account">' + busyAppleFormHtml() + '</article>';
+            return {
+                ok: true,
+                data: {
+                    ok: true,
+                    feeds: feeds,
+                    ownerFeed: owner,
+                    blocks: Array.isArray(tenant.externalBusy) ? tenant.externalBusy : [],
+                    syncedAt: Date.now()
+                }
+            };
+        }
+
+        function calendarFeedsPost(tenant, action, extra) {
+            if (window.__SCHEDI_DEMO === true) return Promise.resolve(calendarFeedsDemoResult(tenant, action, extra || {}));
+            var body = { action: action, tenantId: tenant && tenant.id, session: schediAuthSession() };
+            if (extra && extra.url) body.url = extra.url;
+            if (extra && extra.id) body.id = extra.id;
+            return fetch('https://schedi.app/api/calendar-feeds', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            }).then(function (r) {
+                return r.json().then(function (data) { return { ok: r.ok, data: data }; });
+            }).catch(function () {
+                return { ok: false, data: { ok: false, message: 'Could not reach Schedi. Try again in a moment.' } };
+            });
+        }
+
+        function ensureOwnerCalendarFeeds(tenant) {
+            if (!tenant || !tenant.id || window.__SCHEDI_DEMO === true) return;
+            if (typeof schediAuthSession !== 'function' || !schediAuthSession()) return;
+            if (tenant._calendarBusyLoading) return;
+            if (tenant._calendarBusyLoaded && Date.now() - (tenant._calendarBusyAt || 0) < 60000) return;
+            tenant._calendarBusyLoading = true;
+            tenant._calendarBusyAt = Date.now();
+            calendarFeedsPost(tenant, 'list').then(function (out) {
+                tenant._calendarBusyLoading = false;
+                if (!out || !out.ok || !out.data || out.data.ok !== true) return;
+                var current = (typeof getTenant === 'function') ? getTenant() : null;
+                if (!current || current.id !== tenant.id) {
+                    tenant._calendarBusyAt = 0;
+                    return;
+                }
+                applyCalendarFeedView(current, out.data);
+                current._calendarBusyLoaded = true;
+                current._calendarBusyAt = Date.now();
+                if (document.getElementById('sdBusyCard')) paintBusyCard(current);
+                try { renderSchediToday(current); } catch (errList) {}
+            });
+        }
+
+        function finishCalendarFeedChange(tenant, out, keepDraft) {
+            calendarFeedBusy = false;
+            var current = (typeof getTenant === 'function' && getTenant()) || tenant;
+            if (!out || !out.ok || !out.data || out.data.ok !== true) {
+                calendarFeedError = (out && out.data && (out.data.message || out.data.error)) || 'Could not update that calendar.';
+                paintBusyCard(current);
+                return;
             }
-            if (!row.connected) {
-                return '<article class="sd-busy-account"><div class="sd-busy-account-head"><div><h4>' + name + '</h4><p class="sd-busy-status">Not connected</p></div>' +
-                    '<button type="button" class="sd-busy-connect" data-busy-connect="' + id + '">Connect</button></div></article>';
-            }
-            var cals = row.calendars.map(function (cal) {
-                return '<label class="sd-busy-cal"><input type="checkbox" data-busy-cal="' + id + '" data-cal-id="' + esc(cal.id) + '"' + (cal.checked ? ' checked' : '') + '><span>' + esc(cal.name) + '</span></label>';
+            calendarFeedError = '';
+            if (!keepDraft) calendarFeedDraft = '';
+            applyCalendarFeedView(current, out.data);
+            current._calendarBusyLoaded = true;
+            paintBusyCard(current);
+            try { renderSchediToday(current); } catch (errFeed) {}
+            try { renderLivePreviewIframe(); } catch (errLive) {}
+        }
+
+        function calendarFeedRowsHtml(tenant) {
+            var feeds = tenant && tenant.calendarSync && Array.isArray(tenant.calendarSync.feeds) ? tenant.calendarSync.feeds : [];
+            if (!feeds.length) return '<p class="sd-busy-status">No calendars yet. Open times stay bookable until you add one.</p>';
+            return feeds.map(function (feed) {
+                var err = feed.error ? '<p class="sd-busy-error" role="alert">' + esc(feed.error) + '</p>' : '';
+                return '<article class="sd-busy-account"><div class="sd-busy-account-head"><div><h4>' + esc(feed.provider || 'Calendar') + '</h4>' +
+                    '<p class="sd-busy-status">' + esc(feed.masked || 'Hidden link') + '</p>' +
+                    '<p class="sd-busy-hint">' + esc(calendarSyncedLabel(feed.lastSynced)) + ' · ' + esc(calendarEventCountLabel(feed.eventCount)) + '</p>' +
+                    err + '</div>' +
+                    '<button type="button" class="sd-busy-disconnect" data-busy-remove="' + esc(feed.id) + '">Remove</button></div></article>';
             }).join('');
-            var noneChecked = row.calendars.length > 0 && row.calendars.every(function (cal) { return !cal.checked; });
-            var warn = noneChecked ? '<p class="sd-busy-warn">Pick at least one calendar so Schedi can see when you are busy.</p>' : '';
-            return '<article class="sd-busy-account"><div class="sd-busy-account-head"><div><h4>' + name + '</h4><p class="sd-busy-status">Connected as ' + esc(row.email) + '</p></div>' +
-                '<button type="button" class="sd-busy-disconnect" data-busy-disconnect="' + id + '">Disconnect</button></div>' +
-                '<fieldset class="sd-busy-cals"><legend>Calendars to check for busy times</legend>' + cals + '</fieldset>' +
-                warn +
-                '<label class="sd-pay-switch-row">' +
-                '<span class="sd-pay-switch-copy"><span>' +
-                '<span class="sd-pay-switch-title text-white" id="sdBusyWriteLabel_' + id + '">Add Schedi bookings to my calendar</span>' +
-                '<span class="sd-pay-switch-note text-slate-400">On means new, changed, and cancelled bookings can be written to this calendar. Off means Schedi only reads busy times.</span>' +
-                '</span></span>' +
-                '<input type="checkbox" class="sd-pay-switch" role="switch" data-busy-write="' + id + '" aria-checked="' + (row.writeBookings ? 'true' : 'false') + '" aria-labelledby="sdBusyWriteLabel_' + id + '"' + (row.writeBookings ? ' checked' : '') + '>' +
-                '</label></article>';
+        }
+
+        function calendarSubscribeHtml(tenant) {
+            var owner = tenant && tenant.calendarSync && tenant.calendarSync.ownerFeed;
+            var https = owner && owner.https ? String(owner.https) : '';
+            var webcal = owner && owner.webcal ? String(owner.webcal) : '';
+            var link = https
+                ? '<p class="sd-busy-url">' + esc(https) + '</p>' + (webcal ? '<p class="sd-busy-hint">Webcal: ' + esc(webcal) + '</p>' : '')
+                : '<p class="sd-busy-status">The subscribe link shows here after Schedi checks this account.</p>';
+            var actions = https
+                ? '<div class="sd-busy-actions"><button type="button" class="sd-busy-connect" data-busy-copy="1">Copy link</button><button type="button" class="sd-busy-disconnect" data-busy-reset="1">Reset link</button></div>'
+                : '';
+            return '<div class="sd-busy-subscribe"><h4>Subscribe to your Schedi bookings</h4>' +
+                '<p class="sd-busy-hint">Add this link in Google Calendar, Apple Calendar, or Outlook. It lists your bookings, including the client and the service.</p>' +
+                link + actions + '</div>';
         }
 
         function paintBusyCard(tenant) {
             var card = document.getElementById('sdBusyCard');
             if (!card) return;
-            var demo = window.__SCHEDI_DEMO === true;
-            var sync = calendarSyncNormalize(tenant && tenant.calendarSync);
-            var lead = demo
-                ? 'Connect a calendar so Schedi can skip times you are already busy. This preview does not talk to Google, Microsoft, or Apple.'
-                : 'Calendar connections are coming soon. Connect buttons stay off until the backend exists.';
-            var accounts = calendarSyncProviders().map(function (provider) {
-                return busyAccountHtml(provider, sync[provider.id], demo);
-            }).join('');
-            card.innerHTML = '<div class="sd-busy-top"><h3 id="sdBusyTitle">Avoid double-booking</h3><p class="sd-busy-lead">' + esc(lead) + '</p></div>' + accounts;
-            syncPaySwitchAriaAll();
+            var err = calendarFeedError ? '<p class="sd-busy-error" role="alert">' + esc(calendarFeedError) + '</p>' : '';
+            var addLabel = calendarFeedBusy ? 'Checking the link…' : 'Add calendar';
+            card.innerHTML = '<div class="sd-busy-top"><h3 id="sdBusyTitle">Keep busy times off the book</h3>' +
+                '<p class="sd-busy-lead">Paste a private calendar link. Schedi blocks those times for the next 90 days and leaves the event names on your calendar.</p>' +
+                '<ul class="sd-busy-help">' +
+                '<li><strong>Google Calendar.</strong> Open Settings and sharing for that calendar, then copy the Secret address in iCal format.</li>' +
+                '<li><strong>Apple Calendar.</strong> Share the calendar with a public link and paste that link. Schedi does not ask you to sign in.</li>' +
+                '<li><strong>Outlook.</strong> Publish the calendar and paste the ICS link.</li>' +
+                '</ul></div>' +
+                '<form class="sd-busy-form" data-busy-add="1">' +
+                '<label class="sd-busy-field"><span>Private iCal link</span><input type="url" name="calendarUrl" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://" value="' + esc(calendarFeedDraft) + '"></label>' +
+                err +
+                '<div class="sd-busy-actions"><button type="submit" class="sd-busy-connect"' + (calendarFeedBusy ? ' disabled' : '') + '>' + addLabel + '</button>' +
+                '<button type="button" class="sd-busy-disconnect" data-busy-refresh="1">Check again</button></div></form>' +
+                calendarFeedRowsHtml(tenant) +
+                calendarSubscribeHtml(tenant);
             if (card.getAttribute('data-bound') === '1') return;
             card.setAttribute('data-bound', '1');
+            card.addEventListener('input', function (event) {
+                var input = event.target;
+                if (input && input.name === 'calendarUrl') calendarFeedDraft = String(input.value || '');
+            });
             card.addEventListener('click', onBusyCardClick);
-            card.addEventListener('change', onBusyCardChange);
             card.addEventListener('submit', onBusyCardSubmit);
         }
 
         function onBusyCardClick(event) {
-            if (window.__SCHEDI_DEMO !== true) return;
-            var node = event.target && event.target.closest ? event.target.closest('[data-busy-connect], [data-busy-disconnect], [data-busy-apple-cancel]') : null;
+            var node = event.target && event.target.closest ? event.target.closest('[data-busy-remove], [data-busy-copy], [data-busy-reset], [data-busy-refresh]') : null;
             if (!node) return;
             var tenant = getTenant();
-            if (!tenant) return;
-            if (node.hasAttribute('data-busy-apple-cancel')) {
-                busyAppleFormOpen = false;
-                busyAppleDraft = { appleId: '', password: '', error: '' };
+            if (!tenant || calendarFeedBusy) return;
+            if (node.hasAttribute('data-busy-refresh')) {
+                calendarFeedBusy = true;
+                calendarFeedError = '';
                 paintBusyCard(tenant);
+                calendarFeedsPost(tenant, 'refresh').then(function (out) { finishCalendarFeedChange(tenant, out, true); });
                 return;
             }
-            var connectId = node.getAttribute('data-busy-connect');
-            if (connectId === 'apple') {
-                busyAppleFormOpen = true;
-                paintBusyCard(tenant);
+            if (node.hasAttribute('data-busy-copy')) {
+                var link = tenant.calendarSync && tenant.calendarSync.ownerFeed && tenant.calendarSync.ownerFeed.https;
+                if (!link) return;
+                var copied = function () { if (typeof showToast === 'function') showToast('Subscribe link copied.', 'info'); };
+                if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(link).then(copied).catch(copied);
+                else copied();
                 return;
             }
-            if (connectId) {
-                var sample = calendarSyncDemoSample(connectId);
-                if (!sample) return;
-                var sync = calendarSyncNormalize(tenant.calendarSync);
-                sync[connectId] = sample;
-                tenant.calendarSync = sync;
-                paintBusyCard(tenant);
-                try { renderSchediToday(tenant); } catch (errConnect) {}
+            if (node.hasAttribute('data-busy-reset')) {
+                var reset = function () {
+                    calendarFeedBusy = true;
+                    paintBusyCard(tenant);
+                    calendarFeedsPost(tenant, 'reset-feed').then(function (out) { finishCalendarFeedChange(tenant, out, true); });
+                };
+                if (typeof openOwnerConfirm === 'function') {
+                    openOwnerConfirm({
+                        title: 'Reset the subscribe link?',
+                        body: 'Calendars that already subscribed will stop updating until you add the new link.',
+                        confirmLabel: 'Reset link',
+                        danger: false
+                    }).then(function (yes) { if (yes) reset(); });
+                } else {
+                    reset();
+                }
                 return;
             }
-            var disconnectId = node.getAttribute('data-busy-disconnect');
-            if (!disconnectId) return;
-            var next = calendarSyncNormalize(tenant.calendarSync);
-            next[disconnectId] = { connected: false, email: '', writeBookings: true, calendars: [] };
-            tenant.calendarSync = next;
-            if (disconnectId === 'apple') {
-                busyAppleFormOpen = false;
-                busyAppleDraft = { appleId: '', password: '', error: '' };
-            }
+            var removeId = node.getAttribute('data-busy-remove');
+            if (!removeId) return;
+            calendarFeedBusy = true;
+            calendarFeedError = '';
             paintBusyCard(tenant);
-            try { renderSchediToday(tenant); } catch (errDisconnect) {}
-        }
-
-        function onBusyCardChange(event) {
-            if (window.__SCHEDI_DEMO !== true) return;
-            var input = event.target;
-            if (!input || !input.getAttribute) return;
-            var tenant = getTenant();
-            if (!tenant) return;
-            var sync = calendarSyncNormalize(tenant.calendarSync);
-            var calProvider = input.getAttribute('data-busy-cal');
-            if (calProvider && sync[calProvider]) {
-                var calId = input.getAttribute('data-cal-id');
-                sync[calProvider].calendars.forEach(function (cal) {
-                    if (cal.id === calId) cal.checked = !!input.checked;
-                });
-                tenant.calendarSync = sync;
-                paintBusyCard(tenant);
-                return;
-            }
-            var writeProvider = input.getAttribute('data-busy-write');
-            if (writeProvider && sync[writeProvider]) {
-                sync[writeProvider].writeBookings = !!input.checked;
-                tenant.calendarSync = sync;
-            }
+            calendarFeedsPost(tenant, 'remove', { id: removeId }).then(function (out) { finishCalendarFeedChange(tenant, out, true); });
         }
 
         function onBusyCardSubmit(event) {
             var form = event.target;
-            if (!form || !form.getAttribute || form.getAttribute('data-busy-apple-form') !== '1') return;
+            if (!form || !form.getAttribute || form.getAttribute('data-busy-add') !== '1') return;
             event.preventDefault();
-            if (window.__SCHEDI_DEMO !== true) return;
             var tenant = getTenant();
-            if (!tenant) return;
-            var appleId = form.appleId ? form.appleId.value : '';
-            var password = form.applePassword ? form.applePassword.value : '';
-            var error = appleConnectError(appleId, password);
-            if (error) {
-                busyAppleFormOpen = true;
-                busyAppleDraft = { appleId: String(appleId || '').trim(), password: String(password || ''), error: error };
+            if (!tenant || calendarFeedBusy) return;
+            var url = form.calendarUrl ? String(form.calendarUrl.value || '').trim() : '';
+            calendarFeedDraft = url;
+            var localError = calendarFeedUrlError(url);
+            if (localError) {
+                calendarFeedError = localError;
                 paintBusyCard(tenant);
                 return;
             }
-            var sync = calendarSyncNormalize(tenant.calendarSync);
-            sync.apple = {
-                connected: true,
-                email: String(appleId || '').trim(),
-                writeBookings: true,
-                calendars: [
-                    { id: 'home', name: 'Home', checked: true },
-                    { id: 'work', name: 'Work', checked: false }
-                ]
-            };
-            tenant.calendarSync = sync;
-            busyAppleFormOpen = false;
-            busyAppleDraft = { appleId: '', password: '', error: '' };
+            calendarFeedError = '';
+            calendarFeedBusy = true;
             paintBusyCard(tenant);
-            try { renderSchediToday(tenant); } catch (errApple) {}
+            calendarFeedsPost(tenant, 'add', { url: url }).then(function (out) { finishCalendarFeedChange(tenant, out, false); });
         }
 
         var hoursWeekLayoutChoice = null;
@@ -20458,7 +20609,24 @@ function schediQrCardPixels(text, color) {
             if (extras) {
                 var hintText = '';
                 if (!opts.length) hintText = reason + '. Turn on Show all times to pick a time anyway.';
-                else if (showAll) hintText = 'Showing every time. Hours, blocks, and other bookings are not checked.';
+                else if (showAll) {
+                    hintText = 'Showing every time. Hours, blocks, and other bookings are not checked.';
+                    var hintDateEl = c && document.getElementById(c.date);
+                    var hintDate = hintDateEl ? hintDateEl.value : '';
+                    var hintStart = toMinutes(el.value);
+                    var hintDur = 60;
+                    if (c && c.dur) hintDur = parseInt((document.getElementById(c.dur) || {}).value, 10) || 60;
+                    else if (current) hintDur = appointmentDurationMins(tenant, current);
+                    else if (showAll && c) {
+                        var hintIdEl = document.getElementById(c.id);
+                        var hintIgnore = hintIdEl ? String(hintIdEl.value || '') : '';
+                        var hintAppt = hintIgnore ? (tenant.appointments || []).find(function (a) { return a && String(a.id) === hintIgnore; }) : null;
+                        if (hintAppt) hintDur = appointmentDurationMins(tenant, hintAppt);
+                    }
+                    if (hintDate && hintStart !== null && externalBusyConflictReason(tenant, hintDate, hintStart, hintStart + hintDur)) {
+                        hintText = 'Busy on a connected calendar. You can still book this time.';
+                    }
+                }
                 extras.hint.textContent = hintText;
                 extras.hint.classList.toggle('hidden', !hintText);
             }
@@ -21343,7 +21511,7 @@ function schediQrCardPixels(text, color) {
                 : (formatLocalBasic(dateStr, startMins) + '/' + formatLocalBasic(endDateStr, endMins));
             var gUrl = 'https://calendar.google.com/calendar/render?action=TEMPLATE'
                 + '&text=' + encodeURIComponent(summary)
-                + '&dates=' + encodeURIComponent(googleDates)
+                + '&dates=' + googleDates.split('/').map(encodeURIComponent).join('/')
                 + '&details=' + encodeURIComponent(description.replace(/\\n/g, '\n'))
                 + (loc ? ('&location=' + encodeURIComponent(loc)) : '');
             var uid = 'schedi-' + String((booking && booking.id) || Date.now()) + '@schedi.app';
@@ -26369,6 +26537,9 @@ function schediQrCardPixels(text, color) {
             publicTenant.publicSlots = (Array.isArray(tenant.publicSlots) && tenant.publicSlots.length)
                 ? tenant.publicSlots.map(publicSlotFromAppointment).filter(Boolean)
                 : (tenant.appointments || []).map(publicSlotFromAppointment).filter(Boolean);
+            publicTenant.externalBusy = (Array.isArray(tenant.externalBusy) ? tenant.externalBusy : []).map(function (block) {
+                return { start: String(block && block.start || ''), end: String(block && block.end || '') };
+            }).filter(function (block) { return block.start && block.end; });
             if (publicTenant.showPublicAddress === false) {
                 delete publicTenant.address;
                 delete publicTenant.location;
@@ -27488,6 +27659,20 @@ function schediQrCardPixels(text, color) {
                 if (typeof generateDynamicTimeSlots === 'function') generateDynamicTimeSlots();
             });
         });
+        function refreshExternalBusy() {
+            if (SCHEDI_DEMO || !tenantData || !tenantData.id) return;
+            fetch('https://schedi.app/api/calendar-busy?tenant=' + encodeURIComponent(String(tenantData.id)))
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (!data || data.ok === false || !Array.isArray(data.blocks)) return;
+                    tenantData.externalBusy = data.blocks.map(function (block) {
+                        return { start: String(block && block.start || ''), end: String(block && block.end || '') };
+                    }).filter(function (block) { return block.start && block.end; });
+                    if (typeof generateDynamicTimeSlots === 'function') generateDynamicTimeSlots();
+                })
+                .catch(function () {});
+        }
+        refreshExternalBusy();
         function applySchediTheme(mode) {
             var light = mode === 'light';
             document.documentElement.classList.toggle('schedi-light', light);
@@ -28714,7 +28899,7 @@ function paintBizHeader() {
                 : (formatLocalBasicPub(dateStr, startMins) + '/' + formatLocalBasicPub(endDateStr, endMins));
             var gUrl = 'https://calendar.google.com/calendar/render?action=TEMPLATE'
                 + '&text=' + encodeURIComponent(summary)
-                + '&dates=' + encodeURIComponent(googleDates)
+                + '&dates=' + googleDates.split('/').map(encodeURIComponent).join('/')
                 + '&details=' + encodeURIComponent(description)
                 + (loc ? ('&location=' + encodeURIComponent(loc)) : '');
             var uid = 'schedi-' + String((booking && booking.id) || Date.now()) + '@schedi.app';
@@ -29096,6 +29281,30 @@ function paintBizHeader() {
             return start < otherEnd + g && otherStart < end + g;
         }
 
+        function externalBusyReason(dateStr, startMins, endMins) {
+            var blocks = tenantData && Array.isArray(tenantData.externalBusy) ? tenantData.externalBusy : [];
+            if (!blocks.length || startMins == null || !dateStr) return null;
+            var endMin = endMins;
+            var endDate = dateStr;
+            if (endMin >= 1440) {
+                endMin -= 1440;
+                endDate = addDaysISO(dateStr, 1);
+            }
+            var startAt = wallTimeToUtcDatePub(dateStr, startMins, getPubTimezone());
+            var endAt = wallTimeToUtcDatePub(endDate, endMin, getPubTimezone());
+            if (!startAt || !endAt) return null;
+            var buf = appointmentBufferMins(tenantData) * 60000;
+            var s = startAt.getTime();
+            var e = endAt.getTime();
+            for (var bi = 0; bi < blocks.length; bi++) {
+                var b0 = Date.parse(blocks[bi] && blocks[bi].start);
+                var b1 = Date.parse(blocks[bi] && blocks[bi].end);
+                if (!isFinite(b0) || !isFinite(b1)) continue;
+                if (s < b1 + buf && b0 < e + buf) return 'Busy';
+            }
+            return null;
+        }
+
         function slotConflictReason(dateStr, timeLabel) {
             if (!dateStr || !timeLabel) return 'Missing date or time';
             var parts = String(dateStr).split('-');
@@ -29132,6 +29341,8 @@ function paintBizHeader() {
                     return 'Needs ' + gap + ' minutes after the previous appointment';
                 }
             }
+            var externalReason = externalBusyReason(dateStr, start, end);
+            if (externalReason) return externalReason;
             if (slotInsideNotice(dateStr, start)) return noticeReasonText();
             var bizNow = zonedNow(getPubTimezone());
             if (dateStr < bizNow.iso || (dateStr === bizNow.iso && start <= bizNow.minutes)) return 'That time has already passed';
@@ -29859,13 +30070,14 @@ function paintBizHeader() {
                     var isTaken = taken.some(function (tk) {
                         return bufferedOverlap(t, slotEnd, tk.start, tk.end, slotGap);
                     });
+                    var externalBusy = !blockedBy && !isTaken ? externalBusyReason(selectedDateStr, t, slotEnd) : null;
 
                     var isPast = isToday && t <= nowMins;
 
                     slots.push({
                         time: fromMinutes(t),
-                        blocked: Boolean(blockedBy) || isTaken || isPast,
-                        reason: isTaken ? 'Booked' : isPast ? 'Passed' : blockedBy
+                        blocked: Boolean(blockedBy) || isTaken || isPast || Boolean(externalBusy),
+                        reason: isTaken ? 'Booked' : isPast ? 'Passed' : (blockedBy || externalBusy)
                     });
                 }
             }
@@ -30442,13 +30654,15 @@ function paintBizHeader() {
                         }).then(function (r) { return r.json().then(function (data) { return { ok: r.ok, data: data }; }); })
                           .then(function (out) {
                               if (!out.ok) console.warn('Booking save failed', out.data && out.data.error);
-                              if (!out.ok && out.data && out.data.error === 'too_soon') {
+                              if (!out.ok && out.data && (out.data.error === 'too_soon' || out.data.error === 'slot_taken')) {
                                   var dropped = {};
                                   list.forEach(function (item) { if (item && item.id) dropped[item.id] = true; });
                                   tenantData.publicSlots = (tenantData.publicSlots || []).filter(function (slot) { return !(slot && dropped[slot.id]); });
                                   var errBox = document.getElementById('bookingErrMsg');
                                   if (errBox) {
-                                      errBox.textContent = noticeReasonText() + '. Choose a later time.';
+                                      errBox.textContent = out.data.error === 'slot_taken'
+                                          ? ((out.data && out.data.message) || 'That time was just taken.')
+                                          : (noticeReasonText() + '. Choose a later time.');
                                       errBox.classList.remove('hidden');
                                   }
                                   var cards = document.querySelectorAll('main > .glass-card, main > .biz-header');
@@ -30475,7 +30689,7 @@ function paintBizHeader() {
                         }
                         if (window.parent === window) return;
                         // A too_soon reject was not saved; do not hand the portal a booking the server refused.
-                        if (out && !out.ok && out.data && out.data.error === 'too_soon') return;
+                        if (out && !out.ok && out.data && (out.data.error === 'too_soon' || out.data.error === 'slot_taken')) return;
                         var msg = {
                             type: 'NEW_BOOKING_SUBMITTED',
                             booking: booking,

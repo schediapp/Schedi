@@ -97,12 +97,22 @@ function durationMins(booking) {
   return 60;
 }
 
-function buildIcsBody(tenant, booking, manageUrl) {
+export function googleCalendarDatesParam(startUtc, endUtc) {
+  const start = formatUtcBasic(startUtc);
+  const end = formatUtcBasic(endUtc);
+  if (!start || !end) return '';
+  // The slash must stay literal. Google drops the times when it is encoded.
+  return start + '/' + end;
+}
+
+function bookingEventLines(tenant, booking, options) {
+  const opts = options || {};
   const tz = String((tenant && (tenant.timezone || tenant.timeZone)) || 'America/New_York').trim() || 'America/New_York';
   const loc = publicBusinessAddress(tenant);
   const service = String((booking && booking.serviceName) || 'Appointment');
   const biz = String((tenant && tenant.name) || 'Schedi');
-  const summary = service + ' at ' + biz;
+  const client = String((booking && booking.clientName) || '').trim();
+  const summary = opts.includeClient && client ? (client + ' — ' + service) : (service + ' at ' + biz);
   let startMins = toMinutes(booking && booking.time);
   if (startMins == null) startMins = 10 * 60;
   const dur = durationMins(booking);
@@ -114,35 +124,63 @@ function buildIcsBody(tenant, booking, manageUrl) {
     const p = dateStr.split('-');
     const d = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
     d.setDate(d.getDate() + 1);
-    endDateStr =
-      d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+    endDateStr = d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
   }
   const startUtc = wallTimeToUtcDate(dateStr, startMins, tz);
   const endUtc = wallTimeToUtcDate(endDateStr, endMins, tz);
   const uid = 'schedi-' + String((booking && booking.id) || 'booking') + '@schedi.app';
-  const descParts = [
-    'Service: ' + service,
-    'With: ' + biz,
-    'Reference: #' + String((booking && booking.id) || ''),
+  const descParts = ['Service: ' + service, 'With: ' + biz];
+  if (opts.includeClient && client) descParts.push('Client: ' + client);
+  descParts.push('Reference: #' + String((booking && booking.id) || ''));
+  if (opts.manageUrl) descParts.push('Manage: ' + opts.manageUrl);
+  const lines = [
+    'BEGIN:VEVENT',
+    'UID:' + uid,
+    'DTSTAMP:' + formatUtcBasic(opts.now || new Date()),
+    'DTSTART:' + formatUtcBasic(startUtc),
+    'DTEND:' + formatUtcBasic(endUtc),
+    'SUMMARY:' + icsEscape(summary),
+    'DESCRIPTION:' + icsEscape(descParts.join('\n')),
   ];
-  if (manageUrl) descParts.push('Manage: ' + manageUrl);
-  const description = descParts.join('\n');
+  if (loc) lines.push('LOCATION:' + icsEscape(loc));
+  lines.push('END:VEVENT');
+  return lines;
+}
+
+function buildIcsBody(tenant, booking, manageUrl) {
   const lines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
     'PRODID:-//Schedi//Booking//EN',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
-    'BEGIN:VEVENT',
-    'UID:' + uid,
-    'DTSTAMP:' + formatUtcBasic(new Date()),
-    'DTSTART:' + formatUtcBasic(startUtc),
-    'DTEND:' + formatUtcBasic(endUtc),
-    'SUMMARY:' + icsEscape(summary),
-    'DESCRIPTION:' + icsEscape(description),
+  ].concat(bookingEventLines(tenant, booking, { manageUrl: manageUrl || '' }), ['END:VCALENDAR']);
+  return lines.join('\r\n') + '\r\n';
+}
+
+function feedBookingOpen(booking) {
+  if (!booking) return false;
+  if (booking.cancelled === true) return false;
+  const status = String(booking.status || '').toLowerCase();
+  return status !== 'cancelled' && status !== 'canceled' && status !== 'denied';
+}
+
+export function buildOwnerFeedIcs(tenant, bookings, now) {
+  const stamp = now instanceof Date ? now : new Date();
+  const name = String((tenant && tenant.name) || 'Schedi');
+  const lines = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Schedi//Owner Feed//EN',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    'X-WR-CALNAME:' + icsEscape(name + ' bookings'),
   ];
-  if (loc) lines.push('LOCATION:' + icsEscape(loc));
-  lines.push('END:VEVENT', 'END:VCALENDAR');
+  for (const booking of bookings || []) {
+    if (!feedBookingOpen(booking) || !booking.date || !booking.time) continue;
+    lines.push.apply(lines, bookingEventLines(tenant, booking, { includeClient: true, now: stamp }));
+  }
+  lines.push('END:VCALENDAR');
   return lines.join('\r\n') + '\r\n';
 }
 

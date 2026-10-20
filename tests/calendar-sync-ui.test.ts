@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+const hq = readFileSync(new URL("../site/hq.html", import.meta.url), "utf8");
 const plan = readFileSync(new URL("../docs/calendar-sync-plan.md", import.meta.url), "utf8");
 const TEMPLATE = "return `<!DOCTYPE html>";
 
@@ -21,74 +22,72 @@ function extractFunction(source: string, name: string): string {
 }
 
 const owner = html.slice(0, html.indexOf(TEMPLATE));
-const names = [
-  "calendarSyncProviders",
-  "calendarSyncNormalize",
-  "calendarSyncConnected",
-  "appleConnectError",
-  "calendarSyncDemoSample",
-];
+const names = ["calendarHostLooksPrivate", "calendarFeedUrlError", "calendarSyncConnected", "calendarMaskUrl"];
 const lib = names.map((name) => extractFunction(owner, name)).join("\n");
 const api = new Function(
-  `${lib}; return { calendarSyncProviders, calendarSyncNormalize, calendarSyncConnected, appleConnectError, calendarSyncDemoSample };`,
+  `${lib}; return { calendarHostLooksPrivate, calendarFeedUrlError, calendarSyncConnected, calendarMaskUrl };`,
 )() as {
-  calendarSyncProviders: () => { id: string; name: string }[];
-  calendarSyncNormalize: (sync: unknown) => Record<string, {
-    connected: boolean;
-    email: string;
-    writeBookings: boolean;
-    calendars: { id: string; name: string; checked: boolean }[];
-  }>;
+  calendarHostLooksPrivate: (host: string) => boolean;
+  calendarFeedUrlError: (raw: unknown) => string;
   calendarSyncConnected: (sync: unknown) => boolean;
-  appleConnectError: (appleId: unknown, password: unknown) => string;
-  calendarSyncDemoSample: (providerId: string) => { email?: string; calendars?: { name: string; checked: boolean }[] } | null;
+  calendarMaskUrl: (raw: string) => string;
 };
 
-describe("calendar sync helpers", () => {
-  it("normalizes missing accounts and treats a connection without an email as disconnected", () => {
-    const empty = api.calendarSyncNormalize(null);
-    expect(api.calendarSyncProviders().map((provider) => provider.id)).toEqual(["google", "microsoft", "apple"]);
-    expect(empty.google.connected).toBe(false);
-    expect(empty.microsoft.calendars).toEqual([]);
-    expect(empty.apple.writeBookings).toBe(true);
-    const partial = api.calendarSyncNormalize({
-      google: {
-        connected: true,
-        email: "  ",
-        calendars: [{ id: "", name: "Skip" }, { id: "work", name: "Work", checked: true }],
-      },
-      apple: { connected: true, email: "ada@icloud.com", writeBookings: false, calendars: [] },
-    });
-    expect(partial.google.connected).toBe(false);
-    expect(partial.google.calendars).toEqual([{ id: "work", name: "Work", checked: true }]);
-    expect(partial.apple.connected).toBe(true);
-    expect(partial.apple.writeBookings).toBe(false);
-    expect(api.calendarSyncConnected(partial)).toBe(true);
+describe("calendar feed helpers", () => {
+  it("treats a saved feed as connected and ignores the old provider shape", () => {
     expect(api.calendarSyncConnected(null)).toBe(false);
+    expect(api.calendarSyncConnected({})).toBe(false);
+    expect(api.calendarSyncConnected({ feedCount: 1, feeds: [] })).toBe(true);
+    expect(api.calendarSyncConnected({
+      feeds: [{ id: "abc", masked: "calendar.google.com/…/basic.ics" }],
+    })).toBe(true);
+    expect(api.calendarSyncConnected({
+      google: { connected: true, email: "ada@example.com" },
+    })).toBe(false);
   });
 
-  it("rejects a short Apple password and accepts a 16-character app-specific password", () => {
-    expect(api.appleConnectError("", "abcd-efgh-ijkl-mnop")).toBe("Enter an Apple ID.");
-    expect(api.appleConnectError("not-an-email", "abcd-efgh-ijkl-mnop")).toBe("Enter an Apple ID that looks like an email.");
-    expect(api.appleConnectError("ada@icloud.com", "")).toBe("Enter an app-specific password.");
-    expect(api.appleConnectError("ada@icloud.com", "too-short")).toBe("That app-specific password looks too short.");
-    expect(api.appleConnectError(" ada@icloud.com ", "abcd efgh ijkl mnop")).toBe("");
+  it("accepts https and webcal links and rejects private addresses", () => {
+    expect(api.calendarFeedUrlError("")).toBe("Paste a calendar link.");
+    expect(api.calendarFeedUrlError("http://calendar.google.com/calendar/ical/secret.ics")).toBe("Use an https or webcal link.");
+    expect(api.calendarFeedUrlError("https://user:pass@calendar.google.com/secret.ics")).toBe("Remove the username and password from the link.");
+    expect(api.calendarFeedUrlError("https://localhost/basic.ics")).toBe("That address cannot be used.");
+    expect(api.calendarFeedUrlError("https://127.0.0.1/basic.ics")).toBe("That address cannot be used.");
+    expect(api.calendarFeedUrlError("https://10.1.2.3/basic.ics")).toBe("That address cannot be used.");
+    expect(api.calendarFeedUrlError("https://192.168.1.9/basic.ics")).toBe("That address cannot be used.");
+    expect(api.calendarFeedUrlError("https://calendar.google.com:8443/basic.ics")).toBe("Use a calendar link on port 443 or 80.");
+    expect(api.calendarFeedUrlError("webcal://calendar.google.com/calendar/ical/secret/basic.ics")).toBe("");
+    expect(api.calendarMaskUrl("https://calendar.google.com/calendar/ical/secret-token/basic.ics")).toBe("calendar.google.com/…/basic.ics");
+    expect(api.calendarMaskUrl("https://calendar.google.com/calendar/ical/secret-token/basic.ics")).not.toContain("secret-token");
   });
 
-  it("uses local demo accounts and does not put provider secrets in the owner script", () => {
-    expect(api.calendarSyncDemoSample("google")?.email).toBe("demo@harbor.studio");
-    expect(api.calendarSyncDemoSample("microsoft")?.email).toBe("avery.cole@outlook.com");
-    expect(api.calendarSyncDemoSample("apple")).toBeNull();
-    expect(owner).toContain("Avoid double-booking");
-    expect(owner).toContain("Calendars to check for busy times");
-    expect(owner).toContain("Add Schedi bookings to my calendar");
-    expect(owner).toContain("Coming soon");
-    expect(owner).toContain("https://support.apple.com/en-us/102654");
-    expect(owner).toContain("This preview does not save the password.");
-    expect(owner).not.toContain("calendar.freebusy");
-    expect(owner).not.toContain("Calendars.ReadWrite");
-    expect(owner).not.toContain("/api/calendar/");
-    expect(html.slice(html.indexOf(TEMPLATE))).not.toContain("Avoid double-booking");
+  it("shows masked feeds and a subscribe link without the old connect mock", () => {
+    expect(owner).toContain("Keep busy times off the book");
+    expect(owner).toContain("Secret address in iCal format");
+    expect(owner).toContain("Share the calendar with a public link");
+    expect(owner).toContain("Publish the calendar and paste the ICS link");
+    expect(owner).toContain("Copy link");
+    expect(owner).toContain("Reset link");
+    expect(owner).toContain("/api/calendar-feeds");
+    expect(owner).toContain("Busy on a connected calendar");
+    const calendarSync = owner.slice(owner.indexOf("function calendarSyncConnected"), owner.indexOf("function schediSetupSteps"))
+      + owner.slice(owner.indexOf("function applyCalendarFeedView"), owner.indexOf("function hoursWeekStored"));
+    expect(calendarSync).toContain("Keep busy times off the book");
+    expect(calendarSync).not.toContain("Coming soon");
+    expect(owner).not.toContain("app-specific password");
+    expect(owner).not.toContain("This preview does not save the password.");
+    expect(owner).not.toContain("data-busy-write=");
+    expect(owner).not.toContain("calendarSyncProviders");
+    expect(owner).not.toContain("encodeURIComponent(googleDates)");
+    expect(owner).toContain("googleDates.split('/').map(encodeURIComponent).join('/')");
+    const page = html.slice(html.indexOf(TEMPLATE));
+    expect(page).toContain("function refreshExternalBusy");
+    expect(page).toContain("https://schedi.app/api/calendar-busy?tenant=");
+    expect(page).toContain("return 'Busy'");
+    expect(page).toContain("out.data.error === 'slot_taken'");
+    expect(page).not.toContain("Keep busy times off the book");
+    expect(page).not.toContain("encodeURIComponent(googleDates)");
+    expect(hq).not.toContain("encodeURIComponent(googleDates)");
+    expect(hq).toContain("googleDates.split('/').map(encodeURIComponent).join('/')");
   });
 });
 
