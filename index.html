@@ -5173,6 +5173,38 @@ html.schedi-light #tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-sv
     font-size: 16px;
     line-height: 1.4;
 }
+#tenantPortalSection.schedi-newdash .sd-pay-status {
+    display: inline-block;
+    margin-top: 8px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+}
+#tenantPortalSection.schedi-newdash .sd-pay-status[data-status="not_started"] {
+    color: #94a3b8;
+    background: rgba(148, 163, 184, 0.16);
+}
+#tenantPortalSection.schedi-newdash .sd-pay-status[data-status="in_progress"] {
+    color: #fbbf24;
+    background: rgba(251, 191, 36, 0.16);
+}
+#tenantPortalSection.schedi-newdash .sd-pay-status[data-status="ready"] {
+    color: #34d399;
+    background: rgba(52, 211, 153, 0.16);
+}
+#tenantPortalSection.schedi-newdash a.sd-pay-setup-btn {
+    display: inline-flex;
+    margin-top: 8px;
+    padding: 8px 12px;
+    border-radius: 12px;
+    background: #4f46e5;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    text-decoration: none;
+}
 #tenantPortalSection.schedi-newdash .sd-pay-switch {
     appearance: none;
     -webkit-appearance: none;
@@ -6455,12 +6487,13 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                                     <i class="fa-solid fa-credit-card text-indigo-400 text-lg" aria-hidden="true"></i>
                                     <span>
                                         <span class="sd-pay-switch-title font-bold text-white" id="tenantPayCardLabel">Credit / Debit Card (Stripe)</span>
-                                        <span id="tenantPayCardNote" class="sd-pay-switch-note text-slate-400">Accept card as one option. Clients still choose how to pay. Pro only.</span>
-                                        <p id="tenantPayCardSetup" hidden class="sd-pay-switch-note hidden"><a href="https://schedi-connect-production.up.railway.app/portal#stripe-setup">Finish Stripe setup to accept cards</a></p>
+                                        <span id="tenantPayCardNote" class="sd-pay-switch-note text-slate-400">Accept card as one option. Clients still choose how to pay. Pro only. Clients see card only when this account is Ready.</span>
                                     </span>
                                 </span>
                                 <input type="checkbox" id="tenantPayCardCheck" class="sd-pay-switch" role="switch" aria-checked="false" aria-labelledby="tenantPayCardLabel">
                             </label>
+                            <p class="sd-pay-switch-note"><span id="tenantPayCardStatus" class="sd-pay-status" data-status="not_started">Not started</span></p>
+                            <p id="tenantPayCardSetup" class="sd-pay-switch-note"><a class="sd-pay-setup-btn" id="tenantPayCardSetupLink" href="https://schedi-connect-production.up.railway.app/portal">Set up Stripe</a></p>
                         </div>
 
                         <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-3">
@@ -6555,12 +6588,13 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                                     <i class="fa-solid fa-square text-slate-300 text-lg" aria-hidden="true"></i>
                                     <span>
                                         <span class="sd-pay-switch-title font-bold text-white" id="tenantPaySquareLabel">Square</span>
-                                        <span id="tenantPaySquareNote" class="sd-pay-switch-note text-slate-400">Clients can choose Square only when this business’s own Square account is connected. No Schedi Square account is charged.</span>
-                                        <p id="tenantPaySquareSetup" hidden class="sd-pay-switch-note hidden"><a href="https://schedi.app/api/square/connect" id="tenantPaySquareSetupLink" onclick="return startSquareSetup(event)">Finish Square setup</a></p>
+                                        <span id="tenantPaySquareNote" class="sd-pay-switch-note text-slate-400">Clients can choose Square only when this business’s own Square account is Ready. No Schedi Square account is charged.</span>
                                     </span>
                                 </span>
                                 <input type="checkbox" id="tenantPaySquareCheck" class="sd-pay-switch" role="switch" aria-checked="false" aria-labelledby="tenantPaySquareLabel">
                             </label>
+                            <p class="sd-pay-switch-note"><span id="tenantPaySquareStatus" class="sd-pay-status" data-status="not_started">Not started</span></p>
+                            <p id="tenantPaySquareSetup" class="sd-pay-switch-note"><a class="sd-pay-setup-btn" href="https://schedi.app/api/square/connect" id="tenantPaySquareSetupLink" onclick="return startSquareSetup(event)">Connect Square</a></p>
                         </div>
 
                         <div id="tenantCardProcessorRow" hidden class="hidden p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-2">
@@ -21617,6 +21651,31 @@ function schediQrCardPixels(text, color) {
             return tenant;
         }
 
+        function payAccountStatus(tenant, kind) {
+            if (!tenant) return 'not_started';
+            if (kind === 'stripe') {
+                if (tenant.stripeConnectReady === true || tenant.stripeConnectStatus === 'ready') return 'ready';
+                if (tenant.stripeConnectStatus === 'in_progress') return 'in_progress';
+                return 'not_started';
+            }
+            if (tenant.squareReady === true || tenant.squareConnectStatus === 'ready') return 'ready';
+            if (tenant.squareConnectStatus === 'in_progress') return 'in_progress';
+            return 'not_started';
+        }
+
+        function payAccountStatusLabel(status) {
+            if (status === 'ready') return 'Ready';
+            if (status === 'in_progress') return 'In progress';
+            return 'Not started';
+        }
+
+        function paintPayAccountStatus(el, status) {
+            if (!el) return;
+            el.hidden = false;
+            el.textContent = payAccountStatusLabel(status);
+            el.setAttribute('data-status', status);
+        }
+
         window.startSquareSetup = async function (ev) {
             if (ev && ev.preventDefault) ev.preventDefault();
             var tenant = (typeof getTenant === 'function') ? getTenant() : null;
@@ -21663,12 +21722,23 @@ function schediQrCardPixels(text, color) {
                 cardCheck.disabled = normalizePlan(tenant) !== 'pro';
             }
             var cardNote = document.getElementById('tenantPayCardNote');
-            if (cardNote) cardNote.textContent = normalizePlan(tenant) === 'pro' ? 'Card is one way to pay. Clients still choose Cash App, Zelle, Venmo, PayPal, or pay at the appointment.' : 'Card checkout is on Pro only.';
+            if (cardNote) cardNote.textContent = normalizePlan(tenant) === 'pro' ? 'Card is one way to pay. Clients see it only when Stripe is Ready. They can still choose Cash App, Zelle, Venmo, PayPal, or pay at the appointment.' : 'Card checkout is on Pro only.';
+            var stripeStatus = payAccountStatus(tenant, 'stripe');
+            var cardStatusEl = document.getElementById('tenantPayCardStatus');
+            if (normalizePlan(tenant) === 'pro') paintPayAccountStatus(cardStatusEl, stripeStatus);
+            else if (cardStatusEl) cardStatusEl.hidden = true;
             var cardSetup = document.getElementById('tenantPayCardSetup');
             if (cardSetup) {
-                var cardNeedsConnect = normalizePlan(tenant) === 'pro' && !!tenant.paymentGateways.card && tenant.stripeConnectReady !== true;
+                var cardNeedsConnect = normalizePlan(tenant) === 'pro' && stripeStatus !== 'ready';
                 cardSetup.hidden = !cardNeedsConnect;
                 cardSetup.classList.toggle('hidden', !cardNeedsConnect);
+                var cardSetupLink = document.getElementById('tenantPayCardSetupLink');
+                if (cardSetupLink) {
+                    cardSetupLink.textContent = 'Set up Stripe';
+                    cardSetupLink.href = stripeStatus === 'in_progress'
+                        ? 'https://schedi-connect-production.up.railway.app/portal#stripe-setup'
+                        : 'https://schedi-connect-production.up.railway.app/portal';
+                }
             }
             var dep = ensureDepositSettings(tenant);
             var depOn = document.getElementById('tenantDepositEnabled');
@@ -21741,8 +21811,13 @@ function schediQrCardPixels(text, color) {
             if (squareNote) {
                 squareNote.textContent = normalizePlan(tenant) === 'free'
                     ? 'Square is not on the Free plan. No Square charge is taken here.'
-                    : 'Clients can choose Square only when this business’s own Square account is connected. No Schedi Square account is charged.';
+                    : 'Clients see Square only when this business’s own Square account is Ready. No Schedi Square account is charged.';
             }
+            var squareStatus = payAccountStatus(tenant, 'square');
+            var squareStatusEl = document.getElementById('tenantPaySquareStatus');
+            if (normalizePlan(tenant) === 'free') {
+                if (squareStatusEl) squareStatusEl.hidden = true;
+            } else paintPayAccountStatus(squareStatusEl, squareStatus);
             var processor = document.getElementById('tenantCardProcessor');
             if (processor) processor.value = tenant.cardProcessor === 'square' ? 'square' : 'stripe';
             syncSquarePayChrome();
@@ -21786,10 +21861,13 @@ function schediQrCardPixels(text, color) {
                 row.hidden = !show;
                 row.classList.toggle('hidden', !show);
             }
-            if (setup && square && tenant) {
-                var needs = !!(square.checked && !square.disabled && tenant.squareReady !== true);
+            if (setup && tenant) {
+                var squareStatus = payAccountStatus(tenant, 'square');
+                var needs = SCHEDI_SQUARE_PUBLIC_ENABLED && normalizePlan(tenant) !== 'free' && squareStatus !== 'ready';
                 setup.hidden = !needs;
                 setup.classList.toggle('hidden', !needs);
+                var squareLink = document.getElementById('tenantPaySquareSetupLink');
+                if (squareLink) squareLink.textContent = 'Connect Square';
             }
         }
 

@@ -547,8 +547,15 @@ export function connectionSquareReady(connection) {
   return String(match.status || 'ACTIVE').toUpperCase() === 'ACTIVE';
 }
 
+export function squareConnectStatus(connection) {
+  if (connectionSquareReady(connection)) return 'ready';
+  if (connection && connection.cipher && String(connection.merchantId || '').trim()) return 'in_progress';
+  return 'not_started';
+}
+
 function publicStatusFrom(connection) {
-  return { squareReady: connectionSquareReady(connection) };
+  const status = squareConnectStatus(connection);
+  return { squareReady: status === 'ready', squareConnectStatus: status };
 }
 
 function statusView(connection) {

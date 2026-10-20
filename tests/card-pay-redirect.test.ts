@@ -300,9 +300,18 @@ describe("POST /billing/connect-ready", () => {
       body: JSON.stringify({ slug: TENANT, ready: true }),
     }), env, { waitUntil() {} });
     expect(ok.status).toBe(200);
-    expect(await ok.json()).toMatchObject({ ok: true, slug: TENANT, stripeConnectReady: true });
+    expect(await ok.json()).toMatchObject({ ok: true, slug: TENANT, stripeConnectReady: true, stripeConnectStatus: "ready" });
     expect(patches[0]).toContain("stripeConnectReady");
+    expect(patches[0]).toContain("stripeConnectStatus");
     expect(patches[0]).toContain("booleanValue");
+
+    const progress = await worker.fetch(new Request("https://schedi.app/billing/connect-ready", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-schedi-connect-secret": "connect-secret" },
+      body: JSON.stringify({ slug: TENANT, ready: false }),
+    }), env, { waitUntil() {} });
+    expect(progress.status).toBe(200);
+    expect(await progress.json()).toMatchObject({ stripeConnectReady: false, stripeConnectStatus: "in_progress" });
   });
 });
 

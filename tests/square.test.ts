@@ -13,6 +13,7 @@ import {
   buildAuthorizeUrl,
   buildPaymentLinkBody,
   connectionSquareReady,
+  squareConnectStatus,
   squareHostedPayUrl,
   decryptSquareTokens,
   encryptSquareTokens,
@@ -724,7 +725,7 @@ describe("Square refunds and payment links", () => {
     expect((await res.json()).error).toBe("square_not_ready");
     expect(calls).toEqual(["https://connect.squareupsandbox.com/v2/locations"]);
     expect(calls.join(" ")).not.toContain("payment-links");
-    expect(saved).toContainEqual({ squareReady: false });
+    expect(saved).toContainEqual({ squareReady: false, squareConnectStatus: "in_progress" });
   });
 
   it("treats OAuth plus an active location as the only chargeable Square account", () => {
@@ -743,6 +744,9 @@ describe("Square refunds and payment links", () => {
       locations: [{ id: "LOC", name: "Main", status: "INACTIVE" }],
     })).toBe(false);
     expect(connectionSquareReady({ ...ready, locations: [] })).toBe(false);
+    expect(squareConnectStatus(null)).toBe("not_started");
+    expect(squareConnectStatus({ cipher: "cipher", merchantId: "MERCHANT" })).toBe("in_progress");
+    expect(squareConnectStatus(ready)).toBe("ready");
   });
 });
 

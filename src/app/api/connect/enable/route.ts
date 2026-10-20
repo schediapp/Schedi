@@ -13,7 +13,7 @@ export async function POST(request: Request) {
 
   try {
     await enableCardPayments(getStore(), getStripe(), owner.id);
-    return redirectTo(request, "/portal");
+    return redirectTo(request, "/portal#stripe-setup");
   } catch (error) {
     const failure = formatConnectEnableError(error);
     if (failure.log) {

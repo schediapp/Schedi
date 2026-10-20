@@ -2987,7 +2987,8 @@ async function handleConnectReady(request, env, origin) {
     return json({ ok: false, error: 'invalid_json' }, 400, origin);
   }
   const slug = safeTenantId(body && (body.slug || body.tenantId));
-  if (!slug || typeof body.ready !== 'boolean') {
+  const allowedStatus = body && (body.status === 'not_started' || body.status === 'in_progress' || body.status === 'ready');
+  if (!slug || (typeof body.ready !== 'boolean' && !allowedStatus)) {
     return json({ ok: false, error: 'invalid_tenant' }, 400, origin);
   }
   let idToken = '';
@@ -2998,8 +2999,12 @@ async function handleConnectReady(request, env, origin) {
   }
   const tenant = await getTenantById(env, idToken, slug);
   if (!tenant) return json({ ok: false, error: 'tenant_not_found' }, 404, origin);
-  await patchTenantFields(env, idToken, slug, { stripeConnectReady: body.ready === true });
-  return json({ ok: true, slug, stripeConnectReady: body.ready === true }, 200, origin);
+  let status = allowedStatus ? body.status : (body.ready === true ? 'ready' : 'in_progress');
+  if (body.ready === true) status = 'ready';
+  if (status === 'ready') body.ready = true;
+  const ready = status === 'ready';
+  await patchTenantFields(env, idToken, slug, { stripeConnectReady: ready, stripeConnectStatus: status });
+  return json({ ok: true, slug, stripeConnectReady: ready, stripeConnectStatus: status }, 200, origin);
 }
 
 async function handleBillingRequest(request, env, origin, path, url) {

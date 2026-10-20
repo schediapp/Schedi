@@ -337,7 +337,8 @@ describe("booking page card copy", () => {
       expect(html).toContain("tenantData.stripeConnectReady !== true");
       expect(html).toContain("tenantData.stripeConnectReady === true");
     }
-    expect(indexHtml).toContain("Finish Stripe setup to accept cards");
+    expect(indexHtml).toContain("Set up Stripe");
+    expect(indexHtml).toContain("https://schedi-connect-production.up.railway.app/portal");
     expect(indexHtml).toContain("https://schedi-connect-production.up.railway.app/portal#stripe-setup");
     const syncAt = bookingHtml.indexOf("function syncBookingsToFirestore");
     const sync = bookingHtml.slice(syncAt, bookingHtml.indexOf("document.getElementById('resCode')", syncAt));

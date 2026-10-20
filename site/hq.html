@@ -1859,8 +1859,9 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
                                 <i class="fa-solid fa-credit-card text-indigo-400 text-lg"></i>
                                 <div>
                                     <div class="font-bold text-white">Credit / Debit Card (Stripe)</div>
-                                    <div id="tenantPayCardNote" class="text-[11px] text-slate-400">Accept card as one option. Clients still choose how to pay. Pro only.</div>
-                                    <p id="tenantPayCardSetup" hidden class="text-[11px] hidden"><a href="https://schedi-connect-production.up.railway.app/portal#stripe-setup">Finish Stripe setup to accept cards</a></p>
+                                    <div id="tenantPayCardNote" class="text-[11px] text-slate-400">Accept card as one option. Clients still choose how to pay. Pro only. Clients see card only when this account is Ready.</div>
+                                    <p class="text-[11px] text-slate-400"><span id="tenantPayCardStatus">Not started</span></p>
+                                    <p id="tenantPayCardSetup" class="text-[11px]"><a id="tenantPayCardSetupLink" href="https://schedi-connect-production.up.railway.app/portal">Set up Stripe</a></p>
                                 </div>
                             </div>
                             <input type="checkbox" id="tenantPayCardCheck" class="w-4 h-4 accent-brand-500 rounded cursor-pointer">
@@ -10669,12 +10670,26 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
                 cardCheck.disabled = normalizePlan(tenant) !== 'pro';
             }
             var cardNote = document.getElementById('tenantPayCardNote');
-            if (cardNote) cardNote.textContent = normalizePlan(tenant) === 'pro' ? 'Card is one way to pay. Clients still choose Cash App, Zelle, Venmo, PayPal, or pay at the appointment.' : 'Card checkout is on Pro only.';
+            if (cardNote) cardNote.textContent = normalizePlan(tenant) === 'pro' ? 'Card is one way to pay. Clients see it only when Stripe is Ready.' : 'Card checkout is on Pro only.';
+            var stripeReady = tenant.stripeConnectReady === true || tenant.stripeConnectStatus === 'ready';
+            var stripeStatus = stripeReady ? 'ready' : (tenant.stripeConnectStatus === 'in_progress' ? 'in_progress' : 'not_started');
+            var cardStatusEl = document.getElementById('tenantPayCardStatus');
+            if (cardStatusEl) {
+                cardStatusEl.hidden = normalizePlan(tenant) !== 'pro';
+                cardStatusEl.textContent = stripeStatus === 'ready' ? 'Ready' : (stripeStatus === 'in_progress' ? 'In progress' : 'Not started');
+            }
             var cardSetup = document.getElementById('tenantPayCardSetup');
             if (cardSetup) {
-                var cardNeedsConnect = normalizePlan(tenant) === 'pro' && !!tenant.paymentGateways.card && tenant.stripeConnectReady !== true;
+                var cardNeedsConnect = normalizePlan(tenant) === 'pro' && stripeStatus !== 'ready';
                 cardSetup.hidden = !cardNeedsConnect;
                 cardSetup.classList.toggle('hidden', !cardNeedsConnect);
+                var cardSetupLink = document.getElementById('tenantPayCardSetupLink');
+                if (cardSetupLink) {
+                    cardSetupLink.textContent = 'Set up Stripe';
+                    cardSetupLink.href = stripeStatus === 'in_progress'
+                        ? 'https://schedi-connect-production.up.railway.app/portal#stripe-setup'
+                        : 'https://schedi-connect-production.up.railway.app/portal';
+                }
             }
             var dep = ensureDepositSettings(tenant);
             var depOn = document.getElementById('tenantDepositEnabled');
