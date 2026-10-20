@@ -200,20 +200,21 @@ export function comparePage(): MarketingPage {
     path: "/compare",
     title: "Schedi vs other booking tools | Schedi",
     description:
-      "Schedi compared with Squire, Booksy, Vagaro, Acuity Scheduling, and Jobber. Prices as of Oct 2026, from each vendor's pricing page.",
+      "Schedi compared with Squire, Booksy, Vagaro, Acuity Scheduling, Jobber, and Square Appointments. Prices as of Oct 2026, from each vendor's pricing page.",
     h1: "Schedi vs other booking tools",
     softwareJsonLd: true,
     faqs: [],
     bodyHtml: [
       p("Schedi is a booking page and back office for one owner. Free is $0. Starter is $29 a month. Pro is $49 a month and adds repeating appointments. Paid plans have no setup fee and no contract: they are month-to-month, you can cancel anytime, and the first payment is refundable within 15 days. Clients can pay with Cash App, Venmo, Zelle, PayPal, or at the appointment, with no card processing fees through Schedi. On Starter and Pro you accept or deny each request."),
       p("Prices as listed on each vendor's site on Oct 19, 2026. The source URL is listed in each section."),
-      h2("", "Why these five tools"),
-      p("Schedi is built for a solo owner. These five tools are built for other kinds of businesses, and each section below says what they add."),
+      h2("", "Why these six tools"),
+      p("Schedi is built for a solo owner. Each section below says what these six tools add."),
       p("Squire is built for barbershops, with a plan for one barber and plans for a shop."),
       p("Booksy is a booking app and client marketplace built for barbers and beauty pros."),
       p("Vagaro is an all-in-one salon and appointment system, with a one-person price."),
       p("Acuity Scheduling is a general appointment scheduler, with a one-calendar plan."),
       p("Jobber is field-service software built for online booking, quotes, and invoicing."),
+      p("Square Appointments is appointment software, with Square Free for solo professionals and paid plans for teams and large salons."),
 
       h2("squire", "Schedi vs Squire"),
       p("Schedi starts at $0, and Starter is $29 a month, a dollar under Squire's $30 a month Independent plan for one barber. Clients can pay with Cash App, Venmo, Zelle, PayPal, or at the appointment, with no card processing fees through Schedi. On Starter and Pro you accept or deny each request. There is no setup fee or contract: billing is month-to-month, you can cancel anytime, and the first payment is refundable within 15 days. Pro adds repeating appointments. Setup is built for one owner."),
@@ -250,10 +251,17 @@ export function comparePage(): MarketingPage {
       p("Jobber pricing as listed for one user: Core $49 a month with no commitment, $39 a month with a 1-year commitment, or $29 a month billed annually. Connect $139 / $119 / $99 a month. Grow $199 / $169 / $149 a month. Extra users are $29 a month each. 14-day free trial with full access to Grow features and no credit card. Card processing: 2.9% + 30 cents online, 2.7% + 30 cents for Tap to Pay, 1% for bank (ACH) payments."),
       p('What Jobber includes: Core includes online job booking and scheduling, quotes, invoices and online payments, a website, reporting, and an app marketplace with 100+ tools. Connect adds automated client reminders, automatic payments, checklists, QuickBooks Online sync, and time and expense tracking. Grow adds two-way SMS, job costing, and custom automations. Jobber also lists route optimization, GPS tracking, a "Find a Time" tool that recommends slots based on travel times, crew scheduling, and iOS and Android mobile apps. Plan availability for these is not shown clearly on the pricing page.'),
 
+      h2("square", "Schedi vs Square Appointments"),
+      p("Schedi has a $0 Free plan, and Starter is $29 a month, under Square Plus at $49 a month per location. Square Free is $0 a month per location. Square Free has no monthly subscription cost, and Square charges processing fees when a payment is taken. Clients can pay with Cash App, Venmo, Zelle, PayPal, or at the appointment, with no card processing fees through Schedi. On Starter and Pro you accept or deny each request. There is no setup fee or contract: billing is month-to-month, you can cancel anytime, and the first payment is refundable within 15 days. Pro adds repeating appointments. Setup is built for one owner."),
+      p("Square Appointments is appointment software. Square Free is for solo professionals taking payments and managing schedules. Square Plus is for growing teams needing more advanced tools and features. Square Premium is for large salons with complex staff management and booking needs."),
+      p('Source: <a href="https://squareup.com/us/en/appointments/pricing" rel="nofollow noopener noreferrer">https://squareup.com/us/en/appointments/pricing</a> (checked Oct 19, 2026).'),
+      p("Square Appointments pricing as listed: Square Free is $0 a month per location, with no monthly subscription cost. Processing fees apply when a payment is taken. Square Plus is $49 a month per location. Square Premium is $149 a month per location. The Plus and Premium monthly fee applies to each location. Square Plus and Square Premium each offer a free 30-day trial, and you can cancel or switch plans anytime. In-person payments (tap, dip, or swipe) are 2.6% + 15¢ on Free, 2.5% + 15¢ on Plus, and 2.4% + 15¢ on Premium. Online card payments are 3.3% + 30¢ on Free, and 2.9% + 30¢ on Plus and Premium. Cash or check is free on every plan. If you process over $250,000 per year, Square says you can talk to its team about custom pricing and processing fees."),
+      p("What Square Appointments includes: every plan includes unlimited staff calendars, with no employee limit, custom scheduling, an online booking website and booking integrations, prepayments and automatic contracts, appointment deposits, digital wallets in the booking flow, including Apple Pay and Google Pay, text and email appointment reminders, Square Assistant for replies to SMS appointment reminders, and a Book Now button on Instagram, Facebook, and Google. Plus and Premium add processing time, multi-staff appointment booking, a cancellation policy and no-show fees, a daily booking limit, class booking and packages, multi-location management, a waitlist, Google Calendar sync, the Bookings API, and text and email appointment confirmations. Premium adds resource management, a future bookings report, service cost tracking, and a team performance report. Custom notifications are custom emails on Free, and custom emails and texts on Plus and Premium. Text message marketing is not available on Square Free. Plus includes 500 texts per month per account, then 3¢ per text. Premium includes 2,500 texts per month per account, then 1.5¢ per text."),
+
       h2("", "Quick guide"),
       `<ul>
         <li>Barbers: Schedi has a $0 Free plan and Starter at $29 a month for one owner. Squire is built for barbershops. Booksy is a booking app and marketplace for barbers and beauty pros.</li>
-        <li>Salons and pet groomers: Schedi covers booking and the schedule for one owner, and Starter is $29 a month. Vagaro's regular one-person price is $30.00 a month, or $23.99 a month for the first 6 months. Vagaro is an all-in-one salon system.</li>
+        <li>Salons and pet groomers: Schedi covers booking and the schedule for one owner, and Starter is $29 a month. Vagaro's regular one-person price is $30.00 a month, or $23.99 a month for the first 6 months. Vagaro is an all-in-one salon system. Square Appointments lists Square Free at $0 a month per location, Plus at $49 a month per location, and Premium at $149 a month per location.</li>
         <li>Photographers, lesson teachers, and notaries: Schedi has a $0 Free plan. Acuity Scheduling is a general appointment scheduler. Its one-calendar plan is $20 a month ($16 billed annually), and Schedi Starter is $29 a month.</li>
         <li>Cleaners, lawn care, and auto detailers: Schedi books one owner, with Starter at $29 a month and repeating appointments on Pro at $49 a month. Jobber is field-service software. Its Core plan is $49 a month with no commitment, or $29 a month billed annually.</li>
       </ul>`,

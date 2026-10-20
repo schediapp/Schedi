@@ -163,11 +163,21 @@ describe("answer pages and crawler files", () => {
     expect(text).toContain("$49 a month with no commitment");
     expect(text).toContain("$139 / $119 / $99");
     expect(text).toContain("$199 / $169 / $149");
+    expect(text).toContain("https://squareup.com/us/en/appointments/pricing");
+    expect(text).toContain("$0 a month per location");
+    expect(text).toContain("$49 a month per location");
+    expect(text).toContain("$149 a month per location");
+    expect(text).toContain("2.6% + 15¢");
+    expect(text).toContain("2.5% + 15¢");
+    expect(text).toContain("2.4% + 15¢");
+    expect(text).toContain("3.3% + 30¢");
+    expect(text).toContain("2.9% + 30¢");
     expect(text).toContain('id="squire"');
     expect(text).toContain('id="booksy"');
     expect(text).toContain('id="vagaro"');
     expect(text).toContain('id="acuity"');
     expect(text).toContain('id="jobber"');
+    expect(text).toContain('id="square"');
     expect(compare).not.toContain("card deposit");
     expect(compare).not.toContain("Schedi works with Square");
     expect(compare).toContain('"unitCode":"MON"');
@@ -177,6 +187,7 @@ describe("answer pages and crawler files", () => {
       "Schedi has a $0 Free plan, and Starter is $29 a month, under Vagaro's regular $30.00 a month price for one person.",
       "Schedi has a $0 Free plan. Acuity Scheduling has no free plan.",
       "Schedi has a $0 Free plan, and Starter is $29 a month, under Jobber's $49 a month Core plan with no commitment.",
+      "Schedi has a $0 Free plan, and Starter is $29 a month, under Square Plus at $49 a month per location.",
     ];
     for (const line of openings) expect(text, line).toContain(line);
     expect(text.toLowerCase()).not.toContain("cheaper than acuity");
@@ -189,6 +200,7 @@ describe("answer pages and crawler files", () => {
       "choose Vagaro",
       "choose Acuity",
       "choose Jobber",
+      "choose Square",
       "Choose Schedi",
     ]) {
       expect(text, phrase).not.toContain(phrase);
@@ -197,6 +209,27 @@ describe("answer pages and crawler files", () => {
     const booksyAt = text.indexOf('id="booksy"');
     expect(text.indexOf(openings[0])).toBeGreaterThan(squireAt);
     expect(text.indexOf(openings[0])).toBeLessThan(booksyAt);
+    const squareAt = text.indexOf('id="square"');
+    const jobberAt = text.indexOf('id="jobber"');
+    expect(squareAt).toBeGreaterThan(jobberAt);
+    expect(text.indexOf(openings[5])).toBeGreaterThan(squareAt);
+    expect(text.indexOf(openings[5])).toBeLessThan(text.indexOf("Quick guide"));
+    expect(text).not.toContain("Schedi works with Square");
+    expect(text).not.toContain("Connect your Square account");
+    expect(text).not.toContain("Square payments");
+    expect(compare).not.toContain("/compare/square");
+    const compareLd = JSON.parse(compare.match(/application\/ld\+json">([\s\S]*?)<\/script>/)![1]);
+    expect(compareLd["@context"]).toBe("https://schema.org");
+    expect(compareLd["@graph"].map((node: { "@type"?: string }) => node["@type"])).toEqual([
+      "Organization",
+      "SoftwareApplication",
+    ]);
+    const compareOffers = compareLd["@graph"].find(
+      (node: { "@type"?: string }) => node["@type"] === "SoftwareApplication",
+    ).offers;
+    expect(compareOffers.map((offer: { name?: string }) => offer.name)).toEqual(["Free", "Starter", "Pro"]);
+    expect(JSON.stringify(compareLd)).not.toContain("Square");
+    expect(assertJsonLdDocuments(compare)).toEqual([]);
     const guide = text.slice(text.indexOf("Quick guide"));
     expect(guide).toContain("$30.00 a month, or $23.99 a month for the first 6 months");
     expect(guide).toContain("or $29 a month billed annually");
@@ -522,6 +555,7 @@ describe("copy corrections", () => {
       "https://www.vagaro.com/pro/pricing",
       "https://acuityscheduling.com/pricing",
       "https://www.getjobber.com/pricing/",
+      "https://squareup.com/us/en/appointments/pricing",
     ]) {
       expect(compare).toContain(`<a href="${href}" rel="nofollow noopener noreferrer">`);
     }
