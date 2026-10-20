@@ -991,7 +991,7 @@
         }
         function publicSquareOffered() {
             var pg = (tenantData && tenantData.paymentGateways) || {};
-            return SCHEDI_NEWBOOK && SCHEDI_SQUARE_PUBLIC_ENABLED === true && pg.square === true;
+            return SCHEDI_NEWBOOK && SCHEDI_SQUARE_PUBLIC_ENABLED === true && pg.square === true && tenantData.squareReady === true;
         }
         function publicSvcIcon(svc) {
             if (!SCHEDI_NEWBOOK || !svc) return '';

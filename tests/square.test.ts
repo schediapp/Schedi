@@ -12,6 +12,7 @@ import {
   applySquarePaymentUpdate,
   buildAuthorizeUrl,
   buildPaymentLinkBody,
+  connectionSquareReady,
   decryptSquareTokens,
   encryptSquareTokens,
   handleSquareHttp,
@@ -577,6 +578,12 @@ describe("Square refunds and payment links", () => {
     const calls: string[] = [];
     const squareFetch = vi.fn(async (url: string, init?: RequestInit) => {
       calls.push(String(url));
+      const headers = (init?.headers || {}) as Record<string, string>;
+      expect(headers.Authorization).toBe("Bearer sq_at");
+      expect(headers.Authorization).not.toContain("secret");
+      if (String(url).includes("/v2/locations")) {
+        return jsonResponse({ locations: [{ id: "LOC", name: "Main", status: "ACTIVE" }] });
+      }
       const body = JSON.parse(String(init?.body || "{}"));
       expect(body).not.toHaveProperty("app_fee_money");
       expect(body.order.location_id).toBe("LOC");
@@ -616,7 +623,10 @@ describe("Square refunds and payment links", () => {
     const data = await res.json();
     expect(res.status).toBe(200);
     expect(data.url).toBe("https://sandbox.square.link/u/abc");
-    expect(calls).toEqual(["https://connect.squareupsandbox.com/v2/online-checkout/payment-links"]);
+    expect(calls).toEqual([
+      "https://connect.squareupsandbox.com/v2/locations",
+      "https://connect.squareupsandbox.com/v2/online-checkout/payment-links",
+    ]);
     expect(calls.join(" ")).not.toContain("stripe.com");
   });
 
@@ -641,6 +651,97 @@ describe("Square refunds and payment links", () => {
     expect(res.status).toBe(400);
     expect((await res.json()).error).toBe("square_not_on_free");
     expect(squareFetch).not.toHaveBeenCalled();
+  });
+
+  it("refuses checkout with no Square call when this merchant is not connected", async () => {
+    const squareFetch = vi.fn();
+    const res = await handleSquareHttp(
+      new Request("https://schedi.app/api/square/checkout", {
+        method: "POST",
+        body: JSON.stringify({ tenantId: TENANT, bookingId: BOOKING_ID }),
+      }),
+      { AUTH_KV: kv(), SQUARE_APPLICATION_SECRET: "schedi-platform-secret" },
+      "",
+      "/api/square/checkout",
+      {
+        json: (body: unknown, status = 200) => jsonResponse(body, status),
+        firebaseAnonymousToken: async () => "tok",
+        getTenantById: async () => ({ id: TENANT, name: "Acme", plan: "starter", squareReady: false, slug: "acme" }),
+        planName: () => "starter",
+        loadAppointments: async () => [booking()],
+        squareFetch,
+      },
+    );
+    expect(res.status).toBe(409);
+    expect(await res.json()).toMatchObject({
+      ok: false,
+      error: "square_not_ready",
+      message: "Finish Square setup to accept cards. Nothing was charged.",
+    });
+    expect(squareFetch).not.toHaveBeenCalled();
+  });
+
+  it("does not create a payment link when the seller location is not active", async () => {
+    const key = await tokenKey();
+    const cipher = await encryptSquareTokens(key.raw, { accessToken: "sq_at", refreshToken: "sq_rt" });
+    const calls: string[] = [];
+    const saved: Array<Record<string, unknown>> = [];
+    const squareFetch = vi.fn(async (url: string) => {
+      calls.push(String(url));
+      return jsonResponse({ locations: [{ id: "LOC", name: "Main", status: "INACTIVE" }] });
+    });
+    const res = await handleSquareHttp(
+      new Request("https://schedi.app/api/square/checkout", {
+        method: "POST",
+        body: JSON.stringify({ tenantId: TENANT, bookingIds: [BOOKING_ID] }),
+      }),
+      { AUTH_KV: kv(), SQUARE_TOKEN_KEY: key.b64, SQUARE_APPLICATION_ID: "sq0idp-test", SQUARE_APPLICATION_SECRET: "secret" },
+      "",
+      "/api/square/checkout",
+      {
+        json: (body: unknown, status = 200) => jsonResponse(body, status),
+        firebaseAnonymousToken: async () => "tok",
+        getTenantById: async () => ({ id: TENANT, name: "Acme", plan: "starter", squareReady: true, slug: "acme" }),
+        planName: () => "starter",
+        bookingPrice: () => 25,
+        depositOn: () => false,
+        loadConnection: async () => ({
+          merchantId: "MERCHANT",
+          cipher,
+          expiresAt: new Date(Date.now() + 10 * 86400000).toISOString(),
+          locationId: "LOC",
+          locationName: "Main",
+          locations: [{ id: "LOC", name: "Main", status: "ACTIVE" }],
+        }),
+        loadAppointments: async () => [booking()],
+        saveConnection: async (_env: unknown, _id: string, connection: Record<string, unknown>) => { saved.push(connection); },
+        savePublicStatus: async (_env: unknown, _id: string, status: Record<string, unknown>) => { saved.push(status); },
+        squareFetch,
+      },
+    );
+    expect(res.status).toBe(409);
+    expect((await res.json()).error).toBe("square_not_ready");
+    expect(calls).toEqual(["https://connect.squareupsandbox.com/v2/locations"]);
+    expect(calls.join(" ")).not.toContain("payment-links");
+    expect(saved).toContainEqual({ squareReady: false });
+  });
+
+  it("treats OAuth plus an active location as the only chargeable Square account", () => {
+    const ready = {
+      cipher: "cipher",
+      merchantId: "MERCHANT",
+      locationId: "LOC",
+      locations: [{ id: "LOC", name: "Main", status: "ACTIVE" }],
+    };
+    expect(connectionSquareReady(ready)).toBe(true);
+    expect(connectionSquareReady({ ...ready, cipher: "" })).toBe(false);
+    expect(connectionSquareReady({ ...ready, merchantId: "" })).toBe(false);
+    expect(connectionSquareReady({ ...ready, locationId: "" })).toBe(false);
+    expect(connectionSquareReady({
+      ...ready,
+      locations: [{ id: "LOC", name: "Main", status: "INACTIVE" }],
+    })).toBe(false);
+    expect(connectionSquareReady({ ...ready, locations: [] })).toBe(false);
   });
 });
 

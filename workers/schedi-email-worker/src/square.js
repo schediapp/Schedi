@@ -515,15 +515,27 @@ async function savePublicStatus(env, tenantId, status, deps) {
   await patchPublicFields(env, tenantId, status);
 }
 
+/**
+ * A Square charge is allowed only on this tenant's own merchant:
+ * OAuth ciphertext, merchant id, and a selected location that is active.
+ */
+export function connectionSquareReady(connection) {
+  if (!connection || !connection.cipher || !String(connection.merchantId || '').trim()) return false;
+  const locationId = String(connection.locationId || '').trim();
+  if (!locationId) return false;
+  const locations = Array.isArray(connection.locations) ? connection.locations : [];
+  const match = locations.find((loc) => loc && String(loc.id) === locationId);
+  if (!match) return false;
+  return String(match.status || 'ACTIVE').toUpperCase() === 'ACTIVE';
+}
+
 function publicStatusFrom(connection) {
-  const connected = !!(connection && connection.cipher && connection.merchantId);
-  const ready = connected && !!connection.locationId;
-  return { squareReady: ready };
+  return { squareReady: connectionSquareReady(connection) };
 }
 
 function statusView(connection) {
   const connected = !!(connection && connection.cipher && connection.merchantId);
-  const ready = connected && !!connection.locationId;
+  const ready = connectionSquareReady(connection);
   return {
     ok: true,
     connected,
@@ -624,7 +636,11 @@ async function fetchLocations(env, deps, token) {
   if (!listed.ok) return { error: 'locations_failed', status: listed.status || 502 };
   const locations = (listed.data.locations || [])
     .filter((loc) => loc && loc.id && String(loc.status || 'ACTIVE').toUpperCase() === 'ACTIVE')
-    .map((loc) => ({ id: String(loc.id), name: String(loc.name || loc.business_name || 'Location').slice(0, 120) }));
+    .map((loc) => ({
+      id: String(loc.id),
+      name: String(loc.name || loc.business_name || 'Location').slice(0, 120),
+      status: 'ACTIVE',
+    }));
   return { locations };
 }
 
@@ -915,7 +931,13 @@ async function handleCheckout(request, env, deps) {
   if (!tenant) return jsonResponse(deps, { ok: false, error: 'tenant_not_found' }, 404, '');
   const plan = deps.planName ? deps.planName(tenant) : String(tenant.plan || '');
   if (plan === 'free') return jsonResponse(deps, { ok: false, error: 'square_not_on_free' }, 400, '');
-  if (tenant.squareReady !== true) return jsonResponse(deps, { ok: false, error: 'square_not_ready' }, 409, '');
+  if (tenant.squareReady !== true) {
+    return jsonResponse(deps, {
+      ok: false,
+      error: 'square_not_ready',
+      message: 'Finish Square setup to accept cards. Nothing was charged.',
+    }, 409, '');
+  }
   const load = deps.loadAppointments || loadPrivateAppointments;
   const appointments = await load(env, tenantId);
   const selected = bookingIds.map((id) => (appointments || []).find((b) => b && String(b.id) === id)).filter(Boolean);
@@ -953,7 +975,33 @@ async function handleCheckout(request, env, deps) {
   if (totalCents < 50) return jsonResponse(deps, { ok: true, alreadyPaid: true }, 200, '');
   const got = await accessTokenFor(env, tenantId, deps);
   if (got.error) return jsonResponse(deps, { ok: false, error: got.error }, got.status || 409, '');
-  if (!got.connection.locationId) return jsonResponse(deps, { ok: false, error: 'square_location_required' }, 409, '');
+  const appSecret = String((env && env.SQUARE_APPLICATION_SECRET) || '');
+  if (!got.token || (appSecret && got.token === appSecret) || !got.connection || !got.connection.merchantId) {
+    return jsonResponse(deps, {
+      ok: false,
+      error: 'square_not_ready',
+      message: 'Square charges stay on this business’s own account. Nothing was charged.',
+    }, 409, '');
+  }
+  const listed = await fetchLocations(env, deps, got.token);
+  const active = !listed.error && (listed.locations || []).find((loc) => loc && loc.id === String(got.connection.locationId));
+  if (!active) {
+    if (!listed.error) {
+      const next = Object.assign({}, got.connection, {
+        locations: listed.locations || [],
+        locationId: '',
+        locationName: '',
+      });
+      await saveConnection(env, tenantId, next, deps);
+      await savePublicStatus(env, tenantId, publicStatusFrom(next), deps);
+    }
+    return jsonResponse(deps, {
+      ok: false,
+      error: 'square_not_ready',
+      message: 'Finish Square setup to accept cards. Nothing was charged.',
+    }, 409, '');
+  }
+  got.connection = Object.assign({}, got.connection, { locations: listed.locations, locationName: active.name || got.connection.locationName });
   const slug = deps.slugFor ? deps.slugFor(tenant, tenantId) : tenantId;
   const redirectUrl = APP_ORIGIN + '/' + slug + '/?pay=success&kind=square&booking=' + encodeURIComponent(bookingIds[0]);
   const serviceName = String(selected[0].serviceName || 'Appointment');

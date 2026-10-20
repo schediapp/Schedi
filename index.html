@@ -6556,6 +6556,7 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                                     <span>
                                         <span class="sd-pay-switch-title font-bold text-white" id="tenantPaySquareLabel">Square</span>
                                         <span id="tenantPaySquareNote" class="sd-pay-switch-note text-slate-400">Off. Square stays hidden on the booking page until Schedi turns it on. No Square charge is taken here.</span>
+                                        <p id="tenantPaySquareSetup" hidden class="sd-pay-switch-note hidden"><a href="https://schedi.app/api/square/connect" id="tenantPaySquareSetupLink" onclick="return startSquareSetup(event)">Finish Square setup</a></p>
                                     </span>
                                 </span>
                                 <input type="checkbox" id="tenantPaySquareCheck" class="sd-pay-switch" role="switch" aria-checked="false" aria-labelledby="tenantPaySquareLabel" disabled>
@@ -21555,6 +21556,31 @@ function schediQrCardPixels(text, color) {
             return tenant;
         }
 
+        window.startSquareSetup = async function (ev) {
+            if (ev && ev.preventDefault) ev.preventDefault();
+            var tenant = (typeof getTenant === 'function') ? getTenant() : null;
+            var session = (typeof schediAuthSession === 'function') ? schediAuthSession() : '';
+            if (!tenant || !tenant.id || !session) {
+                if (typeof showToast === 'function') showToast('Sign in to finish Square setup.', 'error');
+                return false;
+            }
+            try {
+                var res = await fetch('https://schedi.app/api/square/connect', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tenantId: tenant.id, session: session })
+                });
+                var data = {};
+                try { data = await res.json(); } catch (parseErr) { data = {}; }
+                if (data && /^https:\/\/connect\.(?:squareup|squareupsandbox)\.com\//.test(String(data.url || ''))) {
+                    window.location.assign(data.url);
+                    return false;
+                }
+            } catch (err) {}
+            if (typeof showToast === 'function') showToast('Square setup did not open. Nothing was charged.', 'error');
+            return false;
+        };
+
         function renderTenantPayments(tenant) {
             ensurePaymentGateways(tenant);
             const cardCheck = document.getElementById('tenantPayCardCheck');
@@ -21653,8 +21679,14 @@ function schediQrCardPixels(text, color) {
             }
             if (squareNote) {
                 squareNote.textContent = SCHEDI_SQUARE_PUBLIC_ENABLED
-                    ? 'Clients can choose Square only when this is on. No Square charge is taken here.'
+                    ? 'Clients can choose Square only when this business’s own Square account is connected. No Schedi Square account is charged.'
                     : 'Off. Square stays hidden on the booking page until Schedi turns it on. No Square charge is taken here.';
+            }
+            var squareSetup = document.getElementById('tenantPaySquareSetup');
+            if (squareSetup) {
+                var squareNeedsSetup = tenant.squareReady !== true;
+                squareSetup.hidden = !squareNeedsSetup;
+                squareSetup.classList.toggle('hidden', !squareNeedsSetup);
             }
             if (tagInput) tagInput.value = tenant.cashAppTag || '';
             if (zelleHandleInput) zelleHandleInput.value = tenant.zelleHandle || '';
@@ -28245,7 +28277,7 @@ function schediQrCardPixels(text, color) {
         }
         function publicSquareOffered() {
             var pg = (tenantData && tenantData.paymentGateways) || {};
-            return SCHEDI_NEWBOOK && SCHEDI_SQUARE_PUBLIC_ENABLED === true && pg.square === true;
+            return SCHEDI_NEWBOOK && SCHEDI_SQUARE_PUBLIC_ENABLED === true && pg.square === true && tenantData.squareReady === true;
         }
         function publicSvcIcon(svc) {
             if (!SCHEDI_NEWBOOK || !svc) return '';

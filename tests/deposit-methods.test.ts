@@ -10,6 +10,7 @@ import {
   methodAcceptsDeposit,
   ownerInPersonMethod,
   squareClientBookingError,
+  squareMerchantReady,
   squareOfferedToClients,
 } from "../workers/schedi-email-worker/src/deposit-methods.js";
 
@@ -55,8 +56,10 @@ describe("deposit methods", () => {
 describe("Square public switch", () => {
   it("stays off even when a business has Square checked", () => {
     expect(SCHEDI_SQUARE_PUBLIC_ENABLED).toBe(false);
-    expect(squareOfferedToClients({ paymentGateways: { square: true } })).toBe(false);
-    expect(squareClientBookingError({ paymentMethod: "square" })).toBe("square_unavailable");
+    expect(squareMerchantReady({ squareReady: true })).toBe(true);
+    expect(squareMerchantReady({})).toBe(false);
+    expect(squareOfferedToClients({ paymentGateways: { square: true }, squareReady: true })).toBe(false);
+    expect(squareClientBookingError({ paymentMethod: "square" }, { squareReady: true })).toBe("square_unavailable");
     expect(squareClientBookingError({ paymentMethod: "cashapp" })).toBe("");
   });
 
@@ -114,6 +117,10 @@ describe("new booking and HQ designs are the default", () => {
     expect(html).not.toContain("In person / Cash</button>");
     expect(html).toContain("var SCHEDI_SQUARE_PUBLIC_ENABLED = false;");
     expect(html).toContain("function publicSquareOffered()");
+    expect(html).toContain("tenantData.squareReady === true");
+    expect(html).toContain("Finish Square setup");
+    expect(html).toContain("https://schedi.app/api/square/connect");
+    expect(html).toContain("tenant.squareReady !== true");
     expect(html).toContain("function publicMethodAcceptsDeposit(method)");
     expect(html).toContain("function schediNewBookOn");
     const bookFn = html.slice(html.indexOf("function schediNewBookOn"), html.indexOf("function bookingPaymentState"));

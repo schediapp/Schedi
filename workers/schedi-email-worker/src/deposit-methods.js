@@ -48,15 +48,25 @@ export function methodAcceptsDeposit(tenant, method) {
   return depositMethodMap(tenant)[key] === true;
 }
 
-/** Client-facing Square. False while the kill switch is off, even if the business checked it. */
-export function squareOfferedToClients(tenant) {
-  return SCHEDI_SQUARE_PUBLIC_ENABLED === true && gatewayOn(tenant, 'square');
+/** Public flag written when this tenant's own Square OAuth is complete and a location is active. */
+export function squareMerchantReady(tenant) {
+  return !!(tenant && tenant.squareReady === true);
 }
 
-/** Public create must not store a Square choice while the kill switch is off. */
-export function squareClientBookingError(booking) {
+/**
+ * Client-facing Square. The kill switch stays off until Square is turned on.
+ * Even then, Square is offered only for this tenant's own connected merchant.
+ */
+export function squareOfferedToClients(tenant) {
+  return SCHEDI_SQUARE_PUBLIC_ENABLED === true && gatewayOn(tenant, 'square') && squareMerchantReady(tenant);
+}
+
+/** Public create must not store a Square choice unless this tenant can take the charge. */
+export function squareClientBookingError(booking, tenant) {
   const method = String(booking && booking.paymentMethod || '').toLowerCase();
-  if (method === 'square' && SCHEDI_SQUARE_PUBLIC_ENABLED !== true) return 'square_unavailable';
+  if (method !== 'square') return '';
+  if (SCHEDI_SQUARE_PUBLIC_ENABLED !== true) return 'square_unavailable';
+  if (!squareMerchantReady(tenant)) return 'square_not_ready';
   return '';
 }
 

@@ -1277,7 +1277,7 @@ export async function handlePrivateBookingHttp(request, env, origin, path, deps,
       if (itemsErr) return respond(json, { ok: false, error: itemsErr }, 400, origin, isAllowedOrigin);
       const planErr = proOnlyBookingError(tenant, booking);
       if (planErr) return respond(json, { ok: false, error: planErr }, 403, origin, isAllowedOrigin);
-      const squareErr = squareClientBookingError(booking);
+      const squareErr = squareClientBookingError(booking, tenant);
       if (squareErr) return respond(json, { ok: false, error: squareErr }, 400, origin, isAllowedOrigin);
       if (existing.some((a) => a && a.id === booking.id) || created.some((a) => a.id === booking.id)) {
         return respond(json, { ok: false, error: 'duplicate_booking' }, 409, origin, isAllowedOrigin);
