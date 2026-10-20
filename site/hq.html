@@ -3619,13 +3619,29 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
         var schediHqPendingTenantId = '';
         var HQ_RETURN_NOTICE_KEY = 'schedi.hqReturnNotice';
         var HQ_RETURN_NOTICE = 'That business isn\'t available to open.';
+        var HQ_MANAGED_TENANT_KEY = 'schedi.hqManagedTenantId';
 
         function hqIsManagingPortal() {
             return !!(platformState.isAgencyMasterLoggedIn && platformState.isTenantOwnerLoggedIn && !platformState.ownerSelfSession);
         }
 
+        function hqRememberManagedTenant(id) {
+            var clean = String(id || '').trim();
+            if (!clean) return;
+            try { window.sessionStorage.setItem(HQ_MANAGED_TENANT_KEY, clean); } catch (errRemember) {}
+        }
+
+        function hqStoredManagedTenant() {
+            try { return String(window.sessionStorage.getItem(HQ_MANAGED_TENANT_KEY) || '').trim(); } catch (errRead) { return ''; }
+        }
+
+        function hqForgetManagedTenant() {
+            try { window.sessionStorage.removeItem(HQ_MANAGED_TENANT_KEY); } catch (errForget) {}
+        }
+
         function hqReturnToDirectory(message) {
             var note = String(message || HQ_RETURN_NOTICE);
+            try { hqForgetManagedTenant(); } catch (errForgetDir) {}
             try { window.sessionStorage.setItem(HQ_RETURN_NOTICE_KEY, note); } catch (errStore) {}
             try { window.location.assign('/hq'); } catch (errGo) {}
         }
@@ -3666,6 +3682,7 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
             if (hqIsManagingPortal()) {
                 if (found) {
                     platformState.activeTenantId = found.id;
+                    try { hqRememberManagedTenant(found.id); } catch (errRememberPin) {}
                     return 'pinned';
                 }
                 hqReturnToDirectory(HQ_RETURN_NOTICE);
@@ -3944,6 +3961,7 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
             try { applySchediAuthMetaOptimistic(); } catch (errAuthOpt) {}
             if (isAgencyHqRoute()) {
                 switchPlatformMode('agency');
+                try { hqForgetManagedTenant(); } catch (errForgetBoot) {}
             } else {
                 switchPlatformMode('tenant');
             }
@@ -13187,6 +13205,7 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
 
         window.handleTenantLogout = function(opts) {
             opts = opts || {};
+            try { hqForgetManagedTenant(); } catch (errForgetOut) {}
             try { stopTenantOwnerIdleWatch(); } catch (errIdle) {}
             platformState.isTenantOwnerLoggedIn = false;
             platformState.ownerSelfSession = false;

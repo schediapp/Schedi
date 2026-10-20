@@ -533,6 +533,16 @@ describe("HQ route", () => {
     const optimistic = extractFunction(publicHtml, "applySchediAuthMetaOptimistic");
     expect(optimistic).not.toContain("searchParams");
     expect(optimistic).not.toContain("get('tenant')");
+    expect(optimistic).not.toContain("HQ_MANAGED_TENANT_KEY");
+    const remember = extractFunction(publicHtml, "hqRememberManagedTenant");
+    expect(remember).toContain("sessionStorage.setItem(HQ_MANAGED_TENANT_KEY, clean)");
+    expect(remember).not.toContain("schediAuthSession");
+    expect(publicHtml).toContain("onclick=\"hqForgetManagedTenant()\"");
+    expect(hqHtml).toContain("try { hqForgetManagedTenant(); } catch (errForgetBoot) {}");
+    const helpers = publicHtml.slice(
+      publicHtml.indexOf("var schediHqPendingTenantId"),
+      publicHtml.indexOf("function attachCloudDbSync"),
+    );
 
     const harbor = { id: "harbor", name: "Harbor Studio", slug: "harbor", services: [], appointments: [] };
     const lumen = { id: "lumen", name: "Lumen Studio", slug: "lumen", services: [], appointments: [] };
@@ -547,11 +557,16 @@ describe("HQ route", () => {
       body?: unknown;
       throwNetwork?: boolean;
       session?: string | null;
+      stored?: string;
+      cloudLoaded?: boolean;
     }) {
       const replaced: string[] = [];
       const cleared: string[] = [];
       const modes: string[] = [];
       const opened: string[] = [];
+      const assigned: string[] = [];
+      const bag = new Map<string, string>();
+      if (input.stored) bag.set("schedi.hqManagedTenantId", input.stored);
       const loginBox = { classList: classList([]) };
       const dashboard = { classList: classList(["hidden"]) };
       const nameEl = { id: "sdHqManageName", textContent: "" };
@@ -574,8 +589,20 @@ describe("HQ route", () => {
       const sandbox: Record<string, unknown> = {
         URL,
         URLSearchParams,
-        location: { href, search: input.search, pathname: input.pathname || "/login", hash: "" },
+        __schediCloudTenantsLoaded: input.cloudLoaded === true,
+        location: {
+          href,
+          search: input.search,
+          pathname: input.pathname || "/login",
+          hash: "",
+          assign(url: string) { assigned.push(String(url)); },
+        },
         history: { replaceState(_state: unknown, _title: string, url: string) { replaced.push(String(url)); } },
+        sessionStorage: {
+          getItem(key: string) { return bag.has(key) ? bag.get(key)! : null; },
+          setItem(key: string, value: string) { bag.set(key, String(value)); },
+          removeItem(key: string) { bag.delete(key); },
+        },
         document: {
           getElementById(id: string) {
             if (id === "tenantLoginBox") return loginBox;
@@ -624,7 +651,9 @@ describe("HQ route", () => {
       sandbox.opened = opened;
       sandbox.replaced = replaced;
       sandbox.cleared = cleared;
+      sandbox.assigned = assigned;
       const script = [
+        helpers,
         extractFunction(publicHtml, "isAgencyHqRoute"),
         "function getTenant(id) { if (id == null) id = platformState.activeTenantId; return platformState.tenants.find(function (t) { return t && t.id === id; }) || platformState.tenants[0]; }",
         extractFunction(publicHtml, "syncHqManagingBanner"),
@@ -635,6 +664,8 @@ describe("HQ route", () => {
         extractFunction(publicHtml, "verifySchediAuthSessionRestore"),
         "(async function () {",
         "  var first = applySchediAuthMetaOptimistic();",
+        "  var optimisticOwner = platformState.isTenantOwnerLoggedIn;",
+        "  var optimisticDashHidden = document.getElementById('tenantDashboard').classList.contains('hidden');",
         "  var confirmed = await verifySchediAuthSessionRestore();",
         "  var bannerEl = document.getElementById('sdHqManage');",
         "  var nameNode = document.getElementById('sdHqManageName');",
@@ -653,7 +684,17 @@ describe("HQ route", () => {
         "    dashHidden: document.getElementById('tenantDashboard').classList.contains('hidden'),",
         "    bannerHidden: bannerEl.hidden,",
         "    bannerText: 'Managing ' + nameNode.textContent + ' · Back to HQ',",
-        "    bannerHref: bannerEl.href",
+        "    bannerHref: bannerEl.href,",
+        "    managed: sessionStorage.getItem('schedi.hqManagedTenantId') || '',",
+        "    assigned: assigned,",
+        "    notice: sessionStorage.getItem('schedi.hqReturnNotice') || '',",
+        "    optimisticOwner: optimisticOwner,",
+        "    optimisticDashHidden: optimisticDashHidden,",
+        "    clickClears: (function () {",
+        "      if (!bannerEl.onclick) return false;",
+        "      bannerEl.onclick();",
+        "      return sessionStorage.getItem('schedi.hqManagedTenantId') == null;",
+        "    })()",
         "  };",
         "})()",
       ].join("\n");
@@ -673,6 +714,12 @@ describe("HQ route", () => {
         bannerHidden: boolean;
         bannerText: string;
         bannerHref: string;
+        managed: string;
+        assigned: string[];
+        notice: string;
+        optimisticOwner: boolean;
+        optimisticDashHidden: boolean;
+        clickClears: boolean;
       };
       return result;
     }
@@ -698,6 +745,11 @@ describe("HQ route", () => {
     expect(confirmed.bannerText).toBe("Managing Lumen Studio · Back to HQ");
     expect(confirmed.bannerHref).toBe("/hq");
     expect(confirmed.cleared).toEqual([]);
+    expect(confirmed.optimisticOwner).toBe(false);
+    expect(confirmed.optimisticDashHidden).toBe(true);
+    expect(confirmed.managed).toBe("lumen");
+    expect(confirmed.assigned).toEqual([]);
+    expect(confirmed.clickClears).toBe(true);
 
     const owner = await restore({
       role: "owner",
@@ -786,6 +838,94 @@ describe("HQ route", () => {
     expect(unsigned.confirmed).toBe(false);
     expect(unsigned.owner).toBe(false);
     expect(unsigned.opened).toEqual([]);
+
+    const reloaded = await restore({
+      role: "agency",
+      search: "",
+      stored: "lumen",
+      status: 200,
+      body: { ok: true, tenants: [{ id: "harbor" }, { id: "lumen" }] },
+    });
+    expect(reloaded.optimisticOwner).toBe(false);
+    expect(reloaded.optimisticDashHidden).toBe(true);
+    expect(reloaded.confirmed).toBe(true);
+    expect(reloaded.owner).toBe(true);
+    expect(reloaded.self).toBe(false);
+    expect(reloaded.active).toBe("lumen");
+    expect(reloaded.opened).toContain("lumen");
+    expect(reloaded.loginHidden).toBe(true);
+    expect(reloaded.dashHidden).toBe(false);
+    expect(reloaded.bannerHidden).toBe(false);
+    expect(reloaded.bannerText).toBe("Managing Lumen Studio · Back to HQ");
+    expect(reloaded.managed).toBe("lumen");
+    expect(reloaded.assigned).toEqual([]);
+    expect(reloaded.replaced).toEqual([]);
+
+    const stale = await restore({
+      role: "agency",
+      search: "",
+      stored: "northwind",
+      status: 200,
+      body: { ok: true, tenants: [{ id: "harbor" }, { id: "lumen" }] },
+    });
+    expect(stale.owner).toBe(false);
+    expect(stale.opened).toEqual([]);
+    expect(stale.dashHidden).toBe(true);
+    expect(stale.managed).toBe("");
+    expect(stale.assigned).toEqual(["/hq"]);
+    expect(stale.notice).toBe("That business isn't available to open.");
+
+    const unresolved = await restore({
+      role: "agency",
+      search: "",
+      stored: "northwind",
+      cloudLoaded: true,
+      status: 200,
+      body: { ok: true, tenants: [{ id: "northwind" }, { id: "lumen" }] },
+    });
+    expect(unresolved.owner).toBe(false);
+    expect(unresolved.active).toBe("");
+    expect(unresolved.opened).toEqual([]);
+    expect(unresolved.managed).toBe("");
+    expect(unresolved.assigned).toEqual(["/hq"]);
+    expect(unresolved.notice).toBe("That business isn't available to open.");
+
+    const ownerStored = await restore({
+      role: "owner",
+      tenantId: "harbor",
+      search: "",
+      stored: "lumen",
+      status: 200,
+      body: { ok: true, tenants: [{ id: "harbor" }, { id: "lumen" }] },
+    });
+    expect(ownerStored.opened).toEqual([]);
+    expect(ownerStored.managed).toBe("");
+    expect(ownerStored.assigned).toEqual(["/hq"]);
+
+    const rejectedStored = await restore({
+      role: "agency",
+      search: "",
+      stored: "lumen",
+      status: 401,
+      body: { error: "session_required" },
+    });
+    expect(rejectedStored.confirmed).toBe(false);
+    expect(rejectedStored.opened).toEqual([]);
+    expect(rejectedStored.managed).toBe("");
+    expect(rejectedStored.cleared).toEqual(["session"]);
+    expect(rejectedStored.assigned).toEqual(["/hq"]);
+
+    const offlineStored = await restore({
+      role: "agency",
+      search: "",
+      stored: "lumen",
+      status: 0,
+      throwNetwork: true,
+    });
+    expect(offlineStored.opened).toEqual([]);
+    expect(offlineStored.dashHidden).toBe(true);
+    expect(offlineStored.managed).toBe("lumen");
+    expect(offlineStored.assigned).toEqual([]);
   });
 
   it("returns Sign out to HQ without clearing the HQ session", () => {
@@ -814,6 +954,7 @@ describe("HQ route", () => {
     function runLogout(state: { agency: boolean; owner: boolean; self: boolean }) {
       const assigned: string[] = [];
       const cleared: string[] = [];
+      const bag = new Map<string, string>([["schedi.hqManagedTenantId", "lumen"]]);
       const sandbox: Record<string, unknown> = {
         platformState: {
           isAgencyMasterLoggedIn: state.agency,
@@ -821,6 +962,11 @@ describe("HQ route", () => {
           ownerSelfSession: state.self,
         },
         location: { assign(url: string) { assigned.push(String(url)); } },
+        sessionStorage: {
+          getItem(key: string) { return bag.has(key) ? bag.get(key)! : null; },
+          setItem(key: string, value: string) { bag.set(key, String(value)); },
+          removeItem(key: string) { bag.delete(key); },
+        },
         document: {
           getElementById() {
             return { classList: classList(["hidden"]), value: "" };
@@ -836,15 +982,26 @@ describe("HQ route", () => {
         showToast() {},
       };
       sandbox.window = sandbox;
-      runInNewContext(extractAssigned(publicHtml, "handleTenantLogout") + "\nhandleTenantLogout();", sandbox, { filename: "hq-sign-out.js" });
-      return { assigned, cleared };
+      const helpers = publicHtml.slice(
+        publicHtml.indexOf("var schediHqPendingTenantId"),
+        publicHtml.indexOf("function attachCloudDbSync"),
+      );
+      runInNewContext(
+        helpers + "\n" + extractAssigned(publicHtml, "handleTenantLogout") + "\nhandleTenantLogout();",
+        sandbox,
+        { filename: "hq-sign-out.js" },
+      );
+      return { assigned, cleared, managed: bag.get("schedi.hqManagedTenantId") || "" };
     }
     expect(runLogout({ agency: true, owner: true, self: false })).toEqual({
       assigned: ["/hq"],
       cleared: [],
+      managed: "",
     });
-    expect(runLogout({ agency: false, owner: true, self: true }).cleared).toContain("session");
-    expect(runLogout({ agency: false, owner: true, self: true }).assigned).toEqual([]);
+    const ownerOut = runLogout({ agency: false, owner: true, self: true });
+    expect(ownerOut.cleared).toContain("session");
+    expect(ownerOut.assigned).toEqual([]);
+    expect(ownerOut.managed).toBe("");
   });
 
   it("sends HQ back when the server allows a business the public list does not have", async () => {
