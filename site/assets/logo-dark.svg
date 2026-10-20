@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="840" height="384" viewBox="0 0 840 384">
+  <g transform="translate(64,64)">
+    <rect x="52" y="0" width="22" height="56" rx="11" fill="#059669"/>
+    <rect x="166" y="0" width="22" height="56" rx="11" fill="#059669"/>
+    <rect x="0" y="28" width="240" height="228" rx="44" fill="#059669"/>
+    <path d="M62 150 L104 194 L182 108" fill="none" stroke="#ffffff" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <text x="360" y="256" fill="#ffffff" font-family="Inter, sans-serif" font-weight="600" font-size="132" letter-spacing="-3.2">Schedi</text>
+</svg>
