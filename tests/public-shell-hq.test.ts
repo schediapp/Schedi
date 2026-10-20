@@ -846,4 +846,209 @@ describe("HQ route", () => {
     expect(runLogout({ agency: false, owner: true, self: true }).cleared).toContain("session");
     expect(runLogout({ agency: false, owner: true, self: true }).assigned).toEqual([]);
   });
+
+  it("sends HQ back when the server allows a business the public list does not have", async () => {
+    function extractFunction(source: string, name: string) {
+      const marker = "function " + name;
+      const start = source.indexOf(marker);
+      const brace = source.indexOf("{", start);
+      let depth = 0;
+      for (let i = brace; i < source.length; i++) {
+        if (source[i] === "{") depth += 1;
+        else if (source[i] === "}") {
+          depth -= 1;
+          if (depth === 0) {
+            const from = source.slice(start - 6, start) === "async " ? start - 6 : start;
+            return source.slice(from, i + 1);
+          }
+        }
+      }
+      throw new Error("missing " + name);
+    }
+    const cloud = extractFunction(publicHtml, "attachCloudDbSync");
+    const bailAt = cloud.indexOf("if (tenantSettle === 'bail') return;");
+    expect(bailAt).toBeGreaterThan(-1);
+    expect(bailAt).toBeLessThan(cloud.indexOf("platformState.tenants = loadedTenants"));
+    expect(bailAt).toBeLessThan(cloud.indexOf("renderTenantAdminPortal"));
+    expect(publicHtml).not.toContain("services: [], appointments: []");
+    expect(hqHtml).toContain("function consumeHqReturnNotice()");
+    expect(hqHtml).toContain("try { consumeHqReturnNotice(); } catch (errHqNote) {}");
+
+    const alejandro = { id: "alejandro", name: "Alejandro", slug: "alejandro" };
+    const harbor = { id: "harbor", name: "Harbor Studio", slug: "harbor" };
+    const left: string[] = [];
+    const toasts: string[] = [];
+    const bag = new Map<string, string>();
+    const state = {
+      activeTenantId: "",
+      isTenantOwnerLoggedIn: false,
+      ownerSelfSession: false,
+      isAgencyMasterLoggedIn: false,
+      currentMode: "tenant",
+      tenants: [alejandro, harbor],
+    };
+    const sandbox: Record<string, unknown> = {
+      URL,
+      URLSearchParams,
+      __schediCloudTenantsLoaded: true,
+      location: {
+        href: "https://schedi.app/login?tenant=northwind&from=hq",
+        search: "?tenant=northwind&from=hq",
+        pathname: "/login",
+        hash: "",
+        assign(url: string) { left.push(String(url)); },
+      },
+      history: { replaceState() {} },
+      sessionStorage: {
+        getItem(key: string) { return bag.has(key) ? bag.get(key)! : null; },
+        setItem(key: string, value: string) { bag.set(key, String(value)); },
+        removeItem(key: string) { bag.delete(key); },
+      },
+      document: { getElementById() { return null; } },
+      platformState: state,
+      schediAuthEpoch: 0,
+      schediPrivateProfiles: {},
+      schediPrivateProfilesLoaded: false,
+      schediAuthRestoreAllowedHere() { return true; },
+      schediAuthSession() { return "agency-session"; },
+      schediAuthMeta() { return { role: "agency", email: "hq@example.com" }; },
+      schediClearAuthSession() {},
+      schediSetAuthSession() { return true; },
+      applyPrivateProfiles() {},
+      clearPrivateAppointments() {},
+      clearPrivateProfiles() {},
+      updateMasterAuthUI() {},
+      refreshPrivateBookings() {},
+      refreshAppointmentCounts() {},
+      syncOwnerChangePassBtn() {},
+      updateLivePreviewControlsVisibility() {},
+      syncTenantAutoLogoffSelect() {},
+      startTenantOwnerIdleWatch() {},
+      stopTenantOwnerIdleWatch() {},
+      populateTenantSelect() {},
+      renderTenantAdminPortal() { throw new Error("opened a portal"); },
+      openTenantOwnerPortal() { throw new Error("opened a portal"); },
+      switchPlatformMode() {},
+      showToast(message: string) { toasts.push(String(message)); },
+      fetch: async () => ({
+        status: 200,
+        ok: true,
+        json: async () => ({ ok: true, tenants: [{ id: "northwind" }, { id: "alejandro" }] }),
+      }),
+    };
+    sandbox.window = sandbox;
+    const helpers = publicHtml.slice(
+      publicHtml.indexOf("var schediHqPendingTenantId"),
+      publicHtml.indexOf("function attachCloudDbSync"),
+    );
+    const result = await runInNewContext(
+      [
+        helpers,
+        extractFunction(publicHtml, "isAgencyHqRoute"),
+        extractFunction(publicHtml, "verifySchediAuthSessionRestore"),
+        "(async function () {",
+        "  await verifySchediAuthSessionRestore();",
+        "  var stored = sessionStorage.getItem('schedi.hqReturnNotice');",
+        "  consumeHqReturnNotice();",
+        "  return {",
+        "    active: platformState.activeTenantId,",
+        "    owner: platformState.isTenantOwnerLoggedIn,",
+        "    self: platformState.ownerSelfSession,",
+        "    ids: platformState.tenants.map(function (t) { return t.id; }),",
+        "    pending: schediHqPendingTenantId,",
+        "    notice: stored,",
+        "    cleared: sessionStorage.getItem('schedi.hqReturnNotice')",
+        "  };",
+        "})()",
+      ].join("\n"),
+      sandbox,
+      { filename: "hq-missing-public-tenant.js" },
+    ) as { active: string; owner: boolean; self: boolean; ids: string[]; pending: string; notice: string; cleared: string | null };
+    expect(result.ids).toEqual(["alejandro", "harbor"]);
+    expect(result.active).toBe("");
+    expect(result.owner).toBe(false);
+    expect(result.self).toBe(false);
+    expect(result.pending).toBe("northwind");
+    expect(left).toEqual(["/hq"]);
+    expect(result.notice).toBe("That business isn't available to open.");
+    expect(toasts).toEqual(["That business isn't available to open."]);
+    expect(result.cleared).toBeNull();
+  });
+
+  it("pins the managed business on a later cloud reload, or returns to HQ", () => {
+    const helpers = publicHtml.slice(
+      publicHtml.indexOf("var schediHqPendingTenantId"),
+      publicHtml.indexOf("function attachCloudDbSync"),
+    );
+    const alejandro = { id: "alejandro", name: "Alejandro" };
+    const lumen = { id: "lumen", name: "Lumen Studio" };
+    function settle(input: {
+      active: string;
+      managing: boolean;
+      pending?: string;
+      rows: { id: string; name: string }[];
+    }) {
+      const left: string[] = [];
+      const bag = new Map<string, string>();
+      const state = {
+        activeTenantId: input.active,
+        isTenantOwnerLoggedIn: input.managing,
+        ownerSelfSession: false,
+        isAgencyMasterLoggedIn: input.managing,
+        tenants: [alejandro, lumen],
+      };
+      const sandbox: Record<string, unknown> = {
+        platformState: state,
+        schediHqPendingTenantId: input.pending || "",
+        location: { assign(url: string) { left.push(String(url)); } },
+        sessionStorage: {
+          getItem(key: string) { return bag.has(key) ? bag.get(key)! : null; },
+          setItem(key: string, value: string) { bag.set(key, String(value)); },
+          removeItem(key: string) { bag.delete(key); },
+        },
+      };
+      sandbox.window = sandbox;
+      const context: Record<string, unknown> = { ...sandbox, rows: input.rows };
+      context.window = context;
+      const result = runInNewContext(
+        `${helpers}\nschediHqPendingTenantId = ${JSON.stringify(input.pending || "")};\nsettleActiveTenantAfterCloud(rows);`,
+        context,
+        { filename: "hq-cloud-settle.js" },
+      ) as string;
+      return { result, active: state.activeTenantId, left, notice: bag.get("schedi.hqReturnNotice") || "" };
+    }
+
+    expect(settle({
+      active: "lumen",
+      managing: true,
+      rows: [alejandro, lumen],
+    })).toMatchObject({ result: "pinned", active: "lumen", left: [], notice: "" });
+
+    const missing = settle({
+      active: "lumen",
+      managing: true,
+      rows: [alejandro],
+    });
+    expect(missing.result).toBe("bail");
+    expect(missing.active).toBe("lumen");
+    expect(missing.left).toEqual(["/hq"]);
+    expect(missing.notice).toBe("That business isn't available to open.");
+
+    const unresolved = settle({
+      active: "",
+      managing: false,
+      pending: "northwind",
+      rows: [alejandro],
+    });
+    expect(unresolved.result).toBe("bail");
+    expect(unresolved.active).toBe("");
+    expect(unresolved.left).toEqual(["/hq"]);
+    expect(unresolved.notice).toBe("That business isn't available to open.");
+
+    expect(settle({
+      active: "gone",
+      managing: false,
+      rows: [alejandro, lumen],
+    })).toMatchObject({ result: "default", active: "alejandro", left: [] });
+  });
 });

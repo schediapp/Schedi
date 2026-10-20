@@ -3616,6 +3616,67 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
         // Reset demo control removed from UI. Kept as a no-op so leftover calls cannot wipe data.
         window.resetDemoData = function() { return false; }
 
+        var schediHqPendingTenantId = '';
+        var HQ_RETURN_NOTICE_KEY = 'schedi.hqReturnNotice';
+        var HQ_RETURN_NOTICE = 'That business isn\'t available to open.';
+
+        function hqIsManagingPortal() {
+            return !!(platformState.isAgencyMasterLoggedIn && platformState.isTenantOwnerLoggedIn && !platformState.ownerSelfSession);
+        }
+
+        function hqReturnToDirectory(message) {
+            var note = String(message || HQ_RETURN_NOTICE);
+            try { window.sessionStorage.setItem(HQ_RETURN_NOTICE_KEY, note); } catch (errStore) {}
+            try { window.location.assign('/hq'); } catch (errGo) {}
+        }
+
+        function consumeHqReturnNotice() {
+            var note = '';
+            try {
+                note = String(window.sessionStorage.getItem(HQ_RETURN_NOTICE_KEY) || '');
+                if (note) window.sessionStorage.removeItem(HQ_RETURN_NOTICE_KEY);
+            } catch (errNote) { note = ''; }
+            if (!note) return;
+            try { showToast(note, 'info'); } catch (errToast) {}
+        }
+
+        // HQ may only manage a business that is actually in the public list.
+        // A missing id goes back to HQ. It must never become the first other business.
+        function settleActiveTenantAfterCloud(loadedTenants) {
+            var rows = Array.isArray(loadedTenants) ? loadedTenants : [];
+            var pending = String(schediHqPendingTenantId || '');
+            var i;
+            if (pending) {
+                var pendingRow = null;
+                for (i = 0; i < rows.length; i++) {
+                    if (rows[i] && String(rows[i].id) === pending) { pendingRow = rows[i]; break; }
+                }
+                if (!pendingRow) {
+                    hqReturnToDirectory(HQ_RETURN_NOTICE);
+                    return 'bail';
+                }
+                platformState.activeTenantId = pendingRow.id;
+                schediHqPendingTenantId = '';
+                return 'open';
+            }
+            var found = null;
+            for (i = 0; i < rows.length; i++) {
+                if (rows[i] && rows[i].id === platformState.activeTenantId) { found = rows[i]; break; }
+            }
+            if (hqIsManagingPortal()) {
+                if (found) {
+                    platformState.activeTenantId = found.id;
+                    return 'pinned';
+                }
+                hqReturnToDirectory(HQ_RETURN_NOTICE);
+                return 'bail';
+            }
+            if (!found && rows.length > 0 && rows[0] && rows[0].id) {
+                platformState.activeTenantId = rows[0].id;
+            }
+            return 'default';
+        }
+
         function attachCloudDbSync() {
             if (!window.db || !window.collection) return;
             if (window.__siteforge_sync_attached) return;
@@ -3676,10 +3737,8 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
                     }
                     var mintedManageTokens = ensureAppointmentManageTokens(loadedTenants);
                     var assignedPlans = assignMissingPlans(loadedTenants);
-                    const validActive = loadedTenants.find(t => t.id === platformState.activeTenantId);
-                    if (!validActive && loadedTenants.length > 0) {
-                        platformState.activeTenantId = loadedTenants[0].id;
-                    }
+                    var tenantSettle = settleActiveTenantAfterCloud(loadedTenants);
+                    if (tenantSettle === 'bail') return;
                     platformState.tenants = loadedTenants;
                     window.__schediCloudTenantsLoaded = true;
                     try {
@@ -3888,6 +3947,7 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
             } else {
                 switchPlatformMode('tenant');
             }
+            try { consumeHqReturnNotice(); } catch (errHqNote) {}
             syncAgencyChrome();
             try { syncTenantAutoLogoffSelect(); } catch (errSelBoot) {}
             try { startTenantOwnerIdleWatch(); } catch (errIdleBoot) {}
