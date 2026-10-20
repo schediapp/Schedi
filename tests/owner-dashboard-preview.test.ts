@@ -6632,14 +6632,25 @@ describe.skipIf(!chrome)("classic owner roster icons", () => {
       });
       expect(light.paid).toBe("$75");
       expect(light.toggle).toBe("none");
-      const classic = await page.goto(`http://127.0.0.1:${port}/login?classic=1`, { waitUntil: "domcontentloaded", timeout: 45000 });
+      const open = async (url: string) => {
+        let last: unknown;
+        for (let attempt = 0; attempt < 2; attempt++) {
+          try {
+            return await page.goto(url, { waitUntil: "domcontentloaded", timeout: 45000 });
+          } catch (error) {
+            last = error;
+          }
+        }
+        throw last;
+      };
+      const classic = await open(`http://127.0.0.1:${port}/login?classic=1`);
       expect(classic?.headers()["content-security-policy"]).toBe(policy);
       await page.waitForFunction(() => {
         const row = document.querySelector("#tenantRosterTableBody .sd-pay svg");
         const box = row?.getBoundingClientRect();
         return !document.body.classList.contains("schedi-newdash") && !!box && box.width > 0 && box.width <= 48;
       }, { timeout: 20000 });
-      const demo = await page.goto(`http://127.0.0.1:${port}/portal-preview`, { waitUntil: "domcontentloaded", timeout: 45000 });
+      const demo = await open(`http://127.0.0.1:${port}/portal-preview`);
       expect(demo?.headers()["content-security-policy"]).toBe(policy);
       await page.waitForFunction(() => {
         const row = document.querySelector("#tenantRosterTableBody .sd-pay svg, #schediTodaySchedule .sd-pay svg");
