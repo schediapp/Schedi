@@ -82,9 +82,10 @@ describe("booking QR code", () => {
     expect(html).toContain("schediQrCardPixels");
     const generateAt = html.indexOf("window.schediQrGenerate = function");
     const generate = html.slice(generateAt, generateAt + 3200);
-    expect(generate).toContain("schediQrDrawCard");
+    expect(generate).toContain("schediQrPaintExport");
     expect(generate).not.toContain("getTenantPublicBookingUrl");
     expect(generate).toContain("Not saved in this demo. The preview stays on this screen only.");
+    expect(generate).toContain("That booking link is too long to draw here. Upload a QR image instead.");
     expect(html).toContain("Change QR code");
     expect(html).toContain("Confirm replacement");
     expect(html).toContain('id="schediQrChange"');
@@ -99,5 +100,192 @@ describe("booking QR code", () => {
     expect(html).toContain("#tenantPortalSection.schedi-newdash .sd-qr-card");
     expect(html).toContain("max-height: min(92vh, 760px)");
     expect(html).toContain("#tenantPortalSection.schedi-newdash .sd-today-actions .sd-share");
+  });
+
+  it("saves a QR file with the Web Share API on mobile and a download otherwise", async () => {
+    function extract(name: string): string {
+      const start = html.indexOf("function " + name);
+      const brace = html.indexOf("{", start);
+      let depth = 0;
+      for (let i = brace; i < html.length; i++) {
+        if (html[i] === "{") depth++;
+        else if (html[i] === "}") {
+          depth--;
+          if (depth === 0) return html.slice(start, i + 1);
+        }
+      }
+      throw new Error("could not extract " + name);
+    }
+    const saveAt = html.indexOf("window.schediQrSave = async function");
+    const save = html.slice(saveAt, saveAt + 2800);
+    expect(save.indexOf("schediQrDeliverFile")).toBeGreaterThan(-1);
+    expect(save.indexOf("schediQrDeliverFile")).toBeLessThan(save.indexOf("/api/business-logo"));
+    expect(save).toContain("schediAuthSession");
+    expect(save).toContain("purpose: 'qr'");
+    expect(save).toContain("QR code saved on this device.");
+    const downloadAt = html.indexOf("window.schediQrDownload = async function");
+    const download = html.slice(downloadAt, downloadAt + 1400);
+    expect(download.indexOf("src.indexOf('https://') === 0")).toBeGreaterThan(-1);
+    expect(download.indexOf("src.indexOf('https://') === 0")).toBeLessThan(download.indexOf("fetch(src)"));
+    expect(download).toContain("schediQrDeliverFile");
+    expect(download).not.toContain("fetch(blob:");
+    expect(extract("schediQrLoadImage")).not.toContain("crossOrigin");
+    expect(extract("schediQrLoadImage")).toContain("createObjectURL");
+    expect(extract("schediQrPaintExport")).toContain("opts.logo = null");
+
+    const clicks: { href: string; download: string }[] = [];
+    const shares: { files?: File[]; title?: string }[] = [];
+    const device = { mobile: true };
+    let shareError: Error | null = null;
+    const documentStub = {
+      body: { appendChild() {} },
+      createElement() {
+        return {
+          href: "",
+          download: "",
+          click() { clicks.push({ href: this.href, download: this.download }); },
+          remove() {},
+        };
+      },
+    };
+    const navigatorStub = {
+      share(payload: { files?: File[]; title?: string }) {
+        shares.push(payload);
+        if (shareError) return Promise.reject(shareError);
+        return Promise.resolve();
+      },
+      canShare(payload: { files?: File[] }) {
+        return !!(payload && payload.files && payload.files.length);
+      },
+    };
+    const run = new Function(
+      "document",
+      "navigator",
+      "URL",
+      "File",
+      "setTimeout",
+      "device",
+      `function schediIsMobileHomeScreenTarget() { return device.mobile; }
+       ${extract("schediQrSharePayload")}
+       ${extract("schediQrDownloadBlob")}
+       ${extract("schediQrDeliverFile")}
+       ${extract("schediQrFileKept")}
+       return { schediQrDeliverFile, schediQrFileKept };`,
+    );
+    const urls = {
+      createObjectURL() { return "blob:qr-file"; },
+      revokeObjectURL() {},
+    };
+    const api = run(documentStub, navigatorStub, urls, File, () => 0, device) as {
+      schediQrDeliverFile: (blob: Blob) => Promise<string>;
+      schediQrFileKept: (delivered: string) => boolean;
+    };
+    const png = new Blob([Uint8Array.from([137, 80, 78, 71])], { type: "image/png" });
+    await expect(api.schediQrDeliverFile(png)).resolves.toBe("shared");
+    expect(shares).toHaveLength(1);
+    expect(shares[0].title).toBe("Booking QR code");
+    expect(shares[0].files?.[0].name).toBe("booking-qr.png");
+    expect(shares[0].files?.[0].type).toBe("image/png");
+    expect(clicks).toHaveLength(0);
+    expect(api.schediQrFileKept("shared")).toBe(true);
+    expect(api.schediQrFileKept("aborted")).toBe(false);
+
+    shareError = Object.assign(new Error("no share"), { name: "NotAllowedError" });
+    await expect(api.schediQrDeliverFile(png)).resolves.toBe("downloaded");
+    expect(clicks).toEqual([{ href: "blob:qr-file", download: "booking-qr.png" }]);
+
+    clicks.length = 0;
+    shareError = Object.assign(new Error("dismissed"), { name: "AbortError" });
+    await expect(api.schediQrDeliverFile(png)).resolves.toBe("aborted");
+    expect(clicks).toHaveLength(0);
+
+    device.mobile = false;
+    shares.length = 0;
+    await expect(api.schediQrDeliverFile(png)).resolves.toBe("downloaded");
+    expect(shares).toHaveLength(0);
+    expect(clicks).toEqual([{ href: "blob:qr-file", download: "booking-qr.png" }]);
+
+    const plain = new Blob([Uint8Array.from([1, 2, 3])], { type: "" });
+    device.mobile = true;
+    shareError = null;
+    shares.length = 0;
+    await expect(api.schediQrDeliverFile(plain)).resolves.toBe("shared");
+    expect(shares[0].files?.[0].type).toBe("image/png");
+  });
+
+  it("loads a logo from a same-origin blob and still exports a card with no logo", async () => {
+    function extract(name: string): string {
+      const start = html.indexOf("function " + name);
+      const brace = html.indexOf("{", start);
+      let depth = 0;
+      for (let i = brace; i < html.length; i++) {
+        if (html[i] === "{") depth++;
+        else if (html[i] === "}") {
+          depth--;
+          if (depth === 0) return html.slice(start, i + 1);
+        }
+      }
+      throw new Error("could not extract " + name);
+    }
+    const fetched: string[] = [];
+    class FakeImage {
+      naturalWidth = 12;
+      naturalHeight = 12;
+      crossOrigin = "";
+      __schediQrObjectUrl = "";
+      onload: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+      set src(_value: string) {
+        queueMicrotask(() => { if (this.onload) this.onload(); });
+      }
+    }
+    const load = new Function(
+      "fetch",
+      "Image",
+      "URL",
+      `${extract("schediQrReleaseLogo")}
+       ${extract("schediQrDecodeLogo")}
+       ${extract("schediQrLoadImage")}
+       return { schediQrLoadImage, schediQrReleaseLogo };`,
+    )(
+      async (url: string) => {
+        fetched.push(url);
+        if (url.indexOf("missing") !== -1) throw new Error("network");
+        return { ok: true, async blob() { return new Blob([Uint8Array.from([1])], { type: "image/png" }); } };
+      },
+      FakeImage,
+      { createObjectURL() { return "blob:logo"; }, revokeObjectURL() {} },
+    ) as {
+      schediQrLoadImage: (url: string) => Promise<{ __schediQrObjectUrl?: string; crossOrigin?: string } | null>;
+      schediQrReleaseLogo: (img: { __schediQrObjectUrl?: string } | null) => void;
+    };
+    await expect(load.schediQrLoadImage("")).resolves.toBeNull();
+    expect(fetched).toHaveLength(0);
+    const logo = await load.schediQrLoadImage("https://schedi.app/logos/axeldelcidphotography?v=1");
+    expect(fetched).toEqual(["https://schedi.app/logos/axeldelcidphotography?v=1"]);
+    expect(logo && logo.__schediQrObjectUrl).toBe("blob:logo");
+    expect(logo && logo.crossOrigin).toBe("");
+    load.schediQrReleaseLogo(logo);
+    await expect(load.schediQrLoadImage("https://cdn.example/missing.png")).resolves.toBeNull();
+
+    const card = { draws: [] as unknown[], exports: 0 };
+    const paint = new Function(
+      "document",
+      "card",
+      `${extract("schediQrPaintExport")}
+       function schediQrDrawCard(_canvas, opts) { card.draws.push(opts.logo); return opts.url !== "too-long"; }
+       function schediQrReleaseLogo() {}
+       function schediQrCanvasBlob() { card.exports += 1; return Promise.resolve(card.exports === 1 ? null : { size: 32, type: "image/png" }); }
+       return schediQrPaintExport;`,
+    )({ createElement() { return {}; } }, card) as (canvas: object, opts: { url: string; logo: unknown }) => Promise<Blob | false | null>;
+    const branded = await paint({}, { url: "https://schedi.app/axeldelcidphotography/", logo: { naturalWidth: 8 } });
+    expect(branded && (branded as { size: number }).size).toBe(32);
+    expect(card.draws.map((logo) => logo == null)).toEqual([false, true]);
+    card.draws.length = 0;
+    card.exports = 0;
+    const bare = await paint({}, { url: "https://schedi.app/harbor-demo/", logo: null });
+    expect(bare).toBeNull();
+    expect(card.draws).toHaveLength(1);
+    await expect(paint({}, { url: "too-long", logo: null })).resolves.toBe(false);
   });
 });
