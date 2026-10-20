@@ -46,14 +46,39 @@ describe("email worker calendar routes", () => {
     expect(matchedBy(patterns, ics)).toBe("schedi.app/api/owner-feed/*");
     expect(matchedBy(patterns, `${ics}?`)).toBe("schedi.app/api/owner-feed/*");
 
-    // POST /api/calendar-feeds sends a JSON body and no query string.
-    expect(patterns).toContain("schedi.app/api/calendar-feeds");
-    expect(matchedBy(patterns, "schedi.app/api/calendar-feeds")).toBe("schedi.app/api/calendar-feeds");
+    expect(patterns).toContain("schedi.app/api/calendar-feeds*");
+    expect(matchedBy(patterns, "schedi.app/api/calendar-feeds")).toBe("schedi.app/api/calendar-feeds*");
+    expect(matchedBy(patterns, "schedi.app/api/calendar-feeds?tenant=harbor")).toBe("schedi.app/api/calendar-feeds*");
     expect(routeMatches("schedi.app/api/calendar-feeds", "schedi.app/api/calendar-feeds?tenant=harbor")).toBe(false);
   });
 
   it("still matches booking-ics query strings the same way", () => {
     expect(patterns).toContain("schedi.app/api/booking-ics*");
     expect(matchedBy(patterns, "schedi.app/api/booking-ics?tenant=harbor&id=1&t=tok")).toBe("schedi.app/api/booking-ics*");
+  });
+
+  it("matches every email-worker route on the same path with a query string", () => {
+    const schediWeb = [
+      "schedi.app/api/business-logo",
+      "schedi.app/api/logo-upload",
+      "schedi.app/api/business",
+      "schedi.app/api/connect/enable",
+      "schedi.app/api/connect/session",
+      "schedi.app/api/public-checkout",
+      "schedi.app/api/session",
+      "schedi.app/api/webhooks/stripe",
+    ];
+    for (const pattern of patterns) {
+      const path = pattern.endsWith("/*") ? `${pattern.slice(0, -1)}item` : pattern.endsWith("*") ? pattern.slice(0, -1) : pattern;
+      const withQuery = `${path}?x=1`;
+      expect(routeMatches(pattern, path), pattern).toBe(true);
+      expect(routeMatches(pattern, withQuery), pattern).toBe(true);
+      expect(matchedBy(patterns, withQuery), withQuery).toBe(pattern);
+      expect(routeMatches(path, withQuery), path).toBe(false);
+    }
+    for (const hostPath of schediWeb) {
+      expect(matchedBy(patterns, hostPath), hostPath).toBeUndefined();
+      expect(matchedBy(patterns, `${hostPath}?x=1`), hostPath).toBeUndefined();
+    }
   });
 });
