@@ -79,6 +79,28 @@ describe("booking document scripts", () => {
     });
     assertParses(filled);
   });
+
+  it("hides a rejected slot and does not offer times the server would refuse", () => {
+    const start = bookingHtml.indexOf("function syncBookingsToFirestore");
+    const end = bookingHtml.indexOf("document.getElementById('resCode')", start);
+    const fn = bookingHtml.slice(start, end);
+    const reject = "out.data.error === 'too_soon' || out.data.error === 'slot_taken' || out.data.error === 'slot_unavailable'";
+    expect(fn.split(reject)).toHaveLength(3);
+    expect(fn).toContain("document.getElementById('confirmationCard')");
+    expect(fn).toContain("confirmCard.classList.add('hidden')");
+    expect(fn).toContain("errBox.classList.remove('hidden')");
+    expect(fn).toContain("That time is not available. Choose another time.");
+    const guard = "if (out && !out.ok && out.data && (" + reject + ")) return;";
+    expect(fn.indexOf(guard)).toBeGreaterThan(0);
+    expect(fn.indexOf(guard)).toBeLessThan(fn.indexOf("type: 'NEW_BOOKING_SUBMITTED'"));
+    expect(bookingHtml).toContain("if (slotInsideNotice(selectedDateStr, t)) { hiddenByNotice++; continue; }");
+    expect(bookingHtml).toContain("return startUtc.getTime() < Date.now() + hours * 60 * 60 * 1000;");
+    expect(bookingHtml).toContain("var openMins = dayHours ? toMinutes(dayHours.start) : 9 * 60;");
+    expect(bookingHtml).toContain("var closeMins = dayHours ? toMinutes(dayHours.end) : 17 * 60;");
+    expect(bookingHtml).toContain("if (closeMins === null || closeMins <= openMins) closeMins = 17 * 60;");
+    expect(bookingHtml).toContain("start: dayHours && dayHours.start ? dayHours.start : '09:00 AM',");
+    expect(bookingHtml).toContain("end: dayHours && dayHours.end ? dayHours.end : '05:00 PM',");
+  });
 });
 
 describe.skipIf(!chrome)("booking document browser", () => {

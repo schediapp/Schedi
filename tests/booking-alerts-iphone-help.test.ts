@@ -30,6 +30,7 @@ function helpApi() {
     client?: string;
     guide?: { slug: string; file: string; poster: string; title: string; kind: string; aud: string };
     card?: string;
+    empty?: string;
     filled?: string;
     groups?: [string, string[]][];
   } = {};
@@ -43,6 +44,7 @@ function helpApi() {
     this.client = schediHelpVideosHtml("client");
     this.guide = SCHEDI_HELP_VIDEOS.filter(function (v) { return v.slug === "owner-20-booking-alerts-iphone"; })[0];
     this.card = schediHelpGuideCard(this.guide);
+    this.empty = schediHelpGuideCard(Object.assign({}, this.guide, { file: "", poster: "" }));
     this.filled = schediHelpGuideCard(Object.assign({}, this.guide, { file: "owner-20-booking-alerts-iphone.mp4", poster: "owner-20-booking-alerts-iphone.jpg" }));
     this.groups = SCHEDI_HELP_VIDEO_GROUPS;
   `, sandbox);
@@ -52,11 +54,11 @@ function helpApi() {
 describe("Booking alerts on iPhone help guide", () => {
   const help = helpApi();
 
-  it("sits in the owner video list with an empty video slot", () => {
+  it("plays the iPhone alerts clip in the owner list", () => {
     expect(help.guide).toMatchObject({
       slug: "owner-20-booking-alerts-iphone",
-      file: "",
-      poster: "",
+      file: "owner-20-booking-alerts-iphone.mp4?v=10",
+      poster: "owner-20-booking-alerts-iphone.jpg?v=10",
       title: "Booking alerts on iPhone",
       kind: "guide",
       aud: "owner",
@@ -66,8 +68,13 @@ describe("Booking alerts on iPhone help guide", () => {
     expect(help.owner).toContain('id="owner-20-booking-alerts-iphone"');
     expect(help.owner).toContain('class="schedi-help-guide');
     expect(help.card).toContain('data-video-slug="owner-20-booking-alerts-iphone"');
-    expect(help.card).toContain("hidden");
-    expect(help.card).not.toContain("<video");
+    expect(help.card).toContain("<video");
+    expect(help.card).toContain('src="/assets/help-videos/owner-20-booking-alerts-iphone.mp4?v=10"');
+    expect(help.card).toContain('poster="/assets/help-videos/owner-20-booking-alerts-iphone.jpg?v=10"');
+    expect(help.card).toContain('width="720"');
+    expect(help.card).toContain('height="1280"');
+    expect(help.empty).toContain("hidden");
+    expect(help.empty).not.toContain("<video");
     expect(help.filled).toContain("<video");
     expect(help.filled).toContain('src="/assets/help-videos/owner-20-booking-alerts-iphone.mp4"');
     expect(help.filled).toContain('data-video-slug="owner-20-booking-alerts-iphone"');
@@ -213,6 +220,26 @@ describe.skipIf(!chrome)("Booking alerts on iPhone help layout", () => {
           expect(helpPage.guide!.left, label).toBeGreaterThanOrEqual(-1);
           expect(helpPage.guide!.right, label).toBeLessThanOrEqual(helpPage.width + 1);
           expect(helpPage.guide!.width, label).toBeGreaterThan(120);
+          const frames = await page.evaluate(() => Array.from(document.querySelectorAll(".schedi-help-video-frame")).map((el) => {
+            const rect = el.getBoundingClientRect();
+            const video = el.querySelector("video");
+            return {
+              w: rect.width,
+              h: rect.height,
+              attrW: video ? Number(video.getAttribute("width")) : 0,
+              attrH: video ? Number(video.getAttribute("height")) : 0,
+              fit: video ? getComputedStyle(video).objectFit : "",
+            };
+          }));
+          expect(frames.length, label).toBeGreaterThan(15);
+          for (const frame of frames) {
+            expect(frame.attrW, label).toBe(720);
+            expect(frame.attrH, label).toBe(1280);
+            expect(frame.fit, label).toBe("contain");
+            expect(frame.w, label).toBeGreaterThan(40);
+            expect(frame.h / frame.w, label).toBeGreaterThan(1.7);
+            expect(frame.h / frame.w, label).toBeLessThan(1.85);
+          }
         }
       }
 

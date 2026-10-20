@@ -22,6 +22,7 @@ import {
   decodeDoc,
 } from './tenant-private.js';
 import { applyOwnerEntitlementLock } from './entitlements.js';
+import { normalizeMinNoticeHours } from './booking-notice.js';
 
 const FORBIDDEN = new Set([
   'ownerPassword',
@@ -123,6 +124,10 @@ export function sanitizeProfile(raw, tenantId) {
   }
   if (Array.isArray(out.services)) {
     out.services = out.services.map(sanitizeService).filter(Boolean).slice(0, 200);
+  }
+  // Public tenant doc. The booking page reads this to hide start times that are too soon.
+  if (Object.prototype.hasOwnProperty.call(out, 'minNoticeHours')) {
+    out.minNoticeHours = normalizeMinNoticeHours(out.minNoticeHours);
   }
   out.id = tenantId;
   return out;

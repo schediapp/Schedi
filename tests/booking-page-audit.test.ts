@@ -92,6 +92,7 @@ describe("booking page audit copy", () => {
 
   it("adds minimum notice choices and hides slots inside the window", () => {
     expect(html).toContain('id="tenantMinNotice"');
+    expect(html).toContain(">Minimum notice</label>");
     for (const value of ["0", "1", "2", "4", "12", "24", "48"]) {
       expect(html).toContain('value="' + value + '"');
     }
@@ -103,6 +104,7 @@ describe("booking page audit copy", () => {
     expect(html).toContain("function getMinNoticeHoursPub");
     expect(html).toContain("if (slotInsideNotice(selectedDateStr, t))");
     expect(html).toContain("error === 'too_soon'");
+    expect(html).toContain("error === 'slot_unavailable'");
   });
 
   it("queues the client confirmation email only after create succeeds", () => {
