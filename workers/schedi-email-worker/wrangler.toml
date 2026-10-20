@@ -50,7 +50,7 @@ pattern = "schedi.app/api/calendar-feeds"
 zone_name = "schedi.app"
 
 [[routes]]
-pattern = "schedi.app/api/calendar-busy"
+pattern = "schedi.app/api/calendar-busy*"
 zone_name = "schedi.app"
 
 [[routes]]
