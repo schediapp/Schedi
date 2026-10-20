@@ -39,7 +39,7 @@ function startServer() {
 }
 
 describe.skipIf(!chrome)("owner accept on the phone agenda", () => {
-  it("saves a pending request, toasts when the save fails, and lists every upcoming visit", async () => {
+  it("saves a pending request, toasts when the save fails, and lets every upcoming visit grow the page", async () => {
     const server = await startServer();
     const puppeteer = await import("puppeteer-core");
     const browser = await puppeteer.default.launch({
@@ -64,16 +64,30 @@ describe.skipIf(!chrome)("owner accept on the phone agenda", () => {
         tenant.appointments.push({ id: "HB-FAR", clientName: "Far Ahead", date: "2099-06-01", time: "09:00 AM", status: "accepted", serviceName: "Cut & style" });
         win.renderSchediToday(tenant);
         const el = document.getElementById("schediTodaySchedule") as HTMLElement;
+        const ready = document.getElementById("schediReady") as HTMLElement;
+        ready.hidden = false;
         const style = getComputedStyle(el);
+        const scheduleBox = el.getBoundingClientRect();
+        const readyBox = ready.getBoundingClientRect();
         return {
-          overflow: style.overflowY,
+          overflowY: style.overflowY,
+          overflowX: style.overflowX,
           scrolls: el.scrollHeight > el.clientHeight + 1,
           far: (el.textContent || "").includes("Far Ahead"),
+          setupBelow: readyBox.top >= scheduleBox.bottom - 2,
+          sameColumn: Math.abs(readyBox.left - scheduleBox.left) < 24,
+          pageGrows: document.documentElement.scrollHeight > window.innerHeight + 40,
+          payStep: (ready.textContent || "").includes("Pick the ways you get paid"),
         };
       });
-      expect(agenda.overflow).toBe("auto");
-      expect(agenda.scrolls).toBe(true);
+      expect(agenda.overflowY).toBe("visible");
+      expect(agenda.overflowX).toBe("visible");
+      expect(agenda.scrolls).toBe(false);
       expect(agenda.far).toBe(true);
+      expect(agenda.setupBelow).toBe(true);
+      expect(agenda.sameColumn).toBe(true);
+      expect(agenda.pageGrows).toBe(true);
+      expect(agenda.payStep).toBe(true);
 
       await page.evaluate(() => {
         const win = window as unknown as {
