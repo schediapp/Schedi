@@ -19,10 +19,12 @@ import { squareClientBookingError } from './deposit-methods.js';
 import { rateLimitOk } from './rate-limit.js';
 import { bookingMakesClient, upsertClientsFromBookings } from './private-clients.js';
 import { bookingNoticeError } from './booking-notice.js';
+import { bookingAvailabilityError, SLOT_UNAVAILABLE_MESSAGE } from './slot-availability.js';
 import { busyBlocksForTenant, bookingOverlapsBusy, BUSY_MESSAGE } from './calendar-sync.js';
 
 const PRIVATE_PREFIX = 'privateAppts:';
 const MAX_BOOKINGS = 800;
+const TOO_SOON_MESSAGE = 'That time is too soon. Choose a later time.';
 
 function firebaseConfig(env) {
   return {
@@ -808,6 +810,18 @@ function bufferedOverlap(aStart, aEnd, bStart, bEnd, gap) {
   return aStart < bEnd + buf && bStart < aEnd + buf;
 }
 
+/**
+ * Public create and customer reschedule. Owner and agency sessions may book outside hours
+ * and inside the notice window (dashboard manual appointments). Calendar conflicts stay separate.
+ */
+function publicWindowReject(tenant, booking, now) {
+  const availErr = bookingAvailabilityError(tenant, booking);
+  if (availErr) return { error: availErr, message: SLOT_UNAVAILABLE_MESSAGE };
+  const noticeErr = bookingNoticeError(tenant, booking, now || new Date());
+  if (noticeErr) return { error: noticeErr, message: TOO_SOON_MESSAGE };
+  return null;
+}
+
 async function externalBusyReject(env, tenant, booking) {
   try {
     const blocks = await busyBlocksForTenant(env, tenant && tenant.id, {
@@ -1148,6 +1162,8 @@ export async function handlePrivateBookingHttp(request, env, origin, path, deps,
         date: body.date ? clip(body.date, 10) : next.date,
         time: body.time ? clip(body.time, 15) : next.time,
       });
+      const windowErr = publicWindowReject(tenant, proposed, new Date());
+      if (windowErr) return respond(json, { ok: false, error: windowErr.error, message: windowErr.message }, 409, origin, isAllowedOrigin);
       if (await externalBusyReject(env, tenant, proposed)) {
         return respond(json, { ok: false, error: 'slot_taken', message: BUSY_MESSAGE }, 409, origin, isAllowedOrigin);
       }
@@ -1233,6 +1249,9 @@ export async function handlePrivateBookingHttp(request, env, origin, path, deps,
     if (!tenant) return respond(json, { ok: false, error: 'tenant_not_found' }, 404, origin, isAllowedOrigin);
     const existing = (tenant.appointments || []).slice();
     const created = [];
+    // Dashboard manual appointments sync the roster. A signed-in owner or agency
+    // posting create may also book outside hours and inside the notice window.
+    const staff = await sessionCanAccess(env, body.session, tenant.id);
     for (const raw of incoming) {
       const booking = sanitizeBooking(Object.assign({}, raw, {
         id: raw && raw.id ? raw.id : randomBookingId(),
@@ -1246,8 +1265,6 @@ export async function handlePrivateBookingHttp(request, env, origin, path, deps,
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(booking.clientEmail).trim())) {
         return respond(json, { ok: false, error: 'email_required' }, 400, origin, isAllowedOrigin);
       }
-      const noticeErr = bookingNoticeError(tenant, booking, new Date());
-      if (noticeErr) return respond(json, { ok: false, error: noticeErr }, 400, origin, isAllowedOrigin);
       const itemsErr = normalizeBookingItems(tenant, booking);
       if (itemsErr) return respond(json, { ok: false, error: itemsErr }, 400, origin, isAllowedOrigin);
       const planErr = proOnlyBookingError(tenant, booking);
@@ -1258,6 +1275,10 @@ export async function handlePrivateBookingHttp(request, env, origin, path, deps,
         return respond(json, { ok: false, error: 'duplicate_booking' }, 409, origin, isAllowedOrigin);
       }
       const withNew = existing.concat(created);
+      if (!staff) {
+        const windowErr = publicWindowReject(tenant, booking, new Date());
+        if (windowErr) return respond(json, { ok: false, error: windowErr.error, message: windowErr.message }, 409, origin, isAllowedOrigin);
+      }
       if (await externalBusyReject(env, tenant, booking)) {
         return respond(json, { ok: false, error: 'slot_taken', message: BUSY_MESSAGE }, 409, origin, isAllowedOrigin);
       }

@@ -6263,7 +6263,7 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                                 <p class="text-[10px] text-slate-500">Free time after each appointment before the next one can start. 15 minutes is the default when a business has not saved a break. None means the next visit can start as soon as the last one ends.</p>
                             </div>
                             <div class="space-y-2">
-                                <label for="tenantMinNotice" class="block text-xs font-semibold text-slate-300">Minimum booking notice</label>
+                                <label for="tenantMinNotice" class="block text-xs font-semibold text-slate-300">Minimum notice</label>
                                 <select id="tenantMinNotice" class="w-full px-3 py-2 rounded-xl glass-input text-xs font-bold text-brand-400">
                                     <option value="0">None</option>
                                     <option value="1">1 hour</option>
@@ -31064,15 +31064,16 @@ function paintBizHeader() {
                         }).then(function (r) { return r.json().then(function (data) { return { ok: r.ok, data: data }; }); })
                           .then(function (out) {
                               if (!out.ok) console.warn('Booking save failed', out.data && out.data.error);
-                              if (!out.ok && out.data && (out.data.error === 'too_soon' || out.data.error === 'slot_taken')) {
+                              if (!out.ok && out.data && (out.data.error === 'too_soon' || out.data.error === 'slot_taken' || out.data.error === 'slot_unavailable')) {
                                   var dropped = {};
                                   list.forEach(function (item) { if (item && item.id) dropped[item.id] = true; });
                                   tenantData.publicSlots = (tenantData.publicSlots || []).filter(function (slot) { return !(slot && dropped[slot.id]); });
                                   var errBox = document.getElementById('bookingErrMsg');
                                   if (errBox) {
-                                      errBox.textContent = out.data.error === 'slot_taken'
-                                          ? ((out.data && out.data.message) || 'That time was just taken.')
-                                          : (noticeReasonText() + '. Choose a later time.');
+                                      var errText = (out.data && out.data.message) || 'That time is not available. Choose another time.';
+                                      if (out.data.error === 'slot_taken') errText = (out.data && out.data.message) || 'That time was just taken.';
+                                      else if (out.data.error === 'too_soon') errText = noticeReasonText() + '. Choose a later time.';
+                                      errBox.textContent = errText;
                                       errBox.classList.remove('hidden');
                                   }
                                   var cards = document.querySelectorAll('main > .glass-card, main > .biz-header');
@@ -31099,7 +31100,7 @@ function paintBizHeader() {
                         }
                         if (window.parent === window) return;
                         // A too_soon reject was not saved; do not hand the portal a booking the server refused.
-                        if (out && !out.ok && out.data && (out.data.error === 'too_soon' || out.data.error === 'slot_taken')) return;
+                        if (out && !out.ok && out.data && (out.data.error === 'too_soon' || out.data.error === 'slot_taken' || out.data.error === 'slot_unavailable')) return;
                         var msg = {
                             type: 'NEW_BOOKING_SUBMITTED',
                             booking: booking,
