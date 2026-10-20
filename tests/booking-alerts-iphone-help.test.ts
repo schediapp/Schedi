@@ -57,20 +57,25 @@ describe("Booking alerts on iPhone help guide", () => {
   it("plays the iPhone alerts clip in the owner list", () => {
     expect(help.guide).toMatchObject({
       slug: "owner-20-booking-alerts-iphone",
-      file: "owner-20-booking-alerts-iphone.mp4?v=10",
-      poster: "owner-20-booking-alerts-iphone.jpg?v=10",
+      file: "owner-20-booking-alerts-iphone.mp4?v=11",
+      poster: "owner-20-booking-alerts-iphone.jpg?v=11",
       title: "Booking alerts on iPhone",
       kind: "guide",
       aud: "owner",
     });
     const group = help.groups?.find((entry) => entry[1].includes("owner-20-booking-alerts-iphone"));
     expect(group?.[0]).toBe("Emails and Pro features");
+    expect(group?.[1].indexOf("owner-22-booking-alerts-android")).toBe((group?.[1].indexOf("owner-20-booking-alerts-iphone") ?? -2) + 1);
+    expect(help.owner).toContain('id="owner-22-booking-alerts-android"');
+    expect(help.owner.indexOf('id="owner-22-booking-alerts-android"')).toBeGreaterThan(help.owner.indexOf('id="owner-20-booking-alerts-iphone"'));
+    expect(help.owner).toContain("Booking alerts on Android (Chrome)");
+    expect(help.owner).toContain('src="/assets/help-videos/owner-22-booking-alerts-android.mp4?v=11"');
     expect(help.owner).toContain('id="owner-20-booking-alerts-iphone"');
     expect(help.owner).toContain('class="schedi-help-guide');
     expect(help.card).toContain('data-video-slug="owner-20-booking-alerts-iphone"');
     expect(help.card).toContain("<video");
-    expect(help.card).toContain('src="/assets/help-videos/owner-20-booking-alerts-iphone.mp4?v=10"');
-    expect(help.card).toContain('poster="/assets/help-videos/owner-20-booking-alerts-iphone.jpg?v=10"');
+    expect(help.card).toContain('src="/assets/help-videos/owner-20-booking-alerts-iphone.mp4?v=11"');
+    expect(help.card).toContain('poster="/assets/help-videos/owner-20-booking-alerts-iphone.jpg?v=11"');
     expect(help.card).toContain('width="720"');
     expect(help.card).toContain('height="1280"');
     expect(help.empty).toContain("hidden");
@@ -110,16 +115,26 @@ describe("Booking alerts on iPhone help guide", () => {
     expect(card).toContain("How to turn on alerts on iPhone");
     expect(card).toContain('href="/portal/help#owner-20-booking-alerts-iphone"');
     expect(card).toContain("ownerBookingAlertsHelpHref()");
+    expect(card).toContain('id="webPushAndroidHelpLink"');
+    expect(card.indexOf('id="webPushIphoneHelpLink"')).toBeLessThan(card.indexOf('id="webPushAndroidHelpLink"'));
+    expect(card).toContain("How to turn on alerts on Android");
+    expect(card).toContain('href="/portal/help#owner-22-booking-alerts-android"');
+    expect(card).toContain("ownerBookingAlertsAndroidHelpHref()");
     const pushStart = html.indexOf("Schedi owner booking alerts");
     const push = html.slice(pushStart, html.indexOf("window.schediWebPushToggle", pushStart));
     expect(push).toContain("webPushIphoneHelpLink");
     expect(push).toContain("is-strong");
     expect(push).toContain("st === 'ios-install' || st === 'blocked' || st === 'unsupported'");
     expect(push).toContain("ownerBookingAlertsHelpHref");
+    expect(push).toContain("webPushAndroidHelpLink");
+    expect(push).toContain("ownerBookingAlertsAndroidHelpHref");
     expect(push.indexOf("helpLink")).toBeGreaterThan(push.indexOf("schediOpenBookingAlerts"));
     const href = new Function(`${extractFunction(html, "ownerBookingAlertsHelpHrefFrom")}; return ownerBookingAlertsHelpHrefFrom;`)() as (value: string) => string;
     expect(href("/portal/help?demo=1&portal=preview&dash=emails")).toBe("/portal/help?demo=1&portal=preview&dash=emails#owner-20-booking-alerts-iphone");
     expect(href("")).toBe("/portal/help#owner-20-booking-alerts-iphone");
+    const androidHref = new Function(`${extractFunction(html, "ownerBookingAlertsAndroidHelpHrefFrom")}; return ownerBookingAlertsAndroidHelpHrefFrom;`)() as (value: string) => string;
+    expect(androidHref("/portal/help?demo=1&portal=preview&dash=emails")).toBe("/portal/help?demo=1&portal=preview&dash=emails#owner-22-booking-alerts-android");
+    expect(androidHref("")).toBe("/portal/help#owner-22-booking-alerts-android");
     expect(html).toContain(".wp-iphone-help");
     expect(html).toContain("html.schedi-light .wp-iphone-help");
     expect(html).toContain("#webPushHint.is-strong .wp-iphone-help");
@@ -199,6 +214,10 @@ describe.skipIf(!chrome)("Booking alerts on iPhone help layout", () => {
           body: document.body.scrollWidth - document.body.clientWidth,
           guide: box(guide),
           link: link ? { text: link.textContent || "", href: link.getAttribute("href") || "" } : null,
+          android: (() => {
+            const node = document.getElementById("webPushAndroidHelpLink");
+            return node ? { text: node.textContent || "", href: node.getAttribute("href") || "" } : null;
+          })(),
           card: box(card),
           helpCard: box(helpCard),
           width: window.innerWidth,
@@ -266,6 +285,8 @@ describe.skipIf(!chrome)("Booking alerts on iPhone help layout", () => {
           const label = `alerts ${width} ${mode}`;
           expect(alerts.link?.text, label).toBe("How to turn on alerts on iPhone");
           expect(alerts.link?.href, label).toContain("#owner-20-booking-alerts-iphone");
+          expect(alerts.android?.text, label).toBe("How to turn on alerts on Android");
+          expect(alerts.android?.href, label).toContain("#owner-22-booking-alerts-android");
           expect(alerts.doc, label).toBeLessThanOrEqual(1);
           expect(alerts.body, label).toBeLessThanOrEqual(1);
           expect(alerts.card!.scroll, label).toBeLessThanOrEqual(1);
