@@ -931,7 +931,7 @@ describe("HQ route", () => {
     expect(offlineStored.assigned).toEqual([]);
   });
 
-  it("signs the HQ-opened dashboard out of the agency and sends an owner to /login", async () => {
+  it("sends every business portal sign-out to /login, including one opened from HQ", async () => {
     function extractAssigned(source: string, name: string) {
       const marker = "window." + name + " = function";
       const start = source.indexOf(marker);
@@ -1042,24 +1042,38 @@ describe("HQ route", () => {
 
     expect(publicHtml).toContain(">Managing <strong id=\"sdHqManageName\"></strong> · Back to HQ</a>");
     expect(publicHtml).toContain("onclick=\"hqForgetManagedTenant()\"");
+    const logoutSource = extractAssigned(publicHtml, "handleTenantLogout");
+    expect(logoutSource).toContain("window.location.replace('/login')");
+    expect(logoutSource).not.toContain("'/hq'");
+    expect(logoutSource).not.toContain('"/hq"');
 
-    const hqOut = await runLogout({ agency: true, owner: true, self: false, role: "agency", stored: "lumen" });
+    const hqOut = await runLogout({ agency: true, owner: true, self: false, role: "agency", stored: "lumen", pathname: "/portal" });
     expect(hqOut.calls).toEqual([{ url: "https://schedi.app/auth/logout", credentials: "include", session: "agency-token" }]);
     expect(hqOut.cleared).toContain("session");
-    expect(hqOut.replaced).toEqual(["/hq"]);
+    expect(hqOut.replaced).toEqual(["/login"]);
     expect(hqOut.assigned).toEqual([]);
     expect(hqOut.managed).toBe("");
     expect(hqOut.session).toBe("");
 
-    const drifted = await runLogout({ agency: true, owner: true, self: true, role: "agency", stored: "lumen" });
+    const drifted = await runLogout({ agency: true, owner: true, self: true, role: "agency", stored: "lumen", pathname: "/", search: "?from=hq" });
     expect(drifted.calls[0]?.credentials).toBe("include");
-    expect(drifted.replaced).toEqual(["/hq"]);
+    expect(drifted.calls[0]?.session).toBe("agency-token");
+    expect(drifted.replaced).toEqual(["/login"]);
     expect(drifted.session).toBe("");
 
-    const fromLink = await runLogout({ agency: false, owner: true, self: true, role: "owner", search: "?tenant=lumen&from=hq" });
-    expect(fromLink.calls).toEqual([{ url: "https://schedi.app/auth/logout", credentials: "include", session: "" }]);
-    expect(fromLink.replaced).toEqual(["/hq"]);
-    expect(fromLink.session).toBe("owner-token");
+    const fromLink = await runLogout({ agency: false, owner: true, self: true, role: "owner", pathname: "/portal", search: "?tenant=lumen&from=hq" });
+    expect(fromLink.calls).toEqual([]);
+    expect(fromLink.cleared).toContain("session");
+    expect(fromLink.replaced).toEqual(["/login"]);
+    expect(fromLink.assigned).toEqual([]);
+    expect(fromLink.session).toBe("");
+
+    const arrived = await runLogout({ agency: true, owner: true, self: true, role: "owner", stored: "lumen", pathname: "/login", search: "?tenant=lumen&from=hq" });
+    expect(arrived.calls).toEqual([]);
+    expect(arrived.replaced).toEqual([]);
+    expect(arrived.assigned).toEqual([]);
+    expect(arrived.managed).toBe("");
+    expect(arrived.session).toBe("");
 
     const ownerOut = await runLogout({ agency: false, owner: true, self: true, role: "owner", pathname: "/portal" });
     expect(ownerOut.calls).toEqual([]);
