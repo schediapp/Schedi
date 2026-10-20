@@ -283,8 +283,12 @@ describe.skipIf(!chrome)("booking page phone taps and notice paint", () => {
         return day.getAttribute("aria-label") || day.textContent || "day";
       });
       expect(picked).not.toBe("");
-      await page.waitForSelector("#timeSlotsContainer button:not([disabled])");
-      await page.click("#timeSlotsContainer button:not([disabled])");
+      await page.waitForFunction(() => {
+        const button = document.querySelector("#timeSlotsContainer button:not([disabled])") as HTMLButtonElement | null;
+        if (!button || !button.isConnected) return false;
+        button.click();
+        return true;
+      }, { timeout: 3000 });
 
       const dayPoint = await page.evaluate(() => {
         const day = document.querySelector("#customDatesGrid button.cal-day-open:not([disabled])") as HTMLButtonElement | null;
