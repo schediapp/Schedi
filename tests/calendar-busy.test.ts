@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   bookingOverlapsBusy,
+  coarsenBusyBlocks,
   hostIsBlocked,
   ipIsPrivate,
   maskCalendarUrl,
@@ -10,7 +11,9 @@ import {
 } from "../workers/schedi-email-worker/src/calendar-ics.js";
 import { buildOwnerFeedIcs, googleCalendarDatesParam } from "../workers/schedi-email-worker/src/booking-ics.js";
 import {
+  busyBlocksForTenant,
   fetchCalendarText,
+  handleCalendarBusy,
   handleCalendarFeeds,
   handleOwnerFeed,
   resolveHostPublic,
@@ -208,9 +211,13 @@ describe("calendar URL guard", () => {
       "https://metadata.google.internal/a.ics",
       "file:///etc/passwd",
       "https://2130706433/a.ics",
+      "https://calendar.google.com:8443/a.ics",
+      "https://calendar.google.com:22/a.ics",
     ]) {
       expect(normalizeCalendarUrl(bad).ok, bad).toBe(false);
     }
+    expect(normalizeCalendarUrl("https://calendar.google.com:443/basic.ics").ok).toBe(true);
+    expect(normalizeCalendarUrl("https://calendar.example.com:80/basic.ics").ok).toBe(true);
     expect(hostIsBlocked("calendar.google.com")).toBe(false);
     expect(ipIsPrivate("8.8.8.8")).toBe(false);
     expect(ipIsPrivate("127.0.0.1")).toBe(true);
@@ -237,6 +244,144 @@ describe("calendar URL guard", () => {
     });
     expect(got.ok).toBe(false);
     expect(fetched).toEqual(["https://calendar.google.com/calendar/ical/secret/basic.ics"]);
+  });
+
+  it("checks every CNAME hop and every address, and resolves a host only once per fetch", async () => {
+    const asked: string[] = [];
+    const dns = async (url: string) => {
+      const parsed = new URL(String(url));
+      const name = parsed.searchParams.get("name");
+      const type = parsed.searchParams.get("type");
+      asked.push(name + " " + type);
+      const chain: Record<string, { type: number; data: string }[]> = {
+        "calendar.example.com A": [{ type: 5, data: "a.example.net." }],
+        "a.example.net A": [{ type: 5, data: "b.example.net." }],
+        "b.example.net A": [{ type: 1, data: "8.8.8.8" }],
+        "b.example.net AAAA": [{ type: 28, data: "2001:4860:4860::8888" }],
+      };
+      return { ok: true, async json() { return { Answer: chain[name + " " + type] || [] }; } };
+    };
+    await expect(resolveHostPublic("calendar.example.com", dns)).resolves.toEqual(["8.8.8.8", "2001:4860:4860::8888"]);
+    expect(asked).toContain("a.example.net A");
+    expect(asked).toContain("b.example.net AAAA");
+
+    const poisoned = async (url: string) => {
+      const name = new URL(String(url)).searchParams.get("name");
+      const rows = name === "calendar.example.com"
+        ? [{ type: 5, data: "metadata.google.internal." }, { type: 1, data: "8.8.8.8" }]
+        : [{ type: 1, data: "10.1.2.3" }];
+      return { ok: true, async json() { return { Answer: rows }; } };
+    };
+    await expect(resolveHostPublic("calendar.example.com", poisoned)).rejects.toThrow(/blocked_host/);
+    const privateHop = async (url: string) => {
+      const name = new URL(String(url)).searchParams.get("name");
+      const type = new URL(String(url)).searchParams.get("type");
+      if (name === "calendar.example.com") return { ok: true, async json() { return { Answer: [{ type: 5, data: "hidden.example.net." }] }; } };
+      if (name === "hidden.example.net" && type === "A") return { ok: true, async json() { return { Answer: [{ type: 1, data: "10.9.9.9" }] }; } };
+      return { ok: true, async json() { return { Answer: [] }; } };
+    };
+    await expect(resolveHostPublic("calendar.example.com", privateHop)).rejects.toThrow(/blocked_host/);
+
+    let lookups = 0;
+    const fetched: string[] = [];
+    const sameHost = await fetchCalendarText("https://calendar.google.com/calendar/ical/secret/basic.ics", {
+      resolve: async () => {
+        lookups += 1;
+        return ["142.250.1.1"];
+      },
+      fetch: async (url: string) => {
+        fetched.push(String(url));
+        if (fetched.length === 1) {
+          return {
+            status: 302,
+            ok: false,
+            headers: { get: (name: string) => (name.toLowerCase() === "location" ? "https://calendar.google.com/calendar/ical/secret/moved.ics" : null) },
+            text: async () => "",
+          };
+        }
+        return {
+          status: 200,
+          ok: true,
+          headers: { get: () => null },
+          text: async () => "BEGIN:VCALENDAR\r\nEND:VCALENDAR",
+        };
+      },
+    });
+    expect(sameHost.ok).toBe(true);
+    expect(lookups).toBe(1);
+    expect(fetched).toHaveLength(2);
+  });
+});
+
+describe("public busy ranges", () => {
+  it("publishes 15-minute ranges and merges nearby events", () => {
+    expect(coarsenBusyBlocks([
+      { start: "2026-10-21T15:07:00.000Z", end: "2026-10-21T15:38:00.000Z" },
+    ])).toEqual([{ start: "2026-10-21T15:00:00.000Z", end: "2026-10-21T15:45:00.000Z" }]);
+    expect(coarsenBusyBlocks([
+      { start: "2026-10-21T15:07:00.000Z", end: "2026-10-21T15:20:00.000Z" },
+      { start: "2026-10-21T15:40:00.000Z", end: "2026-10-21T16:05:00.000Z" },
+    ])).toEqual([{ start: "2026-10-21T15:00:00.000Z", end: "2026-10-21T16:15:00.000Z" }]);
+  });
+
+  it("serves coarsened blocks on the public route and keeps the precise cache for booking checks", async () => {
+    const kv = memoryKv();
+    const precise = [{ start: "2026-10-21T15:07:00.000Z", end: "2026-10-21T15:38:00.000Z" }];
+    await kv.put("calBusy:harbor", JSON.stringify({ syncedAt: Date.now(), blocks: precise, refreshAttemptedAt: Date.now() }));
+    await kv.put("calFeeds:harbor", JSON.stringify({
+      tenantId: "harbor",
+      feeds: [{ id: "feed1", url: "https://calendar.google.com/calendar/ical/secret/basic.ics" }],
+    }));
+    const env = { AUTH_KV: kv };
+    const pub = await handleCalendarBusy(new Request("https://schedi.app/api/calendar-busy?tenant=harbor"), env);
+    const body = await pub.json() as { blocks: { start: string; end: string }[] };
+    expect(body.blocks).toEqual([{ start: "2026-10-21T15:00:00.000Z", end: "2026-10-21T15:45:00.000Z" }]);
+    let fetches = 0;
+    const blocks = await busyBlocksForTenant(env, "harbor", {
+      freshMs: 120000,
+      fetch: async () => { fetches += 1; return { status: 200, ok: true, headers: { get: () => null }, text: async () => "" }; },
+    });
+    expect(fetches).toBe(0);
+    expect(blocks).toEqual(precise);
+  });
+
+  it("fetches a stale public booking cache once per two minutes and logs a fail-open timeout", async () => {
+    const kv = memoryKv();
+    const precise = [{ start: "2026-10-21T15:07:00.000Z", end: "2026-10-21T15:22:00.000Z" }];
+    await kv.put("calBusy:harbor", JSON.stringify({ syncedAt: Date.now() - 10 * 60 * 1000, blocks: precise }));
+    await kv.put("calFeeds:harbor", JSON.stringify({
+      tenantId: "harbor",
+      feeds: [{ id: "feed1", url: "https://calendar.google.com/calendar/ical/secret/basic.ics" }],
+    }));
+    let fetches = 0;
+    let release: () => void = () => {};
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    const logs: string[] = [];
+    const original = console.log;
+    console.log = (...args: unknown[]) => { logs.push(args.map(String).join(" ")); };
+    try {
+      const deps = {
+        freshMs: 120000,
+        timeoutMs: 30,
+        resolve: async () => ["8.8.8.8"],
+        fetch: async () => {
+          fetches += 1;
+          await gate;
+          return { status: 200, ok: true, headers: { get: () => null }, text: async () => "BEGIN:VCALENDAR" };
+        },
+      };
+      const first = await busyBlocksForTenant({ AUTH_KV: kv }, "harbor", deps);
+      const second = await busyBlocksForTenant({ AUTH_KV: kv }, "harbor", deps);
+      expect(first).toEqual(precise);
+      expect(second).toEqual(precise);
+      expect(fetches).toBe(1);
+      expect(logs.some((line) => line.includes("refresh_fail_open") && line.includes("timeout"))).toBe(true);
+      expect(logs.join("\n")).not.toContain("secret");
+    } finally {
+      console.log = original;
+      release();
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
   });
 });
 

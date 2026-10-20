@@ -14631,6 +14631,7 @@ function schediQrCardPixels(text, color) {
             var url;
             try { url = new URL(text); } catch (errUrl) { return 'That link is not a valid calendar address.'; }
             if (url.protocol !== 'https:') return 'Use an https or webcal link.';
+            if (url.port && url.port !== '443' && url.port !== '80') return 'Use a calendar link on port 443 or 80.';
             if (url.username || url.password) return 'Remove the username and password from the link.';
             if (calendarHostLooksPrivate(url.hostname)) return 'That address cannot be used.';
             return '';

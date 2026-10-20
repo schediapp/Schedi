@@ -820,6 +820,7 @@ async function externalBusyReject(env, tenant, booking) {
       bufferMins: appointmentBufferMins(tenant),
     });
   } catch (_) {
+    console.log(JSON.stringify({ calendarSync: 'refresh_fail_open', tenantId: String(tenant && tenant.id || ''), reason: 'error' }));
     return false;
   }
 }

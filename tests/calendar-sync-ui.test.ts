@@ -54,6 +54,7 @@ describe("calendar feed helpers", () => {
     expect(api.calendarFeedUrlError("https://127.0.0.1/basic.ics")).toBe("That address cannot be used.");
     expect(api.calendarFeedUrlError("https://10.1.2.3/basic.ics")).toBe("That address cannot be used.");
     expect(api.calendarFeedUrlError("https://192.168.1.9/basic.ics")).toBe("That address cannot be used.");
+    expect(api.calendarFeedUrlError("https://calendar.google.com:8443/basic.ics")).toBe("Use a calendar link on port 443 or 80.");
     expect(api.calendarFeedUrlError("webcal://calendar.google.com/calendar/ical/secret/basic.ics")).toBe("");
     expect(api.calendarMaskUrl("https://calendar.google.com/calendar/ical/secret-token/basic.ics")).toBe("calendar.google.com/…/basic.ics");
     expect(api.calendarMaskUrl("https://calendar.google.com/calendar/ical/secret-token/basic.ics")).not.toContain("secret-token");

@@ -10,6 +10,7 @@ import {
   hostIsBlocked,
   ipIsPrivate,
   maskCalendarUrl,
+  coarsenBusyBlocks,
   mergeBusyBlocks,
   normalizeCalendarUrl,
   parseBusyBlocks,
@@ -77,14 +78,18 @@ async function readBusy(env, tenantId) {
     syncedAt: Number(row.syncedAt) || 0,
     blocks: Array.isArray(row.blocks) ? row.blocks : [],
     sources: Array.isArray(row.sources) ? row.sources : [],
+    refreshAttemptedAt: Number(row.refreshAttemptedAt) || 0,
   };
 }
 
 async function writeBusy(env, tenantId, busy) {
+  const prev = await readBusy(env, tenantId);
+  const syncedAt = Number(busy && busy.syncedAt);
   await env.AUTH_KV.put(BUSY_PREFIX + tenantId, JSON.stringify({
-    syncedAt: busy.syncedAt || Date.now(),
-    blocks: busy.blocks || [],
-    sources: busy.sources || [],
+    syncedAt: Number.isFinite(syncedAt) ? syncedAt : Date.now(),
+    blocks: (busy && busy.blocks) || [],
+    sources: (busy && busy.sources) || [],
+    refreshAttemptedAt: Number(busy && busy.refreshAttemptedAt) || Number(prev.refreshAttemptedAt) || 0,
   }));
 }
 
@@ -116,6 +121,26 @@ function withTimeout(promise, ms) {
   });
 }
 
+function blockedHost() {
+  const error = new Error('blocked_host');
+  error.code = 'blocked_host';
+  return error;
+}
+
+function stripDnsName(value) {
+  return String(value || '').trim().toLowerCase().replace(/\.+$/, '');
+}
+
+function isIpLiteral(host) {
+  return /^(\d{1,3}\.){3}\d{1,3}$/.test(host) || String(host || '').includes(':');
+}
+
+function dnsRows(payload) {
+  const answer = payload && Array.isArray(payload.Answer) ? payload.Answer : [];
+  const extra = payload && Array.isArray(payload.Additional) ? payload.Additional : [];
+  return answer.concat(extra);
+}
+
 async function dnsLookup(name, type, fetchImpl) {
   const url = 'https://cloudflare-dns.com/dns-query?name=' + encodeURIComponent(name) + '&type=' + type;
   const res = await fetchImpl(url, { headers: { accept: 'application/dns-json' } });
@@ -124,50 +149,38 @@ async function dnsLookup(name, type, fetchImpl) {
 }
 
 export async function resolveHostPublic(hostname, fetchImpl) {
-  const host = String(hostname || '').trim().toLowerCase().replace(/\.+$/, '');
-  if (hostIsBlocked(host)) {
-    const error = new Error('blocked_host');
-    error.code = 'blocked_host';
-    throw error;
-  }
-  if (ipIsPrivate(host) || /^(\d{1,3}\.){3}\d{1,3}$/.test(host) || host.includes(':')) {
-    if (ipIsPrivate(host)) {
-      const error = new Error('blocked_host');
-      error.code = 'blocked_host';
-      throw error;
-    }
-    return [host];
+  let name = stripDnsName(hostname);
+  if (name.startsWith('[') && name.endsWith(']')) name = name.slice(1, -1);
+  if (!name || hostIsBlocked(name)) throw blockedHost();
+  if (isIpLiteral(name)) {
+    if (ipIsPrivate(name) || hostIsBlocked(name)) throw blockedHost();
+    return [name];
   }
   const lookup = fetchImpl || fetch;
-  const [v4, v6] = await Promise.all([
-    dnsLookup(host, 'A', lookup).catch(() => null),
-    dnsLookup(host, 'AAAA', lookup).catch(() => null),
-  ]);
-  const answers = []
-    .concat((v4 && v4.Answer) || [], (v6 && v6.Answer) || [])
-    .filter((row) => row && (row.type === 1 || row.type === 28) && row.data);
-  let ips = answers.map((row) => String(row.data).replace(/\.$/, ''));
-  if (!ips.length) {
-    const cname = []
-      .concat((v4 && v4.Answer) || [], (v6 && v6.Answer) || [])
-      .find((row) => row && row.type === 5 && row.data);
-    if (cname) {
-      const target = String(cname.data).replace(/\.$/, '');
-      if (hostIsBlocked(target)) {
-        const error = new Error('blocked_host');
-        error.code = 'blocked_host';
-        throw error;
-      }
-      const again = await dnsLookup(target, 'A', lookup).catch(() => null);
-      ips = ((again && again.Answer) || []).filter((row) => row && row.type === 1 && row.data).map((row) => String(row.data));
+  const seen = new Set();
+  for (let hop = 0; hop < 6; hop++) {
+    if (seen.has(name) || hostIsBlocked(name) || ipIsPrivate(name)) throw blockedHost();
+    seen.add(name);
+    const [v4, v6] = await Promise.all([
+      dnsLookup(name, 'A', lookup).catch(() => null),
+      dnsLookup(name, 'AAAA', lookup).catch(() => null),
+    ]);
+    if (!v4 && !v6) throw blockedHost();
+    const rows = dnsRows(v4).concat(dnsRows(v6));
+    const cnames = rows.filter((row) => row && row.type === 5 && row.data).map((row) => stripDnsName(row.data));
+    for (const target of cnames) {
+      if (!target || hostIsBlocked(target) || ipIsPrivate(target)) throw blockedHost();
     }
+    const ips = [...new Set(rows.filter((row) => row && (row.type === 1 || row.type === 28) && row.data).map((row) => stripDnsName(row.data)))];
+    if (ips.length) {
+      if (ips.some((ip) => !isIpLiteral(ip) || hostIsBlocked(ip) || ipIsPrivate(ip))) throw blockedHost();
+      return ips;
+    }
+    const next = cnames.find((target) => target && target !== name);
+    if (!next) throw blockedHost();
+    name = next;
   }
-  if (!ips.length || ips.some((ip) => ipIsPrivate(ip) || hostIsBlocked(ip))) {
-    const error = new Error('blocked_host');
-    error.code = 'blocked_host';
-    throw error;
-  }
-  return ips;
+  throw blockedHost();
 }
 
 async function readLimited(res, maxBytes) {
@@ -200,12 +213,20 @@ export async function fetchCalendarText(rawUrl, deps) {
   const resolve = (deps && deps.resolve) || ((host) => resolveHostPublic(host, (deps && deps.dnsFetch) || fetchImpl));
   const timeoutMs = (deps && deps.timeoutMs) || FETCH_TIMEOUT_MS;
   const maxBytes = (deps && deps.maxBytes) || MAX_BYTES;
+  const resolved = new Map();
+  const resolveOnce = (hostname) => {
+    const key = stripDnsName(hostname);
+    if (resolved.has(key)) return resolved.get(key);
+    const pending = Promise.resolve().then(() => resolve(key));
+    resolved.set(key, pending);
+    return pending;
+  };
   let current = normalized.url;
   for (let hop = 0; hop < 4; hop++) {
     let parsed;
     try { parsed = new URL(current); } catch (_) { return { ok: false, error: 'That link is not a calendar address.' }; }
     try {
-      await resolve(parsed.hostname);
+      await resolveOnce(parsed.hostname);
     } catch (_) {
       return { ok: false, error: 'That address cannot be used.' };
     }
@@ -254,7 +275,7 @@ async function publishExternalBusy(env, tenantId, blocks) {
     const res = await fetch(tenantDocUrl(env, tenantId) + '?updateMask.fieldPaths=externalBusy', {
       method: 'PATCH',
       headers,
-      body: JSON.stringify({ fields: { externalBusy: encodeValue(blocks.slice(0, 1500)) } }),
+      body: JSON.stringify({ fields: { externalBusy: encodeValue(coarsenBusyBlocks(blocks).slice(0, 1500)) } }),
     });
     if (!res.ok) console.log(JSON.stringify({ calendarSync: 'publish_failed', tenantId, status: res.status }));
   } catch (_) {
@@ -310,7 +331,10 @@ export async function syncTenantFeeds(env, tenantId, deps) {
       sources.push({ id: feed.id, eventCount: 0, error: feed.error, lastSynced: feed.lastSynced });
     }
   }
-  const blocks = mergeBusyBlocks(all).slice(0, 2000);
+  const parsed = mergeBusyBlocks(all).slice(0, 2000);
+  const previous = await readBusy(env, id);
+  const allFailed = sources.length > 0 && sources.every((source) => source.error);
+  const blocks = allFailed && previous.blocks.length ? previous.blocks : parsed;
   const busy = { syncedAt: Date.now(), blocks, sources };
   await writeSecret(env, secret);
   await writeBusy(env, id, busy);
@@ -336,6 +360,16 @@ export async function syncAllCalendarFeeds(env, deps) {
   return { ok: true, synced, errors };
 }
 
+const inflightRefresh = new Map();
+
+function logRefreshFailOpen(tenantId, reason) {
+  console.log(JSON.stringify({
+    calendarSync: 'refresh_fail_open',
+    tenantId: String(tenantId || ''),
+    reason: reason === 'timeout' ? 'timeout' : 'error',
+  }));
+}
+
 export async function busyBlocksForTenant(env, tenantId, deps) {
   const id = clipId(tenantId);
   if (!id || !env || !env.AUTH_KV) return [];
@@ -345,11 +379,33 @@ export async function busyBlocksForTenant(env, tenantId, deps) {
   const freshMs = deps && Number(deps.freshMs) > 0 ? Number(deps.freshMs) : FRESH_MS;
   const age = Date.now() - (Number(cache.syncedAt) || 0);
   if (cache.syncedAt && age >= 0 && age < freshMs) return cache.blocks || [];
+  const attemptAge = Date.now() - (Number(cache.refreshAttemptedAt) || 0);
+  if (cache.refreshAttemptedAt && attemptAge >= 0 && attemptAge < freshMs) return cache.blocks || [];
   const timeoutMs = deps && Number(deps.timeoutMs) > 0 ? Number(deps.timeoutMs) : 4000;
+  const running = inflightRefresh.get(id);
+  if (running) {
+    try {
+      const shared = await withTimeout(running, timeoutMs);
+      return (shared && shared.blocks) || cache.blocks || [];
+    } catch (err) {
+      logRefreshFailOpen(id, err && err.message);
+      return cache.blocks || [];
+    }
+  }
+  await writeBusy(env, id, {
+    syncedAt: Number(cache.syncedAt) || 0,
+    blocks: cache.blocks || [],
+    sources: cache.sources || [],
+    refreshAttemptedAt: Date.now(),
+  });
+  const job = syncTenantFeeds(env, id, deps || {});
+  inflightRefresh.set(id, job);
+  job.then(() => { inflightRefresh.delete(id); }, () => { inflightRefresh.delete(id); });
   try {
-    const fresh = await withTimeout(syncTenantFeeds(env, id, deps || {}), timeoutMs);
+    const fresh = await withTimeout(job, timeoutMs);
     return (fresh && fresh.blocks) || [];
-  } catch (_) {
+  } catch (err) {
+    logRefreshFailOpen(id, err && err.message);
     return cache.blocks || [];
   }
 }
@@ -395,7 +451,7 @@ async function sessionCan(env, token, tenantId, readSession) {
 }
 
 function publicBlocks(blocks) {
-  return (blocks || []).slice(0, 1500).map((block) => ({
+  return coarsenBusyBlocks(blocks).slice(0, 1500).map((block) => ({
     start: String(block.start || ''),
     end: String(block.end || ''),
   })).filter((block) => block.start && block.end);

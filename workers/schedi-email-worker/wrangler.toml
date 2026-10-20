@@ -108,7 +108,9 @@ zone_name = "schedi.app"
 # before reminders when event.cron is that expression.
 # Feed URLs and the owner subscribe token live in AUTH_KV:
 #   calFeeds:<tenantId>  calBusy:<tenantId>  calOwnerToken:<token>  calFeedIndex
-# No new secret. Do not log feed URLs.
+# calBusy also stores refreshAttemptedAt so a public booking triggers at most
+# one live feed fetch per tenant per 2 minutes. Public blocks are coarsened to
+# 15-minute ranges before they are published. No new secret. Do not log feed URLs.
 [triggers]
 crons = ["0 * * * *", "*/12 * * * *"]
 

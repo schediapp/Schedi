@@ -184,6 +184,7 @@ export function normalizeCalendarUrl(raw) {
   try { url = new URL(text); } catch (_) { return { ok: false, error: 'That link is not a calendar address.' }; }
   if (url.protocol !== 'https:') return { ok: false, error: 'Use an https or webcal link.' };
   if (url.username || url.password) return { ok: false, error: 'Remove any username or password from the link.' };
+  if (url.port && url.port !== '443' && url.port !== '80') return { ok: false, error: 'Use a calendar link on port 443 or 80.' };
   if (hostIsBlocked(url.hostname)) return { ok: false, error: 'That address cannot be used.' };
   url.hash = '';
   return { ok: true, url: url.toString(), host: url.hostname };
@@ -322,6 +323,22 @@ export function parseBusyBlocks(icsText, options) {
     pushRange(blocks, rangeFromTimes(event.startDate, event.endDate, timeZone), windowStart, windowEnd);
   }
   return mergeBusyBlocks(blocks).slice(0, MAX_BLOCKS);
+}
+
+const COARSE_MS = 15 * 60 * 1000;
+
+export function coarsenBusyBlocks(blocks) {
+  const expanded = [];
+  for (const block of blocks || []) {
+    const startMs = Date.parse(block && block.start);
+    const endMs = Date.parse(block && block.end);
+    if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= startMs) continue;
+    const start = Math.floor(startMs / COARSE_MS) * COARSE_MS;
+    let end = Math.ceil(endMs / COARSE_MS) * COARSE_MS;
+    if (end <= start) end = start + COARSE_MS;
+    expanded.push({ start: new Date(start).toISOString(), end: new Date(end).toISOString() });
+  }
+  return mergeBusyBlocks(expanded);
 }
 
 export function mergeBusyBlocks(blocks) {
