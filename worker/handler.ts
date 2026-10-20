@@ -9,6 +9,7 @@ import {
   bookingMissingHtml,
   bookingPaused,
   bookingPausedHtml,
+  bookingPayFromSearch,
   fillBookingDocument,
   isBookingDocument,
 } from "./booking-document";
@@ -752,6 +753,19 @@ async function serveSpa(
       indexableTenant = false;
     } else {
       const pageUrl = new URL(request.url);
+      const payHandoff = bookingPayFromSearch(pageUrl.searchParams);
+      if (payHandoff.flag === "checkout" && payHandoff.booking && slug) {
+        const target = new URL("https://schedi.app/billing/card-pay");
+        target.searchParams.set("t", slug);
+        target.searchParams.set("b", payHandoff.booking);
+        if (payHandoff.kind === "deposit" || payHandoff.kind === "card") target.searchParams.set("kind", payHandoff.kind);
+        if (payHandoff.bookings) target.searchParams.set("ids", payHandoff.bookings);
+        const headers = new Headers();
+        headers.set("Location", target.toString());
+        headers.set("Cache-Control", "no-store");
+        headers.set("Referrer-Policy", "no-referrer");
+        return new Response(null, { status: 302, headers });
+      }
       const canonical = `https://schedi.app/${slug}`;
       body = fillBookingDocument(body, {
         slug: slug || "",

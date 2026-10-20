@@ -115,7 +115,9 @@ describe("booking page card confirmation", () => {
       expect(html).toContain("if (openSchediCardPay(cardPayUrl)) return Promise.resolve();");
       expect(html).toContain("if (cardChargeCents >= 50) startPayNowCheckout = openPayNowCheckout;");
       expect(html).toContain("Pay now");
+      expect(html).toContain("Taking you to secure payment…");
       expect(html).toContain('id="resCheckoutBtn"');
+      expect(html).toContain('id="securePayScreen"');
     }
     const unpriced = page.cardNowConfirmNote({ required: true, deposit: 1, balance: null }, true);
     expect(unpriced).toBe("You'll pay now by card. The deposit is $1.00. The rest is due at the appointment. We emailed you a secure payment link.");
@@ -189,6 +191,17 @@ describe("GET /billing/card-pay", () => {
     const decoded = decodeURIComponent(String(stripeCall?.[1]?.body || ""));
     expect(decoded).toContain("[unit_amount]=100");
     expect(decoded).toContain("[purpose]=deposit");
+  });
+
+  it("redirects a pay link that has no manage token, the same way an older email does", async () => {
+    stubFetch({ status: 409, body: { ok: false, error: "connect_unavailable" } });
+    const res = await worker.fetch(
+      payRequest("?t=" + TENANT + "&b=" + BOOKING + "&kind=deposit"),
+      payEnv(),
+      { waitUntil() {} },
+    );
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe(STRIPE_URL);
   });
 
   it("prefers the connected account payment link when Connect is ready", async () => {

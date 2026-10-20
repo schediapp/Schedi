@@ -393,21 +393,30 @@ describe("email pay link opens Stripe", () => {
     expect(bookingPayFromSearch("")).toEqual({ flag: "", kind: "", booking: "", bookings: "" });
   });
 
-  it("bakes the email's pay=checkout query into the public booking page", async () => {
+  it("sends the email pay=checkout link straight to Stripe's card-pay redirect", async () => {
     globalThis.fetch = tenantFetch() as typeof fetch;
-    const payUrl = "https://schedi.app/bright-cuts/?pay=checkout&booking=BK-QUOTE01&kind=card";
+    const payUrl = "https://schedi.app/bright-cuts/?pay=checkout&booking=BK-QUOTE01&kind=card&bookings=BK-SECOND1";
     const response = await handleRequest(new Request(payUrl), pageEnv(), { waitUntil() {} });
-    expect(response.status).toBe(200);
-    const html = await response.text();
-    expect(html).toContain('var SCHEDULE_PAY_RETURN = "checkout";');
-    expect(html).toContain('var SCHEDULE_PAY_KIND = "card";');
-    expect(html).toContain('var SCHEDULE_PAY_BOOKING = "BK-QUOTE01";');
-    expect(html).toContain("SCHEDULE_PAY_RETURN === 'checkout'");
-    expect(html).toContain("requestPublicCardCheckout");
-    expect(html).not.toContain("__SCHEDI_PAY_FLAG__");
+    expect(response.status).toBe(302);
+    expect(response.headers.get("location")).toBe(
+      "https://schedi.app/billing/card-pay?t=bright-cuts&b=BK-QUOTE01&kind=card&ids=BK-SECOND1",
+    );
+
+    const filled = fillBookingDocument(bookingHtml, {
+      slug: "bright-cuts",
+      fields: { name: "Bright Cuts" },
+      pay: "?pay=checkout&booking=BK-QUOTE01&kind=card",
+    });
+    expect(filled).toContain('var SCHEDULE_PAY_RETURN = "checkout";');
+    expect(filled).toContain('class="dark schedi-newbook schedi-pay-handoff"');
+    expect(filled).toContain("Taking you to secure payment…");
+    expect(filled).toContain("html.schedi-pay-handoff body > main { display: none !important; }");
+    expect(filled).not.toContain("__SCHEDI_PAY_FLAG__");
 
     const plain = fillBookingDocument(bookingHtml, { slug: "bright-cuts", fields: { name: "Bright Cuts" } });
     expect(plain).toContain('var SCHEDULE_PAY_RETURN = "";');
+    expect(plain).toContain('class="dark schedi-newbook"');
+    expect(plain).not.toContain('class="dark schedi-newbook schedi-pay-handoff"');
     expect(plain).not.toContain('var SCHEDULE_PAY_RETURN = "checkout";');
   });
 

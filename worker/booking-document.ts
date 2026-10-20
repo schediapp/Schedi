@@ -219,7 +219,7 @@ export function fillBookingDocument(
   };
   const pay = bookingPayFromSearch(input.pay);
   const values: Record<string, string> = {
-    [TOKEN_HTML_CLASS]: " schedi-newbook",
+    [TOKEN_HTML_CLASS]: pay.flag === "checkout" ? " schedi-newbook schedi-pay-handoff" : " schedi-newbook",
     [TOKEN_SAFE_NAME]: escapeHtml(name),
     [TOKEN_META]: escapeHtml(description),
     [TOKEN_CANONICAL]: canonical ? `<link rel="canonical" href="${escapeHtml(canonical)}">` : "",

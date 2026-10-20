@@ -2922,7 +2922,8 @@ async function handleCardPay(request, env, url) {
   const bookingId = safeBookingId(url.searchParams.get('b'));
   const token = String(url.searchParams.get('k') || '');
   const kindHint = String(url.searchParams.get('kind') || '');
-  if (!tenantId || !bookingId || !/^[A-Za-z0-9_-]{16,128}$/.test(token)) {
+  const tokenOk = /^[A-Za-z0-9_-]{16,128}$/.test(token);
+  if (!tenantId || !bookingId || (token && !tokenOk)) {
     return cardPayPage('This payment link is not valid. Nothing was charged.', 400);
   }
   if (kindHint && kindHint !== 'deposit' && kindHint !== 'card') {
@@ -2949,7 +2950,7 @@ async function handleCardPay(request, env, url) {
     if (!tenant) return cardPayPage('This payment link is not valid. Nothing was charged.', 404);
     const appts = Array.isArray(tenant.appointments) ? tenant.appointments : [];
     const sameId = appts.find((item) => item && String(item.id) === bookingId) || null;
-    if (sameId && (!sameId.manageToken || !timingSafeEqual(String(sameId.manageToken), token))) {
+    if (sameId && tokenOk && (!sameId.manageToken || !timingSafeEqual(String(sameId.manageToken), token))) {
       return cardPayPage('This payment link is not valid. Nothing was charged.', 400);
     }
     booking = sameId;
