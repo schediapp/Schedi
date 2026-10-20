@@ -55,8 +55,9 @@ describe("booking load states", () => {
     expect(render).toContain("schediBookingsErrorHtml()");
     expect(render).toContain("schediComingVisits(apps, today, null, nowMins)");
     const timeline = html.slice(html.indexOf("#tenantPortalSection.schedi-newdash .sd-timeline {"), html.indexOf("#tenantPortalSection.schedi-newdash .sd-timeline .sd-row.is-next"));
-    expect(timeline).toContain("overflow-y: auto");
-    expect(timeline).toContain("max-height:");
+    expect(timeline).not.toContain("overflow");
+    expect(timeline).not.toContain("max-height");
+    expect(timeline).not.toContain("overscroll-behavior");
     expect(render).toContain("schediWaitingRequest(app, today, nowMins)");
     expect(refresh.indexOf("data.ok === false")).toBeLessThan(refresh.indexOf("!Array.isArray(data.tenants)"));
     expect(render).toContain("schediNextVisitLine(coming[0], today)");
