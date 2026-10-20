@@ -26,7 +26,7 @@ compatibility_date = "2026-09-28"
 #   SQUARE_WEBHOOK_NOTIFICATION_URL   default https://schedi.app/api/webhooks/square
 #
 [[routes]]
-pattern = "schedi.app/api/send-booking-email"
+pattern = "schedi.app/api/send-booking-email*"
 zone_name = "schedi.app"
 
 [[routes]]
@@ -38,7 +38,7 @@ pattern = "schedi.app/auth/*"
 zone_name = "schedi.app"
 
 [[routes]]
-pattern = "schedi.app/api/bookings"
+pattern = "schedi.app/api/bookings*"
 zone_name = "schedi.app"
 
 [[routes]]
@@ -46,7 +46,7 @@ pattern = "schedi.app/api/booking-ics*"
 zone_name = "schedi.app"
 
 [[routes]]
-pattern = "schedi.app/api/calendar-feeds"
+pattern = "schedi.app/api/calendar-feeds*"
 zone_name = "schedi.app"
 
 [[routes]]
@@ -62,7 +62,7 @@ pattern = "schedi.app/api/manage*"
 zone_name = "schedi.app"
 
 [[routes]]
-pattern = "schedi.app/api/profile"
+pattern = "schedi.app/api/profile*"
 zone_name = "schedi.app"
 
 # Logo upload and logo files moved to schedi-web (repo-root wrangler.jsonc, binding
@@ -70,11 +70,11 @@ zone_name = "schedi.app"
 # on this worker would intercept POST /api/logo-upload before schedi-web.
 
 [[routes]]
-pattern = "schedi.app/api/push-token"
+pattern = "schedi.app/api/push-token*"
 zone_name = "schedi.app"
 
 [[routes]]
-pattern = "schedi.app/api/push-test"
+pattern = "schedi.app/api/push-test*"
 zone_name = "schedi.app"
 
 # Owner Reports reads booking-page visit totals. schedi-web writes them to the
@@ -87,11 +87,11 @@ zone_name = "schedi.app"
 #   3. npx wrangler secret put CF_ACCOUNT_ID
 # CF_ACCOUNT_ID is the 32-character account id. Do not commit either value.
 [[routes]]
-pattern = "schedi.app/api/page-visits"
+pattern = "schedi.app/api/page-visits*"
 zone_name = "schedi.app"
 
 [[routes]]
-pattern = "schedi.app/api/clients"
+pattern = "schedi.app/api/clients*"
 zone_name = "schedi.app"
 
 [[routes]]
@@ -99,7 +99,7 @@ pattern = "schedi.app/api/square/*"
 zone_name = "schedi.app"
 
 [[routes]]
-pattern = "schedi.app/api/webhooks/square"
+pattern = "schedi.app/api/webhooks/square*"
 zone_name = "schedi.app"
 
 # Hourly: each tenant sends when local hour matches tenant.reminderHour (default 8).
