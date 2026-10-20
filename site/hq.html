@@ -489,6 +489,8 @@
         html.schedi-light #navModeTenant.bg-slate-800 { background-color: #e2e8f0 !important; }
         <!-- SCHEDI_HQ_START -->
         html.schedi-light #navModeAgency.bg-slate-800 { background-color: #e2e8f0 !important; }
+        /* The classic in-page card is retired. A failed agency check goes to the /hq sign-in page. */
+        #agencyMasterLoginBox { display: none !important; }
         <!-- SCHEDI_HQ_END -->
     </style>
     <style id="schedi-hq-frame">
@@ -870,6 +872,13 @@ html.schedi-newhq #hqDash .hqd-nav button {
 html.schedi-newhq #hqDash .hqd-nav button i { width: 1.1rem; text-align: center; color: var(--hqd-faint); }
 html.schedi-newhq #hqDash .hqd-nav button.is-on { background: rgba(16, 185, 129, 0.14); color: var(--hqd-brand-2); border-color: rgba(16, 185, 129, 0.28); }
 html.schedi-newhq #hqDash .hqd-nav button.is-on i { color: var(--hqd-brand); }
+html.schedi-newhq #hqDash .hqd-signout {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    min-height: 44px; padding: 8px 12px; border-radius: 12px; border: 1px solid rgba(244, 63, 94, 0.35);
+    background: transparent; color: var(--hqd-rose); font-size: 13px; font-weight: 800; cursor: pointer; white-space: nowrap;
+}
+html.schedi-newhq #hqDashSidebar .hqd-signout { width: 100%; margin-top: auto; }
+html.schedi-newhq #hqDashTop .hqd-signout { flex: 0 1 auto; min-width: 0; }
 html.schedi-newhq #hqDash .hqd-side-kicker { margin: 14px 8px 6px; font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--hqd-brand-2); }
 html.schedi-newhq #hqDashTabbar { display: none; }
 html.schedi-newhq #hqDash .hqd-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 16px 0; }
@@ -1187,7 +1196,7 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
             </nav>
 
             <!-- MASTER AGENCY AUTH GATEWAY -->
-            <div id="agencyMasterLoginBox" class="max-w-md mx-auto glass-card rounded-2xl p-6 sm:p-8 space-y-6 my-10">
+            <div id="agencyMasterLoginBox" class="hidden max-w-md mx-auto glass-card rounded-2xl p-6 sm:p-8 space-y-6 my-10">
                 <div class="text-center space-y-2">
                     <div class="w-14 h-14 rounded-2xl bg-brand-500/20 text-brand-400 border border-brand-500/30 flex items-center justify-center text-2xl mx-auto glow-emerald">
                         <i class="fa-solid fa-shield-halved"></i>
@@ -1228,10 +1237,12 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
                         <button type="button" data-hqd-go="billing"><i class="fa-solid fa-credit-card" aria-hidden="true"></i><span>Billing</span></button>
                         <button type="button" data-hqd-go="email"><i class="fa-solid fa-envelope" aria-hidden="true"></i><span>Email</span></button>
                     </nav>
+                    <button type="button" id="hqDashSideSignOut" class="hqd-signout" onclick="toggleMasterAgencyAuth()">Sign out of HQ</button>
                 </aside>
                 <header id="hqDashTop">
                     <a class="hqd-brand" href="/" aria-label="Schedi home"><span class="hqd-mark" aria-hidden="true">✓</span><span>Schedi</span><span class="hqd-hq-pill">HQ</span></a>
                     <span class="hqd-spacer"></span>
+                    <button type="button" id="hqDashSignOut" class="hqd-signout" onclick="toggleMasterAgencyAuth()">Sign out of HQ</button>
                     <button type="button" id="hqDashTheme" class="schedi-theme-btn" onclick="toggleSchediTheme()" title="Switch to light theme" aria-label="Switch to light theme"><i class="fa-solid fa-sun" aria-hidden="true"></i><span class="schedi-theme-btn-label">Light</span></button>
                 </header>
                 <div class="hqd-main">
@@ -5333,13 +5344,21 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
         // Async: verify token still valid; drop to login if revoked/expired.
         async function verifySchediAuthSessionRestore() {
             if (!schediAuthRestoreAllowedHere()) return false;
+            var onHq = false;
+            try { onHq = typeof isAgencyHqRoute === 'function' && isAgencyHqRoute() && window.__SCHEDI_HQ_DEMO !== true; } catch (errOnHq) { onHq = false; }
             var session = schediAuthSession();
-            if (!session) return false;
             var meta = schediAuthMeta() || {};
+            // Cookie and saved session disagree, or there is no agency session: drop the cookie and open the sign-in page.
+            if (onHq && (!session || (meta.role && meta.role !== 'agency'))) {
+                schediLeaveAgencyHq();
+                return false;
+            }
+            if (!session) return false;
             var epoch = schediAuthEpoch;
             try {
                 var res = await fetch('https://schedi.app/api/profile', {
                     method: 'POST',
+                    credentials: 'include',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ action: 'private', session: session })
                 });
@@ -5351,6 +5370,10 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
                 if (res.status === 401 || res.status === 403 || (data && data.error === 'session_required')) {
                     if (epoch !== schediAuthEpoch) return false;
                     if (schediAuthSession() && schediAuthSession() !== session) return false;
+                    if (onHq) {
+                        schediLeaveAgencyHq();
+                        return false;
+                    }
                     schediClearAuthSession();
                     if (platformState.isAgencyMasterLoggedIn) {
                         platformState.isAgencyMasterLoggedIn = false;
@@ -5415,6 +5438,7 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
                         }
                         try { switchPlatformMode('tenant'); } catch (errSw2) {}
                     } else if (meta.role === 'agency') {
+                        try { window.sessionStorage.removeItem('schedi.hqAuthBounce'); } catch (errBounce) {}
                         platformState.isAgencyMasterLoggedIn = true;
                         try { updateMasterAuthUI(); } catch (errUi) {}
                         if (typeof isAgencyHqRoute === 'function' && isAgencyHqRoute()) {
@@ -6467,31 +6491,50 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
             }
         }
 
-        window.toggleMasterAgencyAuth = function() {
-            if (platformState.isAgencyMasterLoggedIn) {
-                var session = '';
-                try { session = schediAuthSession(); } catch (errSess) { session = ''; }
-                platformState.isAgencyMasterLoggedIn = false;
-                platformState.appointmentCounts = null;
-                clearPrivateAppointments();
-                clearPrivateProfiles();
-                schediClearAuthSession();
-                try {
-                    fetch('https://schedi.app/auth/logout', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ session: session })
-                    });
-                } catch (errOut) {}
-                updateMasterAuthUI();
-                try {
-                    if (!isAgencyHqRoute()) window.history.replaceState({}, '', agencyHqPath());
-                } catch (errPath) {}
-                switchPlatformMode('agency');
-                showToast('Logged out of Agency HQ Master', 'info');
-            } else if (isAgencyHqRoute()) {
-                switchPlatformMode('agency');
+        // Drop the agency cookie and the agency saved session, then open the /hq sign-in page.
+        // An owner saved session in the same browser is left alone. A second pass does not reload forever.
+        function schediLeaveAgencyHq() {
+            if (window.__SCHEDI_HQ_DEMO) return;
+            if (window.__schediHqLeaving) return;
+            var bounced = false;
+            try { bounced = window.sessionStorage.getItem('schedi.hqAuthBounce') === '1'; } catch (errBounce) { bounced = false; }
+            if (bounced) {
+                try { window.sessionStorage.removeItem('schedi.hqAuthBounce'); } catch (errClearBounce) {}
+                return;
             }
+            window.__schediHqLeaving = true;
+            try { window.sessionStorage.setItem('schedi.hqAuthBounce', '1'); } catch (errSetBounce) {}
+            var session = '';
+            var meta = null;
+            try { session = schediAuthSession() || ''; } catch (errSess) { session = ''; }
+            try { meta = schediAuthMeta(); } catch (errMeta) { meta = null; }
+            var agencySession = (!meta || !meta.role || meta.role === 'agency') ? session : '';
+            try { platformState.isAgencyMasterLoggedIn = false; } catch (errFlag) {}
+            try { platformState.appointmentCounts = null; } catch (errCnt) {}
+            if (agencySession) {
+                try { clearPrivateAppointments(); } catch (errA) {}
+                try { clearPrivateProfiles(); } catch (errP) {}
+                try { schediClearAuthSession(); } catch (errClear) {}
+            }
+            var go = function () {
+                try { window.location.replace('/hq'); } catch (errGo) {}
+            };
+            try {
+                return fetch('https://schedi.app/auth/logout', {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ session: agencySession })
+                }).then(go, go);
+            } catch (errOut) { go(); }
+        }
+
+        window.toggleMasterAgencyAuth = function() {
+            if (window.__SCHEDI_HQ_DEMO) {
+                if (typeof showToast === 'function') showToast('Demo mode does not sign out a real account.', 'info');
+                return;
+            }
+            schediLeaveAgencyHq();
         }
 
         function updateMasterAuthUI() {
@@ -7056,7 +7099,7 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
             const dashboard = document.getElementById('agencyMasterDashboard');
 
             if (!platformState.isAgencyMasterLoggedIn) {
-                if (loginBox) loginBox.classList.remove('hidden');
+                if (loginBox) loginBox.classList.add('hidden');
                 if (dashboard) dashboard.classList.add('hidden');
                 syncPublicHomeFooter();
                 return;
