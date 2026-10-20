@@ -8079,7 +8079,7 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
         // Owner contact + billing fields are NOT on the public tenant docs anymore. The worker keeps them in an
         // Admin-only private doc. Signed-in owners (own business) and the agency (all) load them with
         // POST /api/profile {action:'private'}; they live in memory only (never localStorage, never the public page).
-        var SCHEDI_PRIVATE_TENANT_KEYS = ['ownerName', 'ownerEmail', 'ownerPhone', 'stripeCustomerId', 'stripeSubscriptionId', 'billingExempt', 'complimentaryPro', 'monthlyPrice', 'paymentForm', 'hqTags', 'subscriptionStatus'];
+        var SCHEDI_PRIVATE_TENANT_KEYS = ['ownerName', 'ownerEmail', 'ownerPhone', 'stripeCustomerId', 'stripeSubscriptionId', 'billingExempt', 'complimentaryPro', 'monthlyPrice', 'paymentForm', 'hqTags'];
         // HQ-only tags are saved only once the worker says it keeps them private (otherwise they stay local to this tab).
         var schediHqTagsServer = false;
         var SCHEDI_OWNER_SENTINEL = '__schedi_owner__';
@@ -28008,6 +28008,20 @@ function schediQrCardPixels(text, color) {
 
     <script>
         var tenantData = ${jsonTenant};
+        // Live pause check is subscriptionStatus === 'paused'. Public writes also set
+        // acceptingBookings. When that flag is missing, fall back to the status.
+        function schediBookingsClosed(tenant) {
+            if (!tenant) return false;
+            if (tenant.acceptingBookings === false) return true;
+            if (!Object.prototype.hasOwnProperty.call(tenant, 'acceptingBookings') && String(tenant.subscriptionStatus || '') === 'paused') return true;
+            return false;
+        }
+        function schediShowBookingsClosed() {
+            var who = String((tenantData && tenantData.name) || 'This business').replace(/\s+/g, ' ').trim() || 'This business';
+            var safe = who.replace(/[&<>]/g, function (ch) { return ch === '&' ? '&amp;' : (ch === '<' ? '&lt;' : '&gt;'); });
+            document.title = who + ' is not taking appointments';
+            if (document.body) document.body.innerHTML = '<p>' + safe + ' is not taking appointments right now.</p>';
+        }
         var SCHEDI_NEWBOOK = ${schediNewBook ? 'true' : 'false'};
         var SCHEDI_DEMO = ${(typeof window !== 'undefined' && window.__SCHEDI_DEMO) ? 'true' : 'false'};
         var SCHEDI_SQUARE_PUBLIC_ENABLED = false;
@@ -30107,6 +30121,10 @@ function paintBizHeader() {
         }
 
         window.addEventListener('DOMContentLoaded', function () {
+            if (schediBookingsClosed(tenantData)) {
+                schediShowBookingsClosed();
+                return;
+            }
             paintBizHeader();
             paintTimezoneNotes();
             renderSvc();

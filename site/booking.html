@@ -35,7 +35,7 @@
         html.schedi-light .glass-input { background: #ffffff; color: #0f172a; border-color: #94a3b8; }
         html.schedi-light .text-white { color: #0f172a !important; }
         /* Light theme: darker green/amber text for WCAG AA (>=4.5:1) */
-        html.schedi-light .schedi-compare-cards .bg-slate-900\/60 { background-color: #f8fafc !important; }
+        html.schedi-light .schedi-compare-cards .bg-slate-900/60 { background-color: #f8fafc !important; }
         html.schedi-light #svcCartSummary { background-color: #f8fafc !important; border-color: #e2e8f0 !important; }
         html.schedi-light #svcCartSummary .border-slate-800 { border-color: #e2e8f0 !important; }
         html.schedi-light #svcCartSummary .text-slate-200 { color: #0f172a !important; }
@@ -43,7 +43,7 @@
         html.schedi-light .text-brand-200, html.schedi-light .text-brand-300, html.schedi-light .text-brand-400, html.schedi-light .text-brand-500,
         html.schedi-light .text-emerald-200, html.schedi-light .text-emerald-300, html.schedi-light .text-emerald-400, html.schedi-light .text-emerald-500 { color: #047857 !important; }
         html.schedi-light .text-amber-200, html.schedi-light .text-amber-300, html.schedi-light .text-amber-400, html.schedi-light .text-amber-500,
-        html.schedi-light .text-amber-200\/80, html.schedi-light .text-amber-400\/90 { color: #b45309 !important; }
+        html.schedi-light .text-amber-200/80, html.schedi-light .text-amber-400/90 { color: #b45309 !important; }
         html.schedi-light .text-slate-200 { color: #1e293b !important; }
         html.schedi-light .text-slate-300 { color: #334155 !important; }
         html.schedi-light .text-slate-400 { color: #475569 !important; }
@@ -928,6 +928,20 @@
 
     <script>
         var tenantData = __SCHEDI_TENANT_JSON__;
+        // Live pause check is subscriptionStatus === 'paused'. Public writes also set
+        // acceptingBookings. When that flag is missing, fall back to the status.
+        function schediBookingsClosed(tenant) {
+            if (!tenant) return false;
+            if (tenant.acceptingBookings === false) return true;
+            if (!Object.prototype.hasOwnProperty.call(tenant, 'acceptingBookings') && String(tenant.subscriptionStatus || '') === 'paused') return true;
+            return false;
+        }
+        function schediShowBookingsClosed() {
+            var who = String((tenantData && tenantData.name) || 'This business').replace(/s+/g, ' ').trim() || 'This business';
+            var safe = who.replace(/[&<>]/g, function (ch) { return ch === '&' ? '&amp;' : (ch === '<' ? '&lt;' : '&gt;'); });
+            document.title = who + ' is not taking appointments';
+            if (document.body) document.body.innerHTML = '<p>' + safe + ' is not taking appointments right now.</p>';
+        }
         var SCHEDI_NEWBOOK = __SCHEDI_NEWBOOK__;
         var SCHEDI_DEMO = __SCHEDI_DEMO__;
         var SCHEDI_SQUARE_PUBLIC_ENABLED = false;
@@ -969,7 +983,7 @@
         function publicSvcIcon(svc) {
             if (!SCHEDI_NEWBOOK || !svc) return '';
             var image = String(svc.imageUrl || '');
-            if (/^https:\\/\\//i.test(image)) return '<img src="' + escHtml(image) + '" alt="" class="svc-icon-img">';
+            if (/^https:\/\//i.test(image)) return '<img src="' + escHtml(image) + '" alt="" class="svc-icon-img">';
             var icon = String(svc.icon || '').toLowerCase().replace(/[^a-z0-9-]/g, '');
             if (!icon) return '';
             if (icon.indexOf('fa-') !== 0) icon = 'fa-' + icon;
@@ -1224,7 +1238,7 @@
                         type: mailType || 'mail', ownerTenantId: tenantData.id || '', tenantId: tenantData.id || '', bookingId: (booking && booking.id) || '',
                         manageToken: (booking && booking.manageToken) || ''
                     };
-                    if (paymentLink && /^https:\\/\\/(www\\.)?schedi\\.app\\//.test(String(paymentLink)) && String(paymentLink).indexOf('pay=checkout') !== -1) {
+                    if (paymentLink && /^https:\/\/(www\.)?schedi\.app\//.test(String(paymentLink)) && String(paymentLink).indexOf('pay=checkout') !== -1) {
                         mailObj.paymentLink = String(paymentLink);
                     }
                     if (toOwnerFlag) mailObj.toOwner = true;
@@ -1270,7 +1284,7 @@
             var cardPayUrl = '';
             if (booking && String(booking.paymentMethod || '').toLowerCase() === 'card') {
                 var candidate = String(booking.cardPayLink || '');
-                if (/^https:\\/\\/(www\\.)?schedi\\.app\\//.test(candidate) && candidate.indexOf('pay=checkout') !== -1 && candidate.indexOf('stripe.com') === -1) {
+                if (/^https:\/\/(www\.)?schedi\.app\//.test(candidate) && candidate.indexOf('pay=checkout') !== -1 && candidate.indexOf('stripe.com') === -1) {
                     cardPayUrl = candidate;
                 }
             }
@@ -1614,7 +1628,7 @@
         }
 
         function toMinutes(label) {
-            var m = /^\\s*(\\d{1,2}):(\\d{2})\\s*(AM|PM)?\\s*$/i.exec(String(label || ''));
+            var m = /^\s*(\d{1,2}):(\d{2})\s*(AM|PM)?\s*$/i.exec(String(label || ''));
             if (!m) return null;
             var h = parseInt(m[1], 10), min = parseInt(m[2], 10);
             var ampm = (m[3] || '').toUpperCase();
@@ -1719,8 +1733,8 @@
             if (!svc) return 60;
             if (typeof svc.durationMins === 'number' && svc.durationMins > 0) return svc.durationMins;
             var str = String(svc.duration || '').toLowerCase();
-            var hrs = /(\\d+(?:\\.\\d+)?)\\s*(h|hr|hour)/.exec(str);
-            var mins = /(\\d+)\\s*(m|min)/.exec(str);
+            var hrs = /(\d+(?:\.\d+)?)\s*(h|hr|hour)/.exec(str);
+            var mins = /(\d+)\s*(m|min)/.exec(str);
             var total = 0;
             if (hrs) total += parseFloat(hrs[1]) * 60;
             if (mins) total += parseInt(mins[1], 10);
@@ -1835,7 +1849,7 @@
         }
         function formatPublicHours(tenant) {
             function publicClockLabel(raw) {
-                return String(raw || '').trim().replace(/^0(\\d)/, '$1');
+                return String(raw || '').trim().replace(/^0(\d)/, '$1');
             }
             var order = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
             var hours = tenant && tenant.operatingHours;
@@ -1894,7 +1908,7 @@
         }
         window.hideBrokenBizImage = hideBizImage;
         function bizInitials(name) {
-            var parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+            var parts = String(name || '').trim().split(/s+/).filter(Boolean);
             if (!parts.length) return 'S';
             var letters = parts[0].charAt(0) + (parts.length > 1 ? parts[parts.length - 1].charAt(0) : '');
             return letters.toUpperCase();
@@ -2182,10 +2196,10 @@ function paintBizHeader() {
         }
         function icsEscapePub(text) {
             return String(text == null ? '' : text)
-                .replace(/\\\\/g, '\\\\\\\\')
-                .replace(/;/g, '\\\\;')
-                .replace(/,/g, '\\\\,')
-                .replace(/\\r?\\n/g, '\\\\n');
+                .replace(/\\/g, '\\\\')
+                .replace(/;/g, '\\;')
+                .replace(/,/g, '\\,')
+                .replace(/\r?\n/g, '\\n');
         }
         function bookingRrulePub(booking) {
             var rec = booking && booking.recurrence;
@@ -2259,7 +2273,7 @@ function paintBizHeader() {
             icsLines.push('END:VEVENT', 'END:VCALENDAR');
             return {
                 googleUrl: gUrl,
-                icsText: icsLines.join('\\r\\n') + '\\r\\n',
+                icsText: icsLines.join('\r\n') + '\r\n',
                 fileName: 'schedi-' + String((booking && booking.id) || 'booking') + '.ics'
             };
         }
@@ -2338,7 +2352,7 @@ function paintBizHeader() {
             var p = servicePriceValuePublic(svc);
             if (p === null) return '';
             if (p === 0) return 'FREE';
-            return '$' + (Number.isInteger(p) ? String(p) : p.toFixed(2).replace(/\.00$/, ''));
+            return '$' + (Number.isInteger(p) ? String(p) : p.toFixed(2).replace(/.00$/, ''));
         }
 
         function depositConfig() {
@@ -3027,6 +3041,10 @@ function paintBizHeader() {
         }
 
         window.addEventListener('DOMContentLoaded', function () {
+            if (schediBookingsClosed(tenantData)) {
+                schediShowBookingsClosed();
+                return;
+            }
             paintBizHeader();
             paintTimezoneNotes();
             renderSvc();
@@ -3283,7 +3301,7 @@ function paintBizHeader() {
 
                 let label = 'Open';
                 var awayText = String(awayLabel || 'Away');
-                var awayShort = awayText.length > 18 ? (awayText.slice(0, 17) + '\\u2026') : awayText;
+                var awayShort = awayText.length > 18 ? (awayText.slice(0, 17) + '\u2026') : awayText;
                 var phoneCal = false;
                 try { phoneCal = window.matchMedia('(max-width: 639px)').matches; } catch (errPhoneCal) {}
                 if (isAway) label = (SCHEDI_NEWBOOK && !phoneCal) ? awayShort : 'Away';
@@ -3761,7 +3779,7 @@ function paintBizHeader() {
                 return;
             }
 
-            if (!/^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/.test(email)) {
+            if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
                 fail('Please enter a valid email address.');
                 return;
             }
@@ -4134,7 +4152,7 @@ function paintBizHeader() {
                 }
 
                 function looksLikeUrl(s) {
-                    return /^https?:\\/\\//i.test(String(s || '').trim());
+                    return /^https?:\/\//i.test(String(s || '').trim());
                 }
 
                 function buildPaypalUrl(handle, link) {
@@ -4145,10 +4163,10 @@ function paintBizHeader() {
                     if (looksLikeUrl(h)) return h;
                     var lower = h.toLowerCase();
                     if (lower.indexOf('paypal.me/') === 0 || lower.indexOf('www.paypal.me/') === 0) {
-                        return 'https://' + h.replace(/^https?:\\/\\//i, '');
+                        return 'https://' + h.replace(/^https?:\/\//i, '');
                     }
                     if (h.indexOf('@') !== -1 && h.indexOf(' ') === -1) return ''; // email — no safe pay link
-                    var slug = h.replace(/^@/, '').replace(/^paypal\\.me\\//i, '').replace(/^\\//, '');
+                    var slug = h.replace(/^@/, '').replace(/^paypal\.me\//i, '').replace(/^\//, '');
                     if (slug && /^[A-Za-z0-9._-]+$/.test(slug)) return 'https://www.paypal.me/' + encodeURIComponent(slug);
                     return '';
                 }

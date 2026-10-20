@@ -26,7 +26,6 @@ export const PRIVATE_TENANT_KEYS = [
   'hqTags',
   'cancelAtPeriodEnd',
   'currentPeriodEnd',
-  'subscriptionStatus',
 ];
 /** Worker bookkeeping. Private doc only, and never returned to the owner or agency UI. */
 export const WORKER_ONLY_PRIVATE_KEYS = ['unpaidDigestWeek'];
@@ -48,7 +47,6 @@ export const AGENCY_ONLY_PRIVATE_KEYS = new Set([
   'hqTags',
   'cancelAtPeriodEnd',
   'currentPeriodEnd',
-  'subscriptionStatus',
 ]);
 
 /** Square seller ids belong on the private connection, not the world-readable doc. */
@@ -176,10 +174,11 @@ function showAddress(tenant) {
 
 /**
  * Public booking doc plus the private remainder.
- * The public half keeps the booking page (including the effective plan name)
- * and drops subscription status, plan prices, comp flags, Square seller ids,
+ * The public half keeps the booking page (including the effective plan name
+ * and subscriptionStatus) and drops plan prices, comp flags, Square seller ids,
  * unpaid-digest bookkeeping, and the street address when the owner hid it.
- * acceptingBookings is the only pause signal the booking page needs.
+ * acceptingBookings is written on every public save. Older docs may omit it;
+ * the booking page then falls back to subscriptionStatus === 'paused'.
  */
 export function shapePublicBookingFields(tenant) {
   const { pub, priv } = splitTenant(tenant || {});
@@ -195,7 +194,8 @@ export function shapePublicBookingFields(tenant) {
 
 /**
  * Partial public write. Does not invent plan or address from a patch that
- * did not mention them. A subscriptionStatus change becomes acceptingBookings.
+ * did not mention them. A subscriptionStatus change stays on the public doc
+ * and also sets acceptingBookings.
  */
 export function shapePublicPatch(rawPatch) {
   const patch = rawPatch || {};

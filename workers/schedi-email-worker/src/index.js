@@ -2962,7 +2962,9 @@ function workersDevAuthBlocked(url) {
   if (!host.endsWith('.workers.dev')) return false;
   const path = url.pathname || '/';
   if (path === '/auth' || path.startsWith('/auth/')) return true;
-  if (path.startsWith('/api/ops-')) return true;
+  // Live monitoring uses /api/ops-snapshot (bearer) and Resend uses
+  // /api/resend-events (Svix). Only the default-password audit is blocked here.
+  if (path === '/api/ops-default-passwords') return true;
   return false;
 }
 

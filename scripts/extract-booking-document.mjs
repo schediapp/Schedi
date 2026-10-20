@@ -1,6 +1,11 @@
 // Rebuilds site/booking.html from the public booking document embedded in index.html.
 // The owner shell keeps generateStandaloneHtmlForTenant for preview. Public /{slug}
 // pages are served from this file, which has no owner portal and no agency code.
+//
+// The template is a JavaScript template literal. Copying it raw leaves escapes
+// such as /^https:\\/\\//i, which the browser parses as a regex with illegal flags.
+// This walk evaluates template escapes (\ \, \/, \n, \uXXXX, and the rest) and
+// replaces ${...} interpolations with booking tokens.
 import { readFileSync, writeFileSync } from "node:fs";
 
 const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
@@ -34,25 +39,57 @@ const tokens = [
   ["${schediWebAnalytics}", "__SCHEDI_ANALYTICS__"],
 ];
 
+function hexEscape(source, i, digits) {
+  const hex = source.slice(i, i + digits);
+  if (!/^[0-9a-fA-F]+$/.test(hex) || hex.length !== digits) return null;
+  return String.fromCharCode(parseInt(hex, 16));
+}
+
+/** One template-literal escape starting at the backslash. */
+function readEscape(source, i) {
+  const n = source[i + 1];
+  if (n == null) throw new Error("trailing backslash in booking template");
+  if (n === "\n") return { text: "", next: i + 2 };
+  if (n === "\r") return { text: "", next: source[i + 2] === "\n" ? i + 3 : i + 2 };
+  if (n === "n") return { text: "\n", next: i + 2 };
+  if (n === "r") return { text: "\r", next: i + 2 };
+  if (n === "t") return { text: "\t", next: i + 2 };
+  if (n === "b") return { text: "\b", next: i + 2 };
+  if (n === "f") return { text: "\f", next: i + 2 };
+  if (n === "v") return { text: "\v", next: i + 2 };
+  if (n === "0" && !/[0-9]/.test(source[i + 2] || "")) return { text: "\0", next: i + 2 };
+  if (n === "x") {
+    const ch = hexEscape(source, i + 2, 2);
+    if (ch == null) throw new Error("bad hex escape in booking template");
+    return { text: ch, next: i + 4 };
+  }
+  if (n === "u" && source[i + 2] === "{") {
+    const close = source.indexOf("}", i + 3);
+    const hex = close < 0 ? "" : source.slice(i + 3, close);
+    if (!/^[0-9a-fA-F]{1,6}$/.test(hex)) throw new Error("bad unicode escape in booking template");
+    const cp = parseInt(hex, 16);
+    if (cp > 0x10ffff) throw new Error("bad unicode escape in booking template");
+    return { text: String.fromCodePoint(cp), next: close + 1 };
+  }
+  if (n === "u") {
+    const ch = hexEscape(source, i + 2, 4);
+    if (ch == null) throw new Error("bad unicode escape in booking template");
+    return { text: ch, next: i + 6 };
+  }
+  // NonEscapeCharacter: \/, \`, \$, and any other non-special character.
+  return { text: n, next: i + 2 };
+}
+
 let out = "";
 for (let i = 0; i < source.length; i += 1) {
-  if (source.startsWith("\\${", i)) {
-    out += "${";
-    i += 2;
+  if (source[i] === "\\") {
+    const esc = readEscape(source, i);
+    out += esc.text;
+    i = esc.next - 1;
     continue;
   }
-  if (source.startsWith("\\`", i)) {
-    out += "`";
-    i += 1;
-    continue;
-  }
-  if (source.startsWith("<\\/", i)) {
-    out += "</";
-    i += 2;
-    continue;
-  }
-  let matched = false;
   if (source[i] === "$" && source[i + 1] === "{") {
+    let matched = false;
     for (const [from, token] of tokens) {
       if (source.startsWith(from, i)) {
         out += token;
@@ -72,6 +109,7 @@ for (const word of banned) {
   if (out.includes(word)) throw new Error("booking document still contains " + word);
 }
 if (out.includes("provision")) throw new Error("booking document still contains provision");
+if (out.includes("/^https:\\\\/\\\\//i")) throw new Error("booking document still has an escaped https regex");
 
 const banner = "<!-- schedi public booking document. No owner portal and no agency code. -->\n";
 writeFileSync(new URL("../site/booking.html", import.meta.url), banner + out);

@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { handleRequest, type SchediEnv } from "../worker/handler";
-import { projectPublicBooking } from "../worker/booking-document";
+import { bookingPaused, projectPublicBooking } from "../worker/booking-document";
 import worker from "../workers/schedi-email-worker/src/index.js";
 import { resetLocalLimits } from "../workers/schedi-email-worker/src/rate-limit.js";
 
@@ -77,11 +77,31 @@ describe("public booking bundle", () => {
     expect(html).not.toContain("10 Main St");
     expect(html).not.toContain("merchant-secret");
     expect(html).not.toContain("unpaidDigestWeek");
-    expect(html).not.toContain("subscriptionStatus");
+    expect(html).toContain('"subscriptionStatus":"active"');
+    expect(html).toContain('"acceptingBookings":true');
     expect(html).not.toContain("hidden@example.com");
     expect(calls).toHaveLength(1);
     expect(response.headers.get("cache-control")).toBe("no-store");
     expect(response.headers.get("x-robots-tag")).toBeNull();
+  });
+
+  it("pauses when acceptingBookings is missing and subscriptionStatus is paused", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+      fields: {
+        name: { stringValue: "Northwind Clinic" },
+        slug: { stringValue: "northwind" },
+        subscriptionStatus: { stringValue: "paused" },
+      },
+    }), { status: 200, headers: { "content-type": "application/json" } })));
+    const response = await handleRequest(new Request("https://schedi.app/northwind"), env(), ctx());
+    expect(response.status).toBe(200);
+    const html = await response.text();
+    expect(html).toContain("Northwind Clinic is not taking appointments");
+    expect(html).not.toContain("serviceListContainer");
+    expect(bookingPaused({ name: "Northwind Clinic", subscriptionStatus: "paused" })).toBe(true);
+    expect(bookingPaused({ name: "Bright Cuts", subscriptionStatus: "active" })).toBe(false);
+    expect(bookingPaused({ name: "Bright Cuts" })).toBe(false);
+    expect(bookingPaused({ name: "Bright Cuts", acceptingBookings: false })).toBe(true);
   });
 
   it("keeps the owner shell on /login and the HQ shell only after an agency session", async () => {
@@ -149,7 +169,8 @@ describe("booking field projection", () => {
     expect(pub.plan).toBe("pro");
     expect(pub.address).toBeUndefined();
     expect(pub.city).toBeUndefined();
-    expect(pub.subscriptionStatus).toBeUndefined();
+    expect(pub.subscriptionStatus).toBe("active");
+    expect(pub.acceptingBookings).toBe(true);
     expect(pub.squareMerchantId).toBeUndefined();
     expect(pub.unpaidDigestWeek).toBeUndefined();
     expect(pub.ownerEmail).toBeUndefined();
@@ -172,10 +193,16 @@ describe("firestore rules and dry-run cleanup", () => {
     expect(trimScript).not.toMatch(/method:\s*['"]PATCH['"]/);
     expect(trimScript).not.toMatch(/method:\s*['"]DELETE['"]/);
     expect(trimScript).not.toContain("updateMask");
-    expect(wrangler).toContain("workers_dev = false");
+    expect(wrangler).toContain("workers_dev = true");
+    expect(wrangler).not.toContain("workers_dev = false");
+    expect(wrangler).not.toContain("period = 900");
+    expect(wrangler).not.toContain("RL_AUTH_GLOBAL");
     expect(wrangler).toContain('name = "RL_AUTH_IP"');
     expect(wrangler).toContain('name = "RL_AUTH_EMAIL"');
-    expect(wrangler).toContain('name = "RL_AUTH_GLOBAL"');
+    expect(wrangler).toContain("limit = 10, period = 60");
+    expect(wrangler).toContain("limit = 5, period = 60");
+    expect(wrangler).toContain('pattern = "schedi.app/api/ops-snapshot*"');
+    expect(wrangler).toContain('pattern = "schedi.app/api/resend-events*"');
   });
 });
 
@@ -252,10 +279,29 @@ describe("auth rate limits", () => {
       body: JSON.stringify(body),
     }), authEnv(), { waitUntil() {} });
     expect(devAuth.status).toBe(404);
+    const devPasswords = await worker.fetch(new Request("https://schedi-email-worker.workers.dev/api/ops-default-passwords"), authEnv(), { waitUntil() {} });
+    expect(devPasswords.status).toBe(404);
     const devOps = await worker.fetch(new Request("https://schedi-email-worker.workers.dev/api/ops-snapshot"), authEnv(), { waitUntil() {} });
-    expect(devOps.status).toBe(404);
+    expect(devOps.status).not.toBe(404);
+    const devResend = await worker.fetch(new Request("https://schedi-email-worker.workers.dev/api/resend-events", { method: "POST", body: "{}" }), authEnv(), { waitUntil() {} });
+    expect(devResend.status).not.toBe(404);
+    const appOps = await worker.fetch(new Request("https://schedi.app/api/ops-snapshot"), authEnv(), { waitUntil() {} });
+    expect(appOps.status).not.toBe(404);
     const live = await post("/auth/forgot", { identifier: "owner@example.com" }, "203.0.113.77");
     expect(live.status).not.toBe(404);
     expect(typeof worker.scheduled).toBe("function");
+  });
+
+  it("caps one IP at 10 sign-ins per minute and does not use a global cap", async () => {
+    const ip = "203.0.113.50";
+    for (let i = 0; i < 10; i += 1) {
+      const out = await post("/auth/tenant", { email: `person${i}@example.com`, password: "not-logged" }, ip);
+      expect(out.status).toBe(401);
+    }
+    const blocked = await post("/auth/tenant", { email: "person10@example.com", password: "not-logged" }, ip);
+    expect(blocked.status).toBe(429);
+    expect(blocked.data.error).toBe("rate_limited");
+    const fresh = await post("/auth/agency", { email: "hq-fresh@example.com", password: "not-logged" }, "198.51.100.8");
+    expect(fresh.status).toBe(401);
   });
 });

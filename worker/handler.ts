@@ -245,6 +245,10 @@ function classifySpa(stripped: string): SpaKind {
   if (!/^[a-z0-9](?:[a-z0-9-]{0,40})$/i.test(first)) return { kind: "no" };
   const slug = first.toLowerCase();
   if (parts.length === 1) return { kind: "spa", slug, indexable: false };
+  // Manage stays on the owner shell. Reschedule and cancel are enterPublicManageMode
+  // in index.html, not in the booking document. booking.html only builds the
+  // manage link for confirmation mail, so serving it here would replace the
+  // manage flow with the public booking form.
   if (parts[1].toLowerCase() === "manage") return { kind: "spa", slug: null, indexable: false };
   return { kind: "no" };
 }

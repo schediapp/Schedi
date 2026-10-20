@@ -49,7 +49,6 @@ const PRIVATE_KEYS = [
   "hqTags",
   "cancelAtPeriodEnd",
   "currentPeriodEnd",
-  "subscriptionStatus",
   "unpaidDigestWeek",
   "squareMerchantId",
   "squareLocationId",
@@ -129,10 +128,16 @@ export function projectPublicBooking(fields: Record<string, unknown> | null | un
   return pub;
 }
 
+/**
+ * Paused when acceptingBookings is false. When that flag is missing, fall back
+ * to the live check: subscriptionStatus === "paused". A missing flag alone is
+ * not paused.
+ */
 export function bookingPaused(fields: Record<string, unknown> | null | undefined): boolean {
   if (!fields) return false;
-  if (String(fields.subscriptionStatus || "") === "paused") return true;
-  return fields.acceptingBookings === false;
+  if (fields.acceptingBookings === false) return true;
+  if (!Object.prototype.hasOwnProperty.call(fields, "acceptingBookings") && String(fields.subscriptionStatus || "") === "paused") return true;
+  return false;
 }
 
 function safeSlug(slug: string): string {

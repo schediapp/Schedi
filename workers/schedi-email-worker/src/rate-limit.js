@@ -5,7 +5,8 @@
  * Missing binding => only the local window applies (logged once per isolate).
  */
 const WINDOW_MS = 60 * 1000;
-const AUTH_WINDOW_MS = 15 * 60 * 1000;
+const AUTH_IP_LIMIT = 10;
+const AUTH_EMAIL_LIMIT = 5;
 const local = new Map();
 let warnedNoLimiter = false;
 
@@ -44,8 +45,8 @@ export function clientIp(request) {
 }
 
 /**
- * windowMs defaults to 60s so signup and booking limits stay on the existing window.
- * Auth routes pass 15 minutes.
+ * windowMs defaults to 60s. Cloudflare ratelimit bindings only allow a period of
+ * 10 or 60, so auth uses that same 60s window.
  */
 export async function rateLimitOk(binding, key, localLimit, scope, windowMs) {
   const k = String(key).slice(0, 200);
@@ -64,17 +65,17 @@ export async function rateLimitOk(binding, key, localLimit, scope, windowMs) {
 }
 
 /**
- * 5 requests / 15 minutes per IP and per email for one auth route, plus one global cap.
- * The local window enforces the cap even when the Cloudflare binding is not configured yet.
+ * Per auth route: 10 requests / 60 seconds per IP and 5 / 60 seconds per email.
+ * There is no global cap. A global counter would let one client lock every owner
+ * and HQ out. The local window matches the Cloudflare binding period (10 or 60).
  * Callers must not log the password or the request body.
  */
 export async function authRateLimit(env, { route, ip, email }) {
   const scope = String(route || 'auth').replace(/[^a-z0-9/_-]/gi, '').slice(0, 40) || 'auth';
-  const ipOk = await rateLimitOk(env && env.RL_AUTH_IP, scope + ':ip:' + String(ip || 'unknown'), 5, 'authip', AUTH_WINDOW_MS);
+  const ipOk = await rateLimitOk(env && env.RL_AUTH_IP, scope + ':ip:' + String(ip || 'unknown'), AUTH_IP_LIMIT, 'authip', WINDOW_MS);
   const who = String(email || '').trim().toLowerCase().slice(0, 160);
   const emailOk = who
-    ? await rateLimitOk(env && env.RL_AUTH_EMAIL, scope + ':email:' + who, 5, 'authemail', AUTH_WINDOW_MS)
+    ? await rateLimitOk(env && env.RL_AUTH_EMAIL, scope + ':email:' + who, AUTH_EMAIL_LIMIT, 'authemail', WINDOW_MS)
     : true;
-  const globalOk = await rateLimitOk(env && env.RL_AUTH_GLOBAL, 'auth', 60, 'authglobal', AUTH_WINDOW_MS);
-  return ipOk && emailOk && globalOk;
+  return ipOk && emailOk;
 }

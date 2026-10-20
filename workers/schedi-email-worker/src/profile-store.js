@@ -162,8 +162,9 @@ async function putTenant(env, tenantId, profile, role) {
   let ignored = [];
   if (role !== 'agency') {
     // Plan lock: plan keeps its stored value. Billing keys (monthlyPrice, complimentaryPro,
-    // billingExempt, paymentForm, Stripe ids, subscriptionStatus) are dropped, and
-    // Pro-only features can't be switched on unless the stored plan is Pro (or complimentary Pro).
+    // billingExempt, paymentForm, Stripe ids) are dropped. subscriptionStatus stays on
+    // the public doc; an owner cannot change it. Pro-only features can't be switched
+    // on unless the stored plan is Pro (or complimentary Pro).
     const storedPub = await getPublicTenantDoc(env, tenantId, headers);
     if (!storedPub) throw new Error('tenant_not_found');
     const storedPriv = await getPrivateTenant(env, tenantId);
@@ -178,10 +179,14 @@ async function putTenant(env, tenantId, profile, role) {
     pub = locked.pub;
     ignored = ignored.concat(locked.ignored);
     const effective = Object.assign({}, storedPub, pub);
-    const storedStatus = storedPriv && Object.prototype.hasOwnProperty.call(storedPriv, 'subscriptionStatus')
-      ? storedPriv.subscriptionStatus
-      : storedPub.subscriptionStatus;
+    const storedStatus = Object.prototype.hasOwnProperty.call(storedPub, 'subscriptionStatus')
+      ? storedPub.subscriptionStatus
+      : (storedPriv && Object.prototype.hasOwnProperty.call(storedPriv, 'subscriptionStatus') ? storedPriv.subscriptionStatus : undefined);
+    if (Object.prototype.hasOwnProperty.call(profile, 'subscriptionStatus') && JSON.stringify(profile.subscriptionStatus) !== JSON.stringify(storedStatus)) {
+      ignored.push('subscriptionStatus');
+    }
     if (storedStatus !== undefined) effective.subscriptionStatus = storedStatus;
+    else delete effective.subscriptionStatus;
     if (storedPriv && storedPriv.complimentaryPro !== undefined) effective.complimentaryPro = storedPriv.complimentaryPro;
     if (storedPriv && storedPriv.billingExempt !== undefined) effective.billingExempt = storedPriv.billingExempt;
     if (storedPriv && storedPriv.monthlyPrice !== undefined) effective.monthlyPrice = storedPriv.monthlyPrice;
