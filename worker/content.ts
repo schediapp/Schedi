@@ -133,26 +133,28 @@ const noShow =
   "A no-show still costs the time you held. The reminder email is the nudge the morning of the visit. Pro includes card checkout (Stripe) and appointment deposits. Card checkout stays off until Stripe card payments and payouts are active. The deposit stays off until you turn it on. A cancellation rule can be shown on the page. Charging that fee on a card is coming soon.";
 
 const HELP_VIDEOS: { slug: string; title: string; desc: string; dur: string; v: number }[] = [
-  { slug: "owner-01-create-your-page", title: "Create your booking page", desc: "Sign up and get your booking page ready in a few minutes.", dur: "0:24", v: 8 },
-  { slug: "owner-02-add-services", title: "Add your services", desc: "Add each service with its length and an optional price.", dur: "0:21", v: 8 },
-  { slug: "owner-03-set-hours", title: "Set your hours", desc: "Pick the days you work and your open and close times.", dur: "0:20", v: 9 },
-  { slug: "owner-04-payment-options", title: "Payment options", desc: "Turn on Cash App, Zelle, Venmo, or PayPal, or keep pay at appointment.", dur: "0:28", v: 7 },
-  { slug: "owner-05-share-booking-link", title: "Share your booking link", desc: "Copy or Share your link from the top of your portal. Open Public Page and Add to home screen are in More & settings.", dur: "0:20", v: 8 },
-  { slug: "owner-06-accept-booking-request", title: "Accept a booking request", desc: "On phones, each booking is a card. Tap Accept and it shows as Accepted.", dur: "0:20", v: 8 },
-  { slug: "owner-07-appointments-report", title: "Appointments report", desc: "See counts, recorded prices, marked paid, and walk-ins; export CSV or print.", dur: "0:21", v: 8 },
-  { slug: "owner-08-add-manual-appointment", title: "Add a walk-in or phone booking", desc: "Log a walk-in or phone booking with the Walk-in toggle, saved-client suggest, open time slot, and payment status.", dur: "0:28", v: 8 },
-  { slug: "owner-09-mark-paid", title: "Mark an appointment paid", desc: "Tap Mark paid, pick how the client paid, and the booking turns green.", dur: "0:22", v: 8 },
-  { slug: "owner-10-reschedule", title: "Reschedule an appointment", desc: "Pick a new date and an open time slot, then tap Update Reservation.", dur: "0:23", v: 8 },
-  { slug: "owner-11-cancel-appointment", title: "Cancel an appointment", desc: "Tap Cancel and confirm; the booking stays on your roster as Cancelled.", dur: "0:20", v: 8 },
-  { slug: "owner-12-special-hours", title: "Special hours", desc: "Close or change your hours for one date without touching your weekly hours.", dur: "0:21", v: 9 },
-  { slug: "owner-13-date-blocks", title: "Vacation and date blocks", desc: "Block a range of dates so clients cannot book them.", dur: "0:22", v: 9 },
-  { slug: "owner-14-email-confirmations", title: "Email confirmations and reminders", desc: "Set your Reply-To email, an extra note, and same-day reminder emails.", dur: "0:23", v: 7 },
-  { slug: "owner-15-recurring-visits-pro", title: "Recurring appointments", desc: "Let clients book weekly, every two weeks, or monthly. It stays off until you turn it on.", dur: "0:21", v: 7 },
-  { slug: "owner-16-clients", title: "Clients list", desc: "Search, add, or remove clients. Clients added from a booking are labeled so you can tell.", dur: "0:24", v: 7 },
-  { slug: "owner-17-import-clients-csv", title: "Import clients from CSV", desc: "Upload a CSV, match columns, preview, and import. Schedi never emails imports.", dur: "0:22", v: 8 },
-  { slug: "owner-18-compare-plans", title: "Compare plans", desc: "Open the plan chart from your Schedi subscription card to see what each plan includes.", dur: "0:18", v: 8 },
-  { slug: "owner-19-roster-week-month", title: "Week and month roster", desc: "Switch to Week or Month, move with Previous, Next, or Today, tap a booking for details, and tap a busy day.", dur: "0:22", v: 8 },
-  { slug: "client-booking-demo", title: "How clients book", desc: "Clients pick a service, a day and time, enter their info, and choose how to pay.", dur: "0:29", v: 9 },
+  { slug: "owner-01-create-your-page", title: "Create your booking page", desc: "Sign up and get your booking page ready in a few minutes.", dur: "0:24", v: 10 },
+  { slug: "owner-02-add-services", title: "Add your services", desc: "Add each service with its length and an optional price.", dur: "0:21", v: 10 },
+  { slug: "owner-03-set-hours", title: "Set your hours", desc: "Pick the days you work and your open and close times.", dur: "0:20", v: 10 },
+  { slug: "owner-04-payment-options", title: "Payment options", desc: "Turn on Cash App, Zelle, Venmo, or PayPal, or keep pay at appointment.", dur: "0:28", v: 10 },
+  { slug: "owner-05-share-booking-link", title: "Share your booking link", desc: "Copy or Share your link from the top of your portal. Open Public Page and Add to home screen are in More & settings.", dur: "0:20", v: 10 },
+  { slug: "owner-06-accept-booking-request", title: "Accept a booking request", desc: "On phones, each booking is a card. Tap Accept and it shows as Accepted.", dur: "0:20", v: 10 },
+  { slug: "owner-07-appointments-report", title: "Reports", desc: "See counts, recorded prices, marked paid, and walk-ins; export CSV or print.", dur: "0:21", v: 10 },
+  { slug: "owner-08-add-manual-appointment", title: "Add a walk-in or phone booking", desc: "Log a walk-in or phone booking with the Walk-in toggle, saved-client suggest, open time slot, and payment status.", dur: "0:28", v: 10 },
+  { slug: "owner-09-mark-paid", title: "Mark an appointment paid", desc: "Tap Mark paid, pick how the client paid, and the booking turns green.", dur: "0:22", v: 10 },
+  { slug: "owner-10-reschedule", title: "Reschedule an appointment", desc: "Pick a new date and an open time slot, then tap Update Reservation.", dur: "0:23", v: 10 },
+  { slug: "owner-11-cancel-appointment", title: "Cancel an appointment", desc: "Tap Cancel and confirm; the booking stays on your roster as Cancelled.", dur: "0:20", v: 10 },
+  { slug: "owner-12-special-hours", title: "Special hours", desc: "Close or change your hours for one date without touching your weekly hours.", dur: "0:21", v: 10 },
+  { slug: "owner-13-date-blocks", title: "Time off and vacation", desc: "Block a range of dates so clients cannot book them.", dur: "0:22", v: 10 },
+  { slug: "owner-14-email-confirmations", title: "Email confirmations and reminders", desc: "Set your Reply-To email, an extra note, and same-day reminder emails.", dur: "0:23", v: 10 },
+  { slug: "owner-15-recurring-visits-pro", title: "Recurring appointments", desc: "Let clients book weekly, every two weeks, or monthly. It stays off until you turn it on.", dur: "0:21", v: 10 },
+  { slug: "owner-16-clients", title: "Clients list", desc: "Search, add, or remove clients. Clients added from a booking are labeled so you can tell.", dur: "0:24", v: 10 },
+  { slug: "owner-17-import-clients-csv", title: "Import clients from CSV", desc: "Upload a CSV, match columns, preview, and import. Schedi never emails imports.", dur: "0:22", v: 10 },
+  { slug: "owner-18-compare-plans", title: "Compare plans", desc: "Open the plan chart from your Schedi subscription card to see what each plan includes.", dur: "0:18", v: 10 },
+  { slug: "owner-19-roster-week-month", title: "Week and month roster", desc: "Switch to Week or Month, move with Previous, Next, or Today, tap a booking for details, and tap a busy day.", dur: "0:22", v: 10 },
+  { slug: "owner-20-booking-alerts-iphone", title: "Booking alerts on iPhone", desc: "Turn on a pop-up on your iPhone when a booking comes in.", dur: "0:20", v: 10 },
+  { slug: "owner-21-booking-qr-code", title: "Booking QR code", desc: "How to show, generate, download or print, and save your booking QR code.", dur: "0:25", v: 10 },
+  { slug: "client-booking-demo", title: "How clients book", desc: "Clients pick a service, a day and time, enter their info, and choose how to pay.", dur: "0:29", v: 10 },
 ];
 
 export const MARKETING_PAGES: MarketingPage[] = [
@@ -444,17 +446,24 @@ function vertical(input: {
   };
 }
 
+/** Duration sits before the period. An empty duration drops that separator so the period stays on the title. */
+export function helpVideoFigcaption(title: string, dur: string, desc: string): string {
+  const safeTitle = escapeHtml(title);
+  const safeDesc = escapeHtml(desc);
+  const safeDur = dur.trim();
+  const separator = safeDur ? ` (${escapeHtml(safeDur)}). ` : ". ";
+  return `<strong>${safeTitle}</strong>${separator}${safeDesc}`;
+}
+
 function helpVideosHtml(): string {
   const cards = HELP_VIDEOS.map((video) => {
     const poster = `/assets/help-videos/${video.slug}.jpg?v=${video.v}`;
     const file = `/assets/help-videos/${video.slug}.mp4?v=${video.v}`;
-    const title = escapeHtml(video.title);
-    const desc = escapeHtml(video.desc);
     return `<figure>
-      <video class="schedi-help-video" controls preload="none" poster="${poster}" width="720" height="1280">
+      <video class="schedi-help-video" controls playsinline preload="none" poster="${poster}" width="720" height="1280">
         <source src="${file}" type="video/mp4">
       </video>
-      <figcaption><strong>${title}</strong> (${escapeHtml(video.dur)}). ${desc}</figcaption>
+      <figcaption>${helpVideoFigcaption(video.title, video.dur, video.desc)}</figcaption>
     </figure>`;
   }).join("\n");
   return `<section class="help-clips"><h2>Video tutorials</h2><p>Short videos, about 20 seconds each. They load when you press play.</p><div class="help-clip-grid">${cards}</div></section>`;
