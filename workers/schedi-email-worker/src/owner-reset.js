@@ -13,6 +13,7 @@
  *   rl:<bucket>:<key>:<window>  count                      short TTL rate-limit counters
  */
 import { saveOwnerSecret, authReady, readSession, passwordMatches } from './owner-auth.js';
+import { rejectIfAuthLimited } from './rate-limit.js';
 
 const RESET_TTL_SECONDS = 60 * 60; // link valid 60 minutes
 const RESET_FROM = 'onboarding@schedi.app';
@@ -282,6 +283,9 @@ export async function handleOwnerResetRequest(request, env, origin, path, json, 
   const ip = clientIp(request);
 
   if (path === '/auth/forgot') {
+    const email = String(body.identifier || body.email || body.slug || '').trim().toLowerCase();
+    const forgotLimited = await rejectIfAuthLimited(env, json, origin, { route: '/auth/forgot', ip, email });
+    if (forgotLimited) return forgotLimited;
     const ipAllowed = await rateLimit(env, 'forgot-ip', ip, 5, 15 * 60);
     if (!ipAllowed) return json({ ok: false, error: 'too_many_requests', message: 'Too many requests. Try again in a few minutes.' }, 429, origin);
     const work = (async () => {
@@ -297,6 +301,8 @@ export async function handleOwnerResetRequest(request, env, origin, path, json, 
   }
 
   if (path === '/auth/reset-check') {
+    const checkLimited = await rejectIfAuthLimited(env, json, origin, { route: '/auth/reset', ip, email: '' });
+    if (checkLimited) return checkLimited;
     const ipAllowed = await rateLimit(env, 'reset-ip', ip, 30, 15 * 60);
     if (!ipAllowed) return json({ ok: false, error: 'too_many_requests' }, 429, origin);
     const found = await lookupResetToken(env, body.token);
@@ -306,6 +312,8 @@ export async function handleOwnerResetRequest(request, env, origin, path, json, 
   }
 
   if (path === '/auth/reset') {
+    const resetLimited = await rejectIfAuthLimited(env, json, origin, { route: '/auth/reset', ip, email: '' });
+    if (resetLimited) return resetLimited;
     const ipAllowed = await rateLimit(env, 'reset-ip', ip, 30, 15 * 60);
     if (!ipAllowed) return json({ ok: false, error: 'too_many_requests' }, 429, origin);
     if (!validNewPassword(body.newPassword)) return json({ ok: false, error: 'invalid_password' }, 400, origin);
@@ -327,6 +335,9 @@ export async function handleOwnerResetRequest(request, env, origin, path, json, 
 
   if (path === '/auth/change') {
     const session = await readSession(env, body.session);
+    const email = session && session.email ? String(session.email) : '';
+    const changeLimited = await rejectIfAuthLimited(env, json, origin, { route: '/auth/change', ip, email });
+    if (changeLimited) return changeLimited;
     if (!session || session.role !== 'owner' || !session.tenantId) return json({ ok: false, error: 'session_required' }, 401, origin);
     if (!validNewPassword(body.newPassword)) return json({ ok: false, error: 'invalid_password' }, 400, origin);
     const failKey = await failCounterKey('change-fail', session.tenantId, 15 * 60);

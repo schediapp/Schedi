@@ -242,7 +242,7 @@ Checkout rules (`checkoutEligibility`):
 
 ## Email engagement tracking (Resend webhook), Oct 5, 2026
 
-- `POST /api/resend-events` (workers.dev only, not a schedi.app route): Resend webhook receiver, Svix-verified with
+- `POST /api/resend-events` (workers.dev, and `schedi.app/api/resend-events*` for a later move): Resend webhook receiver, Svix-verified with
   `RESEND_WEBHOOK_SECRET`. 503 until the secret is set, 401 on a bad signature. Code: `src/email-events.js`.
 - Stores one KV key per event `emailEvt:e:<email_id>:<svix-id>` (metadata only, 180-day TTL); `/api/ops-snapshot` aggregates it
   into `emailEngagement` + `summary.email*`. See `/home/box/agent-data/shared/schedi-ops/README.md` for field meanings.

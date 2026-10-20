@@ -100,6 +100,7 @@ export async function handleOwnerBillingSchedule(request, path, deps) {
   } catch (_) {
     allowed = false;
   }
+  if (allowed === 'forbidden') return result(403, { ok: false, error: 'forbidden' });
   if (allowed !== true) return result(401, { ok: false, error: 'session_required' });
 
   let tenant;

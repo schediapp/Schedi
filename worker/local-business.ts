@@ -54,6 +54,15 @@ function priceOf(value: unknown): number | undefined {
   return Math.round(n * 100) / 100;
 }
 
+export function decodeFirestoreFields(document: unknown): Record<string, unknown> | null {
+  if (!document || typeof document !== "object") return null;
+  const fields = (document as { fields?: Record<string, unknown> }).fields;
+  if (!fields) return null;
+  const out: Record<string, unknown> = {};
+  for (const key of Object.keys(fields)) out[key] = decodeFirestore(fields[key]);
+  return out;
+}
+
 export function tenantFromFirestore(document: unknown): TenantSeo | null {
   if (!document || typeof document !== "object") return null;
   const fields = (document as { fields?: Record<string, unknown> }).fields;

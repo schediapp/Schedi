@@ -7,6 +7,7 @@ import { requireAgency } from './agency-session.js';
 import { adminAuthHeaders } from './firebase-admin.js';
 import {
   splitTenant,
+  shapePublicBookingFields,
   patchPrivateTenant,
   deletePrivateTenant,
   getPrivateTenant,
@@ -14,9 +15,14 @@ import {
   privateView,
   migrateTenantsToPrivate,
   AGENCY_ONLY_PRIVATE_KEYS,
+  PRIVATE_TENANT_KEYS,
+  PUBLIC_ADDRESS_KEYS,
+  SQUARE_PUBLIC_ID_KEYS,
+  WORKER_ONLY_PRIVATE_KEYS,
   decodeDoc,
 } from './tenant-private.js';
 import { applyOwnerEntitlementLock } from './entitlements.js';
+import { normalizeMinNoticeHours } from './booking-notice.js';
 
 const FORBIDDEN = new Set([
   'ownerPassword',
@@ -119,6 +125,10 @@ export function sanitizeProfile(raw, tenantId) {
   if (Array.isArray(out.services)) {
     out.services = out.services.map(sanitizeService).filter(Boolean).slice(0, 200);
   }
+  // Public tenant doc. The booking page reads this to hide start times that are too soon.
+  if (Object.prototype.hasOwnProperty.call(out, 'minNoticeHours')) {
+    out.minNoticeHours = normalizeMinNoticeHours(out.minNoticeHours);
+  }
   out.id = tenantId;
   return out;
 }
@@ -140,19 +150,26 @@ async function getPublicTenantDoc(env, tenantId, headers) {
   return decodeDoc(await res.json());
 }
 
+function publicWriteMask(pub) {
+  const drop = SQUARE_PUBLIC_ID_KEYS.concat(WORKER_ONLY_PRIVATE_KEYS, PRIVATE_TENANT_KEYS);
+  if (pub && pub.showPublicAddress === false) drop.push.apply(drop, PUBLIC_ADDRESS_KEYS);
+  return Array.from(new Set(Object.keys(pub || {}).concat(drop)));
+}
+
 /** Returns the list of owner-sent fields that were ignored by the plan/entitlement lock. */
 async function putTenant(env, tenantId, profile, role) {
   // Owner contact + billing fields go to the private doc (merge, only keys present);
-  // the world-readable public doc never receives them.
+  // the world-readable public doc keeps booking-page fields only.
   const split = splitTenant(profile);
   let pub = split.pub;
-  const priv = split.priv;
+  let priv = split.priv;
   const headers = await adminAuthHeaders(env);
   let ignored = [];
   if (role !== 'agency') {
-    // Plan / entitlement lock: plan + subscriptionStatus keep their stored values, billing keys
-    // (monthlyPrice, complimentaryPro, billingExempt, paymentForm, Stripe ids) are dropped, and
-    // Pro-only features can't be switched on unless the stored plan is Pro (or complimentary Pro).
+    // Plan lock: plan keeps its stored value. Billing keys (monthlyPrice, complimentaryPro,
+    // billingExempt, paymentForm, Stripe ids) are dropped. subscriptionStatus stays on
+    // the public doc; an owner cannot change it. Pro-only features can't be switched
+    // on unless the stored plan is Pro (or complimentary Pro).
     const storedPub = await getPublicTenantDoc(env, tenantId, headers);
     if (!storedPub) throw new Error('tenant_not_found');
     const storedPriv = await getPrivateTenant(env, tenantId);
@@ -166,11 +183,30 @@ async function putTenant(env, tenantId, profile, role) {
     const locked = applyOwnerEntitlementLock(pub, storedPub, storedPriv);
     pub = locked.pub;
     ignored = ignored.concat(locked.ignored);
+    const effective = Object.assign({}, storedPub, pub);
+    const storedStatus = Object.prototype.hasOwnProperty.call(storedPub, 'subscriptionStatus')
+      ? storedPub.subscriptionStatus
+      : (storedPriv && Object.prototype.hasOwnProperty.call(storedPriv, 'subscriptionStatus') ? storedPriv.subscriptionStatus : undefined);
+    if (Object.prototype.hasOwnProperty.call(profile, 'subscriptionStatus') && JSON.stringify(profile.subscriptionStatus) !== JSON.stringify(storedStatus)) {
+      ignored.push('subscriptionStatus');
+    }
+    if (storedStatus !== undefined) effective.subscriptionStatus = storedStatus;
+    else delete effective.subscriptionStatus;
+    if (storedPriv && storedPriv.complimentaryPro !== undefined) effective.complimentaryPro = storedPriv.complimentaryPro;
+    if (storedPriv && storedPriv.billingExempt !== undefined) effective.billingExempt = storedPriv.billingExempt;
+    if (storedPriv && storedPriv.monthlyPrice !== undefined) effective.monthlyPrice = storedPriv.monthlyPrice;
+    pub = shapePublicBookingFields(effective).pub;
+  } else {
+    const shaped = shapePublicBookingFields(Object.assign({}, pub, priv));
+    pub = shaped.pub;
+    priv = shaped.priv;
   }
   if (Object.keys(priv).length) await patchPrivateTenant(env, tenantId, priv);
+  const mask = publicWriteMask(pub);
+  const qs = mask.map((k) => 'updateMask.fieldPaths=' + encodeURIComponent(k)).join('&');
   const fields = {};
   for (const k of Object.keys(pub)) fields[k] = encodeFirestoreValue(pub[k]);
-  const res = await fetch(tenantsCollectionUrl(env) + '/' + encodeURIComponent(tenantId), {
+  const res = await fetch(tenantsCollectionUrl(env) + '/' + encodeURIComponent(tenantId) + '?' + qs, {
     method: 'PATCH',
     headers,
     body: JSON.stringify({ fields }),

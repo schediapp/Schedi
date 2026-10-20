@@ -8,27 +8,47 @@ const WINDOW_MS = 60 * 1000;
 const local = new Map();
 let warnedNoLimiter = false;
 
-function localOk(key, limit) {
+function localOk(key, limit, windowMs) {
   if (!limit || limit < 1) return true;
+  const span = Math.max(1000, Number(windowMs) || WINDOW_MS);
   const now = Date.now();
   if (local.size > 5000) {
-    for (const [k, list] of local) {
-      if (!list.length || now - list[list.length - 1] > WINDOW_MS) local.delete(k);
+    for (const [k, entry] of local) {
+      if (!entry.times.length || now - entry.times[entry.times.length - 1] > entry.span) local.delete(k);
     }
   }
-  const list = (local.get(key) || []).filter((t) => now - t < WINDOW_MS);
+  const entry = local.get(key) || { times: [], span };
+  entry.span = span;
+  const list = entry.times.filter((t) => now - t < span);
   if (list.length >= limit) {
-    local.set(key, list);
+    entry.times = list;
+    local.set(key, entry);
     return false;
   }
   list.push(now);
-  local.set(key, list);
+  entry.times = list;
+  local.set(key, entry);
   return true;
 }
 
-export async function rateLimitOk(binding, key, localLimit, scope) {
+export function resetLocalLimits() {
+  local.clear();
+}
+
+export function clientIp(request) {
+  const raw = request && request.headers
+    ? (request.headers.get('CF-Connecting-IP') || request.headers.get('X-Forwarded-For') || '')
+    : '';
+  return String(raw || 'unknown').split(',')[0].trim().slice(0, 64) || 'unknown';
+}
+
+/**
+ * windowMs defaults to 60s. Cloudflare ratelimit bindings only allow a period of
+ * 10 or 60. Sign-in does not use these bindings; see auth-rate-limit.js.
+ */
+export async function rateLimitOk(binding, key, localLimit, scope, windowMs) {
   const k = String(key).slice(0, 200);
-  if (!localOk(String(scope || 'rl') + '|' + k, localLimit)) return false;
+  if (!localOk(String(scope || 'rl') + '|' + k, localLimit, windowMs)) return false;
   if (!binding || typeof binding.limit !== 'function') {
     if (!warnedNoLimiter) { warnedNoLimiter = true; console.warn('rate limiter binding missing'); }
     return true;
@@ -41,3 +61,5 @@ export async function rateLimitOk(binding, key, localLimit, scope) {
     return true;
   }
 }
+
+export { authRateLimit, rejectIfAuthLimited, withRetryAfter } from './auth-rate-limit.js';

@@ -19,10 +19,12 @@ import { squareClientBookingError } from './deposit-methods.js';
 import { rateLimitOk } from './rate-limit.js';
 import { bookingMakesClient, upsertClientsFromBookings } from './private-clients.js';
 import { bookingNoticeError } from './booking-notice.js';
+import { bookingAvailabilityError, SLOT_UNAVAILABLE_MESSAGE } from './slot-availability.js';
 import { busyBlocksForTenant, bookingOverlapsBusy, BUSY_MESSAGE } from './calendar-sync.js';
 
 const PRIVATE_PREFIX = 'privateAppts:';
 const MAX_BOOKINGS = 800;
+const TOO_SOON_MESSAGE = 'That time is too soon. Choose a later time.';
 
 function firebaseConfig(env) {
   return {
@@ -808,6 +810,18 @@ function bufferedOverlap(aStart, aEnd, bStart, bEnd, gap) {
   return aStart < bEnd + buf && bStart < aEnd + buf;
 }
 
+/**
+ * Public create and customer reschedule. Owner and agency sessions may book outside hours
+ * and inside the notice window (dashboard manual appointments). Calendar conflicts stay separate.
+ */
+function publicWindowReject(tenant, booking, now) {
+  const availErr = bookingAvailabilityError(tenant, booking);
+  if (availErr) return { error: availErr, message: SLOT_UNAVAILABLE_MESSAGE };
+  const noticeErr = bookingNoticeError(tenant, booking, now || new Date());
+  if (noticeErr) return { error: noticeErr, message: TOO_SOON_MESSAGE };
+  return null;
+}
+
 async function externalBusyReject(env, tenant, booking) {
   try {
     const blocks = await busyBlocksForTenant(env, tenant && tenant.id, {
@@ -868,10 +882,10 @@ function publishedRosterRevision(list) {
 
 async function sessionCanAccess(env, sessionToken, tenantId) {
   const session = await readSession(env, sessionToken);
-  if (!session) return null;
-  if (session.role === 'agency') return session;
-  if (session.role === 'owner' && session.tenantId === tenantId) return session;
-  return null;
+  if (!session) return { ok: false, status: 401, error: 'session_required' };
+  if (session.role === 'agency') return { ok: true, session };
+  if (session.role === 'owner' && session.tenantId === tenantId) return { ok: true, session };
+  return { ok: false, status: 403, error: 'forbidden' };
 }
 
 function bookingCors(origin, isAllowedOrigin) {
@@ -1000,7 +1014,8 @@ export async function handlePrivateBookingHttp(request, env, origin, path, deps,
   if (action === 'migrate') {
     // One-off maintenance (rewrites every tenant's store and clears old mail collections): agency only.
     const migrator = await readSession(env, body.session);
-    if (!migrator || migrator.role !== 'agency') {
+    if (!migrator) return respond(json, { ok: false, error: 'session_required' }, 401, origin, isAllowedOrigin);
+    if (migrator.role !== 'agency') {
       return respond(json, { ok: false, error: 'forbidden' }, 403, origin, isAllowedOrigin);
     }
     try {
@@ -1065,8 +1080,8 @@ export async function handlePrivateBookingHttp(request, env, origin, path, deps,
 
   if (action === 'sync') {
     const tenantId = clip(body.tenantId, 48);
-    const session = await sessionCanAccess(env, body.session, tenantId);
-    if (!session) return respond(json, { ok: false, error: 'forbidden' }, 403, origin, isAllowedOrigin);
+    const access = await sessionCanAccess(env, body.session, tenantId);
+    if (!access.ok) return respond(json, { ok: false, error: access.error }, access.status, origin, isAllowedOrigin);
     const incoming = (Array.isArray(body.appointments) ? body.appointments : []).map((item) => sanitizeBooking(item, tenantId)).filter(Boolean);
     const idToken = await firebaseAnonymousToken(env);
     let before = [];
@@ -1148,6 +1163,8 @@ export async function handlePrivateBookingHttp(request, env, origin, path, deps,
         date: body.date ? clip(body.date, 10) : next.date,
         time: body.time ? clip(body.time, 15) : next.time,
       });
+      const windowErr = publicWindowReject(tenant, proposed, new Date());
+      if (windowErr) return respond(json, { ok: false, error: windowErr.error, message: windowErr.message }, 409, origin, isAllowedOrigin);
       if (await externalBusyReject(env, tenant, proposed)) {
         return respond(json, { ok: false, error: 'slot_taken', message: BUSY_MESSAGE }, 409, origin, isAllowedOrigin);
       }
@@ -1189,8 +1206,8 @@ export async function handlePrivateBookingHttp(request, env, origin, path, deps,
   if (action === 'delete') {
     const tenantId = clip(body.tenantId, 48);
     const bookingId = clip(body.bookingId, 40);
-    const session = await sessionCanAccess(env, body.session, tenantId);
-    if (!session) return respond(json, { ok: false, error: 'forbidden' }, 403, origin, isAllowedOrigin);
+    const access = await sessionCanAccess(env, body.session, tenantId);
+    if (!access.ok) return respond(json, { ok: false, error: access.error }, access.status, origin, isAllowedOrigin);
     if (!tenantId || !bookingId) {
       return respond(json, { ok: false, error: 'invalid_booking' }, 400, origin, isAllowedOrigin);
     }
@@ -1233,6 +1250,9 @@ export async function handlePrivateBookingHttp(request, env, origin, path, deps,
     if (!tenant) return respond(json, { ok: false, error: 'tenant_not_found' }, 404, origin, isAllowedOrigin);
     const existing = (tenant.appointments || []).slice();
     const created = [];
+    // Dashboard manual appointments sync the roster. A signed-in owner or agency
+    // posting create may also book outside hours and inside the notice window.
+    const staff = await sessionCanAccess(env, body.session, tenant.id);
     for (const raw of incoming) {
       const booking = sanitizeBooking(Object.assign({}, raw, {
         id: raw && raw.id ? raw.id : randomBookingId(),
@@ -1246,8 +1266,6 @@ export async function handlePrivateBookingHttp(request, env, origin, path, deps,
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(booking.clientEmail).trim())) {
         return respond(json, { ok: false, error: 'email_required' }, 400, origin, isAllowedOrigin);
       }
-      const noticeErr = bookingNoticeError(tenant, booking, new Date());
-      if (noticeErr) return respond(json, { ok: false, error: noticeErr }, 400, origin, isAllowedOrigin);
       const itemsErr = normalizeBookingItems(tenant, booking);
       if (itemsErr) return respond(json, { ok: false, error: itemsErr }, 400, origin, isAllowedOrigin);
       const planErr = proOnlyBookingError(tenant, booking);
@@ -1258,6 +1276,12 @@ export async function handlePrivateBookingHttp(request, env, origin, path, deps,
         return respond(json, { ok: false, error: 'duplicate_booking' }, 409, origin, isAllowedOrigin);
       }
       const withNew = existing.concat(created);
+      // sessionCanAccess returns { ok } even when nobody is signed in. Only a real
+      // owner or agency session may skip hours and the notice window.
+      if (!staff.ok) {
+        const windowErr = publicWindowReject(tenant, booking, new Date());
+        if (windowErr) return respond(json, { ok: false, error: windowErr.error, message: windowErr.message }, 409, origin, isAllowedOrigin);
+      }
       if (await externalBusyReject(env, tenant, booking)) {
         return respond(json, { ok: false, error: 'slot_taken', message: BUSY_MESSAGE }, 409, origin, isAllowedOrigin);
       }

@@ -1,3 +1,5 @@
+import { clientIp, rejectIfAuthLimited } from './rate-limit.js';
+
 const PBKDF2_ITERATIONS = 100000;
 
 function bytesToB64(bytes) {
@@ -250,6 +252,12 @@ export async function handleAuthRequest(request, env, origin, path, json, deps) 
   try { body = await request.json(); } catch (e) { body = {}; }
   const email = String(body.email || body.ownerEmail || '').trim().toLowerCase();
   const password = String(body.password || body.ownerPassword || '');
+
+  // Before the password check. The counter is shared across data centres.
+  if (path === '/auth/agency' || path === '/auth/tenant') {
+    const limited = await rejectIfAuthLimited(env, json, origin, { route: path, ip: clientIp(request), email });
+    if (limited) return limited;
+  }
 
   if (path === '/auth/agency') {
     const record = await readJson(env.AUTH_KV, 'agency:' + email);
