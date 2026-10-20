@@ -4,6 +4,7 @@ import { fulfillOwnerCheckout } from "@/lib/billing";
 import { currentOwner } from "@/lib/auth";
 import { withFreshCapabilities } from "@/lib/live";
 import { formatUsd } from "@/lib/money";
+import { cardConnectStatus, cardConnectStatusLabel } from "@/lib/connect-status";
 import { isCardCheckoutReady, isPublicPageLive } from "@/lib/readiness";
 import { formatSlot } from "@/lib/slots";
 import { getStore } from "@/lib/store";
@@ -42,6 +43,7 @@ export default async function PortalPage({
   const bookings = store.listBookings(business.id).slice(0, 8);
   const live = isPublicPageLive(business.subscriptionStatus);
   const cardReady = isCardCheckoutReady(business);
+  const connectStatus = cardConnectStatus(!!business.stripeAccountId, cardReady);
   const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
 
   return (
@@ -83,10 +85,16 @@ export default async function PortalPage({
               </>
             ) : null}
 
+            {business.plan === "pro" && business.subscriptionStatus === "active" ? (
+              <p className="meta" style={{ margin: "8px 0 12px" }}>
+                <span className="pill">Stripe: {cardConnectStatusLabel(connectStatus)}</span>
+              </p>
+            ) : null}
+
             {business.plan === "pro" && business.subscriptionStatus === "active" && !business.stripeAccountId ? (
               <>
                 <p className="muted" style={{ margin: "8px 0 16px" }}>
-                  Turn on cards to create a Stripe account for {business.name}. Clients pay that account directly. Stripe bills {business.name} for processing. Schedi does not add a fee.
+                  Set up Stripe to create an account for {business.name}. You can leave and come back. Clients pay that account directly, and they do not see card until this is Ready. Stripe bills {business.name} for processing. Schedi does not add a fee.
                 </p>
                 {query.source === "connect" && query.error ? (
                   <div className="banner bad" role="alert">
@@ -100,17 +108,17 @@ export default async function PortalPage({
                   </div>
                 ) : null}
                 <form method="post" action="/api/connect/enable">
-                  <button type="submit">Turn on card payments</button>
+                  <button type="submit">Set up Stripe</button>
                 </form>
               </>
             ) : null}
 
             {business.stripeAccountId ? (
-              <>
+              <div id="stripe-setup">
                 <p className="muted" style={{ margin: "8px 0 12px" }}>
                   {cardReady
-                    ? `Clients can pay ${business.name} by card, including the deposit when it is on.`
-                    : "Card checkout and the deposit stay hidden until card payments and payouts are both active."}
+                    ? `Ready. Clients can pay ${business.name} by card, including the deposit when it is on.`
+                    : "In progress. You can leave and come back to finish. Clients do not see card until this is Ready."}
                 </p>
                 <p className="meta">
                   <span className="pill">Card payments: {business.cardPaymentsStatus ?? "not active"}</span>
@@ -126,7 +134,7 @@ export default async function PortalPage({
                     The connected account exists. Add NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY to load onboarding, the notification banner, account management, payments, and payouts.
                   </p>
                 )}
-              </>
+              </div>
             ) : null}
           </div>
 

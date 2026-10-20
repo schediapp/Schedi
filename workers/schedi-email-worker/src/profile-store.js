@@ -21,7 +21,7 @@ import {
   WORKER_ONLY_PRIVATE_KEYS,
   decodeDoc,
 } from './tenant-private.js';
-import { applyOwnerEntitlementLock } from './entitlements.js';
+import { applyOwnerEntitlementLock, preserveServerOwnedConnectFields, SERVER_OWNED_CONNECT_KEYS } from './entitlements.js';
 import { normalizeMinNoticeHours } from './booking-notice.js';
 
 const FORBIDDEN = new Set([
@@ -119,6 +119,7 @@ export function sanitizeProfile(raw, tenantId) {
   const out = {};
   for (const k of Object.keys(raw)) {
     if (!k || FORBIDDEN.has(k) || k.charAt(0) === '_') continue;
+    if (SERVER_OWNED_CONNECT_KEYS.indexOf(k) !== -1) continue;
     if (raw[k] === undefined) continue;
     out[k] = raw[k];
   }
@@ -197,6 +198,10 @@ async function putTenant(env, tenantId, profile, role) {
     if (storedPriv && storedPriv.monthlyPrice !== undefined) effective.monthlyPrice = storedPriv.monthlyPrice;
     pub = shapePublicBookingFields(effective).pub;
   } else {
+    const storedPub = await getPublicTenantDoc(env, tenantId, headers);
+    const preserved = preserveServerOwnedConnectFields(pub, storedPub);
+    pub = preserved.pub;
+    ignored = preserved.ignored;
     const shaped = shapePublicBookingFields(Object.assign({}, pub, priv));
     pub = shaped.pub;
     priv = shaped.priv;

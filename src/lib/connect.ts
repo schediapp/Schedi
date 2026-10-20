@@ -1,7 +1,8 @@
 import type Stripe from "stripe";
 import type { Store } from "./db";
 import { SchediError } from "./errors";
-import { readCapabilityStatuses } from "./readiness";
+import { publishStripeConnectReady } from "./connect-ready";
+import { connectedChargesEnabled, readCapabilityStatuses } from "./readiness";
 import { assertNoForbiddenKeys, cardStatementDescriptor } from "./statement";
 import type { Business, Owner } from "./types";
 
@@ -80,7 +81,10 @@ export async function enableCardPayments(
   const account = await stripe.v2.core.accounts.create(buildMerchantAccountParams(business, owner), {
     idempotencyKey: `schedi_connect_v2_${business.id}`,
   });
-  store.setStripeAccount(business.id, account.id, readCapabilityStatuses(account));
+  const saved = store.setStripeAccount(business.id, account.id, readCapabilityStatuses(account));
+  await publishStripeConnectReady(saved.slug, connectedChargesEnabled(account)).catch((error) => {
+    console.error("Could not publish stripeConnectReady:", error instanceof Error ? error.message : "unknown error");
+  });
   return { accountId: account.id, created: true };
 }
 
@@ -124,5 +128,9 @@ export async function refreshMerchantCapabilities(
   const account = await stripe.v2.core.accounts.retrieve(business.stripeAccountId, {
     include: ["configuration.merchant"],
   });
-  return store.setCapabilities(business.id, readCapabilityStatuses(account));
+  const saved = store.setCapabilities(business.id, readCapabilityStatuses(account));
+  await publishStripeConnectReady(saved.slug, connectedChargesEnabled(account)).catch((error) => {
+    console.error("Could not publish stripeConnectReady:", error instanceof Error ? error.message : "unknown error");
+  });
+  return saved;
 }

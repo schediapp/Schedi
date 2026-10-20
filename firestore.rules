@@ -7,6 +7,9 @@ service cloud.firestore {
     // because the portal and HQ depend on it.
     // Clients cannot create, update, or delete. The worker uses the Admin SDK,
     // which bypasses these rules.
+    // stripeConnectReady, squareReady, stripeConnectStatus, and squareConnectStatus
+    // are server-only. Only the worker and payment webhooks write them.
+    // Signed-in owners cannot set them: client writes are denied.
     match /artifacts/{appId}/public/data/tenants/{tenantId} {
       allow get, list: if true;
       allow create, update, delete: if false;

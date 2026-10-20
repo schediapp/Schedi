@@ -40,7 +40,8 @@ describe("public booking card choice", () => {
     expect(booking?.type ?? "").toBe("");
     const body = booking?.body ?? "";
     const escapedPayLink = "/^https:\\/\\/(www\\.)?schedi\\.app\\//.test(";
-    expect(body.split(escapedPayLink).length - 1).toBe(2);
+    expect(body.split(escapedPayLink).length - 1).toBe(1);
+    expect(body.split("schediCardPayHref(").length - 1).toBeGreaterThanOrEqual(3);
     expect(body).not.toContain("/^https://(www.)?schedi.app//");
     expect(body).toContain("window.toggleSchediTheme");
     expect(body).toContain("function renderSvc");
@@ -69,7 +70,8 @@ describe("worker site shell", () => {
     expect(body).toContain("pay=checkout");
     expect(body).toContain("function assignTopStripe");
     const escapedPayLink = "/^https:\\/\\/(www\\.)?schedi\\.app\\//.test(";
-    expect(body.split(escapedPayLink).length - 1).toBe(2);
+    expect(body.split(escapedPayLink).length - 1).toBe(1);
+    expect(body.split("schediCardPayHref(").length - 1).toBeGreaterThanOrEqual(3);
     expect(body).not.toContain("/^https://(www.)?schedi.app//");
     expect(() => new Script(body, { filename: "public-booking-iframe.js" })).not.toThrow();
 

@@ -343,6 +343,11 @@ export class Store {
     return row ? mapBusiness(row) : null;
   }
 
+  getBusinessByStripeAccount(stripeAccountId: string): Business | null {
+    const row = this.db.prepare("SELECT * FROM businesses WHERE stripe_account_id = ?").get(stripeAccountId) as BusinessRow | undefined;
+    return row ? mapBusiness(row) : null;
+  }
+
   listBusinesses(): Business[] {
     const rows = this.db.prepare("SELECT * FROM businesses ORDER BY name").all() as unknown as BusinessRow[];
     return rows.map(mapBusiness);

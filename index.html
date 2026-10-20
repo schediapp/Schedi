@@ -5189,6 +5189,38 @@ html.schedi-light #tenantPortalSection.schedi-newdash #tenantServicesGrid .sd-sv
     font-size: 16px;
     line-height: 1.4;
 }
+#tenantPortalSection.schedi-newdash .sd-pay-status {
+    display: inline-block;
+    margin-top: 8px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+}
+#tenantPortalSection.schedi-newdash .sd-pay-status[data-status="not_started"] {
+    color: #94a3b8;
+    background: rgba(148, 163, 184, 0.16);
+}
+#tenantPortalSection.schedi-newdash .sd-pay-status[data-status="in_progress"] {
+    color: #fbbf24;
+    background: rgba(251, 191, 36, 0.16);
+}
+#tenantPortalSection.schedi-newdash .sd-pay-status[data-status="ready"] {
+    color: #34d399;
+    background: rgba(52, 211, 153, 0.16);
+}
+#tenantPortalSection.schedi-newdash a.sd-pay-setup-btn {
+    display: inline-flex;
+    margin-top: 8px;
+    padding: 8px 12px;
+    border-radius: 12px;
+    background: #4f46e5;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    text-decoration: none;
+}
 #tenantPortalSection.schedi-newdash .sd-pay-switch {
     appearance: none;
     -webkit-appearance: none;
@@ -6471,11 +6503,13 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                                     <i class="fa-solid fa-credit-card text-indigo-400 text-lg" aria-hidden="true"></i>
                                     <span>
                                         <span class="sd-pay-switch-title font-bold text-white" id="tenantPayCardLabel">Credit / Debit Card (Stripe)</span>
-                                        <span id="tenantPayCardNote" class="sd-pay-switch-note text-slate-400">Accept card as one option. Clients still choose how to pay. Pro only.</span>
+                                        <span id="tenantPayCardNote" class="sd-pay-switch-note text-slate-400">Accept card as one option. Clients still choose how to pay. Pro only. Clients see card only when this account is Ready.</span>
                                     </span>
                                 </span>
                                 <input type="checkbox" id="tenantPayCardCheck" class="sd-pay-switch" role="switch" aria-checked="false" aria-labelledby="tenantPayCardLabel">
                             </label>
+                            <p class="sd-pay-switch-note"><span id="tenantPayCardStatus" class="sd-pay-status" data-status="not_started">Not started</span></p>
+                            <p id="tenantPayCardSetup" class="sd-pay-switch-note"><a class="sd-pay-setup-btn" id="tenantPayCardSetupLink" href="https://schedi-connect-production.up.railway.app/portal">Set up Stripe</a></p>
                         </div>
 
                         <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-3">
@@ -6570,11 +6604,22 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                                     <i class="fa-solid fa-square text-slate-300 text-lg" aria-hidden="true"></i>
                                     <span>
                                         <span class="sd-pay-switch-title font-bold text-white" id="tenantPaySquareLabel">Square</span>
-                                        <span id="tenantPaySquareNote" class="sd-pay-switch-note text-slate-400">Off. Square stays hidden on the booking page until Schedi turns it on. No Square charge is taken here.</span>
+                                        <span id="tenantPaySquareNote" class="sd-pay-switch-note text-slate-400">Clients can choose Square only when this business’s own Square account is Ready. No Schedi Square account is charged.</span>
                                     </span>
                                 </span>
-                                <input type="checkbox" id="tenantPaySquareCheck" class="sd-pay-switch" role="switch" aria-checked="false" aria-labelledby="tenantPaySquareLabel" disabled>
+                                <input type="checkbox" id="tenantPaySquareCheck" class="sd-pay-switch" role="switch" aria-checked="false" aria-labelledby="tenantPaySquareLabel">
                             </label>
+                            <p class="sd-pay-switch-note"><span id="tenantPaySquareStatus" class="sd-pay-status" data-status="not_started">Not started</span></p>
+                            <p id="tenantPaySquareSetup" class="sd-pay-switch-note"><a class="sd-pay-setup-btn" href="https://schedi.app/api/square/connect" id="tenantPaySquareSetupLink" onclick="return startSquareSetup(event)">Connect Square</a></p>
+                        </div>
+
+                        <div id="tenantCardProcessorRow" hidden class="hidden p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-2">
+                            <label for="tenantCardProcessor" class="block text-sm font-bold text-white">Card processor</label>
+                            <p class="sd-pay-switch-note text-slate-400">When Stripe and Square are both ready, clients see one card option. This defaults to Stripe.</p>
+                            <select id="tenantCardProcessor" class="w-full px-3 py-2 rounded-lg glass-input">
+                                <option value="stripe">Stripe</option>
+                                <option value="square">Square</option>
+                            </select>
                         </div>
 
                         <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800">
@@ -8911,24 +8956,13 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                         delete booking.depositPaid;
                         delete booking.balanceDue;
                     }
-                    if (choseCard) {
-                        var incomingLink = raw && typeof raw.cardPayLink === 'string' ? String(raw.cardPayLink) : '';
-                        if (/^https:\/\/(www\.)?schedi\.app\/[a-z0-9](?:[a-z0-9-]{0,40})\/\?pay=checkout&booking=/.test(incomingLink)) {
-                            booking.cardPayLink = incomingLink;
-                        } else {
-                            booking.cardPayLink = durableCardPayLink(
-                                tenant.slug || tenant.id,
-                                [booking.id],
-                                Number(booking.depositAmount) > 0 ? 'deposit' : 'card'
-                            );
-                        }
-                    }
                     if (raw && (raw.status === 'pending' || raw.status === 'accepted' || raw.status === 'denied')) booking.status = raw.status;
                     if (raw && raw.manageToken && /^[A-Za-z0-9_-]{16,128}$/.test(String(raw.manageToken))) {
                         booking.manageToken = String(raw.manageToken);
                     } else {
                         booking.manageToken = newManageToken();
                     }
+                    if (choseCard) booking.cardPayLink = bookingCardPayLink(tenant, booking);
                     return booking;
                 }
 
@@ -11610,14 +11644,70 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
         }
 
         function bookingCardPayLink(tenant, booking) {
+            if (!tenant || tenant.stripeConnectReady !== true) return '';
             if (!booking || String(booking.paymentMethod || '').toLowerCase() !== 'card') return '';
-            var existing = String(booking.cardPayLink || '');
-            if (/^https:\/\/(www\.)?schedi\.app\/[a-z0-9](?:[a-z0-9-]{0,40})\/\?pay=checkout&booking=/.test(existing)) return existing;
-            return durableCardPayLink(
-                tenant && (tenant.slug || tenant.id),
+            var token = String(booking.manageToken || '').trim();
+            if (!/^[A-Za-z0-9_-]{16,128}$/.test(token)) return '';
+            var safeSlug = String((tenant.slug || tenant.id) || '').trim().toLowerCase();
+            if (!/^[a-z0-9](?:[a-z0-9-]{0,40})$/.test(safeSlug)) return '';
+            var id = String(booking.id || '').trim();
+            if (!/^[A-Za-z0-9_-]{4,40}$/.test(id)) return '';
+            var kind = Number(booking.depositAmount) > 0 ? 'deposit' : 'card';
+            return 'https://schedi.app/billing/card-pay?t=' + encodeURIComponent(safeSlug)
+                + '&b=' + encodeURIComponent(id)
+                + '&k=' + encodeURIComponent(token)
+                + '&kind=' + kind;
+        }
+
+        function squarePayApiUrl(slug, bookingIds, token, kind) {
+            var safeSlug = String(slug || '').trim().toLowerCase();
+            if (!/^[a-z0-9](?:[a-z0-9-]{0,40})$/.test(safeSlug)) return '';
+            if (kind !== 'deposit' && kind !== 'card') return '';
+            var tok = String(token || '').trim();
+            if (!/^[A-Za-z0-9_-]{16,128}$/.test(tok)) return '';
+            var ids = [];
+            var list = Array.isArray(bookingIds) ? bookingIds : [bookingIds];
+            for (var i = 0; i < list.length; i++) {
+                var id = String(list[i] || '').trim();
+                if (!/^[A-Za-z0-9_-]{4,40}$/.test(id) || ids.indexOf(id) !== -1) continue;
+                ids.push(id);
+                if (ids.length === 12) break;
+            }
+            if (!ids.length) return '';
+            var url = 'https://schedi.app/api/square/pay?t=' + encodeURIComponent(safeSlug)
+                + '&b=' + encodeURIComponent(ids[0])
+                + '&k=' + encodeURIComponent(tok)
+                + '&kind=' + kind;
+            if (ids.length > 1) url += '&ids=' + encodeURIComponent(ids.slice(1).join(','));
+            return url;
+        }
+
+        function bookingSquarePayLink(tenant, booking) {
+            if (!tenant || tenant.squareReady !== true) return '';
+            var pg = tenant.paymentGateways || {};
+            if (pg.square !== true) return '';
+            if (!booking || String(booking.paymentMethod || '').toLowerCase() !== 'square') return '';
+            return squarePayApiUrl(
+                tenant.slug || tenant.id,
                 [booking.id],
-                Number(booking.depositAmount) > 0 ? 'deposit' : 'card'
+                booking.manageToken,
+                Number(booking.depositAmount) > 0 && booking.depositPaid !== true ? 'deposit' : 'card'
             );
+        }
+
+        function squarePayEmailBits(url) {
+            if (!url) return { text: '', html: '' };
+            var safeHref = String(url).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+            return {
+                text: '\nPay with Square:\n' + url + '\n',
+                html: '<tr><td align="center" style="padding:8px 28px 4px;">'
+                    + '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"><tr>'
+                    + '<td align="center" bgcolor="#111827" style="background-color:#111827;border-radius:14px;">'
+                    + '<a href="' + safeHref + '" style="display:block;padding:14px 18px;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;">Pay with Square</a>'
+                    + '</td></tr></table>'
+                    + '<p style="margin:10px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#64748b;line-height:1.4;">Or copy this link: ' + esc(url) + '</p>'
+                    + '</td></tr>'
+            };
         }
 
         function cardPayEmailBits(url) {
@@ -21744,7 +21834,7 @@ function schediQrCardPixels(text, color) {
         }
 
 
-        var SCHEDI_SQUARE_PUBLIC_ENABLED = false;
+        var SCHEDI_SQUARE_PUBLIC_ENABLED = true;
 
         function ensurePaymentGateways(tenant) {
             if (!tenant) return tenant;
@@ -21759,6 +21849,7 @@ function schediQrCardPixels(text, color) {
             if (typeof pg.paypal !== 'boolean') pg.paypal = false;
             if (typeof pg.square !== 'boolean') pg.square = false;
             if (!SCHEDI_SQUARE_PUBLIC_ENABLED) pg.square = false;
+            if (tenant.cardProcessor !== 'square' && tenant.cardProcessor !== 'stripe') tenant.cardProcessor = 'stripe';
             if (typeof pg.later !== 'boolean') pg.later = true;
             if (typeof tenant.cashAppTag !== 'string') tenant.cashAppTag = '';
             if (typeof tenant.zelleHandle !== 'string') tenant.zelleHandle = '';
@@ -21769,6 +21860,56 @@ function schediQrCardPixels(text, color) {
             if (typeof tenant.paypalLink !== 'string') tenant.paypalLink = '';
             return tenant;
         }
+
+        function payAccountStatus(tenant, kind) {
+            if (!tenant) return 'not_started';
+            if (kind === 'stripe') {
+                if (tenant.stripeConnectReady === true || tenant.stripeConnectStatus === 'ready') return 'ready';
+                if (tenant.stripeConnectStatus === 'in_progress') return 'in_progress';
+                return 'not_started';
+            }
+            if (tenant.squareReady === true || tenant.squareConnectStatus === 'ready') return 'ready';
+            if (tenant.squareConnectStatus === 'in_progress') return 'in_progress';
+            return 'not_started';
+        }
+
+        function payAccountStatusLabel(status) {
+            if (status === 'ready') return 'Ready';
+            if (status === 'in_progress') return 'In progress';
+            return 'Not started';
+        }
+
+        function paintPayAccountStatus(el, status) {
+            if (!el) return;
+            el.hidden = false;
+            el.textContent = payAccountStatusLabel(status);
+            el.setAttribute('data-status', status);
+        }
+
+        window.startSquareSetup = async function (ev) {
+            if (ev && ev.preventDefault) ev.preventDefault();
+            var tenant = (typeof getTenant === 'function') ? getTenant() : null;
+            var session = (typeof schediAuthSession === 'function') ? schediAuthSession() : '';
+            if (!tenant || !tenant.id || !session) {
+                if (typeof showToast === 'function') showToast('Sign in to finish Square setup.', 'error');
+                return false;
+            }
+            try {
+                var res = await fetch('https://schedi.app/api/square/connect', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tenantId: tenant.id, session: session })
+                });
+                var data = {};
+                try { data = await res.json(); } catch (parseErr) { data = {}; }
+                if (data && /^https:\/\/connect\.(?:squareup|squareupsandbox)\.com\//.test(String(data.url || ''))) {
+                    window.location.assign(data.url);
+                    return false;
+                }
+            } catch (err) {}
+            if (typeof showToast === 'function') showToast('Square setup did not open. Nothing was charged.', 'error');
+            return false;
+        };
 
         function renderTenantPayments(tenant) {
             ensurePaymentGateways(tenant);
@@ -21791,7 +21932,24 @@ function schediQrCardPixels(text, color) {
                 cardCheck.disabled = normalizePlan(tenant) !== 'pro';
             }
             var cardNote = document.getElementById('tenantPayCardNote');
-            if (cardNote) cardNote.textContent = normalizePlan(tenant) === 'pro' ? 'Card is one way to pay. Clients still choose Cash App, Zelle, Venmo, PayPal, or pay at the appointment.' : 'Card checkout is on Pro only.';
+            if (cardNote) cardNote.textContent = normalizePlan(tenant) === 'pro' ? 'Card is one way to pay. Clients see it only when Stripe is Ready. They can still choose Cash App, Zelle, Venmo, PayPal, or pay at the appointment.' : 'Card checkout is on Pro only.';
+            var stripeStatus = payAccountStatus(tenant, 'stripe');
+            var cardStatusEl = document.getElementById('tenantPayCardStatus');
+            if (normalizePlan(tenant) === 'pro') paintPayAccountStatus(cardStatusEl, stripeStatus);
+            else if (cardStatusEl) cardStatusEl.hidden = true;
+            var cardSetup = document.getElementById('tenantPayCardSetup');
+            if (cardSetup) {
+                var cardNeedsConnect = normalizePlan(tenant) === 'pro' && stripeStatus !== 'ready';
+                cardSetup.hidden = !cardNeedsConnect;
+                cardSetup.classList.toggle('hidden', !cardNeedsConnect);
+                var cardSetupLink = document.getElementById('tenantPayCardSetupLink');
+                if (cardSetupLink) {
+                    cardSetupLink.textContent = 'Set up Stripe';
+                    cardSetupLink.href = stripeStatus === 'in_progress'
+                        ? 'https://schedi-connect-production.up.railway.app/portal#stripe-setup'
+                        : 'https://schedi-connect-production.up.railway.app/portal';
+                }
+            }
             var dep = ensureDepositSettings(tenant);
             var depOn = document.getElementById('tenantDepositEnabled');
             var depPercent = document.getElementById('tenantDepositTypePercent');
@@ -21857,14 +22015,22 @@ function schediQrCardPixels(text, color) {
             var squareCheck = document.getElementById('tenantPaySquareCheck');
             var squareNote = document.getElementById('tenantPaySquareNote');
             if (squareCheck) {
-                squareCheck.checked = SCHEDI_SQUARE_PUBLIC_ENABLED && !!tenant.paymentGateways.square;
+                squareCheck.checked = SCHEDI_SQUARE_PUBLIC_ENABLED && normalizePlan(tenant) !== 'free' && !!tenant.paymentGateways.square;
                 squareCheck.disabled = !SCHEDI_SQUARE_PUBLIC_ENABLED || normalizePlan(tenant) === 'free';
             }
             if (squareNote) {
-                squareNote.textContent = SCHEDI_SQUARE_PUBLIC_ENABLED
-                    ? 'Clients can choose Square only when this is on. No Square charge is taken here.'
-                    : 'Off. Square stays hidden on the booking page until Schedi turns it on. No Square charge is taken here.';
+                squareNote.textContent = normalizePlan(tenant) === 'free'
+                    ? 'Square is not on the Free plan. No Square charge is taken here.'
+                    : 'Clients see Square only when this business’s own Square account is Ready. No Schedi Square account is charged.';
             }
+            var squareStatus = payAccountStatus(tenant, 'square');
+            var squareStatusEl = document.getElementById('tenantPaySquareStatus');
+            if (normalizePlan(tenant) === 'free') {
+                if (squareStatusEl) squareStatusEl.hidden = true;
+            } else paintPayAccountStatus(squareStatusEl, squareStatus);
+            var processor = document.getElementById('tenantCardProcessor');
+            if (processor) processor.value = tenant.cardProcessor === 'square' ? 'square' : 'stripe';
+            syncSquarePayChrome();
             if (tagInput) tagInput.value = tenant.cashAppTag || '';
             if (zelleHandleInput) zelleHandleInput.value = tenant.zelleHandle || '';
             if (zelleLinkInput) zelleLinkInput.value = tenant.zelleLink || '';
@@ -21885,11 +22051,34 @@ function schediQrCardPixels(text, color) {
                 window.__schediPaySwitchBound = true;
                 document.addEventListener('change', function (ev) {
                     syncPaySwitchAria(ev && ev.target);
+                    var id = ev && ev.target && ev.target.id;
+                    if (id === 'tenantPayCardCheck' || id === 'tenantPaySquareCheck') syncSquarePayChrome();
                 });
             }
             var root = document.getElementById('tenantPortalSection') || document;
             var nodes = root.querySelectorAll('.sd-pay-switch');
             for (var i = 0; i < nodes.length; i++) syncPaySwitchAria(nodes[i]);
+        }
+
+        function syncSquarePayChrome() {
+            var card = document.getElementById('tenantPayCardCheck');
+            var square = document.getElementById('tenantPaySquareCheck');
+            var row = document.getElementById('tenantCardProcessorRow');
+            var setup = document.getElementById('tenantPaySquareSetup');
+            var tenant = (typeof getTenant === 'function') ? getTenant() : null;
+            if (row && card && square) {
+                var show = !!(card.checked && !card.disabled && square.checked && !square.disabled);
+                row.hidden = !show;
+                row.classList.toggle('hidden', !show);
+            }
+            if (setup && tenant) {
+                var squareStatus = payAccountStatus(tenant, 'square');
+                var needs = SCHEDI_SQUARE_PUBLIC_ENABLED && normalizePlan(tenant) !== 'free' && squareStatus !== 'ready';
+                setup.hidden = !needs;
+                setup.classList.toggle('hidden', !needs);
+                var squareLink = document.getElementById('tenantPaySquareSetupLink');
+                if (squareLink) squareLink.textContent = 'Connect Square';
+            }
         }
 
 
@@ -22524,6 +22713,7 @@ function schediQrCardPixels(text, color) {
             var feeSentence = cancellationFeeSentence(tenant, booking && booking.amount);
             var payInstr = confirmEmailPaymentInstructions(tenant, booking);
             var cardPayBits = cardPayEmailBits(bookingCardPayLink(tenant, booking));
+            var squarePayBits = squarePayEmailBits(bookingSquarePayLink(tenant, booking));
             var schediMark = 'https://schedi.app/assets/homescreen-icon.png';
             var bizLogo = emailRasterSrc(tenant && (tenant.logoUrl || tenant.logo || tenant.businessLogo));
             var markUrl = bizLogo || schediMark;
@@ -22551,6 +22741,7 @@ function schediQrCardPixels(text, color) {
                 (note ? ('\nNote: ' + note + '\n') : '') +
                 (payInstr.text ? ('\n' + payInstr.text + '\n') : '') +
                 (cardPayBits.text ? (cardPayBits.text) : '') +
+                (squarePayBits.text ? (squarePayBits.text) : '') +
                 (manageUrl ? ('\nManage / reschedule / cancel:\n' + manageUrl + '\n' + (seriesLine ? (seriesLine + '\n') : '')) : '') +
                 '\nQuestions? Contact ' + ownerContactPhrase(tenant, false) + '.\n\n— ' + biz;
 
@@ -22620,6 +22811,7 @@ function schediQrCardPixels(text, color) {
                 notesHtml += '<tr><td style="padding:10px 28px 0;">' + payInstr.html + '</td></tr>';
             }
             if (cardPayBits.html) notesHtml += cardPayBits.html;
+            if (squarePayBits.html) notesHtml += squarePayBits.html;
             var footerLeft = isPending
                 ? 'We will email you when this request is accepted.'
                 : ('Questions? Contact ' + ownerContactPhrase(tenant, true) + '.');
@@ -22814,6 +23006,7 @@ function schediQrCardPixels(text, color) {
             var amountStr = formatBookingAmountLabel(booking && booking.amount);
             var payOpt = paymentOptionLabel(booking);
             var cardPayUrl = bookingCardPayLink(tenant, booking);
+            var squarePayUrl = bookingSquarePayLink(tenant, booking);
             var text = (pendingReview ? 'A client requested a time. Accept or deny it in the Appointments Roster.\n\n' : 'New booking for ' + tenant.name + '.\n\n') +
                 'Client: ' + (booking.clientName || '') + '\n' +
                 'Phone: ' + (booking.clientPhone || '') + '\n' +
@@ -22829,6 +23022,7 @@ function schediQrCardPixels(text, color) {
                 (booking.payCode ? ('Payment code: ' + booking.payCode + '\n') : '') +
                 (Number(booking.depositAmount) > 0 ? ('Deposit: $' + Number(booking.depositAmount).toFixed(2) + ' (' + (booking.depositPaid === true ? 'paid' : 'unpaid until you mark it paid') + ')\nRemaining balance: $' + (Number(booking.balanceDue) || 0).toFixed(2) + '\n') : '') +
                 (cardPayUrl ? ('Card payment link: ' + cardPayUrl + '\n') : '') +
+                (squarePayUrl ? ('Square payment link: ' + squarePayUrl + '\n') : '') +
                 '\n— Schedi';
             var html = '<div style="font-family:Inter,Arial,sans-serif;line-height:1.5;color:#0f172a">' +
                 '<h2 style="margin:0 0 12px;color:#0ea5e9">' + (isSeries ? 'New recurring booking' : 'New booking') + '</h2>' +
@@ -22846,6 +23040,7 @@ function schediQrCardPixels(text, color) {
                 '<tr><td style="padding:4px 12px 4px 0;color:#64748b">Payment status</td><td style="padding:4px 0;font-weight:600">' + esc(booking.paymentStatus || '') + '</td></tr>' +
                 (amountStr ? ('<tr><td style="padding:4px 12px 4px 0;color:#64748b">Amount</td><td style="padding:4px 0;font-weight:600">' + esc(amountStr) + '</td></tr>') : '') +
                 (cardPayUrl ? ('<tr><td style="padding:4px 12px 4px 0;color:#64748b">Card payment link</td><td style="padding:4px 0;font-weight:600"><a href="' + String(cardPayUrl).replace(/&/g, '&amp;').replace(/"/g, '&quot;') + '">' + esc(cardPayUrl) + '</a></td></tr>') : '') +
+                (squarePayUrl ? ('<tr><td style="padding:4px 12px 4px 0;color:#64748b">Square payment link</td><td style="padding:4px 0;font-weight:600"><a href="' + String(squarePayUrl).replace(/&/g, '&amp;').replace(/"/g, '&quot;') + '">' + esc(squarePayUrl) + '</a></td></tr>') : '') +
                 '</table>' +
                 '<p style="color:#64748b;font-size:13px">— Schedi</p></div>';
             return { subject: subject, text: text, html: html, replyTo: (booking.clientEmail || '') };
@@ -23941,12 +24136,14 @@ function schediQrCardPixels(text, color) {
                 wantCard = false;
                 showToast('Card checkout is on Pro only. Card was turned off.', 'error');
             }
-            if (normalizePlan(tenant) === 'free' && (wantCard || wantCash || wantZelle || wantVenmo || wantPaypal)) {
+            var wantSquare = SCHEDI_SQUARE_PUBLIC_ENABLED && normalizePlan(tenant) !== 'free' && !!(document.getElementById('tenantPaySquareCheck') && document.getElementById('tenantPaySquareCheck').checked);
+            if (normalizePlan(tenant) === 'free' && (wantCard || wantCash || wantZelle || wantVenmo || wantPaypal || wantSquare)) {
                 wantCard = false;
                 wantCash = false;
                 wantZelle = false;
                 wantVenmo = false;
                 wantPaypal = false;
+                wantSquare = false;
                 wantLater = true;
                 showToast('Free plan only allows pay at the appointment. Payment collection was not saved.', 'error');
             }
@@ -23955,8 +24152,10 @@ function schediQrCardPixels(text, color) {
             tenant.paymentGateways.zelle = wantZelle;
             tenant.paymentGateways.venmo = wantVenmo;
             tenant.paymentGateways.paypal = wantPaypal;
-            tenant.paymentGateways.square = SCHEDI_SQUARE_PUBLIC_ENABLED && !!(document.getElementById('tenantPaySquareCheck') && document.getElementById('tenantPaySquareCheck').checked);
+            tenant.paymentGateways.square = wantSquare;
             tenant.paymentGateways.later = wantLater;
+            var processorEl = document.getElementById('tenantCardProcessor');
+            tenant.cardProcessor = processorEl && processorEl.value === 'square' ? 'square' : 'stripe';
             tenant.cashAppTag = document.getElementById('tenantCashAppTagInput').value.trim();
             tenant.zelleHandle = document.getElementById('tenantZelleHandleInput').value.trim();
             tenant.zelleLink = document.getElementById('tenantZelleLinkInput').value.trim();
@@ -27937,6 +28136,10 @@ function schediQrCardPixels(text, color) {
         }
         html.schedi-newbook #paymentMethodsGrid > button { border-radius: 12px; min-height: 44px; }
         html.schedi-newbook #timeSlotsContainer button { border-radius: 12px; min-height: 44px; }
+        #securePayScreen { display: none; }
+        html.schedi-pay-handoff #securePayScreen { display: flex; position: fixed; inset: 0; z-index: 80; align-items: center; justify-content: center; padding: 24px; background: #020617; }
+        html.schedi-pay-handoff body > header,
+        html.schedi-pay-handoff body > main { display: none !important; }
         @media (max-width: 640px) {
             html.schedi-newbook header { padding-left: 12px; padding-right: 12px; }
             html.schedi-newbook main { padding-left: 12px; padding-right: 12px; }
@@ -27945,6 +28148,14 @@ function schediQrCardPixels(text, color) {
     </style>
 </head>
 <body class="min-h-screen flex flex-col justify-between selection:bg-emerald-500 selection:text-slate-950">
+
+    <div id="securePayScreen" role="status">
+        <div style="max-width:24rem;text-align:center">
+            <p style="margin:0 0 8px;font-size:22px;font-weight:800;color:#fff">Taking you to secure payment…</p>
+            <p data-pay-detail class="pub-banner pub-banner-info" style="margin:0;font-size:14px;line-height:1.5;color:#c7d2fe">Nothing is charged until Stripe opens.</p>
+            <p data-pay-error class="pub-banner pub-banner-err" hidden style="margin:8px 0 0;font-size:14px;line-height:1.5">Card checkout did not open. Nothing was charged.</p>
+        </div>
+    </div>
 
     <header class="sticky top-0 z-40 glass-card border-b border-slate-800 px-4 py-2.5">
         <div class="max-w-4xl mx-auto flex flex-wrap items-center justify-between gap-2">
@@ -28228,7 +28439,7 @@ function schediQrCardPixels(text, color) {
                 </div>
                 <p id="resCheckoutError" role="alert" class="hidden text-rose-300 font-semibold"></p>
                 <a id="resCheckoutBtn" href="#" target="_top" rel="noopener" class="block w-full mt-2 py-2.5 rounded-xl bg-indigo-500 hover:bg-indigo-400 text-white font-black text-center transition-all">
-                    Continue to secure payment
+                    Pay now
                 </a>
             </div>
 
@@ -28394,7 +28605,7 @@ function schediQrCardPixels(text, color) {
         }
         var SCHEDI_NEWBOOK = ${schediNewBook ? 'true' : 'false'};
         var SCHEDI_DEMO = ${(typeof window !== 'undefined' && window.__SCHEDI_DEMO) ? 'true' : 'false'};
-        var SCHEDI_SQUARE_PUBLIC_ENABLED = false;
+        var SCHEDI_SQUARE_PUBLIC_ENABLED = true;
         try {
             var bookQuery = new URLSearchParams(location.search || '');
             var newBookFlag = bookQuery.get('newbook');
@@ -28426,9 +28637,22 @@ function schediQrCardPixels(text, color) {
             if (PUBLIC_DEPOSIT_METHODS.indexOf(key) === -1) return false;
             return publicDepositMethodMap()[key] === true;
         }
-        function publicSquareOffered() {
+        function publicCardProcessor() {
+            var raw = String(tenantData && tenantData.cardProcessor || '').toLowerCase();
+            return raw === 'square' ? 'square' : 'stripe';
+        }
+        function publicStripeRailReady(cardOn, plan) {
+            return cardOn === true && plan === 'pro' && !!(tenantData && tenantData.stripeConnectReady === true);
+        }
+        function publicSquareRailReady() {
             var pg = (tenantData && tenantData.paymentGateways) || {};
-            return SCHEDI_NEWBOOK && SCHEDI_SQUARE_PUBLIC_ENABLED === true && pg.square === true;
+            return SCHEDI_SQUARE_PUBLIC_ENABLED === true && pg.square === true && !!(tenantData && tenantData.squareReady === true);
+        }
+        function publicSquareOffered() {
+            if (!SCHEDI_NEWBOOK || !publicSquareRailReady()) return false;
+            var pg = (tenantData && tenantData.paymentGateways) || {};
+            if (publicStripeRailReady(pg.card === true, bookingPlan()) && publicCardProcessor() !== 'square') return false;
+            return true;
         }
         function publicSvcIcon(svc) {
             if (!SCHEDI_NEWBOOK || !svc) return '';
@@ -28549,6 +28773,107 @@ function schediQrCardPixels(text, color) {
             var url = 'https://schedi.app/' + safeSlug + '/?pay=checkout&booking=' + encodeURIComponent(ids[0]) + '&kind=' + kind;
             if (ids.length > 1) url += '&bookings=' + encodeURIComponent(ids.slice(1).join(','));
             return url;
+        }
+
+        function schediCardPayHref(value) {
+            var candidate = String(value || '');
+            if (!/^https:\\/\\/(www\\.)?schedi\\.app\\//.test(candidate)) return false;
+            if (candidate.indexOf('stripe.com') !== -1) return false;
+            if (candidate.indexOf('pay=checkout') !== -1) return true;
+            return candidate.indexOf('/billing/card-pay?') !== -1;
+        }
+
+        function cardPayApiUrl(slug, bookingIds, token, kind) {
+            var safeSlug = String(slug || '').trim().toLowerCase();
+            if (!/^[a-z0-9](?:[a-z0-9-]{0,40})$/.test(safeSlug)) return '';
+            if (kind !== 'deposit' && kind !== 'card') return '';
+            var tok = String(token || '').trim();
+            if (!/^[A-Za-z0-9_-]{16,128}$/.test(tok)) return '';
+            var ids = [];
+            var list = Array.isArray(bookingIds) ? bookingIds : [bookingIds];
+            for (var i = 0; i < list.length; i++) {
+                var id = String(list[i] || '').trim();
+                if (!/^[A-Za-z0-9_-]{4,40}$/.test(id) || ids.indexOf(id) !== -1) continue;
+                ids.push(id);
+                if (ids.length === 12) break;
+            }
+            if (!ids.length) return '';
+            var url = 'https://schedi.app/billing/card-pay?t=' + encodeURIComponent(safeSlug)
+                + '&b=' + encodeURIComponent(ids[0])
+                + '&k=' + encodeURIComponent(tok)
+                + '&kind=' + kind;
+            if (ids.length > 1) url += '&ids=' + encodeURIComponent(ids.slice(1).join(','));
+            return url;
+        }
+
+        function cardNowConfirmNote(quote, emailed) {
+            var note = "You'll pay now by card.";
+            if (quote && quote.required) {
+                var dep = Number(quote.deposit);
+                if (isFinite(dep)) note += ' The deposit is $' + dep.toFixed(2) + '.';
+                var bal = quote.balance;
+                if (bal != null && isFinite(Number(bal))) note += ' $' + Number(bal).toFixed(2) + ' is due at the appointment.';
+                else note += ' The rest is due at the appointment.';
+            }
+            if (emailed) note += ' We emailed you a secure payment link.';
+            return note;
+        }
+
+        function schediSquarePayHref(value) {
+            var candidate = String(value || '');
+            if (!/^https:\\/\\/(www\\.)?schedi\\.app\\/api\\/square\\/pay\\?/.test(candidate)) return false;
+            if (candidate.indexOf('stripe.com') !== -1) return false;
+            if (candidate.indexOf('squareup.com') !== -1) return false;
+            return candidate.indexOf('t=') !== -1 && candidate.indexOf('b=') !== -1 && candidate.indexOf('k=') !== -1;
+        }
+
+        function squarePayApiUrl(slug, bookingIds, token, kind) {
+            var safeSlug = String(slug || '').trim().toLowerCase();
+            if (!/^[a-z0-9](?:[a-z0-9-]{0,40})$/.test(safeSlug)) return '';
+            if (kind !== 'deposit' && kind !== 'card') return '';
+            var tok = String(token || '').trim();
+            if (!/^[A-Za-z0-9_-]{16,128}$/.test(tok)) return '';
+            var ids = [];
+            var list = Array.isArray(bookingIds) ? bookingIds : [bookingIds];
+            for (var i = 0; i < list.length; i++) {
+                var id = String(list[i] || '').trim();
+                if (!/^[A-Za-z0-9_-]{4,40}$/.test(id) || ids.indexOf(id) !== -1) continue;
+                ids.push(id);
+                if (ids.length === 12) break;
+            }
+            if (!ids.length) return '';
+            var url = 'https://schedi.app/api/square/pay?t=' + encodeURIComponent(safeSlug)
+                + '&b=' + encodeURIComponent(ids[0])
+                + '&k=' + encodeURIComponent(tok)
+                + '&kind=' + kind;
+            if (ids.length > 1) url += '&ids=' + encodeURIComponent(ids.slice(1).join(','));
+            return url;
+        }
+
+        function openSchediSquarePay(href) {
+            var target = String(href || '');
+            if (!schediSquarePayHref(target)) return false;
+            try {
+                if (window.top && window.top !== window) {
+                    window.top.location.assign(target);
+                    return true;
+                }
+            } catch (err) {}
+            window.location.assign(target);
+            return true;
+        }
+
+        function openSchediCardPay(href) {
+            var target = String(href || '');
+            if (target.indexOf('https://schedi.app/billing/card-pay?') !== 0 && target.indexOf('https://www.schedi.app/billing/card-pay?') !== 0) return false;
+            try {
+                if (window.top && window.top !== window) {
+                    window.top.location.assign(target);
+                    return true;
+                }
+            } catch (err) {}
+            window.location.assign(target);
+            return true;
         }
 
         function visibleCardPayLink(stripeUrl, durable) {
@@ -28688,7 +29013,7 @@ function schediQrCardPixels(text, color) {
                         type: mailType || 'mail', ownerTenantId: tenantData.id || '', tenantId: tenantData.id || '', bookingId: (booking && booking.id) || '',
                         manageToken: (booking && booking.manageToken) || ''
                     };
-                    if (paymentLink && /^https:\\/\\/(www\\.)?schedi\\.app\\//.test(String(paymentLink)) && String(paymentLink).indexOf('pay=checkout') !== -1) {
+                    if (paymentLink && schediCardPayHref(paymentLink)) {
                         mailObj.paymentLink = String(paymentLink);
                     }
                     if (toOwnerFlag) mailObj.toOwner = true;
@@ -28732,14 +29057,19 @@ function schediQrCardPixels(text, color) {
 
             var clientTo = (booking && booking.clientEmail) ? String(booking.clientEmail).trim() : '';
             var cardPayUrl = '';
+            var squarePayUrl = '';
             var cardLinkLater = false;
-            if (booking && String(booking.paymentMethod || '').toLowerCase() === 'card') {
+            if (booking && tenantData.squareReady === true && String(booking.paymentMethod || '').toLowerCase() === 'square') {
+                var squareCandidate = String(booking.squarePayLink || '');
+                if (schediSquarePayHref(squareCandidate)) squarePayUrl = squareCandidate;
+            }
+            if (booking && tenantData.stripeConnectReady === true && String(booking.paymentMethod || '').toLowerCase() === 'card') {
                 var cardPayStatus = String(booking.paymentStatus || '').toUpperCase();
                 if (cardPayStatus.indexOf('AWAITING CARD LINK') !== -1) {
                     cardLinkLater = true;
                 } else {
                     var candidate = String(booking.cardPayLink || '');
-                    if (/^https:\\/\\/(www\\.)?schedi\\.app\\//.test(candidate) && candidate.indexOf('pay=checkout') !== -1 && candidate.indexOf('stripe.com') === -1) {
+                    if (schediCardPayHref(candidate)) {
                         cardPayUrl = candidate;
                     }
                 }
@@ -28863,6 +29193,7 @@ function schediQrCardPixels(text, color) {
                     (depositInstr ? (depositInstr + nl) : '') +
                     (cardLinkLater ? (cardLinkLaterCopy + nl) : '') +
                     (cardPayUrl ? ('Pay by card:' + nl + cardPayUrl + nl) : '') +
+                    (squarePayUrl ? ('Pay with Square:' + nl + squarePayUrl + nl) : '') +
                     (feeSentence ? (feeSentence + nl) : '') +
                     (extra ? (nl + 'Note: ' + extra + nl) : '') +
                     (manageUrl ? (nl + 'Manage / reschedule / cancel:' + nl + manageUrl + nl + (isSeries ? ('This is one saved record in a recurring series. Cancelling or rescheduling updates this record only, not other visits.' + nl) : '')) : '') +
@@ -28946,6 +29277,16 @@ function schediQrCardPixels(text, color) {
                         + '<p style="margin:10px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#64748b;">Or copy this link: ' + safe(cardPayUrl) + '</p>'
                         + '</td></tr>';
                 }
+                if (squarePayUrl) {
+                    var squareHref = String(squarePayUrl).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+                    notesHtml += '<tr><td align="center" style="padding:8px 28px 4px;">'
+                        + '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"><tr>'
+                        + '<td align="center" bgcolor="#111827" style="background-color:#111827;border-radius:14px;">'
+                        + '<a href="' + squareHref + '" style="display:block;padding:14px 18px;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;">Pay with Square</a>'
+                        + '</td></tr></table>'
+                        + '<p style="margin:10px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#64748b;">Or copy this link: ' + safe(squarePayUrl) + '</p>'
+                        + '</td></tr>';
+                }
                 if (depositInstr) notesHtml += '<tr><td style="padding:8px 28px 0;"><div style="padding:12px 14px;border-radius:10px;background-color:#111c33;border:1px solid #334155;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#e2e8f0;">' + safe(depositInstr) + '</div></td></tr>';
                 if (feeSentence) notesHtml += '<tr><td style="padding:8px 28px 0;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#94a3b8;">' + safe(feeSentence) + '</td></tr>';
                 if (extra) notesHtml += '<tr><td style="padding:10px 28px 0;"><div style="padding:12px 14px;border-radius:10px;background-color:#111c33;border:1px solid #334155;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#cbd5e1;">' + safe(extra) + '</div></td></tr>';
@@ -29003,6 +29344,7 @@ function schediQrCardPixels(text, color) {
                     (booking.payCode ? ('Payment code: ' + booking.payCode + nl) : '') +
                     (depositInstr ? (depositInstr + nl) : '') +
                     (cardPayUrl ? ('Card payment link: ' + cardPayUrl + nl) : '') +
+                    (squarePayUrl ? ('Square payment link: ' + squarePayUrl + nl) : '') +
                     nl + '— Schedi';
                 var oHtml = '<div style="font-family:Arial,sans-serif;line-height:1.5">' +
                     '<h2 style="color:#0ea5e9">' + (isSeries ? 'New recurring booking' : 'New booking') + '</h2>' +
@@ -29018,7 +29360,8 @@ function schediQrCardPixels(text, color) {
                     '<strong>Payment option:</strong> ' + safe(payOpt) + '<br>' +
                     '<strong>Payment status:</strong> ' + safe(booking.paymentStatus || '') +
                     (amountStr ? ('<br><strong>Amount:</strong> ' + safe(amountStr)) : '') +
-                    (cardPayUrl ? ('<br><strong>Card payment link:</strong> <a href="' + String(cardPayUrl).replace(/&/g, '&amp;').replace(/"/g, '&quot;') + '">' + safe(cardPayUrl) + '</a>') : '') + '</p>' +
+                    (cardPayUrl ? ('<br><strong>Card payment link:</strong> <a href="' + String(cardPayUrl).replace(/&/g, '&amp;').replace(/"/g, '&quot;') + '">' + safe(cardPayUrl) + '</a>') : '') +
+                    (squarePayUrl ? ('<br><strong>Square payment link:</strong> <a href="' + String(squarePayUrl).replace(/&/g, '&amp;').replace(/"/g, '&quot;') + '">' + safe(squarePayUrl) + '</a>') : '') + '</p>' +
                     '<p>— Schedi</p></div>';
                 dispatchStandaloneMail(ownerTo, oSubject, oText, oHtml, 'owner_booking_alert', (booking.clientEmail || ''), cardPayUrl);
 
@@ -30587,15 +30930,21 @@ function paintBizHeader() {
                 var extraIds = (typeof SCHEDULE_PAY_BOOKINGS !== 'undefined') ? String(SCHEDULE_PAY_BOOKINGS || '') : '';
                 var resumeKind = (typeof SCHEDULE_PAY_KIND !== 'undefined' && SCHEDULE_PAY_KIND === 'deposit') ? 'deposit' : 'full';
                 var resumeIds = [resumeId].concat(extraIds ? extraIds.split(',') : []).map(function (id) { return String(id || '').trim(); }).filter(Boolean);
-                var resumeBanner = document.createElement('div');
-                resumeBanner.setAttribute('role', 'status');
-                resumeBanner.style.margin = '12px auto';
-                resumeBanner.style.maxWidth = '56rem';
-                resumeBanner.style.padding = '0 16px';
-                resumeBanner.innerHTML = '<div class="pub-banner pub-banner-info" style="padding:12px;border-radius:12px;border:1px solid rgba(99,102,241,.35);background:rgba(99,102,241,.12);color:#c7d2fe;font-size:12px;font-weight:600">Opening secure card checkout…</div>';
-                var resumeHeader = document.querySelector('header');
-                if (resumeHeader && resumeHeader.parentNode) resumeHeader.parentNode.insertBefore(resumeBanner, resumeHeader.nextSibling);
+                document.documentElement.classList.add('schedi-pay-handoff');
+                var payScreen = document.getElementById('securePayScreen');
+                function paintPayHandoff(message, failed) {
+                    document.documentElement.classList.add('schedi-pay-handoff');
+                    if (!payScreen) return;
+                    var detail = payScreen.querySelector('[data-pay-detail]');
+                    if (!detail) return;
+                    detail.textContent = message;
+                    detail.className = failed ? 'pub-banner pub-banner-err' : 'pub-banner pub-banner-info';
+                    detail.style.color = failed ? '#fecdd3' : '#c7d2fe';
+                    var errLine = payScreen.querySelector('[data-pay-error]');
+                    if (errLine) errLine.hidden = !failed;
+                }
                 if (resumeIds.length) {
+                    paintPayHandoff('Nothing is charged until Stripe opens.', false);
                     requestPublicCardCheckout({
                         tenantId: tenantData.id,
                         slug: tenantData.slug || tenantData.id,
@@ -30606,10 +30955,10 @@ function paintBizHeader() {
                         chargeKind: resumeKind
                     }).then(function (out) {
                         if (out && out.url && assignTopStripe(out.url)) return;
-                        resumeBanner.innerHTML = '<div role="alert" class="pub-banner pub-banner-err" style="padding:12px;border-radius:12px;border:1px solid rgba(244,63,94,.35);background:rgba(244,63,94,.12);color:#fecdd3;font-size:12px;font-weight:600">Card checkout did not open. This booking page is still here. Nothing was charged.</div>';
+                        paintPayHandoff('Card checkout did not open. Nothing was charged. Open the payment link from your email again.', true);
                     });
                 } else {
-                    resumeBanner.innerHTML = '<div role="alert" class="pub-banner pub-banner-err" style="padding:12px;border-radius:12px;border:1px solid rgba(244,63,94,.35);background:rgba(244,63,94,.12);color:#fecdd3;font-size:12px;font-weight:600">This payment link is missing a booking reference. Nothing was charged.</div>';
+                    paintPayHandoff('This payment link is missing a booking reference. Nothing was charged.', true);
                 }
             }
 
@@ -31078,7 +31427,8 @@ function paintBizHeader() {
             } catch (e2) { fallback(); }
         };
         function cardPayMode(price, depositRequired, cardOn, plan) {
-            if (cardOn !== true || plan !== 'pro') return 'off';
+            if (cardOn !== true || plan !== 'pro' || tenantData.stripeConnectReady !== true) return 'off';
+            if (publicSquareRailReady() && publicCardProcessor() === 'square') return 'off';
             if (depositRequired === true) return 'now';
             if (price !== null && price !== undefined && Number(price) >= 0.5) return 'now';
             if (price === null || price === undefined) return 'link';
@@ -31472,15 +31822,84 @@ function paintBizHeader() {
                 var refId = booking.id;
                 var cardPayKind = (payByCard && depositQuote.required) ? 'deposit' : 'card';
                 var startPayNowCheckout = null;
-                var cardPayUrl = (payByCard && !linkLater)
-                    ? durableCardPayLink(String(tenantData.slug || tenantData.id || ''), bookings.map(function (item) { return item.id; }), cardPayKind)
-                    : '';
+                var cardPayIds = bookings.map(function (item) { return item.id; });
+                var cardPayUrl = '';
+                if (payByCard && !linkLater) {
+                    cardPayUrl = cardPayApiUrl(String(tenantData.slug || tenantData.id || ''), cardPayIds, booking.manageToken, cardPayKind)
+                        || durableCardPayLink(String(tenantData.slug || tenantData.id || ''), cardPayIds, cardPayKind);
+                }
                 if (cardPayUrl) bookings.forEach(function (item) { item.cardPayLink = cardPayUrl; });
+                var squareChargeCents = 0;
+                if (selectedPay === 'square') {
+                    var squareDollars = Number(bookingAmount);
+                    if (isFinite(squareDollars) && squareDollars > 0) squareChargeCents = Math.round(squareDollars * 100);
+                }
+                var squarePayUrl = '';
+                if (selectedPay === 'square' && squareChargeCents >= 50) {
+                    squarePayUrl = squarePayApiUrl(String(tenantData.slug || tenantData.id || ''), cardPayIds, booking.manageToken, 'card');
+                }
+                if (squarePayUrl) bookings.forEach(function (item) { item.squarePayLink = squarePayUrl; });
                 var cardChargeCents = 0;
                 if (payByCard) {
                     var cardDollars = depositQuote.required ? depositQuote.deposit : Number(bookingAmount);
                     if (isFinite(cardDollars) && cardDollars > 0) cardChargeCents = Math.round(cardDollars * 100);
                 }
+                var openPayNowCheckout = function () {
+                    var checkoutErr = document.getElementById('resCheckoutError');
+                    var checkoutBtn = document.getElementById('resCheckoutBtn');
+                    var payLinkEl = document.getElementById('resCardPayLink');
+                    if (checkoutErr) checkoutErr.classList.add('hidden');
+                    if (checkoutBtn) checkoutBtn.textContent = 'Taking you to secure payment…';
+                    var headingNow = document.getElementById('confirmationHeading');
+                    if (headingNow) headingNow.textContent = 'Taking you to secure payment…';
+                    if (openSchediCardPay(cardPayUrl)) return Promise.resolve();
+                    return requestPublicCardCheckout({
+                        tenantId: tenantData.id,
+                        slug: tenantData.slug || tenantData.id,
+                        bookingIds: cardPayIds,
+                        email: email,
+                        serviceName: booking.serviceName,
+                        amountCents: cardChargeCents,
+                        chargeKind: depositQuote.required ? 'deposit' : 'full'
+                    }).then(function (out) {
+                        var shown = visibleCardPayLink(out && out.url, cardPayUrl);
+                        if (payLinkEl && shown) {
+                            payLinkEl.textContent = shown;
+                            payLinkEl.href = shown;
+                            payLinkEl.target = '_top';
+                        }
+                        if (out && out.url && assignTopStripe(out.url)) return;
+                        if (openSchediCardPay(cardPayUrl)) return;
+                        if (checkoutBtn) checkoutBtn.textContent = 'Pay now';
+                        if (out && out.error === 'already_paid') {
+                            if (checkoutErr) {
+                                checkoutErr.textContent = 'That card payment is already paid.';
+                                checkoutErr.classList.remove('hidden');
+                            }
+                            return;
+                        }
+                        if (checkoutErr) {
+                            checkoutErr.textContent = 'Card checkout did not open. The payment link above still works. Nothing was charged.';
+                            checkoutErr.classList.remove('hidden');
+                        }
+                        var missed = document.getElementById('confirmationNote');
+                        if (missed) {
+                            var missedText = "You'll pay now by card. Checkout did not open, so we emailed you a secure payment link. Nothing is charged until you open it.";
+                            if (bookingIsPendingReview) missedText += ' The business still needs to accept this time.';
+                            missed.textContent = missedText;
+                            missed.classList.remove('hidden');
+                        }
+                    });
+                };
+                var openSquarePayNow = function () {
+                    var squareBtn = document.getElementById('resCheckoutBtn');
+                    if (squareBtn) squareBtn.textContent = 'Taking you to secure payment…';
+                    var squareHeading = document.getElementById('confirmationHeading');
+                    if (squareHeading) squareHeading.textContent = 'Taking you to secure payment…';
+                    openSchediSquarePay(squarePayUrl);
+                };
+                if (cardChargeCents >= 50) startPayNowCheckout = openPayNowCheckout;
+                if (selectedPay === 'square' && squareChargeCents >= 50) startPayNowCheckout = openSquarePayNow;
 
                 tenantData.publicSlots = tenantData.publicSlots || [];
                 bookings.forEach(function (b) {
@@ -31509,7 +31928,7 @@ function paintBizHeader() {
                         var saved = list.map(function (item) {
                             var copy = {};
                             for (var key in item) {
-                                if (Object.prototype.hasOwnProperty.call(item, key) && key !== 'cardPayLink') copy[key] = item[key];
+                                if (Object.prototype.hasOwnProperty.call(item, key) && key !== 'cardPayLink' && key !== 'squarePayLink') copy[key] = item[key];
                             }
                             return copy;
                         });
@@ -31622,15 +32041,24 @@ function paintBizHeader() {
                 var headingEl = document.getElementById('confirmationHeading');
                 var noteEl = document.getElementById('confirmationNote');
                 if (payByCard) {
+                    var cardMailOn = !(tenantData.notifications && tenantData.notifications.emailConfirmations === false);
                     var cardNote = linkLater
                         ? "Pay by card: we'll email you a secure payment link once your price is confirmed."
-                        : (depositQuote.required
-                            ? ("You'll pay now by card. The deposit is $" + depositQuote.deposit.toFixed(2) + '. $' + depositQuote.balance.toFixed(2) + ' is due at the appointment.')
-                            : "You'll pay now by card.");
+                        : cardNowConfirmNote(depositQuote, !!(cardPayUrl && cardMailOn));
                     if (bookingIsPendingReview) cardNote += ' The business still needs to accept this time.';
-                    if (headingEl) headingEl.textContent = 'Booking Requested';
+                    if (headingEl) headingEl.textContent = linkLater ? 'Booking Requested' : 'Taking you to secure payment…';
                     if (noteEl) {
                         noteEl.textContent = cardNote;
+                        noteEl.classList.remove('hidden');
+                    }
+                } else if (selectedPay === 'square' && squarePayUrl) {
+                    var squareMailOn = !(tenantData.notifications && tenantData.notifications.emailConfirmations === false);
+                    var squareNote = "You'll pay now with Square.";
+                    if (squareMailOn) squareNote += ' We emailed you a secure payment link.';
+                    if (bookingIsPendingReview) squareNote += ' The business still needs to accept this time.';
+                    if (headingEl) headingEl.textContent = 'Taking you to secure payment…';
+                    if (noteEl) {
+                        noteEl.textContent = squareNote;
                         noteEl.classList.remove('hidden');
                     }
                 } else if (bookingIsPendingReview) {
@@ -31766,42 +32194,42 @@ function paintBizHeader() {
 
                         var checkoutBtn = document.getElementById('resCheckoutBtn');
                         if (checkoutBtn) {
-                            checkoutBtn.textContent = 'Continue to secure payment';
+                            checkoutBtn.textContent = 'Pay now';
                             checkoutBtn.target = '_top';
                             checkoutBtn.href = cardPayUrl || '#';
-                            function openPayNowCheckout() {
-                                if (checkoutErr) checkoutErr.classList.add('hidden');
-                                checkoutBtn.textContent = 'Opening secure checkout...';
-                                return requestPublicCardCheckout({
-                                    tenantId: tenantData.id,
-                                    slug: tenantData.slug || tenantData.id,
-                                    bookingIds: bookings.map(function (item) { return item.id; }),
-                                    email: email,
-                                    serviceName: booking.serviceName,
-                                    amountCents: cardChargeCents,
-                                    chargeKind: depositQuote.required ? 'deposit' : 'full'
-                                }).then(function (out) {
-                                    paintPayLink(out && out.url);
-                                    if (out && out.url && assignTopStripe(out.url)) return;
-                                    checkoutBtn.textContent = 'Continue to secure payment';
-                                    if (out && out.error === 'already_paid') {
-                                        showCheckoutError('That card payment is already paid.');
-                                        return;
-                                    }
-                                    showCheckoutError('Card checkout did not open. The payment link above still works. Nothing was charged.');
-                                    var missed = document.getElementById('confirmationNote');
-                                    if (missed) {
-                                        var missedText = "You'll pay now by card. Checkout did not open, so we emailed you a secure payment link. Nothing is charged until you open it.";
-                                        if (bookingIsPendingReview) missedText += ' The business still needs to accept this time.';
-                                        missed.textContent = missedText;
-                                        missed.classList.remove('hidden');
-                                    }
-                                });
-                            }
-                            if (cardChargeCents >= 50) startPayNowCheckout = openPayNowCheckout;
                             checkoutBtn.onclick = function (ev) {
                                 ev.preventDefault();
                                 openPayNowCheckout();
+                            };
+                        }
+                    }
+                } else if (selectedPay === 'square' && squarePayUrl) {
+                    if (cardReceiptBox) {
+                        cardReceiptBox.classList.remove('hidden');
+                        var squareShow = bookingAmount;
+                        document.getElementById('resCardAmountLabel').textContent = (squareShow == null ? '—' : ('$' + Number(squareShow).toFixed(2)));
+                        var squareLinkEl = document.getElementById('resCardPayLink');
+                        var squareCopyBtn = document.getElementById('resCardPayCopyBtn');
+                        if (squareLinkEl) {
+                            squareLinkEl.textContent = squarePayUrl;
+                            squareLinkEl.href = squarePayUrl;
+                            squareLinkEl.target = '_top';
+                        }
+                        if (squareCopyBtn) {
+                            squareCopyBtn.onclick = function () {
+                                copyTextToClipboard(squarePayUrl);
+                                squareCopyBtn.textContent = 'Copied';
+                                setTimeout(function () { squareCopyBtn.textContent = 'Copy payment link'; }, 1500);
+                            };
+                        }
+                        var squareCheckoutBtn = document.getElementById('resCheckoutBtn');
+                        if (squareCheckoutBtn) {
+                            squareCheckoutBtn.textContent = 'Pay now';
+                            squareCheckoutBtn.target = '_top';
+                            squareCheckoutBtn.href = squarePayUrl;
+                            squareCheckoutBtn.onclick = function (ev) {
+                                ev.preventDefault();
+                                openSquarePayNow();
                             };
                         }
                     }

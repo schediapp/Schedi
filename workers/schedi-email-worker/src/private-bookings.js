@@ -143,7 +143,7 @@ const BOOKING_KEYS = [
   'date', 'time', 'paymentStatus', 'paymentMethod', 'paymentOptionLabel', 'paidMethod', 'amount', 'durationMins',
   'status', 'seriesId', 'recurrence', 'depositAmount', 'depositPaid', 'balanceDue', 'cancelled', 'noShow',
   'cancelledAt', 'cancelledBy', 'reminderSentAt', 'smsReminderSentAt', 'smsConfirmSentAt',
-  'depositConfirmSentAt', 'notes', 'createdAt', 'walkIn',
+  'depositConfirmSentAt', 'paymentReceivedSentAt', 'notes', 'createdAt', 'walkIn',
   'depositNudgeSentAt', 'depositDayBeforeSentAt', 'depositOwnerWarnSentAt', 'depositExpiredAt',
   'payCode',
   'stripeCustomerId', 'stripePaymentMethodId', 'stripePaymentIntentId',
@@ -1277,7 +1277,7 @@ export async function handlePrivateBookingHttp(request, env, origin, path, deps,
       if (itemsErr) return respond(json, { ok: false, error: itemsErr }, 400, origin, isAllowedOrigin);
       const planErr = proOnlyBookingError(tenant, booking);
       if (planErr) return respond(json, { ok: false, error: planErr }, 403, origin, isAllowedOrigin);
-      const squareErr = squareClientBookingError(booking);
+      const squareErr = squareClientBookingError(booking, tenant);
       if (squareErr) return respond(json, { ok: false, error: squareErr }, 400, origin, isAllowedOrigin);
       if (existing.some((a) => a && a.id === booking.id) || created.some((a) => a.id === booking.id)) {
         return respond(json, { ok: false, error: 'duplicate_booking' }, 409, origin, isAllowedOrigin);
@@ -1343,14 +1343,14 @@ export async function handlePrivateBookingHttp(request, env, origin, path, deps,
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
       return respond(json, { ok: false, error: 'email_required' }, 400, origin, isAllowedOrigin);
     }
+    if (tenant.stripeConnectReady !== true) {
+      return respond(json, {
+        ok: false,
+        error: 'connect_not_ready',
+        message: 'Card payments are not ready for this business. Nothing was charged.',
+      }, 409, origin, isAllowedOrigin);
+    }
     const dollars = cents / 100;
-    appts[idx] = Object.assign({}, booking, {
-      amount: dollars,
-      paymentMethod: 'card',
-      paymentStatus: 'AWAITING CARD CHECKOUT',
-      paymentOptionLabel: 'Card',
-    });
-    const persisted = await persistTenantAppointments(env, idToken, tenantId, appts);
     const slug = String((tenant.slug || tenant.id || tenantId) || '').trim().toLowerCase();
     const fetchImpl = typeof deps.fetchImpl === 'function' ? deps.fetchImpl : fetch;
     const link = await createQuotedPayLink(fetchImpl, {
@@ -1361,7 +1361,20 @@ export async function handlePrivateBookingHttp(request, env, origin, path, deps,
       serviceName: booking.serviceName || 'Appointment',
       amountCents: cents,
     });
-    if (!link.url) return respond(json, { ok: false, error: 'link_unavailable' }, 502, origin, isAllowedOrigin);
+    if (!link.url) {
+      return respond(json, {
+        ok: false,
+        error: 'connect_not_ready',
+        message: 'Card payments are not ready for this business. Nothing was charged.',
+      }, 409, origin, isAllowedOrigin);
+    }
+    appts[idx] = Object.assign({}, booking, {
+      amount: dollars,
+      paymentMethod: 'card',
+      paymentStatus: 'AWAITING CARD CHECKOUT',
+      paymentOptionLabel: 'Card',
+    });
+    const persisted = await persistTenantAppointments(env, idToken, tenantId, appts);
     if (typeof deps.sendResend !== 'function') {
       return respond(json, { ok: false, error: 'email_unavailable', url: link.url, amount: dollars }, 500, origin, isAllowedOrigin);
     }

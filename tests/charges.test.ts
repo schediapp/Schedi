@@ -79,6 +79,8 @@ describe("direct client charges", () => {
     expect(request.params.line_items?.[0]).toMatchObject({
       price_data: { unit_amount: 8000, product_data: { name: "Northwind Cuts — Haircut" } },
     });
+    expect(request.params.customer_email).toBe("casey@example.com");
+    expect(request.params.payment_intent_data?.receipt_email).toBe("casey@example.com");
     expect(request.options).toMatchObject({ stripeAccount: "acct_northwind" });
     expect(keysDeep(request.params).has("application_fee_amount")).toBe(false);
   });
@@ -153,9 +155,9 @@ describe("direct client charges", () => {
     }
   });
 
-  it("does not start a card checkout before both capabilities are active", async () => {
+  it("does not start a card checkout before charges are enabled", async () => {
     const store = memoryStore();
-    const { business, service } = seedProBusiness(store, { payoutsStatus: "pending" });
+    const { business, service } = seedProBusiness(store, { cardPaymentsStatus: "pending", payoutsStatus: "pending" });
     const stripe = createFakeStripe();
     const slot = upcomingSlots(now, new Set())[0]!;
 

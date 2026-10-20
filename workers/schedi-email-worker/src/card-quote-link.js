@@ -1,8 +1,8 @@
 /**
  * Unpriced card bookings: the client asks to pay by card, and the owner later
  * emails a short Stripe Payment Link for the amount they enter.
- * Connect (buy.stripe.com) is tried first, the same way a deposit link is built.
- * A 409 from Connect falls back to the schedi.app pay link. It is not a failure.
+ * The link is a direct charge on the connected account (buy.stripe.com).
+ * A Connect miss is a refusal. Client charges never fall back to the platform account.
  */
 
 export const CARD_LINK_LATER_COPY = "Pay by card: we'll email you a secure payment link once your price is confirmed.";
@@ -76,14 +76,6 @@ export function awaitingCardQuote(booking) {
   return status.indexOf("AWAITING CARD LINK") !== -1 || status.indexOf("AWAITING CARD CHECKOUT") !== -1;
 }
 
-export function durableQuotedPayLink(slug, bookingId) {
-  const safeSlug = String(slug || "").trim().toLowerCase();
-  const id = String(bookingId || "").trim();
-  if (!/^[a-z0-9](?:[a-z0-9-]{0,40})$/.test(safeSlug)) return "";
-  if (!/^[A-Za-z0-9_-]{4,40}$/.test(id)) return "";
-  return "https://schedi.app/" + safeSlug + "/?pay=checkout&booking=" + encodeURIComponent(id) + "&kind=card";
-}
-
 export function isShortStripePayUrl(value) {
   try {
     const url = new URL(String(value || ""));
@@ -104,11 +96,12 @@ function escapeHtml(value) {
 
 /**
  * Short Payment Link on the connected account. Any Connect miss, including 409
- * connect_unavailable, keeps the schedi.app link the deposit emails already use.
+ * connect_unavailable, returns no URL. Nothing is charged on the platform account.
  */
 export async function createQuotedPayLink(fetchImpl, input) {
-  const durable = durableQuotedPayLink(input && input.slug, input && input.bookingId);
-  if (!durable) return { url: "", via: "", connectStatus: 0 };
+  const slugOk = /^[a-z0-9](?:[a-z0-9-]{0,40})$/.test(String((input && input.slug) || "").trim().toLowerCase());
+  const idOk = /^[A-Za-z0-9_-]{4,40}$/.test(String((input && input.bookingId) || "").trim());
+  if (!slugOk || !idOk) return { url: "", via: "", connectStatus: 0, error: "connect_not_ready" };
   const call = typeof fetchImpl === "function" ? fetchImpl : fetch;
   let status = 0;
   try {
@@ -134,7 +127,7 @@ export async function createQuotedPayLink(fetchImpl, input) {
   } catch (_) {
     status = 0;
   }
-  return { url: durable, via: "platform", connectStatus: status };
+  return { url: "", via: "", connectStatus: status, error: "connect_not_ready" };
 }
 
 export function quotedPayEmail({ businessName, serviceName, amount, url, when }) {

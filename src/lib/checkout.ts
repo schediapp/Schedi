@@ -54,6 +54,7 @@ export function buildDirectChargeRequest(input: DirectChargeInput): {
     },
     payment_intent_data: {
       description: `${input.businessName}: ${input.serviceName}`,
+      receipt_email: input.clientEmail,
       metadata: {
         schedi_booking_id: input.bookingId,
         schedi_business_id: input.businessId,

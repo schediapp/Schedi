@@ -101,6 +101,7 @@ export async function createConnectPaymentLink(
     description: description.slice(0, 500),
     metadata,
     setup_future_usage: "off_session",
+    ...(input.email ? { receipt_email: input.email } : {}),
   };
   // after_completion.type is Stripe's redirect enum, not a charge-routing key.
   assertNoForbiddenKeys(paymentIntentData);

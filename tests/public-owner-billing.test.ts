@@ -99,6 +99,7 @@ describe("public owner billing cancel and resume", () => {
     expect(ownerBillingScheduleAction("/billing/resume/")).toBe("resume");
     expect(ownerBillingScheduleAction("/billing/checkout")).toBeNull();
     expect(ownerBillingScheduleAction("/billing/booking-checkout")).toBeNull();
+    expect(ownerBillingScheduleAction("/billing/card-pay")).toBeNull();
     expect(html).toContain("postSchediBillingAction('/cancel'");
     expect(html).toContain("postSchediBillingAction('/resume'");
     expect(html).toContain("fetch(SCHEDI_BILLING_BASE + path");

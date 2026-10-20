@@ -40,18 +40,27 @@ export function readCapabilityStatuses(account: MerchantCapabilityAccount): {
 }
 
 /**
- * Live card checkout, including the deposit, stays off until the connected
- * account can take card payments and pay out. Both statuses come from the
- * merchant configuration on Accounts v2.
+ * A connected account can take a client charge when Stripe reports
+ * charges_enabled, or the Accounts v2 card_payments capability is active.
+ * An explicit charges_enabled: false always wins.
+ */
+export function connectedChargesEnabled(account: MerchantCapabilityAccount & { charges_enabled?: boolean | null }): boolean {
+  if (account.charges_enabled === false) return false;
+  if (account.charges_enabled === true) return true;
+  return readCapabilityStatuses(account).cardPaymentsStatus === "active";
+}
+
+/**
+ * Live card checkout stays off until the connected account can take charges.
+ * Payout status does not gate the charge. charges_enabled is the gate.
  */
 export function isCardCheckoutReady(
-  business: Pick<Business, "plan" | "subscriptionStatus" | "cardPaymentsStatus" | "payoutsStatus">,
+  business: Pick<Business, "plan" | "subscriptionStatus" | "cardPaymentsStatus">,
 ): boolean {
   return (
     business.plan === "pro" &&
     business.subscriptionStatus === "active" &&
-    business.cardPaymentsStatus === "active" &&
-    business.payoutsStatus === "active"
+    business.cardPaymentsStatus === "active"
   );
 }
 

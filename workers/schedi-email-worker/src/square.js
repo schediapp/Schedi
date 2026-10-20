@@ -103,6 +103,24 @@ export function squareWebhookUrl(env) {
   return configured || WEBHOOK_URL_DEFAULT;
 }
 
+/** Hosted Square checkout only. Never the OAuth or API host, and never a platform page. */
+export function squareHostedPayUrl(value) {
+  try {
+    const url = new URL(String(value || ''));
+    if (url.protocol !== 'https:' || url.username || url.password) return false;
+    const host = url.hostname.toLowerCase();
+    if (host === 'connect.squareup.com' || host === 'connect.squareupsandbox.com') return false;
+    if (host === 'api.squareup.com' || host === 'api.squareupsandbox.com') return false;
+    if (host === 'square.link' || host.endsWith('.square.link')) return true;
+    if (host === 'checkout.square.site' || host.endsWith('.checkout.square.site')) return true;
+    if (host === 'squareup.com' || host.endsWith('.squareup.com')) return true;
+    if (host === 'squareupsandbox.com' || host.endsWith('.squareupsandbox.com')) return true;
+    return false;
+  } catch (_) {
+    return false;
+  }
+}
+
 export function squareTokenKeyBytes(raw) {
   const text = String(raw || '').trim();
   if (!text) return null;
@@ -515,15 +533,34 @@ async function savePublicStatus(env, tenantId, status, deps) {
   await patchPublicFields(env, tenantId, status);
 }
 
+/**
+ * A Square charge is allowed only on this tenant's own merchant:
+ * OAuth ciphertext, merchant id, and a selected location that is active.
+ */
+export function connectionSquareReady(connection) {
+  if (!connection || !connection.cipher || !String(connection.merchantId || '').trim()) return false;
+  const locationId = String(connection.locationId || '').trim();
+  if (!locationId) return false;
+  const locations = Array.isArray(connection.locations) ? connection.locations : [];
+  const match = locations.find((loc) => loc && String(loc.id) === locationId);
+  if (!match) return false;
+  return String(match.status || 'ACTIVE').toUpperCase() === 'ACTIVE';
+}
+
+export function squareConnectStatus(connection) {
+  if (connectionSquareReady(connection)) return 'ready';
+  if (connection && connection.cipher && String(connection.merchantId || '').trim()) return 'in_progress';
+  return 'not_started';
+}
+
 function publicStatusFrom(connection) {
-  const connected = !!(connection && connection.cipher && connection.merchantId);
-  const ready = connected && !!connection.locationId;
-  return { squareReady: ready };
+  const status = squareConnectStatus(connection);
+  return { squareReady: status === 'ready', squareConnectStatus: status };
 }
 
 function statusView(connection) {
   const connected = !!(connection && connection.cipher && connection.merchantId);
-  const ready = connected && !!connection.locationId;
+  const ready = connectionSquareReady(connection);
   return {
     ok: true,
     connected,
@@ -624,7 +661,11 @@ async function fetchLocations(env, deps, token) {
   if (!listed.ok) return { error: 'locations_failed', status: listed.status || 502 };
   const locations = (listed.data.locations || [])
     .filter((loc) => loc && loc.id && String(loc.status || 'ACTIVE').toUpperCase() === 'ACTIVE')
-    .map((loc) => ({ id: String(loc.id), name: String(loc.name || loc.business_name || 'Location').slice(0, 120) }));
+    .map((loc) => ({
+      id: String(loc.id),
+      name: String(loc.name || loc.business_name || 'Location').slice(0, 120),
+      status: 'ACTIVE',
+    }));
   return { locations };
 }
 
@@ -740,6 +781,10 @@ export async function handleSquareHttp(request, env, origin, path, deps) {
     if (request.method !== 'POST') return jsonResponse(deps, { ok: false, error: 'method_not_allowed' }, 405, origin);
     const res = await handleCheckout(request, env, deps);
     return withCheckoutCors(res);
+  }
+
+  if (path === '/api/square/pay') {
+    return handleSquarePay(request, env, url, deps);
   }
 
   if (path === '/api/square/confirm') {
@@ -896,6 +941,107 @@ async function handleDisconnect(env, tenantId, deps, origin) {
   return jsonResponse(deps, { ok: true, connected: false, ready: false }, 200, origin);
 }
 
+function squarePayPage(message, status) {
+  const safe = String(message || 'This payment link did not open. Nothing was charged.')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+  const html = '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Square payment</title></head>'
+    + '<body style="margin:0;padding:32px 16px;background:#020617;color:#e2e8f0;font-family:Arial,Helvetica,sans-serif;">'
+    + '<main style="max-width:28rem;margin:0 auto;padding:24px;border:1px solid #334155;border-radius:16px;background:#0b1325;">'
+    + '<h1 style="margin:0 0 12px;font-size:20px;color:#fff;">Square payment</h1>'
+    + '<p style="margin:0;line-height:1.5;">' + safe + '</p>'
+    + '</main></body></html>';
+  return new Response(html, {
+    status: status || 400,
+    headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' },
+  });
+}
+
+function squarePayRedirect(target) {
+  return new Response(null, {
+    status: 302,
+    headers: {
+      Location: target,
+      'Cache-Control': 'no-store',
+      'Referrer-Policy': 'no-referrer',
+    },
+  });
+}
+
+// GET /api/square/pay?t=&b=&k=&kind=
+// Booking emails and the confirmation Pay now button use this URL.
+// It redirects only to a payment link on this tenant's own Square merchant.
+async function handleSquarePay(request, env, url, deps) {
+  if (request.method !== 'GET' && request.method !== 'HEAD') {
+    return squarePayPage('Open this payment link in your browser. Nothing was charged.', 405);
+  }
+  const tenantId = safeTenant(url.searchParams.get('t'));
+  const bookingId = bookingIdsFrom(url.searchParams.get('b'))[0] || '';
+  const token = String(url.searchParams.get('k') || '');
+  const kindHint = String(url.searchParams.get('kind') || '');
+  const tokenOk = /^[A-Za-z0-9_-]{16,128}$/.test(token);
+  if (!tenantId || !bookingId || !tokenOk) {
+    return squarePayPage('This payment link is not valid. Nothing was charged.', 400);
+  }
+  if (kindHint && kindHint !== 'deposit' && kindHint !== 'card') {
+    return squarePayPage('This payment link is not valid. Nothing was charged.', 400);
+  }
+  const ip = clientIp(request);
+  if (!(await rateLimitOk(env && env.RL_MAIL, 'sqpay:' + ip, 30, 'sqpay'))) {
+    return squarePayPage('Too many tries. Wait a minute and open the link again. Nothing was charged.', 429);
+  }
+  if (!deps.getTenantById || !deps.firebaseAnonymousToken) {
+    return squarePayPage('Square checkout is unavailable right now. Nothing was charged.', 500);
+  }
+  let tenant;
+  try {
+    const idToken = await deps.firebaseAnonymousToken(env);
+    tenant = await deps.getTenantById(env, idToken, tenantId);
+  } catch (_) {
+    return squarePayPage('Square checkout is unavailable right now. Nothing was charged.', 502);
+  }
+  if (!tenant) return squarePayPage('This payment link is not valid. Nothing was charged.', 404);
+  const load = deps.loadAppointments || loadPrivateAppointments;
+  const appointments = await load(env, tenantId);
+  const booking = (appointments || []).find((item) => item && String(item.id) === bookingId) || null;
+  if (!booking || !booking.manageToken || !timingSafeEqual(String(booking.manageToken), token)) {
+    return squarePayPage('This payment link is not valid. Nothing was charged.', 400);
+  }
+  if (request.method === 'HEAD') {
+    return new Response(null, { status: 200, headers: { 'Cache-Control': 'no-store' } });
+  }
+  if (tenant.squareReady !== true) {
+    return squarePayPage('Finish Square setup to accept cards. Nothing was charged.', 409);
+  }
+  if (String(booking.paymentMethod || '').toLowerCase() !== 'square') {
+    return squarePayPage('This booking is not set to pay with Square. Nothing was charged.', 400);
+  }
+  const ids = [bookingId];
+  for (const extraId of bookingIdsFrom(url.searchParams.get('ids'))) {
+    if (ids.indexOf(extraId) !== -1) continue;
+    const other = (appointments || []).find((item) => item && String(item.id) === extraId && booking.seriesId && item.seriesId === booking.seriesId);
+    if (!other || String(other.paymentMethod || '').toLowerCase() !== 'square') continue;
+    ids.push(extraId);
+  }
+  const inner = new Request(APP_ORIGIN + '/api/square/checkout', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tenantId, bookingIds: ids }),
+  });
+  const checkoutRes = await handleCheckout(inner, env, deps);
+  const data = await checkoutRes.json().catch(() => ({}));
+  if (data && data.alreadyPaid) {
+    return squarePayPage('This Square payment is already paid. Nothing more was charged.', 200);
+  }
+  if (squareHostedPayUrl(data && data.url)) return squarePayRedirect(data.url);
+  if (data && data.error === 'square_not_ready') {
+    return squarePayPage(data.message || 'Finish Square setup to accept cards. Nothing was charged.', 409);
+  }
+  const status = checkoutRes.status >= 400 ? checkoutRes.status : 502;
+  return squarePayPage('Square checkout did not open. Nothing was charged.', status);
+}
+
 async function handleCheckout(request, env, deps) {
   const body = await readJsonBody(request);
   const tenantId = safeTenant(body.tenantId);
@@ -915,7 +1061,13 @@ async function handleCheckout(request, env, deps) {
   if (!tenant) return jsonResponse(deps, { ok: false, error: 'tenant_not_found' }, 404, '');
   const plan = deps.planName ? deps.planName(tenant) : String(tenant.plan || '');
   if (plan === 'free') return jsonResponse(deps, { ok: false, error: 'square_not_on_free' }, 400, '');
-  if (tenant.squareReady !== true) return jsonResponse(deps, { ok: false, error: 'square_not_ready' }, 409, '');
+  if (tenant.squareReady !== true) {
+    return jsonResponse(deps, {
+      ok: false,
+      error: 'square_not_ready',
+      message: 'Finish Square setup to accept cards. Nothing was charged.',
+    }, 409, '');
+  }
   const load = deps.loadAppointments || loadPrivateAppointments;
   const appointments = await load(env, tenantId);
   const selected = bookingIds.map((id) => (appointments || []).find((b) => b && String(b.id) === id)).filter(Boolean);
@@ -953,7 +1105,33 @@ async function handleCheckout(request, env, deps) {
   if (totalCents < 50) return jsonResponse(deps, { ok: true, alreadyPaid: true }, 200, '');
   const got = await accessTokenFor(env, tenantId, deps);
   if (got.error) return jsonResponse(deps, { ok: false, error: got.error }, got.status || 409, '');
-  if (!got.connection.locationId) return jsonResponse(deps, { ok: false, error: 'square_location_required' }, 409, '');
+  const appSecret = String((env && env.SQUARE_APPLICATION_SECRET) || '');
+  if (!got.token || (appSecret && got.token === appSecret) || !got.connection || !got.connection.merchantId) {
+    return jsonResponse(deps, {
+      ok: false,
+      error: 'square_not_ready',
+      message: 'Square charges stay on this business’s own account. Nothing was charged.',
+    }, 409, '');
+  }
+  const listed = await fetchLocations(env, deps, got.token);
+  const active = !listed.error && (listed.locations || []).find((loc) => loc && loc.id === String(got.connection.locationId));
+  if (!active) {
+    if (!listed.error) {
+      const next = Object.assign({}, got.connection, {
+        locations: listed.locations || [],
+        locationId: '',
+        locationName: '',
+      });
+      await saveConnection(env, tenantId, next, deps);
+      await savePublicStatus(env, tenantId, publicStatusFrom(next), deps);
+    }
+    return jsonResponse(deps, {
+      ok: false,
+      error: 'square_not_ready',
+      message: 'Finish Square setup to accept cards. Nothing was charged.',
+    }, 409, '');
+  }
+  got.connection = Object.assign({}, got.connection, { locations: listed.locations, locationName: active.name || got.connection.locationName });
   const slug = deps.slugFor ? deps.slugFor(tenant, tenantId) : tenantId;
   const redirectUrl = APP_ORIGIN + '/' + slug + '/?pay=success&kind=square&booking=' + encodeURIComponent(bookingIds[0]);
   const serviceName = String(selected[0].serviceName || 'Appointment');
