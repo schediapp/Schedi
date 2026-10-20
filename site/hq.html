@@ -8355,9 +8355,7 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
 
         function hqManagedPortalUrl(tenant) {
             var demo = window.__SCHEDI_HQ_DEMO === true;
-            var framed = false;
-            try { framed = document.documentElement.classList.contains('schedi-newhq'); } catch (errFrame) {}
-            if (!demo && !framed) return '';
+            if (!demo) return '';
             var slug = '';
             var id = '';
             try {
@@ -8380,9 +8378,6 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
                 var demoQs = params.toString();
                 return '/portal-preview' + (demoQs ? '?' + demoQs : '');
             }
-            params.set('newdash', '1');
-            params.delete('demo');
-            return '/?' + params.toString();
         }
 
         window.loginAsTenantOwner = function(tenantId) {

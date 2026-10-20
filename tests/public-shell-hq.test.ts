@@ -287,7 +287,7 @@ describe("HQ route", () => {
       framed: true,
       search: "?newhq=1&demo=1&booking=BK-9&appt=BK-9&ref=mail",
       tenant: { id: "lumen-demo", slug: "lumen-studio" },
-    })).toBe("/?booking=BK-9&appt=BK-9&ref=mail&biz=lumen-studio&tenant=lumen-demo&newdash=1");
+    })).toBe("");
     const ownerStart = hqHtml.indexOf("window.loginAsTenantOwner = function");
     const owner = hqHtml.slice(ownerStart, hqHtml.indexOf("// SCHEDI_HQ_END", ownerStart));
     expect(owner.indexOf("hqManagedPortalUrl")).toBeGreaterThan(-1);
@@ -379,7 +379,7 @@ describe("HQ route", () => {
       framed: true,
       search: "?newhq=1&demo=1&booking=BK-9&appt=BK-9&ref=mail",
       tenant: { id: "lumen-demo", slug: "lumen-studio" },
-    })).toBe("/?booking=BK-9&appt=BK-9&ref=mail&biz=lumen-studio&tenant=lumen-demo&newdash=1");
+    })).toBe("");
     const ownerStart = hqHtml.indexOf("window.loginAsTenantOwner = function");
     const owner = hqHtml.slice(ownerStart, hqHtml.indexOf("// SCHEDI_HQ_END", ownerStart));
     expect(owner.indexOf("hqManagedPortalUrl")).toBeGreaterThan(-1);
@@ -391,5 +391,108 @@ describe("HQ route", () => {
     expect(hqHtml).toContain('onclick="loginAsTenantOwner(');
     expect(hqHtml).toContain(">Manage</button>");
     expect((hqHtml.match(/onclick="loginAsTenantOwner\(/g) || []).length).toBeGreaterThan(1);
+  });
+
+  it("shows #tenantDashboard when Log in to portal is clicked on the default new HQ", () => {
+    function extractFunction(source: string, name: string) {
+      const start = source.indexOf("function " + name);
+      const brace = source.indexOf("{", start);
+      let depth = 0;
+      for (let i = brace; i < source.length; i++) {
+        if (source[i] === "{") depth += 1;
+        else if (source[i] === "}") {
+          depth -= 1;
+          if (depth === 0) return source.slice(start, i + 1);
+        }
+      }
+      throw new Error("missing " + name);
+    }
+    function classList(initial: string[]) {
+      const names = new Set(initial);
+      return {
+        add(name: string) { names.add(name); },
+        remove(name: string) { names.delete(name); },
+        contains(name: string) { return names.has(name); },
+      };
+    }
+    const assigned: string[] = [];
+    const toasts: string[] = [];
+    const loginBox = { id: "tenantLoginBox", classList: classList([]) };
+    const dashboard = { id: "tenantDashboard", classList: classList(["hidden"]) };
+    const biz = { id: "lumen-studio", name: "Lumen Studio", slug: "lumen-studio", subscriptionStatus: "active" };
+    const sandbox: Record<string, unknown> = {
+      location: {
+        search: "?booking=BK-9&appt=BK-9&ref=mail",
+        assign(url: string) { assigned.push(String(url)); },
+      },
+      scrollTo() {},
+      document: {
+        documentElement: { classList: classList(["schedi-newhq"]) },
+        getElementById(id: string) {
+          if (id === "tenantLoginBox") return loginBox;
+          if (id === "tenantDashboard") return dashboard;
+          return null;
+        },
+      },
+      URLSearchParams,
+      platformState: {
+        tenants: [biz],
+        activeTenantId: "",
+        isTenantOwnerLoggedIn: false,
+        isAgencyMasterLoggedIn: true,
+        ownerSelfSession: true,
+      },
+      biz,
+      syncOwnerChangePassBtn() {},
+      populateTenantSelect() {},
+      updateLivePreviewControlsVisibility() {},
+      switchPlatformMode() {},
+      syncHqManagingBanner() {},
+      getTenant(id?: string) {
+        const state = sandbox.platformState as { tenants: typeof biz[]; activeTenantId: string };
+        const want = id || state.activeTenantId;
+        return state.tenants.find((row) => row.id === want) || state.tenants[0];
+      },
+      showToast(message: string) { toasts.push(String(message)); },
+      hqHealthOf() { return {}; },
+      hqDashShortDate() { return ""; },
+      hqWarnings() { return [] as string[]; },
+      isComplimentaryPro() { return false; },
+      hqDashPlanPill() { return ""; },
+      hqDashStatusPill() { return ""; },
+      hqDashMenu() { return ""; },
+      hqDashLiveRow() { return ""; },
+    };
+    sandbox.window = sandbox;
+    const ownerStart = hqHtml.indexOf("window.loginAsTenantOwner = function");
+    const owner = hqHtml.slice(ownerStart, hqHtml.indexOf("// SCHEDI_HQ_END", ownerStart));
+    runInNewContext(
+      [
+        extractFunction(hqHtml, "esc"),
+        extractFunction(hqHtml, "jsArg"),
+        extractFunction(hqHtml, "hqManagedPortalUrl"),
+        extractFunction(hqHtml, "hqDashBizCard"),
+        owner,
+      ].join("\n"),
+      sandbox,
+      { filename: "hq-login-portal.js" },
+    );
+    const markup = runInNewContext("hqDashBizCard(biz);", sandbox, { filename: "hq-login-card.js" }) as string;
+    const buttons: { onclick: string; text: string }[] = [];
+    const buttonRe = /<button\b([^>]*)>([\s\S]*?)<\/button>/g;
+    for (let match = buttonRe.exec(markup); match; match = buttonRe.exec(markup)) {
+      const onclick = /onclick="([^"]*)"/.exec(match[1]);
+      buttons.push({
+        onclick: onclick ? onclick[1] : "",
+        text: match[2].replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim(),
+      });
+    }
+    const portalButton = buttons.find((button) => button.text === "Log in to portal");
+    expect(portalButton?.onclick).toBe("loginAsTenantOwner('lumen-studio')");
+    runInNewContext(portalButton?.onclick || "", sandbox, { filename: "hq-login-click.js" });
+    expect(assigned).toEqual([]);
+    expect(dashboard.classList.contains("hidden")).toBe(false);
+    expect(loginBox.classList.contains("hidden")).toBe(true);
+    expect(toasts).toEqual(["Managing Lumen Studio"]);
   });
 });
