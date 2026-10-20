@@ -12871,6 +12871,25 @@ function schediQrCardPixels(text, color) {
             });
         };
 
+        function schediManagedTenantId(tenant) {
+            var meta = null;
+            var agency = false;
+            var id = '';
+            try {
+                if (typeof schediAuthMeta === 'function') meta = schediAuthMeta();
+            } catch (errMeta) { meta = null; }
+            if (meta && meta.role === 'agency') agency = true;
+            try {
+                if (!agency && platformState && platformState.isAgencyMasterLoggedIn && !platformState.ownerSelfSession) agency = true;
+            } catch (errAgency) {}
+            if (!agency) return '';
+            id = tenant && tenant.id ? String(tenant.id) : '';
+            if (!id) {
+                try { if (platformState && platformState.activeTenantId) id = String(platformState.activeTenantId); } catch (errId) { id = ''; }
+            }
+            return id;
+        }
+
         window.schediQrSave = async function () {
             var tenant;
             var session = '';
@@ -12880,6 +12899,7 @@ function schediQrCardPixels(text, color) {
             var url = '';
             var delivered = 'failed';
             var kept = false;
+            var payload;
             if (!schediQrPending) return;
             if (window.__SCHEDI_DEMO) {
                 showToast('Not saved in this demo. The preview stays on this screen only.', 'info');
@@ -12899,13 +12919,19 @@ function schediQrCardPixels(text, color) {
                 return;
             }
             try {
+                payload = { session: session, data: data, contentType: schediQrPending.type, purpose: 'qr' };
+                if (schediManagedTenantId(tenant)) payload.tenantId = schediManagedTenantId(tenant);
                 res = await fetch('/api/business-logo', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ session: session, data: data, contentType: schediQrPending.type, purpose: 'qr' })
+                    body: JSON.stringify(payload)
                 });
                 body = {};
                 try { body = await res.json(); } catch (errJson) { body = {}; }
+                if (body && body.error === 'session_expired') {
+                    showToast('Please sign in again to upload', 'error');
+                    return;
+                }
                 if (body.error === 'logo_storage_unconfigured' || res.status === 503) {
                     if (kept) showToast('QR code saved on this device.', 'success');
                     else showToast('QR upload is not turned on yet. The preview stays on this screen only.', 'info');
@@ -19840,6 +19866,7 @@ function schediQrCardPixels(text, color) {
             if (error === 'too_large') return 'That file is over 2 MB. Use a smaller logo, or paste a link.';
             if (error === 'bad_type') return 'Use a PNG, JPG, WebP, or SVG file.';
             if (error === 'svg_rejected') return 'That SVG cannot be used. Export a PNG, or paste a link.';
+            if (error === 'session_expired') return 'Please sign in again to upload';
             if (error === 'session_required') return 'Sign in again, then upload the logo.';
             if (error === 'logo_storage_unconfigured') return 'Logo upload is not turned on yet. Paste a link instead.';
             if (error === 'demo') return 'This demo shows your logo here only. Nothing is saved.';
@@ -19979,6 +20006,7 @@ function schediQrCardPixels(text, color) {
             if (error === 'too_large') return 'That file is over 2 MB. Use a smaller image.';
             if (error === 'bad_type') return 'Use a PNG, JPG, WebP, or SVG file.';
             if (error === 'svg_rejected') return 'That SVG cannot be used. Export a PNG instead.';
+            if (error === 'session_expired') return 'Please sign in again to upload';
             if (error === 'session_required') return 'Sign in again, then upload the image.';
             if (error === 'logo_storage_unconfigured') return 'Image upload is not turned on yet. The icon above still shows.';
             if (error === 'demo') return 'This demo shows the image here only. Nothing is uploaded.';
@@ -20032,7 +20060,10 @@ function schediQrCardPixels(text, color) {
             }
             var tenant = getTenant();
             var session = '';
-            try { session = localStorage.getItem('schedi.authSession') || ''; } catch (errSession) { session = ''; }
+            try {
+                session = typeof schediAuthSession === 'function' ? schediAuthSession() : '';
+                if (!session) session = localStorage.getItem('schedi.authSession') || '';
+            } catch (errSession) { session = ''; }
             var data = '';
             try { data = await blobToBase64(blob); } catch (errRead) { data = ''; }
             if (!tenant || !data) {
@@ -20043,6 +20074,7 @@ function schediQrCardPixels(text, color) {
             }
             var payload = { session: session, data: data, contentType: contentType };
             if (serviceTarget) payload.serviceId = String(serviceTarget.serviceId);
+            if (schediManagedTenantId(tenant)) payload.tenantId = schediManagedTenantId(tenant);
             try {
                 var res = await fetch('/api/business-logo', {
                     method: 'POST',
@@ -20124,13 +20156,19 @@ function schediQrCardPixels(text, color) {
             }
             var tenant = getTenant();
             var session = '';
-            try { session = localStorage.getItem('schedi.authSession') || ''; } catch (errSession) { session = ''; }
+            var removeBody;
+            try {
+                session = typeof schediAuthSession === 'function' ? schediAuthSession() : '';
+                if (!session) session = localStorage.getItem('schedi.authSession') || '';
+            } catch (errSession) { session = ''; }
             if (tenant) {
                 try {
+                    removeBody = { session: session, remove: true };
+                    if (schediManagedTenantId(tenant)) removeBody.tenantId = schediManagedTenantId(tenant);
                     var res = await fetch('/api/business-logo', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ session: session, remove: true })
+                        body: JSON.stringify(removeBody)
                     });
                     var body = {};
                     try { body = await res.json(); } catch (errJson) { body = {}; }
@@ -20293,7 +20331,7 @@ function schediQrCardPixels(text, color) {
         function showLogoUploadFailure(error) {
             var code = String(error || '');
             var text = logoUploadMessage(code);
-            if (code && text.indexOf(code) < 0) text += ' (' + code + ')';
+            if (code && code !== 'session_expired' && text.indexOf(code) < 0) text += ' (' + code + ')';
             refreshLogoPreview();
             setLogoNote(text, true);
             setLogoActionVisible('logoUploadSave', true);

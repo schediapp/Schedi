@@ -117,7 +117,7 @@ describe("booking QR code", () => {
       throw new Error("could not extract " + name);
     }
     const saveAt = html.indexOf("window.schediQrSave = async function");
-    const save = html.slice(saveAt, saveAt + 2800);
+    const save = html.slice(saveAt, html.indexOf("window.schediQrDownload = async function"));
     expect(save.indexOf("schediQrDeliverFile")).toBeGreaterThan(-1);
     expect(save.indexOf("schediQrDeliverFile")).toBeLessThan(save.indexOf("/api/business-logo"));
     expect(save).toContain("schediAuthSession");
@@ -287,5 +287,63 @@ describe("booking QR code", () => {
     expect(bare).toBeNull();
     expect(card.draws).toHaveLength(1);
     await expect(paint({}, { url: "too-long", logo: null })).resolves.toBe(false);
+  });
+
+  it("sends the managed business for an agency session and asks an expired owner to sign in", async () => {
+    const start = html.indexOf("function schediManagedTenantId");
+    const saveStart = html.indexOf("window.schediQrSave = async function");
+    const saveEnd = html.indexOf("window.schediQrDownload = async function");
+    const source = html.slice(start, html.indexOf("window.schediQrSave = async function")) + html.slice(saveStart, saveEnd);
+    const toasts: string[] = [];
+    const posts: { tenantId?: string; purpose?: string }[] = [];
+    const auth = { role: "agency" as string, result: { ok: false, status: 401, error: "session_expired", url: "" } };
+    const run = new Function(
+      "fetch",
+      "localStorage",
+      "showToast",
+      "auth",
+      `var window = {};
+       var schediQrPending = { blob: { type: "image/png" }, type: "image/png" };
+       var platformState = {
+         get isAgencyMasterLoggedIn() { return auth.role === "agency"; },
+         get ownerSelfSession() { return auth.role !== "agency"; },
+         activeTenantId: "axeldelcidphotography"
+       };
+       function schediQrDeliverFile() { return Promise.resolve("failed"); }
+       function schediQrFileKept() { return false; }
+       function getTenant() { return { id: "axeldelcidphotography" }; }
+       function schediAuthSession() { return "agency-token"; }
+       function schediAuthMeta() { return { role: auth.role }; }
+       function blobToBase64() { return Promise.resolve("abc"); }
+       function safeHttpsUrl(value) { return String(value || "").indexOf("https://") === 0 ? value : ""; }
+       function saveState() { return Promise.resolve(); }
+       function schediQrShowFilled() {}
+       ${source}
+       return window.schediQrSave;`,
+    ) as (fetchImpl: typeof fetch, storage: { getItem: () => string }, toast: (message: string) => void, authState: typeof auth) => () => Promise<void>;
+    const save = run(
+      (async (_url: string, init?: RequestInit) => {
+        posts.push(JSON.parse(String(init?.body || "{}")));
+        return {
+          ok: auth.result.ok,
+          status: auth.result.status,
+          json: async () => ({ ok: auth.result.ok, error: auth.result.error, url: auth.result.url }),
+        };
+      }) as unknown as typeof fetch,
+      { getItem: () => "" },
+      (message: string) => { toasts.push(message); },
+      auth,
+    );
+    await save();
+    expect(toasts).toEqual(["Please sign in again to upload"]);
+    expect(posts[0]).toMatchObject({ tenantId: "axeldelcidphotography", purpose: "qr" });
+
+    toasts.length = 0;
+    posts.length = 0;
+    auth.role = "owner";
+    auth.result = { ok: false, status: 401, error: "session_expired", url: "" };
+    await save();
+    expect(posts[0].tenantId).toBeUndefined();
+    expect(toasts).toEqual(["Please sign in again to upload"]);
   });
 });

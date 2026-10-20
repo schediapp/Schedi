@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { handleLogoGet, handleLogoUpload, sanitizeLogoSvg, sniffLogo } from "../workers/schedi-email-worker/src/logo-upload.js";
+import { readLogoWriteSession, readSession } from "../workers/schedi-email-worker/src/owner-auth.js";
+import { agencyListedTenant, handleLogoGet, handleLogoUpload, sanitizeLogoSvg, sniffLogo } from "../workers/schedi-email-worker/src/logo-upload.js";
 
 const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const TINY_PNG = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
@@ -23,12 +24,25 @@ function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 }
 
-function deps(session: unknown) {
+function deps(session: unknown, agencyOwnsTenant?: (env: unknown, tenantId: string) => Promise<boolean> | boolean) {
   return {
     json,
     isAllowedOrigin: () => true,
     readSession: async () => session,
+    agencyOwnsTenant,
   };
+}
+
+function listedAgency(ids: string[]) {
+  return deps({ role: "agency", email: "hq@schedi.app" }, async (_env, tenantId) => ids.includes(tenantId));
+}
+
+function upload(body: Record<string, unknown>, origin = "https://schedi.app") {
+  return new Request("https://schedi.app/api/business-logo", {
+    method: "POST",
+    headers: origin ? { Origin: origin } : {},
+    body: JSON.stringify({ session: "tok", ...body }),
+  });
 }
 
 function post(data: string, origin = "https://schedi.app") {
@@ -66,6 +80,119 @@ describe("logo upload", () => {
     expect(await unconfigured.json()).toMatchObject({ error: "logo_storage_unconfigured" });
     const foreign = await handleLogoUpload(post(TINY_PNG), { LOGO_BUCKET: { put: async () => {} }, LOGO_PUBLIC_BASE: "https://logos.example.test" }, "https://schedi.app", deps({ role: "agency", tenantId: "hq" }));
     expect(foreign.status).toBe(401);
+    expect(await foreign.json()).toMatchObject({ error: "session_required" });
+  });
+
+  it("lets an agency session write only a business on its tenant list", async () => {
+    const puts: string[] = [];
+    const deleted: string[] = [];
+    const env = {
+      LOGO_BUCKET: {
+        async put(key: string) { puts.push(key); },
+        async delete(key: string) { deleted.push(key); },
+      },
+    };
+    const logo = await handleLogoUpload(upload({ data: TINY_PNG, tenantId: "axeldelcidphotography" }), env, "https://schedi.app", listedAgency(["axeldelcidphotography"]));
+    expect(logo.status).toBe(200);
+    expect((await logo.json() as { url: string }).url).toMatch(/^https:\/\/schedi\.app\/logos\/axeldelcidphotography\?v=[a-f0-9]{18}$/);
+    const qr = await handleLogoUpload(upload({ data: TINY_PNG, tenantId: "axeldelcidphotography", purpose: "qr" }), env, "https://schedi.app", listedAgency(["axeldelcidphotography"]));
+    expect(qr.status).toBe(200);
+    expect((await qr.json() as { url: string }).url).toMatch(/\/logos\/axeldelcidphotography\/qr\?v=/);
+    const removed = await handleLogoUpload(upload({ remove: true, tenantId: "axeldelcidphotography" }), env, "https://schedi.app", listedAgency(["axeldelcidphotography"]));
+    expect(removed.status).toBe(200);
+    expect(puts).toEqual(["logos/axeldelcidphotography.png", "logos/axeldelcidphotography/qr.png"]);
+    expect(deleted).toContain("logos/axeldelcidphotography.jpg");
+    expect(deleted.join(" ")).not.toContain("logos/axeldelcidphotography/qr.png");
+
+    puts.length = 0;
+    const other = await handleLogoUpload(upload({ data: TINY_PNG, tenantId: "other-biz" }), env, "https://schedi.app", listedAgency(["axeldelcidphotography"]));
+    expect(other.status).toBe(403);
+    expect(await other.json()).toMatchObject({ error: "forbidden" });
+    const missing = await handleLogoUpload(upload({ data: TINY_PNG, tenantId: "not a business" }), env, "https://schedi.app", listedAgency(["axeldelcidphotography"]));
+    expect(missing.status).toBe(401);
+    const invalid = await handleLogoUpload(upload({ data: TINY_PNG, tenantId: "axeldelcidphotography" }), env, "https://schedi.app", deps(null));
+    expect(invalid.status).toBe(401);
+    expect(await invalid.json()).toMatchObject({ error: "session_required" });
+    expect(puts).toEqual([]);
+  });
+
+  it("asks for a fresh sign-in when the owner session has expired", async () => {
+    const puts: string[] = [];
+    const env = {
+      AUTH_KV: {
+        async get(key: string) {
+          if (key === "session:old") return JSON.stringify({ role: "owner", tenantId: "harbor-demo", exp: Date.now() - 1000 });
+          if (key === "session:agency-old") return JSON.stringify({ role: "agency", email: "hq@schedi.app", exp: Date.now() - 1000 });
+          if (key === "session:live") return JSON.stringify({ role: "owner", tenantId: "harbor-demo", exp: Date.now() + 60_000 });
+          return null;
+        },
+      },
+      LOGO_BUCKET: { async put(key: string) { puts.push(key); }, async delete() {} },
+    };
+    expect(await readSession(env, "old")).toBeNull();
+    expect(await readLogoWriteSession(env, "old")).toMatchObject({ role: "owner", expired: true, tenantId: "harbor-demo" });
+    expect(await readLogoWriteSession(env, "agency-old")).toBeNull();
+    expect(await readSession(env, "live")).toMatchObject({ role: "owner", tenantId: "harbor-demo" });
+
+    const expiredReq = new Request("https://schedi.app/api/business-logo", {
+      method: "POST",
+      headers: { Origin: "https://schedi.app" },
+      body: JSON.stringify({ session: "old", data: TINY_PNG, tenantId: "other-biz" }),
+    });
+    const stale = await handleLogoUpload(expiredReq, env, "https://schedi.app", {
+      json,
+      isAllowedOrigin: () => true,
+      readSession: readLogoWriteSession,
+    });
+    expect(stale.status).toBe(401);
+    expect(await stale.json()).toMatchObject({ error: "session_expired" });
+    const message = new Function(`${extractFunction(html, "logoUploadMessage")}; return logoUploadMessage;`)() as (error: string) => string;
+    expect(message("session_expired")).toBe("Please sign in again to upload");
+    expect(extractFunction(html, "serviceImageMessage")).toContain("Please sign in again to upload");
+    expect(extractFunction(html, "showLogoUploadFailure")).toContain("session_expired");
+    const saveAt = html.indexOf("window.schediQrSave = async function");
+    const save = html.slice(saveAt, html.indexOf("window.schediQrDownload = async function"));
+    expect(save).toContain("Please sign in again to upload");
+    expect(save).toContain("schediManagedTenantId");
+    expect(extractFunction(html, "storeLogoBlob")).toContain("schediManagedTenantId");
+    expect(extractFunction(html, "clearStoredLogo")).toContain("schediManagedTenantId");
+    expect(puts).toEqual([]);
+  });
+
+  it("treats a public tenant document as the agency list", async () => {
+    const puts: string[] = [];
+    const bucket = { async put(key: string) { puts.push(key); }, async delete() {} };
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("/artifacts/siteforge-97699/public/data/tenants/axeldelcidphotography?")) {
+        return new Response("{}", { status: 200 });
+      }
+      return new Response("{}", { status: 404 });
+    }) as typeof fetch;
+    try {
+      expect(await agencyListedTenant({ FIREBASE_PROJECT_ID: "siteforge-97699" }, "axeldelcidphotography")).toBe(true);
+      expect(await agencyListedTenant({ FIREBASE_PROJECT_ID: "siteforge-97699" }, "other-biz")).toBe(false);
+      expect(await agencyListedTenant({}, "axeldelcidphotography")).toBe(false);
+      const listed = await handleLogoUpload(
+        upload({ data: TINY_PNG, tenantId: "axeldelcidphotography" }),
+        { FIREBASE_PROJECT_ID: "siteforge-97699", LOGO_BUCKET: bucket },
+        "https://schedi.app",
+        deps({ role: "agency", email: "hq@schedi.app" }),
+      );
+      expect(listed.status).toBe(200);
+      expect(puts).toEqual(["logos/axeldelcidphotography.png"]);
+      const unlisted = await handleLogoUpload(
+        upload({ data: TINY_PNG, tenantId: "other-biz" }),
+        { FIREBASE_PROJECT_ID: "siteforge-97699", LOGO_BUCKET: bucket },
+        "https://schedi.app",
+        deps({ role: "agency", email: "hq@schedi.app" }),
+      );
+      expect(unlisted.status).toBe(403);
+      expect(puts).toEqual(["logos/axeldelcidphotography.png"]);
+    } finally {
+      globalThis.fetch = realFetch;
+    }
   });
 
   it("stores a PNG and returns the public URL for that business", async () => {
@@ -391,6 +518,7 @@ describe("logo upload", () => {
     };
     const names = [
       "logoCropSource",
+      "schediManagedTenantId",
       "logoUploadMessage",
       "setLogoNote",
       "revokeLogoObjectUrl",
@@ -512,6 +640,11 @@ describe("logo upload", () => {
     expect(els.logoUploadNote.textContent).toContain("session_required");
     expect(els.logoUploadNote.textContent).toContain("Sign in again");
     expect(els.logoUploadRetry.hidden).toBe(false);
+
+    api.setResult({ ok: false, status: 401, body: { ok: false, error: "session_expired" } });
+    els.logoUploadRetry.dispatch("click", { preventDefault() {} });
+    await flush();
+    expect(els.logoUploadNote.textContent).toBe("Please sign in again to upload");
 
     api.setResult({
       ok: true,

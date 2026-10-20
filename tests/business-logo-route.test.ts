@@ -111,6 +111,79 @@ describe("schedi-web logo route", () => {
     const gone = await handleRequest(new Request(body.url), env, ctx);
     expect(gone.status).toBe(404);
   });
+
+  it("accepts an agency session for a listed business and rejects the rest", async () => {
+    const bucket = memoryBucket();
+    const rows = new Map<string, string>();
+    rows.set("session:agency", JSON.stringify({ role: "agency", email: "hq@schedi.app", exp: Date.now() + 60 * 60 * 1000 }));
+    rows.set("session:old", JSON.stringify({ role: "owner", tenantId: "harbor-demo", exp: Date.now() - 1000 }));
+    const env = {
+      AUTH_KV: { async get(key: string) { return rows.get(key) ?? null; } },
+      LOGO_BUCKET: bucket,
+      FIREBASE_PROJECT_ID: "siteforge-97699",
+    };
+    const ctx = { waitUntil() {} };
+    const png = Buffer.from(TINY_PNG).toString("base64");
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("/public/data/tenants/axeldelcidphotography?")) return new Response("{}", { status: 200 });
+      return new Response("{}", { status: 404 });
+    }) as typeof fetch;
+    try {
+      const saved = await handleRequest(new Request("https://schedi.app/api/business-logo", {
+        method: "POST",
+        headers: { Origin: "https://schedi.app", "Content-Type": "application/json" },
+        body: JSON.stringify({ session: "agency", tenantId: "axeldelcidphotography", data: png }),
+      }), env, ctx);
+      expect(saved.status).toBe(200);
+      expect((await saved.json() as { url: string }).url).toMatch(/\/logos\/axeldelcidphotography\?v=/);
+      expect(bucket.objects.has("logos/axeldelcidphotography.png")).toBe(true);
+
+      const qr = await handleRequest(new Request("https://schedi.app/api/business-logo", {
+        method: "POST",
+        headers: { Origin: "https://schedi.app", "Content-Type": "application/json" },
+        body: JSON.stringify({ session: "agency", tenantId: "axeldelcidphotography", data: png, purpose: "qr" }),
+      }), env, ctx);
+      expect(qr.status).toBe(200);
+      expect([...bucket.objects.keys()].some((key) => key.startsWith("logos/axeldelcidphotography/qr."))).toBe(true);
+
+      const other = await handleRequest(new Request("https://schedi.app/api/business-logo", {
+        method: "POST",
+        headers: { Origin: "https://schedi.app", "Content-Type": "application/json" },
+        body: JSON.stringify({ session: "agency", tenantId: "other-biz", data: png }),
+      }), env, ctx);
+      expect(other.status).toBe(403);
+      expect(bucket.objects.has("logos/other-biz.png")).toBe(false);
+
+      const removed = await handleRequest(new Request("https://schedi.app/api/business-logo", {
+        method: "POST",
+        headers: { Origin: "https://schedi.app", "Content-Type": "application/json" },
+        body: JSON.stringify({ session: "agency", tenantId: "axeldelcidphotography", remove: true }),
+      }), env, ctx);
+      expect(removed.status).toBe(200);
+      expect(bucket.objects.has("logos/axeldelcidphotography.png")).toBe(false);
+      expect([...bucket.objects.keys()].some((key) => key.includes("/qr."))).toBe(true);
+
+      const stale = await handleRequest(new Request("https://schedi.app/api/business-logo", {
+        method: "POST",
+        headers: { Origin: "https://schedi.app", "Content-Type": "application/json" },
+        body: JSON.stringify({ session: "old", data: png }),
+      }), env, ctx);
+      expect(stale.status).toBe(401);
+      expect(await stale.json()).toMatchObject({ error: "session_expired" });
+
+      const invalid = await handleRequest(new Request("https://schedi.app/api/business-logo", {
+        method: "POST",
+        headers: { Origin: "https://schedi.app", "Content-Type": "application/json" },
+        body: JSON.stringify({ session: "missing", tenantId: "axeldelcidphotography", data: png }),
+      }), env, ctx);
+      expect(invalid.status).toBe(401);
+      expect(await invalid.json()).toMatchObject({ error: "session_required" });
+    } finally {
+      globalThis.fetch = realFetch;
+    }
+  });
 });
 
 describe("logo wrangler config", () => {
