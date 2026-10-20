@@ -2641,7 +2641,7 @@ async function markBookingCheckoutPaid(env, { tenantId, bookingIds, purpose, car
       const bal = hasBal ? roundMoney(booking.balanceDue).toFixed(2) : '';
       const friendlyDate = formatFriendlyLocalDateEmail(booking.date || '');
       const cal = formatConfirmEmailCalParts(booking.date || '');
-      const markUrl = 'https://schedi.app/assets/email-calendar-check.png';
+      const markUrl = 'https://schedi.app/assets/homescreen-icon.png';
       const subject = "You're booked! — " + biz;
       const sub = 'Your card deposit of $' + dep + ' is paid.' + (bal ? (' $' + bal + ' is due at the appointment.') : '');
       let text =

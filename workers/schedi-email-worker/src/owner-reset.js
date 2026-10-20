@@ -19,7 +19,7 @@ const RESET_TTL_SECONDS = 60 * 60; // link valid 60 minutes
 const RESET_FROM = 'onboarding@schedi.app';
 const RESET_REPLY_TO = 'admin@schedi.app';
 const NEUTRAL_MESSAGE = 'If that matches a Schedi business, we sent a reset link to the owner email on file. The link works for 60 minutes.';
-const MARK_URL = 'https://schedi.app/assets/email-calendar-check.png';
+const MARK_URL = 'https://schedi.app/assets/homescreen-icon.png';
 
 function esc(v) {
   return String(v == null ? '' : v)
