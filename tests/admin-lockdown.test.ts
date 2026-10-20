@@ -4,6 +4,7 @@ import { handleRequest, type SchediEnv } from "../worker/handler";
 import { bookingPaused, projectPublicBooking } from "../worker/booking-document";
 import worker from "../workers/schedi-email-worker/src/index.js";
 import { resetLocalLimits } from "../workers/schedi-email-worker/src/rate-limit.js";
+import { memoryAuthLimits } from "./memory-auth-limit";
 
 const bookingHtml = readFileSync(new URL("../site/booking.html", import.meta.url), "utf8");
 const ownerHtml = readFileSync(new URL("../index.html", import.meta.url), "utf8");
@@ -197,10 +198,13 @@ describe("firestore rules and dry-run cleanup", () => {
     expect(wrangler).not.toContain("workers_dev = false");
     expect(wrangler).not.toContain("period = 900");
     expect(wrangler).not.toContain("RL_AUTH_GLOBAL");
-    expect(wrangler).toContain('name = "RL_AUTH_IP"');
-    expect(wrangler).toContain('name = "RL_AUTH_EMAIL"');
-    expect(wrangler).toContain("limit = 10, period = 60");
-    expect(wrangler).toContain("limit = 5, period = 60");
+    expect(wrangler).not.toContain("RL_AUTH_IP");
+    expect(wrangler).not.toContain("RL_AUTH_EMAIL");
+    expect(wrangler).not.toContain("limit = 10, period = 60");
+    expect(wrangler).not.toContain("limit = 5, period = 60");
+    expect(wrangler).toContain('name = "AUTH_RATE_LIMIT"');
+    expect(wrangler).toContain('class_name = "AuthRateLimit"');
+    expect(wrangler).toContain('new_sqlite_classes = ["AuthRateLimit"]');
     expect(wrangler).toContain('pattern = "schedi.app/api/ops-snapshot*"');
     expect(wrangler).toContain('pattern = "schedi.app/api/resend-events*"');
   });
@@ -223,7 +227,10 @@ function authEnv() {
 }
 
 describe("auth rate limits", () => {
+  let limits = memoryAuthLimits();
+
   beforeEach(() => {
+    limits = memoryAuthLimits();
     resetLocalLimits();
     vi.spyOn(console, "log").mockImplementation(() => {});
     vi.spyOn(console, "warn").mockImplementation(() => {});
@@ -236,14 +243,18 @@ describe("auth rate limits", () => {
     resetLocalLimits();
   });
 
+  function authEnvWithLimits() {
+    return Object.assign(authEnv(), { AUTH_RATE_LIMIT: limits.namespace });
+  }
+
   async function post(path: string, body: Record<string, unknown>, ip: string) {
     const response = await worker.fetch(new Request("https://schedi.app" + path, {
       method: "POST",
       headers: { "Content-Type": "application/json", "CF-Connecting-IP": ip, Origin: "https://schedi.app" },
       body: JSON.stringify(body),
-    }), authEnv(), { waitUntil() {} });
+    }), authEnvWithLimits(), { waitUntil() {} });
     const data = await response.json().catch(() => ({}));
-    return { status: response.status, data: data as { error?: string } };
+    return { status: response.status, data: data as { error?: string }, retryAfter: response.headers.get("Retry-After") };
   }
 
   it("returns 429 rate_limited on the sixth agency sign-in and never logs the password", async () => {
@@ -256,11 +267,14 @@ describe("auth rate limits", () => {
     const blocked = await post("/auth/agency", body, "203.0.113.10");
     expect(blocked.status).toBe(429);
     expect(blocked.data.error).toBe("rate_limited");
+    expect(blocked.retryAfter).toMatch(/^(?:[1-9]|[1-5]\d|60)$/);
     const logged = [console.log, console.warn, console.error, console.info]
       .map((fn) => (fn as unknown as { mock?: { calls: unknown[][] } }).mock?.calls || [])
       .flat()
       .join(" ");
+    expect(logged).toContain("auth rate limit /auth/agency email");
     expect(logged).not.toContain(password);
+    expect(logged).not.toContain("hq@example.com");
   });
 
   it("limits /auth/tenant per email across IPs and blocks workers.dev auth and ops", async () => {
@@ -272,6 +286,7 @@ describe("auth rate limits", () => {
     const blocked = await post("/auth/tenant", body, "203.0.113.90");
     expect(blocked.status).toBe(429);
     expect(blocked.data.error).toBe("rate_limited");
+    expect(blocked.retryAfter).toMatch(/^(?:[1-9]|[1-5]\d|60)$/);
 
     const devAuth = await worker.fetch(new Request("https://schedi-email-worker.workers.dev/auth/agency", {
       method: "POST",
@@ -301,6 +316,7 @@ describe("auth rate limits", () => {
     const blocked = await post("/auth/tenant", { email: "person10@example.com", password: "not-logged" }, ip);
     expect(blocked.status).toBe(429);
     expect(blocked.data.error).toBe("rate_limited");
+    expect(blocked.retryAfter).toMatch(/^(?:[1-9]|[1-5]\d|60)$/);
     const fresh = await post("/auth/agency", { email: "hq-fresh@example.com", password: "not-logged" }, "198.51.100.8");
     expect(fresh.status).toBe(401);
   });
