@@ -8235,11 +8235,19 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                 if (ticket !== schediBookingsTicket) return;
                 var data = {};
                 try { data = await res.json(); } catch (err) { data = {}; }
-                if (!res.ok || !data.ok || !Array.isArray(data.tenants)) {
+                if (!res.ok || data.ok === false) {
                     if (!schediBookingsSettled()) {
                         schediSetBookingsLoad('error');
                         try { schediPaintBookingSurfaces(); } catch (errPaintFail) {}
                     }
+                    return;
+                }
+                if (!Array.isArray(data.tenants)) {
+                    var kept = (typeof getTenant === 'function') ? getTenant() : null;
+                    if (kept) kept._privateBookingsLoaded = true;
+                    schediSetBookingsLoad('ready');
+                    window.__schediRosterLoadedAt = Date.now();
+                    try { schediPaintBookingSurfaces(); } catch (errKeep) {}
                     return;
                 }
                 var seen = {};
@@ -15702,27 +15710,67 @@ function schediQrCardPixels(text, color) {
                 '<button type="button" class="sd-btn sd-btn-ghost sd-bookings-retry" onclick="refreshPrivateBookings()">Retry</button>';
         }
 
-        function schediWaitingRequest(app) {
+        function schediNowMinutes(tenant) {
+            var tz = 'America/New_York';
+            try { tz = (typeof getTenantTimezone === 'function' ? getTenantTimezone(tenant) : '') || tz; } catch (errTz) { tz = 'America/New_York'; }
+            try {
+                var fmt = new Intl.DateTimeFormat('en-US', { timeZone: tz, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+                var hour = NaN;
+                var minute = NaN;
+                fmt.formatToParts(new Date()).forEach(function (part) {
+                    if (part.type === 'hour') hour = parseInt(part.value, 10);
+                    if (part.type === 'minute') minute = parseInt(part.value, 10);
+                });
+                if (hour === 24) hour = 0;
+                if (isFinite(hour) && isFinite(minute)) return hour * 60 + minute;
+            } catch (errNow) {}
+            var local = new Date();
+            return local.getHours() * 60 + local.getMinutes();
+        }
+
+        function schediVisitOpen(app, nowMins) {
+            var start = toMinutes(app && app.time);
+            if (start == null || !isFinite(start)) return true;
+            var dur = Number(app && app.durationMins);
+            if (!isFinite(dur) || dur <= 0) dur = 45;
+            if (nowMins == null || !isFinite(Number(nowMins))) return true;
+            return Number(nowMins) < start + dur;
+        }
+
+        function schediWaitingRequest(app, today, nowMins) {
             if (!app || appointmentIsCancelled(app)) return false;
             var st = String(app.status == null ? '' : app.status).replace(/[\s-]+/g, ' ').trim().toLowerCase();
             if (st === 'denied' || st === 'declined') return false;
-            return st === 'pending' || st === '';
+            if (st === 'pending') return true;
+            if (st !== '') return false;
+            var date = String(app.date || '');
+            var day = typeof today === 'string' ? today : '';
+            if (!date || !day) return true;
+            if (date > day) return true;
+            if (date < day) return false;
+            return schediVisitOpen(app, nowMins);
         }
 
-        function schediUpcomingVisits(apps, today, limit) {
+        function schediSortVisits(a, b) {
+            var ad = String(a.date || '');
+            var bd = String(b.date || '');
+            if (ad !== bd) return ad < bd ? -1 : 1;
+            return rosterApptSortKey(a) - rosterApptSortKey(b);
+        }
+
+        function schediComingVisits(apps, today, limit, nowMins) {
+            var start = String(today || '');
+            var todayRows = (apps || []).filter(function (app) {
+                return !!(app && start && String(app.date || '') === start);
+            }).sort(schediSortVisits);
             var cap = limit == null ? 4 : Number(limit);
             if (!isFinite(cap) || cap < 1) cap = 4;
-            var start = String(today || '');
-            return (apps || []).filter(function (app) {
-                if (!app || schediWaitingRequest(app)) return false;
+            var later = (apps || []).filter(function (app) {
+                if (!app || schediWaitingRequest(app, start, nowMins)) return false;
                 var date = String(app.date || '');
-                return !!date && (!start || date >= start);
-            }).sort(function (a, b) {
-                var ad = String(a.date || '');
-                var bd = String(b.date || '');
-                if (ad !== bd) return ad < bd ? -1 : 1;
-                return rosterApptSortKey(a) - rosterApptSortKey(b);
-            }).slice(0, cap);
+                return !!date && !!start && date > start;
+            }).sort(schediSortVisits).slice(0, cap);
+            return todayRows.concat(later);
         }
 
         function schediNextVisitLine(app, today) {
@@ -15774,10 +15822,12 @@ function schediQrCardPixels(text, color) {
                 if (requests) requests.innerHTML = hold;
                 if (schedule) schedule.innerHTML = hold;
             } else {
+            var nowMins = null;
+            try { nowMins = schediNowMinutes(tenant); } catch (errClock) { nowMins = null; }
             var apps = (tenant.appointments || []).filter(function (app) { return app && !appointmentIsCancelled(app) && String(app.status || '').toLowerCase() !== 'denied'; });
             var todayApps = apps.filter(function (app) { return app.date === today; }).sort(function (a, b) { return rosterApptSortKey(a) - rosterApptSortKey(b); });
-            var coming = schediUpcomingVisits(apps, today, 4);
-            var pending = apps.filter(schediWaitingRequest);
+            var coming = schediComingVisits(apps, today, 4, nowMins);
+            var pending = apps.filter(function (app) { return schediWaitingRequest(app, today, nowMins); });
             var weekStart = '';
             try { weekStart = rosterWeekStart(today); } catch (errWeek) { weekStart = ''; }
             var weekEnd = weekStart ? addIsoDays(weekStart, 6) : '';
@@ -15787,7 +15837,7 @@ function schediQrCardPixels(text, color) {
                 weekVisits += 1;
             });
             var unpaid = apps.filter(function (app) {
-                if (schediWaitingRequest(app)) return false;
+                if (schediWaitingRequest(app, today, nowMins)) return false;
                 return bookingPaymentState(app) === 'unpaid';
             });
             var owed = 0;
