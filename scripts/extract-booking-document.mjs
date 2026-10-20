@@ -1,0 +1,119 @@
+// Rebuilds site/booking.html from the public booking document embedded in index.html.
+// The owner shell keeps generateStandaloneHtmlForTenant for preview. Public /{slug}
+// pages are served from this file, which has no owner portal and no agency code.
+//
+// The template is a JavaScript template literal. Copying it raw leaves escapes
+// such as /^https:\\/\\//i, which the browser parses as a regex with illegal flags.
+// This walk evaluates template escapes (\ \, \/, \n, \uXXXX, and the rest) and
+// replaces ${...} interpolations with booking tokens.
+import { readFileSync, writeFileSync } from "node:fs";
+import { writeBookingFieldModule } from "./booking-fields.mjs";
+
+const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+const fn = html.indexOf("function generateStandaloneHtmlForTenant");
+if (fn < 0) throw new Error("booking generator missing");
+const ret = html.indexOf("return `<!DOCTYPE html>", fn);
+if (ret < 0) throw new Error("booking template missing");
+const end = html.indexOf("</html>`;", ret);
+if (end < 0) throw new Error("booking template end missing");
+const source = html.slice(ret + "return `".length, end + "</html>".length);
+
+const tokens = [
+  ["${schediNewBook ? ' schedi-newbook' : ''}", "__SCHEDI_HTML_CLASS__"],
+  ["${safeName}", "__SCHEDI_SAFE_NAME__"],
+  ["${metaDesc}", "__SCHEDI_META_DESC__"],
+  ["${canonicalTag}", "__SCHEDI_CANONICAL__"],
+  ["${ogUrlTag}", "__SCHEDI_OG_URL__"],
+  ["${jsonLd}", "__SCHEDI_JSON_LD__"],
+  ["${clientHelpHref}", "__SCHEDI_HELP_HREF__"],
+  ["${schediPlanBadge}", "__SCHEDI_PLAN_BADGE__"],
+  ["${safeIndustry}", "__SCHEDI_SAFE_INDUSTRY__"],
+  ["${configStr}", "__SCHEDI_FIREBASE_CONFIG__"],
+  ["${appIdStr}", "__SCHEDI_APP_ID__"],
+  ["${jsonTenant}", "__SCHEDI_TENANT_JSON__"],
+  ["${schediNewBook ? 'true' : 'false'}", "__SCHEDI_NEWBOOK__"],
+  ["${(typeof window !== 'undefined' && window.__SCHEDI_DEMO) ? 'true' : 'false'}", "__SCHEDI_DEMO__"],
+  ["${JSON.stringify(payReturnFlag)}", "__SCHEDI_PAY_FLAG__"],
+  ["${JSON.stringify(payReturnKind)}", "__SCHEDI_PAY_KIND__"],
+  ["${JSON.stringify(payReturnBooking)}", "__SCHEDI_PAY_BOOKING__"],
+  ["${JSON.stringify(payReturnBookings)}", "__SCHEDI_PAY_BOOKINGS__"],
+  ["${schediWebAnalytics}", "__SCHEDI_ANALYTICS__"],
+];
+
+function hexEscape(source, i, digits) {
+  const hex = source.slice(i, i + digits);
+  if (!/^[0-9a-fA-F]+$/.test(hex) || hex.length !== digits) return null;
+  return String.fromCharCode(parseInt(hex, 16));
+}
+
+/** One template-literal escape starting at the backslash. */
+function readEscape(source, i) {
+  const n = source[i + 1];
+  if (n == null) throw new Error("trailing backslash in booking template");
+  if (n === "\n") return { text: "", next: i + 2 };
+  if (n === "\r") return { text: "", next: source[i + 2] === "\n" ? i + 3 : i + 2 };
+  if (n === "n") return { text: "\n", next: i + 2 };
+  if (n === "r") return { text: "\r", next: i + 2 };
+  if (n === "t") return { text: "\t", next: i + 2 };
+  if (n === "b") return { text: "\b", next: i + 2 };
+  if (n === "f") return { text: "\f", next: i + 2 };
+  if (n === "v") return { text: "\v", next: i + 2 };
+  if (n === "0" && !/[0-9]/.test(source[i + 2] || "")) return { text: "\0", next: i + 2 };
+  if (n === "x") {
+    const ch = hexEscape(source, i + 2, 2);
+    if (ch == null) throw new Error("bad hex escape in booking template");
+    return { text: ch, next: i + 4 };
+  }
+  if (n === "u" && source[i + 2] === "{") {
+    const close = source.indexOf("}", i + 3);
+    const hex = close < 0 ? "" : source.slice(i + 3, close);
+    if (!/^[0-9a-fA-F]{1,6}$/.test(hex)) throw new Error("bad unicode escape in booking template");
+    const cp = parseInt(hex, 16);
+    if (cp > 0x10ffff) throw new Error("bad unicode escape in booking template");
+    return { text: String.fromCodePoint(cp), next: close + 1 };
+  }
+  if (n === "u") {
+    const ch = hexEscape(source, i + 2, 4);
+    if (ch == null) throw new Error("bad unicode escape in booking template");
+    return { text: ch, next: i + 6 };
+  }
+  // NonEscapeCharacter: \/, \`, \$, and any other non-special character.
+  return { text: n, next: i + 2 };
+}
+
+let out = "";
+for (let i = 0; i < source.length; i += 1) {
+  if (source[i] === "\\") {
+    const esc = readEscape(source, i);
+    out += esc.text;
+    i = esc.next - 1;
+    continue;
+  }
+  if (source[i] === "$" && source[i + 1] === "{") {
+    let matched = false;
+    for (const [from, token] of tokens) {
+      if (source.startsWith(from, i)) {
+        out += token;
+        i += from.length - 1;
+        matched = true;
+        break;
+      }
+    }
+    if (!matched) throw new Error("unmapped interpolation at " + i + ": " + source.slice(i, i + 80));
+    continue;
+  }
+  out += source[i];
+}
+
+const banned = ["renderAgencyDashboard", "assertAgencyExportPrivilege", "bootPublicOrAgency", "isAgencyHqRoute", "syncHqManagingBanner", "/auth/agency", "Complimentary"];
+for (const word of banned) {
+  if (out.includes(word)) throw new Error("booking document still contains " + word);
+}
+if (out.includes("provision")) throw new Error("booking document still contains provision");
+if (out.includes("/^https:\\\\/\\\\//i")) throw new Error("booking document still has an escaped https regex");
+
+const banner = "<!-- schedi public booking document. No owner portal and no agency code. -->\n";
+const document = banner + out;
+writeFileSync(new URL("../site/booking.html", import.meta.url), document);
+writeBookingFieldModule(document);
+console.log("wrote site/booking.html", out.length);

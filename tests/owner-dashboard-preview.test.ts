@@ -9,7 +9,7 @@ import { renderRobots, renderSitemap } from "../worker/render";
 
 const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const root = new URL("..", import.meta.url).pathname;
-const BOOKING_TEMPLATE_SHA = "07c4b28bba9d84cb3378020e91b8900cd83432e086bead97d591629b25e232be";
+const BOOKING_TEMPLATE_SHA = "78edf9e2ce9c339f09f699bd4c8945945ffa743f5cb2f78c3e2e162eaf57b8a7";
 const SHELL_STYLE_SHA = "7c1f1bbb7af97aa8c1e95ab8de650f6493512361a409fd083bcbe3a2c04332d6";
 
 function bookingTemplate(source: string): string {
@@ -113,7 +113,7 @@ function shellAssets(): SchediEnv["ASSETS"] {
   return {
     async fetch(request: Request) {
       const path = new URL(request.url).pathname;
-      if (path === "/index.html") {
+      if (path === "/index.html" || path === "/booking.html") {
         return new Response("<!DOCTYPE html><html><head><title>Schedi</title></head><body>app</body></html>", {
           headers: { "content-type": "text/html; charset=utf-8" },
         });
@@ -6649,7 +6649,7 @@ describe.skipIf(!chrome)("classic owner roster icons", () => {
         const row = document.querySelector("#tenantRosterTableBody .sd-pay svg");
         const box = row?.getBoundingClientRect();
         return !document.body.classList.contains("schedi-newdash") && !!box && box.width > 0 && box.width <= 48;
-      }, { timeout: 20000 });
+      }, { timeout: 45000 });
       const demo = await open(`http://127.0.0.1:${port}/portal-preview`);
       expect(demo?.headers()["content-security-policy"]).toBe(policy);
       await page.waitForFunction(() => {

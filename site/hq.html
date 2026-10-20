@@ -3240,8 +3240,15 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
         var STORAGE_KEY = 'siteforge.platformState.v2';
         var hydratedFromLocal = false;
 
+        function noteBookingAvailability(tenant) {
+            if (!tenant || Object.prototype.hasOwnProperty.call(tenant, 'subscriptionStatus')) return;
+            if (tenant.acceptingBookings === false) tenant.subscriptionStatus = 'paused';
+            else if (tenant.acceptingBookings === true) tenant.subscriptionStatus = 'active';
+        }
+
         function stripTenantSecrets(tenant) {
             if (tenant && Object.prototype.hasOwnProperty.call(tenant, 'ownerPassword')) delete tenant.ownerPassword;
+            noteBookingAvailability(tenant);
         }
 
         function publicSlotFromAppointment(a) {

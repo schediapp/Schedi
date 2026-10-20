@@ -22,6 +22,7 @@
  */
 
 import { handleAuthRequest, saveOwnerSecret, authReady, readSession, readLogoWriteSession, passwordMatches } from './owner-auth.js';
+import { requireAgency } from './agency-session.js';
 import { runUnpaidDigest } from './unpaid-digest.js';
 import { runDepositFollowups, runSignupReminders, isAwaitingDeposit, signupAwaitingCheckout } from './flow-gaps.js';
 import { resolveOwnerNotifyAddress } from './owner-notify.js';
@@ -44,7 +45,8 @@ import { handleBookingMailPost } from './booking-mail.js';
 import { rateLimitOk } from './rate-limit.js';
 import { handleOwnerBillingSchedule, ownerBillingScheduleAction, subscriptionScheduleFromStripe } from './owner-billing-schedule.js';
 import {
-  splitTenant,
+  shapePublicBookingFields,
+  shapePublicPatch,
   mergePrivateInto,
   getPrivateTenant,
   listPrivateTenants,
@@ -1132,14 +1134,15 @@ async function stripeRequest(env, path, { method, params, extraHeaders } = {}) {
 }
 
 async function patchTenantFields(env, idToken, tenantId, rawPatch) {
-  // Billing fields (stripe ids, monthlyPrice, paymentForm, complimentaryPro...) go to the private doc.
-  const { pub: patch, priv } = splitTenant(rawPatch || {});
-  if (Object.keys(priv).length) await patchPrivateTenant(env, tenantId, priv);
-  const keys = Object.keys(patch).filter((k) => patch[k] !== undefined);
-  if (!keys.length) return;
-  const qs = keys.map((k) => 'updateMask.fieldPaths=' + encodeURIComponent(k)).join('&');
+  // Billing fields go to the private doc. The public doc keeps booking-page fields only.
+  const shaped = shapePublicPatch(rawPatch || {});
+  if (Object.keys(shaped.priv).length) await patchPrivateTenant(env, tenantId, shaped.priv);
+  const keys = Object.keys(shaped.pub).filter((k) => shaped.pub[k] !== undefined);
+  const mask = keys.concat(shaped.drop || []);
+  if (!mask.length) return;
+  const qs = mask.map((k) => 'updateMask.fieldPaths=' + encodeURIComponent(k)).join('&');
   const fields = {};
-  for (const k of keys) fields[k] = encodeFirestoreValue(patch[k]);
+  for (const k of keys) fields[k] = encodeFirestoreValue(shaped.pub[k]);
   const res = await fetch(tenantDocUrl(env, tenantId) + '?' + qs, {
     method: 'PATCH',
     headers: await adminAuthHeaders(env),
@@ -1375,8 +1378,8 @@ function defaultSignupTenant(meta, billing) {
 }
 
 async function createTenantDocument(env, idToken, fullTenant) {
-  // New signups: public booking-page fields on the public doc, owner contact + billing on the private doc.
-  const { pub: tenant, priv } = splitTenant(fullTenant);
+  // New signups: booking-page fields on the public doc, owner contact + billing on the private doc.
+  const { pub: tenant, priv } = shapePublicBookingFields(fullTenant);
   tenant.id = fullTenant.id;
   const fields = {};
   for (const k of Object.keys(tenant)) {
@@ -1588,10 +1591,8 @@ async function handleAgencyProvisionMail(request, env, origin) {
   if (request.method !== 'POST') return json({ ok: false, error: 'method_not_allowed' }, 405, origin);
   let data = {};
   try { data = await request.json(); } catch (_) { data = {}; }
-  const session = await readSession(env, data.session);
-  if (!session || session.role !== 'agency') {
-    return json({ ok: false, error: 'session_required' }, 401, origin);
-  }
+  const gate = await requireAgency(env, request, data);
+  if (!gate.ok) return json({ ok: false, error: gate.error }, gate.status, origin);
   const businessName = String(data.businessName || data.name || '').trim().slice(0, 80);
   const slug = String(data.slug || '').trim();
   const ownerName = String(data.ownerName || '').trim().slice(0, 80);
@@ -1808,16 +1809,27 @@ async function handleBillingSignup(request, env, origin) {
   }, 200, origin);
 }
 
-/** Signed-in owner of this business, or the agency. Billing actions that touch a tenant's Stripe customer need it. */
+/**
+ * Signed-in owner of this business, or the agency.
+ * true = allowed, 'forbidden' = signed in as someone else, false = no session.
+ * Boolean false stays a 401 so existing callers and test doubles keep working.
+ */
 async function billingSessionAllows(env, sessionToken, tenantId) {
   try {
     const session = await readSession(env, sessionToken);
     if (!session) return false;
     if (session.role === 'agency') return true;
-    return session.role === 'owner' && String(session.tenantId || '') === String(tenantId || '');
+    if (session.role === 'owner' && String(session.tenantId || '') === String(tenantId || '')) return true;
+    return 'forbidden';
   } catch (_) {
     return false;
   }
+}
+
+function billingDenied(allowed) {
+  if (allowed === true) return null;
+  if (allowed === 'forbidden') return { status: 403, error: 'forbidden' };
+  return { status: 401, error: 'session_required' };
 }
 
 const LIVE_SUBSCRIPTION_STATUSES = new Set(['active', 'trialing', 'past_due', 'unpaid', 'incomplete']);
@@ -1878,9 +1890,8 @@ async function handleBillingCheckout(request, env, origin) {
   const plan = String(data.plan || '').trim().toLowerCase();
   if (!tenantId) return json({ ok: false, error: 'invalid_tenant' }, 400, origin);
   if (plan !== 'starter' && plan !== 'pro') return json({ ok: false, error: 'invalid_plan' }, 400, origin);
-  if (!(await billingSessionAllows(env, data.session, tenantId))) {
-    return json({ ok: false, error: 'session_required' }, 401, origin);
-  }
+  const checkoutDenied = billingDenied(await billingSessionAllows(env, data.session, tenantId));
+  if (checkoutDenied) return json({ ok: false, error: checkoutDenied.error }, checkoutDenied.status, origin);
 
   let tenant;
   try {
@@ -1941,9 +1952,8 @@ async function handleBillingPortal(request, env, origin) {
   }
   const tenantId = safeTenantId(data.tenantId || data.tenant_id);
   if (!tenantId) return json({ ok: false, error: 'invalid_tenant' }, 400, origin);
-  if (!(await billingSessionAllows(env, data.session, tenantId))) {
-    return json({ ok: false, error: 'session_required' }, 401, origin);
-  }
+  const portalDenied = billingDenied(await billingSessionAllows(env, data.session, tenantId));
+  if (portalDenied) return json({ ok: false, error: portalDenied.error }, portalDenied.status, origin);
   let tenant;
   try {
     const idToken = await firebaseAnonymousToken(env);
@@ -1985,7 +1995,7 @@ async function handleBillingStatus(request, env, origin, url) {
   if (!tenant) return json({ ok: false, error: 'tenant_not_found' }, 404, origin);
   if (!signedIn) {
     // Without the owner's (or agency) session, only what the public page already shows.
-    return json({ ok: true, tenantId, subscriptionStatus: tenant.subscriptionStatus || null, plan: tenant.plan || null, source: 'firestore', limited: true }, 200, origin);
+    return json({ ok: true, tenantId, plan: tenant.plan || null, source: 'firestore', limited: true }, 200, origin);
   }
   return json(
     {
@@ -2947,11 +2957,24 @@ async function notifyOwnerOfCancellations(env, tenant, bookings) {
   return results;
 }
 
+function workersDevAuthBlocked(url) {
+  const host = String(url.hostname || '').toLowerCase();
+  if (!host.endsWith('.workers.dev')) return false;
+  const path = url.pathname || '/';
+  if (path === '/auth' || path.startsWith('/auth/')) return true;
+  // Live monitoring uses /api/ops-snapshot (bearer) and Resend uses
+  // /api/resend-events (Svix). Only the default-password audit is blocked here.
+  if (path === '/api/ops-default-passwords') return true;
+  return false;
+}
+
 export default {
   async fetch(request, env, ctx) {
     const origin = request.headers.get('Origin') || '';
     const url = new URL(request.url);
     const path = url.pathname.replace(/\/+$/, '') || '/';
+    // Cron triggers call scheduled(), not this fetch handler. schedi.app routes stay open.
+    if (workersDevAuthBlocked(url)) return json({ ok: false, error: 'not_found' }, 404, origin);
     if (path === '/api/ops-snapshot') {
       return handleOpsSnapshotHttp(request, env, { stripeRequest, adminAuthHeaders });
     }

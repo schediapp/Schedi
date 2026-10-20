@@ -94,6 +94,9 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
+const OPEN_DAY = { open: true, start: "08:00 AM", end: "08:00 PM" };
+const OPEN_WEEK = { Sun: OPEN_DAY, Mon: OPEN_DAY, Tue: OPEN_DAY, Wed: OPEN_DAY, Thu: OPEN_DAY, Fri: OPEN_DAY, Sat: OPEN_DAY };
+
 function deps(extra: Record<string, unknown> = {}) {
   return {
     json,
@@ -103,6 +106,7 @@ function deps(extra: Record<string, unknown> = {}) {
       name: "Acme",
       plan: "pro",
       timezone: "America/New_York",
+      operatingHours: OPEN_WEEK,
       services: [],
       appointments: (await loadPrivateRoster(env, tenantId)).appointments,
     })),

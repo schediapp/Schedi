@@ -1,4 +1,8 @@
 name = "schedi-email-worker"
+# Crons are scheduled() triggers, not HTTP.
+# workers.dev stays on for live monitoring and the Resend webhook. Runtime still
+# blocks /auth/* and /api/ops-default-passwords on *.workers.dev. /api/ops-snapshot
+# (bearer) and /api/resend-events (signature) stay open there.
 workers_dev = true
 main = "src/index.js"
 compatibility_date = "2026-09-28"
@@ -102,6 +106,16 @@ zone_name = "schedi.app"
 pattern = "schedi.app/api/webhooks/square*"
 zone_name = "schedi.app"
 
+# Same paths the workers.dev host already serves. The trailing * lets them move
+# onto schedi.app later without a second route change.
+[[routes]]
+pattern = "schedi.app/api/ops-snapshot*"
+zone_name = "schedi.app"
+
+[[routes]]
+pattern = "schedi.app/api/resend-events*"
+zone_name = "schedi.app"
+
 # Hourly: each tenant sends when local hour matches tenant.reminderHour (default 8).
 # Handler skips tenants with remindersEnabled === false.
 # */12 refreshes private iCal busy blocks only. The scheduled handler returns
@@ -165,3 +179,19 @@ name = "RL_CLIENTS"
 type = "ratelimit"
 namespace_id = "41006"
 simple = { limit = 60, period = 60 }
+
+# Auth sign-in. Cloudflare ratelimit periods are only 10 or 60 seconds.
+# 10/60 per IP and 5/60 per email. No global cap: a shared counter lets one
+# client lock every owner and HQ out. Created on the next email-worker deploy.
+# The worker enforces the same 60s window in-isolate when a binding is missing.
+[[unsafe.bindings]]
+name = "RL_AUTH_IP"
+type = "ratelimit"
+namespace_id = "41007"
+simple = { limit = 10, period = 60 }
+
+[[unsafe.bindings]]
+name = "RL_AUTH_EMAIL"
+type = "ratelimit"
+namespace_id = "41008"
+simple = { limit = 5, period = 60 }
