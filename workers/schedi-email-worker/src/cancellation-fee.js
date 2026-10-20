@@ -68,10 +68,7 @@ export function cancellationFeeSentence(tenant, price) {
     : (String(settings.percent) + '% of the service price');
   if (settings.type === 'percent' && quote.amount >= 0.5) feeDesc += ' ($' + quote.amount.toFixed(2) + ')';
   const when = cancellationWindowLabel(settings.hours);
-  const collect = tenantPlanName(tenant) === 'pro'
-    ? ' If you pay by card, this fee is charged to that card.'
-    : '';
-  return 'If you cancel ' + when + ', a cancellation fee of ' + feeDesc + ' applies.' + collect;
+  return 'If you cancel ' + when + ', a cancellation fee of ' + feeDesc + ' applies. Other ways to pay stay available.';
 }
 
 export function cancellationPolicyPublic(tenant) {

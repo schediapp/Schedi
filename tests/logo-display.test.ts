@@ -120,9 +120,11 @@ function bookingDocument() {
   const ids = [
     "bizLogo",
     "bizLogoInitials",
+    "bizSchediMark",
     "bizLogoWrap",
     "pubHeaderLogo",
     "pubHeaderInitials",
+    "pubHeaderMark",
     "bizTitle",
     "bizIndustry",
     "bizAddress",
@@ -206,27 +208,37 @@ describe("business logo display", () => {
   });
 
   it("paints the booking header and business card for the current design and ?newbook=1", () => {
-    expect(html).toContain("html.schedi-newbook .pub-header-logo, html.schedi-newbook .pub-header-initials { border-radius: 16px; }");
+    expect(html).toContain("html.schedi-newbook .biz-schedi-mark");
     expect(html).not.toContain("html.schedi-newbook .pub-header-logo { display: none");
     const shown = paintBooking({ name: "Aria Rose", logoUrl: "", logo: LOGO });
+    expect(shown.els.pubHeaderMark.hidden).toBe(false);
     expect(shown.els.pubHeaderLogo.hidden).toBe(false);
     expect(shown.els.pubHeaderLogo.src).toBe(LOGO);
     expect(shown.els.bizLogo.hidden).toBe(false);
     expect(shown.els.bizLogo.src).toBe(LOGO);
     expect(shown.els.pubHeaderInitials.hidden).toBe(true);
-    expect(shown.els.pubHeaderInitials.textContent).toBe("AR");
+    expect(shown.els.pubHeaderInitials.textContent).toBe("");
     expect(shown.els.bizLogoInitials.hidden).toBe(true);
-    expect(shown.els.bizLogoInitials.textContent).toBe("AR");
+    expect(shown.els.bizSchediMark.hidden).toBe(true);
     expect(shown.els.bizTitle.textContent).toBe("Aria Rose");
 
-    const fallback = paintBooking({ name: "Aria Rose" });
+    const fallback = paintBooking({ name: "Northside" });
+    expect(fallback.els.pubHeaderMark.hidden).toBe(true);
     expect(fallback.els.pubHeaderLogo.hidden).toBe(true);
     expect(fallback.els.pubHeaderLogo.src).toBe("");
+    expect(fallback.els.pubHeaderInitials.hidden).toBe(true);
+    expect(fallback.els.pubHeaderInitials.textContent).toBe("");
     expect(fallback.els.bizLogo.hidden).toBe(true);
-    expect(fallback.els.pubHeaderInitials.hidden).toBe(false);
-    expect(fallback.els.pubHeaderInitials.textContent).toBe("AR");
-    expect(fallback.els.bizLogoInitials.hidden).toBe(false);
-    expect(fallback.els.bizLogoInitials.textContent).toBe("AR");
+    expect(fallback.els.bizLogoInitials.hidden).toBe(true);
+    expect(fallback.els.bizSchediMark.hidden).toBe(false);
+    expect(fallback.els.bizLogoWrap.hidden).toBe(false);
+
+    fallback.api.hideBroken(fallback.els.bizLogo);
+    expect(fallback.els.bizLogoInitials.hidden).toBe(true);
+    expect(fallback.els.bizSchediMark.hidden).toBe(false);
+    fallback.api.hideBroken(fallback.els.pubHeaderLogo);
+    expect(fallback.els.pubHeaderInitials.hidden).toBe(true);
+    expect(fallback.els.pubHeaderMark.hidden).toBe(true);
   });
 
   it("writes logoUrl and logo on upload and profile save, and a reload still paints that URL", () => {
