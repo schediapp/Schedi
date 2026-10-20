@@ -949,6 +949,25 @@ html.schedi-newhq #hqDash .hqd-metrics div { background: color-mix(in srgb, var(
 html.schedi-newhq #hqDash .hqd-metrics strong { display: block; font-size: 16px; color: var(--hqd-text); }
 html.schedi-newhq #hqDash .hqd-metrics strong.is-hot { color: var(--hqd-amber); }
 html.schedi-newhq #hqDash .hqd-metrics span { display: block; margin-top: 2px; font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--hqd-muted); }
+html.schedi-newhq #hqDash .hqd-loading,
+html.schedi-newhq #hqDash .hqd-error { margin: 8px 0 12px; color: var(--hqd-muted); font-size: 13px; font-weight: 700; line-height: 1.4; overflow-wrap: anywhere; }
+html.schedi-newhq #hqDash .hqd-error { color: var(--hqd-text); }
+html.schedi-newhq #hqDash .hqd-retry {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-height: 44px; margin-top: 8px; padding: 8px 14px;
+    border-radius: 12px; border: 1px solid var(--hqd-line);
+    background: var(--hqd-panel); color: var(--hqd-text);
+    font-size: 13px; font-weight: 800; cursor: pointer;
+}
+html.schedi-newhq #hqDash .hqd-skel {
+    display: block; height: 14px; margin: 8px 0 12px; border-radius: 8px;
+    background: color-mix(in srgb, var(--hqd-muted) 35%, transparent);
+    animation: schedi-newhq-skel 1s ease-in-out infinite alternate;
+}
+@keyframes schedi-newhq-skel { from { opacity: 0.4; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+    html.schedi-newhq #hqDash .hqd-skel { animation: none; opacity: 0.7; }
+}
 html.schedi-newhq #hqDash .hqd-biz-side { display: flex; align-items: flex-start; gap: 2px; }
 html.schedi-newhq #hqDash .hq-more > summary {
     list-style: none; width: 48px; height: 48px; min-width: 48px; min-height: 48px; margin: -8px -6px 0 0; padding: 0;
@@ -2979,7 +2998,7 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
             window.dispatchEvent(new Event('db_ready'));
         } else {
         const { initializeApp } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js");
-        const { getAuth, signInAnonymously, signInWithCustomToken } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js");
+        const { initializeAuth, indexedDBLocalPersistence, browserLocalPersistence, browserSessionPersistence, signInAnonymously, signInWithCustomToken } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js");
         const { getFirestore, doc, getDoc, onSnapshot, collection } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
 
         // Safely parse injected configs to prevent [object Object] syntax crashes
@@ -3008,7 +3027,12 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
         } else {
             try {
                 const app = initializeApp(firebaseConfig);
-                const auth = getAuth(app);
+                // Same persistence chain as Firebase's default auth helper, without its
+                // popup/redirect resolver. That resolver loads https://apis.google.com/js/api.js
+                // on phones and Safari.
+                const auth = initializeAuth(app, {
+                    persistence: [indexedDBLocalPersistence, browserLocalPersistence, browserSessionPersistence]
+                });
                 const db = getFirestore(app);
 
                 window.db = db;
@@ -3422,11 +3446,20 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
             } catch (err) {}
         }
 
+        var hqCountsTicket = 0;
+
         async function refreshAppointmentCounts() {
             var session = schediAuthSession();
             if (!session || !platformState.isAgencyMasterLoggedIn) {
                 platformState.appointmentCounts = null;
+                platformState.countsLoad = '';
                 return;
+            }
+            var ticket = ++hqCountsTicket;
+            var had = platformState.countsLoad === 'ready';
+            if (!had) {
+                platformState.countsLoad = 'loading';
+                try { renderAgencyDashboard(); } catch (errDashLoad) {}
             }
             try {
                 var res = await fetch('https://schedi.app/api/bookings', {
@@ -3434,19 +3467,30 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ action: 'counts', session: session })
                 });
+                if (ticket !== hqCountsTicket) return;
                 var data = {};
                 try { data = await res.json(); } catch (err) { data = {}; }
                 if (!res.ok || !data.ok || !data.counts || typeof data.counts !== 'object') {
-                    platformState.appointmentCounts = null;
-                    try { renderAgencyDashboard(); } catch (errDash) {}
+                    if (!had) {
+                        platformState.appointmentCounts = null;
+                        platformState.tenantHealth = null;
+                        platformState.countsLoad = 'error';
+                        try { renderAgencyDashboard(); } catch (errDash) {}
+                    }
                     return;
                 }
                 platformState.appointmentCounts = data.counts;
                 platformState.tenantHealth = (data.health && typeof data.health === 'object') ? data.health : null;
+                platformState.countsLoad = 'ready';
                 try { renderAgencyDashboard(); } catch (errDash) {}
             } catch (err) {
-                platformState.appointmentCounts = null;
-                try { renderAgencyDashboard(); } catch (errDash) {}
+                if (ticket !== hqCountsTicket) return;
+                if (!had) {
+                    platformState.appointmentCounts = null;
+                    platformState.tenantHealth = null;
+                    platformState.countsLoad = 'error';
+                    try { renderAgencyDashboard(); } catch (errDash) {}
+                }
             }
         }
 
@@ -3879,12 +3923,11 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
             platformState.isAgencyMasterLoggedIn = true;
             platformState.isTenantOwnerLoggedIn = false;
             platformState.ownerSelfSession = false;
-            platformState.appointmentCounts = { 'harbor-demo': 42, 'northwind-demo': 6, 'lumen-demo': 11 };
-            platformState.tenantHealth = {
+            hqSetCounts('ready', { 'harbor-demo': 42, 'northwind-demo': 6, 'lumen-demo': 11 }, {
                 'harbor-demo': { month: 18, unpaid: 3, lastBooking: '2026-10-15' },
                 'northwind-demo': { month: 0, unpaid: 0, lastBooking: '' },
                 'lumen-demo': { month: 4, unpaid: 0, lastBooking: '2026-10-12' }
-            };
+            });
             window.__schediCloudTenantsLoaded = true;
             var note = document.getElementById('hqDemoNote');
             if (note) note.hidden = false;
@@ -5369,6 +5412,7 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
                     if (platformState.isAgencyMasterLoggedIn) {
                         platformState.isAgencyMasterLoggedIn = false;
                         platformState.appointmentCounts = null;
+                        platformState.countsLoad = '';
                         try { clearPrivateAppointments(); } catch (errA) {}
                         try { clearPrivateProfiles(); } catch (errP) {}
                         try { updateMasterAuthUI(); } catch (errU) {}
@@ -6501,7 +6545,7 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
             try { meta = schediAuthMeta(); } catch (errMeta) { meta = null; }
             var agencySession = (!meta || !meta.role || meta.role === 'agency') ? session : '';
             try { platformState.isAgencyMasterLoggedIn = false; } catch (errFlag) {}
-            try { platformState.appointmentCounts = null; } catch (errCnt) {}
+            try { platformState.appointmentCounts = null; platformState.countsLoad = ''; } catch (errCnt) {}
             if (agencySession) {
                 try { clearPrivateAppointments(); } catch (errA) {}
                 try { clearPrivateProfiles(); } catch (errP) {}
@@ -6900,18 +6944,48 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
             saveState();
             renderAgencyDashboard();
         };
-        function hqDashSheetHtml(t) {
+        function hqSetCounts(load, counts, health) {
+            platformState.countsLoad = load || '';
+            platformState.appointmentCounts = counts;
+            platformState.tenantHealth = health;
+        }
+        function hqCountsPhase() {
+            if (platformState.countsLoad === 'ready') return 'ready';
+            if (platformState.countsLoad === 'error') return 'error';
+            if (platformState.countsLoad === 'loading') return 'loading';
+            if (window.__SCHEDI_HQ_DEMO && platformState.tenantHealth) return 'ready';
+            if (!platformState.isAgencyMasterLoggedIn) return 'ready';
+            return 'loading';
+        }
+        function hqCountsHoldHtml() {
+            var phase = hqCountsPhase();
+            if (phase === 'error') return '<p class="hqd-error" role="alert">Could not load bookings.</p><button type="button" class="hqd-retry" onclick="refreshAppointmentCounts()">Retry</button>';
+            return '<p class="hqd-loading" role="status">Loading bookings…</p><div class="hqd-skel" aria-hidden="true"></div>';
+        }
+        function hqActivityNumbers(t) {
             var h = hqHealthOf(t) || {};
             var counts = platformState.appointmentCounts || {};
-            var all = counts[t.id] == null ? '—' : String(Number(counts[t.id]) || 0);
-            var month = h.month == null ? '—' : String(h.month);
-            var unpaid = h.unpaid == null ? '—' : String(h.unpaid);
-            var last = hqDashShortDate(h.lastBooking) || '—';
+            var all = counts[t.id] == null ? '0' : String(Number(counts[t.id]) || 0);
+            return {
+                all: all,
+                month: h.month == null ? '0' : String(h.month),
+                unpaid: h.unpaid == null ? '0' : String(h.unpaid),
+                unpaidN: Number(h.unpaid) || 0,
+                last: hqDashShortDate(h.lastBooking) || 'None'
+            };
+        }
+        function hqDashSheetHtml(t) {
+            var hold = hqCountsPhase() === 'ready' ? '' : hqCountsHoldHtml();
+            var n = hqActivityNumbers(t);
+            var all = n.all;
+            var month = n.month;
+            var unpaid = n.unpaid;
+            var last = n.last;
             var since = hqDashSince(t.createdAt);
             var price = hqDashMoney(Number(t.monthlyPrice) || 0, false) + '/mo';
             return '<div class="hqd-pills">' + hqDashStatusPill(t) + hqDashPlanPill(t) + '<span class="hqd-pill hqd-pill-grey">' + esc(price) + '</span>' + (since ? '<span class="hqd-pill hqd-pill-grey">' + esc(since) + '</span>' : '') + '</div>'
                 + hqDashLiveRow(t, false) + hqDashCompRow(t, false)
-                + '<h4 class="hqd-label">Activity</h4><div class="hqd-metrics hqd-metrics-4"><div><strong>' + esc(all) + '</strong><span>All time</span></div><div><strong>' + esc(month) + '</strong><span>This month</span></div><div><strong>' + esc(unpaid) + '</strong><span>Unpaid</span></div><div><strong>' + esc(last) + '</strong><span>Last</span></div></div>'
+                + '<h4 class="hqd-label">Activity</h4>' + (hold || ('<div class="hqd-metrics hqd-metrics-4"><div><strong>' + esc(all) + '</strong><span>All time</span></div><div><strong>' + esc(month) + '</strong><span>This month</span></div><div><strong>' + esc(unpaid) + '</strong><span>Unpaid</span></div><div><strong>' + esc(last) + '</strong><span>Last</span></div></div>'))
                 + '<h4 class="hqd-label">Owner</h4>'
                 + '<p class="hqd-contact"><i class="fa-solid fa-user" aria-hidden="true"></i> ' + esc(t.ownerName || '—') + '</p>'
                 + '<p class="hqd-contact"><i class="fa-solid fa-envelope" aria-hidden="true"></i> ' + esc(t.ownerEmail || '—') + '</p>'
@@ -6939,15 +7013,15 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
             document.body.classList.add('hqd-sheet-open');
         }
         function hqDashBizCard(t) {
-            var h = hqHealthOf(t) || {};
-            var month = h.month == null ? '—' : String(h.month);
-            var unpaid = h.unpaid == null ? '—' : String(h.unpaid);
-            var last = hqDashShortDate(h.lastBooking) || '—';
+            var n = hqActivityNumbers(t);
+            var metrics = hqCountsPhase() === 'ready'
+                ? '<div class="hqd-metrics"><div><strong>' + esc(n.month) + '</strong><span>This month</span></div><div><strong class="' + (n.unpaidN > 0 ? 'is-hot' : '') + '">' + esc(n.unpaid) + '</strong><span>Unpaid</span></div><div><strong>' + esc(n.last) + '</strong><span>Last booking</span></div></div>'
+                : hqCountsHoldHtml();
             var warns = hqWarnings(t).map(function (w) { return '<span class="hqd-pill hqd-pill-rose"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> ' + esc(w) + '</span>'; }).join('');
             var comp = isComplimentaryPro(t) ? '<span class="hqd-pill hqd-pill-ok"><i class="fa-solid fa-gift" aria-hidden="true"></i> Complimentary</span>' : '';
             var id = jsArg(t.id);
             return '<article class="hqd-card hqd-biz" data-hqd-open="' + esc(t.id) + '"><div class="hqd-biz-top"><div><button type="button" class="hqd-name" onclick="hqDashOpen(' + id + ')">' + esc(t.name) + '</button><p class="hqd-slug"><span class="hqd-mono">/' + esc(t.slug || t.id) + '</span> · ' + esc(t.industry || '') + '</p><p class="hqd-owner">' + esc(t.ownerName || '') + (t.ownerEmail ? ' · ' + esc(t.ownerEmail) : '') + '</p><div class="hqd-pills">' + hqDashPlanPill(t) + comp + warns + '</div></div><div class="hqd-biz-side">' + hqDashStatusPill(t) + hqDashMenu(t) + '</div></div>'
-                + '<div class="hqd-metrics"><div><strong>' + esc(month) + '</strong><span>This month</span></div><div><strong class="' + (Number(h.unpaid) > 0 ? 'is-hot' : '') + '">' + esc(unpaid) + '</strong><span>Unpaid</span></div><div><strong>' + esc(last) + '</strong><span>Last booking</span></div></div>'
+                + metrics
                 + hqDashLiveRow(t, true)
                 + '<button type="button" class="hqd-login" onclick="loginAsTenantOwner(' + id + ')"><i class="fa-solid fa-arrow-right-to-bracket" aria-hidden="true"></i> Log in to portal</button></article>';
         }
@@ -6984,13 +7058,19 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
             }
             var demo = document.getElementById('hqDashDemo');
             if (demo) demo.hidden = !document.documentElement.classList.contains('schedi-hq-demo');
+            var countsPhase = hqCountsPhase();
             var stats = document.getElementById('hqdStats');
             if (stats) {
                 function cell(id, label, value, sub) { return '<article class="hqd-stat"><p>' + label + '</p><strong id="' + id + '">' + value + '</strong><span>' + sub + '</span></article>'; }
+                var monthValue = countsPhase === 'ready' ? String(month) : (countsPhase === 'error' ? '—' : '…');
+                var unpaidValue = countsPhase === 'ready' ? String(unpaid) : (countsPhase === 'error' ? '—' : '…');
+                var allValue = countsPhase === 'ready' && counts ? String(all) : (countsPhase === 'error' ? '—' : '…');
+                var monthSub = countsPhase === 'loading' ? 'Loading bookings…' : (countsPhase === 'error' ? '<button type="button" class="hqd-retry" onclick="refreshAppointmentCounts()">Retry</button>' : ('bookings · ' + allValue + ' all time'));
+                var unpaidSub = countsPhase === 'loading' ? 'Loading bookings…' : 'appointments, all sites';
                 stats.innerHTML = cell('hqdStatBusinesses', 'Businesses', ready ? String(tenants.length) : '—', ready ? (live + ' live · ' + pausedN + ' paused') : 'live and paused')
                     + cell('hqdStatMrr', 'Agency MRR', ready ? hqDashMoney(mrr, false) : '—', 'active subscriptions')
-                    + cell('hqdStatMonth', 'This month', ready ? String(month) : '—', 'bookings · ' + (ready && counts ? all : '—') + ' all time')
-                    + cell('hqdStatUnpaid', 'Unpaid', ready ? String(unpaid) : '—', 'appointments, all sites');
+                    + cell('hqdStatMonth', 'This month', monthValue, monthSub)
+                    + cell('hqdStatUnpaid', 'Unpaid', unpaidValue, unpaidSub);
             }
             var attn = [];
             tenants.forEach(function (t) {
@@ -6999,7 +7079,7 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
                 var due = Number(h.unpaid) || 0;
                 var isPaused = st === 'paused';
                 var setup = st === 'setup';
-                if (!isPaused && !setup && due <= 0) return;
+                if (!isPaused && !setup && (countsPhase !== 'ready' || due <= 0)) return;
                 var id = jsArg(t.id);
                 var slug = 'schedi.app/' + (t.slug || t.id);
                 var warns = hqWarnings(t).map(function (w) { return '<span class="hqd-pill hqd-pill-rose"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> ' + esc(w) + '</span>'; }).join('');
@@ -7015,7 +7095,7 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
             var attnCount = document.getElementById('hqdAttnCount');
             if (attnCount) { attnCount.hidden = attn.length === 0; attnCount.textContent = String(attn.length); }
             var attnEl = document.getElementById('hqdAttention');
-            if (attnEl) attnEl.innerHTML = attn.length ? attn.map(function (row) { return row.html; }).join('') : '<p class="hqd-meta">Nothing needs attention.</p>';
+            if (attnEl) attnEl.innerHTML = attn.length ? attn.map(function (row) { return row.html; }).join('') : (countsPhase === 'ready' ? '<p class="hqd-meta">Nothing needs attention.</p>' : hqCountsHoldHtml());
             var latest = tenants.slice().sort(function (a, b) {
                 var ha = (hqHealthOf(a) || {}).lastBooking || '';
                 var hb = (hqHealthOf(b) || {}).lastBooking || '';
@@ -7023,10 +7103,10 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
                 return String(a.name || '').localeCompare(String(b.name || ''));
             });
             var latestEl = document.getElementById('hqdLatest');
-            if (latestEl) latestEl.innerHTML = latest.map(function (t) {
+            if (latestEl) latestEl.innerHTML = countsPhase !== 'ready' ? hqCountsHoldHtml() : latest.map(function (t) {
                 var h = hqHealthOf(t) || {};
-                var when = hqDashShortDate(h.lastBooking) || '—';
-                var shown = h.month == null ? '—' : String(h.month);
+                var when = hqDashShortDate(h.lastBooking) || 'None';
+                var shown = h.month == null ? '0' : String(h.month);
                 var active = t.subscriptionStatus === 'active';
                 return '<article class="hqd-card hqd-latest" data-hqd-open="' + esc(t.id) + '"><span class="hqd-when">' + esc(when) + '</span><button type="button" class="hqd-latest-main" onclick="hqDashOpen(' + jsArg(t.id) + ')"><strong>' + esc(t.name) + '</strong><span>' + esc(shown + ' this month · ' + (t.industry || 'Business')) + '</span></button>' + (active ? '<span class="hqd-pill hqd-pill-ok">Active</span>' : '<span class="hqd-pill hqd-pill-amber">Paused</span>') + hqDashMenu(t, true) + '</article>';
             }).join('');
@@ -14580,7 +14660,7 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
     <script>var __firebase_config = ${configStr};<\/script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { initializeAuth, indexedDBLocalPersistence, browserLocalPersistence, browserSessionPersistence, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         let firebaseConfig = {};
@@ -14595,7 +14675,11 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
         if (firebaseConfig && firebaseConfig.apiKey) {
             try {
                 const app = initializeApp(firebaseConfig);
-                const auth = getAuth(app);
+                // Anonymous sign-in only. Skip the popup/redirect resolver so phones
+                // do not load https://apis.google.com/js/api.js under the page CSP.
+                const auth = initializeAuth(app, {
+                    persistence: [indexedDBLocalPersistence, browserLocalPersistence, browserSessionPersistence]
+                });
                 const db = getFirestore(app);
 
                 window.db = db;

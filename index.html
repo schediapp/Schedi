@@ -1264,6 +1264,22 @@ html.schedi-light body.schedi-newdash .roster-sheet-actions > button.sd-act.sd-a
     border-color: #fda4af;
 }
 #tenantPortalSection.schedi-newdash .sd-empty { margin: 0; color: var(--sd-muted); font-size: 13px; padding: 8px 2px; }
+#tenantPortalSection.schedi-newdash .sd-bookings-status { margin: 0; color: var(--sd-muted); font-size: 13px; font-weight: 700; line-height: 1.4; }
+#tenantPortalSection.schedi-newdash .sd-bookings-error { color: var(--sd-text); }
+#tenantPortalSection.schedi-newdash .sd-bookings-retry { min-height: 44px; margin-top: 8px; }
+#tenantPortalSection.schedi-newdash .sd-skel-stack { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+#tenantPortalSection.schedi-newdash .sd-skel {
+    display: block;
+    height: 14px;
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--sd-muted) 35%, transparent);
+    animation: schedi-newdash-skel 1s ease-in-out infinite alternate;
+}
+#tenantPortalSection.schedi-newdash .sd-skel-short { width: 62%; }
+@keyframes schedi-newdash-skel { from { opacity: 0.4; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+    #tenantPortalSection.schedi-newdash .sd-skel { animation: none; opacity: 0.7; }
+}
 #tenantPortalSection.schedi-newdash .sd-ready .sd-stack { margin-top: 0; }
 #tenantPortalSection.schedi-newdash .sd-progress { height: 6px; border-radius: 999px; background: rgba(148, 163, 184, 0.2); overflow: hidden; margin-bottom: 12px; }
 #tenantPortalSection.schedi-newdash .sd-progress > span { display: block; height: 100%; width: 0; background: var(--sd-brand); }
@@ -5949,17 +5965,17 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                             </section>
                             <section class="sd-wait" aria-labelledby="schediWaitHeading">
                                 <h3 id="schediWaitHeading">Waiting on you</h3>
-                                <div id="schediTodayRequests" class="sd-stack"></div>
+                                <div id="schediTodayRequests" class="sd-stack"><p class="sd-bookings-status" role="status">Loading bookings…</p></div>
                             </section>
                             <section class="sd-agenda" aria-labelledby="schediAgendaHeading">
                                 <div class="sd-agenda-head">
                                     <div class="sd-agenda-copy">
                                         <h3 id="schediAgendaHeading">Coming up</h3>
-                                        <p id="schediNextLine" class="sd-next-line">Nothing is lined up yet.</p>
+                                        <p id="schediNextLine" class="sd-next-line">Loading bookings…</p>
                                     </div>
                                     <button type="button" class="sd-btn sd-btn-brand sd-add-phone" data-dash-add-open="1" onclick="schediDashToggleAdd(event)"><i class="fa-solid fa-plus" aria-hidden="true"></i><span>Add appointment</span></button>
                                 </div>
-                                <div id="schediTodaySchedule" class="sd-timeline"></div>
+                                <div id="schediTodaySchedule" class="sd-timeline"><p class="sd-bookings-status" role="status">Loading bookings…</p></div>
                             </section>
                             <section class="sd-ready" id="schediReady" aria-labelledby="schediSetupTitle">
                                 <div class="sd-ready-head">
@@ -6196,7 +6212,7 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                                 </tr>
                             </thead>
                             <tbody id="tenantRosterTableBody" class="divide-y divide-slate-800/80">
-                                <!-- Injected via JS -->
+                                <tr><td colspan="9" class="p-4 text-center"><p class="sd-bookings-status" role="status">Loading bookings…</p></td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -7724,7 +7740,7 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
     <script type="module">
         if (!window.__SCHEDI_DEMO) {
         const { initializeApp } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js");
-        const { getAuth, signInAnonymously, signInWithCustomToken } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js");
+        const { initializeAuth, indexedDBLocalPersistence, browserLocalPersistence, browserSessionPersistence, signInAnonymously, signInWithCustomToken } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js");
         const { getFirestore, doc, getDoc, onSnapshot, collection } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
 
         // Safely parse injected configs to prevent [object Object] syntax crashes
@@ -7753,7 +7769,12 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
         } else {
             try {
                 const app = initializeApp(firebaseConfig);
-                const auth = getAuth(app);
+                // Same persistence chain as Firebase's default auth helper, without its
+                // popup/redirect resolver. That resolver loads https://apis.google.com/js/api.js
+                // on phones and Safari.
+                const auth = initializeAuth(app, {
+                    persistence: [indexedDBLocalPersistence, browserLocalPersistence, browserSessionPersistence]
+                });
                 const db = getFirestore(app);
 
                 window.db = db;
@@ -8209,7 +8230,12 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
             }
         }
 
+        function schediSetBookingsLoad(load) {
+            platformState.bookingsLoad = load || '';
+        }
+
         function clearPrivateAppointments() {
+            schediSetBookingsLoad('');
             (platformState.tenants || []).forEach(function (t) {
                 if (!t) return;
                 t.publicSlots = (t.appointments || []).map(publicSlotFromAppointment).filter(Boolean);
@@ -8224,33 +8250,88 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
             if (typeof rev === 'number' && isFinite(rev)) tenant._rosterRevision = rev;
         }
 
+        var schediBookingsTicket = 0;
+
+        function schediBookingsSettled() {
+            var tenant = (typeof getTenant === 'function') ? getTenant() : null;
+            return !!(tenant && tenant._privateBookingsLoaded === true);
+        }
+
+        function schediPaintBookingSurfaces() {
+            var tenant = (typeof getTenant === 'function') ? getTenant() : null;
+            if (!tenant) return;
+            if (document.getElementById('tenantRosterTableBody')) {
+                try { renderTenantRoster(tenant); } catch (errRoster) {}
+                return;
+            }
+            try { if (window.renderSchediToday) window.renderSchediToday(tenant); } catch (errToday) {}
+        }
+
         async function refreshPrivateBookings() {
             var session = schediAuthSession();
             if (!session) return;
+            var ticket = ++schediBookingsTicket;
+            var settled = schediBookingsSettled();
+            if (!settled) {
+                schediSetBookingsLoad('loading');
+                try { schediPaintBookingSurfaces(); } catch (errPaint) {}
+            }
             try {
                 var res = await fetch('https://schedi.app/api/bookings', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ action: 'list', session: session })
                 });
+                if (ticket !== schediBookingsTicket) return;
                 var data = {};
                 try { data = await res.json(); } catch (err) { data = {}; }
-                if (!res.ok || !data.ok || !Array.isArray(data.tenants)) return;
+                if (!res.ok || data.ok === false) {
+                    if (!schediBookingsSettled()) {
+                        schediSetBookingsLoad('error');
+                        try { schediPaintBookingSurfaces(); } catch (errPaintFail) {}
+                    }
+                    return;
+                }
+                if (!Array.isArray(data.tenants)) {
+                    (platformState.tenants || []).forEach(function (t) {
+                        if (t) t._privateBookingsLoaded = true;
+                    });
+                    schediSetBookingsLoad('ready');
+                    window.__schediRosterLoadedAt = Date.now();
+                    try { schediPaintBookingSurfaces(); } catch (errKeep) {}
+                    return;
+                }
+                var seen = {};
                 data.tenants.forEach(function (row) {
+                    if (row && row.id) seen[String(row.id)] = true;
                     var tenant = (platformState.tenants || []).find(function (t) { return t && t.id === row.id; });
                     if (!tenant) return;
                     tenant.appointments = Array.isArray(row.appointments) ? row.appointments : [];
                     tenant._privateBookingsLoaded = true;
                     rememberRosterRevision(tenant, row);
                 });
+                var active = (typeof getTenant === 'function') ? getTenant() : null;
+                if (active && active.id && !seen[String(active.id)]) {
+                    active.appointments = [];
+                    active._privateBookingsLoaded = true;
+                }
+                schediSetBookingsLoad('ready');
                 window.__schediRosterLoadedAt = Date.now();
                 try { if (window.schediRosterStamp) window.schediRosterStamp(); } catch (errStamp) {}
                 try { renderAgencyDashboard(); } catch (errDash) {}
                 var rosterTenant = (typeof getTenant === 'function') ? getTenant() : null;
                 if (rosterTenant && document.getElementById('tenantRosterTableBody')) {
                     try { renderTenantRoster(rosterTenant); } catch (errRoster) {}
+                } else if (rosterTenant) {
+                    try { if (window.renderSchediToday) window.renderSchediToday(rosterTenant); } catch (errToday) {}
                 }
-            } catch (err) {}
+            } catch (err) {
+                if (ticket !== schediBookingsTicket) return;
+                if (!schediBookingsSettled()) {
+                    schediSetBookingsLoad('error');
+                    try { schediPaintBookingSurfaces(); } catch (errPaintErr) {}
+                }
+            }
         }
 
         async function refreshAppointmentCounts() {
@@ -10401,10 +10482,16 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                 // Offline / transient: keep optimistic restore from localStorage.
                 try { syncTenantAutoLogoffSelect(); } catch (errSel2) {}
                 try { startTenantOwnerIdleWatch(); } catch (errIdle2) {}
+                if (platformState.isTenantOwnerLoggedIn) {
+                    try { refreshPrivateBookings(); } catch (errBookOff) {}
+                }
                 return !!(platformState.isTenantOwnerLoggedIn || platformState.isAgencyMasterLoggedIn);
             }
             try { syncTenantAutoLogoffSelect(); } catch (errSel3) {}
             try { startTenantOwnerIdleWatch(); } catch (errIdle3) {}
+            if (platformState.isTenantOwnerLoggedIn) {
+                try { refreshPrivateBookings(); } catch (errBookMiss) {}
+            }
             return !!(platformState.isTenantOwnerLoggedIn || platformState.isAgencyMasterLoggedIn);
         }
 
@@ -15705,6 +15792,101 @@ function schediQrCardPixels(text, color) {
                 '</form>';
         }
 
+        function schediBookingsPhase(tenant) {
+            if (tenant && tenant._privateBookingsLoaded === true) return 'ready';
+            if (window.__SCHEDI_DEMO && (!tenant || tenant._privateBookingsLoaded !== false)) return 'ready';
+            if (platformState.bookingsLoad === 'error') return 'error';
+            var session = '';
+            try { session = (typeof schediAuthSession === 'function') ? schediAuthSession() : ''; } catch (errSess) { session = ''; }
+            if (!session && platformState.bookingsLoad !== 'loading') return 'ready';
+            return 'loading';
+        }
+
+        function schediBookingsLoadingHtml() {
+            return '<p class="sd-bookings-status" role="status">Loading bookings…</p>' +
+                '<div class="sd-skel-stack" aria-hidden="true"><span class="sd-skel"></span><span class="sd-skel sd-skel-short"></span><span class="sd-skel"></span></div>';
+        }
+
+        function schediBookingsErrorHtml() {
+            return '<p class="sd-bookings-status sd-bookings-error" role="alert">Could not load bookings.</p>' +
+                '<button type="button" class="sd-btn sd-btn-ghost sd-bookings-retry" onclick="refreshPrivateBookings()">Retry</button>';
+        }
+
+        function schediNowMinutes(tenant) {
+            var tz = 'America/New_York';
+            try { tz = (typeof getTenantTimezone === 'function' ? getTenantTimezone(tenant) : '') || tz; } catch (errTz) { tz = 'America/New_York'; }
+            try {
+                var fmt = new Intl.DateTimeFormat('en-US', { timeZone: tz, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+                var hour = NaN;
+                var minute = NaN;
+                fmt.formatToParts(new Date()).forEach(function (part) {
+                    if (part.type === 'hour') hour = parseInt(part.value, 10);
+                    if (part.type === 'minute') minute = parseInt(part.value, 10);
+                });
+                if (hour === 24) hour = 0;
+                if (isFinite(hour) && isFinite(minute)) return hour * 60 + minute;
+            } catch (errNow) {}
+            var local = new Date();
+            return local.getHours() * 60 + local.getMinutes();
+        }
+
+        function schediVisitOpen(app, nowMins) {
+            var start = toMinutes(app && app.time);
+            if (start == null || !isFinite(start)) return true;
+            var dur = Number(app && app.durationMins);
+            if (!isFinite(dur) || dur <= 0) dur = 45;
+            if (nowMins == null || !isFinite(Number(nowMins))) return true;
+            return Number(nowMins) < start + dur;
+        }
+
+        function schediWaitingRequest(app, today, nowMins) {
+            if (!app || appointmentIsCancelled(app)) return false;
+            var st = String(app.status == null ? '' : app.status).replace(/[\s-]+/g, ' ').trim().toLowerCase();
+            if (st === 'denied' || st === 'declined') return false;
+            if (st === 'pending') return true;
+            if (st !== '') return false;
+            var date = String(app.date || '');
+            var day = typeof today === 'string' ? today : '';
+            if (!date || !day) return true;
+            if (date > day) return true;
+            if (date < day) return false;
+            return schediVisitOpen(app, nowMins);
+        }
+
+        function schediSortVisits(a, b) {
+            var ad = String(a.date || '');
+            var bd = String(b.date || '');
+            if (ad !== bd) return ad < bd ? -1 : 1;
+            return rosterApptSortKey(a) - rosterApptSortKey(b);
+        }
+
+        function schediComingVisits(apps, today, limit, nowMins) {
+            var start = String(today || '');
+            var todayRows = (apps || []).filter(function (app) {
+                return !!(app && start && String(app.date || '') === start);
+            }).sort(schediSortVisits);
+            var cap = limit == null ? 4 : Number(limit);
+            if (!isFinite(cap) || cap < 1) cap = 4;
+            var later = (apps || []).filter(function (app) {
+                if (!app || schediWaitingRequest(app, start, nowMins)) return false;
+                var date = String(app.date || '');
+                return !!date && !!start && date > start;
+            }).sort(schediSortVisits).slice(0, cap);
+            return todayRows.concat(later);
+        }
+
+        function schediNextVisitLine(app, today) {
+            if (!app) return 'Nothing is lined up yet.';
+            var who = app.clientName || 'Someone';
+            var time = app.time || 'a time still to set';
+            if (app.date && today && String(app.date) !== String(today)) {
+                var prettyDay = '';
+                try { prettyDay = rosterPrettyDate(app.date); } catch (errDay) { prettyDay = ''; }
+                return who + ' is first, ' + (prettyDay || app.date) + ' at ' + time + '.';
+            }
+            return who + ' is first, at ' + time + '.';
+        }
+
         function renderSchediToday(tenant) {
             if (!schediNewDashOn() || !tenant) return;
             if (typeof schediDenyUndoBoot === 'function') schediDenyUndoBoot(tenant);
@@ -15725,9 +15907,29 @@ function schediQrCardPixels(text, color) {
                 linkEl.textContent = '';
                 linkEl.hidden = true;
             }
+            var phase = schediBookingsPhase(tenant);
+            var statPeople = document.getElementById('schediStatPeople');
+            var statOwed = document.getElementById('schediStatOwed');
+            var statWeek = document.getElementById('schediStatWeekVisits');
+            var lead = document.getElementById('schediNextLine');
+            var requests = document.getElementById('schediTodayRequests');
+            var schedule = document.getElementById('schediTodaySchedule');
+            if (phase !== 'ready') {
+                var hold = phase === 'error' ? schediBookingsErrorHtml() : schediBookingsLoadingHtml();
+                if (statPeople) statPeople.textContent = '…';
+                if (statOwed) statOwed.textContent = '…';
+                if (statWeek) statWeek.textContent = '…';
+                if (dateEl) dateEl.textContent = phase === 'error' ? 'Bookings did not load.' : 'Loading bookings…';
+                if (lead) lead.textContent = phase === 'error' ? 'Could not load bookings.' : 'Loading bookings…';
+                if (requests) requests.innerHTML = hold;
+                if (schedule) schedule.innerHTML = hold;
+            } else {
+            var nowMins = null;
+            try { nowMins = schediNowMinutes(tenant); } catch (errClock) { nowMins = null; }
             var apps = (tenant.appointments || []).filter(function (app) { return app && !appointmentIsCancelled(app) && String(app.status || '').toLowerCase() !== 'denied'; });
             var todayApps = apps.filter(function (app) { return app.date === today; }).sort(function (a, b) { return rosterApptSortKey(a) - rosterApptSortKey(b); });
-            var pending = apps.filter(function (app) { return String(app.status || '').toLowerCase() === 'pending'; });
+            var coming = schediComingVisits(apps, today, 4, nowMins);
+            var pending = apps.filter(function (app) { return schediWaitingRequest(app, today, nowMins); });
             var weekStart = '';
             try { weekStart = rosterWeekStart(today); } catch (errWeek) { weekStart = ''; }
             var weekEnd = weekStart ? addIsoDays(weekStart, 6) : '';
@@ -15737,7 +15939,7 @@ function schediQrCardPixels(text, color) {
                 weekVisits += 1;
             });
             var unpaid = apps.filter(function (app) {
-                if (String(app.status || '').toLowerCase() === 'pending') return false;
+                if (schediWaitingRequest(app, today, nowMins)) return false;
                 return bookingPaymentState(app) === 'unpaid';
             });
             var owed = 0;
@@ -15749,9 +15951,6 @@ function schediQrCardPixels(text, color) {
                 var who = String(app.clientName || '').trim().toLowerCase();
                 if (who) people[who] = true;
             });
-            var statPeople = document.getElementById('schediStatPeople');
-            var statOwed = document.getElementById('schediStatOwed');
-            var statWeek = document.getElementById('schediStatWeekVisits');
             if (statPeople) statPeople.textContent = String(Object.keys(people).length);
             if (statOwed) statOwed.textContent = formatBookingAmountLabel(owed) || '$0';
             if (statWeek) statWeek.textContent = String(weekVisits);
@@ -15759,11 +15958,7 @@ function schediQrCardPixels(text, color) {
                 if (!todayApps.length) dateEl.textContent = 'The book is open.';
                 else dateEl.textContent = todayApps.length === 1 ? '1 visit on the book.' : (todayApps.length + ' visits on the book.');
             }
-            var lead = document.getElementById('schediNextLine');
-            if (lead) {
-                if (!todayApps.length) lead.textContent = 'Nothing is lined up yet.';
-                else lead.textContent = (todayApps[0].clientName || 'Someone') + ' is first, at ' + (todayApps[0].time || 'a time still to set') + '.';
-            }
+            if (lead) lead.textContent = schediNextVisitLine(coming[0], today);
             var requests = document.getElementById('schediTodayRequests');
             if (requests) {
                 requests.innerHTML = pending.length ? pending.map(function (app) {
@@ -15778,12 +15973,12 @@ function schediQrCardPixels(text, color) {
                         '</div></article>';
                 }).join('') : '<p class="sd-empty">Nobody is waiting on a yes.</p>';
             }
-            var schedule = document.getElementById('schediTodaySchedule');
             if (schedule) {
-                schedule.innerHTML = todayApps.length ? todayApps.map(function (app, index) {
+                schedule.innerHTML = coming.length ? coming.map(function (app, index) {
                     var id = esc(jsArg(app.id));
                     var cardStatus = String(app.status || '').toLowerCase();
-                    var acceptedCard = cardStatus !== 'pending' && cardStatus !== 'requested';
+                    var acceptedCard = cardStatus !== 'pending' && cardStatus !== 'requested' && cardStatus !== '';
+                    var dayNote = (app.date && app.date !== today) ? ((rosterPrettyDate(app.date) || app.date) + ' · ') : '';
                     var payAction = !acceptedCard ? '' : (rosterPayMenuLabel(app) === 'Mark unpaid'
                         ? '<button type="button" role="menuitem" onclick="closeSchediTodayMenus(event); markAppointmentUnpaid(' + id + ')">Mark unpaid</button>'
                         : '<button type="button" class="sd-act-ok" role="menuitem" onclick="closeSchediTodayMenus(event); markAppointmentPaid(' + id + ')">Mark paid</button>');
@@ -15794,7 +15989,7 @@ function schediQrCardPixels(text, color) {
                         '<div class="sd-time">' + esc(app.time || '') + '</div>' +
                         '<div class="sd-row-main"><div class="sd-row-head">' + (index === 0 ? '<span class="sd-next-tag">Next</span>' : '') + '<h4><span class="sd-row-title">' + esc(app.clientName || 'Client') + (app.walkIn ? ' · Walk-in' : '') + '</span></h4>' +
                         '<div class="sd-row-chips">' + appointmentStatusChipsHtml(app, { pendingLabel: 'New request' }) + '</div></div>' +
-                        '<p class="sd-meta"><span class="sd-svc-line">' + serviceMarkHtml(tenant, app.serviceName) + '<span>' + esc(app.serviceName || 'Appointment') + '</span></span></p></div>' +
+                        '<p class="sd-meta"><span class="sd-svc-line">' + serviceMarkHtml(tenant, app.serviceName) + '<span>' + esc(dayNote) + esc(app.serviceName || 'Appointment') + '</span></span></p></div>' +
                         '<details class="sd-more"><summary aria-label="More actions" aria-expanded="false"><i class="fa-solid fa-ellipsis-vertical" aria-hidden="true"></i></summary>' +
                         '<div class="sd-more-menu" role="menu">' +
                         payAction +
@@ -15805,6 +16000,7 @@ function schediQrCardPixels(text, color) {
                         '<button type="button" class="sd-act-no sd-act-delete" role="menuitem" onclick="closeSchediTodayMenus(event); openRosterDeleteModal(' + id + ')">Delete</button>' +
                         '</div></details></article>';
                 }).join('') : '<p class="sd-empty">The book is clear.</p>';
+            }
             }
             var steps = schediSetupSteps(tenant);
             var done = steps.filter(function (step) { return step.done; }).length;
@@ -17112,6 +17308,15 @@ function schediQrCardPixels(text, color) {
             syncRosterCalendarChrome(tenant);
             var wrap = document.getElementById('rosterCalendarWrap');
             if (!wrap || rosterCalendarView === 'list') return;
+            var phase = schediBookingsPhase(tenant);
+            if (phase === 'loading' || phase === 'error') {
+                var labelHold = document.getElementById('rosterCalendarLabel');
+                if (labelHold) labelHold.textContent = phase === 'error' ? 'Bookings did not load' : 'Loading bookings…';
+                var noteHold = document.getElementById('rosterCalendarNote');
+                if (noteHold) noteHold.classList.add('hidden');
+                wrap.innerHTML = phase === 'error' ? schediBookingsErrorHtml() : schediBookingsLoadingHtml();
+                return;
+            }
             if (!rosterCalendarCursor) rosterCalendarCursor = rosterTodayIso(tenant);
             var today = rosterTodayIso(tenant);
             var byDate = rosterApptsByDate(tenant);
@@ -17651,7 +17856,10 @@ function schediQrCardPixels(text, color) {
             var hits = rosterSearchAppointments(apps, q);
             if (!hits.length) {
                 box.hidden = false;
-                box.innerHTML = '<p class="sd-roster-empty">No appointments match "' + esc(q) + '".</p>';
+                var searchPhase = schediBookingsPhase((typeof getTenant === 'function') ? getTenant() : null);
+                if (searchPhase === 'loading') box.innerHTML = schediBookingsLoadingHtml();
+                else if (searchPhase === 'error') box.innerHTML = schediBookingsErrorHtml();
+                else box.innerHTML = '<p class="sd-roster-empty">No appointments match "' + esc(q) + '".</p>';
                 return;
             }
             var limit = 80;
@@ -17857,6 +18065,15 @@ function schediQrCardPixels(text, color) {
             if (!tbody) return;
 
             try { renderRosterPayFilter(tenant); } catch (errFilter) {}
+            var bookingsPhase = schediBookingsPhase(tenant);
+            if (bookingsPhase === 'loading' || bookingsPhase === 'error') {
+                tbody.innerHTML = '<tr><td colspan="9" class="p-4 text-center">' + (bookingsPhase === 'error' ? schediBookingsErrorHtml() : schediBookingsLoadingHtml()) + '</td></tr>';
+                renderRosterCalendar(tenant);
+                try { if (window.renderSchediToday) window.renderSchediToday(tenant); } catch (errToday) {}
+                try { renderRosterSearchResults(tenant && tenant.appointments); } catch (errSearch) {}
+                try { paintRosterBulkBar(); } catch (errBulk) {}
+                return;
+            }
             if (!tenant || !tenant.appointments || tenant.appointments.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-slate-500">No client appointments logged yet.</td></tr>`;
                 renderRosterCalendar(tenant);
@@ -26930,55 +27147,23 @@ function schediQrCardPixels(text, color) {
             showToast('Enter the owner password to sign in.', 'info');
         }
 
+        // Business portal sign-out always returns to /login. Arrival (?from=hq, a managed
+        // business, an agency session) does not change that. "Sign out of HQ" is the HQ button.
         window.handleTenantLogout = function(opts) {
             if (window.__SCHEDI_DEMO) {
                 if (typeof showToast === 'function') showToast('Demo mode does not sign out a real account.', 'info');
                 return;
             }
             opts = opts || {};
-            var fromHq = false;
-            try {
-                var metaNow = (typeof schediAuthMeta === 'function') ? schediAuthMeta() : null;
-                if (metaNow && metaNow.role === 'agency') fromHq = true;
-                if (!fromHq && platformState.isAgencyMasterLoggedIn && platformState.isTenantOwnerLoggedIn && !platformState.ownerSelfSession) fromHq = true;
-                if (!fromHq && typeof hqStoredManagedTenant === 'function' && hqStoredManagedTenant()) fromHq = true;
-            } catch (errHqOut) { fromHq = false; }
-            try {
-                if (!fromHq && new URLSearchParams(window.location.search || '').get('from') === 'hq') fromHq = true;
-            } catch (errFrom) {}
+            var session = '';
+            var meta = null;
+            try { session = (typeof schediAuthSession === 'function' ? schediAuthSession() : '') || ''; } catch (errSess) { session = ''; }
+            try { meta = (typeof schediAuthMeta === 'function') ? schediAuthMeta() : null; } catch (errMeta) { meta = null; }
+            var ownerSession = !!(meta && meta.role === 'owner');
+            var agencySession = (!ownerSession && session && (!meta || !meta.role || meta.role === 'agency')) ? session : '';
             try { stopTenantOwnerIdleWatch(); } catch (errIdle) {}
-            if (fromHq) {
-                var session = '';
-                var meta = null;
-                try { session = (typeof schediAuthSession === 'function' ? schediAuthSession() : '') || ''; } catch (errSess) { session = ''; }
-                try { meta = (typeof schediAuthMeta === 'function') ? schediAuthMeta() : null; } catch (errMeta) { meta = null; }
-                var agencySession = (!meta || !meta.role || meta.role === 'agency') ? session : '';
-                try { hqForgetManagedTenant(); } catch (errForgetOut) {}
-                platformState.isAgencyMasterLoggedIn = false;
-                platformState.isTenantOwnerLoggedIn = false;
-                platformState.ownerSelfSession = false;
-                if (agencySession) {
-                    try { clearPrivateAppointments(); } catch (errA) {}
-                    try { clearPrivateProfiles(); } catch (errP) {}
-                    try { schediClearAuthSession(); } catch (errClear) {}
-                }
-                var goHq = function () {
-                    try {
-                        if (window.location && typeof window.location.replace === 'function') window.location.replace('/hq');
-                        else window.location.assign('/hq');
-                    } catch (errGoHq) {}
-                };
-                try {
-                    return fetch('https://schedi.app/auth/logout', {
-                        method: 'POST',
-                        credentials: 'include',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ session: agencySession })
-                    }).then(goHq, goHq);
-                } catch (errOut) { goHq(); }
-                return;
-            }
             try { hqForgetManagedTenant(); } catch (errForgetOwner) {}
+            platformState.isAgencyMasterLoggedIn = false;
             platformState.isTenantOwnerLoggedIn = false;
             platformState.ownerSelfSession = false;
             syncOwnerChangePassBtn();
@@ -26993,14 +27178,28 @@ function schediQrCardPixels(text, color) {
             if (passInput) passInput.value = '';
             populateTenantSelect();
             updateLivePreviewControlsVisibility();
-            var onLogin = false;
-            try { onLogin = String(window.location.pathname || '').replace(/\/+$/, '') === '/login'; } catch (errPath) { onLogin = false; }
-            if (!onLogin) {
+            var goLogin = function () {
+                var onLogin = false;
+                try { onLogin = String(window.location.pathname || '').replace(/\/+$/, '') === '/login'; } catch (errPath) { onLogin = false; }
+                if (!onLogin) {
+                    try {
+                        if (window.location && typeof window.location.replace === 'function') window.location.replace('/login');
+                        else window.location.assign('/login');
+                    } catch (errLogin) {}
+                }
+            };
+            if (agencySession) {
                 try {
-                    if (window.location && typeof window.location.replace === 'function') window.location.replace('/login');
-                    else window.location.assign('/login');
-                } catch (errLogin) {}
+                    return fetch('https://schedi.app/auth/logout', {
+                        method: 'POST',
+                        credentials: 'include',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ session: agencySession })
+                    }).then(goLogin, goLogin);
+                } catch (errOut) { goLogin(); }
+                return;
             }
+            goLogin();
             if (opts.silent !== true) showToast('Signed out of Business Portal', 'info');
         }
 
@@ -28347,7 +28546,7 @@ function schediQrCardPixels(text, color) {
     <script>var __firebase_config = ${configStr};<\/script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { initializeAuth, indexedDBLocalPersistence, browserLocalPersistence, browserSessionPersistence, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         let firebaseConfig = {};
@@ -28362,7 +28561,11 @@ function schediQrCardPixels(text, color) {
         if (firebaseConfig && firebaseConfig.apiKey) {
             try {
                 const app = initializeApp(firebaseConfig);
-                const auth = getAuth(app);
+                // Anonymous sign-in only. Skip the popup/redirect resolver so phones
+                // do not load https://apis.google.com/js/api.js under the page CSP.
+                const auth = initializeAuth(app, {
+                    persistence: [indexedDBLocalPersistence, browserLocalPersistence, browserSessionPersistence]
+                });
                 const db = getFirestore(app);
 
                 window.db = db;
