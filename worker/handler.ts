@@ -5,13 +5,20 @@
 import { publicDuplicateRedirect } from "./canonical";
 import { marketingPage, publicPaths } from "./content";
 import { indexNowKey } from "./indexnow";
-import { localBusinessScript, tenantFromFirestore, type TenantSeo } from "./local-business";
+import {
+  bookingMissingHtml,
+  bookingPaused,
+  bookingPausedHtml,
+  fillBookingDocument,
+  isBookingDocument,
+} from "./booking-document";
+import { decodeFirestoreFields, localBusinessJsonLd, localBusinessScript, tenantFromFirestore, type TenantSeo } from "./local-business";
 import { noteBookingVisit, type PageVisitDataset, shouldCountBookingVisit, visitDay } from "./page-visits";
 import {
   agencySessionToken,
-  hasAgencySession,
   HQ_PATHS,
   hqLoginDocument,
+  requireAgency,
   stripPublicShell,
   type AgencyKv,
 } from "./public-shell";
@@ -312,22 +319,70 @@ function injectNoindex(html: string): string {
 
 export { tenantFromFirestore };
 
-async function lookupTenant(slug: string, env: SchediEnv, ctx: SchediContext): Promise<TenantSeo | null> {
+const BOOKING_FIELD_MASK = [
+  "name",
+  "industry",
+  "slug",
+  "seoPublic",
+  "address",
+  "location",
+  "businessAddress",
+  "businessLocation",
+  "showPublicAddress",
+  "city",
+  "businessCity",
+  "state",
+  "businessState",
+  "services",
+  "timezone",
+  "timeZone",
+  "plan",
+  "acceptingBookings",
+  "subscriptionStatus",
+  "complimentaryPro",
+  "billingExempt",
+  "monthlyPrice",
+  "logo",
+  "logoUrl",
+  "paymentGateways",
+  "operatingHours",
+  "deposit",
+  "cancellationFee",
+  "notifications",
+  "hours",
+  "cashAppTag",
+  "phone",
+  "businessPhone",
+  "description",
+].map((field) => `mask.fieldPaths=${field}`).join("&");
+
+type TenantLookup = {
+  tenant: TenantSeo | null;
+  missing: boolean;
+  paused: boolean;
+  fields: Record<string, unknown> | null;
+};
+
+function interpretTenant(document: unknown): TenantLookup {
+  const tenant = tenantFromFirestore(document);
+  const fields = decodeFirestoreFields(document);
+  if (!tenant || !fields) return { tenant: null, missing: false, paused: false, fields: null };
+  return { tenant, missing: false, paused: bookingPaused(fields), fields };
+}
+
+async function lookupTenant(slug: string, env: SchediEnv, ctx: SchediContext): Promise<TenantLookup> {
+  const empty: TenantLookup = { tenant: null, missing: false, paused: false, fields: null };
   const projectId = env.FIREBASE_PROJECT_ID || "";
-  if (!projectId || !/^[a-z0-9-]+$/i.test(projectId)) return null;
+  if (!projectId || !/^[a-z0-9-]+$/i.test(projectId)) return empty;
   const endpoint =
     `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/artifacts/${projectId}/public/data/tenants/${slug}` +
-    `?mask.fieldPaths=name&mask.fieldPaths=industry&mask.fieldPaths=slug&mask.fieldPaths=seoPublic` +
-    `&mask.fieldPaths=address&mask.fieldPaths=location&mask.fieldPaths=businessAddress&mask.fieldPaths=businessLocation` +
-    `&mask.fieldPaths=showPublicAddress` +
-    `&mask.fieldPaths=city&mask.fieldPaths=businessCity&mask.fieldPaths=state&mask.fieldPaths=businessState&mask.fieldPaths=services` +
-    `&mask.fieldPaths=timezone&mask.fieldPaths=timeZone`;
-  const cacheKey = new Request(`https://schedi-meta.invalid/tenant/${projectId}/${slug}`);
+    `?${BOOKING_FIELD_MASK}`;
+  const cacheKey = new Request(`https://schedi-meta.invalid/tenant2/${projectId}/${slug}`);
   try {
     const cached = await cacheMatch(cacheKey);
     if (cached) {
-      if (cached.status === 404) return null;
-      return (await cached.json()) as TenantSeo;
+      if (cached.status === 404) return { tenant: null, missing: true, paused: false, fields: null };
+      return interpretTenant(await cached.json());
     }
     const res = await fetch(endpoint);
     if (res.status === 404) {
@@ -336,23 +391,24 @@ async function lookupTenant(slug: string, env: SchediEnv, ctx: SchediContext): P
         cacheKey,
         new Response("", { status: 404, headers: { "Cache-Control": "public, max-age=60" } }),
       );
-      return null;
+      return { tenant: null, missing: true, paused: false, fields: null };
     }
     if (!res.ok) {
       console.error(JSON.stringify({ message: "tenant lookup failed", slug, status: res.status }));
-      return null;
+      return empty;
     }
-    const tenant = tenantFromFirestore(await res.json());
-    if (!tenant) return null;
+    const document = await res.json();
+    const lookup = interpretTenant(document);
+    if (!lookup.tenant) return empty;
     await cachePut(
       ctx,
       cacheKey,
-      new Response(JSON.stringify(tenant), {
+      new Response(JSON.stringify(document), {
         status: 200,
         headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=120" },
       }),
     );
-    return tenant;
+    return lookup;
   } catch (err) {
     console.error(
       JSON.stringify({
@@ -361,7 +417,7 @@ async function lookupTenant(slug: string, env: SchediEnv, ctx: SchediContext): P
         error: err instanceof Error ? err.message : String(err),
       }),
     );
-    return null;
+    return empty;
   }
 }
 
@@ -445,6 +501,14 @@ async function fetchShell(request: Request, env: SchediEnv): Promise<Response | 
   indexUrl.pathname = "/index.html";
   indexUrl.search = "";
   return env.ASSETS.fetch(new Request(indexUrl.toString(), { method: "GET" }));
+}
+
+async function fetchBookingShell(request: Request, env: SchediEnv): Promise<Response | null> {
+  if (!env.ASSETS) return null;
+  const bookingUrl = new URL(request.url);
+  bookingUrl.pathname = "/booking.html";
+  bookingUrl.search = "";
+  return env.ASSETS.fetch(new Request(bookingUrl.toString(), { method: "GET" }));
 }
 
 async function fetchHqShell(request: Request, env: SchediEnv): Promise<Response | null> {
@@ -679,6 +743,13 @@ async function guardStatic(asset: Response | null, pathname: string, method: str
   return new Response(asset.body, { status: asset.status, statusText: asset.statusText, headers });
 }
 
+function forceNoindex(html: string): string {
+  if (/<meta name="robots" content="[^"]*">/i.test(html)) {
+    return html.replace(/<meta name="robots" content="[^"]*">/i, '<meta name="robots" content="noindex, follow">');
+  }
+  return injectNoindex(html);
+}
+
 async function serveSpa(
   request: Request,
   env: SchediEnv,
@@ -687,38 +758,61 @@ async function serveSpa(
   slug: string | null,
   indexable: boolean,
 ): Promise<Response> {
-  const shell = await fetchShell(request, env);
+  const booking = !!slug;
+  const shell = booking ? await fetchBookingShell(request, env) : await fetchShell(request, env);
   if (!shell || !shell.ok || !(shell.headers.get("content-type") || "").includes("text/html")) {
     if (shell) await discard(shell);
     return textResponse("App shell unavailable\n", 503, "text/plain; charset=utf-8", { "Cache-Control": "no-store" }, method);
   }
   let indexableTenant = indexable;
-  let tenant: TenantSeo | null = null;
+  let lookup: TenantLookup | null = null;
   if (slug) {
-    tenant = await lookupTenant(slug, env, ctx);
-    indexableTenant = !!(tenant && tenant.seoPublic);
+    lookup = await lookupTenant(slug, env, ctx);
+    indexableTenant = !!(lookup.tenant && lookup.tenant.seoPublic);
   }
-  let body = method === "HEAD" ? null : stripPublicShell(await shell.text());
-  if (body != null && tenant && slug) {
+  const raw = method === "HEAD" ? "" : stripPublicShell(await shell.text());
+  const bookingTemplate = booking && isBookingDocument(raw);
+  let body: string | null = method === "HEAD" ? null : raw;
+  if (body != null && bookingTemplate && lookup) {
+    if (lookup.missing) {
+      body = bookingMissingHtml();
+      indexableTenant = false;
+    } else if (lookup.paused) {
+      body = bookingPausedHtml(lookup.tenant?.name || String(lookup.fields?.name || ""));
+      indexableTenant = false;
+    } else {
+      const pageUrl = new URL(request.url);
+      const canonical = `https://schedi.app/${slug}`;
+      body = fillBookingDocument(body, {
+        slug: slug || "",
+        fields: lookup.fields,
+        projectId: env.FIREBASE_PROJECT_ID,
+        demo: pageUrl.searchParams.get("demo") === "1",
+        jsonLd: lookup.tenant ? localBusinessJsonLd(lookup.tenant, canonical) : null,
+      });
+    }
+  } else if (body != null && lookup?.tenant && slug) {
     const canonical = `https://schedi.app/${slug}`;
     body = injectBookingMeta(body, {
-      name: tenant.name,
-      title: bookingTitle(tenant.name),
-      description: bookingDescription(tenant.name, tenant.industry),
+      name: lookup.tenant.name,
+      title: bookingTitle(lookup.tenant.name),
+      description: bookingDescription(lookup.tenant.name, lookup.tenant.industry),
       canonical,
     });
-    const script = localBusinessScript(tenant, canonical);
+    const script = localBusinessScript(lookup.tenant, canonical);
     if (body.includes("</head>")) body = body.replace("</head>", `${script}</head>`);
     else body = script + body;
   }
-  if (body != null && !indexableTenant) body = injectNoindex(body);
+  if (body != null && !indexableTenant) body = bookingTemplate ? forceNoindex(body) : injectNoindex(body);
   if (body != null) body = injectWebAnalytics(body, new URL(request.url));
   const headers = new Headers(shell.headers);
   applySecurityHeaders(headers, true);
   headers.set("Cache-Control", "no-store");
   headers.delete("Content-Length");
   if (!indexableTenant) headers.set("X-Robots-Tag", "noindex, follow");
-  if (method === "GET" && slug && tenant) countPublishedVisit(request, env, slug, tenant.timezone);
+  if (method === "GET" && slug && lookup?.tenant && !lookup.missing && !lookup.paused) {
+    countPublishedVisit(request, env, slug, lookup.tenant.timezone);
+  }
   if (method === "HEAD") return new Response(null, { status: 200, headers });
   return new Response(body, { status: 200, headers });
 }
@@ -754,7 +848,7 @@ function hqDemoRequest(request: Request): boolean {
 
 async function serveHq(request: Request, env: SchediEnv, method: string): Promise<Response> {
   const token = agencySessionToken(request);
-  const allowed = await hasAgencySession(env.AUTH_KV, token);
+  const allowed = await requireAgency(env.AUTH_KV, token);
   // Preview only. demo=1 paints sample businesses and the page blocks live calls.
   // It does not create an agency session and does not authorize API routes.
   if (!allowed && !hqDemoRequest(request)) {

@@ -868,10 +868,10 @@ function publishedRosterRevision(list) {
 
 async function sessionCanAccess(env, sessionToken, tenantId) {
   const session = await readSession(env, sessionToken);
-  if (!session) return null;
-  if (session.role === 'agency') return session;
-  if (session.role === 'owner' && session.tenantId === tenantId) return session;
-  return null;
+  if (!session) return { ok: false, status: 401, error: 'session_required' };
+  if (session.role === 'agency') return { ok: true, session };
+  if (session.role === 'owner' && session.tenantId === tenantId) return { ok: true, session };
+  return { ok: false, status: 403, error: 'forbidden' };
 }
 
 function bookingCors(origin, isAllowedOrigin) {
@@ -1000,7 +1000,8 @@ export async function handlePrivateBookingHttp(request, env, origin, path, deps,
   if (action === 'migrate') {
     // One-off maintenance (rewrites every tenant's store and clears old mail collections): agency only.
     const migrator = await readSession(env, body.session);
-    if (!migrator || migrator.role !== 'agency') {
+    if (!migrator) return respond(json, { ok: false, error: 'session_required' }, 401, origin, isAllowedOrigin);
+    if (migrator.role !== 'agency') {
       return respond(json, { ok: false, error: 'forbidden' }, 403, origin, isAllowedOrigin);
     }
     try {
@@ -1065,8 +1066,8 @@ export async function handlePrivateBookingHttp(request, env, origin, path, deps,
 
   if (action === 'sync') {
     const tenantId = clip(body.tenantId, 48);
-    const session = await sessionCanAccess(env, body.session, tenantId);
-    if (!session) return respond(json, { ok: false, error: 'forbidden' }, 403, origin, isAllowedOrigin);
+    const access = await sessionCanAccess(env, body.session, tenantId);
+    if (!access.ok) return respond(json, { ok: false, error: access.error }, access.status, origin, isAllowedOrigin);
     const incoming = (Array.isArray(body.appointments) ? body.appointments : []).map((item) => sanitizeBooking(item, tenantId)).filter(Boolean);
     const idToken = await firebaseAnonymousToken(env);
     let before = [];
@@ -1189,8 +1190,8 @@ export async function handlePrivateBookingHttp(request, env, origin, path, deps,
   if (action === 'delete') {
     const tenantId = clip(body.tenantId, 48);
     const bookingId = clip(body.bookingId, 40);
-    const session = await sessionCanAccess(env, body.session, tenantId);
-    if (!session) return respond(json, { ok: false, error: 'forbidden' }, 403, origin, isAllowedOrigin);
+    const access = await sessionCanAccess(env, body.session, tenantId);
+    if (!access.ok) return respond(json, { ok: false, error: access.error }, access.status, origin, isAllowedOrigin);
     if (!tenantId || !bookingId) {
       return respond(json, { ok: false, error: 'invalid_booking' }, 400, origin, isAllowedOrigin);
     }

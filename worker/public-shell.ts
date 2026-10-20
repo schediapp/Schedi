@@ -127,6 +127,11 @@ export interface AgencyKv {
   }>;
 }
 
+/** True only for a live agency session. Call this before reading the HQ shell. */
+export async function requireAgency(kv: AgencyKv | undefined, token: string): Promise<boolean> {
+  return hasAgencySession(kv, token);
+}
+
 export async function hasAgencySession(kv: AgencyKv | undefined, token: string): Promise<boolean> {
   if (!kv || !token) return false;
   let raw: string | null = null;

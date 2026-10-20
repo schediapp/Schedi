@@ -20,7 +20,7 @@ function shellAssets(): SchediEnv["ASSETS"] {
   return {
     async fetch(request: Request) {
       const path = new URL(request.url).pathname;
-      if (path === "/index.html") {
+      if (path === "/index.html" || path === "/booking.html") {
         return new Response(SHELL, { headers: { "content-type": "text/html; charset=utf-8" } });
       }
       return new Response("missing", { status: 404, headers: { "content-type": "text/plain" } });
@@ -144,7 +144,7 @@ describe("crawler files and app routes", () => {
     const assets: SchediEnv["ASSETS"] = {
       async fetch(request: Request) {
         const path = new URL(request.url).pathname;
-        if (path === "/index.html") return new Response(shell, { headers: { "content-type": "text/html; charset=utf-8" } });
+        if (path === "/index.html" || path === "/booking.html") return new Response(shell, { headers: { "content-type": "text/html; charset=utf-8" } });
         return new Response("missing", { status: 404 });
       },
     };

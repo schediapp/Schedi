@@ -13,7 +13,7 @@ import { SCHEDI_SQUARE_PUBLIC_ENABLED } from './deposit-methods.js';
 export { tenantPlanName };
 
 /** Public-doc fields owners can't change. Stored values are kept on owner saves. */
-export const OWNER_LOCKED_PUBLIC_KEYS = ['plan', 'subscriptionStatus'];
+export const OWNER_LOCKED_PUBLIC_KEYS = ['plan'];
 
 function isObj(v) {
   return !!v && typeof v === 'object' && !Array.isArray(v);

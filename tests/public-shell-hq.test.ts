@@ -15,7 +15,7 @@ function assets(indexBody: string): SchediEnv["ASSETS"] {
   return {
     async fetch(request: Request) {
       const path = new URL(request.url).pathname;
-      if (path === "/index.html") {
+      if (path === "/index.html" || path === "/booking.html") {
         return new Response(indexBody, { headers: { "content-type": "text/html; charset=utf-8" } });
       }
       if (path === "/hq.html") {

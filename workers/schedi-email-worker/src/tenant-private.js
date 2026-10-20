@@ -10,6 +10,7 @@
  * getTenantById/listAllTenants, which merge the private doc back in.
  */
 import { adminAuthHeaders } from './firebase-admin.js';
+import { tenantPlanName } from './cancellation-fee.js';
 
 /** Top-level tenant keys that must never be on the public doc. */
 export const PRIVATE_TENANT_KEYS = [
@@ -25,7 +26,10 @@ export const PRIVATE_TENANT_KEYS = [
   'hqTags',
   'cancelAtPeriodEnd',
   'currentPeriodEnd',
+  'subscriptionStatus',
 ];
+/** Worker bookkeeping. Private doc only, and never returned to the owner or agency UI. */
+export const WORKER_ONLY_PRIVATE_KEYS = ['unpaidDigestWeek'];
 /** notifications.replyTo (an email address) is stored privately as this key. */
 export const PRIVATE_REPLY_TO_KEY = 'notificationsReplyTo';
 /**
@@ -44,7 +48,27 @@ export const AGENCY_ONLY_PRIVATE_KEYS = new Set([
   'hqTags',
   'cancelAtPeriodEnd',
   'currentPeriodEnd',
+  'subscriptionStatus',
 ]);
+
+/** Square seller ids belong on the private connection, not the world-readable doc. */
+export const SQUARE_PUBLIC_ID_KEYS = [
+  'squareMerchantId',
+  'squareLocationId',
+  'squareLocationName',
+  'squareAccountName',
+];
+
+export const PUBLIC_ADDRESS_KEYS = [
+  'address',
+  'location',
+  'businessAddress',
+  'businessLocation',
+  'city',
+  'businessCity',
+  'state',
+  'businessState',
+];
 
 const PRIVATE_SET = new Set(PRIVATE_TENANT_KEYS);
 
@@ -124,7 +148,7 @@ export function splitTenant(tenant) {
   const priv = {};
   for (const k of Object.keys(tenant || {})) {
     if (tenant[k] === undefined) continue;
-    if (PRIVATE_SET.has(k)) {
+    if (PRIVATE_SET.has(k) || WORKER_ONLY_PRIVATE_KEYS.includes(k)) {
       priv[k] = tenant[k];
       continue;
     }
@@ -146,6 +170,72 @@ export function splitTenant(tenant) {
   return { pub, priv };
 }
 
+function showAddress(tenant) {
+  return !tenant || tenant.showPublicAddress !== false;
+}
+
+/**
+ * Public booking doc plus the private remainder.
+ * The public half keeps the booking page (including the effective plan name)
+ * and drops subscription status, plan prices, comp flags, Square seller ids,
+ * unpaid-digest bookkeeping, and the street address when the owner hid it.
+ * acceptingBookings is the only pause signal the booking page needs.
+ */
+export function shapePublicBookingFields(tenant) {
+  const { pub, priv } = splitTenant(tenant || {});
+  for (const key of SQUARE_PUBLIC_ID_KEYS) delete pub[key];
+  for (const key of WORKER_ONLY_PRIVATE_KEYS) delete pub[key];
+  pub.plan = tenantPlanName(tenant || {});
+  pub.acceptingBookings = String((tenant && tenant.subscriptionStatus) || '') !== 'paused' && (tenant ? tenant.acceptingBookings !== false : true);
+  if (!showAddress(pub)) {
+    for (const key of PUBLIC_ADDRESS_KEYS) delete pub[key];
+  }
+  return { pub, priv };
+}
+
+/**
+ * Partial public write. Does not invent plan or address from a patch that
+ * did not mention them. A subscriptionStatus change becomes acceptingBookings.
+ */
+export function shapePublicPatch(rawPatch) {
+  const patch = rawPatch || {};
+  const { pub, priv } = splitTenant(patch);
+  for (const key of SQUARE_PUBLIC_ID_KEYS) delete pub[key];
+  for (const key of WORKER_ONLY_PRIVATE_KEYS) delete pub[key];
+  if (Object.prototype.hasOwnProperty.call(patch, 'subscriptionStatus')) {
+    pub.acceptingBookings = String(patch.subscriptionStatus || '') !== 'paused';
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'complimentaryPro') || Object.prototype.hasOwnProperty.call(patch, 'billingExempt') || Object.prototype.hasOwnProperty.call(patch, 'plan') || Object.prototype.hasOwnProperty.call(patch, 'monthlyPrice')) {
+    pub.plan = tenantPlanName(Object.assign({}, patch));
+  }
+  const drop = [];
+  for (const key of SQUARE_PUBLIC_ID_KEYS.concat(WORKER_ONLY_PRIVATE_KEYS)) {
+    if (Object.prototype.hasOwnProperty.call(patch, key)) drop.push(key);
+  }
+  if (patch.showPublicAddress === false) {
+    for (const key of PUBLIC_ADDRESS_KEYS) {
+      delete pub[key];
+      drop.push(key);
+    }
+  }
+  return { pub, priv, drop };
+}
+
+/** Names that a dry-run cleanup should remove from an existing public doc. */
+export function publicFieldsToTrim(pubTenant) {
+  const paths = privatePathsOnPublic(pubTenant);
+  const pub = pubTenant || {};
+  for (const key of SQUARE_PUBLIC_ID_KEYS.concat(WORKER_ONLY_PRIVATE_KEYS)) {
+    if (Object.prototype.hasOwnProperty.call(pub, key) && paths.indexOf(key) < 0) paths.push(key);
+  }
+  if (pub.showPublicAddress === false) {
+    for (const key of PUBLIC_ADDRESS_KEYS) {
+      if (Object.prototype.hasOwnProperty.call(pub, key) && paths.indexOf(key) < 0) paths.push(key);
+    }
+  }
+  return paths;
+}
+
 /** Overlay private fields onto a (public) tenant object, in place. */
 export function mergePrivateInto(tenant, priv) {
   if (!tenant || !priv) return tenant;
@@ -156,6 +246,9 @@ export function mergePrivateInto(tenant, priv) {
     const notes = tenant.notifications && typeof tenant.notifications === 'object' ? tenant.notifications : {};
     tenant.notifications = Object.assign({}, notes, { replyTo: priv[PRIVATE_REPLY_TO_KEY] || '' });
   }
+  for (const k of WORKER_ONLY_PRIVATE_KEYS) {
+    if (Object.prototype.hasOwnProperty.call(priv, k)) tenant[k] = priv[k];
+  }
   return tenant;
 }
 
@@ -164,6 +257,7 @@ export function privateView(id, priv, role) {
   const out = { id };
   for (const k of PRIVATE_TENANT_KEYS) {
     if (k === 'hqTags' && role !== 'agency') continue; // HQ-only notes never go to owners
+    if (WORKER_ONLY_PRIVATE_KEYS.includes(k)) continue;
     if (priv && Object.prototype.hasOwnProperty.call(priv, k)) out[k] = priv[k];
   }
   if (priv && Object.prototype.hasOwnProperty.call(priv, PRIVATE_REPLY_TO_KEY)) out[PRIVATE_REPLY_TO_KEY] = priv[PRIVATE_REPLY_TO_KEY];
@@ -208,7 +302,7 @@ export async function listPrivateTenants(env) {
 export async function patchPrivateTenant(env, tenantId, priv) {
   const id = safeId(tenantId);
   if (!id) throw new Error('invalid_tenant');
-  const keys = Object.keys(priv || {}).filter((k) => priv[k] !== undefined && (PRIVATE_SET.has(k) || k === PRIVATE_REPLY_TO_KEY || k === SQUARE_CONNECTION_KEY));
+  const keys = Object.keys(priv || {}).filter((k) => priv[k] !== undefined && (PRIVATE_SET.has(k) || WORKER_ONLY_PRIVATE_KEYS.includes(k) || k === PRIVATE_REPLY_TO_KEY || k === SQUARE_CONNECTION_KEY));
   if (!keys.length) return { ok: true, written: 0 };
   const body = {};
   for (const k of keys) body[k] = priv[k];

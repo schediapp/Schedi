@@ -476,9 +476,10 @@ async function readJsonBody(request) {
 }
 
 function sessionCan(session, tenantId) {
-  if (!session) return false;
-  if (session.role === 'agency') return true;
-  return session.role === 'owner' && session.tenantId === tenantId;
+  if (!session) return { ok: false, status: 401, error: 'session_required' };
+  if (session.role === 'agency') return { ok: true };
+  if (session.role === 'owner' && session.tenantId === tenantId) return { ok: true };
+  return { ok: false, status: 403, error: 'forbidden' };
 }
 
 function safeTenant(value) {
@@ -517,25 +518,20 @@ async function savePublicStatus(env, tenantId, status, deps) {
 function publicStatusFrom(connection) {
   const connected = !!(connection && connection.cipher && connection.merchantId);
   const ready = connected && !!connection.locationId;
-  return {
-    squareReady: ready,
-    squareMerchantId: connected ? String(connection.merchantId) : '',
-    squareLocationId: ready ? String(connection.locationId) : '',
-    squareLocationName: ready ? String(connection.locationName || '') : '',
-    squareAccountName: connected ? String(connection.accountName || '') : '',
-  };
+  return { squareReady: ready };
 }
 
 function statusView(connection) {
-  const pub = publicStatusFrom(connection);
+  const connected = !!(connection && connection.cipher && connection.merchantId);
+  const ready = connected && !!connection.locationId;
   return {
     ok: true,
-    connected: !!(connection && connection.cipher && connection.merchantId),
-    ready: pub.squareReady === true,
-    merchantId: pub.squareMerchantId,
-    locationId: pub.squareLocationId,
-    locationName: pub.squareLocationName,
-    accountName: pub.squareAccountName,
+    connected,
+    ready,
+    merchantId: connected ? String(connection.merchantId) : '',
+    locationId: ready ? String(connection.locationId) : '',
+    locationName: ready ? String(connection.locationName || '') : '',
+    accountName: connected ? String(connection.accountName || '') : '',
     needsLocation: !!(connection && connection.cipher && !connection.locationId),
     locations: Array.isArray(connection && connection.locations) ? connection.locations : [],
     expiresAt: connection && connection.expiresAt ? connection.expiresAt : '',
@@ -756,7 +752,8 @@ export async function handleSquareHttp(request, env, origin, path, deps) {
   const body = await readJsonBody(request);
   const tenantId = safeTenant(body.tenantId);
   const session = await readSession(env, body.session);
-  if (!sessionCan(session, tenantId)) return jsonResponse(deps, { ok: false, error: 'forbidden' }, 403, origin);
+  const access = sessionCan(session, tenantId);
+  if (!access.ok) return jsonResponse(deps, { ok: false, error: access.error }, access.status, origin);
 
   if (path === '/api/square/connect') return handleConnect(env, tenantId, body.session, deps, origin);
   if (path === '/api/square/status') {
@@ -821,7 +818,8 @@ async function handleCallback(request, env, url, deps) {
     try { await env.AUTH_KV.delete(STATE_PREFIX + state); } catch (_) {}
   }
   const session = await readSession(env, checked.session);
-  if (!sessionCan(session, checked.tenantId)) return portalRedirect('error', 'session');
+  const access = sessionCan(session, checked.tenantId);
+  if (!access.ok) return portalRedirect('error', 'session');
   const keyBytes = squareTokenKeyBytes(env && env.SQUARE_TOKEN_KEY);
   if (!keyBytes) return portalRedirect('error', 'square_token_key_invalid');
   const exchanged = await exchangeToken(env, deps, {
@@ -1408,7 +1406,8 @@ async function handleConfirm(request, env, deps) {
   const sessionToken = String(body.session || '').trim();
   if (sessionToken) {
     const session = await readSession(env, sessionToken);
-    if (!sessionCan(session, tenantId)) return jsonResponse(deps, { ok: false, error: 'forbidden', paid: false }, 403, '');
+    const access = sessionCan(session, tenantId);
+    if (!access.ok) return jsonResponse(deps, { ok: false, error: access.error, paid: false }, access.status, '');
   }
   const allowed = await limitConfirm(request, env, deps, tenantId, !!sessionToken);
   if (!allowed) return jsonResponse(deps, { ok: false, error: 'rate_limited', paid: false }, 429, '');

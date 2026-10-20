@@ -3240,8 +3240,15 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
         var STORAGE_KEY = 'siteforge.platformState.v2';
         var hydratedFromLocal = false;
 
+        function noteBookingAvailability(tenant) {
+            if (!tenant || Object.prototype.hasOwnProperty.call(tenant, 'subscriptionStatus')) return;
+            if (tenant.acceptingBookings === false) tenant.subscriptionStatus = 'paused';
+            else if (tenant.acceptingBookings === true) tenant.subscriptionStatus = 'active';
+        }
+
         function stripTenantSecrets(tenant) {
             if (tenant && Object.prototype.hasOwnProperty.call(tenant, 'ownerPassword')) delete tenant.ownerPassword;
+            noteBookingAvailability(tenant);
         }
 
         function publicSlotFromAppointment(a) {
@@ -3279,7 +3286,7 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
         // Owner contact + billing fields are NOT on the public tenant docs anymore. The worker keeps them in an
         // Admin-only private doc. Signed-in owners (own business) and the agency (all) load them with
         // POST /api/profile {action:'private'}; they live in memory only (never localStorage, never the public page).
-        var SCHEDI_PRIVATE_TENANT_KEYS = ['ownerName', 'ownerEmail', 'ownerPhone', 'stripeCustomerId', 'stripeSubscriptionId', 'billingExempt', 'complimentaryPro', 'monthlyPrice', 'paymentForm', 'hqTags'];
+        var SCHEDI_PRIVATE_TENANT_KEYS = ['ownerName', 'ownerEmail', 'ownerPhone', 'stripeCustomerId', 'stripeSubscriptionId', 'billingExempt', 'complimentaryPro', 'monthlyPrice', 'paymentForm', 'hqTags', 'subscriptionStatus'];
         // HQ-only tags are saved only once the worker says it keeps them private (otherwise they stay local to this tab).
         var schediHqTagsServer = false;
         var SCHEDI_OWNER_SENTINEL = '__schedi_owner__';

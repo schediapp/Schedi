@@ -58,7 +58,7 @@ describe("schedi-web logo route", () => {
     const assets = {
       async fetch(request: Request) {
         const path = new URL(request.url).pathname;
-        if (path === "/index.html") {
+        if (path === "/index.html" || path === "/booking.html") {
           return new Response("<!DOCTYPE html><html><head><title>Schedi</title></head><body>app</body></html>", {
             headers: { "content-type": "text/html; charset=utf-8" },
           });

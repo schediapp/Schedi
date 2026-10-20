@@ -463,12 +463,12 @@ async function ensureOwnerToken(env, secret) {
 }
 
 async function sessionCan(env, token, tenantId, readSession) {
-  if (typeof readSession !== 'function') return null;
+  if (typeof readSession !== 'function') return { ok: false, status: 401, error: 'session_required' };
   const session = await readSession(env, token);
-  if (!session) return null;
-  if (session.role === 'agency') return session;
-  if (session.role === 'owner' && session.tenantId === tenantId) return session;
-  return null;
+  if (!session) return { ok: false, status: 401, error: 'session_required' };
+  if (session.role === 'agency') return { ok: true, session };
+  if (session.role === 'owner' && session.tenantId === tenantId) return { ok: true, session };
+  return { ok: false, status: 403, error: 'forbidden' };
 }
 
 function publicBlocks(blocks) {
@@ -488,8 +488,8 @@ export async function handleCalendarFeeds(request, env, origin, deps) {
   let body = {};
   try { body = await request.json(); } catch (_) { body = {}; }
   const tenantId = clipId(body.tenantId);
-  const session = await sessionCan(env, body.session, tenantId, deps.readSession);
-  if (!session) return json({ ok: false, error: 'forbidden' }, 403, origin);
+  const access = await sessionCan(env, body.session, tenantId, deps.readSession);
+  if (!access.ok) return json({ ok: false, error: access.error }, access.status, origin);
   const action = String(body.action || 'list');
   const secret = await readSecret(env, tenantId);
 

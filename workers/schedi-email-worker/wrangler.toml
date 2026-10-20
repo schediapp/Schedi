@@ -1,5 +1,7 @@
 name = "schedi-email-worker"
-workers_dev = true
+# Crons are scheduled() triggers, not HTTP. Ops and auth stay on schedi.app routes.
+# workers.dev must not expose /auth or /api/ops-* (also blocked at runtime).
+workers_dev = false
 main = "src/index.js"
 compatibility_date = "2026-09-28"
 
@@ -165,3 +167,24 @@ name = "RL_CLIENTS"
 type = "ratelimit"
 namespace_id = "41006"
 simple = { limit = 60, period = 60 }
+
+# Auth sign-in. 5 per 15 minutes per IP and per email, plus a global cap.
+# Created on the next schedi-email-worker deploy. The worker also enforces the
+# same window in-isolate when a binding is missing.
+[[unsafe.bindings]]
+name = "RL_AUTH_IP"
+type = "ratelimit"
+namespace_id = "41007"
+simple = { limit = 5, period = 900 }
+
+[[unsafe.bindings]]
+name = "RL_AUTH_EMAIL"
+type = "ratelimit"
+namespace_id = "41008"
+simple = { limit = 5, period = 900 }
+
+[[unsafe.bindings]]
+name = "RL_AUTH_GLOBAL"
+type = "ratelimit"
+namespace_id = "41009"
+simple = { limit = 60, period = 900 }

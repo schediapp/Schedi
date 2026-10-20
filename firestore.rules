@@ -1,0 +1,25 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Public booking pages and the signed-in owner/HQ apps read tenant docs.
+    // The owner app and HQ list this collection (onSnapshot). Booking pages read
+    // one tenant's slots subcollection, not the tenant list, but list stays open
+    // because the portal and HQ depend on it.
+    // Clients cannot create, update, or delete. The worker uses the Admin SDK,
+    // which bypasses these rules.
+    match /artifacts/{appId}/public/data/tenants/{tenantId} {
+      allow get, list: if true;
+      allow create, update, delete: if false;
+
+      match /slots/{slotId} {
+        allow read: if true;
+        allow write: if false;
+      }
+    }
+
+    // Owner contact, billing, and Square tokens. Admin SDK only.
+    match /artifacts/{appId}/private/data/tenants/{tenantId} {
+      allow read, write: if false;
+    }
+  }
+}
