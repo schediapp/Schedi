@@ -1973,7 +1973,7 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
                             <div class="flex items-center justify-between gap-3">
                                 <div>
                                     <div class="font-bold text-white">Cancellation fee</div>
-                                    <div id="tenantCancelFeeNote" class="text-[11px] text-slate-400">Off unless you turn it on. A cancellation fee does not make card the only way to pay. When a client who paid by card cancels inside this window, Pro charges the fee on that card. Other methods stay available. Free and Starter only show the rule and do not charge a card. Cancelling still frees the time if the fee is not collected.</div>
+                                    <div id="tenantCancelFeeNote" class="text-[11px] text-slate-400">Off unless you turn it on. A cancellation fee does not make card the only way to pay. Charging that fee on a card is coming soon. Other methods stay available. Free and Starter only show the rule and do not charge a card. Cancelling still frees the time if the fee is not collected.</div>
                                 </div>
                                 <input type="checkbox" id="tenantCancelFeeEnabled" class="w-4 h-4 accent-brand-500 rounded cursor-pointer">
                             </div>
@@ -4072,7 +4072,7 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
                 { label: 'Manual pay (Cash App, Venmo, Zelle, PayPal)', free: 'No', starter: 'Yes', pro: 'Yes' },
                 { label: 'Card checkout (Stripe)', free: 'No', starter: 'No', pro: 'Yes' },
                 { label: 'Appointment deposits', free: 'No', starter: 'No', pro: 'Yes' },
-                { label: 'Cancellation fee on card', free: 'Rule only', starter: 'Rule only', pro: 'Can charge' },
+                { label: 'Cancellation fee on card', free: 'Rule only', starter: 'Rule only', pro: 'Coming soon' },
                 { label: 'Booking approval', free: 'Auto-confirm', starter: 'Accept / Deny', pro: 'Accept / Deny' },
                 { label: 'Repeating appointments', free: 'No', starter: 'No', pro: 'Yes' },
                 { label: 'Agency Management', free: 'No', starter: 'No', pro: 'Yes' }
@@ -4083,7 +4083,7 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
             var v = String(val || '');
             if (v === 'Yes' || v === 'Unlimited' || v === 'Can charge' || v === 'Accept / Deny') return 'text-emerald-400 font-semibold';
             if (v === 'No') return 'text-slate-500';
-            if (v === 'Rule only' || v === 'Auto-confirm' || v === '1' || v === '5') return 'text-amber-300';
+            if (v === 'Rule only' || v === 'Coming soon' || v === 'Auto-confirm' || v === '1' || v === '5') return 'text-amber-300';
             return 'text-white font-semibold';
         }
 
@@ -4136,6 +4136,8 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
                     if (r.label === 'Monthly price') { price = v; continue; }
                     if (v === 'No') {
                         items += '<li class="flex items-start gap-2 text-slate-500"><i class="fa-solid fa-xmark mt-0.5 w-3 text-slate-600" aria-hidden="true"></i><span class="line-through decoration-slate-600">' + r.label + '</span><span class="sr-only"> (not included)</span></li>';
+                    } else if (v === 'Coming soon') {
+                        items += '<li class="flex items-start gap-2 text-slate-400"><span>' + r.label + ': <span class="text-amber-300">Coming soon</span></span></li>';
                     } else {
                         var detail = v === 'Yes' ? '' : ': <span class="' + schediPlanCellClass(v) + '">' + v + '</span>';
                         items += '<li class="flex items-start gap-2 text-slate-200"><i class="fa-solid fa-check mt-0.5 w-3 text-emerald-400" aria-hidden="true"></i><span>' + r.label + detail + '</span></li>';
@@ -4346,10 +4348,7 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
                 ? ('$' + settings.amount.toFixed(2))
                 : (String(settings.percent) + '% of the service price');
             if (settings.type === 'percent' && fee >= 0.5) feeDesc += ' ($' + fee.toFixed(2) + ')';
-            var collect = normalizePlan(tenant) === 'pro'
-                ? ' If you pay by card, this fee is charged to that card. Other ways to pay stay available.'
-                : '';
-            return 'If you cancel ' + cancellationWindowLabel(settings.hours) + ', a cancellation fee of ' + feeDesc + ' applies.' + collect;
+            return 'If you cancel ' + cancellationWindowLabel(settings.hours) + ', a cancellation fee of ' + feeDesc + ' applies. Other ways to pay stay available.';
         }
 
         function catalogServicePrice(tenant, serviceName) {
@@ -5035,7 +5034,7 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
                     + '<section><h2 class="text-base font-bold text-white mb-1">Sign in</h2><ol class="list-decimal pl-5 space-y-1"><li>Open Schedi and sign in to the Business Portal.</li><li>Enter the owner email and password.</li></ol></section>'
                     + '<section><h2 class="text-base font-bold text-white mb-1">Add a service</h2><ol class="list-decimal pl-5 space-y-1"><li>Open Manage Services.</li><li>Click Add New Service.</li><li>Enter the name, duration, optional price, and description, then save. Leave price blank if you do not want a price shown.</li><li>Use Edit or Delete on a service you already added.</li><li>Free keeps one service. A second service is not saved.</li></ol></section>'
                     + '<section><h2 class="text-base font-bold text-white mb-1">Set hours</h2><ol class="list-decimal pl-5 space-y-1"><li>Open Hours &amp; Blocked Times.</li><li>Check Open for a day, then set Start and End.</li><li>Choose Start times every 15 minutes, 30 minutes, or 1 hour.</li><li>Click Save Operating Hours.</li><li>Use Add Special Hours to open or change one date without editing the weekly schedule.</li><li>Use Add Recurring Outage or Add Date Block when you need time off.</li></ol></section>'
-                    + '<section><h2 class="text-base font-bold text-white mb-1">Payments</h2><ol class="list-decimal pl-5 space-y-1"><li>Open Payment Options.</li><li>Free only allows Pay at Appointment.</li><li>Starter can use Cash App, Venmo, Zelle, PayPal, and Pay at Appointment. Card checkout is not offered.</li><li>Pro can also turn on Credit / Debit Card (Stripe).</li><li>On Pro, Appointment deposit can be a percent of the service price or a fixed amount. It stays off until you turn it on. Percent deposits skip services with no price; card checkout also needs a price. Free and Starter cannot collect a card deposit.</li><li>Cancellation fee stays off until you turn it on. Set the hours (default 24) and a percent or a fixed amount. Pro charges a card already used for that visit. Free and Starter only show the rule.</li><li>Click Save Payment Gateways.</li></ol></section>'
+                    + '<section><h2 class="text-base font-bold text-white mb-1">Payments</h2><ol class="list-decimal pl-5 space-y-1"><li>Open Payment Options.</li><li>Free only allows Pay at Appointment.</li><li>Starter can use Cash App, Venmo, Zelle, PayPal, and Pay at Appointment. Card checkout is not offered.</li><li>Pro can also turn on Credit / Debit Card (Stripe).</li><li>On Pro, Appointment deposit can be a percent of the service price or a fixed amount. It stays off until you turn it on. Percent deposits skip services with no price; card checkout also needs a price. Free and Starter cannot collect a card deposit.</li><li>Cancellation fee stays off until you turn it on. Set the hours (default 24) and a percent or a fixed amount. Charging that fee on a card is coming soon. Free and Starter only show the rule.</li><li>Click Save Payment Gateways.</li></ol></section>'
                     + '<section><h2 class="text-base font-bold text-white mb-1">Appointments</h2><ol class="list-decimal pl-5 space-y-1"><li>Open Appointments Roster.</li><li>Free bookings are confirmed as soon as the client reserves.</li><li>Starter and Pro bookings stay pending. Click Accept or Deny. Deny frees that time.</li><li>Mark paid, Reschedule, and Cancel are on the same row.</li><li>Add Manual Appointment records a visit you took in person.</li></ol></section>'
                     + '<section><h2 class="text-base font-bold text-white mb-1">Repeating visits</h2><ol class="list-decimal pl-5 space-y-1"><li>Open Email Confirmations.</li><li>On Pro, turn on Allow recurring appointments and click Save Email Settings.</li><li>Free and Starter do not show repeating visits on the booking page.</li></ol></section>'
                     + '<section><h2 class="text-base font-bold text-white mb-1">Your Schedi plan</h2><p>Starter is $29/mo and Pro is $49/mo, month to month, with no contract. ' + SCHEDI_OWNER_POLICY_SHORT + ' Use Cancel subscription to stop renewal at the end of the paid period. Resume subscription if you change your mind before then. Card updates stay in Manage billing. To request a refund of the first payment within 15 days, email <a class="text-brand-400 underline" href="mailto:admin@schedi.app">admin@schedi.app</a> with the business name and the charge date.</p></section>'
@@ -15796,10 +15795,7 @@ function paintBizHeader() {
             if (settings.type === 'percent' && fee >= 0.5) feeDesc += ' ($' + fee.toFixed(2) + ')';
             var n = settings.hours;
             var when = n <= 0 ? 'at the time of the appointment' : (n === 1 ? 'within 1 hour of the appointment' : ('within ' + n + ' hours of the appointment'));
-            var collect = bookingPlan() === 'pro'
-                ? ' If you pay by card, this fee is charged to that card. Other ways to pay stay available.'
-                : '';
-            return 'If you cancel ' + when + ', a cancellation fee of ' + feeDesc + ' applies.' + collect;
+            return 'If you cancel ' + when + ', a cancellation fee of ' + feeDesc + ' applies. Other ways to pay stay available.';
         }
 
         function updateCancelFeeNotice() {

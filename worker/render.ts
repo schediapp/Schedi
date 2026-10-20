@@ -73,8 +73,8 @@ export function renderLlms(): string {
     "Plans (USD, billed monthly):",
     "- Free: $0. One service, up to 5 bookings a week (Monday through Sunday), pay at the appointment, instant confirmation, and a Schedi badge on the booking page. No repeating appointments and no accept or deny.",
     "- Starter: $29 a month. Unlimited services and bookings. Cash App, Venmo, Zelle, PayPal, or pay at the appointment. Accept or deny each request. Starter does not include card checkout or repeating appointments.",
-    "- Pro: $49 a month. Everything in Starter, plus repeating appointments weekly, biweekly, or monthly.",
-    "- Card checkout (Stripe), appointment deposits, and a cancellation fee on a card are coming soon. They are not available to clients today.",
+    "- Pro: $49 a month. Everything in Starter, plus repeating appointments weekly, biweekly, or monthly, card checkout (Stripe), and appointment deposits. Card checkout stays off until Stripe card payments and payouts are active. The deposit stays off until you turn it on.",
+    "- Charging a cancellation fee on a card is coming soon. Free and Starter only show the rule.",
     "",
     "Billing:",
     ...OWNER_SUBSCRIPTION_POLICY_TERMS.map((line) => `- ${line}`),
@@ -194,7 +194,7 @@ function jsonLd(page: MarketingPage): string {
         monthlyOffer(
           "Pro",
           "49",
-          "Billed monthly. Adds repeating appointments. Card checkout (Stripe), appointment deposits, and a cancellation fee on a card are coming soon.",
+          "Billed monthly. Adds repeating appointments, card checkout (Stripe), and appointment deposits. Charging a cancellation fee on a card is coming soon.",
         ),
       ],
     });
@@ -293,7 +293,7 @@ type PlanKey = "free" | "starter" | "pro";
 const PLANS: { key: PlanKey; name: string; blurb: string; cta: string; popular?: boolean }[] = [
   { key: "free", name: "Free", blurb: "Try Schedi with one service and get your link today.", cta: "Start free" },
   { key: "starter", name: "Starter", blurb: "For growing businesses that take Cash App, Venmo, Zelle, or PayPal.", cta: "Choose Starter" },
-  { key: "pro", name: "Pro", blurb: "Repeating visits for one owner. Card checkout stays hidden until Stripe card payments and payouts are active.", cta: "Choose Pro", popular: true },
+  { key: "pro", name: "Pro", blurb: "Repeating visits, card checkout, and appointment deposits for one owner.", cta: "Choose Pro", popular: true },
 ];
 
 export function planCardsHtml(): string {
@@ -328,14 +328,14 @@ export function planCardsHtml(): string {
     </article>`;
   }).join("\n");
   return `<div class="plans">${cards}</div>
-  <p class="muted center small">Monthly prices. Upgrade, switch, or stay on Free anytime from your Business Portal. Nothing is charged until checkout finishes. Card checkout and appointment deposits stay hidden until Stripe card payments and payouts are active.</p>`;
+  <p class="muted center small">Monthly prices. Upgrade, switch, or stay on Free anytime from your Business Portal. Nothing is charged until checkout finishes. On Pro, card checkout stays off until Stripe card payments and payouts are active, and the deposit stays off until you turn it on. Charging a cancellation fee on a card is coming soon.</p>`;
 }
 
 const FEATURES: { icon: string; title: string; text: string }[] = [
   { icon: "link", title: "One link for everything", text: "Share schedi.app/your-business in your bio, a text, or on a printed QR code." },
   { icon: "calendar", title: "Open times, always current", text: "Set your hours once. Clients only see times you're actually free." },
   { icon: "bell", title: "Reminder emails", text: "Clients get a friendly reminder the morning of their visit, so fewer no-shows." },
-  { icon: "wallet", title: "Get paid your way", text: "Pay at the appointment, or with Cash App, Venmo, Zelle, or PayPal." },
+  { icon: "wallet", title: "Get paid your way", text: "Pay at the appointment, with Cash App, Venmo, Zelle, or PayPal, or by card on Pro." },
   { icon: "repeat", title: "Repeating visits", text: "Weekly, biweekly, or monthly regulars book once on Pro." },
   { icon: "shield", title: "You stay in control", text: "Accept or decline new requests, and keep every booking in one place." },
 ];
