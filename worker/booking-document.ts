@@ -144,6 +144,44 @@ function safeSlug(slug: string): string {
   return String(slug || "").toLowerCase().replace(/[^a-z0-9-]/g, "").slice(0, 80);
 }
 
+const PAY_FLAGS = new Set(["success", "cancel", "checkout"]);
+const PAY_KINDS = new Set(["card", "deposit"]);
+const PAY_BOOKING_ID = /^[A-Za-z0-9_-]{4,40}$/;
+
+/**
+ * Values baked into the public booking page for ?pay=checkout|success|cancel.
+ * The page does not read location.search for these. After the public page moved
+ * off the owner shell, an empty bake leaves the email's Pay by card link on the
+ * booking form and never calls Stripe.
+ */
+export function bookingPayFromSearch(search: string | URLSearchParams | null | undefined): {
+  flag: string;
+  kind: string;
+  booking: string;
+  bookings: string;
+} {
+  const params = search instanceof URLSearchParams
+    ? search
+    : new URLSearchParams(String(search || "").replace(/^\?/, ""));
+  const flagRaw = String(params.get("pay") || "");
+  const flag = PAY_FLAGS.has(flagRaw) ? flagRaw : "";
+  if (!flag) return { flag: "", kind: "", booking: "", bookings: "" };
+  const kindRaw = String(params.get("kind") || "");
+  const kind = PAY_KINDS.has(kindRaw) ? kindRaw : "";
+  const bookingRaw = String(params.get("booking") || "");
+  const booking = PAY_BOOKING_ID.test(bookingRaw) ? bookingRaw : "";
+  const extras: string[] = [];
+  const seen = new Set<string>();
+  for (const part of String(params.get("bookings") || "").split(",")) {
+    const id = part.trim();
+    if (!PAY_BOOKING_ID.test(id) || id === booking || seen.has(id)) continue;
+    seen.add(id);
+    extras.push(id);
+    if (extras.length === 11) break;
+  }
+  return { flag, kind, booking, bookings: extras.join(",") };
+}
+
 export function fillBookingDocument(
   html: string,
   input: {
@@ -152,6 +190,7 @@ export function fillBookingDocument(
     projectId?: string;
     demo?: boolean;
     jsonLd?: Record<string, unknown> | null;
+    pay?: string | URLSearchParams | null;
   },
 ): string {
   const fields = input.fields || {};
@@ -178,6 +217,7 @@ export function fillBookingDocument(
     name,
     ...(canonical ? { url: canonical } : {}),
   };
+  const pay = bookingPayFromSearch(input.pay);
   const values: Record<string, string> = {
     [TOKEN_HTML_CLASS]: " schedi-newbook",
     [TOKEN_SAFE_NAME]: escapeHtml(name),
@@ -193,10 +233,10 @@ export function fillBookingDocument(
     [TOKEN_TENANT]: jsonForScript(projectPublicBooking(fields)),
     [TOKEN_NEWBOOK]: "true",
     [TOKEN_DEMO]: input.demo ? "true" : "false",
-    [TOKEN_PAY_FLAG]: '""',
-    [TOKEN_PAY_KIND]: '""',
-    [TOKEN_PAY_BOOKING]: '""',
-    [TOKEN_PAY_BOOKINGS]: '""',
+    [TOKEN_PAY_FLAG]: jsonForScript(pay.flag),
+    [TOKEN_PAY_KIND]: jsonForScript(pay.kind),
+    [TOKEN_PAY_BOOKING]: jsonForScript(pay.booking),
+    [TOKEN_PAY_BOOKINGS]: jsonForScript(pay.bookings),
     [TOKEN_ANALYTICS]: "",
   };
   let out = html;

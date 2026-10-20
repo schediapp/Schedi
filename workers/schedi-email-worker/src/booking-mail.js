@@ -45,7 +45,44 @@ const MAX_TEXT = 30000;
 const ALLOWED_FROM_NAMES = new Set(['schedi', 'schedi bookings']);
 
 const ALLOWED_LINK_HOSTS = new Set(['schedi.app', 'www.schedi.app', 'calendar.google.com']);
-const IMG_PREFIX = 'https://schedi.app/assets/';
+
+/** PNG already on schedi.app. Gmail loads this; it does not load SVG or a missing file. */
+export const SCHEDI_EMAIL_MARK = 'https://schedi.app/assets/homescreen-icon.png';
+
+/**
+ * Absolute https URL on schedi.app for an email <img>.
+ * Asset images must be png or jpeg. A business logo at /logos/{id} is rewritten
+ * to /logos/{id}/email.png, which serves only the stored png or jpeg.
+ * Returns '' for data:, SVG, other hosts, and anything else Gmail would block.
+ */
+export function emailRasterSrc(raw) {
+  const s = String(raw || '').trim();
+  if (!s || s.length > 500) return '';
+  let u;
+  try { u = new URL(s); } catch (_) { return ''; }
+  if (u.protocol !== 'https:' || u.username || u.password) return '';
+  const host = String(u.hostname || '').toLowerCase();
+  if (host !== 'schedi.app' && host !== 'www.schedi.app') return '';
+  const path = String(u.pathname || '');
+  if (path.indexOf('..') !== -1 || /\.svg$/i.test(path)) return '';
+  let v = '';
+  let extra = false;
+  u.searchParams.forEach((val, key) => {
+    if (key === 'v') v = String(val || '');
+    else extra = true;
+  });
+  if (extra) return '';
+  if (/^\/assets\/[A-Za-z0-9._/-]+\.(png|jpe?g)$/i.test(path)) {
+    if (v && !/^[A-Za-z0-9._-]{1,40}$/.test(v)) return '';
+    return 'https://schedi.app' + path + (v ? ('?v=' + v) : '');
+  }
+  const emailPng = path.match(/^\/logos\/([A-Za-z0-9_-]{1,80})\/email\.png$/);
+  const logo = path.match(/^\/logos\/([A-Za-z0-9_-]{1,80})$/);
+  const id = emailPng ? emailPng[1] : (logo ? logo[1] : '');
+  if (!id) return '';
+  if (v && !/^[a-f0-9]{18}$/.test(v)) return '';
+  return 'https://schedi.app/logos/' + id + '/email.png' + (v ? ('?v=' + v) : '');
+}
 const ALLOWED_TAGS = new Set([
   'html', 'head', 'meta', 'title', 'body', 'table', 'thead', 'tbody', 'tfoot', 'tr', 'td', 'th',
   'div', 'span', 'p', 'a', 'img', 'strong', 'b', 'em', 'i', 'u', 's', 'strike', 'br', 'hr',
@@ -166,7 +203,9 @@ export function mailContentProblem(html, text, ctx) {
         if (!linkAllowed(av, ctx)) return 'link_not_allowed';
       } else if (an === 'src') {
         if (name !== 'img') return 'src_on_' + name;
-        if (decodeEntities(av).trim().indexOf(IMG_PREFIX) !== 0) return 'image_not_allowed';
+        const decodedImg = decodeEntities(av).trim();
+        const canonImg = emailRasterSrc(decodedImg);
+        if (!canonImg || canonImg !== decodedImg) return 'image_not_allowed';
       } else if (an === 'style') {
         if (/url\(|expression\(|@import|behavior:|-moz-binding|image-set\(/.test(dv)) return 'bad_style';
       } else if (an === 'name' && name === 'meta') {

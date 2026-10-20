@@ -28,6 +28,7 @@ import { runDepositFollowups, runSignupReminders, isAwaitingDeposit, signupAwait
 import { resolveOwnerNotifyAddress } from './owner-notify.js';
 import { handleOwnerResetRequest } from './owner-reset.js';
 import { planFromStripePrice } from './entitlements.js';
+import { catalogChargeDollars, ownerQuotedDollars } from './card-quote-link.js';
 import { hydrateTenantBookings, persistTenantAppointments, handlePrivateBookingHttp, loadPrivateAppointments } from './private-bookings.js';
 import { handleClientsHttp, runClientsBackfillOnce } from './private-clients.js';
 import { adminAuthHeaders } from './firebase-admin.js';
@@ -2640,7 +2641,7 @@ async function markBookingCheckoutPaid(env, { tenantId, bookingIds, purpose, car
       const bal = hasBal ? roundMoney(booking.balanceDue).toFixed(2) : '';
       const friendlyDate = formatFriendlyLocalDateEmail(booking.date || '');
       const cal = formatConfirmEmailCalParts(booking.date || '');
-      const markUrl = 'https://schedi.app/assets/email-calendar-check.png';
+      const markUrl = 'https://schedi.app/assets/homescreen-icon.png';
       const subject = "You're booked! — " + biz;
       const sub = 'Your card deposit of $' + dep + ' is paid.' + (bal ? (' $' + bal + ' is due at the appointment.') : '');
       let text =
@@ -2747,8 +2748,10 @@ async function handleBookingCheckout(request, env, origin) {
   if (selected.length !== bookingIds.length) return json({ ok: false, error: 'booking_not_found' }, 404, origin);
   const depositOn = depositRequiredForTenant(tenant);
   const gateways = tenant.paymentGateways && typeof tenant.paymentGateways === 'object' ? tenant.paymentGateways : {};
+  const quotedFull = selected.length > 0 && selected.every((booking) => ownerQuotedDollars(booking, catalogChargeDollars(tenant, booking)) != null);
   let purpose = '';
-  if (depositOn) purpose = 'deposit';
+  if (quotedFull) purpose = 'card';
+  else if (depositOn) purpose = 'deposit';
   else if (gateways.card === true) purpose = 'card';
   else return json({ ok: false, error: 'card_checkout_off' }, 400, origin);
   const splits = [];
@@ -2759,7 +2762,7 @@ async function handleBookingCheckout(request, env, origin) {
     if (status === 'denied' || status === 'cancelled' || status === 'canceled') {
       return json({ ok: false, error: 'booking_cancelled' }, 400, origin);
     }
-    const price = bookingPriceForCharge(tenant, booking);
+    let price = bookingPriceForCharge(tenant, booking);
     if (purpose === 'deposit') {
       if (booking.depositPaid === true) continue;
       const quote = quoteDepositForPrice(tenant, price);
@@ -2776,6 +2779,8 @@ async function handleBookingCheckout(request, env, origin) {
         return json({ ok: false, error: 'not_card_booking' }, 400, origin);
       }
       if (payStatus.indexOf('PAID') !== -1 && payStatus.indexOf('AWAITING') === -1) continue;
+      const quoted = ownerQuotedDollars(booking, catalogChargeDollars(tenant, booking));
+      if (quoted != null) price = quoted;
       if (price === null) return json({ ok: false, error: 'service_has_no_price' }, 400, origin);
       const cents = Math.round(price * 100);
       if (cents < 50) return json({ ok: false, error: 'amount_too_small' }, 400, origin);
@@ -3026,6 +3031,7 @@ export default {
         applyCancellationFee: (env2, tenant, booking) => applyCancellationFee(env2, tenant, booking, stripeRequest),
         notifyOwnerOfNewBookings,
         notifyOwnerOfCancellations,
+        sendResend,
       }, ctx);
     }
     if (path === '/api/push-token') {

@@ -759,6 +759,7 @@ async function serveSpa(
         projectId: env.FIREBASE_PROJECT_ID,
         demo: pageUrl.searchParams.get("demo") === "1",
         jsonLd: lookup.tenant ? localBusinessJsonLd(lookup.tenant, canonical) : null,
+        pay: pageUrl.searchParams,
       });
     }
   } else if (body != null && lookup?.tenant && slug) {

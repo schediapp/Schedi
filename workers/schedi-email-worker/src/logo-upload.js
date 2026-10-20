@@ -126,6 +126,8 @@ export function parseLogoPath(pathname) {
   const tenantId = safeTenantId(decodePathPart(parts[1]));
   if (!tenantId) return null;
   if (parts.length === 2) return { tenantId: tenantId, kind: 'logo' };
+  // Email clients need a raster. This path serves the png or jpeg only.
+  if (parts.length === 3 && parts[2] === 'email.png') return { tenantId: tenantId, kind: 'email' };
   if (parts.length === 3 && parts[2] === 'qr') return { tenantId: tenantId, kind: 'qr' };
   if (parts.length === 4 && parts[2] === 'services') {
     const serviceId = safeServiceId(decodePathPart(parts[3]));
@@ -183,8 +185,9 @@ export async function handleLogoGet(request, env) {
   const stem = logoStem(parsed);
   let found = null;
   let foundExt = '';
-  for (let i = 0; i < READ_EXT.length; i++) {
-    const ext = READ_EXT[i];
+  const exts = parsed.kind === 'email' ? ['png', 'jpg'] : READ_EXT;
+  for (let i = 0; i < exts.length; i++) {
+    const ext = exts[i];
     let obj = null;
     try { obj = await bucket.get(stem + ext); } catch (_) { obj = null; }
     if (obj) { found = obj; foundExt = ext; break; }

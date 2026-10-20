@@ -14,7 +14,14 @@ import { readSession } from './owner-auth.js';
 import { isUnpaidPast } from './unpaid-digest.js';
 import { adminAuthHeaders } from './firebase-admin.js';
 import { applyCancellationFee, cancellationPolicyPublic } from './cancellation-fee.js';
-import { proOnlyBookingError } from './entitlements.js';
+import { proOnlyBookingError, tenantPlanName } from './entitlements.js';
+import {
+  awaitingCardQuote,
+  catalogChargeDollars,
+  createQuotedPayLink,
+  quoteAmountCents,
+  quotedPayEmail,
+} from './card-quote-link.js';
 import { squareClientBookingError } from './deposit-methods.js';
 import { rateLimitOk } from './rate-limit.js';
 import { bookingMakesClient, upsertClientsFromBookings } from './private-clients.js';
@@ -1304,6 +1311,94 @@ export async function handlePrivateBookingHttp(request, env, origin, path, deps,
     return respond(json, {
       ok: true,
       bookings: created,
+      rosterRevision: publishedRosterRevision(persisted),
+    }, 200, origin, isAllowedOrigin);
+  }
+
+  if (action === 'send_card_link') {
+    const tenantId = clip(body.tenantId, 48);
+    const bookingId = clip(body.bookingId, 40);
+    const access = await sessionCanAccess(env, body.session, tenantId);
+    if (!access.ok) return respond(json, { ok: false, error: access.error }, access.status, origin, isAllowedOrigin);
+    if (!tenantId || !bookingId) return respond(json, { ok: false, error: 'invalid_booking' }, 400, origin, isAllowedOrigin);
+    if (!(await rateLimitOk(env.RL_MAIL, 'cardlink:' + tenantId, 20, 'cardlink'))) {
+      return respond(json, { ok: false, error: 'rate_limited' }, 429, origin, isAllowedOrigin);
+    }
+    const cents = quoteAmountCents(body.amount);
+    if (!cents) return respond(json, { ok: false, error: 'amount_too_small' }, 400, origin, isAllowedOrigin);
+    const idToken = await firebaseAnonymousToken(env);
+    const tenant = await deps.getTenantById(env, idToken, tenantId);
+    if (!tenant) return respond(json, { ok: false, error: 'tenant_not_found' }, 404, origin, isAllowedOrigin);
+    if (tenantPlanName(tenant) !== 'pro') return respond(json, { ok: false, error: 'card_checkout_pro_only' }, 400, origin, isAllowedOrigin);
+    const gateways = tenant.paymentGateways && typeof tenant.paymentGateways === 'object' ? tenant.paymentGateways : {};
+    if (gateways.card !== true) return respond(json, { ok: false, error: 'card_checkout_off' }, 400, origin, isAllowedOrigin);
+    const appts = Array.isArray(tenant.appointments) ? tenant.appointments.slice() : [];
+    const idx = appts.findIndex((row) => row && String(row.id) === bookingId);
+    if (idx < 0) return respond(json, { ok: false, error: 'booking_not_found' }, 404, origin, isAllowedOrigin);
+    const booking = appts[idx];
+    if (!awaitingCardQuote(booking) || catalogChargeDollars(tenant, booking) !== null) {
+      return respond(json, { ok: false, error: 'not_card_quote' }, 400, origin, isAllowedOrigin);
+    }
+    const email = String(booking.clientEmail || '').trim();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+      return respond(json, { ok: false, error: 'email_required' }, 400, origin, isAllowedOrigin);
+    }
+    const dollars = cents / 100;
+    appts[idx] = Object.assign({}, booking, {
+      amount: dollars,
+      paymentMethod: 'card',
+      paymentStatus: 'AWAITING CARD CHECKOUT',
+      paymentOptionLabel: 'Card',
+    });
+    const persisted = await persistTenantAppointments(env, idToken, tenantId, appts);
+    const slug = String((tenant.slug || tenant.id || tenantId) || '').trim().toLowerCase();
+    const fetchImpl = typeof deps.fetchImpl === 'function' ? deps.fetchImpl : fetch;
+    const link = await createQuotedPayLink(fetchImpl, {
+      slug,
+      tenantId,
+      bookingId,
+      email,
+      serviceName: booking.serviceName || 'Appointment',
+      amountCents: cents,
+    });
+    if (!link.url) return respond(json, { ok: false, error: 'link_unavailable' }, 502, origin, isAllowedOrigin);
+    if (typeof deps.sendResend !== 'function') {
+      return respond(json, { ok: false, error: 'email_unavailable', url: link.url, amount: dollars }, 500, origin, isAllowedOrigin);
+    }
+    const when = [booking.date, booking.time].filter(Boolean).join(' at ');
+    const mail = quotedPayEmail({
+      businessName: tenant.name || 'Schedi',
+      serviceName: booking.serviceName || 'Appointment',
+      amount: dollars,
+      url: link.url,
+      when,
+    });
+    const notes = tenant.notifications && typeof tenant.notifications === 'object' ? tenant.notifications : {};
+    const replyTo = String(notes.replyTo || tenant.ownerEmail || '').trim();
+    const sent = await deps.sendResend(env, {
+      to: email,
+      subject: mail.subject,
+      text: mail.text,
+      html: mail.html,
+      replyTo: replyTo.indexOf('@') > 0 ? replyTo : undefined,
+      fromName: String(tenant.name || 'Schedi'),
+      fromAddress: 'bookings@schedi.app',
+    });
+    if (!sent || sent.ok !== true) {
+      return respond(json, {
+        ok: false,
+        error: 'email_failed',
+        amount: dollars,
+        url: link.url,
+        rosterRevision: publishedRosterRevision(persisted),
+      }, 502, origin, isAllowedOrigin);
+    }
+    return respond(json, {
+      ok: true,
+      amount: dollars,
+      url: link.url,
+      via: link.via,
+      connectStatus: link.connectStatus,
       rosterRevision: publishedRosterRevision(persisted),
     }, 200, origin, isAllowedOrigin);
   }
