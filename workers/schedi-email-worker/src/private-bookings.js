@@ -143,7 +143,7 @@ const BOOKING_KEYS = [
   'date', 'time', 'paymentStatus', 'paymentMethod', 'paymentOptionLabel', 'paidMethod', 'amount', 'durationMins',
   'status', 'seriesId', 'recurrence', 'depositAmount', 'depositPaid', 'balanceDue', 'cancelled', 'noShow',
   'cancelledAt', 'cancelledBy', 'reminderSentAt', 'smsReminderSentAt', 'smsConfirmSentAt',
-  'depositConfirmSentAt', 'notes', 'createdAt', 'walkIn',
+  'depositConfirmSentAt', 'paymentReceivedSentAt', 'notes', 'createdAt', 'walkIn',
   'depositNudgeSentAt', 'depositDayBeforeSentAt', 'depositOwnerWarnSentAt', 'depositExpiredAt',
   'payCode',
   'stripeCustomerId', 'stripePaymentMethodId', 'stripePaymentIntentId',

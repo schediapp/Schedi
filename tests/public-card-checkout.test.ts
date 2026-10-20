@@ -54,6 +54,7 @@ describe("public card checkout", () => {
     const params = linkCall?.args[0] as Stripe.PaymentLinkCreateParams;
     expect(params.metadata?.kind).toBe("booking_payment");
     expect(params.metadata?.schedi_public_booking).toBe("1");
+    expect(params.payment_intent_data?.receipt_email).toBe("client@example.com");
     expect(params.after_completion).toMatchObject({
       type: "redirect",
       redirect: { url: publicCardReturnUrl("https://schedi.app", "northwind", "deposit", "BK-CB126C75", "success") },

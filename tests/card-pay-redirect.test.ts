@@ -191,6 +191,10 @@ describe("GET /billing/card-pay", () => {
     const decoded = decodeURIComponent(String(stripeCall?.[1]?.body || ""));
     expect(decoded).toContain("[unit_amount]=100");
     expect(decoded).toContain("[purpose]=deposit");
+    expect(decoded).toContain("customer_email=client@example.com");
+    expect(decoded).toContain("payment_intent_data[receipt_email]=client@example.com");
+    const stripeHeaders = (stripeCall?.[1]?.headers || {}) as Record<string, string>;
+    expect(stripeHeaders["Stripe-Account"] || stripeHeaders["stripe-account"]).toBeUndefined();
   });
 
   it("redirects a pay link that has no manage token, the same way an older email does", async () => {
@@ -237,5 +241,89 @@ describe("GET /billing/card-pay", () => {
     expect(phish.status).toBeGreaterThanOrEqual(400);
     expect(phish.headers.get("location")).toBeNull();
     expect(await phish.text()).toContain("Nothing was charged.");
+  });
+});
+
+describe("payment received email", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it("emails the client when a pending deposit is paid", async () => {
+    const resendBodies: string[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input instanceof Request ? input.url : input);
+      if (url.includes("identitytoolkit.googleapis.com")) return Response.json({ idToken: "tok" });
+      if (url.includes("api.stripe.com")) return Response.json({});
+      if (url.includes("api.resend.com/emails")) {
+        resendBodies.push(String(init?.body || ""));
+        return Response.json({ id: "email_1" });
+      }
+      if (url.includes("firestore.googleapis.com")) {
+        if (url.includes("/public/data/tenants/") && !url.includes("/slots")) {
+          return Response.json({
+            fields: (fsValue({
+              id: TENANT,
+              slug: TENANT,
+              name: "Axel Del Cid Photography",
+              plan: "pro",
+              notifications: { emailConfirmations: true },
+            }) as { mapValue: { fields: unknown } }).mapValue.fields,
+          });
+        }
+        return Response.json({ documents: [] });
+      }
+      return new Response("unexpected " + url, { status: 500 });
+    }));
+    const payload = JSON.stringify({
+      id: "evt_deposit_paid",
+      type: "checkout.session.completed",
+      data: {
+        object: {
+          mode: "payment",
+          payment_status: "paid",
+          amount_total: 100,
+          payment_intent: "pi_testdeposit",
+          metadata: {
+            kind: "booking_payment",
+            purpose: "deposit",
+            tenantId: TENANT,
+            bookingIds: BOOKING,
+            splits: BOOKING + ":100",
+          },
+        },
+      },
+    });
+    const secret = "whsec_test_receipt";
+    const stamp = Math.floor(Date.now() / 1000).toString();
+    const key = await crypto.subtle.importKey(
+      "raw",
+      new TextEncoder().encode(secret),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"],
+    );
+    const mac = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(stamp + "." + payload));
+    const hex = [...new Uint8Array(mac)].map((b) => b.toString(16).padStart(2, "0")).join("");
+    const env = payEnv() as ReturnType<typeof payEnv> & { STRIPE_WEBHOOK_SECRET: string; RESEND_API_KEY: string };
+    env.STRIPE_WEBHOOK_SECRET = secret;
+    env.RESEND_API_KEY = "re_test";
+    const res = await worker.fetch(new Request("https://schedi.app/billing/webhook", {
+      method: "POST",
+      headers: { "Stripe-Signature": "t=" + stamp + ",v1=" + hex, "Content-Type": "application/json" },
+      body: payload,
+    }), env, { waitUntil() {} });
+    expect(res.status).toBe(200);
+    expect(resendBodies).toHaveLength(1);
+    const mail = JSON.parse(resendBodies[0]) as { to: string; subject: string; text: string };
+    expect(mail.to).toBe("client@example.com");
+    expect(mail.subject).toBe("Payment received — Axel Del Cid Photography");
+    expect(mail.text).toContain("$1.00 card deposit");
+    expect(mail.text).toContain("#" + BOOKING);
+    const stored = JSON.parse(String(await env.AUTH_KV.get("privateAppts:" + TENANT)));
+    expect(stored.appointments[0].status).toBe("pending");
+    expect(stored.appointments[0].depositPaid).toBe(true);
+    expect(stored.appointments[0].paymentReceivedSentAt).toEqual(expect.any(String));
   });
 });

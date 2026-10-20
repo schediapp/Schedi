@@ -2574,6 +2574,45 @@ function formatConfirmEmailCalParts(dateStr) {
 }
 
 
+function paymentReceivedMessage(tenant, booking, purpose) {
+  const biz = String((tenant && tenant.name) || 'Schedi');
+  const service = String((booking && booking.serviceName) || 'Appointment');
+  const deposit = purpose === 'deposit';
+  const dollars = deposit ? roundMoney(booking && booking.depositAmount) : roundMoney(booking && booking.amount);
+  const amount = Number.isFinite(dollars) && dollars > 0 ? ('$' + dollars.toFixed(2)) : '';
+  const what = deposit ? 'card deposit' : 'card payment';
+  const friendlyDate = formatFriendlyLocalDateEmail((booking && booking.date) || '');
+  const balanceRaw = booking && booking.balanceDue;
+  const balance = deposit && balanceRaw !== null && balanceRaw !== undefined && Number.isFinite(Number(balanceRaw))
+    ? roundMoney(balanceRaw) : null;
+  const subject = 'Payment received — ' + biz;
+  let text = 'Payment received\n\n';
+  text += 'We received your ' + (amount ? amount + ' ' : '') + what + ' for ' + service + ' with ' + biz + '.\n';
+  if (friendlyDate) text += 'Date: ' + friendlyDate + '\n';
+  if (booking && booking.time) text += 'Time: ' + booking.time + '\n';
+  text += 'Booking ref: #' + ((booking && booking.id) || '') + '\n';
+  if (balance !== null && balance > 0) text += 'The rest ($' + balance.toFixed(2) + ') is due at the appointment.\n';
+  text += '\n— ' + biz;
+  function row(label, value) {
+    return '<tr><td style="padding:8px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#94a3b8;">' + escapeHtml(label) + '</td>'
+      + '<td style="padding:8px 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#f1f5f9;font-weight:600;text-align:right;">' + escapeHtml(value) + '</td></tr>';
+  }
+  let rows = row('Service', service);
+  if (amount) rows += row(deposit ? 'Deposit' : 'Amount', amount);
+  if (friendlyDate) rows += row('Date', friendlyDate);
+  if (booking && booking.time) rows += row('Time', String(booking.time));
+  rows += row('Booking ref', '#' + ((booking && booking.id) || ''));
+  const html = '<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="margin:0;padding:24px;background:#020617;">'
+    + '<div style="max-width:560px;margin:0 auto;background:#0b1325;border:1px solid #334155;border-radius:16px;padding:24px;font-family:Arial,Helvetica,sans-serif;">'
+    + '<h1 style="margin:0 0 8px;font-size:22px;color:#fff;">Payment received</h1>'
+    + '<p style="margin:0 0 16px;color:#c7d2fe;font-size:14px;line-height:1.5;">We received your ' + escapeHtml((amount ? amount + ' ' : '') + what) + ' for ' + escapeHtml(service) + '.</p>'
+    + '<table role="presentation" width="100%">' + rows + '</table>'
+    + (balance !== null && balance > 0 ? ('<p style="margin:16px 0 0;color:#94a3b8;font-size:13px;">The rest ($' + escapeHtml(balance.toFixed(2)) + ') is due at the appointment.</p>') : '')
+    + '<p style="margin:16px 0 0;color:#64748b;font-size:12px;">— ' + escapeHtml(biz) + '</p>'
+    + '</div></body></html>';
+  return { subject: subject, text: text, html: html };
+}
+
 async function markBookingCheckoutPaid(env, { tenantId, bookingIds, purpose, card, amountCents, paymentIntentId, splits }) {
   const id = safeTenantId(tenantId);
   const ids = parseBookingIdList(bookingIds);
@@ -2611,7 +2650,7 @@ async function markBookingCheckoutPaid(env, { tenantId, bookingIds, purpose, car
     }
     appts[i] = applied.booking;
     changed = true;
-    if (payPurpose === 'deposit') paidNow.push(applied.booking);
+    paidNow.push(applied.booking);
   }
   if (!changed) {
     if (matched && duplicates === matched) return { ok: true, duplicate: true, tenantId: id, purpose: payPurpose };
@@ -2626,99 +2665,33 @@ async function markBookingCheckoutPaid(env, { tenantId, bookingIds, purpose, car
     }
   }
   await persistTenantAppointments(env, idToken, id, appts, { cards: cards });
-  if (payPurpose === 'deposit') {
-    const notes = tenant.notifications && typeof tenant.notifications === 'object' ? tenant.notifications : {};
-    const emailOn = notes.emailConfirmations !== false;
+  const notes = tenant.notifications && typeof tenant.notifications === 'object' ? tenant.notifications : {};
+  const emailOn = notes.emailConfirmations !== false;
+  if (emailOn) {
+    let mailed = false;
     for (const booking of paidNow) {
-      if (!emailOn) break;
-      if (String(booking.status || '').toLowerCase() !== 'accepted') continue;
-      if (booking.depositConfirmSentAt) continue;
+      if (booking.paymentReceivedSentAt || booking.depositConfirmSentAt) continue;
       const to = String(booking.clientEmail || '').trim();
       if (!to) continue;
-      const biz = String(tenant.name || 'Schedi');
-      const dep = roundMoney(booking.depositAmount).toFixed(2);
-      const hasBal = booking.balanceDue !== null && booking.balanceDue !== undefined && Number.isFinite(Number(booking.balanceDue));
-      const bal = hasBal ? roundMoney(booking.balanceDue).toFixed(2) : '';
-      const friendlyDate = formatFriendlyLocalDateEmail(booking.date || '');
-      const cal = formatConfirmEmailCalParts(booking.date || '');
-      const markUrl = 'https://schedi.app/assets/homescreen-icon.png';
-      const subject = "You're booked! — " + biz;
-      const sub = 'Your card deposit of $' + dep + ' is paid.' + (bal ? (' $' + bal + ' is due at the appointment.') : '');
-      let text =
-        "You're booked!" + '\n' + sub + '\n\n' +
-        'Service: ' + (booking.serviceName || 'Appointment') + '\n' +
-        'Date: ' + friendlyDate + '\n' +
-        'Time: ' + (booking.time || '') + '\n' +
-        'Booking ref: #' + (booking.id || '') + '\n' +
-        'Deposit: $' + dep + ' (paid)\n' +
-        (bal ? ('Balance due: $' + bal + '\n') : '');
-      const feeLine = cancellationFeeSentence(tenant, booking.amount);
-      if (feeLine) text += '\n' + feeLine + '\n';
-      text += '\n— ' + biz;
-      const whenLine = booking.time
-        ? ('<strong style="color:#34d399;font-weight:600">' + escapeHtml(booking.time) + '</strong>')
-        : '';
-      let rows =
-        '<tr><td style="padding:13px 0;border-bottom:1px dashed #334155;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#94a3b8;">Service</td>' +
-        '<td style="padding:13px 0;border-bottom:1px dashed #334155;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#f1f5f9;font-weight:600;text-align:right;">' + escapeHtml(booking.serviceName || 'Appointment') + '</td></tr>' +
-        '<tr><td style="padding:13px 0;border-bottom:1px dashed #334155;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#94a3b8;">Deposit</td>' +
-        '<td style="padding:13px 0;border-bottom:1px dashed #334155;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#f1f5f9;font-weight:600;text-align:right;">$' + escapeHtml(dep) + ' (paid)</td></tr>';
-      if (bal) {
-        rows +=
-          '<tr><td style="padding:13px 0;border-bottom:1px dashed #334155;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#94a3b8;">Balance due</td>' +
-          '<td style="padding:13px 0;border-bottom:1px dashed #334155;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#f1f5f9;font-weight:600;text-align:right;">$' + escapeHtml(bal) + '</td></tr>';
-      }
-      rows +=
-        '<tr><td style="padding:13px 0;border-bottom:none;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#94a3b8;">Booking ref</td>' +
-        '<td style="padding:13px 0;border-bottom:none;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#f1f5f9;font-weight:600;text-align:right;">#' + escapeHtml(booking.id || '') + '</td></tr>';
-      let html =
-        '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>' +
-        '<body style="margin:0;padding:0;background-color:#020617;">' +
-        '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:#020617;"><tr><td align="center" style="padding:24px 12px;">' +
-        '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:560px;width:100%;background-color:#0b1325;border:1px solid #334155;border-radius:24px;overflow:hidden;">' +
-        '<tr><td align="center" bgcolor="#059669" style="background-color:#059669;padding:36px 28px 40px;">' +
-        '<img src="' + markUrl + '" width="72" height="72" alt="" style="display:block;width:72px;height:72px;border:0;border-radius:20px;margin:0 auto 16px;">' +
-        '<div style="font-family:Arial,Helvetica,sans-serif;font-size:28px;font-weight:700;color:#ffffff;">You\'re booked!</div>' +
-        '<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#ecfdf5;margin-top:8px;line-height:1.4;">' + escapeHtml(sub) + '</div>' +
-        '</td></tr>' +
-        '<tr><td style="padding:0 24px;">' +
-        '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top:-22px;background-color:#111c33;border:1px solid #334155;border-radius:18px;"><tr>' +
-        '<td width="62" valign="middle" style="padding:14px 0 14px 16px;">' +
-        '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="62">' +
-        '<tr><td align="center" bgcolor="#059669" style="background-color:#059669;color:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:11px;font-weight:700;letter-spacing:1.5px;padding:4px 0;">' + escapeHtml(cal.mon) + '</td></tr>' +
-        '<tr><td align="center" bgcolor="#ffffff" style="background-color:#ffffff;color:#020617;font-family:Arial,Helvetica,sans-serif;font-size:24px;font-weight:700;padding:4px 0 6px;">' + escapeHtml(cal.day) + '</td></tr>' +
-        '</table></td>' +
-        '<td valign="middle" style="padding:14px 16px 14px 12px;font-family:Arial,Helvetica,sans-serif;">' +
-        '<div style="color:#ffffff;font-size:16px;font-weight:600;">' + escapeHtml(friendlyDate) + '</div>' +
-        '<div style="color:#94a3b8;font-size:14px;margin-top:4px;">' + whenLine + '</div>' +
-        '</td></tr></table></td></tr>' +
-        '<tr><td style="padding:8px 28px 6px;"><table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">' + rows + '</table></td></tr>' +
-        emailCalendarButtonsHtml(tenant, booking) +
-        (feeLine ? ('<tr><td style="padding:8px 28px 0;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#94a3b8;">' + escapeHtml(feeLine) + '</td></tr>') : '') +
-        '<tr><td style="padding:18px 28px 24px;"><table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"><tr>' +
-        '<td style="font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#64748b;">Questions? Reply to this email.</td>' +
-        '<td align="right" style="font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#94a3b8;font-weight:600;">' +
-        '<img src="' + markUrl + '" width="16" height="16" alt="" style="display:inline-block;width:16px;height:16px;border:0;vertical-align:middle;margin-right:4px;">Schedi</td>' +
-        '</tr></table></td></tr></table>' +
-        '<div style="font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#475569;padding:16px 8px 0;">Powered by Schedi</div>' +
-        '</td></tr></table></body></html>';
+      const message = paymentReceivedMessage(tenant, booking, payPurpose);
       const replyTo = String((notes.replyTo || tenant.ownerEmail || '')).trim();
       const sent = await sendResend(env, {
         to,
-        subject,
-        text,
-        html,
+        subject: message.subject,
+        text: message.text,
+        html: message.html,
         replyTo: replyTo || undefined,
-        fromName: biz,
+        fromName: String(tenant.name || 'Schedi'),
       });
       if (sent.ok) {
         const idx = appts.findIndex((b) => b && b.id === booking.id);
-        if (idx >= 0) appts[idx] = Object.assign({}, appts[idx], { depositConfirmSentAt: new Date().toISOString() });
+        if (idx >= 0) {
+          appts[idx] = Object.assign({}, appts[idx], { paymentReceivedSentAt: new Date().toISOString() });
+          mailed = true;
+        }
       }
     }
-    if (appts.some((b) => b && b.depositConfirmSentAt)) {
-      await persistTenantAppointments(env, idToken, id, appts);
-    }
+    if (mailed) await persistTenantAppointments(env, idToken, id, appts);
   }
   return { ok: true, tenantId: id, purpose: payPurpose };
 }
@@ -2814,11 +2787,15 @@ async function handleBookingCheckout(request, env, origin) {
   params.set('payment_intent_data[metadata][purpose]', purpose);
   params.set('payment_intent_data[metadata][tenantId]', tenantId);
   params.set('payment_intent_data[metadata][bookingIds]', bookingIds.join(','));
-  const email = String(data.email || selected[0].clientEmail || '').trim();
-  if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) params.set('customer_email', email);
+  const email = String(selected[0].clientEmail || data.email || '').trim();
+  if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+    params.set('customer_email', email);
+    params.set('payment_intent_data[receipt_email]', email);
+  }
   params.set('customer_creation', 'always');
   params.set('payment_intent_data[setup_future_usage]', 'off_session');
-  const idem = ('bk_' + tenantId + '_' + bookingIds.join('_') + '_' + purpose + '_' + totalCents).slice(0, 200);
+  const emailMark = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) ? '_em' : '';
+  const idem = ('bk_' + tenantId + '_' + bookingIds.join('_') + '_' + purpose + '_' + totalCents + emailMark).slice(0, 200);
   const created = await stripeRequest(env, '/v1/checkout/sessions', {
     method: 'POST',
     params,
