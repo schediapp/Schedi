@@ -274,7 +274,7 @@ describe("HQ route", () => {
       }) as string;
     }
     const harbor = { id: "harbor-demo", slug: "harbor-demo" };
-    expect(portalUrl({ tenant: harbor, search: "?booking=HB-1" })).toBe("");
+    expect(portalUrl({ tenant: harbor, search: "?booking=HB-1&session=sekret" })).toBe("/login?tenant=harbor-demo&from=hq");
     expect(portalUrl({
       demo: true,
       framed: true,
@@ -287,7 +287,7 @@ describe("HQ route", () => {
       framed: true,
       search: "?newhq=1&demo=1&booking=BK-9&appt=BK-9&ref=mail",
       tenant: { id: "lumen-demo", slug: "lumen-studio" },
-    })).toBe("");
+    })).toBe("/login?tenant=lumen-demo&from=hq");
     const ownerStart = hqHtml.indexOf("window.loginAsTenantOwner = function");
     const owner = hqHtml.slice(ownerStart, hqHtml.indexOf("// SCHEDI_HQ_END", ownerStart));
     expect(owner.indexOf("hqManagedPortalUrl")).toBeGreaterThan(-1);
@@ -366,7 +366,7 @@ describe("HQ route", () => {
       }) as string;
     }
     const harbor = { id: "harbor-demo", slug: "harbor-demo" };
-    expect(portalUrl({ tenant: harbor, search: "?booking=HB-1" })).toBe("");
+    expect(portalUrl({ tenant: harbor, search: "?booking=HB-1&session=sekret" })).toBe("/login?tenant=harbor-demo&from=hq");
     expect(portalUrl({
       demo: true,
       framed: true,
@@ -379,7 +379,7 @@ describe("HQ route", () => {
       framed: true,
       search: "?newhq=1&demo=1&booking=BK-9&appt=BK-9&ref=mail",
       tenant: { id: "lumen-demo", slug: "lumen-studio" },
-    })).toBe("");
+    })).toBe("/login?tenant=lumen-demo&from=hq");
     const ownerStart = hqHtml.indexOf("window.loginAsTenantOwner = function");
     const owner = hqHtml.slice(ownerStart, hqHtml.indexOf("// SCHEDI_HQ_END", ownerStart));
     expect(owner.indexOf("hqManagedPortalUrl")).toBeGreaterThan(-1);
@@ -393,7 +393,7 @@ describe("HQ route", () => {
     expect((hqHtml.match(/onclick="loginAsTenantOwner\(/g) || []).length).toBeGreaterThan(1);
   });
 
-  it("shows #tenantDashboard when Log in to portal is clicked on the default new HQ", () => {
+  it("sends Log in to portal to the new dashboard without a token in the URL", () => {
     function extractFunction(source: string, name: string) {
       const start = source.indexOf("function " + name);
       const brace = source.indexOf("{", start);
@@ -422,7 +422,7 @@ describe("HQ route", () => {
     const biz = { id: "lumen-studio", name: "Lumen Studio", slug: "lumen-studio", subscriptionStatus: "active" };
     const sandbox: Record<string, unknown> = {
       location: {
-        search: "?booking=BK-9&appt=BK-9&ref=mail",
+        search: "?booking=BK-9&session=sekret&token=abc",
         assign(url: string) { assigned.push(String(url)); },
       },
       scrollTo() {},
@@ -490,9 +490,360 @@ describe("HQ route", () => {
     const portalButton = buttons.find((button) => button.text === "Log in to portal");
     expect(portalButton?.onclick).toBe("loginAsTenantOwner('lumen-studio')");
     runInNewContext(portalButton?.onclick || "", sandbox, { filename: "hq-login-click.js" });
-    expect(assigned).toEqual([]);
-    expect(dashboard.classList.contains("hidden")).toBe(false);
-    expect(loginBox.classList.contains("hidden")).toBe(true);
-    expect(toasts).toEqual(["Managing Lumen Studio"]);
+    expect(assigned).toEqual(["/login?tenant=lumen-studio&from=hq"]);
+    expect(assigned.join("")).not.toContain("sekret");
+    expect(assigned.join("")).not.toContain("token");
+    expect(dashboard.classList.contains("hidden")).toBe(true);
+    expect(loginBox.classList.contains("hidden")).toBe(false);
+    expect(toasts).toEqual([]);
+  });
+
+  it("opens the new dashboard only after a confirmed HQ session names that business", async () => {
+    function extractFunction(source: string, name: string) {
+      const marker = "function " + name;
+      const start = source.indexOf(marker);
+      const brace = source.indexOf("{", start);
+      let depth = 0;
+      for (let i = brace; i < source.length; i++) {
+        if (source[i] === "{") depth += 1;
+        else if (source[i] === "}") {
+          depth -= 1;
+          if (depth === 0) {
+            const from = source.slice(start - 6, start) === "async " ? start - 6 : start;
+            return source.slice(from, i + 1);
+          }
+        }
+      }
+      throw new Error("missing " + name);
+    }
+    function classList(initial: string[]) {
+      const names = new Set(initial);
+      return {
+        add(...values: string[]) { for (const name of values) names.add(name); },
+        remove(...values: string[]) { for (const name of values) names.delete(name); },
+        contains(name: string) { return names.has(name); },
+        toggle(name: string, force?: boolean) {
+          const on = force == null ? !names.has(name) : force;
+          if (on) names.add(name);
+          else names.delete(name);
+          return on;
+        },
+      };
+    }
+    const optimistic = extractFunction(publicHtml, "applySchediAuthMetaOptimistic");
+    expect(optimistic).not.toContain("searchParams");
+    expect(optimistic).not.toContain("get('tenant')");
+
+    const harbor = { id: "harbor", name: "Harbor Studio", slug: "harbor", services: [], appointments: [] };
+    const lumen = { id: "lumen", name: "Lumen Studio", slug: "lumen", services: [], appointments: [] };
+
+    async function restore(input: {
+      role: "agency" | "owner";
+      tenantId?: string;
+      search: string;
+      pathname?: string;
+      status: number;
+      ok?: boolean;
+      body?: unknown;
+      throwNetwork?: boolean;
+      session?: string | null;
+    }) {
+      const replaced: string[] = [];
+      const cleared: string[] = [];
+      const modes: string[] = [];
+      const opened: string[] = [];
+      const loginBox = { classList: classList([]) };
+      const dashboard = { classList: classList(["hidden"]) };
+      const nameEl = { id: "sdHqManageName", textContent: "" };
+      const banner = {
+        id: "sdHqManage",
+        hidden: true,
+        href: "/hq",
+        className: "sd-hq-manage",
+        children: [{ textContent: "Managing " }, nameEl, { textContent: " · Back to HQ" }],
+      };
+      const state = {
+        activeTenantId: "",
+        isTenantOwnerLoggedIn: false,
+        ownerSelfSession: false,
+        isAgencyMasterLoggedIn: false,
+        currentMode: "",
+        tenants: [harbor, lumen],
+      };
+      const href = "https://schedi.app" + (input.pathname || "/login") + input.search;
+      const sandbox: Record<string, unknown> = {
+        URL,
+        URLSearchParams,
+        location: { href, search: input.search, pathname: input.pathname || "/login", hash: "" },
+        history: { replaceState(_state: unknown, _title: string, url: string) { replaced.push(String(url)); } },
+        document: {
+          getElementById(id: string) {
+            if (id === "tenantLoginBox") return loginBox;
+            if (id === "tenantDashboard") return dashboard;
+            if (id === "sdHqManage") return banner;
+            if (id === "sdHqManageName") return nameEl;
+            if (id === "tenantAutoLogoffWrap" || id === "tenantSignOutBtn") return { classList: classList(["hidden"]), querySelector: () => null };
+            return null;
+          },
+        },
+        platformState: state,
+        schediAuthEpoch: 0,
+        schediPrivateProfiles: {},
+        schediPrivateProfilesLoaded: false,
+        schediAuthRestoreAllowedHere() { return true; },
+        schediAuthSession() { return input.session === null ? "" : (input.session || "agency-session"); },
+        schediAuthMeta() {
+          if (input.role === "owner") return { role: "owner", tenantId: input.tenantId || "harbor", email: "owner@example.com" };
+          return { role: "agency", email: "hq@example.com" };
+        },
+        schediClearAuthSession() { cleared.push("session"); },
+        schediSetAuthSession() { return true; },
+        applyPrivateProfiles() {},
+        clearPrivateAppointments() {},
+        clearPrivateProfiles() {},
+        updateMasterAuthUI() {},
+        refreshPrivateBookings() {},
+        refreshAppointmentCounts() {},
+        syncOwnerChangePassBtn() {},
+        updateLivePreviewControlsVisibility() {},
+        syncTenantAutoLogoffSelect() {},
+        startTenantOwnerIdleWatch() {},
+        stopTenantOwnerIdleWatch() {},
+        populateTenantSelect() {},
+        renderTenantAdminPortal() { opened.push(state.activeTenantId); },
+        fetch: async () => {
+          if (input.throwNetwork) throw new Error("offline");
+          return {
+            status: input.status,
+            ok: input.ok != null ? input.ok : input.status >= 200 && input.status < 300,
+            json: async () => input.body,
+          };
+        },
+      };
+      sandbox.window = sandbox;
+      sandbox.opened = opened;
+      sandbox.replaced = replaced;
+      sandbox.cleared = cleared;
+      const script = [
+        extractFunction(publicHtml, "isAgencyHqRoute"),
+        "function getTenant(id) { if (id == null) id = platformState.activeTenantId; return platformState.tenants.find(function (t) { return t && t.id === id; }) || platformState.tenants[0]; }",
+        extractFunction(publicHtml, "syncHqManagingBanner"),
+        extractFunction(publicHtml, "openTenantOwnerPortal"),
+        "var modes = [];",
+        "function switchPlatformMode(mode) { modes.push(mode); platformState.currentMode = mode; try { syncHqManagingBanner(); } catch (err) {} }",
+        optimistic,
+        extractFunction(publicHtml, "verifySchediAuthSessionRestore"),
+        "(async function () {",
+        "  var first = applySchediAuthMetaOptimistic();",
+        "  var confirmed = await verifySchediAuthSessionRestore();",
+        "  var bannerEl = document.getElementById('sdHqManage');",
+        "  var nameNode = document.getElementById('sdHqManageName');",
+        "  return {",
+        "    first: first,",
+        "    confirmed: confirmed,",
+        "    active: platformState.activeTenantId,",
+        "    owner: platformState.isTenantOwnerLoggedIn,",
+        "    self: platformState.ownerSelfSession,",
+        "    agency: platformState.isAgencyMasterLoggedIn,",
+        "    modes: modes,",
+        "    opened: opened,",
+        "    replaced: replaced,",
+        "    cleared: cleared,",
+        "    loginHidden: document.getElementById('tenantLoginBox').classList.contains('hidden'),",
+        "    dashHidden: document.getElementById('tenantDashboard').classList.contains('hidden'),",
+        "    bannerHidden: bannerEl.hidden,",
+        "    bannerText: 'Managing ' + nameNode.textContent + ' · Back to HQ',",
+        "    bannerHref: bannerEl.href",
+        "  };",
+        "})()",
+      ].join("\n");
+      const result = await runInNewContext(script, sandbox, { filename: "hq-managed-login.js" }) as {
+        first: boolean;
+        confirmed: boolean;
+        active: string;
+        owner: boolean;
+        self: boolean;
+        agency: boolean;
+        modes: string[];
+        opened: string[];
+        replaced: string[];
+        cleared: string[];
+        loginHidden: boolean;
+        dashHidden: boolean;
+        bannerHidden: boolean;
+        bannerText: string;
+        bannerHref: string;
+      };
+      return result;
+    }
+
+    const confirmed = await restore({
+      role: "agency",
+      search: "?tenant=lumen&from=hq&dash=today",
+      status: 200,
+      body: { ok: true, tenants: [{ id: "harbor" }, { id: "lumen" }] },
+    });
+    expect(confirmed.first).toBe(true);
+    expect(confirmed.confirmed).toBe(true);
+    expect(confirmed.agency).toBe(true);
+    expect(confirmed.owner).toBe(true);
+    expect(confirmed.self).toBe(false);
+    expect(confirmed.active).toBe("lumen");
+    expect(confirmed.opened).toContain("lumen");
+    expect(confirmed.modes).toContain("tenant");
+    expect(confirmed.loginHidden).toBe(true);
+    expect(confirmed.dashHidden).toBe(false);
+    expect(confirmed.replaced).toEqual(["/login?dash=today"]);
+    expect(confirmed.bannerHidden).toBe(false);
+    expect(confirmed.bannerText).toBe("Managing Lumen Studio · Back to HQ");
+    expect(confirmed.bannerHref).toBe("/hq");
+    expect(confirmed.cleared).toEqual([]);
+
+    const owner = await restore({
+      role: "owner",
+      tenantId: "harbor",
+      search: "?tenant=lumen&from=hq",
+      status: 200,
+      body: { ok: true, tenants: [{ id: "harbor" }, { id: "lumen" }] },
+    });
+    expect(owner.active).toBe("harbor");
+    expect(owner.self).toBe(true);
+    expect(owner.owner).toBe(true);
+    expect(owner.opened).toEqual(["harbor"]);
+    expect(owner.replaced).toEqual([]);
+    expect(owner.bannerHidden).toBe(true);
+
+    const invalid = await restore({
+      role: "agency",
+      search: "?tenant=missing&from=hq",
+      status: 200,
+      body: { ok: true, tenants: [{ id: "harbor" }, { id: "lumen" }] },
+    });
+    expect(invalid.owner).toBe(false);
+    expect(invalid.self).toBe(false);
+    expect(invalid.opened).toEqual([]);
+    expect(invalid.dashHidden).toBe(true);
+    expect(invalid.replaced).toEqual([]);
+    expect(invalid.bannerHidden).toBe(true);
+
+    const onHq = await restore({
+      role: "agency",
+      pathname: "/hq",
+      search: "?tenant=lumen&from=hq",
+      status: 200,
+      body: { ok: true, tenants: [{ id: "lumen" }] },
+    });
+    expect(onHq.owner).toBe(false);
+    expect(onHq.opened).toEqual([]);
+    expect(onHq.modes).toContain("agency");
+    expect(onHq.dashHidden).toBe(true);
+
+    const rejected = await restore({
+      role: "agency",
+      search: "?tenant=lumen&from=hq",
+      status: 401,
+      body: { error: "session_required" },
+    });
+    expect(rejected.confirmed).toBe(false);
+    expect(rejected.owner).toBe(false);
+    expect(rejected.agency).toBe(false);
+    expect(rejected.opened).toEqual([]);
+    expect(rejected.dashHidden).toBe(true);
+    expect(rejected.replaced).toEqual([]);
+    expect(rejected.cleared).toEqual(["session"]);
+
+    const unconfirmed = await restore({
+      role: "agency",
+      search: "?tenant=lumen&from=hq",
+      status: 500,
+      ok: false,
+      body: { ok: false },
+    });
+    expect(unconfirmed.owner).toBe(false);
+    expect(unconfirmed.opened).toEqual([]);
+    expect(unconfirmed.dashHidden).toBe(true);
+    expect(unconfirmed.replaced).toEqual([]);
+    expect(unconfirmed.cleared).toEqual([]);
+
+    const offline = await restore({
+      role: "agency",
+      search: "?tenant=lumen&from=hq",
+      status: 0,
+      throwNetwork: true,
+    });
+    expect(offline.owner).toBe(false);
+    expect(offline.opened).toEqual([]);
+    expect(offline.dashHidden).toBe(true);
+
+    const unsigned = await restore({
+      role: "agency",
+      search: "?tenant=lumen&from=hq",
+      status: 200,
+      session: null,
+      body: { ok: true, tenants: [{ id: "lumen" }] },
+    });
+    expect(unsigned.first).toBe(false);
+    expect(unsigned.confirmed).toBe(false);
+    expect(unsigned.owner).toBe(false);
+    expect(unsigned.opened).toEqual([]);
+  });
+
+  it("returns Sign out to HQ without clearing the HQ session", () => {
+    function extractAssigned(source: string, name: string) {
+      const marker = "window." + name + " = function";
+      const start = source.indexOf(marker);
+      const brace = source.indexOf("{", start);
+      let depth = 0;
+      for (let i = brace; i < source.length; i++) {
+        if (source[i] === "{") depth += 1;
+        else if (source[i] === "}") {
+          depth -= 1;
+          if (depth === 0) return source.slice(start, i + 1);
+        }
+      }
+      throw new Error("missing " + name);
+    }
+    function classList(initial: string[]) {
+      const names = new Set(initial);
+      return {
+        add(...values: string[]) { for (const name of values) names.add(name); },
+        remove(...values: string[]) { for (const name of values) names.delete(name); },
+        contains(name: string) { return names.has(name); },
+      };
+    }
+    function runLogout(state: { agency: boolean; owner: boolean; self: boolean }) {
+      const assigned: string[] = [];
+      const cleared: string[] = [];
+      const sandbox: Record<string, unknown> = {
+        platformState: {
+          isAgencyMasterLoggedIn: state.agency,
+          isTenantOwnerLoggedIn: state.owner,
+          ownerSelfSession: state.self,
+        },
+        location: { assign(url: string) { assigned.push(String(url)); } },
+        document: {
+          getElementById() {
+            return { classList: classList(["hidden"]), value: "" };
+          },
+        },
+        stopTenantOwnerIdleWatch() {},
+        syncOwnerChangePassBtn() {},
+        clearPrivateAppointments() { cleared.push("appointments"); },
+        clearPrivateProfiles() { cleared.push("profiles"); },
+        schediClearAuthSession() { cleared.push("session"); },
+        populateTenantSelect() {},
+        updateLivePreviewControlsVisibility() {},
+        showToast() {},
+      };
+      sandbox.window = sandbox;
+      runInNewContext(extractAssigned(publicHtml, "handleTenantLogout") + "\nhandleTenantLogout();", sandbox, { filename: "hq-sign-out.js" });
+      return { assigned, cleared };
+    }
+    expect(runLogout({ agency: true, owner: true, self: false })).toEqual({
+      assigned: ["/hq"],
+      cleared: [],
+    });
+    expect(runLogout({ agency: false, owner: true, self: true }).cleared).toContain("session");
+    expect(runLogout({ agency: false, owner: true, self: true }).assigned).toEqual([]);
   });
 });

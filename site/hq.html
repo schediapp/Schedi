@@ -8355,29 +8355,32 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
 
         function hqManagedPortalUrl(tenant) {
             var demo = window.__SCHEDI_HQ_DEMO === true;
-            if (!demo) return '';
-            var slug = '';
-            var id = '';
-            try {
-                slug = String((tenant && (tenant.slug || tenant.id)) || '').trim();
-                id = String((tenant && tenant.id) || '').trim();
-            } catch (errId) {}
-            var params = new URLSearchParams();
-            var keep = ['booking', 'date', 'biz', 'tenant', 'slug', 'from', 'appt', 'ref'];
-            try {
-                var current = new URLSearchParams(window.location.search || '');
-                keep.forEach(function (key) {
-                    if (current.has(key)) params.set(key, current.get(key) || '');
-                });
-            } catch (errCur) {}
-            if (slug) params.set('biz', slug);
-            if (id) params.set('tenant', id);
             if (demo) {
+                var slug = '';
+                var id = '';
+                try {
+                    slug = String((tenant && (tenant.slug || tenant.id)) || '').trim();
+                    id = String((tenant && tenant.id) || '').trim();
+                } catch (errId) {}
+                var params = new URLSearchParams();
+                var keep = ['booking', 'date', 'biz', 'tenant', 'slug', 'from', 'appt', 'ref'];
+                try {
+                    var current = new URLSearchParams(window.location.search || '');
+                    keep.forEach(function (key) {
+                        if (current.has(key)) params.set(key, current.get(key) || '');
+                    });
+                } catch (errCur) {}
+                if (slug) params.set('biz', slug);
+                if (id) params.set('tenant', id);
                 params.delete('newhq');
                 params.set('demo', '1');
                 var demoQs = params.toString();
                 return '/portal-preview' + (demoQs ? '?' + demoQs : '');
             }
+            var realId = '';
+            try { realId = String((tenant && tenant.id) || '').trim(); } catch (errReal) { realId = ''; }
+            if (!realId) return '';
+            return '/login?tenant=' + encodeURIComponent(realId) + '&from=hq';
         }
 
         window.loginAsTenantOwner = function(tenantId) {

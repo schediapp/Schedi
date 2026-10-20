@@ -575,6 +575,26 @@ html.schedi-light #tenantPortalSection.schedi-newdash {
     font-weight: 700;
 }
 html.schedi-light #tenantPortalSection.schedi-newdash .sd-demo-note { color: #0369a1; background: #e0f2fe; border-color: #bae6fd; }
+#tenantPortalSection.schedi-newdash .sd-hq-manage {
+    display: block;
+    margin: 0 0 14px;
+    padding: 8px 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(16, 185, 129, 0.35);
+    background: rgba(16, 185, 129, 0.12);
+    color: var(--sd-text);
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.4;
+    text-decoration: none;
+}
+#tenantPortalSection.schedi-newdash .sd-hq-manage strong { font-weight: 800; color: var(--sd-brand-2); }
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-hq-manage {
+    background: #ecfdf5;
+    border-color: #a7f3d0;
+    color: #064e3b;
+}
+html.schedi-light #tenantPortalSection.schedi-newdash .sd-hq-manage strong { color: #047857; }
 #tenantPortalSection.schedi-newdash #schediTodayPanel { display: none; }
 #tenantPortalSection.schedi-newdash[data-dash="today"] #schediTodayPanel { display: block; }
 #tenantPortalSection.schedi-newdash .sd-today-head { display: flex; justify-content: space-between; gap: 16px; align-items: flex-end; margin-bottom: 18px; }
@@ -5841,6 +5861,7 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                             <img id="schediDashUserLogoPhone" class="sd-avatar-img" alt="" hidden onerror="schediDashLogoFailed(this)">
                         </button>
                     </header>
+                    <a id="sdHqManage" class="sd-hq-manage" href="/hq" hidden>Managing <strong id="sdHqManageName"></strong> · Back to HQ</a>
                     <p id="schediDemoNote" class="sd-demo-note" hidden>Demo · sample business · nothing is saved or sent</p>
                     <section id="schediTodayPanel" aria-labelledby="schediTodayHeading">
                         <div class="sd-today-head">
@@ -10119,7 +10140,43 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                     } else if (meta.role === 'agency') {
                         platformState.isAgencyMasterLoggedIn = true;
                         try { updateMasterAuthUI(); } catch (errUi) {}
-                        if (typeof isAgencyHqRoute === 'function' && isAgencyHqRoute()) {
+                        var hqManagedTenant = null;
+                        var onHqPage = false;
+                        try { onHqPage = typeof isAgencyHqRoute === 'function' && isAgencyHqRoute(); } catch (errHqPage) { onHqPage = false; }
+                        if (!onHqPage) {
+                            var askedTenant = '';
+                            try { askedTenant = String(new URLSearchParams(window.location.search || '').get('tenant') || '').trim(); } catch (errAsk) { askedTenant = ''; }
+                            var tenantAllowed = false;
+                            if (askedTenant) {
+                                tenantAllowed = data.tenants.some(function (row) { return row && String(row.id) === askedTenant; });
+                            }
+                            if (tenantAllowed) {
+                                try {
+                                    hqManagedTenant = (platformState.tenants || []).find(function (t) { return t && String(t.id) === askedTenant; }) || null;
+                                } catch (errFindT) { hqManagedTenant = null; }
+                                if (!hqManagedTenant) {
+                                    hqManagedTenant = { id: askedTenant, name: askedTenant, slug: askedTenant, services: [], appointments: [] };
+                                    if (!Array.isArray(platformState.tenants)) platformState.tenants = [];
+                                    platformState.tenants.push(hqManagedTenant);
+                                }
+                            }
+                        }
+                        if (hqManagedTenant && typeof openTenantOwnerPortal === 'function') {
+                            platformState.activeTenantId = hqManagedTenant.id;
+                            platformState.isTenantOwnerLoggedIn = true;
+                            platformState.ownerSelfSession = false;
+                            try { openTenantOwnerPortal(hqManagedTenant); } catch (errOpenHq) {}
+                            platformState.activeTenantId = hqManagedTenant.id;
+                            platformState.isTenantOwnerLoggedIn = true;
+                            platformState.ownerSelfSession = false;
+                            try { switchPlatformMode('tenant'); } catch (errSwHq) {}
+                            try {
+                                var cleanHq = new URL(window.location.href);
+                                cleanHq.searchParams.delete('tenant');
+                                cleanHq.searchParams.delete('from');
+                                window.history.replaceState({}, '', cleanHq.pathname + cleanHq.search + cleanHq.hash);
+                            } catch (errHist) {}
+                        } else if (onHqPage) {
                             try { switchPlatformMode('agency'); } catch (errAg) {}
                         }
                     }
@@ -12731,6 +12788,7 @@ function schediQrCardPixels(text, color) {
             pullBillingStatus(tenant);
             switchTenantTab(platformState.tenantTab);
             try { schediMountNewDash(); } catch (errDash) {}
+            try { syncHqManagingBanner(); } catch (errBan) {}
         }
 
         // ---- Clients list + CSV import (owner portal). Data lives only in the worker store (/api/clients). ----
@@ -25819,7 +25877,15 @@ function schediQrCardPixels(text, color) {
                 return;
             }
             opts = opts || {};
+            var backToHq = false;
+            try {
+                backToHq = !!(platformState.isAgencyMasterLoggedIn && platformState.isTenantOwnerLoggedIn && !platformState.ownerSelfSession);
+            } catch (errHqOut) { backToHq = false; }
             try { stopTenantOwnerIdleWatch(); } catch (errIdle) {}
+            if (backToHq) {
+                try { window.location.assign('/hq'); } catch (errGoHq) {}
+                return;
+            }
             platformState.isTenantOwnerLoggedIn = false;
             platformState.ownerSelfSession = false;
             syncOwnerChangePassBtn();
@@ -31337,7 +31403,40 @@ function hqSectionEl(){return null;}
 function hqNavButton(){return null;}
 function hqMasterButton(){return null;}
 function syncAgencyChrome(){}
-function syncHqManagingBanner(){}
+function syncHqManagingBanner() {
+    var banner = document.getElementById('sdHqManage');
+    var on = false;
+    var name = '';
+    try {
+        on = !!(platformState && platformState.isAgencyMasterLoggedIn && platformState.isTenantOwnerLoggedIn && !platformState.ownerSelfSession);
+        if (on && typeof getTenant === 'function') {
+            var t = getTenant();
+            if (t) name = String(t.name || t.id || '');
+        }
+    } catch (errBan) { on = false; name = ''; }
+    if (!banner && on) {
+        banner = document.createElement('a');
+        banner.id = 'sdHqManage';
+        banner.className = 'sd-hq-manage';
+        banner.href = '/hq';
+        banner.appendChild(document.createTextNode('Managing '));
+        var created = document.createElement('strong');
+        created.id = 'sdHqManageName';
+        banner.appendChild(created);
+        banner.appendChild(document.createTextNode(' · Back to HQ'));
+        var note = document.getElementById('schediDemoNote');
+        if (note && note.parentNode) note.parentNode.insertBefore(banner, note);
+        else {
+            var host = document.getElementById('tenantDashboard') || document.body;
+            if (host) host.insertBefore(banner, host.firstChild);
+        }
+    }
+    if (!banner) return;
+    banner.href = '/hq';
+    var nameEl = document.getElementById('sdHqManageName');
+    if (nameEl) nameEl.textContent = name;
+    banner.hidden = !on;
+}
 function updateMasterAuthUI(){}
 function renderAgencyDashboard(){}
 function refreshEmailSenderUI(){}
