@@ -6,6 +6,8 @@
  * that should not go out.
  */
 
+import { publicBusinessAddress, showPublicAddressOn } from './public-address.js';
+
 const PAY_LABELS = {
   card: 'Card',
   cashapp: 'Cash App',
@@ -20,7 +22,7 @@ const PAY_LABELS = {
 const CLIENT_FIELDS = [
   { key: 'service', label: 'Service', keys: ['serviceName'] },
   { key: 'staff', label: 'Staff', keys: ['staffName', 'staff', 'providerName', 'provider', 'assignedStaff'] },
-  { key: 'location', label: 'Location', keys: ['location', 'serviceLocation', 'place', 'appointmentAddress'] },
+  { key: 'location', label: 'Location', keys: ['location', 'serviceLocation', 'place', 'appointmentAddress', 'address'] },
   { key: 'note', label: 'Note', keys: ['notesToClient', 'noteToClient', 'clientNote', 'clientNotes', 'notes', 'note'] },
 ];
 
@@ -50,6 +52,7 @@ function readOneAddressPref(key, value) {
 /** 'show' | 'hide' | null. null means the owner has no preference saved. */
 export function readAddressDisplay(tenant) {
   if (!tenant || typeof tenant !== 'object') return null;
+  if (!showPublicAddressOn(tenant)) return 'hide';
   const sources = [tenant, tenant.notifications];
   const keys = ['addressDisplay', 'showAddress', 'hideAddress'];
   for (let s = 0; s < sources.length; s++) {
@@ -67,7 +70,7 @@ export function readAddressDisplay(tenant) {
 export function clientFacingAddress(tenant) {
   if (!tenant || typeof tenant !== 'object') return '';
   if (readAddressDisplay(tenant) === 'hide') return '';
-  return String(tenant.address || tenant.location || tenant.businessAddress || tenant.businessLocation || '').trim();
+  return publicBusinessAddress(tenant);
 }
 
 export function appointmentIsClientConfirmed(booking) {
@@ -90,6 +93,16 @@ function appointmentText(booking, keys) {
     if (text) return text;
   }
   return '';
+}
+
+function appointmentLocationValue(booking) {
+  const keys = ['location', 'serviceLocation', 'place', 'appointmentAddress', 'address'];
+  const parts = [];
+  for (let i = 0; i < keys.length; i++) {
+    const text = appointmentText(booking, [keys[i]]);
+    if (text && parts.indexOf(text) < 0) parts.push(text);
+  }
+  return parts.join(' · ');
 }
 
 function appointmentMoneyCents(value) {
@@ -189,8 +202,8 @@ export function appointmentClientChanges(before, after) {
       if (from !== to) rows.push({ key: 'service', label: 'Service', from: from, to: to });
       return;
     }
-    const from = appointmentText(before, field.keys);
-    const to = appointmentText(after, field.keys);
+    const from = field.key === 'location' ? appointmentLocationValue(before) : appointmentText(before, field.keys);
+    const to = field.key === 'location' ? appointmentLocationValue(after) : appointmentText(after, field.keys);
     if (from !== to) rows.push({ key: field.key, label: field.label, from: from, to: to });
   });
   const fromCents = appointmentMoneyCents(before.amount);

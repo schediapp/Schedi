@@ -32,10 +32,14 @@ const page = pageFns([
   "esc",
   "hasPricedAmount",
   "roundMoney",
+  "showPublicAddressOn",
+  "getTenantLocation",
+  "publicTenantLocation",
   "readAddressDisplay",
   "clientFacingAddress",
   "appointmentIsClientConfirmed",
   "appointmentUpdatedText",
+  "appointmentUpdatedLocationValue",
   "appointmentUpdatedCents",
   "appointmentUpdatedPriceFromCents",
   "appointmentPriceText",
@@ -138,6 +142,10 @@ describe("appointment edit mail plan", () => {
     ["location shown", confirmed(), confirmed({ location: "Studio B" }), { notify: true, tenant }, "updated"],
     ["hidden location only", confirmed(), confirmed({ location: "Studio B" }), { notify: true, tenant: { ...tenant, addressDisplay: "hide" } }, "none"],
     ["hidden location plus service", confirmed(), confirmed({ location: "Studio B", serviceName: "Color" }), { notify: true, tenant: { ...tenant, addressDisplay: "hide" } }, "updated"],
+    ["public address toggle off hides a location change", confirmed({ location: "18 Harbor Lane, Brooklyn, NY" }), confirmed({ location: "22 Dock Street, Brooklyn, NY" }), { notify: true, tenant: { ...tenant, showPublicAddress: false } }, "none"],
+    ["public address toggle off hides an address change", confirmed({ address: "18 Harbor Lane, Brooklyn, NY" }), confirmed({ address: "22 Dock Street, Brooklyn, NY" }), { notify: true, tenant: { ...tenant, showPublicAddress: false } }, "none"],
+    ["public address toggle off still reports the service", confirmed({ location: "18 Harbor Lane, Brooklyn, NY" }), confirmed({ location: "22 Dock Street, Brooklyn, NY", serviceName: "Color" }), { notify: true, tenant: { ...tenant, showPublicAddress: false } }, "updated"],
+    ["public address toggle on still reports the location", confirmed({ location: "Front desk" }), confirmed({ location: "Studio B" }), { notify: true, tenant: { ...tenant, showPublicAddress: true } }, "updated"],
     ["payment method", confirmed(), confirmed({ paymentStatus: "PAID VENMO", paymentMethod: "venmo", paidMethod: "venmo", paymentOptionLabel: "Venmo" }), { notify: true, tenant }, "updated"],
     ["same card rewritten by the edit form", confirmed(), confirmed({ paymentStatus: "PAID VIA CARD", paymentMethod: "card", paymentOptionLabel: "Card", paidMethod: "card" }), { notify: true, tenant }, "none"],
   ];
@@ -166,6 +174,12 @@ describe("appointment edit mail plan", () => {
     expect(page.clientFacingAddress(tenant)).toBe("18 Harbor Lane, Brooklyn, NY");
     expect(clientFacingAddress({ ...tenant, addressDisplay: "hidden" })).toBe("");
     expect(page.clientFacingAddress({ ...tenant, showAddress: false })).toBe(clientFacingAddress({ ...tenant, showAddress: false }));
+    expect(page.readAddressDisplay({ ...tenant, showPublicAddress: false })).toBe("hide");
+    expect(readAddressDisplay({ ...tenant, showPublicAddress: false, addressDisplay: "public" })).toBe("hide");
+    expect(page.readAddressDisplay({ ...tenant, showPublicAddress: true })).toBe(readAddressDisplay({ ...tenant, showPublicAddress: true }));
+    expect(page.clientFacingAddress({ ...tenant, showPublicAddress: false })).toBe("");
+    expect(clientFacingAddress({ ...tenant, showPublicAddress: false })).toBe("");
+    expect(extractFunction(html, "readAddressDisplay")).toContain("showPublicAddressOn");
   });
 
   it("drops a hidden location from the change list and keeps the service", () => {
@@ -233,6 +247,44 @@ describe("appointment updated email", () => {
     expect(mail.html).not.toContain("Studio B");
     expect(mail.html).toContain("Manage my booking");
     expect(mailContentProblem(mail.html, mail.text, { paymentLinks: new Set() })).toBe("");
+  });
+
+  it("leaves the address out of What changed when the public address toggle is off", () => {
+    const hidden = { ...tenant, showPublicAddress: false };
+    const before = confirmed({
+      location: "18 Harbor Lane, Brooklyn, NY",
+      appointmentAddress: "18 Harbor Lane, Brooklyn, NY",
+      address: "18 Harbor Lane, Brooklyn, NY",
+    });
+    const after = confirmed({
+      serviceName: "Color",
+      location: "22 Dock Street, Brooklyn, NY",
+      appointmentAddress: "22 Dock Street, Brooklyn, NY",
+      address: "22 Dock Street, Brooklyn, NY",
+    });
+    const mail = page.buildAppointmentUpdatedEmail(hidden, after, before);
+    expect(mail.subject).toBe("Appointment updated — Harbor Studio");
+    expect(mail.text).toContain("changed one thing on your booking");
+    expect(mail.text).toContain("Now: Color");
+    expect(mail.text).not.toContain("Location");
+    for (const secret of ["18 Harbor Lane", "22 Dock Street", "Brooklyn"]) {
+      expect(mail.text).not.toContain(secret);
+      expect(mail.html).not.toContain(secret);
+      expect(mail.subject).not.toContain(secret);
+    }
+    expect(page.appointmentEditMailPlan(before, after, { notify: true, tenant: hidden })).toBe("updated");
+    expect(appointmentEditMailPlan(before, after, { notify: true, tenant: hidden })).toBe("updated");
+
+    const addressOnly = page.buildAppointmentUpdatedEmail(
+      hidden,
+      confirmed({ address: "22 Dock Street, Brooklyn, NY" }),
+      confirmed({ address: "18 Harbor Lane, Brooklyn, NY" }),
+    );
+    expect(addressOnly.text).not.toContain("Harbor Lane");
+    expect(addressOnly.text).not.toContain("Dock Street");
+    expect(addressOnly.html).not.toContain("Harbor Lane");
+    expect(addressOnly.html).not.toContain("Dock Street");
+    expect(addressOnly.html).not.toContain("Location");
   });
 });
 

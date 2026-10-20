@@ -22164,6 +22164,7 @@ function schediQrCardPixels(text, color) {
                 return addressWord(value);
             }
             if (!tenant || typeof tenant !== 'object') return null;
+            if (!showPublicAddressOn(tenant)) return 'hide';
             var sources = [tenant, tenant.notifications];
             var keys = ['addressDisplay', 'showAddress', 'hideAddress'];
             for (var s = 0; s < sources.length; s++) {
@@ -22181,7 +22182,7 @@ function schediQrCardPixels(text, color) {
         function clientFacingAddress(tenant) {
             if (!tenant || typeof tenant !== 'object') return '';
             if (readAddressDisplay(tenant) === 'hide') return '';
-            return String(tenant.address || tenant.location || tenant.businessAddress || tenant.businessLocation || '').trim();
+            return publicTenantLocation(tenant);
         }
 
         function appointmentIsClientConfirmed(booking) {
@@ -22204,6 +22205,16 @@ function schediQrCardPixels(text, color) {
                 if (text) return text;
             }
             return '';
+        }
+
+        function appointmentUpdatedLocationValue(booking) {
+            var keys = ['location', 'serviceLocation', 'place', 'appointmentAddress', 'address'];
+            var parts = [];
+            for (var i = 0; i < keys.length; i++) {
+                var text = appointmentUpdatedText(booking, [keys[i]]);
+                if (text && parts.indexOf(text) < 0) parts.push(text);
+            }
+            return parts.join(' · ');
         }
 
         function appointmentUpdatedCents(value) {
@@ -22296,7 +22307,7 @@ function schediQrCardPixels(text, color) {
             var fields = [
                 { key: 'service', label: 'Service' },
                 { key: 'staff', label: 'Staff', keys: ['staffName', 'staff', 'providerName', 'provider', 'assignedStaff'] },
-                { key: 'location', label: 'Location', keys: ['location', 'serviceLocation', 'place', 'appointmentAddress'] },
+                { key: 'location', label: 'Location', keys: ['location', 'serviceLocation', 'place', 'appointmentAddress', 'address'] },
                 { key: 'note', label: 'Note', keys: ['notesToClient', 'noteToClient', 'clientNote', 'clientNotes', 'notes', 'note'] }
             ];
             var rows = [];
@@ -22307,8 +22318,8 @@ function schediQrCardPixels(text, color) {
                     if (fromService !== toService) rows.push({ key: 'service', label: 'Service', from: fromService, to: toService });
                     return;
                 }
-                var from = appointmentUpdatedText(before, field.keys);
-                var to = appointmentUpdatedText(after, field.keys);
+                var from = field.key === 'location' ? appointmentUpdatedLocationValue(before) : appointmentUpdatedText(before, field.keys);
+                var to = field.key === 'location' ? appointmentUpdatedLocationValue(after) : appointmentUpdatedText(after, field.keys);
                 if (from !== to) rows.push({ key: field.key, label: field.label, from: from, to: to });
             });
             var fromCents = appointmentUpdatedCents(before.amount);
@@ -22335,7 +22346,7 @@ function schediQrCardPixels(text, color) {
         }
 
         function appointmentMailSnapshot(booking) {
-            var keys = ['id', 'clientEmail', 'clientName', 'walkIn', 'cancelled', 'noShow', 'status', 'serviceName', 'amount', 'date', 'time', 'durationMins', 'staffName', 'staff', 'providerName', 'provider', 'assignedStaff', 'location', 'serviceLocation', 'place', 'appointmentAddress', 'notesToClient', 'noteToClient', 'clientNote', 'clientNotes', 'notes', 'note', 'paymentStatus', 'paymentMethod', 'paymentOption', 'paymentOptionLabel', 'paidMethod', 'depositAmount', 'depositPaid', 'balanceDue', 'payCode', 'paymentCode', 'manageToken', 'recurrence', 'seriesId'];
+            var keys = ['id', 'clientEmail', 'clientName', 'walkIn', 'cancelled', 'noShow', 'status', 'serviceName', 'amount', 'date', 'time', 'durationMins', 'staffName', 'staff', 'providerName', 'provider', 'assignedStaff', 'location', 'serviceLocation', 'place', 'appointmentAddress', 'address', 'notesToClient', 'noteToClient', 'clientNote', 'clientNotes', 'notes', 'note', 'paymentStatus', 'paymentMethod', 'paymentOption', 'paymentOptionLabel', 'paidMethod', 'depositAmount', 'depositPaid', 'balanceDue', 'payCode', 'paymentCode', 'manageToken', 'recurrence', 'seriesId'];
             var out = {};
             if (!booking) return out;
             for (var i = 0; i < keys.length; i++) {
