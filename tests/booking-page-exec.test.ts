@@ -146,7 +146,10 @@ describe.skipIf(!chrome)("booking document browser", () => {
     });
     const firebaseStub = [
       "export function initializeApp(){return {}}",
-      "export function getAuth(){return {currentUser:null}}",
+      "export function initializeAuth(){return {currentUser:null}}",
+      "export const indexedDBLocalPersistence = {}",
+      "export const browserLocalPersistence = {}",
+      "export const browserSessionPersistence = {}",
       "export function signInAnonymously(){return Promise.resolve()}",
       "export function getFirestore(){return {}}",
       "export function doc(){return {}}",
