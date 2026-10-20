@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
+import { bookingPayFromSearch, fillBookingDocument } from "../worker/booking-document";
+import { handleRequest, type SchediEnv } from "../worker/handler";
 
 vi.mock("../workers/schedi-email-worker/src/firebase-admin.js", () => ({
   adminAccessToken: vi.fn(async () => "access"),
@@ -346,6 +348,80 @@ describe("booking page card copy", () => {
     expect(fn).toContain("if (quotedFull) purpose = 'card'");
     expect(fn).toContain("if (quoted != null) price = quoted");
     expect(fn).toContain("ownerQuotedDollars(booking, catalogChargeDollars(tenant, booking))");
+  });
+});
+
+describe("email pay link opens Stripe", () => {
+  function tenantFetch() {
+    return vi.fn(async () => new Response(JSON.stringify({
+      fields: {
+        name: { stringValue: "Bright Cuts" },
+        slug: { stringValue: "bright-cuts" },
+        plan: { stringValue: "pro" },
+        subscriptionStatus: { stringValue: "active" },
+        acceptingBookings: { booleanValue: true },
+      },
+    }), { status: 200, headers: { "content-type": "application/json" } }));
+  }
+
+  function pageEnv(): SchediEnv {
+    return {
+      FIREBASE_PROJECT_ID: "siteforge-97699",
+      ASSETS: {
+        async fetch(request: Request) {
+          const path = new URL(request.url).pathname;
+          if (path !== "/booking.html") return new Response("missing", { status: 404 });
+          return new Response(bookingHtml, { headers: { "content-type": "text/html; charset=utf-8" } });
+        },
+      },
+    };
+  }
+
+  it("keeps only a real checkout flag and booking id", () => {
+    expect(bookingPayFromSearch("?pay=checkout&booking=BK-QUOTE01&kind=card&bookings=BK-SECOND1")).toEqual({
+      flag: "checkout",
+      kind: "card",
+      booking: "BK-QUOTE01",
+      bookings: "BK-SECOND1",
+    });
+    expect(bookingPayFromSearch("?pay=checkout%22;alert(1)&booking=%3Cscript%3E")).toEqual({
+      flag: "",
+      kind: "",
+      booking: "",
+      bookings: "",
+    });
+    expect(bookingPayFromSearch("")).toEqual({ flag: "", kind: "", booking: "", bookings: "" });
+  });
+
+  it("bakes the email's pay=checkout query into the public booking page", async () => {
+    globalThis.fetch = tenantFetch() as typeof fetch;
+    const payUrl = "https://schedi.app/bright-cuts/?pay=checkout&booking=BK-QUOTE01&kind=card";
+    const response = await handleRequest(new Request(payUrl), pageEnv(), { waitUntil() {} });
+    expect(response.status).toBe(200);
+    const html = await response.text();
+    expect(html).toContain('var SCHEDULE_PAY_RETURN = "checkout";');
+    expect(html).toContain('var SCHEDULE_PAY_KIND = "card";');
+    expect(html).toContain('var SCHEDULE_PAY_BOOKING = "BK-QUOTE01";');
+    expect(html).toContain("SCHEDULE_PAY_RETURN === 'checkout'");
+    expect(html).toContain("requestPublicCardCheckout");
+    expect(html).not.toContain("__SCHEDI_PAY_FLAG__");
+
+    const plain = fillBookingDocument(bookingHtml, { slug: "bright-cuts", fields: { name: "Bright Cuts" } });
+    expect(plain).toContain('var SCHEDULE_PAY_RETURN = "";');
+    expect(plain).not.toContain('var SCHEDULE_PAY_RETURN = "checkout";');
+  });
+
+  it("does not bake a broken pay query into the page script", async () => {
+    globalThis.fetch = tenantFetch() as typeof fetch;
+    const response = await handleRequest(
+      new Request("https://schedi.app/bright-cuts/?pay=checkout%22%3Balert(1)&booking=%3Cscript%3E"),
+      pageEnv(),
+      { waitUntil() {} },
+    );
+    const html = await response.text();
+    expect(html).toContain('var SCHEDULE_PAY_RETURN = "";');
+    expect(html).not.toContain("alert(1)");
+    expect(html).not.toContain('var SCHEDULE_PAY_BOOKING = "<script>"');
   });
 });
 
