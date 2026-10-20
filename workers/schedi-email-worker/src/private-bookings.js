@@ -19,6 +19,7 @@ import { squareClientBookingError } from './deposit-methods.js';
 import { rateLimitOk } from './rate-limit.js';
 import { bookingMakesClient, upsertClientsFromBookings } from './private-clients.js';
 import { bookingNoticeError } from './booking-notice.js';
+import { busyBlocksForTenant, bookingOverlapsBusy, BUSY_MESSAGE } from './calendar-sync.js';
 
 const PRIVATE_PREFIX = 'privateAppts:';
 const MAX_BOOKINGS = 800;
@@ -807,6 +808,22 @@ function bufferedOverlap(aStart, aEnd, bStart, bEnd, gap) {
   return aStart < bEnd + buf && bStart < aEnd + buf;
 }
 
+async function externalBusyReject(env, tenant, booking) {
+  try {
+    const blocks = await busyBlocksForTenant(env, tenant && tenant.id, {
+      getTenant: async () => tenant,
+      freshMs: 120000,
+      timeoutMs: 4000,
+    });
+    return bookingOverlapsBusy(blocks, booking, {
+      timeZone: (tenant && (tenant.timezone || tenant.timeZone)) || 'America/New_York',
+      bufferMins: appointmentBufferMins(tenant),
+    });
+  } catch (_) {
+    return false;
+  }
+}
+
 function slotTaken(existing, booking, ignoreId, bufferMins) {
   const start = toMinutes(booking.time);
   if (start === null || !booking.date) return false;
@@ -1130,6 +1147,9 @@ export async function handlePrivateBookingHttp(request, env, origin, path, deps,
         date: body.date ? clip(body.date, 10) : next.date,
         time: body.time ? clip(body.time, 15) : next.time,
       });
+      if (await externalBusyReject(env, tenant, proposed)) {
+        return respond(json, { ok: false, error: 'slot_taken', message: BUSY_MESSAGE }, 409, origin, isAllowedOrigin);
+      }
       if (slotTaken(appts, proposed, next.id, appointmentBufferMins(tenant))) {
         return respond(json, { ok: false, error: 'slot_taken' }, 409, origin, isAllowedOrigin);
       }
@@ -1237,6 +1257,9 @@ export async function handlePrivateBookingHttp(request, env, origin, path, deps,
         return respond(json, { ok: false, error: 'duplicate_booking' }, 409, origin, isAllowedOrigin);
       }
       const withNew = existing.concat(created);
+      if (await externalBusyReject(env, tenant, booking)) {
+        return respond(json, { ok: false, error: 'slot_taken', message: BUSY_MESSAGE }, 409, origin, isAllowedOrigin);
+      }
       if (slotTaken(withNew, booking, '', appointmentBufferMins(tenant))) {
         return respond(json, { ok: false, error: 'slot_taken' }, 409, origin, isAllowedOrigin);
       }

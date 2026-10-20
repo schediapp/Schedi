@@ -22,6 +22,7 @@ const FORBIDDEN = new Set([
   'ownerPassword',
   'appointments',
   'publicSlots',
+  'externalBusy',
   'clientName',
   'clientEmail',
   'clientPhone',

@@ -46,6 +46,18 @@ pattern = "schedi.app/api/booking-ics*"
 zone_name = "schedi.app"
 
 [[routes]]
+pattern = "schedi.app/api/calendar-feeds"
+zone_name = "schedi.app"
+
+[[routes]]
+pattern = "schedi.app/api/calendar-busy"
+zone_name = "schedi.app"
+
+[[routes]]
+pattern = "schedi.app/api/owner-feed/*"
+zone_name = "schedi.app"
+
+[[routes]]
 pattern = "schedi.app/api/manage*"
 zone_name = "schedi.app"
 
@@ -92,8 +104,13 @@ zone_name = "schedi.app"
 
 # Hourly: each tenant sends when local hour matches tenant.reminderHour (default 8).
 # Handler skips tenants with remindersEnabled === false.
+# */12 refreshes private iCal busy blocks only. The scheduled handler returns
+# before reminders when event.cron is that expression.
+# Feed URLs and the owner subscribe token live in AUTH_KV:
+#   calFeeds:<tenantId>  calBusy:<tenantId>  calOwnerToken:<token>  calFeedIndex
+# No new secret. Do not log feed URLs.
 [triggers]
-crons = ["0 * * * *"]
+crons = ["0 * * * *", "*/12 * * * *"]
 
 [vars]
 # Public Firebase web config (same values already embedded in SiteForge.html).

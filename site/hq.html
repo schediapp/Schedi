@@ -10925,7 +10925,7 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
                 : (formatLocalBasic(dateStr, startMins) + '/' + formatLocalBasic(endDateStr, endMins));
             var gUrl = 'https://calendar.google.com/calendar/render?action=TEMPLATE'
                 + '&text=' + encodeURIComponent(summary)
-                + '&dates=' + encodeURIComponent(googleDates)
+                + '&dates=' + googleDates.split('/').map(encodeURIComponent).join('/')
                 + '&details=' + encodeURIComponent(description.replace(/\\n/g, '\n'))
                 + (loc ? ('&location=' + encodeURIComponent(loc)) : '');
             var uid = 'schedi-' + String((booking && booking.id) || Date.now()) + '@schedi.app';
@@ -15627,7 +15627,7 @@ function paintBizHeader() {
                 : (formatLocalBasicPub(dateStr, startMins) + '/' + formatLocalBasicPub(endDateStr, endMins));
             var gUrl = 'https://calendar.google.com/calendar/render?action=TEMPLATE'
                 + '&text=' + encodeURIComponent(summary)
-                + '&dates=' + encodeURIComponent(googleDates)
+                + '&dates=' + googleDates.split('/').map(encodeURIComponent).join('/')
                 + '&details=' + encodeURIComponent(description)
                 + (loc ? ('&location=' + encodeURIComponent(loc)) : '');
             var uid = 'schedi-' + String((booking && booking.id) || Date.now()) + '@schedi.app';

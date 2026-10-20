@@ -27,7 +27,7 @@ import { runDepositFollowups, runSignupReminders, isAwaitingDeposit, signupAwait
 import { resolveOwnerNotifyAddress } from './owner-notify.js';
 import { handleOwnerResetRequest } from './owner-reset.js';
 import { planFromStripePrice } from './entitlements.js';
-import { hydrateTenantBookings, persistTenantAppointments, handlePrivateBookingHttp } from './private-bookings.js';
+import { hydrateTenantBookings, persistTenantAppointments, handlePrivateBookingHttp, loadPrivateAppointments } from './private-bookings.js';
 import { handleClientsHttp, runClientsBackfillOnce } from './private-clients.js';
 import { adminAuthHeaders } from './firebase-admin.js';
 import { handleProfileRequest } from './profile-store.js';
@@ -38,7 +38,8 @@ import { handleOpsSnapshotHttp, runOpsSnapshotCron } from './ops-snapshot.js';
 import { handleDefaultPasswordAudit } from './default-password-audit.js';
 import { handleResendEventsHttp } from './email-events.js';
 import { notifyOwnerOfNewBooking, notifyOwnerOfCancellation, ownerNotifyEnabledForTenant } from './owner-notify.js';
-import { handleBookingIcs, publicBusinessAddress } from './booking-ics.js';
+import { handleBookingIcs, publicBusinessAddress, googleCalendarDatesParam } from './booking-ics.js';
+import { handleCalendarFeeds, handleCalendarBusy, handleOwnerFeed, syncAllCalendarFeeds } from './calendar-sync.js';
 import { handleBookingMailPost } from './booking-mail.js';
 import { rateLimitOk } from './rate-limit.js';
 import { handleOwnerBillingSchedule, ownerBillingScheduleAction, subscriptionScheduleFromStripe } from './owner-billing-schedule.js';
@@ -2471,7 +2472,6 @@ function googleCalendarUrlForBooking(tenant, booking) {
       return h * 60 + min;
     };
     const pad2 = (n) => String(n).padStart(2, '0');
-    const fmt = (d) => d.getUTCFullYear() + pad2(d.getUTCMonth() + 1) + pad2(d.getUTCDate()) + 'T' + pad2(d.getUTCHours()) + pad2(d.getUTCMinutes()) + pad2(d.getUTCSeconds()) + 'Z';
     // reuse cancellation-fee wallTime if available via global in bundle — inline minimal
     const wall = (dateStr, minutesOfDay, timeZone) => {
       const p = String(dateStr || '').split('-');
@@ -2504,7 +2504,8 @@ function googleCalendarUrlForBooking(tenant, booking) {
     }
     const startUtc = wall(dateStr, startMins, tz);
     const endUtc = wall(endDateStr, endMins, tz);
-    if (startUtc && endUtc) gUrl += '&dates=' + encodeURIComponent(fmt(startUtc) + '/' + fmt(endUtc));
+    const dates = googleCalendarDatesParam(startUtc, endUtc);
+    if (dates) gUrl += '&dates=' + dates;
   } catch (_) {}
   return gUrl;
 }
@@ -2968,6 +2969,25 @@ export default {
         listAllTenants,
       });
     }
+    if (path === '/api/calendar-feeds') {
+      return handleCalendarFeeds(request, env, origin, {
+        json,
+        isAllowedOrigin,
+        readSession,
+        getTenant: async (env2, id) => getTenantById(env2, await firebaseAnonymousToken(env2), id),
+      });
+    }
+    if (path === '/api/calendar-busy') {
+      return handleCalendarBusy(request, env);
+    }
+    const ownerFeedMatch = path.match(/^\/api\/owner-feed\/([a-f0-9]{32,128})\.ics$/i);
+    if (ownerFeedMatch) {
+      return handleOwnerFeed(request, env, ownerFeedMatch[1], {
+        loadAppointments: (id) => loadPrivateAppointments(env, id),
+        getTenantById,
+        firebaseAnonymousToken,
+      });
+    }
     if (path === '/api/manage/pay') {
       if (request.method !== 'GET') return json({ ok: false, error: 'method_not_allowed' }, 405, origin);
       return handleManagePay(request, env, url);
@@ -3098,6 +3118,16 @@ export default {
   },
 
   async scheduled(event, env, ctx) {
+    if (event && event.cron === '*/12 * * * *') {
+      ctx.waitUntil(
+        syncAllCalendarFeeds(env, {
+          getTenant: async (env2, id) => getTenantById(env2, await firebaseAnonymousToken(env2), id),
+        })
+          .then((r) => console.log('calendar sync', JSON.stringify({ synced: r && r.synced, errors: r && r.errors })))
+          .catch((err) => console.error('calendar sync failed', err && err.message ? err.message : err))
+      );
+      return;
+    }
     ctx.waitUntil(
       runSameDayReminders(env, { force: false, dryRun: false })
         .then((r) => console.log('reminder cron', JSON.stringify(r)))

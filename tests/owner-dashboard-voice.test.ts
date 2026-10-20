@@ -129,7 +129,7 @@ describe("owner dashboard voice", () => {
     expect(render).not.toContain("Finish setting up");
     expect(render).not.toContain("schediStatToday");
     expect(render).not.toContain("schediStatReview");
-    expect(html).toContain("Avoid double-booking");
+    expect(html).toContain("Keep busy times off the book");
   });
 });
 
