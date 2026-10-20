@@ -52,6 +52,20 @@ function scripts(html: string) {
   return found;
 }
 
+function extractFunction(source: string, name: string): string {
+  const start = source.indexOf("function " + name);
+  const brace = source.indexOf("{", start);
+  let depth = 0;
+  for (let i = brace; i < source.length; i += 1) {
+    if (source[i] === "{") depth += 1;
+    else if (source[i] === "}") {
+      depth -= 1;
+      if (depth === 0) return source.slice(start, i + 1);
+    }
+  }
+  throw new Error("could not extract " + name);
+}
+
 function assertParses(html: string) {
   for (const script of scripts(html)) {
     if (!script.code.trim() || script.src || script.kind === "application/ld+json") continue;
@@ -90,6 +104,9 @@ describe("booking document scripts", () => {
     expect(fn).toContain("confirmCard.classList.add('hidden')");
     expect(fn).toContain("errBox.classList.remove('hidden')");
     expect(fn).toContain("That time is not available. Choose another time.");
+    expect(fn).toContain("var noticeHours = getMinNoticeHoursPub(tenantData);");
+    expect(fn).toContain("if (noticeHours > 0) errText = noticeReasonText() + '. Choose a later time.';");
+    expect(fn).toContain("else errText = (out.data && out.data.message) || 'That time is too soon. Choose a later time.';");
     const guard = "if (out && !out.ok && out.data && (" + reject + ")) return;";
     expect(fn.indexOf(guard)).toBeGreaterThan(0);
     expect(fn.indexOf(guard)).toBeLessThan(fn.indexOf("type: 'NEW_BOOKING_SUBMITTED'"));
@@ -100,6 +117,22 @@ describe("booking document scripts", () => {
     expect(bookingHtml).toContain("if (closeMins === null || closeMins <= openMins) closeMins = 17 * 60;");
     expect(bookingHtml).toContain("start: dayHours && dayHours.start ? dayHours.start : '09:00 AM',");
     expect(bookingHtml).toContain("end: dayHours && dayHours.end ? dayHours.end : '05:00 PM',");
+  });
+
+  it("uses the server too_soon message when minimum notice is 0 or missing", () => {
+    const lib = ["getMinNoticeHoursPub", "noticeReasonText"].map((name) => extractFunction(bookingHtml, name)).join("\n");
+    const branchAt = bookingHtml.indexOf("var noticeHours = getMinNoticeHoursPub(tenantData);");
+    const branch = bookingHtml.slice(branchAt, bookingHtml.indexOf("errBox.textContent = errText;", branchAt)).replace(/\n\s*\}\s*$/, "\n");
+    const run = new Function("tenantData", "out", `var errText;\n${lib}\n${branch}\nreturn errText;`) as (
+      tenant: unknown,
+      out: unknown,
+    ) => string;
+    expect(run({}, { data: { error: "too_soon", message: "Book at least a day ahead." } })).toBe("Book at least a day ahead.");
+    expect(run({ minNoticeHours: 0 }, { data: { error: "too_soon" } })).toBe("That time is too soon. Choose a later time.");
+    expect(run({ minNoticeHours: null }, { data: { error: "too_soon", message: "" } })).toBe("That time is too soon. Choose a later time.");
+    expect(run({ minNoticeHours: "" }, { data: { error: "too_soon" } })).toBe("That time is too soon. Choose a later time.");
+    expect(run({ minNoticeHours: 2 }, { data: { error: "too_soon", message: "ignored when notice is set" } })).toBe("Needs at least 2 hours notice. Choose a later time.");
+    expect(run({ minNoticeHours: 1 }, { data: { error: "too_soon" } })).toBe("Needs at least 1 hour notice. Choose a later time.");
   });
 });
 

@@ -2973,6 +2973,8 @@ function workersDevAuthBlocked(url) {
   return false;
 }
 
+export { AuthRateLimit } from './auth-rate-limit.js';
+
 export default {
   async fetch(request, env, ctx) {
     const origin = request.headers.get('Origin') || '';

@@ -4080,7 +4080,11 @@ function paintBizHeader() {
                                   if (errBox) {
                                       var errText = (out.data && out.data.message) || 'That time is not available. Choose another time.';
                                       if (out.data.error === 'slot_taken') errText = (out.data && out.data.message) || 'That time was just taken.';
-                                      else if (out.data.error === 'too_soon') errText = noticeReasonText() + '. Choose a later time.';
+                                      else if (out.data.error === 'too_soon') {
+                                          var noticeHours = getMinNoticeHoursPub(tenantData);
+                                          if (noticeHours > 0) errText = noticeReasonText() + '. Choose a later time.';
+                                          else errText = (out.data && out.data.message) || 'That time is too soon. Choose a later time.';
+                                      }
                                       errBox.textContent = errText;
                                       errBox.classList.remove('hidden');
                                   }

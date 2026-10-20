@@ -180,18 +180,16 @@ type = "ratelimit"
 namespace_id = "41006"
 simple = { limit = 60, period = 60 }
 
-# Auth sign-in. Cloudflare ratelimit periods are only 10 or 60 seconds.
-# 10/60 per IP and 5/60 per email. No global cap: a shared counter lets one
-# client lock every owner and HQ out. Created on the next email-worker deploy.
-# The worker enforces the same 60s window in-isolate when a binding is missing.
-[[unsafe.bindings]]
-name = "RL_AUTH_IP"
-type = "ratelimit"
-namespace_id = "41007"
-simple = { limit = 10, period = 60 }
+# Sign-in limits. The Workers ratelimit binding is per location and was returning
+# success for every /auth/tenant and /auth/agency attempt, so it is not used.
+# AUTH_RATE_LIMIT is one Durable Object, named "auth", shared by every data centre.
+# The worker counts route+IP (10 / 60s) and route+sha256(normalized email) (5 / 60s)
+# before the password check. There is no global cap. Created on the next
+# email-worker deploy. If the object is missing, sign-in fails open.
+[[durable_objects.bindings]]
+name = "AUTH_RATE_LIMIT"
+class_name = "AuthRateLimit"
 
-[[unsafe.bindings]]
-name = "RL_AUTH_EMAIL"
-type = "ratelimit"
-namespace_id = "41008"
-simple = { limit = 5, period = 60 }
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["AuthRateLimit"]
