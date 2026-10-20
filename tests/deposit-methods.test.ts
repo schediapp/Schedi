@@ -6,6 +6,9 @@ import { applyOwnerEntitlementLock } from "../workers/schedi-email-worker/src/en
 import { hqLoginDocument } from "../worker/public-shell";
 import {
   SCHEDI_SQUARE_PUBLIC_ENABLED,
+  activeCardRail,
+  bothCardRailsReady,
+  cardProcessorPreference,
   depositMethodMap,
   methodAcceptsDeposit,
   ownerInPersonMethod,
@@ -54,23 +57,48 @@ describe("deposit methods", () => {
 });
 
 describe("Square public switch", () => {
-  it("stays off even when a business has Square checked", () => {
-    expect(SCHEDI_SQUARE_PUBLIC_ENABLED).toBe(false);
+  const squareOnly = { plan: "starter", paymentGateways: { square: true }, squareReady: true };
+  const both = {
+    plan: "pro",
+    stripeConnectReady: true,
+    squareReady: true,
+    paymentGateways: { card: true, square: true },
+  };
+
+  it("offers Square only for this business's own connected merchant", () => {
+    expect(SCHEDI_SQUARE_PUBLIC_ENABLED).toBe(true);
     expect(squareMerchantReady({ squareReady: true })).toBe(true);
     expect(squareMerchantReady({})).toBe(false);
-    expect(squareOfferedToClients({ paymentGateways: { square: true }, squareReady: true })).toBe(false);
-    expect(squareClientBookingError({ paymentMethod: "square" }, { squareReady: true })).toBe("square_unavailable");
+    expect(squareOfferedToClients(squareOnly)).toBe(true);
+    expect(squareOfferedToClients({ ...squareOnly, squareReady: false })).toBe(false);
+    expect(squareOfferedToClients({ ...squareOnly, paymentGateways: { square: false } })).toBe(false);
+    expect(squareClientBookingError({ paymentMethod: "square" }, { ...squareOnly, squareReady: false })).toBe("square_not_ready");
+    expect(squareClientBookingError({ paymentMethod: "square" }, squareOnly)).toBe("");
     expect(squareClientBookingError({ paymentMethod: "cashapp" })).toBe("");
   });
 
-  it("drops Square on an owner save while the kill switch is off", () => {
+  it("defaults to Stripe when both card rails are ready", () => {
+    expect(cardProcessorPreference({})).toBe("stripe");
+    expect(cardProcessorPreference({ cardProcessor: "square" })).toBe("square");
+    expect(bothCardRailsReady(both)).toBe(true);
+    expect(activeCardRail(both)).toBe("stripe");
+    expect(squareOfferedToClients(both)).toBe(false);
+    expect(squareClientBookingError({ paymentMethod: "square" }, both)).toBe("square_not_offered");
+    expect(activeCardRail({ ...both, cardProcessor: "square" })).toBe("square");
+    expect(squareOfferedToClients({ ...both, cardProcessor: "square" })).toBe(true);
+    expect(squareClientBookingError({ paymentMethod: "square" }, { ...both, cardProcessor: "square" })).toBe("");
+    expect(activeCardRail({ plan: "pro", stripeConnectReady: true, paymentGateways: { card: true } })).toBe("stripe");
+  });
+
+  it("keeps an owner's Square choice now that Square is on", () => {
     const locked = applyOwnerEntitlementLock(
-      { paymentGateways: { card: true, square: true, later: true } },
+      { paymentGateways: { card: true, square: true, later: true }, cardProcessor: "square" },
       { plan: "pro", paymentGateways: { card: true, later: true } },
       {},
     );
-    expect(locked.pub.paymentGateways.square).toBe(false);
-    expect(locked.ignored).toContain("paymentGateways.square");
+    expect(locked.pub.paymentGateways.square).toBe(true);
+    expect(locked.pub.cardProcessor).toBe("square");
+    expect(locked.ignored).not.toContain("paymentGateways.square");
   });
 });
 
@@ -115,11 +143,15 @@ describe("new booking and HQ designs are the default", () => {
   it("keeps Pay at Appt, hides Square behind both switches, and turns the booking skin on unless classicbook", () => {
     expect(html).toContain(">Pay at Appt</button>");
     expect(html).not.toContain("In person / Cash</button>");
-    expect(html).toContain("var SCHEDI_SQUARE_PUBLIC_ENABLED = false;");
+    expect(html).toContain("var SCHEDI_SQUARE_PUBLIC_ENABLED = true;");
+    expect(html).not.toContain("var SCHEDI_SQUARE_PUBLIC_ENABLED = false;");
     expect(html).toContain("function publicSquareOffered()");
     expect(html).toContain("tenantData.squareReady === true");
+    expect(html).toContain("tenantData.cardProcessor");
+    expect(html).toContain('id="tenantCardProcessor"');
     expect(html).toContain("Finish Square setup");
     expect(html).toContain("https://schedi.app/api/square/connect");
+    expect(html).toContain("https://schedi.app/api/square/pay?t=");
     expect(html).toContain("tenant.squareReady !== true");
     expect(html).toContain("function publicMethodAcceptsDeposit(method)");
     expect(html).toContain("function schediNewBookOn");

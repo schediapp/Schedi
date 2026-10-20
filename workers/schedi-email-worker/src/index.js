@@ -3223,7 +3223,7 @@ export default {
         },
       });
     }
-    if (path === '/api/webhooks/square' || path === '/api/square/callback' || path === '/api/square/checkout' || path === '/api/square/confirm' || path === '/api/square/connect' || path === '/api/square/status' || path === '/api/square/location' || path === '/api/square/disconnect' || path === '/api/square/refund') {
+    if (path === '/api/webhooks/square' || path === '/api/square/callback' || path === '/api/square/checkout' || path === '/api/square/pay' || path === '/api/square/confirm' || path === '/api/square/connect' || path === '/api/square/status' || path === '/api/square/location' || path === '/api/square/disconnect' || path === '/api/square/refund') {
       return handleSquareHttp(request, env, origin, path, {
         json,
         isAllowedOrigin,

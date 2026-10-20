@@ -103,6 +103,24 @@ export function squareWebhookUrl(env) {
   return configured || WEBHOOK_URL_DEFAULT;
 }
 
+/** Hosted Square checkout only. Never the OAuth or API host, and never a platform page. */
+export function squareHostedPayUrl(value) {
+  try {
+    const url = new URL(String(value || ''));
+    if (url.protocol !== 'https:' || url.username || url.password) return false;
+    const host = url.hostname.toLowerCase();
+    if (host === 'connect.squareup.com' || host === 'connect.squareupsandbox.com') return false;
+    if (host === 'api.squareup.com' || host === 'api.squareupsandbox.com') return false;
+    if (host === 'square.link' || host.endsWith('.square.link')) return true;
+    if (host === 'checkout.square.site' || host.endsWith('.checkout.square.site')) return true;
+    if (host === 'squareup.com' || host.endsWith('.squareup.com')) return true;
+    if (host === 'squareupsandbox.com' || host.endsWith('.squareupsandbox.com')) return true;
+    return false;
+  } catch (_) {
+    return false;
+  }
+}
+
 export function squareTokenKeyBytes(raw) {
   const text = String(raw || '').trim();
   if (!text) return null;
@@ -758,6 +776,10 @@ export async function handleSquareHttp(request, env, origin, path, deps) {
     return withCheckoutCors(res);
   }
 
+  if (path === '/api/square/pay') {
+    return handleSquarePay(request, env, url, deps);
+  }
+
   if (path === '/api/square/confirm') {
     if (request.method !== 'POST') return jsonResponse(deps, { ok: false, error: 'method_not_allowed' }, 405, origin);
     const res = await handleConfirm(request, env, deps);
@@ -910,6 +932,107 @@ async function handleDisconnect(env, tenantId, deps, origin) {
   await clearConnection(env, tenantId, deps);
   await savePublicStatus(env, tenantId, publicStatusFrom(null), deps);
   return jsonResponse(deps, { ok: true, connected: false, ready: false }, 200, origin);
+}
+
+function squarePayPage(message, status) {
+  const safe = String(message || 'This payment link did not open. Nothing was charged.')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+  const html = '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Square payment</title></head>'
+    + '<body style="margin:0;padding:32px 16px;background:#020617;color:#e2e8f0;font-family:Arial,Helvetica,sans-serif;">'
+    + '<main style="max-width:28rem;margin:0 auto;padding:24px;border:1px solid #334155;border-radius:16px;background:#0b1325;">'
+    + '<h1 style="margin:0 0 12px;font-size:20px;color:#fff;">Square payment</h1>'
+    + '<p style="margin:0;line-height:1.5;">' + safe + '</p>'
+    + '</main></body></html>';
+  return new Response(html, {
+    status: status || 400,
+    headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' },
+  });
+}
+
+function squarePayRedirect(target) {
+  return new Response(null, {
+    status: 302,
+    headers: {
+      Location: target,
+      'Cache-Control': 'no-store',
+      'Referrer-Policy': 'no-referrer',
+    },
+  });
+}
+
+// GET /api/square/pay?t=&b=&k=&kind=
+// Booking emails and the confirmation Pay now button use this URL.
+// It redirects only to a payment link on this tenant's own Square merchant.
+async function handleSquarePay(request, env, url, deps) {
+  if (request.method !== 'GET' && request.method !== 'HEAD') {
+    return squarePayPage('Open this payment link in your browser. Nothing was charged.', 405);
+  }
+  const tenantId = safeTenant(url.searchParams.get('t'));
+  const bookingId = bookingIdsFrom(url.searchParams.get('b'))[0] || '';
+  const token = String(url.searchParams.get('k') || '');
+  const kindHint = String(url.searchParams.get('kind') || '');
+  const tokenOk = /^[A-Za-z0-9_-]{16,128}$/.test(token);
+  if (!tenantId || !bookingId || !tokenOk) {
+    return squarePayPage('This payment link is not valid. Nothing was charged.', 400);
+  }
+  if (kindHint && kindHint !== 'deposit' && kindHint !== 'card') {
+    return squarePayPage('This payment link is not valid. Nothing was charged.', 400);
+  }
+  if (request.method === 'HEAD') {
+    return new Response(null, { status: 200, headers: { 'Cache-Control': 'no-store' } });
+  }
+  const ip = clientIp(request);
+  if (!(await rateLimitOk(env && env.RL_MAIL, 'sqpay:' + ip, 30, 'sqpay'))) {
+    return squarePayPage('Too many tries. Wait a minute and open the link again. Nothing was charged.', 429);
+  }
+  if (!deps.getTenantById || !deps.firebaseAnonymousToken) {
+    return squarePayPage('Square checkout is unavailable right now. Nothing was charged.', 500);
+  }
+  let tenant;
+  try {
+    const idToken = await deps.firebaseAnonymousToken(env);
+    tenant = await deps.getTenantById(env, idToken, tenantId);
+  } catch (_) {
+    return squarePayPage('Square checkout is unavailable right now. Nothing was charged.', 502);
+  }
+  if (!tenant) return squarePayPage('This payment link is not valid. Nothing was charged.', 404);
+  if (tenant.squareReady !== true) {
+    return squarePayPage('Finish Square setup to accept cards. Nothing was charged.', 409);
+  }
+  const load = deps.loadAppointments || loadPrivateAppointments;
+  const appointments = await load(env, tenantId);
+  const booking = (appointments || []).find((item) => item && String(item.id) === bookingId) || null;
+  if (!booking || !booking.manageToken || !timingSafeEqual(String(booking.manageToken), token)) {
+    return squarePayPage('This payment link is not valid. Nothing was charged.', 400);
+  }
+  if (String(booking.paymentMethod || '').toLowerCase() !== 'square') {
+    return squarePayPage('This booking is not set to pay with Square. Nothing was charged.', 400);
+  }
+  const ids = [bookingId];
+  for (const extraId of bookingIdsFrom(url.searchParams.get('ids'))) {
+    if (ids.indexOf(extraId) !== -1) continue;
+    const other = (appointments || []).find((item) => item && String(item.id) === extraId && booking.seriesId && item.seriesId === booking.seriesId);
+    if (!other || String(other.paymentMethod || '').toLowerCase() !== 'square') continue;
+    ids.push(extraId);
+  }
+  const inner = new Request(APP_ORIGIN + '/api/square/checkout', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tenantId, bookingIds: ids }),
+  });
+  const checkoutRes = await handleCheckout(inner, env, deps);
+  const data = await checkoutRes.json().catch(() => ({}));
+  if (data && data.alreadyPaid) {
+    return squarePayPage('This Square payment is already paid. Nothing more was charged.', 200);
+  }
+  if (squareHostedPayUrl(data && data.url)) return squarePayRedirect(data.url);
+  if (data && data.error === 'square_not_ready') {
+    return squarePayPage(data.message || 'Finish Square setup to accept cards. Nothing was charged.', 409);
+  }
+  const status = checkoutRes.status >= 400 ? checkoutRes.status : 502;
+  return squarePayPage('Square checkout did not open. Nothing was charged.', status);
 }
 
 async function handleCheckout(request, env, deps) {

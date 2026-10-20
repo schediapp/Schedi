@@ -957,7 +957,7 @@
         }
         var SCHEDI_NEWBOOK = __SCHEDI_NEWBOOK__;
         var SCHEDI_DEMO = __SCHEDI_DEMO__;
-        var SCHEDI_SQUARE_PUBLIC_ENABLED = false;
+        var SCHEDI_SQUARE_PUBLIC_ENABLED = true;
         try {
             var bookQuery = new URLSearchParams(location.search || '');
             var newBookFlag = bookQuery.get('newbook');
@@ -989,9 +989,22 @@
             if (PUBLIC_DEPOSIT_METHODS.indexOf(key) === -1) return false;
             return publicDepositMethodMap()[key] === true;
         }
-        function publicSquareOffered() {
+        function publicCardProcessor() {
+            var raw = String(tenantData && tenantData.cardProcessor || '').toLowerCase();
+            return raw === 'square' ? 'square' : 'stripe';
+        }
+        function publicStripeRailReady(cardOn, plan) {
+            return cardOn === true && plan === 'pro' && !!(tenantData && tenantData.stripeConnectReady === true);
+        }
+        function publicSquareRailReady() {
             var pg = (tenantData && tenantData.paymentGateways) || {};
-            return SCHEDI_NEWBOOK && SCHEDI_SQUARE_PUBLIC_ENABLED === true && pg.square === true && tenantData.squareReady === true;
+            return SCHEDI_SQUARE_PUBLIC_ENABLED === true && pg.square === true && !!(tenantData && tenantData.squareReady === true);
+        }
+        function publicSquareOffered() {
+            if (!SCHEDI_NEWBOOK || !publicSquareRailReady()) return false;
+            var pg = (tenantData && tenantData.paymentGateways) || {};
+            if (publicStripeRailReady(pg.card === true, bookingPlan()) && publicCardProcessor() !== 'square') return false;
+            return true;
         }
         function publicSvcIcon(svc) {
             if (!SCHEDI_NEWBOOK || !svc) return '';
@@ -1156,6 +1169,50 @@
             }
             if (emailed) note += ' We emailed you a secure payment link.';
             return note;
+        }
+
+        function schediSquarePayHref(value) {
+            var candidate = String(value || '');
+            if (!/^https:\/\/(www\.)?schedi\.app\/api\/square\/pay\?/.test(candidate)) return false;
+            if (candidate.indexOf('stripe.com') !== -1) return false;
+            if (candidate.indexOf('squareup.com') !== -1) return false;
+            return candidate.indexOf('t=') !== -1 && candidate.indexOf('b=') !== -1 && candidate.indexOf('k=') !== -1;
+        }
+
+        function squarePayApiUrl(slug, bookingIds, token, kind) {
+            var safeSlug = String(slug || '').trim().toLowerCase();
+            if (!/^[a-z0-9](?:[a-z0-9-]{0,40})$/.test(safeSlug)) return '';
+            if (kind !== 'deposit' && kind !== 'card') return '';
+            var tok = String(token || '').trim();
+            if (!/^[A-Za-z0-9_-]{16,128}$/.test(tok)) return '';
+            var ids = [];
+            var list = Array.isArray(bookingIds) ? bookingIds : [bookingIds];
+            for (var i = 0; i < list.length; i++) {
+                var id = String(list[i] || '').trim();
+                if (!/^[A-Za-z0-9_-]{4,40}$/.test(id) || ids.indexOf(id) !== -1) continue;
+                ids.push(id);
+                if (ids.length === 12) break;
+            }
+            if (!ids.length) return '';
+            var url = 'https://schedi.app/api/square/pay?t=' + encodeURIComponent(safeSlug)
+                + '&b=' + encodeURIComponent(ids[0])
+                + '&k=' + encodeURIComponent(tok)
+                + '&kind=' + kind;
+            if (ids.length > 1) url += '&ids=' + encodeURIComponent(ids.slice(1).join(','));
+            return url;
+        }
+
+        function openSchediSquarePay(href) {
+            var target = String(href || '');
+            if (!schediSquarePayHref(target)) return false;
+            try {
+                if (window.top && window.top !== window) {
+                    window.top.location.assign(target);
+                    return true;
+                }
+            } catch (err) {}
+            window.location.assign(target);
+            return true;
         }
 
         function openSchediCardPay(href) {
@@ -1352,7 +1409,12 @@
 
             var clientTo = (booking && booking.clientEmail) ? String(booking.clientEmail).trim() : '';
             var cardPayUrl = '';
+            var squarePayUrl = '';
             var cardLinkLater = false;
+            if (booking && tenantData.squareReady === true && String(booking.paymentMethod || '').toLowerCase() === 'square') {
+                var squareCandidate = String(booking.squarePayLink || '');
+                if (schediSquarePayHref(squareCandidate)) squarePayUrl = squareCandidate;
+            }
             if (booking && tenantData.stripeConnectReady === true && String(booking.paymentMethod || '').toLowerCase() === 'card') {
                 var cardPayStatus = String(booking.paymentStatus || '').toUpperCase();
                 if (cardPayStatus.indexOf('AWAITING CARD LINK') !== -1) {
@@ -1483,6 +1545,7 @@
                     (depositInstr ? (depositInstr + nl) : '') +
                     (cardLinkLater ? (cardLinkLaterCopy + nl) : '') +
                     (cardPayUrl ? ('Pay by card:' + nl + cardPayUrl + nl) : '') +
+                    (squarePayUrl ? ('Pay with Square:' + nl + squarePayUrl + nl) : '') +
                     (feeSentence ? (feeSentence + nl) : '') +
                     (extra ? (nl + 'Note: ' + extra + nl) : '') +
                     (manageUrl ? (nl + 'Manage / reschedule / cancel:' + nl + manageUrl + nl + (isSeries ? ('This is one saved record in a recurring series. Cancelling or rescheduling updates this record only, not other visits.' + nl) : '')) : '') +
@@ -1566,6 +1629,16 @@
                         + '<p style="margin:10px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#64748b;">Or copy this link: ' + safe(cardPayUrl) + '</p>'
                         + '</td></tr>';
                 }
+                if (squarePayUrl) {
+                    var squareHref = String(squarePayUrl).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+                    notesHtml += '<tr><td align="center" style="padding:8px 28px 4px;">'
+                        + '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"><tr>'
+                        + '<td align="center" bgcolor="#111827" style="background-color:#111827;border-radius:14px;">'
+                        + '<a href="' + squareHref + '" style="display:block;padding:14px 18px;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;">Pay with Square</a>'
+                        + '</td></tr></table>'
+                        + '<p style="margin:10px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#64748b;">Or copy this link: ' + safe(squarePayUrl) + '</p>'
+                        + '</td></tr>';
+                }
                 if (depositInstr) notesHtml += '<tr><td style="padding:8px 28px 0;"><div style="padding:12px 14px;border-radius:10px;background-color:#111c33;border:1px solid #334155;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#e2e8f0;">' + safe(depositInstr) + '</div></td></tr>';
                 if (feeSentence) notesHtml += '<tr><td style="padding:8px 28px 0;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#94a3b8;">' + safe(feeSentence) + '</td></tr>';
                 if (extra) notesHtml += '<tr><td style="padding:10px 28px 0;"><div style="padding:12px 14px;border-radius:10px;background-color:#111c33;border:1px solid #334155;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#cbd5e1;">' + safe(extra) + '</div></td></tr>';
@@ -1623,6 +1696,7 @@
                     (booking.payCode ? ('Payment code: ' + booking.payCode + nl) : '') +
                     (depositInstr ? (depositInstr + nl) : '') +
                     (cardPayUrl ? ('Card payment link: ' + cardPayUrl + nl) : '') +
+                    (squarePayUrl ? ('Square payment link: ' + squarePayUrl + nl) : '') +
                     nl + '— Schedi';
                 var oHtml = '<div style="font-family:Arial,sans-serif;line-height:1.5">' +
                     '<h2 style="color:#0ea5e9">' + (isSeries ? 'New recurring booking' : 'New booking') + '</h2>' +
@@ -1638,7 +1712,8 @@
                     '<strong>Payment option:</strong> ' + safe(payOpt) + '<br>' +
                     '<strong>Payment status:</strong> ' + safe(booking.paymentStatus || '') +
                     (amountStr ? ('<br><strong>Amount:</strong> ' + safe(amountStr)) : '') +
-                    (cardPayUrl ? ('<br><strong>Card payment link:</strong> <a href="' + String(cardPayUrl).replace(/&/g, '&amp;').replace(/"/g, '&quot;') + '">' + safe(cardPayUrl) + '</a>') : '') + '</p>' +
+                    (cardPayUrl ? ('<br><strong>Card payment link:</strong> <a href="' + String(cardPayUrl).replace(/&/g, '&amp;').replace(/"/g, '&quot;') + '">' + safe(cardPayUrl) + '</a>') : '') +
+                    (squarePayUrl ? ('<br><strong>Square payment link:</strong> <a href="' + String(squarePayUrl).replace(/&/g, '&amp;').replace(/"/g, '&quot;') + '">' + safe(squarePayUrl) + '</a>') : '') + '</p>' +
                     '<p>— Schedi</p></div>';
                 dispatchStandaloneMail(ownerTo, oSubject, oText, oHtml, 'owner_booking_alert', (booking.clientEmail || ''), cardPayUrl);
 
@@ -3705,6 +3780,7 @@ function paintBizHeader() {
         };
         function cardPayMode(price, depositRequired, cardOn, plan) {
             if (cardOn !== true || plan !== 'pro' || tenantData.stripeConnectReady !== true) return 'off';
+            if (publicSquareRailReady() && publicCardProcessor() === 'square') return 'off';
             if (depositRequired === true) return 'now';
             if (price !== null && price !== undefined && Number(price) >= 0.5) return 'now';
             if (price === null || price === undefined) return 'link';
@@ -4105,6 +4181,16 @@ function paintBizHeader() {
                         || durableCardPayLink(String(tenantData.slug || tenantData.id || ''), cardPayIds, cardPayKind);
                 }
                 if (cardPayUrl) bookings.forEach(function (item) { item.cardPayLink = cardPayUrl; });
+                var squareChargeCents = 0;
+                if (selectedPay === 'square') {
+                    var squareDollars = Number(bookingAmount);
+                    if (isFinite(squareDollars) && squareDollars > 0) squareChargeCents = Math.round(squareDollars * 100);
+                }
+                var squarePayUrl = '';
+                if (selectedPay === 'square' && squareChargeCents >= 50) {
+                    squarePayUrl = squarePayApiUrl(String(tenantData.slug || tenantData.id || ''), cardPayIds, booking.manageToken, 'card');
+                }
+                if (squarePayUrl) bookings.forEach(function (item) { item.squarePayLink = squarePayUrl; });
                 var cardChargeCents = 0;
                 if (payByCard) {
                     var cardDollars = depositQuote.required ? depositQuote.deposit : Number(bookingAmount);
@@ -4157,7 +4243,15 @@ function paintBizHeader() {
                         }
                     });
                 };
+                var openSquarePayNow = function () {
+                    var squareBtn = document.getElementById('resCheckoutBtn');
+                    if (squareBtn) squareBtn.textContent = 'Taking you to secure payment…';
+                    var squareHeading = document.getElementById('confirmationHeading');
+                    if (squareHeading) squareHeading.textContent = 'Taking you to secure payment…';
+                    openSchediSquarePay(squarePayUrl);
+                };
                 if (cardChargeCents >= 50) startPayNowCheckout = openPayNowCheckout;
+                if (selectedPay === 'square' && squareChargeCents >= 50) startPayNowCheckout = openSquarePayNow;
 
                 tenantData.publicSlots = tenantData.publicSlots || [];
                 bookings.forEach(function (b) {
@@ -4186,7 +4280,7 @@ function paintBizHeader() {
                         var saved = list.map(function (item) {
                             var copy = {};
                             for (var key in item) {
-                                if (Object.prototype.hasOwnProperty.call(item, key) && key !== 'cardPayLink') copy[key] = item[key];
+                                if (Object.prototype.hasOwnProperty.call(item, key) && key !== 'cardPayLink' && key !== 'squarePayLink') copy[key] = item[key];
                             }
                             return copy;
                         });
@@ -4307,6 +4401,16 @@ function paintBizHeader() {
                     if (headingEl) headingEl.textContent = linkLater ? 'Booking Requested' : 'Taking you to secure payment…';
                     if (noteEl) {
                         noteEl.textContent = cardNote;
+                        noteEl.classList.remove('hidden');
+                    }
+                } else if (selectedPay === 'square' && squarePayUrl) {
+                    var squareMailOn = !(tenantData.notifications && tenantData.notifications.emailConfirmations === false);
+                    var squareNote = "You'll pay now with Square.";
+                    if (squareMailOn) squareNote += ' We emailed you a secure payment link.';
+                    if (bookingIsPendingReview) squareNote += ' The business still needs to accept this time.';
+                    if (headingEl) headingEl.textContent = 'Taking you to secure payment…';
+                    if (noteEl) {
+                        noteEl.textContent = squareNote;
                         noteEl.classList.remove('hidden');
                     }
                 } else if (bookingIsPendingReview) {
@@ -4448,6 +4552,36 @@ function paintBizHeader() {
                             checkoutBtn.onclick = function (ev) {
                                 ev.preventDefault();
                                 openPayNowCheckout();
+                            };
+                        }
+                    }
+                } else if (selectedPay === 'square' && squarePayUrl) {
+                    if (cardReceiptBox) {
+                        cardReceiptBox.classList.remove('hidden');
+                        var squareShow = bookingAmount;
+                        document.getElementById('resCardAmountLabel').textContent = (squareShow == null ? '—' : ('$' + Number(squareShow).toFixed(2)));
+                        var squareLinkEl = document.getElementById('resCardPayLink');
+                        var squareCopyBtn = document.getElementById('resCardPayCopyBtn');
+                        if (squareLinkEl) {
+                            squareLinkEl.textContent = squarePayUrl;
+                            squareLinkEl.href = squarePayUrl;
+                            squareLinkEl.target = '_top';
+                        }
+                        if (squareCopyBtn) {
+                            squareCopyBtn.onclick = function () {
+                                copyTextToClipboard(squarePayUrl);
+                                squareCopyBtn.textContent = 'Copied';
+                                setTimeout(function () { squareCopyBtn.textContent = 'Copy payment link'; }, 1500);
+                            };
+                        }
+                        var squareCheckoutBtn = document.getElementById('resCheckoutBtn');
+                        if (squareCheckoutBtn) {
+                            squareCheckoutBtn.textContent = 'Pay now';
+                            squareCheckoutBtn.target = '_top';
+                            squareCheckoutBtn.href = squarePayUrl;
+                            squareCheckoutBtn.onclick = function (ev) {
+                                ev.preventDefault();
+                                openSquarePayNow();
                             };
                         }
                     }

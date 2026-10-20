@@ -1,16 +1,16 @@
 /**
  * Deposit methods and the public Square switch.
  *
- * Square on the public page is a label only. It does not charge a card.
- * SCHEDI_SQUARE_PUBLIC_ENABLED is the global kill switch. It stays false until
- * Square is turned on later. A business can also leave paymentGateways.square off.
- * Both have to be on before a client can pick Square.
+ * Square is on. A client can pay with Square only when this business has
+ * connected its own Square merchant (squareReady). Schedi never charges a
+ * platform Square account. When Stripe and Square are both ready, cardProcessor
+ * picks the one clients see. Missing cardProcessor means Stripe.
  *
  * "Pay at Appt" stays the public label. The owner roster treats that choice as
  * in-person cash (paidMethod "cash") once the visit is marked paid.
  */
 
-export const SCHEDI_SQUARE_PUBLIC_ENABLED = false;
+export const SCHEDI_SQUARE_PUBLIC_ENABLED = true;
 
 export const DEPOSIT_METHOD_KEYS = ['card', 'cashapp', 'zelle', 'venmo', 'paypal'];
 
@@ -53,12 +53,46 @@ export function squareMerchantReady(tenant) {
   return !!(tenant && tenant.squareReady === true);
 }
 
+function planName(tenant) {
+  if (tenant && (tenant.complimentaryPro === true || tenant.billingExempt === true)) return 'pro';
+  const stored = String((tenant && tenant.plan) || '').toLowerCase();
+  if (stored === 'free' || stored === 'starter' || stored === 'pro') return stored;
+  return '';
+}
+
+/** Owner setting. Stripe is the default when both card rails are ready. */
+export function cardProcessorPreference(tenant) {
+  return String((tenant && tenant.cardProcessor) || '').toLowerCase() === 'square' ? 'square' : 'stripe';
+}
+
+export function stripeRailReady(tenant) {
+  return planName(tenant) === 'pro' && gatewayOn(tenant, 'card') && !!(tenant && tenant.stripeConnectReady === true);
+}
+
+export function squareRailReady(tenant) {
+  return SCHEDI_SQUARE_PUBLIC_ENABLED === true && gatewayOn(tenant, 'square') && squareMerchantReady(tenant);
+}
+
+export function bothCardRailsReady(tenant) {
+  return stripeRailReady(tenant) && squareRailReady(tenant);
+}
+
+/** The one card rail clients should see. Empty when neither merchant is ready. */
+export function activeCardRail(tenant) {
+  const stripe = stripeRailReady(tenant);
+  const square = squareRailReady(tenant);
+  if (stripe && square) return cardProcessorPreference(tenant);
+  if (square) return 'square';
+  if (stripe) return 'stripe';
+  return '';
+}
+
 /**
- * Client-facing Square. The kill switch stays off until Square is turned on.
- * Even then, Square is offered only for this tenant's own connected merchant.
+ * Client-facing Square. Offered only for this tenant's own connected merchant,
+ * and only when it is the active card rail.
  */
 export function squareOfferedToClients(tenant) {
-  return SCHEDI_SQUARE_PUBLIC_ENABLED === true && gatewayOn(tenant, 'square') && squareMerchantReady(tenant);
+  return activeCardRail(tenant) === 'square';
 }
 
 /** Public create must not store a Square choice unless this tenant can take the charge. */
@@ -66,7 +100,8 @@ export function squareClientBookingError(booking, tenant) {
   const method = String(booking && booking.paymentMethod || '').toLowerCase();
   if (method !== 'square') return '';
   if (SCHEDI_SQUARE_PUBLIC_ENABLED !== true) return 'square_unavailable';
-  if (!squareMerchantReady(tenant)) return 'square_not_ready';
+  if (!squareMerchantReady(tenant) || !gatewayOn(tenant, 'square')) return 'square_not_ready';
+  if (activeCardRail(tenant) !== 'square') return 'square_not_offered';
   return '';
 }
 

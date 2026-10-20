@@ -337,8 +337,8 @@ describe.skipIf(!chrome)("owner dashboard fixes in the browser", () => {
         expect(paypal.opacity).toBe("1");
         expect(paypal.cursor).toBe("pointer");
         expect(paypal.icon).toBe(mode === "dark" ? "rgb(0,112,224)" : "rgb(0,48,135)");
-        expect(paypal.squareDisabled).toBe(true);
-        expect(Number(paypal.squareOpacity)).toBeCloseTo(0.45, 2);
+        expect(paypal.squareDisabled).toBe(false);
+        expect(Number(paypal.squareOpacity)).toBeCloseTo(1, 2);
       }
       await setTheme("dark");
       await page.click("#tenantPayPaypalCheck");

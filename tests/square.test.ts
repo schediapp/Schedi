@@ -13,6 +13,7 @@ import {
   buildAuthorizeUrl,
   buildPaymentLinkBody,
   connectionSquareReady,
+  squareHostedPayUrl,
   decryptSquareTokens,
   encryptSquareTokens,
   handleSquareHttp,
@@ -742,6 +743,142 @@ describe("Square refunds and payment links", () => {
       locations: [{ id: "LOC", name: "Main", status: "INACTIVE" }],
     })).toBe(false);
     expect(connectionSquareReady({ ...ready, locations: [] })).toBe(false);
+  });
+});
+
+describe("Square pay redirect", () => {
+  const token = "mtBKSQ000001xxxxxxxxxxxx";
+
+  function payRequest(search = "") {
+    return new Request("https://schedi.app/api/square/pay?t=" + TENANT + "&b=" + BOOKING_ID + "&k=" + token + "&kind=card" + search);
+  }
+
+  it("redirects only to this merchant's Square payment link", async () => {
+    const key = await tokenKey();
+    const cipher = await encryptSquareTokens(key.raw, { accessToken: "sq_at", refreshToken: "sq_rt" });
+    const calls: string[] = [];
+    const squareFetch = vi.fn(async (url: string, init?: RequestInit) => {
+      calls.push(String(url));
+      const headers = (init?.headers || {}) as Record<string, string>;
+      expect(headers.Authorization || "").not.toContain("secret");
+      if (String(url).includes("/v2/locations")) {
+        expect(headers.Authorization).toBe("Bearer sq_at");
+        return jsonResponse({ locations: [{ id: "LOC", name: "Main", status: "ACTIVE" }] });
+      }
+      return jsonResponse({
+        payment_link: { id: "link_1", url: "https://sandbox.square.link/u/abc", order_id: "ord_9" },
+      });
+    });
+    const res = await handleSquareHttp(
+      payRequest(),
+      { AUTH_KV: kv(), SQUARE_TOKEN_KEY: key.b64, SQUARE_APPLICATION_ID: "sq0idp-test", SQUARE_APPLICATION_SECRET: "secret" },
+      "",
+      "/api/square/pay",
+      {
+        json: (body: unknown, status = 200) => jsonResponse(body, status),
+        firebaseAnonymousToken: async () => "tok",
+        getTenantById: async () => ({ id: TENANT, name: "Acme", plan: "starter", squareReady: true, slug: "acme", paymentGateways: { square: true } }),
+        planName: () => "starter",
+        bookingPrice: () => 25,
+        depositOn: () => false,
+        slugFor: () => "acme",
+        loadConnection: async () => ({
+          merchantId: "MERCHANT",
+          cipher,
+          expiresAt: new Date(Date.now() + 10 * 86400000).toISOString(),
+          locationId: "LOC",
+          locationName: "Main",
+        }),
+        loadAppointments: async () => [booking()],
+        saveAppointments: async () => {},
+        squareFetch,
+      },
+    );
+    expect(res.status).toBe(302);
+    expect(res.headers.get("Location")).toBe("https://sandbox.square.link/u/abc");
+    expect(calls).toEqual([
+      "https://connect.squareupsandbox.com/v2/locations",
+      "https://connect.squareupsandbox.com/v2/online-checkout/payment-links",
+    ]);
+  });
+
+  it("does not call Square when this merchant is not connected", async () => {
+    const squareFetch = vi.fn();
+    const res = await handleSquareHttp(
+      payRequest(),
+      { AUTH_KV: kv(), SQUARE_APPLICATION_SECRET: "schedi-platform-secret" },
+      "",
+      "/api/square/pay",
+      {
+        json: (body: unknown, status = 200) => jsonResponse(body, status),
+        firebaseAnonymousToken: async () => "tok",
+        getTenantById: async () => ({ id: TENANT, plan: "starter", squareReady: false }),
+        loadAppointments: async () => [booking()],
+        squareFetch,
+      },
+    );
+    expect(res.status).toBe(409);
+    expect(await res.text()).toContain("Finish Square setup to accept cards. Nothing was charged.");
+    expect(squareFetch).not.toHaveBeenCalled();
+  });
+
+  it("does not call Square when the manage token does not match", async () => {
+    const squareFetch = vi.fn();
+    const res = await handleSquareHttp(
+      new Request("https://schedi.app/api/square/pay?t=" + TENANT + "&b=" + BOOKING_ID + "&k=" + "b".repeat(24)),
+      { AUTH_KV: kv() },
+      "",
+      "/api/square/pay",
+      {
+        json: (body: unknown, status = 200) => jsonResponse(body, status),
+        firebaseAnonymousToken: async () => "tok",
+        getTenantById: async () => ({ id: TENANT, squareReady: true }),
+        loadAppointments: async () => [booking()],
+        squareFetch,
+      },
+    );
+    expect(res.status).toBe(400);
+    expect(squareFetch).not.toHaveBeenCalled();
+  });
+
+  it("does not redirect to a non-Square host", async () => {
+    const key = await tokenKey();
+    const cipher = await encryptSquareTokens(key.raw, { accessToken: "sq_at", refreshToken: "sq_rt" });
+    const squareFetch = vi.fn(async (url: string) => {
+      if (String(url).includes("/v2/locations")) {
+        return jsonResponse({ locations: [{ id: "LOC", name: "Main", status: "ACTIVE" }] });
+      }
+      return jsonResponse({ payment_link: { id: "link_1", url: "https://checkout.stripe.com/c/pay/phish", order_id: "ord_9" } });
+    });
+    const res = await handleSquareHttp(
+      payRequest(),
+      { AUTH_KV: kv(), SQUARE_TOKEN_KEY: key.b64, SQUARE_APPLICATION_SECRET: "secret" },
+      "",
+      "/api/square/pay",
+      {
+        json: (body: unknown, status = 200) => jsonResponse(body, status),
+        firebaseAnonymousToken: async () => "tok",
+        getTenantById: async () => ({ id: TENANT, name: "Acme", plan: "starter", squareReady: true, slug: "acme" }),
+        planName: () => "starter",
+        bookingPrice: () => 25,
+        depositOn: () => false,
+        slugFor: () => "acme",
+        loadConnection: async () => ({
+          merchantId: "MERCHANT",
+          cipher,
+          expiresAt: new Date(Date.now() + 10 * 86400000).toISOString(),
+          locationId: "LOC",
+        }),
+        loadAppointments: async () => [booking()],
+        saveAppointments: async () => {},
+        squareFetch,
+      },
+    );
+    expect(res.status).not.toBe(302);
+    expect(res.headers.get("Location")).toBeNull();
+    expect(squareHostedPayUrl("https://checkout.stripe.com/c/pay/phish")).toBe(false);
+    expect(squareHostedPayUrl("https://connect.squareup.com/oauth2/authorize")).toBe(false);
+    expect(squareHostedPayUrl("https://sandbox.square.link/u/abc")).toBe(true);
   });
 });
 
