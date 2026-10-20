@@ -370,43 +370,64 @@ function logRefreshFailOpen(tenantId, reason) {
   }));
 }
 
-export async function busyBlocksForTenant(env, tenantId, deps) {
-  const id = clipId(tenantId);
-  if (!id || !env || !env.AUTH_KV) return [];
+async function cachedBusyBlocks(env, tenantId) {
+  try {
+    const cache = await readBusy(env, tenantId);
+    return cache.blocks || [];
+  } catch (_) {
+    return [];
+  }
+}
+
+async function refreshBusyBlocks(env, id, deps) {
   const secret = await readSecret(env, id);
-  if (!secret.feeds.length) return [];
+  if (!secret.feeds.length) return { blocks: [] };
   const cache = await readBusy(env, id);
   const freshMs = deps && Number(deps.freshMs) > 0 ? Number(deps.freshMs) : FRESH_MS;
   const age = Date.now() - (Number(cache.syncedAt) || 0);
-  if (cache.syncedAt && age >= 0 && age < freshMs) return cache.blocks || [];
+  if (cache.syncedAt && age >= 0 && age < freshMs) return { blocks: cache.blocks || [] };
   const attemptAge = Date.now() - (Number(cache.refreshAttemptedAt) || 0);
-  if (cache.refreshAttemptedAt && attemptAge >= 0 && attemptAge < freshMs) return cache.blocks || [];
-  const timeoutMs = deps && Number(deps.timeoutMs) > 0 ? Number(deps.timeoutMs) : 4000;
-  const running = inflightRefresh.get(id);
-  if (running) {
-    try {
-      const shared = await withTimeout(running, timeoutMs);
-      return (shared && shared.blocks) || cache.blocks || [];
-    } catch (err) {
-      logRefreshFailOpen(id, err && err.message);
-      return cache.blocks || [];
-    }
-  }
+  if (cache.refreshAttemptedAt && attemptAge >= 0 && attemptAge < freshMs) return { blocks: cache.blocks || [] };
   await writeBusy(env, id, {
     syncedAt: Number(cache.syncedAt) || 0,
     blocks: cache.blocks || [],
     sources: cache.sources || [],
     refreshAttemptedAt: Date.now(),
   });
-  const job = syncTenantFeeds(env, id, deps || {});
+  return syncTenantFeeds(env, id, deps || {});
+}
+
+export async function busyBlocksForTenant(env, tenantId, deps) {
+  const id = clipId(tenantId);
+  if (!id || !env || !env.AUTH_KV) return [];
+  const timeoutMs = deps && Number(deps.timeoutMs) > 0 ? Number(deps.timeoutMs) : 4000;
+  const running = inflightRefresh.get(id);
+  if (running) {
+    try {
+      const shared = await withTimeout(running, timeoutMs);
+      return (shared && shared.blocks) || [];
+    } catch (err) {
+      logRefreshFailOpen(id, err && err.message);
+      return cachedBusyBlocks(env, id);
+    }
+  }
+  // Register before any KV read so concurrent callers in this isolate share one refresh.
+  let settle;
+  const job = new Promise((resolve, reject) => {
+    settle = { resolve, reject };
+  });
   inflightRefresh.set(id, job);
-  job.then(() => { inflightRefresh.delete(id); }, () => { inflightRefresh.delete(id); });
+  const clear = () => {
+    if (inflightRefresh.get(id) === job) inflightRefresh.delete(id);
+  };
+  job.then(clear, clear);
+  refreshBusyBlocks(env, id, deps).then((result) => settle.resolve(result), (err) => settle.reject(err));
   try {
     const fresh = await withTimeout(job, timeoutMs);
     return (fresh && fresh.blocks) || [];
   } catch (err) {
     logRefreshFailOpen(id, err && err.message);
-    return cache.blocks || [];
+    return cachedBusyBlocks(env, id);
   }
 }
 

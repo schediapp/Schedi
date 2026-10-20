@@ -383,6 +383,37 @@ describe("public busy ranges", () => {
       await new Promise((resolve) => setTimeout(resolve, 20));
     }
   });
+
+  it("runs one feed fetch for five concurrent stale booking checks", async () => {
+    const kv = memoryKv();
+    const precise = [{ start: "2026-10-21T15:07:00.000Z", end: "2026-10-21T15:22:00.000Z" }];
+    await kv.put("calBusy:race", JSON.stringify({ syncedAt: Date.now() - 10 * 60 * 1000, blocks: precise }));
+    await kv.put("calFeeds:race", JSON.stringify({
+      tenantId: "race",
+      feeds: [{ id: "feed1", url: "https://calendar.google.com/calendar/ical/secret/basic.ics" }],
+    }));
+    let fetches = 0;
+    let release: () => void = () => {};
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    const deps = {
+      freshMs: 120000,
+      timeoutMs: 4000,
+      resolve: async () => ["8.8.8.8"],
+      fetch: async () => {
+        fetches += 1;
+        await gate;
+        return { status: 200, ok: true, headers: { get: () => null }, text: async () => "BEGIN:VCALENDAR" };
+      },
+    };
+    const pending = [0, 1, 2, 3, 4].map(() => busyBlocksForTenant({ AUTH_KV: kv }, "race", deps));
+    for (let i = 0; i < 20 && fetches < 1; i++) await new Promise((resolve) => setTimeout(resolve, 5));
+    expect(fetches).toBe(1);
+    release();
+    const rows = await Promise.all(pending);
+    expect(fetches).toBe(1);
+    expect(rows).toHaveLength(5);
+    for (const row of rows) expect(row).toEqual(precise);
+  });
 });
 
 function memoryKv() {
