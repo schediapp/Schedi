@@ -186,6 +186,106 @@ describe.skipIf(!chrome)("booking document browser", () => {
       const stillBooking = await closed.page.$("#serviceListContainer");
       expect(stillBooking).toBeNull();
       expect(closed.errors, closed.errors.join("\n")).toEqual([]);
+
+      const limitedHtml = fillBookingDocument(bookingHtml, {
+        slug: "axeldelcidphotography",
+        fields: fixture({
+          id: "axeldelcidphotography",
+          name: "Axel Delcid Photography",
+          slug: "axeldelcidphotography",
+          subscriptionStatus: "active",
+          acceptingBookings: true,
+          slotInterval: 60,
+          minNoticeHours: 0,
+          appointmentBufferMins: 0,
+          operatingHours: {
+            ...hours,
+            Fri: { open: true, start: "11:00 AM", end: "07:00 PM" },
+            Sun: { open: true, start: "09:00 AM", end: "05:00 PM" },
+          },
+          blockedTimes: [{
+            startDate: "2026-10-25",
+            endDate: "2026-10-25",
+            allDay: true,
+            note: "Studio closed",
+          }],
+          specialHours: {
+            "2027-09-24": { closed: false, ranges: [{ start: "09:00 AM", end: "05:00 PM" }] },
+          },
+        }),
+      });
+      pages.set("/axel", limitedHtml);
+      const limited = await browser.newPage();
+      await limited.setViewport({ width: 1280, height: 900 });
+      await limited.evaluateOnNewDocument(() => {
+        const fixed = Date.parse("2026-10-20T15:00:00Z");
+        const RealDate = Date;
+        class PatchedDate extends RealDate {
+          constructor(...args) {
+            if (args.length === 0) super(fixed);
+            else super(...args);
+          }
+          static now() { return fixed; }
+        }
+        PatchedDate.parse = RealDate.parse;
+        PatchedDate.UTC = RealDate.UTC;
+        window.Date = PatchedDate;
+      });
+      const hourErrors: string[] = [];
+      limited.on("pageerror", (error) => hourErrors.push(String(error)));
+      limited.on("console", (msg) => {
+        if (msg.type() === "error") hourErrors.push(msg.text());
+      });
+      await limited.setRequestInterception(true);
+      limited.on("request", (request) => {
+        const url = request.url();
+        if (url.startsWith(`http://127.0.0.1:${port}`)) {
+          request.continue();
+          return;
+        }
+        if (url.includes("firebasejs")) {
+          fulfill(request, 200, "application/javascript", firebaseStub);
+          return;
+        }
+        if (url.includes("/api/calendar-busy")) {
+          fulfill(request, 200, "application/json", '{"ok":true,"blocks":[]}');
+          return;
+        }
+        const type = request.resourceType();
+        if (type === "script") {
+          fulfill(request, 200, "application/javascript", "");
+          return;
+        }
+        if (type === "stylesheet" || type === "font" || type === "image") {
+          fulfill(request, 200, type === "stylesheet" ? "text/css" : "text/plain", "");
+          return;
+        }
+        fulfill(request, 204, "text/plain", "");
+      });
+      await limited.goto(`http://127.0.0.1:${port}/axel`, { waitUntil: "domcontentloaded", timeout: 15000 });
+      await limited.waitForFunction(() => {
+        const day = document.querySelector('button[aria-label*="October 25"]');
+        return !!day && day.classList.contains("cal-day-away") && (day.textContent || "").includes("Studio closed");
+      }, { timeout: 10000 });
+      await limited.click('button[aria-label*="October 25"]');
+      await limited.waitForFunction(() => (document.getElementById("timeSlotsContainer")?.textContent || "").includes("Unavailable — Studio closed"));
+      for (let step = 0; step < 11; step += 1) {
+        await limited.click('button[onclick="nextMonth()"]');
+      }
+      await limited.waitForFunction(() => {
+        const title = document.getElementById("monthTitleLabel");
+        const day = document.querySelector('button[aria-label*="September 24"]');
+        return (title?.textContent || "").includes("September 2027")
+          && !!day
+          && day.classList.contains("cal-day-special")
+          && (day.textContent || "").includes("Special");
+      }, { timeout: 10000 });
+      await limited.click('button[aria-label*="September 24"]');
+      await limited.waitForFunction(() => {
+        const text = document.getElementById("timeSlotsContainer")?.textContent || "";
+        return text.includes("09:00 AM") && text.includes("04:00 PM") && !text.includes("06:00 PM");
+      }, { timeout: 10000 });
+      expect(hourErrors, hourErrors.join("\n")).toEqual([]);
     } finally {
       await browser.close();
       await new Promise<void>((resolve) => server.close(() => resolve()));

@@ -11,6 +11,7 @@
  */
 import { adminAuthHeaders } from './firebase-admin.js';
 import { tenantPlanName } from './cancellation-fee.js';
+import { BOOKING_PAGE_KEEP_FIELDS } from '../../../worker/booking-page-keep.js';
 
 /** Top-level tenant keys that must never be on the public doc. */
 export const PRIVATE_TENANT_KEYS = [
@@ -221,6 +222,8 @@ export function shapePublicPatch(rawPatch) {
   return { pub, priv, drop };
 }
 
+const BOOKING_KEEP = new Set(BOOKING_PAGE_KEEP_FIELDS);
+
 /** Names that a dry-run cleanup should remove from an existing public doc. */
 export function publicFieldsToTrim(pubTenant) {
   const paths = privatePathsOnPublic(pubTenant);
@@ -233,7 +236,7 @@ export function publicFieldsToTrim(pubTenant) {
       if (Object.prototype.hasOwnProperty.call(pub, key) && paths.indexOf(key) < 0) paths.push(key);
     }
   }
-  return paths;
+  return paths.filter((path) => PUBLIC_ADDRESS_KEYS.includes(path) || !BOOKING_KEEP.has(path));
 }
 
 /** Overlay private fields onto a (public) tenant object, in place. */

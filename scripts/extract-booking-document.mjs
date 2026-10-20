@@ -7,6 +7,7 @@
 // This walk evaluates template escapes (\ \, \/, \n, \uXXXX, and the rest) and
 // replaces ${...} interpolations with booking tokens.
 import { readFileSync, writeFileSync } from "node:fs";
+import { writeBookingFieldModule } from "./booking-fields.mjs";
 
 const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const fn = html.indexOf("function generateStandaloneHtmlForTenant");
@@ -112,5 +113,7 @@ if (out.includes("provision")) throw new Error("booking document still contains 
 if (out.includes("/^https:\\\\/\\\\//i")) throw new Error("booking document still has an escaped https regex");
 
 const banner = "<!-- schedi public booking document. No owner portal and no agency code. -->\n";
-writeFileSync(new URL("../site/booking.html", import.meta.url), banner + out);
+const document = banner + out;
+writeFileSync(new URL("../site/booking.html", import.meta.url), document);
+writeBookingFieldModule(document);
 console.log("wrote site/booking.html", out.length);

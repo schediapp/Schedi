@@ -12,6 +12,7 @@ import {
   fillBookingDocument,
   isBookingDocument,
 } from "./booking-document";
+import { BOOKING_MASK_FIELDS } from "./booking-page-keep.js";
 import { decodeFirestoreFields, localBusinessJsonLd, localBusinessScript, tenantFromFirestore, type TenantSeo } from "./local-business";
 import { noteBookingVisit, type PageVisitDataset, shouldCountBookingVisit, visitDay } from "./page-visits";
 import {
@@ -323,42 +324,7 @@ function injectNoindex(html: string): string {
 
 export { tenantFromFirestore };
 
-const BOOKING_FIELD_MASK = [
-  "name",
-  "industry",
-  "slug",
-  "seoPublic",
-  "address",
-  "location",
-  "businessAddress",
-  "businessLocation",
-  "showPublicAddress",
-  "city",
-  "businessCity",
-  "state",
-  "businessState",
-  "services",
-  "timezone",
-  "timeZone",
-  "plan",
-  "acceptingBookings",
-  "subscriptionStatus",
-  "complimentaryPro",
-  "billingExempt",
-  "monthlyPrice",
-  "logo",
-  "logoUrl",
-  "paymentGateways",
-  "operatingHours",
-  "deposit",
-  "cancellationFee",
-  "notifications",
-  "hours",
-  "cashAppTag",
-  "phone",
-  "businessPhone",
-  "description",
-].map((field) => `mask.fieldPaths=${field}`).join("&");
+export const BOOKING_FIELD_MASK = BOOKING_MASK_FIELDS.map((field) => `mask.fieldPaths=${encodeURIComponent(field)}`).join("&");
 
 type TenantLookup = {
   tenant: TenantSeo | null;
