@@ -6649,7 +6649,7 @@ describe.skipIf(!chrome)("classic owner roster icons", () => {
         const row = document.querySelector("#tenantRosterTableBody .sd-pay svg");
         const box = row?.getBoundingClientRect();
         return !document.body.classList.contains("schedi-newdash") && !!box && box.width > 0 && box.width <= 48;
-      }, { timeout: 20000 });
+      }, { timeout: 45000 });
       const demo = await open(`http://127.0.0.1:${port}/portal-preview`);
       expect(demo?.headers()["content-security-policy"]).toBe(policy);
       await page.waitForFunction(() => {

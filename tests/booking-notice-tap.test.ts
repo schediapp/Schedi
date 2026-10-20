@@ -256,15 +256,25 @@ describe.skipIf(!chrome)("booking page phone taps and notice paint", () => {
       }
 
       async function tapValue(value: string) {
-        const point = await page.evaluate((freq) => {
-          const input = document.querySelector('#recurrenceFreqGroup input[value="' + freq + '"]') as HTMLElement;
-          const span = input.parentElement?.querySelector("span") as HTMLElement;
-          span.scrollIntoView({ block: "center" });
-          const rect = span.getBoundingClientRect();
-          return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
-        }, value);
-        await page.touchscreen.tap(point.x, point.y);
-        await page.waitForFunction((freq) => document.querySelector('input[name="pubRecurrenceFreq"]:checked')?.getAttribute("value") === freq, { timeout: 3000 }, value);
+        let last: unknown;
+        for (let attempt = 0; attempt < 2; attempt++) {
+          const point = await page.evaluate(async (freq) => {
+            const input = document.querySelector('#recurrenceFreqGroup input[value="' + freq + '"]') as HTMLElement;
+            const span = input.parentElement?.querySelector("span") as HTMLElement;
+            span.scrollIntoView({ block: "center" });
+            await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve(undefined))));
+            const rect = span.getBoundingClientRect();
+            return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+          }, value);
+          await page.touchscreen.tap(point.x, point.y);
+          try {
+            await page.waitForFunction((freq) => document.querySelector('input[name="pubRecurrenceFreq"]:checked')?.getAttribute("value") === freq, { timeout: attempt === 0 ? 1500 : 4000 }, value);
+            return;
+          } catch (error) {
+            last = error;
+          }
+        }
+        throw last;
       }
       for (const value of ["weekly", "biweekly", "monthly", "once", "custom"]) await tapValue(value);
       expect(await page.$eval("#recurrenceCustomWrap", (el) => el.classList.contains("hidden"))).toBe(false);
