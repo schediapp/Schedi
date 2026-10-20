@@ -3616,6 +3616,84 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
         // Reset demo control removed from UI. Kept as a no-op so leftover calls cannot wipe data.
         window.resetDemoData = function() { return false; }
 
+        var schediHqPendingTenantId = '';
+        var HQ_RETURN_NOTICE_KEY = 'schedi.hqReturnNotice';
+        var HQ_RETURN_NOTICE = 'That business isn\'t available to open.';
+        var HQ_MANAGED_TENANT_KEY = 'schedi.hqManagedTenantId';
+
+        function hqIsManagingPortal() {
+            return !!(platformState.isAgencyMasterLoggedIn && platformState.isTenantOwnerLoggedIn && !platformState.ownerSelfSession);
+        }
+
+        function hqRememberManagedTenant(id) {
+            var clean = String(id || '').trim();
+            if (!clean) return;
+            try { window.sessionStorage.setItem(HQ_MANAGED_TENANT_KEY, clean); } catch (errRemember) {}
+        }
+
+        function hqStoredManagedTenant() {
+            try { return String(window.sessionStorage.getItem(HQ_MANAGED_TENANT_KEY) || '').trim(); } catch (errRead) { return ''; }
+        }
+
+        function hqForgetManagedTenant() {
+            try { window.sessionStorage.removeItem(HQ_MANAGED_TENANT_KEY); } catch (errForget) {}
+        }
+
+        function hqReturnToDirectory(message) {
+            var note = String(message || HQ_RETURN_NOTICE);
+            try { hqForgetManagedTenant(); } catch (errForgetDir) {}
+            try { window.sessionStorage.setItem(HQ_RETURN_NOTICE_KEY, note); } catch (errStore) {}
+            try { window.location.assign('/hq'); } catch (errGo) {}
+        }
+
+        function consumeHqReturnNotice() {
+            var note = '';
+            try {
+                note = String(window.sessionStorage.getItem(HQ_RETURN_NOTICE_KEY) || '');
+                if (note) window.sessionStorage.removeItem(HQ_RETURN_NOTICE_KEY);
+            } catch (errNote) { note = ''; }
+            if (!note) return;
+            try { showToast(note, 'info'); } catch (errToast) {}
+        }
+
+        // HQ may only manage a business that is actually in the public list.
+        // A missing id goes back to HQ. It must never become the first other business.
+        function settleActiveTenantAfterCloud(loadedTenants) {
+            var rows = Array.isArray(loadedTenants) ? loadedTenants : [];
+            var pending = String(schediHqPendingTenantId || '');
+            var i;
+            if (pending) {
+                var pendingRow = null;
+                for (i = 0; i < rows.length; i++) {
+                    if (rows[i] && String(rows[i].id) === pending) { pendingRow = rows[i]; break; }
+                }
+                if (!pendingRow) {
+                    hqReturnToDirectory(HQ_RETURN_NOTICE);
+                    return 'bail';
+                }
+                platformState.activeTenantId = pendingRow.id;
+                schediHqPendingTenantId = '';
+                return 'open';
+            }
+            var found = null;
+            for (i = 0; i < rows.length; i++) {
+                if (rows[i] && rows[i].id === platformState.activeTenantId) { found = rows[i]; break; }
+            }
+            if (hqIsManagingPortal()) {
+                if (found) {
+                    platformState.activeTenantId = found.id;
+                    try { hqRememberManagedTenant(found.id); } catch (errRememberPin) {}
+                    return 'pinned';
+                }
+                hqReturnToDirectory(HQ_RETURN_NOTICE);
+                return 'bail';
+            }
+            if (!found && rows.length > 0 && rows[0] && rows[0].id) {
+                platformState.activeTenantId = rows[0].id;
+            }
+            return 'default';
+        }
+
         function attachCloudDbSync() {
             if (!window.db || !window.collection) return;
             if (window.__siteforge_sync_attached) return;
@@ -3676,10 +3754,8 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
                     }
                     var mintedManageTokens = ensureAppointmentManageTokens(loadedTenants);
                     var assignedPlans = assignMissingPlans(loadedTenants);
-                    const validActive = loadedTenants.find(t => t.id === platformState.activeTenantId);
-                    if (!validActive && loadedTenants.length > 0) {
-                        platformState.activeTenantId = loadedTenants[0].id;
-                    }
+                    var tenantSettle = settleActiveTenantAfterCloud(loadedTenants);
+                    if (tenantSettle === 'bail') return;
                     platformState.tenants = loadedTenants;
                     window.__schediCloudTenantsLoaded = true;
                     try {
@@ -3885,9 +3961,11 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
             try { applySchediAuthMetaOptimistic(); } catch (errAuthOpt) {}
             if (isAgencyHqRoute()) {
                 switchPlatformMode('agency');
+                try { hqForgetManagedTenant(); } catch (errForgetBoot) {}
             } else {
                 switchPlatformMode('tenant');
             }
+            try { consumeHqReturnNotice(); } catch (errHqNote) {}
             syncAgencyChrome();
             try { syncTenantAutoLogoffSelect(); } catch (errSelBoot) {}
             try { startTenantOwnerIdleWatch(); } catch (errIdleBoot) {}
@@ -8355,29 +8433,32 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
 
         function hqManagedPortalUrl(tenant) {
             var demo = window.__SCHEDI_HQ_DEMO === true;
-            if (!demo) return '';
-            var slug = '';
-            var id = '';
-            try {
-                slug = String((tenant && (tenant.slug || tenant.id)) || '').trim();
-                id = String((tenant && tenant.id) || '').trim();
-            } catch (errId) {}
-            var params = new URLSearchParams();
-            var keep = ['booking', 'date', 'biz', 'tenant', 'slug', 'from', 'appt', 'ref'];
-            try {
-                var current = new URLSearchParams(window.location.search || '');
-                keep.forEach(function (key) {
-                    if (current.has(key)) params.set(key, current.get(key) || '');
-                });
-            } catch (errCur) {}
-            if (slug) params.set('biz', slug);
-            if (id) params.set('tenant', id);
             if (demo) {
+                var slug = '';
+                var id = '';
+                try {
+                    slug = String((tenant && (tenant.slug || tenant.id)) || '').trim();
+                    id = String((tenant && tenant.id) || '').trim();
+                } catch (errId) {}
+                var params = new URLSearchParams();
+                var keep = ['booking', 'date', 'biz', 'tenant', 'slug', 'from', 'appt', 'ref'];
+                try {
+                    var current = new URLSearchParams(window.location.search || '');
+                    keep.forEach(function (key) {
+                        if (current.has(key)) params.set(key, current.get(key) || '');
+                    });
+                } catch (errCur) {}
+                if (slug) params.set('biz', slug);
+                if (id) params.set('tenant', id);
                 params.delete('newhq');
                 params.set('demo', '1');
                 var demoQs = params.toString();
                 return '/portal-preview' + (demoQs ? '?' + demoQs : '');
             }
+            var realId = '';
+            try { realId = String((tenant && tenant.id) || '').trim(); } catch (errReal) { realId = ''; }
+            if (!realId) return '';
+            return '/login?tenant=' + encodeURIComponent(realId) + '&from=hq';
         }
 
         window.loginAsTenantOwner = function(tenantId) {
@@ -13124,6 +13205,7 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
 
         window.handleTenantLogout = function(opts) {
             opts = opts || {};
+            try { hqForgetManagedTenant(); } catch (errForgetOut) {}
             try { stopTenantOwnerIdleWatch(); } catch (errIdle) {}
             platformState.isTenantOwnerLoggedIn = false;
             platformState.ownerSelfSession = false;
