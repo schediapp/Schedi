@@ -118,11 +118,12 @@ describe("booking QR code", () => {
     }
     const saveAt = html.indexOf("window.schediQrSave = async function");
     const save = html.slice(saveAt, html.indexOf("window.schediQrDownload = async function"));
-    expect(save.indexOf("schediQrDeliverFile")).toBeGreaterThan(-1);
-    expect(save.indexOf("schediQrDeliverFile")).toBeLessThan(save.indexOf("/api/business-logo"));
+    expect(save).not.toContain("schediQrDeliverFile");
+    expect(save).not.toContain("QR code saved on this device.");
     expect(save).toContain("schediAuthSession");
     expect(save).toContain("purpose: 'qr'");
-    expect(save).toContain("QR code saved on this device.");
+    expect(save).toContain("QR code saved.");
+    expect(save).toContain("This QR code is already saved.");
     const downloadAt = html.indexOf("window.schediQrDownload = async function");
     const download = html.slice(downloadAt, downloadAt + 1400);
     expect(download.indexOf("src.indexOf('https://') === 0")).toBeGreaterThan(-1);
@@ -345,5 +346,277 @@ describe("booking QR code", () => {
     await save();
     expect(posts[0].tenantId).toBeUndefined();
     expect(toasts).toEqual(["Please sign in again to upload"]);
+  });
+
+  it("uploads a QR card without sharing it and names the failure", async () => {
+    function extract(name: string): string {
+      const start = html.indexOf("function " + name);
+      const brace = html.indexOf("{", start);
+      let depth = 0;
+      for (let i = brace; i < html.length; i++) {
+        if (html[i] === "{") depth++;
+        else if (html[i] === "}") {
+          depth--;
+          if (depth === 0) return html.slice(start, i + 1);
+        }
+      }
+      throw new Error("could not extract " + name);
+    }
+    const saveStart = html.indexOf("function schediManagedTenantId");
+    const saveEnd = html.indexOf("window.schediQrDownload = async function");
+    const source = extract("schediQrStoredUrl") + "\n" + html.slice(saveStart, saveEnd);
+    const toasts: { message: string; kind: string }[] = [];
+    const posts: { purpose?: string }[] = [];
+    const state = {
+      pending: { blob: { type: "image/png" }, type: "image/png" } as { blob: { type: string }; type: string } | null,
+      demo: false,
+      tenant: { id: "axeldelcidphotography", qrUrl: "https://schedi.app/qr/axeldelcidphotography.png" } as { id: string; qrUrl?: string },
+      result: { ok: true, status: 200, error: "", url: "https://schedi.app/qr/saved.png" },
+      throwFetch: false,
+    };
+    const posted = new Function(
+      "fetch",
+      "localStorage",
+      "showToast",
+      "state",
+      `var window = { get __SCHEDI_DEMO() { return state.demo; } };
+       var schediQrPending = null;
+       var platformState = { isAgencyMasterLoggedIn: false, ownerSelfSession: true, activeTenantId: "" };
+       function getTenant() { return state.tenant; }
+       function schediAuthSession() { return "owner-token"; }
+       function schediAuthMeta() { return { role: "owner" }; }
+       function blobToBase64() { return Promise.resolve("abc"); }
+       function safeHttpsUrl(value) { return String(value || "").indexOf("https://") === 0 ? value : ""; }
+       function saveState() { return Promise.resolve(); }
+       function schediQrShowFilled() {}
+       function schediQrDeliverFile() { throw new Error("save must not share or download"); }
+       ${source}
+       return function () { schediQrPending = state.pending; return window.schediQrSave(); };`,
+    )(
+      (async (_url: string, init?: RequestInit) => {
+        if (state.throwFetch) throw new Error("offline");
+        posts.push(JSON.parse(String(init?.body || "{}")));
+        return {
+          ok: state.result.ok,
+          status: state.result.status,
+          json: async () => ({ ok: state.result.ok, error: state.result.error, url: state.result.url }),
+        };
+      }) as unknown as typeof fetch,
+      { getItem: () => "" },
+      (message: string, kind: string) => { toasts.push({ message, kind }); },
+      state,
+    );
+    await posted();
+    expect(posts).toHaveLength(1);
+    expect(posts[0].purpose).toBe("qr");
+    expect(toasts).toEqual([{ message: "QR code saved.", kind: "success" }]);
+
+    toasts.length = 0;
+    posts.length = 0;
+    state.pending = null;
+    await posted();
+    expect(posts).toHaveLength(0);
+    expect(toasts).toEqual([{ message: "This QR code is already saved.", kind: "info" }]);
+
+    toasts.length = 0;
+    state.pending = { blob: { type: "image/png" }, type: "image/png" };
+    state.result = { ok: false, status: 400, error: "too_large", url: "" };
+    await posted();
+    expect(toasts).toEqual([{ message: "That file is over 2 MB. Use a smaller QR image.", kind: "error" }]);
+
+    toasts.length = 0;
+    state.result = { ok: false, status: 403, error: "forbidden", url: "" };
+    await posted();
+    expect(toasts).toEqual([{ message: "That business is not on this account.", kind: "error" }]);
+
+    toasts.length = 0;
+    state.throwFetch = true;
+    await posted();
+    expect(toasts).toEqual([{ message: "Could not save that QR code. Check your connection and try again.", kind: "error" }]);
+
+    toasts.length = 0;
+    posts.length = 0;
+    state.throwFetch = false;
+    state.demo = true;
+    await posted();
+    expect(posts).toHaveLength(0);
+    expect(toasts).toEqual([{ message: "Not saved in this demo. The preview stays on this screen only.", kind: "info" }]);
+  });
+
+  it("takes the card, modules, and badge from the brand or the logo", () => {
+    function extract(name: string): string {
+      const start = html.indexOf("function " + name);
+      const brace = html.indexOf("{", start);
+      let depth = 0;
+      for (let i = brace; i < html.length; i++) {
+        if (html[i] === "{") depth++;
+        else if (html[i] === "}") {
+          depth--;
+          if (depth === 0) return html.slice(start, i + 1);
+        }
+      }
+      throw new Error("could not extract " + name);
+    }
+    const names = [
+      "schediQrHex",
+      "schediQrRgb",
+      "schediQrToHex",
+      "schediQrChannel",
+      "schediQrLuminance",
+      "schediQrContrast",
+      "schediQrContrastOnWhite",
+      "schediQrDarkenForQuietZone",
+      "schediQrRgbDistance",
+      "schediQrAverageColor",
+      "schediQrColorsFromPixels",
+      "schediQrLogoPixels",
+      "schediQrLogoColors",
+      "schediQrSavedBrand",
+      "schediQrPalette",
+      "schediQrInk",
+    ];
+    const api = new Function(
+      `${names.map(extract).join("\n")}
+       return {
+         schediQrColorsFromPixels,
+         schediQrDarkenForQuietZone,
+         schediQrContrastOnWhite,
+         schediQrLuminance,
+         schediQrPalette,
+         schediQrSavedBrand,
+         schediQrInk,
+         schediQrLogoPixels,
+         schediQrLogoColors
+       };`,
+    )() as {
+      schediQrColorsFromPixels: (width: number, height: number, data: number[]) => { primary: string; secondary: string } | null;
+      schediQrDarkenForQuietZone: (value: string) => string;
+      schediQrContrastOnWhite: (value: string) => number;
+      schediQrLuminance: (value: string) => number;
+      schediQrPalette: (brand: string, colors: { primary?: string; secondary?: string } | null) => {
+        background: string; background2: string; module: string; badge: string; branded: boolean;
+      };
+      schediQrSavedBrand: (tenant: { brandColor?: string; accentColor?: string; color?: string } | null) => string;
+      schediQrInk: (background: string, background2?: string) => string;
+      schediQrLogoPixels: (img: { naturalWidth?: number; naturalHeight?: number } | null) => { width: number; height: number; data: number[] } | null;
+      schediQrLogoColors: (img: { naturalWidth?: number; naturalHeight?: number } | null) => { primary: string; secondary: string } | null;
+    };
+    const maroon = [0x7a, 0x1f, 0x3d];
+    const navy = [0x1e, 0x3a, 0x5f];
+    const width = 10;
+    const height = 10;
+    const data = new Array(width * height * 4).fill(0);
+    function paint(x0: number, y0: number, x1: number, y1: number, rgb: number[], alpha = 255) {
+      for (let y = y0; y < y1; y++) {
+        for (let x = x0; x < x1; x++) {
+          const p = (y * width + x) * 4;
+          data[p] = rgb[0];
+          data[p + 1] = rgb[1];
+          data[p + 2] = rgb[2];
+          data[p + 3] = alpha;
+        }
+      }
+    }
+    paint(0, 0, 10, 1, [255, 255, 255]);
+    paint(0, 1, 5, 2, [0, 0, 0]);
+    paint(5, 1, 10, 2, [250, 250, 250], 0);
+    paint(0, 2, 10, 7, maroon);
+    paint(0, 7, 10, 10, navy);
+    const colors = api.schediQrColorsFromPixels(width, height, data);
+    expect(colors).not.toBeNull();
+    expect(colors?.primary).toBe("#7a1f3d");
+    expect(colors?.secondary).toBe("#1e3a5f");
+    expect(api.schediQrColorsFromPixels(2, 2, [255, 255, 255, 255, 0, 0, 0, 255, 250, 250, 252, 255, 1, 1, 1, 0])).toBeNull();
+    const solid = new Array(16).fill(0);
+    for (let i = 0; i < 4; i++) {
+      solid[i * 4] = 0x33;
+      solid[i * 4 + 1] = 0x66;
+      solid[i * 4 + 2] = 0x99;
+      solid[i * 4 + 3] = 255;
+    }
+    expect(api.schediQrColorsFromPixels(2, 2, solid)).toEqual({ primary: "#336699", secondary: "" });
+    const gradient = new Array(32 * 4);
+    for (let x = 0; x < 32; x++) {
+      const t = x / 31;
+      gradient[x * 4] = Math.round(0x7a + (0x1e - 0x7a) * t);
+      gradient[x * 4 + 1] = Math.round(0x1f + (0x3a - 0x1f) * t);
+      gradient[x * 4 + 2] = Math.round(0x3d + (0x5f - 0x3d) * t);
+      gradient[x * 4 + 3] = 255;
+    }
+    const ends = api.schediQrColorsFromPixels(32, 1, gradient);
+    const channel = (hex: string, index: number) => parseInt(hex.slice(1 + index * 2, 3 + index * 2), 16);
+    const closeTo = (hex: string, rgb: number[]) => Math.abs(channel(hex, 0) - rgb[0]) <= 24 && Math.abs(channel(hex, 1) - rgb[1]) <= 24 && Math.abs(channel(hex, 2) - rgb[2]) <= 24;
+    expect(ends && closeTo(ends.primary, maroon) || ends && closeTo(ends.secondary, maroon)).toBe(true);
+    expect(ends && closeTo(ends.primary, navy) || ends && closeTo(ends.secondary, navy)).toBe(true);
+    const gradientCard = api.schediQrPalette("", ends);
+    expect(gradientCard.background).not.toBe(gradientCard.background2);
+    expect(api.schediQrContrastOnWhite(gradientCard.module)).toBeGreaterThanOrEqual(4.5);
+    expect(closeTo(gradientCard.module, navy)).toBe(true);
+
+    expect(api.schediQrContrastOnWhite("#10b981")).toBeLessThan(4.5);
+    const darkened = api.schediQrDarkenForQuietZone("#10b981");
+    expect(api.schediQrContrastOnWhite(darkened)).toBeGreaterThanOrEqual(4.5);
+    expect(api.schediQrLuminance(darkened)).toBeLessThan(api.schediQrLuminance("#10b981"));
+    expect(api.schediQrDarkenForQuietZone("#1e3a5f")).toBe("#1e3a5f");
+    expect(api.schediQrContrastOnWhite(api.schediQrDarkenForQuietZone("#ffffff"))).toBeGreaterThanOrEqual(4.5);
+    expect(api.schediQrDarkenForQuietZone("not-a-color")).toBe("#000000");
+
+    const fromLogo = api.schediQrPalette("", colors);
+    expect(fromLogo.branded).toBe(true);
+    expect(fromLogo.background).toBe("#7a1f3d");
+    expect(fromLogo.background2).toBe("#1e3a5f");
+    expect(fromLogo.badge).toBe("#7a1f3d");
+    expect(fromLogo.module).toBe("#1e3a5f");
+    const saved = api.schediQrPalette("#10b981", colors);
+    expect(saved.background).toBe("#10b981");
+    expect(saved.badge).toBe("#10b981");
+    expect(saved.background2).toBe("#10b981");
+    expect(saved.module).toBe(darkened);
+    expect(api.schediQrPalette("", null)).toEqual({
+      background: "#ffffff",
+      background2: "#ffffff",
+      module: "#000000",
+      badge: "",
+      branded: false,
+    });
+    expect(api.schediQrSavedBrand({ accentColor: "#abc", color: "#112233" })).toBe("#aabbcc");
+    expect(api.schediQrSavedBrand({ brandColor: "#1e3a5f", accentColor: "#abcdef" })).toBe("#1e3a5f");
+    expect(api.schediQrSavedBrand(null)).toBe("");
+    expect(api.schediQrInk("#1e3a5f", "#7a1f3d")).toBe("#ffffff");
+    expect(api.schediQrInk("#10b981", "#10b981")).toBe("#111111");
+
+    const sampled = { data: solid };
+    const reads: string[] = [];
+    const documentStub = {
+      createElement() {
+        return {
+          width: 0,
+          height: 0,
+          getContext() {
+            return {
+              clearRect() {},
+              drawImage() { reads.push("draw"); },
+              getImageData() {
+                if (sampled.data === solid) return { data: solid };
+                throw new Error("tainted");
+              },
+            };
+          },
+        };
+      },
+    };
+    const pixels = new Function(
+      "document",
+      `${extract("schediQrLogoPixels")}
+       return schediQrLogoPixels;`,
+    )(documentStub) as (img: { naturalWidth: number; naturalHeight: number } | null) => { width: number; height: number; data: number[] } | null;
+    expect(pixels(null)).toBeNull();
+    const got = pixels({ naturalWidth: 200, naturalHeight: 100 });
+    expect(got && got.width).toBe(96);
+    expect(got && got.height).toBe(48);
+    expect(got && got.data).toBe(solid);
+    expect(reads).toEqual(["draw"]);
+    sampled.data = [];
+    expect(pixels({ naturalWidth: 20, naturalHeight: 20 })).toBeNull();
   });
 });

@@ -150,7 +150,7 @@ describe("logo upload", () => {
     expect(message("session_expired")).toBe("Please sign in again to upload");
     expect(extractFunction(html, "serviceImageMessage")).toContain("Please sign in again to upload");
     expect(extractFunction(html, "showLogoUploadFailure")).toContain("session_expired");
-    const saveAt = html.indexOf("window.schediQrSave = async function");
+    const saveAt = html.indexOf("function schediQrSaveMessage");
     const save = html.slice(saveAt, html.indexOf("window.schediQrDownload = async function"));
     expect(save).toContain("Please sign in again to upload");
     expect(save).toContain("schediManagedTenantId");
