@@ -1276,7 +1276,9 @@ export async function handlePrivateBookingHttp(request, env, origin, path, deps,
         return respond(json, { ok: false, error: 'duplicate_booking' }, 409, origin, isAllowedOrigin);
       }
       const withNew = existing.concat(created);
-      if (!staff) {
+      // sessionCanAccess returns { ok } even when nobody is signed in. Only a real
+      // owner or agency session may skip hours and the notice window.
+      if (!staff.ok) {
         const windowErr = publicWindowReject(tenant, booking, new Date());
         if (windowErr) return respond(json, { ok: false, error: windowErr.error, message: windowErr.message }, 409, origin, isAllowedOrigin);
       }
