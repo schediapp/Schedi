@@ -1,3 +1,4 @@
+import { createServer } from "node:http";
 import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { MARKETING_PAGES } from "../worker/content";
@@ -14,10 +15,11 @@ import {
 import { hqLoginDocument } from "../worker/public-shell";
 import { renderMarketingPage, renderRobots, renderSecurityTxt, SECURITY_TXT_EXPIRES } from "../worker/render";
 
+const chrome = ["/usr/bin/google-chrome", "/usr/bin/google-chrome-stable", "/usr/bin/chromium", "/usr/bin/chromium-browser"].find((path) => existsSync(path));
+
 const HEADERS = readFileSync(new URL("../site/_headers", import.meta.url), "utf8");
 const INDEX = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const HQ = readFileSync(new URL("../site/hq.html", import.meta.url), "utf8");
-const FONT_CSS = readFileSync(new URL("../site/assets/fonts/inter.css", import.meta.url), "utf8");
 
 const SHARED_HEADERS = [
   `Strict-Transport-Security: ${STRICT_TRANSPORT_SECURITY}`,
@@ -39,8 +41,11 @@ function env(): SchediEnv {
         if (path === "/index.html") {
           return new Response(INDEX, { headers: { "content-type": "text/html; charset=utf-8" } });
         }
-        if (path === "/assets/fonts/inter.css") {
-          return new Response(FONT_CSS, { headers: { "content-type": "text/css; charset=utf-8" } });
+        if (path.startsWith("/assets/fonts/")) {
+          const file = new URL(`../site${path}`, import.meta.url);
+          if (!existsSync(file)) return new Response("missing", { status: 404, headers: { "content-type": "text/plain" } });
+          const type = path.endsWith(".css") ? "text/css; charset=utf-8" : "font/woff2";
+          return new Response(readFileSync(file), { headers: { "content-type": type } });
         }
         return new Response("missing", { status: 404, headers: { "content-type": "text/plain" } });
       },
@@ -184,4 +189,79 @@ describe("security and accessibility headers", () => {
     expect(HEADERS).not.toContain("fonts.googleapis.com");
     expect(HEADERS).not.toContain("fonts.gstatic.com");
   });
+});
+
+describe.skipIf(!chrome)("homepage and login in the browser", () => {
+  it("shows the skip link, paints Inter, and links the login labels", async () => {
+    const server = createServer(async (req, res) => {
+      const response = await handleRequest(new Request(`https://schedi.app${req.url || "/"}`), env(), ctx());
+      const headers: Record<string, string> = {};
+      response.headers.forEach((value, key) => {
+        if (key === "strict-transport-security") return;
+        headers[key] = value;
+      });
+      res.writeHead(response.status, headers);
+      res.end(Buffer.from(await response.arrayBuffer()));
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const address = server.address();
+    const port = typeof address === "object" && address ? address.port : 0;
+    const puppeteer = await import("puppeteer-core");
+    const browser = await puppeteer.default.launch({
+      executablePath: chrome,
+      headless: true,
+      args: ["--no-sandbox", "--disable-dev-shm-usage"],
+    });
+    try {
+      const page = await browser.newPage();
+      await page.setViewport({ width: 1280, height: 800 });
+      await page.goto(`http://127.0.0.1:${port}/`, { waitUntil: "networkidle0", timeout: 20000 });
+      const skip = await page.$eval("a.skip", (el) => ({
+        text: el.textContent,
+        href: el.getAttribute("href"),
+      }));
+      expect(skip).toEqual({ text: "Skip to content", href: "#content" });
+      expect(await page.$eval("main", (el) => el.id)).toBe("content");
+      await page.focus("a.skip");
+      const focused = await page.evaluate(() => {
+        const el = document.activeElement as HTMLElement | null;
+        const box = el?.getBoundingClientRect();
+        return { text: el?.textContent || "", top: box?.top ?? -1, visible: (box?.height || 0) > 0 };
+      });
+      expect(focused.text).toBe("Skip to content");
+      expect(focused.top).toBeGreaterThanOrEqual(0);
+      expect(focused.visible).toBe(true);
+      await page.evaluate(() => document.fonts.ready);
+      const font = await page.evaluate(() => {
+        const family = getComputedStyle(document.body).fontFamily;
+        const loaded = [...document.fonts].some((face) => face.family === "Inter" && face.status === "loaded");
+        return { family, loaded };
+      });
+      expect(font.family.toLowerCase()).toContain("inter");
+      expect(font.loaded).toBe(true);
+
+      await page.goto(`http://127.0.0.1:${port}/login`, { waitUntil: "domcontentloaded", timeout: 20000 });
+      const fields = await page.evaluate(() => {
+        const email = document.querySelector("#tenantLoginEmail") as HTMLInputElement | null;
+        const password = document.querySelector("#tenantLoginPassword") as HTMLInputElement | null;
+        const emailLabel = document.querySelector('label[for="tenantLoginEmail"]');
+        const passwordLabel = document.querySelector('label[for="tenantLoginPassword"]');
+        return {
+          email: email?.getAttribute("autocomplete") || "",
+          password: password?.getAttribute("autocomplete") || "",
+          emailLabel: emailLabel?.textContent || "",
+          passwordLabel: passwordLabel?.textContent || "",
+        };
+      });
+      expect(fields).toEqual({
+        email: "email",
+        password: "current-password",
+        emailLabel: "Owner Email",
+        passwordLabel: "Password",
+      });
+    } finally {
+      await browser.close();
+      await new Promise<void>((resolve, reject) => server.close((err) => (err ? reject(err) : resolve())));
+    }
+  }, 40000);
 });
