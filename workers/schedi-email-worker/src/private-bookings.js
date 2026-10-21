@@ -445,17 +445,25 @@ async function rememberReconcileTenant(env, tenantId) {
     return;
   }
   if (raw == null || raw === '') return;
-  let list;
+  let parsed;
   try {
-    list = JSON.parse(raw);
+    parsed = JSON.parse(raw);
   } catch (_) {
     return;
   }
-  if (!Array.isArray(list)) return;
-  const ids = list.map((item) => String(item));
+  if (Array.isArray(parsed)) {
+    const ids = parsed.map((item) => String(item));
+    if (ids.includes(tenantId)) return;
+    ids.push(tenantId);
+    await env.AUTH_KV.put(RECONCILE_TENANTS_KEY, JSON.stringify(ids.slice(0, 5000)));
+    return;
+  }
+  if (!parsed || !Array.isArray(parsed.tenants)) return;
+  const ids = parsed.tenants.map((item) => String(item));
   if (ids.includes(tenantId)) return;
   ids.push(tenantId);
-  await env.AUTH_KV.put(RECONCILE_TENANTS_KEY, JSON.stringify(ids.slice(0, 5000)));
+  parsed.tenants = ids.slice(0, 5000);
+  await env.AUTH_KV.put(RECONCILE_TENANTS_KEY, JSON.stringify(parsed));
 }
 
 /**

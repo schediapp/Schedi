@@ -33,6 +33,7 @@ const PAYMENT_PREFIX = 'sqpay:';
 const REFUND_PREFIX = 'sqref:';
 const RECONCILE_CURSOR_KEY = 'sqrecon:after';
 const RECONCILE_INDEX_KEY = 'sqrecon:tenants';
+const RECONCILE_INDEX_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 const EVENT_PREFIX = 'sqevt:';
 const RECONCILE_CAP = 20;
 const AWAITING_MAX_AGE_MS = 48 * 60 * 60 * 1000;
@@ -1491,19 +1492,36 @@ async function listedAppointmentTenants(env) {
   return ids;
 }
 
+function parseReconcileIndex(raw) {
+  if (raw == null || raw === '') return null;
+  let parsed;
+  try { parsed = JSON.parse(raw); } catch (_) { return null; }
+  if (Array.isArray(parsed)) return { tenants: uniqueTenantIds(parsed), listedAt: 0 };
+  if (parsed && Array.isArray(parsed.tenants)) {
+    const listedAt = Number(parsed.listedAt);
+    return {
+      tenants: uniqueTenantIds(parsed.tenants),
+      listedAt: Number.isFinite(listedAt) ? listedAt : 0,
+    };
+  }
+  return null;
+}
+
+function reconcileIndexFresh(stored, now) {
+  if (!stored || !stored.listedAt) return false;
+  const age = now - stored.listedAt;
+  return age >= 0 && age < RECONCILE_INDEX_MAX_AGE_MS;
+}
+
 async function tenantIdsForReconcile(env, deps) {
   if (Array.isArray(deps && deps.tenantIds)) return uniqueTenantIds(deps.tenantIds);
   if (!env || !env.AUTH_KV) return [];
-  const raw = await env.AUTH_KV.get(RECONCILE_INDEX_KEY);
-  if (raw != null && raw !== '') {
-    try {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) return uniqueTenantIds(parsed);
-    } catch (_) {}
-  }
-  if (typeof env.AUTH_KV.list !== 'function') return [];
+  const now = typeof (deps && deps.now) === 'number' ? deps.now : Date.now();
+  const stored = parseReconcileIndex(await env.AUTH_KV.get(RECONCILE_INDEX_KEY));
+  if (reconcileIndexFresh(stored, now)) return stored.tenants;
+  if (typeof env.AUTH_KV.list !== 'function') return stored ? stored.tenants : [];
   const ids = await listedAppointmentTenants(env);
-  await env.AUTH_KV.put(RECONCILE_INDEX_KEY, JSON.stringify(ids));
+  await env.AUTH_KV.put(RECONCILE_INDEX_KEY, JSON.stringify({ tenants: ids, listedAt: now }));
   return ids;
 }
 

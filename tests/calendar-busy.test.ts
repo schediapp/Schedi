@@ -545,12 +545,13 @@ function feedDeps(body: string) {
 }
 
 describe("calendar cron KV writes", () => {
+  const syncNow = Date.parse("2026-10-20T12:00:00.000Z");
   const block = { start: "2026-10-21T15:00:00.000Z", end: "2026-10-21T16:00:00.000Z" };
   const feed = {
     id: "feed01",
     url: "https://calendar.google.com/calendar/ical/secret/basic.ics",
     addedAt: 1,
-    lastSynced: 111,
+    lastSynced: syncNow,
     eventCount: 1,
     error: "",
   };
@@ -582,7 +583,23 @@ describe("calendar cron KV writes", () => {
     expect(busy.syncedAt).toBe(111);
     expect(busy.blocks).toEqual([block]);
     const secret = JSON.parse(kv.store.get("calFeeds:harbor") || "{}");
-    expect(secret.feeds[0].lastSynced).toBe(111);
+    expect(secret.feeds[0].lastSynced).toBe(syncNow);
+  });
+
+  it("writes lastSynced at most once an hour when busy times are unchanged", async () => {
+    const kv = seedBusy();
+    const secretKey = "calFeeds:harbor";
+    const stored = JSON.parse(kv.store.get(secretKey) || "{}");
+    stored.feeds[0].lastSynced = syncNow - 61 * 60 * 1000;
+    kv.store.set(secretKey, JSON.stringify(stored));
+    await syncAllCalendarFeeds({ AUTH_KV: kv }, feedDeps(BUSY_ICS));
+    expect(kv.puts).toEqual([secretKey]);
+    expect(JSON.parse(kv.store.get(secretKey) || "{}").feeds[0].lastSynced).toBe(syncNow);
+    expect(JSON.parse(kv.store.get("calBusy:harbor") || "{}").syncedAt).toBe(111);
+    kv.puts.length = 0;
+    await syncAllCalendarFeeds({ AUTH_KV: kv }, feedDeps(BUSY_ICS));
+    expect(kv.puts).toEqual([]);
+    expect(JSON.parse(kv.store.get(secretKey) || "{}").feeds[0].lastSynced).toBe(syncNow);
   });
 
   it("still writes when the scheduled sync sees a new busy time", async () => {

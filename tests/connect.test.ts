@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
-import { buildMerchantAccountParams, embeddedAccountSessionParams, enableCardPayments, refreshMerchantCapabilities } from "../src/lib/connect";
+import { buildMerchantAccountParams, embeddedAccountSessionParams, enableCardPayments, MISSING_ACCOUNT_CONFIRM_MS, refreshMerchantCapabilities, SCHEDI_PLATFORM_ACCOUNT_ID } from "../src/lib/connect";
 import { cardStatementDescriptor } from "../src/lib/statement";
 import { isCardCheckoutReady } from "../src/lib/readiness";
 import { createFakeStripe, memoryStore, seedProBusiness } from "./helpers";
@@ -117,11 +117,12 @@ describe("connected account onboarding", () => {
     expect(params.metadata).toEqual({ schedi_business_id: "biz" });
   });
 
-  it("clears a stored account once when Stripe says that account does not exist", async () => {
+  it("parks a missing account only after a second miss an hour later, and keeps the id", async () => {
     const store = memoryStore();
+    const staleId = "acct_1UNlXiGitAq7DPgt";
     const { business } = seedProBusiness(store, {
       slug: "lumen",
-      stripeAccountId: "acct_1UNlXiGitAq7DPgt",
+      stripeAccountId: staleId,
       cardPaymentsStatus: "active",
       payoutsStatus: "active",
     });
@@ -129,11 +130,14 @@ describe("connected account onboarding", () => {
     let retrieves = 0;
     stripe.v2.core.accounts.retrieve = (async () => {
       retrieves += 1;
-      throw Object.assign(new Error("No such account: 'acct_1UNlXiGitAq7DPgt'"), {
+      throw Object.assign(new Error(`No such account: '${staleId}'`), {
         code: "resource_missing",
         statusCode: 404,
       });
     }) as typeof stripe.v2.core.accounts.retrieve;
+    stripe.accounts = {
+      retrieve: async () => ({ id: SCHEDI_PLATFORM_ACCOUNT_ID, livemode: true }),
+    } as typeof stripe.accounts;
     const previousSecret = process.env.SCHEDI_CONNECT_PAID_SECRET;
     process.env.SCHEDI_CONNECT_PAID_SECRET = "connect-secret";
     const logs: string[] = [];
@@ -141,21 +145,41 @@ describe("connected account onboarding", () => {
       logs.push(args.map((part) => String(part)).join(" "));
     });
     const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("{}", { status: 200 }));
+    const started = Date.parse("2026-10-21T12:00:00.000Z");
     try {
-      const saved = await refreshMerchantCapabilities(store, stripe, business);
-      expect(saved.stripeAccountId).toBeNull();
-      expect(saved.cardPaymentsStatus).toBeNull();
-      expect(saved.payoutsStatus).toBeNull();
-      expect(store.getBusiness(business.id).stripeAccountId).toBeNull();
-      expect(retrieves).toBe(1);
-      expect(logs.filter((line) => line.includes("acct_1UNlXiGitAq7DPgt"))).toHaveLength(1);
-      const published = JSON.parse(String(fetchSpy.mock.calls[0]?.[1]?.body));
-      expect(published).toMatchObject({ slug: "lumen", ready: false, status: "not_started" });
+      const first = await refreshMerchantCapabilities(store, stripe, business, started);
+      expect(first.stripeAccountId).toBe(staleId);
+      expect(first.stripeAccountIdMissing ?? null).toBeNull();
+      expect(first.stripeAccountMissingAt).toBe(started);
+      expect(first.cardPaymentsStatus).toBe("active");
+      expect(fetchSpy).not.toHaveBeenCalled();
+      expect(logs.filter((line) => line.includes(staleId))).toHaveLength(1);
 
       logs.length = 0;
-      const again = await refreshMerchantCapabilities(store, stripe, saved);
+      const early = await refreshMerchantCapabilities(store, stripe, store.getBusiness(business.id), started + MISSING_ACCOUNT_CONFIRM_MS - 1);
+      expect(early.stripeAccountId).toBe(staleId);
+      expect(early.stripeAccountMissingAt).toBe(started);
+      expect(early.stripeAccountIdMissing ?? null).toBeNull();
+      expect(logs).toEqual([]);
+      expect(fetchSpy).not.toHaveBeenCalled();
+
+      const parked = await refreshMerchantCapabilities(store, stripe, store.getBusiness(business.id), started + MISSING_ACCOUNT_CONFIRM_MS);
+      expect(parked.stripeAccountId).toBeNull();
+      expect(parked.stripeAccountIdMissing).toBe(staleId);
+      expect(parked.stripeAccountMissingAt).toBeNull();
+      expect(parked.cardPaymentsStatus).toBeNull();
+      expect(parked.payoutsStatus).toBeNull();
+      expect(store.getBusiness(business.id).stripeAccountIdMissing).toBe(staleId);
+      expect(logs.filter((line) => line.includes(staleId))).toHaveLength(1);
+      const published = JSON.parse(String(fetchSpy.mock.calls[0]?.[1]?.body));
+      expect(published).toMatchObject({ slug: "lumen", ready: false, status: "not_started" });
+      expect(retrieves).toBe(3);
+
+      logs.length = 0;
+      const again = await refreshMerchantCapabilities(store, stripe, parked, started + MISSING_ACCOUNT_CONFIRM_MS + 60_000);
       expect(again.stripeAccountId).toBeNull();
-      expect(retrieves).toBe(1);
+      expect(again.stripeAccountIdMissing).toBe(staleId);
+      expect(retrieves).toBe(3);
       expect(logs).toEqual([]);
     } finally {
       errorSpy.mockRestore();
@@ -163,6 +187,140 @@ describe("connected account onboarding", () => {
       if (previousSecret === undefined) delete process.env.SCHEDI_CONNECT_PAID_SECRET;
       else process.env.SCHEDI_CONNECT_PAID_SECRET = previousSecret;
     }
+  });
+
+  it("does not park accounts when the Stripe key is not the live Schedi platform", async () => {
+    const store = memoryStore();
+    const { business } = seedProBusiness(store, { stripeAccountId: "acct_real_connected" });
+    const stripe = createFakeStripe();
+    stripe.v2.core.accounts.retrieve = (async () => {
+      throw Object.assign(new Error("No such account: 'acct_real_connected'"), {
+        code: "resource_missing",
+        statusCode: 404,
+      });
+    }) as typeof stripe.v2.core.accounts.retrieve;
+    stripe.accounts = {
+      retrieve: async () => ({ id: "acct_test_platform", livemode: false }),
+    } as typeof stripe.accounts;
+    const logs: string[] = [];
+    const errorSpy = vi.spyOn(console, "error").mockImplementation((...args: unknown[]) => {
+      logs.push(args.map((part) => String(part)).join(" "));
+    });
+    const started = Date.parse("2026-10-21T12:00:00.000Z");
+    try {
+      const first = await refreshMerchantCapabilities(store, stripe, business, started);
+      const later = await refreshMerchantCapabilities(store, stripe, store.getBusiness(business.id), started + MISSING_ACCOUNT_CONFIRM_MS + 1);
+      expect(first.stripeAccountId).toBe("acct_real_connected");
+      expect(later.stripeAccountId).toBe("acct_real_connected");
+      expect(later.stripeAccountMissingAt ?? null).toBeNull();
+      expect(later.stripeAccountIdMissing ?? null).toBeNull();
+      expect(logs.filter((line) => line.includes(SCHEDI_PLATFORM_ACCOUNT_ID))).toHaveLength(1);
+    } finally {
+      errorSpy.mockRestore();
+    }
+  });
+
+  it("does not park accounts when the platform id matches but the key is not live", async () => {
+    const store = memoryStore();
+    const { business } = seedProBusiness(store, { stripeAccountId: "acct_real_connected" });
+    const stripe = createFakeStripe();
+    stripe.v2.core.accounts.retrieve = (async () => {
+      throw Object.assign(new Error("No such account: 'acct_real_connected'"), {
+        code: "resource_missing",
+        statusCode: 404,
+      });
+    }) as typeof stripe.v2.core.accounts.retrieve;
+    stripe.accounts = {
+      retrieve: async () => ({ id: SCHEDI_PLATFORM_ACCOUNT_ID, livemode: false }),
+    } as typeof stripe.accounts;
+    const started = Date.parse("2026-10-21T12:00:00.000Z");
+    const saved = await refreshMerchantCapabilities(store, stripe, business, started + MISSING_ACCOUNT_CONFIRM_MS);
+    expect(saved.stripeAccountId).toBe("acct_real_connected");
+    expect(saved.stripeAccountMissingAt ?? null).toBeNull();
+    expect(saved.stripeAccountIdMissing ?? null).toBeNull();
+  });
+
+  it("leaves the stored account in place when the platform lookup fails", async () => {
+    const store = memoryStore();
+    const { business } = seedProBusiness(store, { stripeAccountId: "acct_real_connected" });
+    const stripe = createFakeStripe();
+    stripe.v2.core.accounts.retrieve = (async () => {
+      throw Object.assign(new Error("No such account: 'acct_real_connected'"), { code: "resource_missing", statusCode: 404 });
+    }) as typeof stripe.v2.core.accounts.retrieve;
+    stripe.accounts = {
+      retrieve: async () => {
+        throw new Error("platform lookup failed");
+      },
+    } as typeof stripe.accounts;
+    const saved = await refreshMerchantCapabilities(store, stripe, business, Date.parse("2026-10-21T12:00:00.000Z"));
+    expect(saved.stripeAccountId).toBe("acct_real_connected");
+    expect(saved.stripeAccountMissingAt ?? null).toBeNull();
+  });
+
+  it("ignores a broad account-not-found 404 that does not name the retrieved account", async () => {
+    const store = memoryStore();
+    const { business } = seedProBusiness(store, { stripeAccountId: "acct_live" });
+    const stripe = createFakeStripe();
+    stripe.v2.core.accounts.retrieve = (async () => {
+      throw Object.assign(new Error("The account was not found"), { statusCode: 404 });
+    }) as typeof stripe.v2.core.accounts.retrieve;
+    await expect(refreshMerchantCapabilities(store, stripe, business)).rejects.toThrow(/not found/);
+    const saved = store.getBusiness(business.id);
+    expect(saved.stripeAccountId).toBe("acct_live");
+    expect(saved.stripeAccountMissingAt ?? null).toBeNull();
+  });
+
+  it("treats a 404 that names this retrieve's account id as a miss", async () => {
+    const store = memoryStore();
+    const staleId = "acct_1UNlXiGitAq7DPgt";
+    const { business } = seedProBusiness(store, { stripeAccountId: staleId, cardPaymentsStatus: "active" });
+    const stripe = createFakeStripe();
+    stripe.v2.core.accounts.retrieve = (async () => {
+      throw Object.assign(new Error(`Account ${staleId} was not found`), { statusCode: 404 });
+    }) as typeof stripe.v2.core.accounts.retrieve;
+    stripe.accounts = {
+      retrieve: async () => ({ id: SCHEDI_PLATFORM_ACCOUNT_ID, livemode: true }),
+    } as typeof stripe.accounts;
+    const started = Date.parse("2026-10-21T15:00:00.000Z");
+    const saved = await refreshMerchantCapabilities(store, stripe, business, started);
+    expect(saved.stripeAccountId).toBe(staleId);
+    expect(saved.stripeAccountMissingAt).toBe(started);
+    expect(saved.stripeAccountIdMissing ?? null).toBeNull();
+  });
+
+  it("clears a recorded miss when the connected account can be retrieved again", async () => {
+    const store = memoryStore();
+    const staleId = "acct_back";
+    const { business } = seedProBusiness(store, { stripeAccountId: staleId, cardPaymentsStatus: "restricted" });
+    const stripe = createFakeStripe();
+    let missing = true;
+    stripe.v2.core.accounts.retrieve = (async () => {
+      if (missing) {
+        throw Object.assign(new Error(`No such account: '${staleId}'`), { code: "resource_missing", statusCode: 404 });
+      }
+      return {
+        id: staleId,
+        configuration: {
+          merchant: {
+            capabilities: {
+              card_payments: { status: "active" },
+              stripe_balance: { payouts: { status: "active" } },
+            },
+          },
+        },
+      };
+    }) as typeof stripe.v2.core.accounts.retrieve;
+    stripe.accounts = {
+      retrieve: async () => ({ id: SCHEDI_PLATFORM_ACCOUNT_ID, livemode: true }),
+    } as typeof stripe.accounts;
+    const started = Date.parse("2026-10-21T16:00:00.000Z");
+    const noted = await refreshMerchantCapabilities(store, stripe, business, started);
+    expect(noted.stripeAccountMissingAt).toBe(started);
+    missing = false;
+    const healed = await refreshMerchantCapabilities(store, stripe, store.getBusiness(business.id), started + 1000);
+    expect(healed.stripeAccountId).toBe(staleId);
+    expect(healed.stripeAccountMissingAt).toBeNull();
+    expect(healed.cardPaymentsStatus).toBe("active");
   });
 
   it("still raises when a capability refresh fails for a reason other than a missing account", async () => {

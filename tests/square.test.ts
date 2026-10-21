@@ -1671,7 +1671,10 @@ describe("Square hourly reconcile", () => {
     };
     await runSquareReconcile(seller.env, deps);
     expect(store.list).toHaveBeenCalled();
-    expect(JSON.parse(String(store.store.get("sqrecon:tenants")))).toEqual(["alpha", "beta"]);
+    expect(JSON.parse(String(store.store.get("sqrecon:tenants")))).toEqual({
+      tenants: ["alpha", "beta"],
+      listedAt: Date.parse("2026-10-16T18:00:00.000Z"),
+    });
     expect(store.store.get("sqrecon:after")).toBe("beta");
     store.list.mockClear();
     store.put.mockClear();
@@ -1693,6 +1696,55 @@ describe("Square hourly reconcile", () => {
     expect(store.put.mock.calls.map((call) => call[0])).toEqual(["privateAppts:alpha"]);
     await savePrivateAppointments(env, "beta", [], 0);
     expect(JSON.parse(String(store.store.get("sqrecon:tenants")))).toEqual(["alpha", "beta"]);
+  });
+
+  it("rebuilds the reconcile index from appointment keys about once a week", async () => {
+    const now = Date.parse("2026-10-16T18:00:00.000Z");
+    const week = 7 * 24 * 60 * 60 * 1000;
+    const store = kv();
+    store.store.set("privateAppts:alpha", "1");
+    store.store.set("privateAppts:gamma", "1");
+    store.store.set("sqrecon:tenants", JSON.stringify({
+      tenants: ["alpha"],
+      listedAt: now - 6 * 24 * 60 * 60 * 1000,
+    }));
+    const seller = await sellerEnv(store);
+    const deps = {
+      now,
+      loadAppointments: async () => [],
+      loadConnection: async () => seller.connection,
+    };
+    await runSquareReconcile(seller.env, deps);
+    expect(store.list).not.toHaveBeenCalled();
+    expect(JSON.parse(String(store.store.get("sqrecon:tenants"))).tenants).toEqual(["alpha"]);
+
+    store.store.set("sqrecon:tenants", JSON.stringify({ tenants: ["alpha"], listedAt: now - week }));
+    store.list.mockClear();
+    await runSquareReconcile(seller.env, deps);
+    expect(store.list).toHaveBeenCalled();
+    expect(JSON.parse(String(store.store.get("sqrecon:tenants")))).toEqual({
+      tenants: ["alpha", "gamma"],
+      listedAt: now,
+    });
+    store.list.mockClear();
+    store.put.mockClear();
+    await runSquareReconcile(seller.env, deps);
+    expect(store.list).not.toHaveBeenCalled();
+    expect(store.put).not.toHaveBeenCalled();
+  });
+
+  it("appends a saved tenant to the object reconcile index without moving listedAt", async () => {
+    const store = kv();
+    store.store.set("sqrecon:tenants", JSON.stringify({ tenants: ["alpha"], listedAt: 50 }));
+    const env = { AUTH_KV: store };
+    await savePrivateAppointments(env, "beta", [], 0);
+    expect(JSON.parse(String(store.store.get("sqrecon:tenants")))).toEqual({
+      tenants: ["alpha", "beta"],
+      listedAt: 50,
+    });
+    store.put.mockClear();
+    await savePrivateAppointments(env, "beta", [{ id: "BK-2" }], 1);
+    expect(store.put.mock.calls.map((call) => call[0])).toEqual(["privateAppts:beta"]);
   });
 });
 

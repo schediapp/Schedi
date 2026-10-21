@@ -25,6 +25,7 @@ const MAX_FEEDS = 8;
 const MAX_BYTES = 2000000;
 const FETCH_TIMEOUT_MS = 8000;
 const FRESH_MS = 2 * 60 * 1000;
+const LAST_SYNCED_WRITE_MS = 60 * 60 * 1000;
 const BUSY_MESSAGE = 'That time is already busy.';
 
 export { bookingOverlapsBusy, BUSY_MESSAGE };
@@ -121,6 +122,17 @@ function feedSignature(feeds) {
 
 function blocksSignature(blocks) {
   return (blocks || []).map((block) => String(block && block.start || '') + '\u0001' + String(block && block.end || '')).join('\u0002');
+}
+
+function oldestLastSynced(feeds) {
+  let oldest = 0;
+  let any = false;
+  for (const feed of feeds || []) {
+    const synced = Number(feed && feed.lastSynced) || 0;
+    if (!any || synced < oldest) oldest = synced;
+    any = true;
+  }
+  return any ? oldest : 0;
 }
 
 function withTimeout(promise, ms) {
@@ -335,12 +347,14 @@ export async function syncTenantFeeds(env, tenantId, deps) {
     return empty;
   }
   const priorFeeds = feedSignature(secret.feeds);
+  const priorLastSynced = oldestLastSynced(secret.feeds);
   const now = deps && deps.now instanceof Date ? deps.now : new Date();
+  const nowMs = now.getTime();
   const all = [];
   const sources = [];
   for (const feed of secret.feeds) {
     const got = await fetchCalendarText(feed.url, deps || {});
-    feed.lastSynced = Date.now();
+    feed.lastSynced = nowMs;
     if (!got.ok) {
       feed.error = got.error;
       feed.eventCount = 0;
@@ -368,6 +382,8 @@ export async function syncTenantFeeds(env, tenantId, deps) {
     && blocksSignature(blocks) === blocksSignature(previous.blocks)
     && feedSignature(secret.feeds) === priorFeeds
   ) {
+    const age = nowMs - priorLastSynced;
+    if (!priorLastSynced || age >= LAST_SYNCED_WRITE_MS) await writeSecret(env, secret);
     return { syncedAt: previous.syncedAt || 0, blocks: previous.blocks, sources: previous.sources || [] };
   }
   const busy = { syncedAt: Date.now(), blocks, sources };
