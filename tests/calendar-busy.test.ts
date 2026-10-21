@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   bookingOverlapsBusy,
   coarsenBusyBlocks,
@@ -23,6 +23,15 @@ import {
 
 const NOW = new Date("2026-10-20T12:00:00.000Z");
 const TZ = "America/New_York";
+
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(NOW);
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 const VTIMEZONE = [
   "BEGIN:VTIMEZONE",
