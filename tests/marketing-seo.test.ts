@@ -106,16 +106,14 @@ describe("public marketing routes", () => {
 });
 
 describe("crawler files and app routes", () => {
-  it("serves robots.txt with the sitemap and private disallows", async () => {
+  it("serves robots.txt with the sitemap and without private path names", async () => {
     const response = await handleRequest(new Request("https://schedi.app/robots.txt"), envWith(shellAssets()), ctx());
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toMatch(/text\/plain/);
     const text = await response.text();
     expect(text).toContain("Sitemap: https://schedi.app/sitemap.xml");
-    expect(text).toContain("Disallow: /portal");
-    expect(text).toContain("Disallow: /admin");
-    expect(text).toContain("Disallow: /billing");
-    expect(text).toContain("Disallow: /api");
+    expect(text).toContain("Allow: /");
+    expect(text).not.toMatch(/Disallow: \/(portal|admin|hq|agency|billing|api)/);
     expect(text).not.toContain("<title>");
   });
 
@@ -284,7 +282,7 @@ describe("crawler files and app routes", () => {
     expect(response.headers.get("cache-control")).toBe("public, max-age=86400");
     expect(response.headers.get("content-type")).toBe("image/svg+xml");
     expect(response.headers.get("content-length")).toBe("1200");
-    expect(response.headers.get("strict-transport-security")).toBe("max-age=31536000");
+    expect(response.headers.get("strict-transport-security")).toBe("max-age=31536000; includeSubDomains");
     expect(response.headers.get("x-content-type-options")).toBe("nosniff");
     expect(response.headers.get("referrer-policy")).toBe("strict-origin-when-cross-origin");
     expect(response.body).toBeNull();

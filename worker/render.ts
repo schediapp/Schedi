@@ -23,8 +23,7 @@ export const HERO_SVG = `<?xml version="1.0" encoding="UTF-8"?>
   <rect x="228" y="228" width="184" height="40" rx="10" fill="#10b981"/>
 </svg>`;
 
-const FONT_STYLESHEET =
-  "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap";
+const FONT_STYLESHEET = "/assets/fonts/inter.css";
 
 export function canonicalUrl(path: string): string {
   if (path === "/") return `${APEX_ORIGIN}/`;
@@ -34,16 +33,17 @@ export function canonicalUrl(path: string): string {
 const ROBOT_AGENTS = ["*", "GPTBot", "PerplexityBot", "ClaudeBot", "Google-Extended", "Bingbot"];
 
 function robotGroup(agent: string): string {
+  return [`User-agent: ${agent}`, "Allow: /", ""].join("\n");
+}
+
+export const SECURITY_TXT_EXPIRES = "2027-10-21T23:59:59.000Z";
+
+export function renderSecurityTxt(): string {
   return [
-    `User-agent: ${agent}`,
-    "Allow: /",
-    "Disallow: /portal",
-    "Disallow: /portal-preview",
-    "Disallow: /admin",
-    "Disallow: /hq",
-    "Disallow: /agency",
-    "Disallow: /billing",
-    "Disallow: /api",
+    "Contact: mailto:hello@schedi.app",
+    `Expires: ${SECURITY_TXT_EXPIRES}`,
+    `Canonical: ${APEX_ORIGIN}/.well-known/security.txt`,
+    "Preferred-Languages: en",
     "",
   ].join("\n");
 }
@@ -454,6 +454,8 @@ const CSS = `
 html{-webkit-text-size-adjust:100%}
 body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--text);line-height:1.6;overflow-x:hidden}
 a{color:var(--brand2)}
+.skip{position:absolute;left:1rem;top:0;transform:translateY(-120%);z-index:40;padding:.65rem 1rem;border-radius:12px;background:var(--brand);color:var(--brand-ink);font-weight:800;text-decoration:none}
+.skip:focus{transform:none;top:1rem;outline:3px solid var(--head);outline-offset:2px}
 img{max-width:100%}
 .wrap{width:min(1120px,calc(100% - 2.5rem));margin:0 auto}
 h1,h2,h3{color:var(--head);letter-spacing:-.02em}
@@ -640,8 +642,6 @@ ${bingVerificationMeta(bingToken)}
 <meta name="twitter:description" content="${description}">
 <meta name="twitter:image" content="${OG_IMAGE}">
 <meta name="twitter:image:alt" content="${OG_IMAGE_ALT}">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preload" href="${FONT_STYLESHEET}" as="style">
 <link rel="stylesheet" href="${FONT_STYLESHEET}">
 ${heroPreload}
@@ -650,8 +650,9 @@ ${heroPreload}
 ${jsonLd(page)}
 </head>
 <body>
+<a class="skip" href="#content">Skip to content</a>
 ${siteHeader()}
-<main>
+<main id="content">
   ${mainHtml}
 </main>
 ${footer()}

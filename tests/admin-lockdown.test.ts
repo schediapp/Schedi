@@ -138,7 +138,7 @@ describe("public booking bundle", () => {
     expect(signedOutHtml).not.toContain('id="agencyHqSection"');
   });
 
-  it("404s direct shell files and keeps robots disallows", async () => {
+  it("404s direct shell files and keeps private paths out of robots.txt", async () => {
     for (const path of ["/hq.html", "/admin.html", "/booking.html"]) {
       const response = await handleRequest(new Request("https://schedi.app" + path), env(), ctx());
       expect(response.status, path).toBe(404);
@@ -146,8 +146,11 @@ describe("public booking bundle", () => {
     }
     const robots = await handleRequest(new Request("https://schedi.app/robots.txt"), env(), ctx());
     const text = await robots.text();
+    expect(text).toContain("Allow: /");
+    expect(text).toContain("Sitemap: https://schedi.app/sitemap.xml");
     for (const rule of ["/portal", "/portal-preview", "/admin", "/hq", "/agency", "/billing", "/api"]) {
-      expect(text).toContain("Disallow: " + rule);
+      expect(text).not.toContain("Disallow: " + rule);
+      expect(text).not.toContain(rule);
     }
   });
 });

@@ -9,7 +9,7 @@ import { renderRobots, renderSitemap } from "../worker/render";
 
 const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const root = new URL("..", import.meta.url).pathname;
-const BOOKING_TEMPLATE_SHA = "0193af4afa6653f3d4e8a07b8d841ab8d27796a153515b9e10b4699828791b5d";
+const BOOKING_TEMPLATE_SHA = "4b9d6574030fce6fa029f2c297c0f0a34b175c76ea4c28e3ce396449a3ec1138";
 const SHELL_STYLE_SHA = "7c1f1bbb7af97aa8c1e95ab8de650f6493512361a409fd083bcbe3a2c04332d6";
 
 function bookingTemplate(source: string): string {
@@ -403,7 +403,8 @@ describe("owner dashboard preview", () => {
 
     const home = await handleRequest(new Request("https://schedi.app/"), env(), ctx());
     expect(await home.text()).not.toContain("<body>app</body>");
-    expect(renderRobots()).toContain("Disallow: /portal-preview");
+    expect(renderRobots()).not.toContain("Disallow: /portal-preview");
+    expect(renderRobots()).not.toContain("/portal-preview");
     expect(renderSitemap()).not.toContain("portal-preview");
     expect(html).toContain("first === 'portal-preview'");
   });
@@ -608,11 +609,11 @@ describe("owner dashboard preview", () => {
     const guardedFetch = context.window.fetch as (input: unknown, init?: { method?: string }) => Promise<Response>;
     const post = await guardedFetch("https://schedi.app/api/profile", { method: "POST" });
     const put = await guardedFetch("/api/bookings", { method: "PUT" });
-    const fonts = await guardedFetch("https://fonts.googleapis.com/css?family=Inter");
+    const fonts = await guardedFetch("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css");
     expect(post.status).toBe(403);
     expect(put.status).toBe(403);
     expect(fonts.status).toBe(200);
-    expect(calls.map((call) => call.url)).toEqual(["https://fonts.googleapis.com/css?family=Inter"]);
+    expect(calls.map((call) => call.url)).toEqual(["https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"]);
     expect((context.window.__schediDemoBlocked as { method: string }[]).map((row) => row.method)).toEqual(["POST", "PUT"]);
     context.localStorage.setItem("siteforge.platformState.v2", "secret");
     context.localStorage.setItem("schedi.authSession", "token");

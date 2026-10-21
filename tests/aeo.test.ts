@@ -98,9 +98,8 @@ describe("answer pages and crawler files", () => {
     for (const agent of ["*", "GPTBot", "PerplexityBot", "ClaudeBot", "Google-Extended", "Bingbot"]) {
       expect(robots).toContain(`User-agent: ${agent}`);
     }
-    expect(robots.match(/^Disallow: \/portal$/gm)?.length).toBe(6);
-    expect(robots.match(/^Disallow: \/portal-preview$/gm)?.length).toBe(6);
-    expect(robots.match(/Disallow: \/api/g)?.length).toBe(6);
+    expect(robots).not.toMatch(/^Disallow: /m);
+    expect(robots).not.toMatch(/\/admin|\/hq|\/api|\/portal|\/billing|\/agency/);
     const llmsPublic = renderLlms();
     const sitemap = renderSitemap();
     for (const hidden of ["portal-preview", "newhq", "newbook", "demo=1"]) {
@@ -335,7 +334,8 @@ describe("preview hosts stay out of the index", () => {
     expect(productionRobotsText).toBe(renderRobots());
     expect(productionRobotsText).toContain("Sitemap: https://schedi.app/sitemap.xml");
     expect(productionRobotsText).toContain("Allow: /");
-    expect(productionRobotsText).toContain("Disallow: /portal");
+    expect(productionRobotsText).not.toContain("Disallow: /portal");
+    expect(productionRobotsText).not.toMatch(/\/admin|\/hq|\/api/);
 
     const productionSitemap = await handleRequest(new Request("https://schedi.app/sitemap.xml"), env, ctx());
     expect(await productionSitemap.text()).toContain("https://schedi.app/pricing");

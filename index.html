@@ -23,10 +23,7 @@
     <!-- Font Awesome Icons CDN -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
-    <!-- Google Fonts Inter -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/fonts/inter.css">
 
     <style>
         body {
@@ -5778,7 +5775,7 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
     window.__schediDemoBlocked = [];
     function demoHostBlocked(url) {
         var u = String(url || '');
-        if (/fonts\.googleapis\.com|fonts\.gstatic\.com|cdn\.tailwindcss\.com|cdnjs\.cloudflare\.com/i.test(u)) return false;
+        if (/cdn\.tailwindcss\.com|cdnjs\.cloudflare\.com/i.test(u)) return false;
         return /schedi\.app|googleapis\.com|firebaseio\.com|firebasestorage|identitytoolkit|securetoken/i.test(u);
     }
     function note(url, method) {
@@ -5880,12 +5877,12 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
 
                 <form onsubmit="handleTenantLogin(event)" class="space-y-4 text-xs">
                     <div>
-                        <label class="block font-semibold text-slate-300 mb-1">Owner Email</label>
-                        <input type="email" id="tenantLoginEmail" required placeholder="owner@business.com" class="w-full px-3.5 py-2.5 rounded-xl glass-input">
+                        <label class="block font-semibold text-slate-300 mb-1" for="tenantLoginEmail">Owner Email</label>
+                        <input type="email" id="tenantLoginEmail" required autocomplete="email" placeholder="owner@business.com" class="w-full px-3.5 py-2.5 rounded-xl glass-input">
                     </div>
                     <div>
-                        <label class="block font-semibold text-slate-300 mb-1">Password</label>
-                        <input type="password" id="tenantLoginPassword" required placeholder="••••••••" class="w-full px-3.5 py-2.5 rounded-xl glass-input">
+                        <label class="block font-semibold text-slate-300 mb-1" for="tenantLoginPassword">Password</label>
+                        <input type="password" id="tenantLoginPassword" required autocomplete="current-password" placeholder="••••••••" class="w-full px-3.5 py-2.5 rounded-xl glass-input">
                     </div>
 
                     <button type="submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-slate-950 font-black shadow-lg glow-emerald transition-all">
@@ -7020,15 +7017,15 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
             <form id="publicSignupForm" onsubmit="handlePublicSignup(event)" class="space-y-3 text-xs">
                 <div>
                     <label class="block font-semibold text-slate-300 mb-1" for="signupBusinessName">Business name</label>
-                    <input type="text" id="signupBusinessName" required maxlength="80" class="w-full px-3 py-2 rounded-xl glass-input">
+                    <input type="text" id="signupBusinessName" required maxlength="80" autocomplete="organization" class="w-full px-3 py-2 rounded-xl glass-input">
                 </div>
                 <div>
                     <label class="block font-semibold text-slate-300 mb-1" for="signupOwnerName">Owner name</label>
-                    <input type="text" id="signupOwnerName" required maxlength="80" class="w-full px-3 py-2 rounded-xl glass-input">
+                    <input type="text" id="signupOwnerName" required maxlength="80" autocomplete="name" class="w-full px-3 py-2 rounded-xl glass-input">
                 </div>
                 <div>
                     <label class="block font-semibold text-slate-300 mb-1" for="signupOwnerEmail">Owner email</label>
-                    <input type="email" id="signupOwnerEmail" required maxlength="160" class="w-full px-3 py-2 rounded-xl glass-input">
+                    <input type="email" id="signupOwnerEmail" required maxlength="160" autocomplete="email" class="w-full px-3 py-2 rounded-xl glass-input">
                 </div>
                 <div>
                     <label class="block font-semibold text-slate-300 mb-1" for="signupPlan">Plan</label>
@@ -7050,7 +7047,9 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                 <a id="signupResumeCheckoutBtn" href="#" class="block w-full text-center py-3 rounded-xl bg-brand-500 hover:bg-brand-600 text-slate-950 font-black">Finish checkout</a>
                 <div id="signupResumeCreds" class="hidden space-y-2">
                     <p class="text-slate-400">To switch to Free, sign in with the email and temporary password from your welcome email.</p>
-                    <input type="email" id="signupResumeEmail" autocomplete="username" placeholder="Owner email" class="w-full px-3 py-2 rounded-xl glass-input">
+                    <label class="block font-semibold text-slate-300 mb-1" for="signupResumeEmail">Owner email</label>
+                    <input type="email" id="signupResumeEmail" autocomplete="email" placeholder="Owner email" class="w-full px-3 py-2 rounded-xl glass-input">
+                    <label class="block font-semibold text-slate-300 mb-1" for="signupResumePassword">Temporary password</label>
                     <input type="password" id="signupResumePassword" autocomplete="current-password" placeholder="Temporary password" class="w-full px-3 py-2 rounded-xl glass-input">
                 </div>
                 <button type="button" id="signupResumeFreeBtn" class="w-full py-3 rounded-xl bg-slate-900 border border-slate-700 hover:border-brand-500 text-white font-bold">Start on Free instead</button>
@@ -27853,7 +27852,7 @@ function schediQrCardPixels(text, color) {
     <script type="application/ld+json">${jsonLd}<\/script>
     <link rel="stylesheet" href="/assets/tailwind.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/fonts/inter.css">
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #07090e; color: #f1f5f9; }
         .glass-card { background: rgba(17, 24, 39, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
@@ -28512,7 +28511,7 @@ function schediQrCardPixels(text, color) {
                         <input type="tel" id="pubClientPhone" required placeholder="(555) 000-0000" class="w-full px-3 py-2 rounded-xl glass-input text-xs">
                     </div>
                     <div>
-                        <label class="block text-xs text-slate-300 mb-1">Email Address *</label>
+                        <label class="block text-xs text-slate-300 mb-1" for="pubClientEmail">Email Address *</label>
                         <input type="email" id="pubClientEmail" required autocomplete="email" inputmode="email" aria-describedby="pubClientEmailHint" placeholder="jane@example.com" class="w-full px-3 py-2 rounded-xl glass-input text-xs">
                         <p id="pubClientEmailHint" class="text-[11px] text-slate-400 mt-1">We'll send your confirmation here, plus a link to change or cancel if plans shift.</p>
                     </div>
