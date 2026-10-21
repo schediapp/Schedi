@@ -303,6 +303,12 @@ describe("auth rate limits", () => {
       body: JSON.stringify(body),
     }), authEnv(), { waitUntil() {} });
     expect(devAuth.status).toBe(404);
+    const devAgencyAdd = await worker.fetch(new Request("https://schedi-email-worker.workers.dev/admin/agency-add", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + "t".repeat(40) },
+      body: JSON.stringify({ email: "new-hq@example.com", password: "password1" }),
+    }), authEnv(), { waitUntil() {} });
+    expect(devAgencyAdd.status).toBe(404);
     const devPasswords = await worker.fetch(new Request("https://schedi-email-worker.workers.dev/api/ops-default-passwords"), authEnv(), { waitUntil() {} });
     expect(devPasswords.status).toBe(404);
     const devOps = await worker.fetch(new Request("https://schedi-email-worker.workers.dev/api/ops-snapshot"), authEnv(), { waitUntil() {} });

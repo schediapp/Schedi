@@ -194,6 +194,16 @@ Omit `dryRun` (or set `false`) to actually send. `force:true` (default for this 
 snapshot a day at 12:00 UTC in AUTH_KV `opsSnapshot:day:YYYY-MM-DD` (120-day TTL); read it back with `?history=N`.
 Consumer docs and the puller script: `/home/box/agent-data/shared/schedi-ops/README.md`.
 
+## Add an HQ login (`POST /admin/agency-add`)
+
+One-time. Body `{ "email", "password" }`. Requires a live agency session (`X-Schedi-Session`, `schedi_hq` cookie, or JSON `session`) and `Authorization: Bearer <MIGRATION_TOKEN>`. Password minimum is 8 characters. The worker calls `ensureAgencySecret`, which writes `AUTH_KV` key `agency:<email>` only when that key has no hash. An existing key is left as it is. Response is `{ "ok": true, "created": true|false }` and does not include the password. The route is 404 on `*.workers.dev`. It is inert until `MIGRATION_TOKEN` is set again (it was removed after the 2026-10-05 migration). Remove the secret after the new login works.
+
+## Inbound admin mail fan-out
+
+`email()` on this worker copies inbound mail for the envelopes in `ADMIN_FORWARD_RECIPIENTS` to every address in `ADMIN_FORWARD_TO` (`message.forward`). Both vars are comma-separated in `wrangler.toml`. A failed forward is logged and the other destinations are still attempted. `bookings@schedi.app` and `onboarding@schedi.app` are not in either list, and the handler does not forward or reject them.
+
+Email Routing is a dashboard change, not a wrangler route. After deploy: Email Routing → Routing rules → `admin@schedi.app` and `hello@schedi.app` → Action: Send to a Worker → `schedi-email-worker`. Leave the `bookings@` and `onboarding@` rules as they are.
+
 ## Owner-private tenant fields (2026-10-05)
 
 Public tenant docs (`artifacts/siteforge-97699/public/data/tenants/{slug}`) are world-readable and hold only what the
