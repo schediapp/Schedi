@@ -202,7 +202,9 @@ which Firestore rules deny to every client; only this worker's Admin service acc
 
 - Private keys: `ownerName, ownerEmail, ownerPhone, stripeCustomerId, stripeSubscriptionId, billingExempt,
   complimentaryPro, monthlyPrice, paymentForm, plan, subscriptionStatus`, plus `notifications.replyTo` stored as
-  `notificationsReplyTo`. Source of truth: `src/tenant-private.js` (`PRIVATE_TENANT_KEYS`).
+  `notificationsReplyTo`. Also private: `signupStartedAt`, `stripeConnectStatus`, `phiAcknowledgment`,
+  `ownerIdleTimeoutMin`, and `ownerIdleDefaultApplied`. `stripeConnectReady` stays on the public doc because
+  booking pages use it. Source of truth: `src/tenant-private.js` (`PRIVATE_TENANT_KEYS`).
   Payment handles (venmo/zelle/cashapp/paypal) and `notifications.emailConfirmations/extraNote` stay public.
   The public doc also keeps the customer-facing `plan` tier (`free`, `starter`, or `pro`, with complimentary
   shown as `pro`) and `acceptingBookings`. The booking page and the public web worker have no Admin credential,
@@ -218,8 +220,20 @@ which Firestore rules deny to every client; only this worker's Admin service acc
   (empty string and null count as present and are not overwritten). It verifies the copied values
   and that every field about to be deleted already exists on the private doc, writes `acceptingBookings`,
   then deletes those fields from the public doc. A failed verify does not delete. It does not delete
-  the public plan tier. The endpoint is inert unless `MIGRATION_TOKEN` is set (it was removed after the
-  2026-10-05 migration).
+  the public plan tier. The same copy-only-missing path now includes `signupStartedAt` and
+  `stripeConnectStatus`. It does not remove `stripeConnectReady`. The endpoint is inert unless
+  `MIGRATION_TOKEN` is set (it was removed after the 2026-10-05 migration).
+- Auto log-off: new owners start at 30 minutes. A separate migration moves an existing owner from Off
+  or a missing `ownerIdleTimeoutMin` to 30 and sets `ownerIdleDefaultApplied`. 15, 30, and 60 are left
+  as chosen. A later Off stays Off because the flag is already set. Owners can still pick Off, 15, 30,
+  or 60 afterward. Local dry-run (no network): `node scripts/migrate-owner-idle.mjs --dry-run --fixture tenants.json`.
+  Production dry-run: `POST /api/profile` `{"action":"migrate_owner_idle","dryRun":true,"session":"<agency session>"}`
+  with `Authorization: Bearer <MIGRATION_TOKEN>`. Apply only after that report, with `"dryRun":false`.
+  The response counts are `setTo30`, `leftChosen`, and `alreadyApplied`. Today the timeout is not stored
+  on the server, so the first production dry-run counts every tenant as `setTo30`. A browser that already
+  chose 15 or 60 writes that choice back once.
+- Medical / Healthcare: signup, the owner portal, and HQ require a checkbox before saving that preset.
+  The private doc stores `phiAcknowledgment` (`who`, `at`, `version` `phi-ack-v1`). The booking page does not read it.
 - Reads: `getTenantById` / `listAllTenants` / ops-snapshot merge the private doc back in, so worker code sees the full tenant.
 - Writes: `/api/profile` save, `patchTenantFields` (Stripe webhooks) and signup `createTenantDocument` split the
   object; private keys are merge-written (only keys present). The public doc is rewritten with the effective plan

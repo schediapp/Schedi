@@ -250,13 +250,13 @@ describe("business logo display", () => {
     expect(tail.indexOf("paintClassicBannerLogo(tenant)")).toBeLessThan(tail.indexOf("await saveState()"));
     expect(store).toContain("renderLivePreviewIframe()");
     const formAt = html.indexOf("window.handleUpdateShiftsSubmit = function");
-    const form = html.slice(formAt, formAt + 4000);
+    const form = html.slice(formAt, formAt + 6000);
     expect(form.indexOf("writeBusinessLogo(tenant, safeHttpsUrl(logoRaw))")).toBeGreaterThan(-1);
     expect(form.indexOf("writeBusinessLogo(tenant, safeHttpsUrl(logoRaw))")).toBeLessThan(form.indexOf("schediDashPaint()"));
 
     const persist = [
       "var schediHqTagsServer = false;",
-      "var SCHEDI_PRIVATE_TENANT_KEYS = ['ownerName', 'ownerEmail', 'ownerPhone', 'stripeCustomerId', 'stripeSubscriptionId', 'billingExempt', 'complimentaryPro', 'monthlyPrice', 'paymentForm', 'hqTags', 'subscriptionStatus'];",
+      "var SCHEDI_PRIVATE_TENANT_KEYS = ['ownerName', 'ownerEmail', 'ownerPhone', 'stripeCustomerId', 'stripeSubscriptionId', 'billingExempt', 'complimentaryPro', 'monthlyPrice', 'paymentForm', 'hqTags', 'subscriptionStatus', 'signupStartedAt', 'stripeConnectStatus', 'phiAcknowledgment', 'ownerIdleTimeoutMin', 'ownerIdleDefaultApplied'];",
       extractFunction(html, "publicTenantForCloud"),
       extractFunction(html, "stripPrivateTenantFields"),
       extractFunction(html, "localTenantCopy"),

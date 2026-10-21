@@ -265,14 +265,22 @@ describe("POST /billing/connect-ready", () => {
   });
 
   it("patches stripeConnectReady only with the connect secret", async () => {
-    const patches: string[] = [];
+    const publicPatches: string[] = [];
+    const privatePatches: string[] = [];
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input instanceof Request ? input.url : input);
+      const method = String(init?.method || "GET").toUpperCase();
       if (url.includes("identitytoolkit.googleapis.com")) return Response.json({ idToken: "tok" });
-      if (url.includes("/private/data/tenants/")) return new Response("{}", { status: 404 });
+      if (url.includes("/private/data/tenants/")) {
+        if (method === "PATCH") {
+          privatePatches.push(String(init?.body || ""));
+          return Response.json({ name: "private" });
+        }
+        return new Response("{}", { status: 404 });
+      }
       if (url.includes("/public/data/tenants/")) {
-        if (String(init?.method || "GET").toUpperCase() === "PATCH") {
-          patches.push(String(init?.body || ""));
+        if (method === "PATCH") {
+          publicPatches.push(url + "\n" + String(init?.body || ""));
           return Response.json({ name: "patched" });
         }
         return Response.json({
@@ -289,7 +297,8 @@ describe("POST /billing/connect-ready", () => {
       body: JSON.stringify({ slug: TENANT, ready: true }),
     }), env, { waitUntil() {} });
     expect(denied.status).toBe(401);
-    expect(patches).toHaveLength(0);
+    expect(publicPatches).toHaveLength(0);
+    expect(privatePatches).toHaveLength(0);
 
     const ok = await worker.fetch(new Request("https://schedi.app/billing/connect-ready", {
       method: "POST",
@@ -298,9 +307,12 @@ describe("POST /billing/connect-ready", () => {
     }), env, { waitUntil() {} });
     expect(ok.status).toBe(200);
     expect(await ok.json()).toMatchObject({ ok: true, slug: TENANT, stripeConnectReady: true, stripeConnectStatus: "ready" });
-    expect(patches[0]).toContain("stripeConnectReady");
-    expect(patches[0]).toContain("stripeConnectStatus");
-    expect(patches[0]).toContain("booleanValue");
+    expect(privatePatches[0]).toContain("stripeConnectStatus");
+    expect(privatePatches[0]).toContain("ready");
+    expect(publicPatches[0]).toContain("stripeConnectReady");
+    expect(publicPatches[0]).toContain("booleanValue");
+    expect(publicPatches[0]).toContain("updateMask.fieldPaths=stripeConnectStatus");
+    expect(publicPatches[0]).not.toContain("\"stripeConnectStatus\"");
 
     const progress = await worker.fetch(new Request("https://schedi.app/billing/connect-ready", {
       method: "POST",
