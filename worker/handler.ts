@@ -35,6 +35,7 @@ import {
   renderMarketingPage,
   renderNotFound,
   renderRobots,
+  renderSecurityTxt,
   renderSitemap,
 } from "./render";
 import { routeBusinessLogo, type LogoBucket } from "./logo-route";
@@ -121,8 +122,8 @@ export function contentSecurityPolicy(html: boolean): string {
     "frame-ancestors 'none'",
     "form-action 'self' https://schedi.app https://checkout.stripe.com",
     `script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com ${WEB_ANALYTICS_SCRIPT_ORIGIN}`,
-    "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com",
-    "font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com",
+    "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com",
+    "font-src 'self' data: https://cdnjs.cloudflare.com",
     "img-src 'self' data: blob: https:",
     `connect-src 'self' https://schedi.app https://schedi-connect-production.up.railway.app https://*.googleapis.com https://*.firebasestorage.app https://*.firebaseio.com wss://*.firebaseio.com ${WEB_ANALYTICS_CONNECT_ORIGIN}`,
     "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://checkout.stripe.com",
@@ -138,8 +139,8 @@ export function marketingContentSecurityPolicy(): string {
     "frame-ancestors 'none'",
     "form-action 'self'",
     `script-src 'self' ${WEB_ANALYTICS_SCRIPT_ORIGIN}`,
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-    "font-src 'self' https://fonts.gstatic.com",
+    "style-src 'self' 'unsafe-inline'",
+    "font-src 'self'",
     "img-src 'self' data:",
     `connect-src 'self' ${WEB_ANALYTICS_CONNECT_ORIGIN}`,
     "frame-src 'none'",
@@ -147,8 +148,16 @@ export function marketingContentSecurityPolicy(): string {
   ].join("; ");
 }
 
+export const STRICT_TRANSPORT_SECURITY = "max-age=31536000; includeSubDomains";
+export const PERMISSIONS_POLICY = "camera=(), microphone=(), geolocation=(), payment=()";
+export const CROSS_ORIGIN_OPENER_POLICY = "same-origin-allow-popups";
+export const CROSS_ORIGIN_RESOURCE_POLICY = "same-origin";
+
 export function applySecurityHeaders(headers: Headers, html: boolean): void {
-  headers.set("Strict-Transport-Security", "max-age=31536000");
+  headers.set("Strict-Transport-Security", STRICT_TRANSPORT_SECURITY);
+  headers.set("Permissions-Policy", PERMISSIONS_POLICY);
+  headers.set("Cross-Origin-Opener-Policy", CROSS_ORIGIN_OPENER_POLICY);
+  headers.set("Cross-Origin-Resource-Policy", CROSS_ORIGIN_RESOURCE_POLICY);
   headers.set("X-Content-Type-Options", "nosniff");
   headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   if ((headers.get("Access-Control-Allow-Origin") || "").trim() === "*") {
@@ -214,6 +223,7 @@ function hasFileExtension(pathname: string): boolean {
 function isStaticFile(pathname: string): boolean {
   if (pathname === HERO_PATH || pathname === "/marketing-boot.js" || pathname === THEME_SCRIPT_PATH) return false;
   if (pathname === "/robots.txt" || pathname === "/sitemap.xml" || pathname.toLowerCase() === "/llms.txt") return false;
+  if (pathname.toLowerCase() === "/.well-known/security.txt") return false;
   if (STATIC_TYPES[pathname]) return true;
   if (pathname.startsWith("/assets/")) return true;
   if (hasFileExtension(pathname)) return true;
@@ -587,6 +597,9 @@ export async function handleRequest(request: Request, env: SchediEnv, ctx: Sched
   }
   if (collapsed.toLowerCase() === "/llms.txt") {
     return textResponse(renderLlms(), 200, "text/plain; charset=utf-8", { "Cache-Control": "public, max-age=3600" }, method);
+  }
+  if (collapsed.toLowerCase() === "/.well-known/security.txt") {
+    return textResponse(renderSecurityTxt(), 200, "text/plain; charset=utf-8", { "Cache-Control": "public, max-age=3600" }, method);
   }
   const indexNow = indexNowKey(env);
   if (indexNow && collapsed.toLowerCase() === `/${indexNow}.txt`) {

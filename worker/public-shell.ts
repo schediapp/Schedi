@@ -190,7 +190,7 @@ html.schedi-light.schedi-newhq #hq-theme{background:#ffffff;color:#0f172a;border
 <h1>Schedi HQ</h1>
 <p>Sign in to open HQ.</p>
 <label for="hq-email">Email</label>
-<input id="hq-email" name="email" type="email" autocomplete="username" required>
+<input id="hq-email" name="email" type="email" autocomplete="email" required>
 <label for="hq-password">Password</label>
 <input id="hq-password" name="password" type="password" autocomplete="current-password" required>
 <div class="err" id="hq-error" role="alert"></div>
@@ -211,7 +211,7 @@ html.schedi-light.schedi-newhq #hq-theme{background:#ffffff;color:#0f172a;border
   document.documentElement.classList.add('schedi-newhq');
   var link = document.createElement('link');
   link.rel = 'stylesheet';
-  link.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap';
+  link.href = '/assets/fonts/inter.css';
   document.head.appendChild(link);
   function paint(theme) {
     var light = theme === 'light';
