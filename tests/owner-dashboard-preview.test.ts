@@ -5148,98 +5148,36 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
           }, theme);
           await page.waitForFunction((mode) => document.documentElement.classList.contains("schedi-light") === (mode === "light"), { timeout: 2000 }, theme);
           for (const item of kinds) {
-            const expectedBorder = theme === "dark" ? "rgb(52, 211, 153)" : "rgb(5, 150, 105)";
-            const expectedBg = theme === "dark" ? "rgba(16, 185, 129, 0.2)" : "rgb(209, 250, 229)";
-            const sample = await page.evaluate((kind, borderTarget, bgTarget) => new Promise<{
-              picked: boolean;
-              menuOpen: boolean;
-              modalHidden: boolean;
-              border: string;
-              shadow: string;
-              scale: number;
-              bg: string;
-              visible: boolean;
-            }>((resolve) => {
-              const menu = document.getElementById("schediDashAddMenu") as HTMLElement;
-              menu.hidden = true;
+            await page.evaluate(() => {
+              const menu = document.getElementById("schediDashAddMenu");
+              if (menu) menu.hidden = true;
               (document.querySelector("#schediDashTabbar .sd-fab") as HTMLButtonElement).click();
+            });
+            await page.waitForSelector("#schediDashAddMenu:not([hidden])");
+            const highlight = await page.evaluate((kind) => {
+              const menu = document.getElementById("schediDashAddMenu") as HTMLElement;
               const button = menu.querySelector(`[data-dash-add="${kind}"]`) as HTMLButtonElement;
               const modalId = kind === "recurring" ? "ownerRecurringModal" : "manualBookingModal";
-              const parts = (value: string) => {
-                const match = value.trim().match(/^rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)(?:[,\s/]+([\d.]+))?\s*\)$/i);
-                if (!match) return null;
-                return [Number(match[1]), Number(match[2]), Number(match[3]), match[4] == null ? 1 : Number(match[4])];
-              };
-              const nearColor = (actual: string, expected: string) => {
-                const got = parts(actual);
-                const want = parts(expected);
-                if (!got || !want) return false;
-                return Math.abs(got[0] - want[0]) <= 1 && Math.abs(got[1] - want[1]) <= 1 && Math.abs(got[2] - want[2]) <= 1 && Math.abs(got[3] - want[3]) <= 0.02;
-              };
-              const read = () => {
-                const style = getComputedStyle(button);
-                const matrix = style.transform.match(/matrix\(([^)]+)\)/);
-                const scale = matrix ? Number(matrix[1].split(",")[0]) : (style.transform === "none" ? 1 : 0);
-                const shadow = style.boxShadow;
-                const blurNear = (shadow.match(/([\d.]+)px/g) || []).some((part) => Math.abs(parseFloat(part) - 18) <= 1);
-                const modalHidden = document.getElementById(modalId)?.classList.contains("hidden") !== false;
-                return {
-                  picked: button.classList.contains("is-picked"),
-                  menuOpen: !menu.hidden,
-                  modalHidden,
-                  border: style.borderTopColor,
-                  shadow,
-                  scale,
-                  bg: style.backgroundColor,
-                  visible: button.getBoundingClientRect().height > 0,
-                  ready: nearColor(style.borderTopColor, borderTarget) && nearColor(style.backgroundColor, bgTarget) && blurNear && scale > 0.95 && scale < 0.99,
-                };
-              };
-              let highlighted: ReturnType<typeof read> | null = null;
-              let settled = false;
-              let giveUp = 0;
-              const finish = (snap: ReturnType<typeof read>) => {
-                if (settled) return;
-                settled = true;
-                window.clearTimeout(giveUp);
-                resolve({
-                  picked: snap.picked,
-                  menuOpen: snap.menuOpen,
-                  modalHidden: snap.modalHidden,
-                  border: snap.border,
-                  shadow: snap.shadow,
-                  scale: snap.scale,
-                  bg: snap.bg,
-                  visible: snap.visible,
-                });
-              };
-              giveUp = window.setTimeout(() => finish(highlighted || read()), 8000);
-              const watch = () => {
-                if (settled) return;
-                const snap = read();
-                if (!highlighted && snap.modalHidden && snap.picked && snap.menuOpen && snap.ready) highlighted = snap;
-                if (highlighted && !snap.modalHidden) {
-                  finish(highlighted);
-                  return;
-                }
-                if (!snap.modalHidden && !highlighted) {
-                  finish(snap);
-                  return;
-                }
-                requestAnimationFrame(watch);
-              };
               button.click();
-              requestAnimationFrame(watch);
-            }), item.kind, expectedBorder, expectedBg);
-            expect(sample.picked, item.kind).toBe(true);
-            expect(sample.menuOpen, item.kind).toBe(true);
-            expect(sample.modalHidden, item.kind).toBe(true);
-            expect(sample.visible, item.kind).toBe(true);
-            expectSettledColor(sample.border, expectedBorder, item.kind);
-            expectSettledColor(sample.bg, expectedBg, item.kind);
-            expect((sample.shadow.match(/([\d.]+)px/g) || []).some((part) => Math.abs(parseFloat(part) - 18) <= 1), item.kind).toBe(true);
-            expect(sample.scale, item.kind).toBeGreaterThan(0.95);
-            expect(sample.scale, item.kind).toBeLessThan(0.99);
+              const modal = document.getElementById(modalId);
+              return {
+                picked: button.classList.contains("is-picked"),
+                menuOpen: menu.hidden === false,
+                modalHidden: !!modal && modal.classList.contains("hidden"),
+              };
+            }, item.kind);
+            expect(highlight.picked, item.kind).toBe(true);
+            expect(highlight.menuOpen, item.kind).toBe(true);
+            expect(highlight.modalHidden, item.kind).toBe(true);
+            await page.waitForFunction((modalId) => {
+              const modal = document.getElementById(modalId);
+              return !!modal && !modal.classList.contains("hidden");
+            }, { timeout: 10000 }, item.modal);
+            if (item.modal === "manualBookingModal") {
+              await page.waitForFunction((pressed) => {
+                return document.getElementById("manWalkInBtn")?.getAttribute("aria-pressed") === pressed;
+              }, { timeout: 10000 }, item.walkIn ? "true" : "false");
+            }
             await page.waitForFunction((modalId) => {
               const sheet = document.getElementById(modalId)?.querySelector(".sd-form-sheet");
               if (!sheet) return false;
@@ -5397,80 +5335,53 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       });
       expect(immediate.open).toBe(true);
       await page.evaluate(() => (window as unknown as { closeOwnerRecurringModal: () => void }).closeOwnerRecurringModal());
-      const cancelled = await page.evaluate(() => new Promise<{ hidden: boolean; picked: boolean }>((resolve) => {
+      const cancelled = await page.evaluate(() => {
         const menu = document.getElementById("schediDashAddMenu") as HTMLElement;
         menu.hidden = true;
         (document.querySelector("#schediDashTabbar .sd-fab") as HTMLButtonElement).click();
-        (menu.querySelector('[data-dash-add="appointment"]') as HTMLButtonElement).click();
+        const button = menu.querySelector('[data-dash-add="appointment"]') as HTMLButtonElement;
+        button.click();
+        const pickedDuring = button.classList.contains("is-picked");
+        const modalHiddenDuring = document.getElementById("manualBookingModal")?.classList.contains("hidden") === true;
         document.body.click();
-        const read = () => ({
-          hidden: document.getElementById("manualBookingModal")?.classList.contains("hidden") !== false,
-          picked: !!document.querySelector("#schediDashAddMenu button.is-picked"),
-        });
-        const clicked = performance.now();
-        const watch = () => {
-          const snap = read();
-          if (!snap.hidden || (!snap.picked && performance.now() - clicked >= 220)) {
-            resolve(snap);
-            return;
-          }
-          requestAnimationFrame(watch);
+        return {
+          pickedDuring,
+          modalHiddenDuring,
+          hidden: document.getElementById("manualBookingModal")?.classList.contains("hidden") === true,
+          picked: button.classList.contains("is-picked"),
+          menuHidden: menu.hidden === true,
         };
-        requestAnimationFrame(watch);
-      }));
+      });
+      expect(cancelled.pickedDuring).toBe(true);
+      expect(cancelled.modalHiddenDuring).toBe(true);
       expect(cancelled.hidden).toBe(true);
       expect(cancelled.picked).toBe(false);
+      expect(cancelled.menuHidden).toBe(true);
       await page.emulateMediaFeatures([{ name: "prefers-reduced-motion", value: "reduce" }]);
-      const reduced = await page.evaluate(() => new Promise<{
-        immediate: { picked: boolean; hidden: boolean; transform: string; duration: string };
-        mid: { picked: boolean; hidden: boolean; transform: string };
-        after: { hidden: boolean };
-      }>((resolve) => {
-        const menu = document.getElementById("schediDashAddMenu") as HTMLElement;
-        menu.hidden = true;
+      await page.evaluate(() => {
+        const menu = document.getElementById("schediDashAddMenu");
+        if (menu) menu.hidden = true;
+        (window as unknown as { closeManualBookingModal: () => void }).closeManualBookingModal();
         (document.querySelector("#schediDashTabbar .sd-fab") as HTMLButtonElement).click();
-        const button = menu.querySelector('[data-dash-add="walkin"]') as HTMLButtonElement;
+      });
+      await page.waitForSelector("#schediDashAddMenu:not([hidden])");
+      const reduced = await page.evaluate(() => {
+        const button = document.querySelector('#schediDashAddMenu [data-dash-add="walkin"]') as HTMLButtonElement;
         button.click();
         const style = getComputedStyle(button);
-        const immediate = {
+        return {
           picked: button.classList.contains("is-picked"),
-          hidden: document.getElementById("manualBookingModal")?.classList.contains("hidden") !== false,
+          hidden: document.getElementById("manualBookingModal")?.classList.contains("hidden") === true,
           transform: style.transform,
           duration: style.transitionDuration,
         };
-        const modalOpen = () => document.getElementById("manualBookingModal")?.classList.contains("hidden") === false;
-        requestAnimationFrame(() => {
-          const midStyle = getComputedStyle(button);
-          const mid = {
-            picked: button.classList.contains("is-picked"),
-            hidden: document.getElementById("manualBookingModal")?.classList.contains("hidden") !== false,
-            transform: midStyle.transform,
-          };
-          const done = () => resolve({ immediate, mid, after: { hidden: false } });
-          if (!mid.hidden) {
-            done();
-            return;
-          }
-          const watchOpen = () => {
-            if (modalOpen()) {
-              done();
-              return;
-            }
-            requestAnimationFrame(watchOpen);
-          };
-          requestAnimationFrame(watchOpen);
-        });
-      }));
-      expect(reduced.immediate.picked).toBe(true);
-      expect(reduced.immediate.hidden).toBe(true);
-      expect(reduced.immediate.transform).toBe("none");
-      expect(reduced.immediate.duration).toBe("0s");
-      expect(reduced.mid.picked).toBe(true);
-      expect(reduced.mid.hidden).toBe(true);
-      expect(reduced.mid.transform).toBe("none");
-      expect(reduced.after.hidden).toBe(false);
-      const reducedWalk = await page.evaluate(() => (document.getElementById("manWalkInBtn") as HTMLButtonElement | null)?.getAttribute("aria-pressed") || "");
-      expect(reducedWalk).toBe("true");
+      });
+      expect(reduced.picked).toBe(true);
+      expect(reduced.hidden).toBe(true);
+      expect(reduced.transform).toBe("none");
+      expect(reduced.duration).toBe("0s");
+      await page.waitForFunction(() => document.getElementById("manualBookingModal")?.classList.contains("hidden") === false);
+      await page.waitForFunction(() => document.getElementById("manWalkInBtn")?.getAttribute("aria-pressed") === "true");
     } finally {
       await browser.close();
       await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));

@@ -23,6 +23,8 @@
 
 import { handleAuthRequest, saveOwnerSecret, authReady, readSession, readLogoWriteSession, passwordMatches } from './owner-auth.js';
 import { requireAgency } from './agency-session.js';
+import { handleAgencyAdd } from './agency-add.js';
+import { forwardAdminInbound } from './admin-mail-forward.js';
 import { runUnpaidDigest } from './unpaid-digest.js';
 import { runDepositFollowups, runSignupReminders, isAwaitingDeposit, signupAwaitingCheckout } from './flow-gaps.js';
 import { resolveOwnerNotifyAddress } from './owner-notify.js';
@@ -3303,6 +3305,10 @@ export default {
       });
     }
 
+    if (path === '/auth/agency-add') {
+      return handleAgencyAdd(request, env, origin, json);
+    }
+
     if (path === '/auth/provision-mail') {
       return handleAgencyProvisionMail(request, env, origin);
     }
@@ -3370,6 +3376,10 @@ export default {
       escapeHtml,
       safeTenantId,
     });
+  },
+
+  async email(message, env) {
+    await forwardAdminInbound(message, env);
   },
 
   async scheduled(event, env, ctx) {

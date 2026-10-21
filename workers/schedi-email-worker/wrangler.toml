@@ -1,8 +1,8 @@
 name = "schedi-email-worker"
 # Crons are scheduled() triggers, not HTTP.
 # workers.dev stays on for live monitoring and the Resend webhook. Runtime still
-# blocks /auth/* and /api/ops-default-passwords on *.workers.dev. /api/ops-snapshot
-# (bearer) and /api/resend-events (signature) stay open there.
+# blocks /auth/* and /api/ops-default-passwords on *.workers.dev.
+# /api/ops-snapshot (bearer) and /api/resend-events (signature) stay open there.
 workers_dev = true
 main = "src/index.js"
 compatibility_date = "2026-09-28"
@@ -16,6 +16,7 @@ compatibility_date = "2026-09-28"
 #   STRIPE_SECRET_KEY
 #   STRIPE_WEBHOOK_SECRET
 #   RESEND_WEBHOOK_SECRET  (whsec_... from the Resend webhook for POST /api/resend-events; opens/clicks for the ops snapshot)
+#   MIGRATION_TOKEN        (Bearer for POST /auth/agency-add and the private-field migrations; set only while that one-time step runs)
 # SMS sends are skipped until all three Twilio secrets are set.
 # Stripe secrets are wrangler secrets only. Never put them in this file or in HTML.
 # FIREBASE_SERVICE_ACCOUNT_JSON is a wrangler secret. Never commit it or put it in HTML.
@@ -135,6 +136,13 @@ FIREBASE_API_KEY = "AIzaSyBYKvxQQGIkBNRej33pTYcqKm8G1qTPDZ0"
 FIREBASE_PROJECT_ID = "siteforge-97699"
 FIREBASE_APP_ID = "siteforge-97699"
 DEFAULT_TIMEZONE = "America/New_York"
+# Inbound Email Routing fan-out. The handler forwards only envelopes listed in
+# ADMIN_FORWARD_RECIPIENTS, to every address in ADMIN_FORWARD_TO. Any other
+# recipient is rejected. bookings@ and onboarding@ stay on their existing routes.
+# Dashboard step (not applied from this file): Email Routing → Routing rules →
+# admin@schedi.app and hello@schedi.app → Action: Send to a Worker → schedi-email-worker.
+ADMIN_FORWARD_RECIPIENTS = "admin@schedi.app,hello@schedi.app"
+ADMIN_FORWARD_TO = "axl199@gmail.com,schedi.app@gmail.com"
 
 [[kv_namespaces]]
 binding = "AUTH_KV"
