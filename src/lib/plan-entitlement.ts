@@ -100,8 +100,10 @@ export function applySchediPlan(
   ownerEmail: string,
 ): Business {
   if (!remote) return business;
+  const remoteEmail = remote.ownerEmail.trim().toLowerCase();
   const email = ownerEmail.trim().toLowerCase();
-  if (remote.ownerEmail && email && remote.ownerEmail !== email) return business;
+  // An empty owner email must not grant or revoke a plan, including a slug-only claim.
+  if (!remoteEmail || !remoteEmail.includes("@") || !email || remoteEmail !== email) return business;
 
   if (remote.cardEntitled) {
     return store.setPlanEntitlement(business.id, {

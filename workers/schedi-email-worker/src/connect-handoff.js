@@ -1,13 +1,12 @@
 /**
  * Schedi.app "Set up Stripe" hands the signed-in owner to the Connect app.
- * The Connect SQLite plan is not the source of truth: complimentaryPro and
- * billingExempt live on the private Firestore tenant, and an active Pro plan
- * counts too. This mints a short-lived signed link so Connect can onboard
- * without offering a $49 subscription.
+ * The token only names the business. Plan flags stay out of it. Connect
+ * re-reads /billing/connect-plan when the link is opened. The token sits in
+ * the URL fragment so Railway's request log does not record it.
  */
 
 export const CONNECT_APP_ORIGIN = "https://schedi-connect-production.up.railway.app";
-const HANDOFF_TTL_SECONDS = 10 * 60;
+const HANDOFF_TTL_SECONDS = 2 * 60;
 
 export function connectCardEntitled(tenant) {
   if (!tenant || typeof tenant !== "object") return false;
@@ -39,6 +38,12 @@ function bytesToB64Url(bytes) {
   let bin = "";
   for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
   return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+function randomNonce() {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  return bytesToB64Url(bytes);
 }
 
 async function signPayload(secret, payload) {
@@ -109,6 +114,7 @@ export async function handleConnectHandoff(request, env, deps) {
     return http(502, { ok: false, error: "tenant_lookup_failed" });
   }
   if (!tenant) return http(404, { ok: false, error: "tenant_not_found" });
+  if (tenant.__privateLoadFailed) return http(502, { ok: false, error: "private_read_failed" });
   if (!connectCardEntitled(tenant)) return http(403, { ok: false, error: "pro_required" });
 
   const view = connectPlanView(tenant);
@@ -122,14 +128,13 @@ export async function handleConnectHandoff(request, env, deps) {
     email: view.ownerEmail,
     ownerName: view.ownerName.slice(0, 80),
     businessName: view.name.slice(0, 80),
-    complimentary: view.complimentary,
-    billingExempt: view.billingExempt,
+    nonce: randomNonce(),
     exp: Math.floor(now / 1000) + HANDOFF_TTL_SECONDS,
   };
   const token = await signConnectHandoff(claims, secret);
   return http(200, {
     ok: true,
-    url: CONNECT_APP_ORIGIN + "/api/connect/handoff?t=" + encodeURIComponent(token),
+    url: CONNECT_APP_ORIGIN + "/api/connect/handoff#t=" + encodeURIComponent(token),
   });
 }
 
@@ -142,22 +147,20 @@ export async function handleConnectPlan(request, env, deps) {
   if (!data) return http(400, { ok: false, error: "invalid_json" });
   const slug = String(data.slug || "").trim();
   const email = String(data.email || "").trim().toLowerCase();
-  if (!slug && !email) return http(400, { ok: false, error: "invalid_tenant" });
+  if (!/^[A-Za-z0-9_-]{1,80}$/.test(slug)) return http(400, { ok: false, error: "invalid_tenant" });
 
   let tenant = null;
   try {
-    if (slug) tenant = await deps.loadBySlug(slug);
-    if (email) {
-      const byEmail = await deps.loadByEmail(email);
-      const current = String((tenant && tenant.ownerEmail) || "").trim().toLowerCase();
-      if (!tenant || (current && current !== email)) tenant = byEmail || null;
-      const got = String((tenant && tenant.ownerEmail) || "").trim().toLowerCase();
-      if (tenant && got && got !== email) tenant = null;
-    }
+    tenant = await deps.loadBySlug(slug);
   } catch {
     return http(502, { ok: false, error: "tenant_lookup_failed" });
   }
   if (!tenant) return http(404, { ok: false, error: "tenant_not_found" });
+  if (tenant.__privateLoadFailed) return http(502, { ok: false, error: "private_read_failed" });
   const view = connectPlanView(tenant);
+  if (!view.ownerEmail || view.ownerEmail.indexOf("@") < 1) {
+    return http(409, { ok: false, error: "owner_email_missing" });
+  }
+  if (email && view.ownerEmail !== email) return http(404, { ok: false, error: "tenant_not_found" });
   return http(200, { ok: true, ...view });
 }

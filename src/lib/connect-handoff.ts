@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import type { Store } from "./db";
 import { SchediError } from "./errors";
+import type { SchediPlanRecord } from "./plan-entitlement";
 import type { Business } from "./types";
 
 export interface HandoffClaims {
@@ -9,14 +10,11 @@ export interface HandoffClaims {
   email: string;
   ownerName: string;
   businessName: string;
-  complimentary: boolean;
-  billingExempt: boolean;
+  nonce: string;
   exp: number;
 }
 
-function b64url(bytes: Buffer): string {
-  return bytes.toString("base64url");
-}
+const HANDOFF_MAX_MS = 2 * 60 * 1000 + 30_000;
 
 export function verifyConnectHandoff(token: string, secret: string, nowMs = Date.now()): HandoffClaims | null {
   const expected = String(secret || "");
@@ -41,28 +39,42 @@ export function verifyConnectHandoff(token: string, secret: string, nowMs = Date
   const row = parsed as Record<string, unknown>;
   const slug = String(row.slug || "").trim().toLowerCase();
   const email = String(row.email || "").trim().toLowerCase();
+  const nonce = String(row.nonce || "");
   const exp = Number(row.exp);
   if (row.v !== 1) return null;
   if (!/^[a-z0-9](?:[a-z0-9-]{0,40})$/.test(slug)) return null;
   if (!email.includes("@") || email.length > 160) return null;
+  if (!/^[A-Za-z0-9_-]{16,128}$/.test(nonce)) return null;
   if (!Number.isFinite(exp) || exp * 1000 < nowMs - 30_000) return null;
-  if (exp * 1000 > nowMs + 15 * 60 * 1000) return null;
+  if (exp * 1000 > nowMs + HANDOFF_MAX_MS) return null;
   return {
     v: 1,
     slug,
     email,
     ownerName: String(row.ownerName || "").trim().slice(0, 80),
     businessName: String(row.businessName || "").trim().slice(0, 80),
-    complimentary: row.complimentary === true,
-    billingExempt: row.billingExempt === true,
+    nonce,
     exp,
   };
 }
 
-/** Open a Connect business for a signed Schedi handoff. Does not create a Stripe customer or subscription. */
-export function adoptSchediBusiness(store: Store, claims: HandoffClaims): { ownerId: string; business: Business } {
+function planSlug(remote: SchediPlanRecord, fallback: string): string {
+  const slug = remote.slug.trim().toLowerCase();
+  return /^[a-z0-9](?:[a-z0-9-]{0,40})$/.test(slug) ? slug : fallback;
+}
+
+/** Open a Connect business from a re-checked Schedi plan. Does not create a Stripe customer or subscription. */
+export function adoptSchediBusiness(
+  store: Store,
+  claims: HandoffClaims,
+  remote: SchediPlanRecord,
+): { ownerId: string; business: Business } {
   const email = claims.email.trim().toLowerCase();
-  const slug = claims.slug.trim().toLowerCase();
+  const remoteEmail = remote.ownerEmail.trim().toLowerCase();
+  if (!remote.cardEntitled || !remoteEmail.includes("@") || remoteEmail !== email) {
+    throw new SchediError("Card payments are available on an active Pro subscription. Nothing was charged.", 403);
+  }
+  const slug = planSlug(remote, claims.slug);
   let owner = store.getOwnerByEmail(email);
   if (!owner) {
     const name = claims.ownerName || claims.businessName || "Owner";
@@ -76,7 +88,7 @@ export function adoptSchediBusiness(store: Store, claims: HandoffClaims): { owne
   if (!business) {
     business = store.createBusiness({
       ownerId: owner.id,
-      name: claims.businessName || "Business",
+      name: remote.name || claims.businessName || "Business",
       slug,
       plan: "pro",
       subscriptionStatus: "active",
@@ -85,9 +97,55 @@ export function adoptSchediBusiness(store: Store, claims: HandoffClaims): { owne
   business = store.setPlanEntitlement(business.id, {
     plan: "pro",
     subscriptionStatus: "active",
-    complimentaryPro: claims.complimentary || claims.billingExempt,
-    billingExempt: claims.billingExempt,
+    complimentaryPro: remote.complimentary || remote.billingExempt,
+    billingExempt: remote.billingExempt,
     slug,
   });
   return { ownerId: owner.id, business };
+}
+
+export type HandoffLookup = (query: { slug: string; email: string }) => Promise<SchediPlanRecord | null>;
+
+export type ConnectHandoffResult =
+  | { ok: true; ownerId: string; business: Business }
+  | { ok: false; error: string };
+
+const INVALID_LINK = "This Stripe setup link is not valid. Nothing was charged.";
+const USED_LINK = "This Stripe setup link was already used. Nothing was charged.";
+const PLAN_REQUIRED = "Card payments are available on an active Pro subscription. Nothing was charged.";
+
+/**
+ * Verify the link, burn its nonce, then accept the plan only from lookup.
+ * Lookup is /billing/connect-plan in production. Claims in the token do not grant Pro.
+ */
+export async function acceptConnectHandoff(
+  store: Store,
+  token: string,
+  secret: string,
+  lookup: HandoffLookup,
+  nowMs = Date.now(),
+): Promise<ConnectHandoffResult> {
+  const claims = verifyConnectHandoff(token, secret, nowMs);
+  if (!claims) return { ok: false, error: INVALID_LINK };
+  const consumed = store.consumeConnectHandoff(claims.nonce, claims.exp * 1000, nowMs);
+  if (consumed === "reused") return { ok: false, error: USED_LINK };
+  if (consumed !== "ok") return { ok: false, error: INVALID_LINK };
+
+  let remote: SchediPlanRecord | null = null;
+  try {
+    remote = await lookup({ slug: claims.slug, email: claims.email });
+  } catch {
+    remote = null;
+  }
+  const remoteEmail = remote?.ownerEmail.trim().toLowerCase() || "";
+  if (!remote || !remote.cardEntitled || remoteEmail !== claims.email) {
+    return { ok: false, error: PLAN_REQUIRED };
+  }
+  try {
+    const adopted = adoptSchediBusiness(store, claims, remote);
+    return { ok: true, ownerId: adopted.ownerId, business: adopted.business };
+  } catch (error) {
+    const message = error instanceof Error && error.message ? error.message : INVALID_LINK;
+    return { ok: false, error: message };
+  }
 }

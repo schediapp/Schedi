@@ -242,6 +242,10 @@ export class Store {
         id TEXT PRIMARY KEY,
         processed_at TEXT NOT NULL
       );
+      CREATE TABLE IF NOT EXISTS connect_handoffs (
+        nonce TEXT PRIMARY KEY,
+        expires_at INTEGER NOT NULL
+      );
     `);
     ensureBusinessBillingColumns(this.db);
   }
@@ -571,6 +575,25 @@ export class Store {
     this.db
       .prepare("INSERT INTO stripe_events (id, processed_at) VALUES (?, ?)")
       .run(id, new Date().toISOString());
+  }
+
+  /**
+   * Record a handoff nonce the first time it is opened.
+   * A second open returns reused. Expired and over-long windows are refused.
+   */
+  consumeConnectHandoff(nonce: string, expMs: number, nowMs = Date.now()): "ok" | "reused" | "expired" | "invalid" {
+    if (!/^[A-Za-z0-9_-]{16,128}$/.test(nonce)) return "invalid";
+    if (!Number.isFinite(expMs) || expMs < nowMs - 30_000) return "expired";
+    if (expMs > nowMs + 2 * 60 * 1000 + 30_000) return "expired";
+    this.db.prepare("DELETE FROM connect_handoffs WHERE expires_at < ?").run(nowMs - 60_000);
+    const result = this.db
+      .prepare(
+        `INSERT INTO connect_handoffs (nonce, expires_at)
+         SELECT ?, ?
+         WHERE NOT EXISTS (SELECT 1 FROM connect_handoffs WHERE nonce = ?)`,
+      )
+      .run(nonce, Math.round(expMs), nonce);
+    return result.changes === 1 ? "ok" : "reused";
   }
 
   createSession(ownerId: string): string {

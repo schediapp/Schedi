@@ -21920,7 +21920,7 @@ function schediQrCardPixels(text, color) {
                 });
                 var data = {};
                 try { data = await res.json(); } catch (parseErr) { data = {}; }
-                if (data && /^https:\/\/schedi-connect-production\.up\.railway\.app\/api\/connect\/handoff\?t=/.test(String(data.url || ''))) {
+                if (data && /^https:\/\/schedi-connect-production\.up\.railway\.app\/api\/connect\/handoff#t=/.test(String(data.url || ''))) {
                     window.location.assign(data.url);
                     return false;
                 }

@@ -476,14 +476,31 @@ async function getTenantBasics(env, tenantId) {
   };
 }
 
-async function findTenantByOwnerEmail(env, email) {
-  const want = String(email || '').trim().toLowerCase();
-  if (!want || want.indexOf('@') < 1) return null;
-  const map = await listPrivateTenants(env);
-  const id = Object.keys(map).find((key) => String((map[key] && map[key].ownerEmail) || '').trim().toLowerCase() === want);
-  if (!id) return null;
+// Plan checks for Stripe setup. One public doc and one private doc. No booking list
+// and no scan of every private tenant.
+async function getTenantPlanRecord(env, tenantId) {
+  const id = String(tenantId || '').trim();
+  if (!/^[A-Za-z0-9_-]{1,80}$/.test(id)) return null;
   const idToken = await firebaseAnonymousToken(env);
-  return getTenantById(env, idToken, id);
+  const res = await fetch(tenantDocUrl(env, id), {
+    headers: { Authorization: `Bearer ${idToken}` },
+  });
+  if (res.status === 404) return null;
+  const data = await res.json().catch(() => null);
+  if (!res.ok) throw new Error('firestore_get_tenant_failed');
+  const fields = (data && data.fields) || {};
+  const tenant = {};
+  for (const k of Object.keys(fields)) tenant[k] = decodeFirestoreValue(fields[k]);
+  if (!tenant.id) tenant.id = id;
+  if (!tenant.slug) tenant.slug = id;
+  try {
+    const priv = await getPrivateTenant(env, id);
+    if (priv) mergePrivateInto(tenant, priv);
+  } catch (err) {
+    console.warn('private tenant read failed', err && err.message ? err.message : err);
+    tenant.__privateLoadFailed = true;
+  }
+  return tenant;
 }
 
 async function getTenantById(env, idToken, tenantId) {
@@ -3068,20 +3085,13 @@ async function handleBillingRequest(request, env, origin, path, url) {
   if (path === '/billing/connect-handoff') {
     const handed = await handleConnectHandoff(request, env, {
       sessionAllows: (session, tenantId) => billingSessionAllows(env, session, tenantId),
-      loadTenant: async (tenantId) => {
-        const idToken = await firebaseAnonymousToken(env);
-        return getTenantById(env, idToken, tenantId);
-      },
+      loadTenant: (tenantId) => getTenantPlanRecord(env, tenantId),
     });
     return json(handed.body, handed.status, origin);
   }
   if (path === '/billing/connect-plan') {
     const plan = await handleConnectPlan(request, env, {
-      loadBySlug: async (slug) => {
-        const idToken = await firebaseAnonymousToken(env);
-        return getTenantById(env, idToken, slug);
-      },
-      loadByEmail: (email) => findTenantByOwnerEmail(env, email),
+      loadBySlug: (slug) => getTenantPlanRecord(env, slug),
     });
     return json(plan.body, plan.status, origin);
   }
