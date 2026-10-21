@@ -56,6 +56,7 @@ import {
 import { handleSquareHttp, runSquareReconcile } from './square.js';
 import { applyCardCheckoutPayment, centsByBooking } from './card-payment.js';
 import { handleConnectBookingPaid } from './connect-booking-paid.js';
+import { handleConnectHandoff, handleConnectPlan } from './connect-handoff.js';
 import { handlePageVisitsRequest } from '../../../worker/page-visits.ts';
 
 const ALLOWED_ORIGINS = new Set([
@@ -473,6 +474,33 @@ async function getTenantBasics(env, tenantId) {
     name: fields.name ? decodeFirestoreValue(fields.name) : '',
     timezone: fields.timezone ? decodeFirestoreValue(fields.timezone) : (fields.timeZone ? decodeFirestoreValue(fields.timeZone) : ''),
   };
+}
+
+// Plan checks for Stripe setup. One public doc and one private doc. No booking list
+// and no scan of every private tenant.
+async function getTenantPlanRecord(env, tenantId) {
+  const id = String(tenantId || '').trim();
+  if (!/^[A-Za-z0-9_-]{1,80}$/.test(id)) return null;
+  const idToken = await firebaseAnonymousToken(env);
+  const res = await fetch(tenantDocUrl(env, id), {
+    headers: { Authorization: `Bearer ${idToken}` },
+  });
+  if (res.status === 404) return null;
+  const data = await res.json().catch(() => null);
+  if (!res.ok) throw new Error('firestore_get_tenant_failed');
+  const fields = (data && data.fields) || {};
+  const tenant = {};
+  for (const k of Object.keys(fields)) tenant[k] = decodeFirestoreValue(fields[k]);
+  if (!tenant.id) tenant.id = id;
+  if (!tenant.slug) tenant.slug = id;
+  try {
+    const priv = await getPrivateTenant(env, id);
+    if (priv) mergePrivateInto(tenant, priv);
+  } catch (err) {
+    console.warn('private tenant read failed', err && err.message ? err.message : err);
+    tenant.__privateLoadFailed = true;
+  }
+  return tenant;
 }
 
 async function getTenantById(env, idToken, tenantId) {
@@ -3053,6 +3081,19 @@ async function handleBillingRequest(request, env, origin, path, url) {
   }
   if (path === '/billing/connect-ready') {
     return handleConnectReady(request, env, origin);
+  }
+  if (path === '/billing/connect-handoff') {
+    const handed = await handleConnectHandoff(request, env, {
+      sessionAllows: (session, tenantId) => billingSessionAllows(env, session, tenantId),
+      loadTenant: (tenantId) => getTenantPlanRecord(env, tenantId),
+    });
+    return json(handed.body, handed.status, origin);
+  }
+  if (path === '/billing/connect-plan') {
+    const plan = await handleConnectPlan(request, env, {
+      loadBySlug: (slug) => getTenantPlanRecord(env, slug),
+    });
+    return json(plan.body, plan.status, origin);
   }
   if (path === '/billing/subscribe') {
     if (request.method !== 'GET') return json({ ok: false, error: 'method_not_allowed' }, 405, origin);

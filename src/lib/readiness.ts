@@ -1,3 +1,4 @@
+import { isCardPlanPro } from "./plan-entitlement";
 import type { Business, Plan, SubscriptionStatus } from "./types";
 
 const PAUSING_STATUSES = new Set<SubscriptionStatus>([
@@ -57,11 +58,7 @@ export function connectedChargesEnabled(account: MerchantCapabilityAccount & { c
 export function isCardCheckoutReady(
   business: Pick<Business, "plan" | "subscriptionStatus" | "cardPaymentsStatus">,
 ): boolean {
-  return (
-    business.plan === "pro" &&
-    business.subscriptionStatus === "active" &&
-    business.cardPaymentsStatus === "active"
-  );
+  return isCardPlanPro(business) && business.cardPaymentsStatus === "active";
 }
 
 export function planIncludesCards(plan: Plan): boolean {

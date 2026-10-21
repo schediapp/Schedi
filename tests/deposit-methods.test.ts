@@ -211,7 +211,9 @@ describe("new booking and HQ designs are the default", () => {
     expect(html).toContain("squareStatus !== 'ready'");
     expect(html).toContain("https://schedi.app/api/square/connect");
     expect(html).toContain("https://schedi.app/api/square/pay?t=");
-    expect(html).toContain("https://schedi-connect-production.up.railway.app/portal");
+    expect(html).toContain("https://schedi.app/billing/connect-handoff");
+    expect(html).toContain("window.startStripeSetup");
+    expect(html).not.toContain("https://schedi-connect-production.up.railway.app/portal");
     expect(html).toContain("function publicMethodAcceptsDeposit(method)");
     expect(html).toContain("function schediNewBookOn");
     const bookFn = html.slice(html.indexOf("function schediNewBookOn"), html.indexOf("function bookingPaymentState"));

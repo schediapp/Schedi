@@ -338,8 +338,10 @@ describe("booking page card copy", () => {
       expect(html).toContain("tenantData.stripeConnectReady === true");
     }
     expect(indexHtml).toContain("Set up Stripe");
-    expect(indexHtml).toContain("https://schedi-connect-production.up.railway.app/portal");
-    expect(indexHtml).toContain("https://schedi-connect-production.up.railway.app/portal#stripe-setup");
+    expect(indexHtml).toContain("https://schedi.app/billing/connect-handoff");
+    expect(indexHtml).toContain("api\\/connect\\/handoff");
+    expect(indexHtml).toContain("handoff#t=");
+    expect(indexHtml).not.toContain("railway.app/portal");
     const syncAt = bookingHtml.indexOf("function syncBookingsToFirestore");
     const sync = bookingHtml.slice(syncAt, bookingHtml.indexOf("document.getElementById('resCode')", syncAt));
     const createdAt = sync.indexOf("var created = !!(out && out.ok && out.data && out.data.ok);");

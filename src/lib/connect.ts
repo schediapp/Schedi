@@ -2,6 +2,7 @@ import type Stripe from "stripe";
 import type { Store } from "./db";
 import { SchediError } from "./errors";
 import { publishStripeConnectReady } from "./connect-ready";
+import { applySchediPlan, fetchSchediPlan, isCardPlanPro } from "./plan-entitlement";
 import { connectedChargesEnabled, readCapabilityStatuses } from "./readiness";
 import { assertNoForbiddenKeys, cardStatementDescriptor } from "./statement";
 import type { Business, Owner } from "./types";
@@ -66,16 +67,19 @@ export async function enableCardPayments(
   stripe: Stripe,
   ownerId: string,
 ): Promise<{ accountId: string; created: boolean }> {
-  const business = store.getBusinessByOwner(ownerId);
-  if (!business) throw new SchediError("Business not found.", 404);
-  if (business.plan !== "pro" || business.subscriptionStatus !== "active") {
+  const existing = store.getBusinessByOwner(ownerId);
+  if (!existing) throw new SchediError("Business not found.", 404);
+  const ownerForPlan = store.getOwner(ownerId);
+  const remotePlan = await fetchSchediPlan({ slug: existing.slug, email: ownerForPlan.email });
+  const business = applySchediPlan(store, existing, remotePlan, ownerForPlan.email);
+  if (!isCardPlanPro(business)) {
     throw new SchediError("Card payments are available on an active Pro subscription.", 403);
   }
   if (business.stripeAccountId) {
     return { accountId: business.stripeAccountId, created: false };
   }
 
-  const owner = store.getOwner(ownerId);
+  const owner = ownerForPlan;
   // Stripe stores the first response for an idempotency key for 24 hours, including
   // failures. v1 keys from earlier attempts must not be reused after a fix.
   const account = await stripe.v2.core.accounts.create(buildMerchantAccountParams(business, owner), {

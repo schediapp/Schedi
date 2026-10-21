@@ -6515,7 +6515,7 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                                 <input type="checkbox" id="tenantPayCardCheck" class="sd-pay-switch" role="switch" aria-checked="false" aria-labelledby="tenantPayCardLabel">
                             </label>
                             <p class="sd-pay-switch-note"><span id="tenantPayCardStatus" class="sd-pay-status" data-status="not_started">Not started</span></p>
-                            <p id="tenantPayCardSetup" class="sd-pay-switch-note"><a class="sd-pay-setup-btn" id="tenantPayCardSetupLink" href="https://schedi-connect-production.up.railway.app/portal">Set up Stripe</a></p>
+                            <p id="tenantPayCardSetup" class="sd-pay-switch-note"><a class="sd-pay-setup-btn" id="tenantPayCardSetupLink" href="#" onclick="return startStripeSetup(event)">Set up Stripe</a></p>
                         </div>
 
                         <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-3">
@@ -21904,6 +21904,35 @@ function schediQrCardPixels(text, color) {
             el.setAttribute('data-status', status);
         }
 
+        window.startStripeSetup = async function (ev) {
+            if (ev && ev.preventDefault) ev.preventDefault();
+            var tenant = (typeof getTenant === 'function') ? getTenant() : null;
+            var session = (typeof schediAuthSession === 'function') ? schediAuthSession() : '';
+            if (!tenant || !tenant.id || !session) {
+                if (typeof showToast === 'function') showToast('Sign in to finish Stripe setup.', 'error');
+                return false;
+            }
+            try {
+                var res = await fetch('https://schedi.app/billing/connect-handoff', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tenantId: tenant.id, session: session })
+                });
+                var data = {};
+                try { data = await res.json(); } catch (parseErr) { data = {}; }
+                if (data && /^https:\/\/schedi-connect-production\.up\.railway\.app\/api\/connect\/handoff#t=/.test(String(data.url || ''))) {
+                    window.location.assign(data.url);
+                    return false;
+                }
+                if (data && data.error === 'pro_required') {
+                    if (typeof showToast === 'function') showToast('Card setup needs an active Pro plan. Nothing was charged.', 'error');
+                    return false;
+                }
+            } catch (err) {}
+            if (typeof showToast === 'function') showToast('Stripe setup did not open. Nothing was charged.', 'error');
+            return false;
+        };
+
         window.startSquareSetup = async function (ev) {
             if (ev && ev.preventDefault) ev.preventDefault();
             var tenant = (typeof getTenant === 'function') ? getTenant() : null;
@@ -21963,9 +21992,8 @@ function schediQrCardPixels(text, color) {
                 var cardSetupLink = document.getElementById('tenantPayCardSetupLink');
                 if (cardSetupLink) {
                     cardSetupLink.textContent = 'Set up Stripe';
-                    cardSetupLink.href = stripeStatus === 'in_progress'
-                        ? 'https://schedi-connect-production.up.railway.app/portal#stripe-setup'
-                        : 'https://schedi-connect-production.up.railway.app/portal';
+                    cardSetupLink.href = '#';
+                    cardSetupLink.setAttribute('onclick', 'return startStripeSetup(event)');
                 }
             }
             var dep = ensureDepositSettings(tenant);

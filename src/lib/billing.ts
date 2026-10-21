@@ -3,6 +3,7 @@ import type { Store } from "./db";
 import { SchediError } from "./errors";
 import { assertNoForbiddenKeys, integrationIdentifier } from "./statement";
 import { ownerCheckoutCustomText } from "./public-owner-billing";
+import { isComplimentaryPro } from "./plan-entitlement";
 import { applySubscriptionState } from "./subscription-state";
 import type { Owner, Plan } from "./types";
 import { PLANS } from "./types";
@@ -59,6 +60,9 @@ export async function startOwnerSubscription(
   const owner = store.getOwner(ownerId);
   const business = store.getBusinessByOwner(ownerId);
   if (!business) throw new SchediError("Business not found.", 404);
+  if (isComplimentaryPro(business)) {
+    throw new SchediError("Complimentary Pro is already active. Nothing was charged.", 400);
+  }
 
   if (
     business.stripeSubscriptionId &&

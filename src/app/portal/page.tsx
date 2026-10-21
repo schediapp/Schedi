@@ -5,6 +5,7 @@ import { currentOwner } from "@/lib/auth";
 import { withFreshCapabilities } from "@/lib/live";
 import { formatUsd } from "@/lib/money";
 import { cardConnectStatus, cardConnectStatusLabel } from "@/lib/connect-status";
+import { applySchediPlan, fetchSchediPlan, isCardPlanPro, isComplimentaryPro, portalPlanPill } from "@/lib/plan-entitlement";
 import { isCardCheckoutReady, isPublicPageLive } from "@/lib/readiness";
 import { formatSlot } from "@/lib/slots";
 import { getStore } from "@/lib/store";
@@ -38,7 +39,12 @@ export default async function PortalPage({
   const freshOwner = store.getOwner(owner.id);
   const found = store.getBusinessByOwner(freshOwner.id);
   if (!found) return <SignIn error="This sign-in has no business." />;
-  const business = await withFreshCapabilities(found);
+  const remotePlan = await fetchSchediPlan({ slug: found.slug, email: freshOwner.email });
+  const entitled = applySchediPlan(store, found, remotePlan, freshOwner.email);
+  const business = await withFreshCapabilities(entitled);
+  const cardsOpen = isCardPlanPro(business);
+  const complimentary = isComplimentaryPro(business);
+  const pill = portalPlanPill(business);
   const services = store.listServices(business.id);
   const bookings = store.listBookings(business.id).slice(0, 8);
   const live = isPublicPageLive(business.subscriptionStatus);
@@ -54,7 +60,7 @@ export default async function PortalPage({
           <p className="eyebrow">Owner portal</p>
           <h1>{business.name}</h1>
           <div className="meta">
-            <span className="pill">{PLANS[business.plan].name} · {formatUsd(PLANS[business.plan].monthlyCents)}/mo</span>
+            <span className="pill">{pill.title} · {formatUsd(pill.monthlyCents)}/mo</span>
             <span className="pill">{live ? "Public page is live" : "Public page is paused"}</span>
             <a href={`/b/${business.slug}`}>View booking page</a>
           </div>
@@ -72,7 +78,7 @@ export default async function PortalPage({
         <section className="grid-2">
           <div className="panel">
             <h2>Card payments</h2>
-            {business.plan !== "pro" || business.subscriptionStatus !== "active" ? (
+            {!cardsOpen ? (
               <>
                 <p className="muted" style={{ margin: "8px 0 12px" }}>
                   Card payments are on an active Pro plan ({formatUsd(PLANS.pro.monthlyCents)} a month). Cash App, Zelle, Venmo, PayPal, and pay-at-appointment stay available on every plan.
@@ -85,13 +91,13 @@ export default async function PortalPage({
               </>
             ) : null}
 
-            {business.plan === "pro" && business.subscriptionStatus === "active" ? (
+            {cardsOpen ? (
               <p className="meta" style={{ margin: "8px 0 12px" }}>
                 <span className="pill">Stripe: {cardConnectStatusLabel(connectStatus)}</span>
               </p>
             ) : null}
 
-            {business.plan === "pro" && business.subscriptionStatus === "active" && !business.stripeAccountId ? (
+            {cardsOpen && !business.stripeAccountId ? (
               <>
                 <p className="muted" style={{ margin: "8px 0 16px" }}>
                   Set up Stripe to create an account for {business.name}. You can leave and come back. Clients pay that account directly, and they do not see card until this is Ready. Stripe bills {business.name} for processing. Schedi does not add a fee.
@@ -139,6 +145,14 @@ export default async function PortalPage({
           </div>
 
           <div className="stack">
+            {complimentary ? (
+              <section className="panel">
+                <h2>Subscription</h2>
+                <p className="muted" style={{ margin: "8px 0 0" }}>
+                  Complimentary Pro. Card setup is included, and nothing is billed for the Schedi plan.
+                </p>
+              </section>
+            ) : (
             <form className="panel" method="post" action="/api/billing">
               <h2>Subscription</h2>
               <p className="muted" style={{ margin: "8px 0 12px" }}>
@@ -152,7 +166,7 @@ export default async function PortalPage({
                 {business.plan !== "starter" ? (
                   <button className="secondary" name="plan" value="starter" type="submit">Starter · $29/mo</button>
                 ) : null}
-                {business.plan !== "pro" || business.subscriptionStatus !== "active" ? (
+                {!cardsOpen ? (
                   <button name="plan" value="pro" type="submit">Pro · $49/mo</button>
                 ) : (
                   <button className="secondary" name="plan" value="pro" type="submit" disabled>Pro is current</button>
@@ -169,6 +183,7 @@ export default async function PortalPage({
                 </div>
               ) : null}
             </form>
+            )}
 
             <form className="panel" method="post" action="/api/business">
               <h2>Other ways to pay</h2>
