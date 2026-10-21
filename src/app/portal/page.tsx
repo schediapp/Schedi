@@ -1,4 +1,4 @@
-import { ConnectDashboard } from "@/components/connect-dashboard";
+import { ConnectDashboardLoader } from "@/components/connect-dashboard-loader";
 import { SiteHeader } from "@/components/site-header";
 import { fulfillOwnerCheckout } from "@/lib/billing";
 import { currentOwner } from "@/lib/auth";
@@ -134,7 +134,7 @@ export default async function PortalPage({
                   <a href="https://dashboard.stripe.com" target="_blank" rel="noreferrer">Open the Stripe Dashboard</a>
                 </p>
                 {publishableKey ? (
-                  <ConnectDashboard publishableKey={publishableKey} />
+                  <ConnectDashboardLoader publishableKey={publishableKey} />
                 ) : (
                   <p className="banner warn">
                     The connected account exists. Add NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY to load onboarding, the notification banner, account management, payments, and payouts.

@@ -17,6 +17,8 @@ import {
   handleCalendarFeeds,
   handleOwnerFeed,
   resolveHostPublic,
+  syncAllCalendarFeeds,
+  syncTenantFeeds,
 } from "../workers/schedi-email-worker/src/calendar-sync.js";
 
 const NOW = new Date("2026-10-20T12:00:00.000Z");
@@ -504,5 +506,159 @@ describe("owner subscribe feed", () => {
     const dates = googleCalendarDatesParam(new Date("2026-10-21T15:00:00.000Z"), new Date("2026-10-21T16:00:00.000Z"));
     expect(dates).toBe("20261021T150000Z/20261021T160000Z");
     expect(dates.includes("%2F")).toBe(false);
+  });
+});
+
+const BUSY_ICS = [
+  "BEGIN:VCALENDAR",
+  "VERSION:2.0",
+  "BEGIN:VEVENT",
+  "UID:busy@example",
+  "DTSTART:20261021T150000Z",
+  "DTEND:20261021T160000Z",
+  "SUMMARY:Hidden title",
+  "END:VEVENT",
+  "END:VCALENDAR",
+].join("\r\n");
+
+const LATER_ICS = BUSY_ICS.replace("DTEND:20261021T160000Z", "DTEND:20261021T170000Z");
+
+function countingKv(seed: Record<string, string> = {}) {
+  const store = new Map(Object.entries(seed));
+  const puts: string[] = [];
+  return {
+    store,
+    puts,
+    async get(key: string) { return store.has(key) ? store.get(key)! : null; },
+    async put(key: string, value: string) { puts.push(key); store.set(key, value); },
+    async delete(key: string) { store.delete(key); },
+  };
+}
+
+function feedDeps(body: string) {
+  return {
+    now: new Date("2026-10-20T12:00:00.000Z"),
+    getTenant: async () => ({ timezone: "America/New_York" }),
+    resolve: async () => ["142.250.1.1"],
+    fetch: async () => ({ status: 200, ok: true, headers: { get: () => null }, text: async () => body }),
+  };
+}
+
+describe("calendar cron KV writes", () => {
+  const syncNow = Date.parse("2026-10-20T12:00:00.000Z");
+  const block = { start: "2026-10-21T15:00:00.000Z", end: "2026-10-21T16:00:00.000Z" };
+  const feed = {
+    id: "feed01",
+    url: "https://calendar.google.com/calendar/ical/secret/basic.ics",
+    addedAt: 1,
+    lastSynced: syncNow,
+    eventCount: 1,
+    error: "",
+  };
+
+  function seedBusy(extra: Record<string, string> = {}) {
+    return countingKv({
+      "calFeedIndex": JSON.stringify(["harbor"]),
+      "calFeeds:harbor": JSON.stringify({
+        tenantId: "harbor",
+        timeZone: "America/New_York",
+        ownerToken: "",
+        feeds: [feed],
+      }),
+      "calBusy:harbor": JSON.stringify({
+        syncedAt: 111,
+        blocks: [block],
+        sources: [{ id: "feed01", eventCount: 1, error: "", lastSynced: 111 }],
+      }),
+      ...extra,
+    });
+  }
+
+  it("skips AUTH_KV writes when a scheduled sync sees the same busy times", async () => {
+    const kv = seedBusy();
+    const result = await syncAllCalendarFeeds({ AUTH_KV: kv }, feedDeps(BUSY_ICS));
+    expect(result).toEqual({ ok: true, synced: 1, errors: 0 });
+    expect(kv.puts).toEqual([]);
+    const busy = JSON.parse(kv.store.get("calBusy:harbor") || "{}");
+    expect(busy.syncedAt).toBe(111);
+    expect(busy.blocks).toEqual([block]);
+    const secret = JSON.parse(kv.store.get("calFeeds:harbor") || "{}");
+    expect(secret.feeds[0].lastSynced).toBe(syncNow);
+  });
+
+  it("writes lastSynced at most once an hour when busy times are unchanged", async () => {
+    const kv = seedBusy();
+    const secretKey = "calFeeds:harbor";
+    const stored = JSON.parse(kv.store.get(secretKey) || "{}");
+    stored.feeds[0].lastSynced = syncNow - 61 * 60 * 1000;
+    kv.store.set(secretKey, JSON.stringify(stored));
+    await syncAllCalendarFeeds({ AUTH_KV: kv }, feedDeps(BUSY_ICS));
+    expect(kv.puts).toEqual([secretKey]);
+    expect(JSON.parse(kv.store.get(secretKey) || "{}").feeds[0].lastSynced).toBe(syncNow);
+    expect(JSON.parse(kv.store.get("calBusy:harbor") || "{}").syncedAt).toBe(111);
+    kv.puts.length = 0;
+    await syncAllCalendarFeeds({ AUTH_KV: kv }, feedDeps(BUSY_ICS));
+    expect(kv.puts).toEqual([]);
+    expect(JSON.parse(kv.store.get(secretKey) || "{}").feeds[0].lastSynced).toBe(syncNow);
+  });
+
+  it("still writes when the scheduled sync sees a new busy time", async () => {
+    const kv = seedBusy();
+    await syncAllCalendarFeeds({ AUTH_KV: kv }, feedDeps(LATER_ICS));
+    expect(kv.puts).toContain("calBusy:harbor");
+    expect(kv.puts).toContain("calFeeds:harbor");
+    const busy = JSON.parse(kv.store.get("calBusy:harbor") || "{}");
+    expect(busy.blocks).toEqual([{ start: block.start, end: "2026-10-21T17:00:00.000Z" }]);
+    expect(busy.syncedAt).not.toBe(111);
+  });
+
+  it("drops a tenant with no calendar links from the index without rewriting empty busy times", async () => {
+    const kv = countingKv({
+      "calFeedIndex": JSON.stringify(["harbor", "kept"]),
+      "calFeeds:harbor": JSON.stringify({ tenantId: "harbor", timeZone: "America/New_York", ownerToken: "", feeds: [] }),
+      "calBusy:harbor": JSON.stringify({ syncedAt: 50, blocks: [], sources: [] }),
+      "calFeeds:kept": JSON.stringify({
+        tenantId: "kept",
+        timeZone: "America/New_York",
+        ownerToken: "",
+        feeds: [{ ...feed, id: "feed02" }],
+      }),
+      "calBusy:kept": JSON.stringify({
+        syncedAt: 222,
+        blocks: [block],
+        sources: [{ id: "feed02", eventCount: 1, error: "", lastSynced: 222 }],
+      }),
+    });
+    await syncAllCalendarFeeds({ AUTH_KV: kv }, feedDeps(BUSY_ICS));
+    expect(JSON.parse(kv.store.get("calFeedIndex") || "[]")).toEqual(["kept"]);
+    expect(kv.puts).toEqual(["calFeedIndex"]);
+    expect(JSON.parse(kv.store.get("calBusy:harbor") || "{}").syncedAt).toBe(50);
+    expect(JSON.parse(kv.store.get("calBusy:kept") || "{}").syncedAt).toBe(222);
+    kv.puts.length = 0;
+    await syncAllCalendarFeeds({ AUTH_KV: kv }, feedDeps(BUSY_ICS));
+    expect(kv.puts).toEqual([]);
+  });
+
+  it("clears stale busy times once when a scheduled tenant no longer has calendar links", async () => {
+    const kv = countingKv({
+      "calFeedIndex": JSON.stringify(["harbor"]),
+      "calFeeds:harbor": JSON.stringify({ tenantId: "harbor", timeZone: "America/New_York", ownerToken: "", feeds: [] }),
+      "calBusy:harbor": JSON.stringify({ syncedAt: 50, blocks: [block], sources: [] }),
+    });
+    await syncAllCalendarFeeds({ AUTH_KV: kv }, feedDeps(BUSY_ICS));
+    expect(JSON.parse(kv.store.get("calFeedIndex") || "[]")).toEqual([]);
+    expect(JSON.parse(kv.store.get("calBusy:harbor") || "{}").blocks).toEqual([]);
+    expect(kv.puts.filter((key) => key === "calBusy:harbor")).toHaveLength(1);
+    expect(kv.puts).not.toContain("calFeeds:harbor");
+    kv.puts.length = 0;
+    await syncAllCalendarFeeds({ AUTH_KV: kv }, feedDeps(BUSY_ICS));
+    expect(kv.puts).toEqual([]);
+  });
+
+  it("still writes when the owner refreshes unchanged busy times", async () => {
+    const kv = seedBusy();
+    await syncTenantFeeds({ AUTH_KV: kv }, "harbor", feedDeps(BUSY_ICS));
+    expect(kv.puts).toContain("calBusy:harbor");
+    expect(kv.puts).toContain("calFeeds:harbor");
   });
 });

@@ -1,6 +1,5 @@
 "use client";
 
-import { loadConnectAndInitialize } from "@stripe/connect-js";
 import {
   ConnectAccountManagement,
   ConnectAccountOnboarding,
@@ -9,33 +8,51 @@ import {
   ConnectPayments,
   ConnectPayouts,
 } from "@stripe/react-connect-js";
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import type { StripeConnectInstance } from "@stripe/connect-js/pure";
 
 export function ConnectDashboard({ publishableKey }: { publishableKey: string }) {
   const [error, setError] = useState<string | null>(null);
-  const connectInstance = useMemo(
-    () =>
-      loadConnectAndInitialize({
-        publishableKey,
-        fetchClientSecret: async () => {
-          const response = await fetch("/api/connect/session", { method: "POST" });
-          const body = (await response.json()) as { clientSecret?: string; error?: string };
-          if (!response.ok || !body.clientSecret) {
-            throw new Error(body.error || "Could not open Stripe onboarding.");
-          }
-          return body.clientSecret;
-        },
-        appearance: {
-          overlays: "dialog",
-          variables: {
-            colorPrimary: "#0e6b62",
-            colorBackground: "#fffdf8",
-            borderRadius: "12px",
+  const [connectInstance, setConnectInstance] = useState<StripeConnectInstance | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    import("@stripe/connect-js/pure")
+      .then(({ loadConnectAndInitialize }) => {
+        if (cancelled) return;
+        setConnectInstance(loadConnectAndInitialize({
+          publishableKey,
+          fetchClientSecret: async () => {
+            const response = await fetch("/api/connect/session", { method: "POST" });
+            const body = (await response.json()) as { clientSecret?: string; error?: string };
+            if (!response.ok || !body.clientSecret) {
+              throw new Error(body.error || "Could not open Stripe onboarding.");
+            }
+            return body.clientSecret;
           },
-        },
-      }),
-    [publishableKey],
-  );
+          appearance: {
+            overlays: "dialog",
+            variables: {
+              colorPrimary: "#0e6b62",
+              colorBackground: "#fffdf8",
+              borderRadius: "12px",
+            },
+          },
+        }));
+      })
+      .catch((loadError: unknown) => {
+        if (!cancelled) {
+          setError(loadError instanceof Error ? loadError.message : "Stripe could not load.");
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [publishableKey]);
+
+  if (!connectInstance) {
+    return error ? <p className="banner bad">{error}</p> : null;
+  }
 
   return (
     <ConnectComponentsProvider connectInstance={connectInstance}>

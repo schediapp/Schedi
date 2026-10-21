@@ -46,6 +46,10 @@ export interface Business {
   /** ISO timestamp for the end of the paid period, when Stripe has one. */
   currentPeriodEnd: string | null;
   stripeAccountId: string | null;
+  /** Connected account id moved aside after Stripe said it was missing. Kept so it can be restored. */
+  stripeAccountIdMissing?: string | null;
+  /** First time this stored account was reported missing, in milliseconds. */
+  stripeAccountMissingAt?: number | null;
   cardPaymentsStatus: string | null;
   payoutsStatus: string | null;
   depositEnabled: boolean;

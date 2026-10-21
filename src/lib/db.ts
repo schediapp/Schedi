@@ -77,6 +77,8 @@ interface BusinessRow {
   cancel_at_period_end: number;
   current_period_end: string | null;
   stripe_account_id: string | null;
+  stripe_account_id_missing?: string | null;
+  stripe_account_missing_at?: number | null;
   card_payments_status: string | null;
   payouts_status: string | null;
   deposit_enabled: number;
@@ -136,6 +138,8 @@ function mapBusiness(row: BusinessRow): Business {
     cancelAtPeriodEnd: row.cancel_at_period_end === 1,
     currentPeriodEnd: row.current_period_end,
     stripeAccountId: row.stripe_account_id,
+    stripeAccountIdMissing: row.stripe_account_id_missing ?? null,
+    stripeAccountMissingAt: row.stripe_account_missing_at == null ? null : Number(row.stripe_account_missing_at),
     cardPaymentsStatus: row.card_payments_status,
     payoutsStatus: row.payouts_status,
     depositEnabled: row.deposit_enabled === 1,
@@ -421,7 +425,7 @@ export class Store {
 
   setStripeAccount(
     businessId: string,
-    stripeAccountId: string,
+    stripeAccountId: string | null,
     statuses: { cardPaymentsStatus: string | null; payoutsStatus: string | null },
   ): Business {
     this.db
@@ -431,6 +435,42 @@ export class Store {
          WHERE id = ?`,
       )
       .run(stripeAccountId, statuses.cardPaymentsStatus, statuses.payoutsStatus, businessId);
+    return this.getBusiness(businessId);
+  }
+
+  noteStripeAccountMiss(businessId: string, at: number): Business {
+    const seenAt = Number(at);
+    if (!Number.isFinite(seenAt)) return this.getBusiness(businessId);
+    this.db
+      .prepare(
+        `UPDATE businesses
+         SET stripe_account_missing_at = ?
+         WHERE id = ? AND stripe_account_id IS NOT NULL AND stripe_account_missing_at IS NULL`,
+      )
+      .run(Math.floor(seenAt), businessId);
+    return this.getBusiness(businessId);
+  }
+
+  clearStripeAccountMiss(businessId: string): Business {
+    this.db
+      .prepare("UPDATE businesses SET stripe_account_missing_at = NULL WHERE id = ?")
+      .run(businessId);
+    return this.getBusiness(businessId);
+  }
+
+  /** Copy the live connected-account id aside, then drop it from the active column. */
+  parkMissingStripeAccount(businessId: string): Business {
+    this.db
+      .prepare(
+        `UPDATE businesses
+         SET stripe_account_id_missing = stripe_account_id,
+             stripe_account_id = NULL,
+             card_payments_status = NULL,
+             payouts_status = NULL,
+             stripe_account_missing_at = NULL
+         WHERE id = ? AND stripe_account_id IS NOT NULL`,
+      )
+      .run(businessId);
     return this.getBusiness(businessId);
   }
 
@@ -634,6 +674,12 @@ function ensureBusinessBillingColumns(db: DatabaseSync): void {
   }
   if (!names.has("billing_exempt")) {
     db.exec("ALTER TABLE businesses ADD COLUMN billing_exempt INTEGER NOT NULL DEFAULT 0");
+  }
+  if (!names.has("stripe_account_id_missing")) {
+    db.exec("ALTER TABLE businesses ADD COLUMN stripe_account_id_missing TEXT");
+  }
+  if (!names.has("stripe_account_missing_at")) {
+    db.exec("ALTER TABLE businesses ADD COLUMN stripe_account_missing_at INTEGER");
   }
 }
 

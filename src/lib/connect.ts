@@ -123,18 +123,106 @@ export async function createEmbeddedAccountSession(stripe: Stripe, accountId: st
   return stripe.accountSessions.create(embeddedAccountSessionParams(accountId));
 }
 
+/** Live Schedi platform account. A test key or another platform must not park connected accounts. */
+export const SCHEDI_PLATFORM_ACCOUNT_ID = "acct_1ULDZkGh1H5O3dkr";
+export const MISSING_ACCOUNT_CONFIRM_MS = 60 * 60 * 1000;
+
+const loggedPlatformRefusal = new Set<string>();
+
+function stripeErrorParts(error: unknown): { code: string; status: number; message: string } {
+  const err = error as {
+    code?: string;
+    statusCode?: number;
+    message?: string;
+    raw?: { code?: string; statusCode?: number; message?: string };
+  };
+  return {
+    code: String(err?.code || err?.raw?.code || ""),
+    status: Number(err?.statusCode || err?.raw?.statusCode || 0),
+    message: String(err?.message || err?.raw?.message || ""),
+  };
+}
+
+/**
+ * A missing connected account from accounts.retrieve.
+ * The loose 404 "account … not found" wording counts only when the message names
+ * the account id this retrieve asked for.
+ */
+function missingConnectedAccount(error: unknown, accountId: string): boolean {
+  const { code, status, message } = stripeErrorParts(error);
+  if (/no such account/i.test(message)) return true;
+  if (code === "resource_missing" && (/account/i.test(message) || message.includes(accountId))) return true;
+  return status === 404 && message.includes(accountId) && /not found/i.test(message);
+}
+
+async function platformKeyIsLiveSchedi(stripe: Stripe): Promise<boolean> {
+  // Accounts v1 types in this SDK omit livemode. The retrieve payload still includes it.
+  const account = await stripe.accounts.retrieve(null) as { id?: string; livemode?: boolean };
+  return account.id === SCHEDI_PLATFORM_ACCOUNT_ID && account.livemode === true;
+}
+
+function logPlatformRefusal(businessId: string): void {
+  if (loggedPlatformRefusal.has(businessId)) return;
+  loggedPlatformRefusal.add(businessId);
+  console.error(
+    `Refusing to park a connected account because this Stripe key does not see live platform ${SCHEDI_PLATFORM_ACCOUNT_ID}.`,
+  );
+}
+
+async function parkMissingAccount(
+  store: Store,
+  stripe: Stripe,
+  business: Business,
+  now: number,
+): Promise<Business> {
+  const accountId = business.stripeAccountId;
+  if (!accountId) return business;
+  let platformOk = false;
+  try {
+    platformOk = await platformKeyIsLiveSchedi(stripe);
+  } catch {
+    platformOk = false;
+  }
+  if (!platformOk) {
+    logPlatformRefusal(business.id);
+    return store.getBusiness(business.id);
+  }
+  const current = store.getBusiness(business.id);
+  if (!current.stripeAccountId) return current;
+  const seenAt = Number(current.stripeAccountMissingAt) || 0;
+  if (!seenAt) {
+    console.error(`Connected account ${accountId} was not found. Waiting an hour for a second miss before parking it.`);
+    return store.noteStripeAccountMiss(current.id, now);
+  }
+  if (now - seenAt < MISSING_ACCOUNT_CONFIRM_MS) return current;
+  console.error(`Connected account ${accountId} was not found again after an hour. Parking the id so it can be restored.`);
+  const saved = store.parkMissingStripeAccount(current.id);
+  await publishStripeConnectReady(saved.slug, false, "not_started").catch((publishError) => {
+    console.error("Could not publish stripeConnectReady:", publishError instanceof Error ? publishError.message : "unknown error");
+  });
+  return saved;
+}
+
 export async function refreshMerchantCapabilities(
   store: Store,
   stripe: Stripe,
   business: Business,
+  now = Date.now(),
 ): Promise<Business> {
   if (!business.stripeAccountId) return business;
-  const account = await stripe.v2.core.accounts.retrieve(business.stripeAccountId, {
-    include: ["configuration.merchant"],
-  });
+  let account: Awaited<ReturnType<Stripe["v2"]["core"]["accounts"]["retrieve"]>>;
+  try {
+    account = await stripe.v2.core.accounts.retrieve(business.stripeAccountId, {
+      include: ["configuration.merchant"],
+    });
+  } catch (error) {
+    if (!missingConnectedAccount(error, business.stripeAccountId)) throw error;
+    return parkMissingAccount(store, stripe, business, now);
+  }
   const saved = store.setCapabilities(business.id, readCapabilityStatuses(account));
-  await publishStripeConnectReady(saved.slug, connectedChargesEnabled(account)).catch((error) => {
+  const current = saved.stripeAccountMissingAt ? store.clearStripeAccountMiss(saved.id) : saved;
+  await publishStripeConnectReady(current.slug, connectedChargesEnabled(account)).catch((error) => {
     console.error("Could not publish stripeConnectReady:", error instanceof Error ? error.message : "unknown error");
   });
-  return saved;
+  return current;
 }
