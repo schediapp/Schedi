@@ -26241,7 +26241,7 @@ function schediQrCardPixels(text, color) {
             var tenant = getTenant();
             if (!tenant) return;
             var app = (tenant.appointments || []).find(function (a) { return a && a.id === appId; });
-            if (!app || String(app.status || '').toLowerCase() !== 'pending') return;
+            if (!app || !schediAcceptableRequest(app, tenant)) return;
             var who = String(app.clientName || '').trim() || 'This client';
             var first = who.split(/\s+/)[0];
             var title = document.getElementById('denyConfirmTitle');
@@ -26571,7 +26571,7 @@ function schediQrCardPixels(text, color) {
             if (!tenant) return;
             var appId = String((document.getElementById('denyConfirmAppId') || {}).value || '').trim();
             var app = (tenant.appointments || []).find(function (a) { return a && a.id === appId; });
-            if (!app || String(app.status || '').toLowerCase() !== 'pending') {
+            if (!app || !schediAcceptableRequest(app, tenant)) {
                 closeDenyConfirmModal({ silent: true });
                 return;
             }
@@ -26579,7 +26579,7 @@ function schediQrCardPixels(text, color) {
             var fromDecision = !!(decision && !decision.classList.contains('hidden') && decision.getAttribute('data-booking-id') === String(app.id));
             schediDenyUndoBindHide();
             if (!schediDenyUndoBooted) schediDenyUndoBoot(tenant);
-            if (String(app.status || '').toLowerCase() !== 'pending') {
+            if (!schediAcceptableRequest(app, tenant)) {
                 closeDenyConfirmModal({ silent: true });
                 return;
             }
