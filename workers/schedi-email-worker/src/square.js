@@ -32,6 +32,7 @@ const BOOKING_ORDER_PREFIX = 'sqbk:';
 const PAYMENT_PREFIX = 'sqpay:';
 const REFUND_PREFIX = 'sqref:';
 const RECONCILE_CURSOR_KEY = 'sqrecon:after';
+const RECONCILE_INDEX_KEY = 'sqrecon:tenants';
 const EVENT_PREFIX = 'sqevt:';
 const RECONCILE_CAP = 20;
 const AWAITING_MAX_AGE_MS = 48 * 60 * 60 * 1000;
@@ -1463,16 +1464,16 @@ function reconcileLimit(value) {
   return Math.min(RECONCILE_CAP, n);
 }
 
-async function tenantIdsForReconcile(env, deps) {
-  if (Array.isArray(deps && deps.tenantIds)) {
-    const ids = [];
-    for (const item of deps.tenantIds) {
-      const id = safeTenant(item);
-      if (id && ids.indexOf(id) === -1) ids.push(id);
-    }
-    return ids;
+function uniqueTenantIds(items) {
+  const ids = [];
+  for (const item of items || []) {
+    const id = safeTenant(item);
+    if (id && ids.indexOf(id) === -1) ids.push(id);
   }
-  if (!env || !env.AUTH_KV || typeof env.AUTH_KV.list !== 'function') return [];
+  return ids;
+}
+
+async function listedAppointmentTenants(env) {
   const ids = [];
   let cursor;
   for (let page = 0; page < 40; page += 1) {
@@ -1487,6 +1488,22 @@ async function tenantIdsForReconcile(env, deps) {
     if (!listed || listed.list_complete !== false || !listed.cursor) break;
     cursor = listed.cursor;
   }
+  return ids;
+}
+
+async function tenantIdsForReconcile(env, deps) {
+  if (Array.isArray(deps && deps.tenantIds)) return uniqueTenantIds(deps.tenantIds);
+  if (!env || !env.AUTH_KV) return [];
+  const raw = await env.AUTH_KV.get(RECONCILE_INDEX_KEY);
+  if (raw != null && raw !== '') {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return uniqueTenantIds(parsed);
+    } catch (_) {}
+  }
+  if (typeof env.AUTH_KV.list !== 'function') return [];
+  const ids = await listedAppointmentTenants(env);
+  await env.AUTH_KV.put(RECONCILE_INDEX_KEY, JSON.stringify(ids));
   return ids;
 }
 
@@ -1543,7 +1560,7 @@ export async function runSquareReconcile(env, deps) {
       }
     }
   }
-  if (lastTenant && env && env.AUTH_KV) {
+  if (lastTenant && lastTenant !== after && env && env.AUTH_KV) {
     await env.AUTH_KV.put(RECONCILE_CURSOR_KEY, lastTenant);
   }
   return { ok: true, checked, paid, refunded, errors };

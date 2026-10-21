@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
-import { buildMerchantAccountParams, embeddedAccountSessionParams, enableCardPayments } from "../src/lib/connect";
+import { readFileSync } from "node:fs";
+import { describe, expect, it, vi } from "vitest";
+import { buildMerchantAccountParams, embeddedAccountSessionParams, enableCardPayments, refreshMerchantCapabilities } from "../src/lib/connect";
 import { cardStatementDescriptor } from "../src/lib/statement";
 import { isCardCheckoutReady } from "../src/lib/readiness";
 import { createFakeStripe, memoryStore, seedProBusiness } from "./helpers";
@@ -114,5 +115,95 @@ describe("connected account onboarding", () => {
     });
     expect(params.configuration?.customer).toBeUndefined();
     expect(params.metadata).toEqual({ schedi_business_id: "biz" });
+  });
+
+  it("clears a stored account once when Stripe says that account does not exist", async () => {
+    const store = memoryStore();
+    const { business } = seedProBusiness(store, {
+      slug: "lumen",
+      stripeAccountId: "acct_1UNlXiGitAq7DPgt",
+      cardPaymentsStatus: "active",
+      payoutsStatus: "active",
+    });
+    const stripe = createFakeStripe();
+    let retrieves = 0;
+    stripe.v2.core.accounts.retrieve = (async () => {
+      retrieves += 1;
+      throw Object.assign(new Error("No such account: 'acct_1UNlXiGitAq7DPgt'"), {
+        code: "resource_missing",
+        statusCode: 404,
+      });
+    }) as typeof stripe.v2.core.accounts.retrieve;
+    const previousSecret = process.env.SCHEDI_CONNECT_PAID_SECRET;
+    process.env.SCHEDI_CONNECT_PAID_SECRET = "connect-secret";
+    const logs: string[] = [];
+    const errorSpy = vi.spyOn(console, "error").mockImplementation((...args: unknown[]) => {
+      logs.push(args.map((part) => String(part)).join(" "));
+    });
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("{}", { status: 200 }));
+    try {
+      const saved = await refreshMerchantCapabilities(store, stripe, business);
+      expect(saved.stripeAccountId).toBeNull();
+      expect(saved.cardPaymentsStatus).toBeNull();
+      expect(saved.payoutsStatus).toBeNull();
+      expect(store.getBusiness(business.id).stripeAccountId).toBeNull();
+      expect(retrieves).toBe(1);
+      expect(logs.filter((line) => line.includes("acct_1UNlXiGitAq7DPgt"))).toHaveLength(1);
+      const published = JSON.parse(String(fetchSpy.mock.calls[0]?.[1]?.body));
+      expect(published).toMatchObject({ slug: "lumen", ready: false, status: "not_started" });
+
+      logs.length = 0;
+      const again = await refreshMerchantCapabilities(store, stripe, saved);
+      expect(again.stripeAccountId).toBeNull();
+      expect(retrieves).toBe(1);
+      expect(logs).toEqual([]);
+    } finally {
+      errorSpy.mockRestore();
+      fetchSpy.mockRestore();
+      if (previousSecret === undefined) delete process.env.SCHEDI_CONNECT_PAID_SECRET;
+      else process.env.SCHEDI_CONNECT_PAID_SECRET = previousSecret;
+    }
+  });
+
+  it("still raises when a capability refresh fails for a reason other than a missing account", async () => {
+    const store = memoryStore();
+    const { business } = seedProBusiness(store, { stripeAccountId: "acct_live" });
+    const stripe = createFakeStripe();
+    stripe.v2.core.accounts.retrieve = (async () => {
+      throw Object.assign(new Error("Stripe is unavailable"), { statusCode: 500 });
+    }) as typeof stripe.v2.core.accounts.retrieve;
+    await expect(refreshMerchantCapabilities(store, stripe, business)).rejects.toThrow(/unavailable/);
+    expect(store.getBusiness(business.id).stripeAccountId).toBe("acct_live");
+  });
+});
+
+describe("ConnectJS browser loading", () => {
+  it("keeps the side-effect ConnectJS loader off the server render", () => {
+    const portal = readFileSync(new URL("../src/app/portal/page.tsx", import.meta.url), "utf8");
+    const loader = readFileSync(new URL("../src/components/connect-dashboard-loader.tsx", import.meta.url), "utf8");
+    const dashboard = readFileSync(new URL("../src/components/connect-dashboard.tsx", import.meta.url), "utf8");
+    expect(portal).toContain("ConnectDashboardLoader");
+    expect(portal).not.toContain("@stripe/connect-js");
+    expect(portal).not.toContain('components/connect-dashboard"');
+    expect(loader).toContain("ssr: false");
+    expect(dashboard).not.toContain('from "@stripe/connect-js"');
+    expect(dashboard).toContain("@stripe/connect-js/pure");
+    expect(dashboard).toContain("useEffect");
+    expect(dashboard).not.toContain("useMemo");
+  });
+
+  it("imports the pure ConnectJS loader on the server without an unhandled rejection", async () => {
+    const reasons: unknown[] = [];
+    const onUnhandled = (reason: unknown) => {
+      reasons.push(reason);
+    };
+    process.on("unhandledRejection", onUnhandled);
+    try {
+      await import("@stripe/connect-js/pure");
+      await new Promise((resolve) => setTimeout(resolve, 30));
+      expect(reasons).toEqual([]);
+    } finally {
+      process.off("unhandledRejection", onUnhandled);
+    }
   });
 });

@@ -421,7 +421,7 @@ export class Store {
 
   setStripeAccount(
     businessId: string,
-    stripeAccountId: string,
+    stripeAccountId: string | null,
     statuses: { cardPaymentsStatus: string | null; payoutsStatus: string | null },
   ): Business {
     this.db

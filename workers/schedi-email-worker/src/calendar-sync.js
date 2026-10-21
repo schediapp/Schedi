@@ -104,8 +104,23 @@ async function rememberTenant(env, tenantId) {
 
 async function forgetTenant(env, tenantId) {
   const row = await readJson(env.AUTH_KV, INDEX_KEY);
-  const list = (Array.isArray(row) ? row : []).map((id) => String(id)).filter((id) => id && id !== tenantId);
-  await env.AUTH_KV.put(INDEX_KEY, JSON.stringify(list));
+  const list = (Array.isArray(row) ? row : []).map((id) => String(id));
+  if (!list.includes(tenantId)) return;
+  const next = list.filter((id) => id && id !== tenantId);
+  await env.AUTH_KV.put(INDEX_KEY, JSON.stringify(next));
+}
+
+function feedSignature(feeds) {
+  return (feeds || []).map((feed) => [
+    String(feed && feed.id || ''),
+    String(feed && feed.url || ''),
+    String(feed && feed.error || ''),
+    String(Number(feed && feed.eventCount) || 0),
+  ].join('\u0001')).join('\u0002');
+}
+
+function blocksSignature(blocks) {
+  return (blocks || []).map((block) => String(block && block.start || '') + '\u0001' + String(block && block.end || '')).join('\u0002');
 }
 
 function withTimeout(promise, ms) {
@@ -297,16 +312,29 @@ async function timezoneFor(env, tenantId, secret, deps) {
 export async function syncTenantFeeds(env, tenantId, deps) {
   const id = clipId(tenantId);
   if (!id || !env || !env.AUTH_KV) return { blocks: [], sources: [], syncedAt: 0 };
+  const scheduled = !!(deps && deps.scheduled);
   const secret = await readSecret(env, id);
   const tz = await timezoneFor(env, id, secret, deps);
   secret.timeZone = tz;
   if (!secret.feeds.length) {
+    if (scheduled) {
+      await forgetTenant(env, id);
+      const previous = await readBusy(env, id);
+      if (!previous.blocks.length) {
+        return { syncedAt: previous.syncedAt || 0, blocks: [], sources: previous.sources || [] };
+      }
+      const empty = { syncedAt: Date.now(), blocks: [], sources: [] };
+      await writeBusy(env, id, empty);
+      await publishExternalBusy(env, id, []);
+      return empty;
+    }
     const empty = { syncedAt: Date.now(), blocks: [], sources: [] };
     await writeBusy(env, id, empty);
     await writeSecret(env, secret);
     await publishExternalBusy(env, id, []);
     return empty;
   }
+  const priorFeeds = feedSignature(secret.feeds);
   const now = deps && deps.now instanceof Date ? deps.now : new Date();
   const all = [];
   const sources = [];
@@ -335,6 +363,13 @@ export async function syncTenantFeeds(env, tenantId, deps) {
   const previous = await readBusy(env, id);
   const allFailed = sources.length > 0 && sources.every((source) => source.error);
   const blocks = allFailed && previous.blocks.length ? previous.blocks : parsed;
+  if (
+    scheduled
+    && blocksSignature(blocks) === blocksSignature(previous.blocks)
+    && feedSignature(secret.feeds) === priorFeeds
+  ) {
+    return { syncedAt: previous.syncedAt || 0, blocks: previous.blocks, sources: previous.sources || [] };
+  }
   const busy = { syncedAt: Date.now(), blocks, sources };
   await writeSecret(env, secret);
   await writeBusy(env, id, busy);
@@ -348,9 +383,10 @@ export async function syncAllCalendarFeeds(env, deps) {
   const ids = Array.isArray(row) ? row : [];
   let synced = 0;
   let errors = 0;
+  const scheduledDeps = Object.assign({}, deps || {}, { scheduled: true });
   for (const tenantId of ids) {
     try {
-      await syncTenantFeeds(env, tenantId, deps || {});
+      await syncTenantFeeds(env, tenantId, scheduledDeps);
       synced += 1;
     } catch (_) {
       errors += 1;

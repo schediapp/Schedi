@@ -1658,6 +1658,42 @@ describe("Square hourly reconcile", () => {
     expect(calls.join(" ")).not.toContain("ord_a");
     expect(calls.some((url) => url.includes("ord_b"))).toBe(true);
   });
+
+  it("lists appointment keys once, then reuses the tenant index and skips an unchanged cursor", async () => {
+    const store = kv();
+    store.store.set("privateAppts:alpha", "1");
+    store.store.set("privateAppts:beta", "1");
+    const seller = await sellerEnv(store);
+    const deps = {
+      now: Date.parse("2026-10-16T18:00:00.000Z"),
+      loadAppointments: async () => [],
+      loadConnection: async () => seller.connection,
+    };
+    await runSquareReconcile(seller.env, deps);
+    expect(store.list).toHaveBeenCalled();
+    expect(JSON.parse(String(store.store.get("sqrecon:tenants")))).toEqual(["alpha", "beta"]);
+    expect(store.store.get("sqrecon:after")).toBe("beta");
+    store.list.mockClear();
+    store.put.mockClear();
+    const again = await runSquareReconcile(seller.env, deps);
+    expect(again).toMatchObject({ ok: true, checked: 0, errors: 0 });
+    expect(store.list).not.toHaveBeenCalled();
+    expect(store.put).not.toHaveBeenCalled();
+    expect(store.store.get("sqrecon:after")).toBe("beta");
+  });
+
+  it("adds a saved tenant to an existing reconcile index and leaves a missing index for the hourly list", async () => {
+    const store = kv();
+    const env = { AUTH_KV: store };
+    await savePrivateAppointments(env, "alpha", [], 0);
+    expect(store.store.has("sqrecon:tenants")).toBe(false);
+    store.store.set("sqrecon:tenants", JSON.stringify(["alpha"]));
+    store.put.mockClear();
+    await savePrivateAppointments(env, "alpha", [{ id: "BK-1" }], 1);
+    expect(store.put.mock.calls.map((call) => call[0])).toEqual(["privateAppts:alpha"]);
+    await savePrivateAppointments(env, "beta", [], 0);
+    expect(JSON.parse(String(store.store.get("sqrecon:tenants")))).toEqual(["alpha", "beta"]);
+  });
 });
 
 describe("Square webhook lookup gaps", () => {

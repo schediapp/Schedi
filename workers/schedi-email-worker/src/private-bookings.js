@@ -30,6 +30,8 @@ import { bookingAvailabilityError, SLOT_UNAVAILABLE_MESSAGE } from './slot-avail
 import { busyBlocksForTenant, bookingOverlapsBusy, BUSY_MESSAGE } from './calendar-sync.js';
 
 const PRIVATE_PREFIX = 'privateAppts:';
+// Same key as the hourly Square reconcile index in square.js.
+const RECONCILE_TENANTS_KEY = 'sqrecon:tenants';
 const MAX_BOOKINGS = 800;
 const TOO_SOON_MESSAGE = 'That time is too soon. Choose a later time.';
 
@@ -429,8 +431,31 @@ export async function savePrivateAppointments(env, tenantId, appointments, prevR
   }
   const revision = Math.floor(Number(base) || 0) + 1;
   await env.AUTH_KV.put(PRIVATE_PREFIX + id, JSON.stringify({ appointments: list, revision }));
+  await rememberReconcileTenant(env, id);
   list.rosterRevision = revision;
   return list;
+}
+
+async function rememberReconcileTenant(env, tenantId) {
+  if (!env || !env.AUTH_KV) return;
+  let raw;
+  try {
+    raw = await env.AUTH_KV.get(RECONCILE_TENANTS_KEY);
+  } catch (_) {
+    return;
+  }
+  if (raw == null || raw === '') return;
+  let list;
+  try {
+    list = JSON.parse(raw);
+  } catch (_) {
+    return;
+  }
+  if (!Array.isArray(list)) return;
+  const ids = list.map((item) => String(item));
+  if (ids.includes(tenantId)) return;
+  ids.push(tenantId);
+  await env.AUTH_KV.put(RECONCILE_TENANTS_KEY, JSON.stringify(ids.slice(0, 5000)));
 }
 
 /**

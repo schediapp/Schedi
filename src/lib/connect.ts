@@ -123,15 +123,45 @@ export async function createEmbeddedAccountSession(stripe: Stripe, accountId: st
   return stripe.accountSessions.create(embeddedAccountSessionParams(accountId));
 }
 
+function missingConnectedAccount(error: unknown): boolean {
+  const err = error as {
+    code?: string;
+    statusCode?: number;
+    message?: string;
+    raw?: { code?: string; statusCode?: number; message?: string };
+  };
+  const code = String(err?.code || err?.raw?.code || "");
+  const status = Number(err?.statusCode || err?.raw?.statusCode || 0);
+  const message = String(err?.message || err?.raw?.message || "");
+  if (code === "resource_missing") return true;
+  if (/no such account/i.test(message)) return true;
+  return status === 404 && /account/i.test(message) && /not found/i.test(message);
+}
+
 export async function refreshMerchantCapabilities(
   store: Store,
   stripe: Stripe,
   business: Business,
 ): Promise<Business> {
   if (!business.stripeAccountId) return business;
-  const account = await stripe.v2.core.accounts.retrieve(business.stripeAccountId, {
-    include: ["configuration.merchant"],
-  });
+  let account: Awaited<ReturnType<Stripe["v2"]["core"]["accounts"]["retrieve"]>>;
+  try {
+    account = await stripe.v2.core.accounts.retrieve(business.stripeAccountId, {
+      include: ["configuration.merchant"],
+    });
+  } catch (error) {
+    if (!missingConnectedAccount(error)) throw error;
+    const stale = business.stripeAccountId;
+    console.error(`Connected account ${stale} was not found. Clearing it so capability refresh stops retrying.`);
+    const saved = store.setStripeAccount(business.id, null, {
+      cardPaymentsStatus: null,
+      payoutsStatus: null,
+    });
+    await publishStripeConnectReady(saved.slug, false, "not_started").catch((publishError) => {
+      console.error("Could not publish stripeConnectReady:", publishError instanceof Error ? publishError.message : "unknown error");
+    });
+    return saved;
+  }
   const saved = store.setCapabilities(business.id, readCapabilityStatuses(account));
   await publishStripeConnectReady(saved.slug, connectedChargesEnabled(account)).catch((error) => {
     console.error("Could not publish stripeConnectReady:", error instanceof Error ? error.message : "unknown error");
