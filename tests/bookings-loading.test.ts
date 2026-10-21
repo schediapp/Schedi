@@ -45,7 +45,7 @@ function agendaApi() {
 }
 
 describe("booking load states", () => {
-  it("keeps empty copy behind a finished bookings request and treats a blank status as waiting", () => {
+  it("keeps empty copy behind a finished bookings request and keeps a blank status out of waiting", () => {
     const render = extractFunction(html, "renderSchediToday");
     const roster = extractFunction(html, "renderTenantRoster");
     const calendar = extractFunction(html, "renderRosterCalendar");
@@ -90,20 +90,26 @@ describe("booking load states", () => {
 
     const noon = 12 * 60;
     expect(api.schediWaitingRequest({ status: "pending" })).toBe(true);
-    expect(api.schediWaitingRequest({ status: "" })).toBe(true);
-    expect(api.schediWaitingRequest({})).toBe(true);
-    expect(api.schediWaitingRequest({ status: "   " })).toBe(true);
+    expect(api.schediWaitingRequest({ status: "requested" })).toBe(true);
+    expect(api.schediWaitingRequest({ status: "  Requested  " })).toBe(true);
+    expect(api.schediWaitingRequest({ status: "" })).toBe(false);
+    expect(api.schediWaitingRequest({})).toBe(false);
+    expect(api.schediWaitingRequest({ status: "   " })).toBe(false);
     expect(api.schediWaitingRequest({ status: "accepted" })).toBe(false);
+    expect(api.schediWaitingRequest({ status: "confirmed" })).toBe(false);
     expect(api.schediWaitingRequest({ status: "denied" })).toBe(false);
+    expect(api.schediWaitingRequest({ status: "declined" })).toBe(false);
     expect(api.schediWaitingRequest({ status: "", cancelled: true })).toBe(false);
+    expect(api.schediWaitingRequest({ status: "pending", cancelled: true })).toBe(false);
     expect(api.schediWaitingRequest({ status: "pending", date: "2026-10-14", time: "09:00 AM" }, "2026-10-20", noon)).toBe(true);
+    expect(api.schediWaitingRequest({ status: "requested", date: "2026-10-20", time: "11:00 AM" }, "2026-10-20", noon)).toBe(true);
     expect(api.schediWaitingRequest({ date: "2026-10-14", time: "09:00 AM" }, "2026-10-20", noon)).toBe(false);
-    expect(api.schediWaitingRequest({ date: "2026-10-21", time: "09:00 AM" }, "2026-10-20", noon)).toBe(true);
-    expect(api.schediWaitingRequest({ date: "2026-10-20", time: "11:00 AM" }, "2026-10-20", 10 * 60)).toBe(true);
+    expect(api.schediWaitingRequest({ date: "2026-10-21", time: "09:00 AM" }, "2026-10-20", noon)).toBe(false);
+    expect(api.schediWaitingRequest({ date: "2026-10-20", time: "11:00 AM" }, "2026-10-20", 10 * 60)).toBe(false);
     expect(api.schediWaitingRequest({ date: "2026-10-20", time: "11:00 AM" }, "2026-10-20", noon)).toBe(false);
-    expect(api.schediWaitingRequest({ date: "2026-10-20", time: "11:30 PM" }, "2026-10-20", 23 * 60)).toBe(true);
-    expect(api.schediWaitingRequest({ date: "2026-10-20" }, "2026-10-20", 18 * 60)).toBe(true);
-    expect(api.schediWaitingRequest({ date: "2026-10-20", time: "09:00 AM", durationMins: 30 }, "2026-10-20", 9 * 60 + 29)).toBe(true);
+    expect(api.schediWaitingRequest({ date: "2026-10-20", time: "11:30 PM" }, "2026-10-20", 23 * 60)).toBe(false);
+    expect(api.schediWaitingRequest({ date: "2026-10-20" }, "2026-10-20", 18 * 60)).toBe(false);
+    expect(api.schediWaitingRequest({ date: "2026-10-20", time: "09:00 AM", durationMins: 30 }, "2026-10-20", 9 * 60 + 29)).toBe(false);
     expect(api.schediWaitingRequest({ date: "2026-10-20", time: "09:00 AM", durationMins: 30 }, "2026-10-20", 9 * 60 + 30)).toBe(false);
 
     const visits = api.schediComingVisits([
@@ -111,7 +117,9 @@ describe("booking load states", () => {
       { id: "past-blank", date: "2026-10-14", time: "09:00 AM", clientName: "Past Blank" },
       { id: "blank", date: "2026-10-20", time: "11:00 AM", clientName: "No Status" },
       { id: "today-pending", status: "pending", date: "2026-10-20", time: "02:00 PM", clientName: "Today Request" },
+      { id: "later-blank", date: "2026-10-21", time: "08:00 AM", clientName: "Later Blank" },
       { id: "pending", status: "pending", date: "2026-10-21", time: "09:00 AM", clientName: "Waiting" },
+      { id: "later-requested", status: "requested", date: "2026-10-21", time: "09:30 AM", clientName: "Later Requested" },
       { id: "later", status: "accepted", date: "2026-10-22", time: "01:00 PM", clientName: "Later" },
       { id: "soon", status: "accepted", date: "2026-10-20", time: "04:00 PM", clientName: "Soon" },
       { id: "early", status: "accepted", date: "2026-10-20", time: "09:00 AM", clientName: "Early" },
@@ -120,7 +128,7 @@ describe("booking load states", () => {
       { id: "seventh", status: "accepted", date: "2026-10-25", time: "09:00 AM", clientName: "Seventh" },
       { id: "eighth", status: "accepted", date: "2026-10-26", time: "09:00 AM", clientName: "Eighth" },
     ], "2026-10-20", undefined, noon);
-    expect(visits.map((row) => row.id)).toEqual(["early", "blank", "today-pending", "soon", "later", "fifth", "sixth", "seventh", "eighth"]);
+    expect(visits.map((row) => row.id)).toEqual(["early", "blank", "today-pending", "soon", "later-blank", "later", "fifth", "sixth", "seventh", "eighth"]);
     const capped = api.schediComingVisits([
       { id: "later", status: "accepted", date: "2026-10-22", time: "01:00 PM" },
       { id: "fifth", status: "accepted", date: "2026-10-23", time: "09:00 AM" },
@@ -132,6 +140,15 @@ describe("booking load states", () => {
     expect(api.schediNextVisitLine({ clientName: "Maya Chen", date: "2026-10-20", time: "09:00 AM" }, "2026-10-20")).toBe("Maya Chen is first, at 09:00 AM.");
     expect(api.schediNextVisitLine({ clientName: "Noah Brooks", date: "2026-10-21", time: "10:00 AM" }, "2026-10-20")).toBe("Noah Brooks is first, 2026-10-21 at 10:00 AM.");
     expect(api.schediNextVisitLine(undefined, "2026-10-20")).toBe("Nothing is lined up yet.");
+
+    const submit = html.slice(html.indexOf("window.handleManualBookingSubmit"), html.indexOf("function appointmentReportRows"));
+    const createdAt = submit.indexOf("const booking = {");
+    expect(createdAt).toBeGreaterThan(0);
+    const bookingLiteral = submit.slice(createdAt, submit.indexOf("if (choice.amount", createdAt));
+    expect(bookingLiteral).toContain("status: 'accepted'");
+    const edit = submit.slice(submit.indexOf("if (existing) {"), submit.indexOf("const refId"));
+    expect(edit).not.toMatch(/existing\.status/);
+    expect(edit).not.toContain("status:");
   });
 
   it("shows HQ activity only after the counts request finishes", () => {
@@ -239,9 +256,11 @@ describe.skipIf(!chrome)("booking load states in the browser", () => {
         tenant.appointments.push({ id: "HB-PAST-BLANK", clientName: "Past Blank", date: "2026-10-14", time: "09:00 AM", serviceName: "Cut & style" });
         tenant.appointments.push({ id: "HB-PAST-PENDING", clientName: "Past Pending", date: "2026-10-14", time: "10:00 AM", status: "pending", serviceName: "Cut & style" });
         tenant.appointments.push({ id: "HB-LATER-BLANK", clientName: "Later Blank", date: "2099-01-01", time: "09:00 AM", serviceName: "Cut & style" });
+        tenant.appointments.push({ id: "HB-REQUESTED", clientName: "Requested Client", date: today, time: "10:00 PM", status: "requested", serviceName: "Cut & style" });
         win.renderSchediToday(tenant);
         const waiting = document.getElementById("schediTodayRequests")?.textContent || "";
         const schedule = document.getElementById("schediTodaySchedule")?.textContent || "";
+        const requestRow = Array.from(document.querySelectorAll("#schediTodayRequests .sd-request")).find((el) => (el.textContent || "").includes("Requested Client"));
         return {
           waiting: waiting.includes("No Status"),
           schedule: schedule.includes("No Status"),
@@ -250,16 +269,20 @@ describe.skipIf(!chrome)("booking load states in the browser", () => {
           pastPending: waiting.includes("Past Pending"),
           laterWaiting: waiting.includes("Later Blank"),
           laterSchedule: schedule.includes("Later Blank"),
+          requestedWaiting: waiting.includes("Requested Client"),
+          requestedActions: (requestRow?.textContent || "").includes("Decline") && (requestRow?.textContent || "").includes("Accept"),
           todayNames: Array.from(document.querySelectorAll("#schediTodaySchedule .sd-row-title")).map((el) => (el.textContent || "").trim()),
         };
       });
-      expect(planted.waiting).toBe(true);
+      expect(planted.waiting).toBe(false);
       expect(planted.schedule).toBe(true);
       expect(planted.pastWaiting).toBe(false);
       expect(planted.pastSchedule).toBe(false);
       expect(planted.pastPending).toBe(true);
-      expect(planted.laterWaiting).toBe(true);
-      expect(planted.laterSchedule).toBe(false);
+      expect(planted.laterWaiting).toBe(false);
+      expect(planted.laterSchedule).toBe(true);
+      expect(planted.requestedWaiting).toBe(true);
+      expect(planted.requestedActions).toBe(true);
       expect(planted.todayNames).toContain("Maya Chen");
       expect(planted.todayNames).toContain("Jordan Lee · Walk-in");
       expect(planted.todayNames).toContain("No Status");

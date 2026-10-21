@@ -467,6 +467,20 @@ async function rememberReconcileTenant(env, tenantId) {
 }
 
 /**
+ * A booking the owner just added (walk-in or phone) often arrives with no status.
+ * Stamp those new rows accepted. Bookings already stored keep a blank status.
+ * An explicit status, including pending or requested, is left as sent.
+ */
+export function acceptNewOwnerBookings(incoming, stored) {
+  const known = new Set((stored || []).filter((a) => a && a.id).map((a) => String(a.id)));
+  for (const item of incoming || []) {
+    if (!item || !item.id || known.has(String(item.id))) continue;
+    if (!String(item.status || '').trim()) item.status = 'accepted';
+  }
+  return incoming;
+}
+
+/**
  * Full-list save merge. Client rows update bookings the client already had (owner edits).
  * Server bookings whose ids are absent stay byte-for-byte as stored. Client-only rows
  * (a booking the owner just added) are appended. Unknown rows are kept even at the cap.
@@ -1126,6 +1140,7 @@ export async function handlePrivateBookingHttp(request, env, origin, path, deps,
     const idToken = await firebaseAnonymousToken(env);
     let before = [];
     try { before = await loadPrivateAppointments(env, tenantId); } catch (_) { before = []; }
+    acceptNewOwnerBookings(incoming, before);
     let saved;
     try {
       // Missing rosterRevision is a page from before this fix: still merge, never replace.
@@ -1328,6 +1343,7 @@ export async function handlePrivateBookingHttp(request, env, origin, path, deps,
       if (slotTaken(withNew, booking, '', appointmentBufferMins(tenant))) {
         return respond(json, { ok: false, error: 'slot_taken' }, 409, origin, isAllowedOrigin);
       }
+      if (staff.ok) acceptNewOwnerBookings([booking], withNew);
       created.push(booking);
     }
     const saved = existing.concat(created);
