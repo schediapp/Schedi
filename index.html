@@ -10072,8 +10072,8 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
             if (main) main.classList.add('hidden');
             if (legal) {
                 legal.classList.remove('hidden');
-                var portalBack = '/';
-                try { portalBack = ownerPortalBackHref(); } catch (errBack) { portalBack = '/'; }
+                var portalBack = '/login';
+                try { portalBack = ownerPortalBackHref(); } catch (errBack) { portalBack = '/login'; }
                 var fromPortal = false;
                 try {
                     var backParams = new URLSearchParams(window.location.search || '');
@@ -10099,7 +10099,7 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                     + '<section><h2 class="text-base font-bold text-white mb-1">Repeating visits</h2><ol class="list-decimal pl-5 space-y-1"><li>Open Email Confirmations.</li><li>On Pro, turn on Allow recurring appointments and click Save Email Settings.</li><li>Free and Starter do not show repeating visits on the booking page.</li></ol></section>'
                     + '<section><h2 class="text-base font-bold text-white mb-1">Your Schedi plan</h2><p>Starter is $29/mo and Pro is $49/mo, month to month, with no contract. ' + SCHEDI_OWNER_POLICY_SHORT + ' Use Cancel subscription to stop renewal at the end of the paid period. Resume subscription if you change your mind before then. Card updates stay in Manage billing. To request a refund of the first payment within 15 days, email <a class="text-brand-400 underline" href="mailto:admin@schedi.app">admin@schedi.app</a> with the business name and the charge date.</p></section>'
                     + '<section><h2 class="text-base font-bold text-white mb-1">Your public page</h2><p>The link at the top of the portal is the booking page. Copy link and Share use https://schedi.app/ and your slug.</p></section>'
-                    + '<p><a class="text-slate-400 underline" href="https://schedi.app/">Back to Schedi</a></p>'
+                    + '<p><a class="text-slate-400 underline" href="' + esc(portalBack) + '">Back to portal</a></p>'
                     + '</div>';
                 try { schediFocusHelpHash(legal); } catch (errHash) {}
             }
@@ -15294,16 +15294,28 @@ function schediQrCardPixels(text, color) {
         }
         window.ownerBookingAlertsAndroidHelpHref = ownerBookingAlertsAndroidHelpHref;
 
-        function ownerPortalBackHrefFrom(search) {
+        function ownerPortalBackHrefFrom(search, signedIn) {
             var params = new URLSearchParams(String(search || '').replace(/^\?/, ''));
             var preview = params.get('demo') === '1' || params.get('portal') === 'preview';
             if (preview) {
                 params.set('demo', '1');
                 params.set('portal', 'preview');
+                var previewQuery = params.toString();
+                return '/portal-preview' + (previewQuery ? ('?' + previewQuery) : '');
             }
-            var path = preview ? '/portal-preview' : '/';
-            var q = params.toString();
-            return path + (q ? ('?' + q) : '');
+            // / is the marketing home. /login is the owner dashboard when a session
+            // is present, and the sign-in form when it is not. Keep dash so the
+            // dashboard reopens on the same section.
+            if (!signedIn) return '/login';
+            var allowed = { today: 1, appointments: 1, services: 1, hours: 1, profile: 1, payments: 1, emails: 1, reports: 1, clients: 1, account: 1, billing: 1 };
+            var keep = new URLSearchParams();
+            var dash = params.get('dash') || '';
+            if (allowed[dash]) keep.set('dash', dash);
+            ['classic', 'newdash'].forEach(function (key) {
+                if (params.has(key)) keep.set(key, params.get(key) || '');
+            });
+            var q = keep.toString();
+            return '/login' + (q ? ('?' + q) : '');
         }
 
         function ownerHelpHref() {
@@ -15321,7 +15333,12 @@ function schediQrCardPixels(text, color) {
         function ownerPortalBackHref() {
             var search = '';
             try { search = window.location.search || ''; } catch (errSearch) { search = ''; }
-            return ownerPortalBackHrefFrom(search);
+            var signedIn = false;
+            try {
+                signedIn = !!(typeof schediAuthSession === 'function' && schediAuthSession())
+                    || !!(platformState && platformState.isTenantOwnerLoggedIn);
+            } catch (errSess) { signedIn = false; }
+            return ownerPortalBackHrefFrom(search, signedIn);
         }
         window.ownerPortalBackHref = ownerPortalBackHref;
 
