@@ -52,8 +52,8 @@ describe("phone tab bar does not sign out", () => {
     expect(html).toContain('onclick="schediDashClosePopovers(); handleTenantLogout()"');
     expect(html).toContain('class="sd-danger" onclick="handleTenantLogout()"');
     expect(html).toContain("if (node.closest('#schediDashTabbar'))");
-    expect(html).toContain("bottom: calc(68px + env(safe-area-inset-bottom, 0px));");
-    expect(html).toContain("z-index: 75;");
+    expect(html).toContain("padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));");
+    expect(html).toContain("#tenantPortalSection.schedi-newdash #schediDashMoreSheet {\n        z-index: 35;");
     expect(html).toContain('href="/assets/tailwind.css"');
     expect(html).not.toContain("cdn.tailwindcss.com");
     expect(readFileSync(new URL("../site/booking.html", import.meta.url), "utf8")).not.toContain("cdn.tailwindcss.com");
@@ -159,6 +159,10 @@ describe.skipIf(!chrome)("phone tab bar hit testing", () => {
       expect(afterSheet.calls).toBe(1);
       expect(afterSheet.toast).toContain("Demo mode does not sign out");
 
+      await page.evaluate(() => {
+        const sheet = document.getElementById("schediDashMoreSheet");
+        if (sheet) sheet.hidden = true;
+      });
       await page.click("#schediDashUserBtnPhone");
       const accountClear = await page.evaluate(() => {
         const menu = document.getElementById("schediDashAccountMenu") as HTMLElement;
@@ -166,7 +170,7 @@ describe.skipIf(!chrome)("phone tab bar hit testing", () => {
         const tab = document.getElementById("schediDashTabbar") as HTMLElement;
         const signRect = sign.getBoundingClientRect();
         const tabRect = tab.getBoundingClientRect();
-        return signRect.bottom <= tabRect.top + 1;
+        return !menu.hidden && signRect.height > 20 && signRect.bottom <= tabRect.top + 1 && signRect.top >= 0;
       });
       expect(accountClear).toBe(true);
       await page.click("#schediDashAccountMenu .sd-danger");
@@ -175,6 +179,8 @@ describe.skipIf(!chrome)("phone tab bar hit testing", () => {
 
       await page.evaluate(() => {
         (window as unknown as { __SCHEDI_DEMO?: boolean }).__SCHEDI_DEMO = false;
+        const toasts = document.getElementById("toastContainer");
+        if (toasts) toasts.replaceChildren();
         const sheet = document.getElementById("schediDashMoreSheet");
         if (sheet) sheet.hidden = false;
       });
@@ -185,5 +191,5 @@ describe.skipIf(!chrome)("phone tab bar hit testing", () => {
       await browser.close();
       await server.close();
     }
-  });
+  }, 120000);
 });

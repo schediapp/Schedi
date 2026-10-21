@@ -3434,11 +3434,11 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
         right: 0;
         padding-left: 0;
         padding-right: 0;
-        z-index: 75;
     }
-    /* Sign out is the last row of the More sheet. Stop the sheet above the tab bar so that row cannot cover Agenda. */
+    /* Sign out is the last row of this sheet. Keep that row above the tab bar, and keep the sheet under the bar so a tab tap cannot hit Sign out. Modals stay above the bar. */
     #tenantPortalSection.schedi-newdash #schediDashMoreSheet {
-        bottom: calc(68px + env(safe-area-inset-bottom, 0px));
+        z-index: 35;
+        padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
     }
     body.schedi-newdash { overflow-x: clip; }
     #tenantPortalSection.schedi-newdash .sd-pay-filters { display: none; }

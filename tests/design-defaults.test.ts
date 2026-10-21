@@ -154,6 +154,7 @@ describe.skipIf(!chrome)("booking page layout", () => {
       ".js": "text/javascript; charset=utf-8",
       ".svg": "image/svg+xml",
       ".png": "image/png",
+      ".css": "text/css; charset=utf-8",
       ".jpg": "image/jpeg",
       ".json": "application/json",
       ".webmanifest": "application/manifest+json",
@@ -199,6 +200,7 @@ describe.skipIf(!chrome)("booking page layout", () => {
       expect(rendered).toContain("First saved");
       const page = await browser.newPage();
       page.on("pageerror", (error) => errors.push(String(error)));
+      await page.goto(`http://127.0.0.1:${port}/assets/tailwind.css`, { waitUntil: "domcontentloaded", timeout: 45000 });
       await page.setContent(rendered, { waitUntil: "domcontentloaded", timeout: 45000 });
       await page.waitForFunction(() => {
         const cal = document.getElementById("monthCalendarContainer");
@@ -258,6 +260,7 @@ describe.skipIf(!chrome)("booking page layout", () => {
       const classic = await browser.newPage();
       classic.on("pageerror", (error) => errors.push("classic " + String(error)));
       await classic.setViewport({ width: 390, height: 844 });
+      await classic.goto(`http://127.0.0.1:${port}/assets/tailwind.css`, { waitUntil: "domcontentloaded", timeout: 45000 });
       await classic.setContent(classicHtml, { waitUntil: "domcontentloaded", timeout: 45000 });
       const classicOn = await classic.evaluate(() => document.documentElement.classList.contains("schedi-newbook"));
       expect(classicOn).toBe(false);

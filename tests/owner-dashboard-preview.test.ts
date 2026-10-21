@@ -1905,6 +1905,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       ".js": "text/javascript; charset=utf-8",
       ".svg": "image/svg+xml",
       ".png": "image/png",
+      ".css": "text/css; charset=utf-8",
       ".json": "application/json",
       ".webmanifest": "application/manifest+json",
     };
@@ -2149,6 +2150,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       ".js": "text/javascript; charset=utf-8",
       ".svg": "image/svg+xml",
       ".png": "image/png",
+      ".css": "text/css; charset=utf-8",
       ".json": "application/json",
       ".webmanifest": "application/manifest+json",
     };
@@ -2316,6 +2318,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       ".js": "text/javascript; charset=utf-8",
       ".svg": "image/svg+xml",
       ".png": "image/png",
+      ".css": "text/css; charset=utf-8",
       ".json": "application/json",
       ".webmanifest": "application/manifest+json",
     };
@@ -2488,6 +2491,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       ".js": "text/javascript; charset=utf-8",
       ".svg": "image/svg+xml",
       ".png": "image/png",
+      ".css": "text/css; charset=utf-8",
       ".json": "application/json",
       ".webmanifest": "application/manifest+json",
     };
@@ -2755,6 +2759,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       ".js": "text/javascript; charset=utf-8",
       ".svg": "image/svg+xml",
       ".png": "image/png",
+      ".css": "text/css; charset=utf-8",
       ".json": "application/json",
       ".webmanifest": "application/manifest+json",
     };
@@ -2893,6 +2898,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       ".js": "text/javascript; charset=utf-8",
       ".svg": "image/svg+xml",
       ".png": "image/png",
+      ".css": "text/css; charset=utf-8",
       ".json": "application/json",
       ".webmanifest": "application/manifest+json",
     };
@@ -3058,6 +3064,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       ".js": "text/javascript; charset=utf-8",
       ".svg": "image/svg+xml",
       ".png": "image/png",
+      ".css": "text/css; charset=utf-8",
       ".json": "application/json",
       ".webmanifest": "application/manifest+json",
     };
@@ -3259,6 +3266,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       ".js": "text/javascript; charset=utf-8",
       ".svg": "image/svg+xml",
       ".png": "image/png",
+      ".css": "text/css; charset=utf-8",
       ".json": "application/json",
       ".webmanifest": "application/manifest+json",
     };
@@ -3610,6 +3618,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       ".js": "text/javascript; charset=utf-8",
       ".svg": "image/svg+xml",
       ".png": "image/png",
+      ".css": "text/css; charset=utf-8",
       ".json": "application/json",
       ".webmanifest": "application/manifest+json",
     };
@@ -3805,6 +3814,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       ".js": "text/javascript; charset=utf-8",
       ".svg": "image/svg+xml",
       ".png": "image/png",
+      ".css": "text/css; charset=utf-8",
       ".json": "application/json",
       ".webmanifest": "application/manifest+json",
     };
@@ -3984,6 +3994,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       ".js": "text/javascript; charset=utf-8",
       ".svg": "image/svg+xml",
       ".png": "image/png",
+      ".css": "text/css; charset=utf-8",
       ".json": "application/json",
       ".webmanifest": "application/manifest+json",
     };
@@ -4275,6 +4286,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       ".js": "text/javascript; charset=utf-8",
       ".svg": "image/svg+xml",
       ".png": "image/png",
+      ".css": "text/css; charset=utf-8",
       ".json": "application/json",
       ".webmanifest": "application/manifest+json",
     };
@@ -4414,6 +4426,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       ".js": "text/javascript; charset=utf-8",
       ".svg": "image/svg+xml",
       ".png": "image/png",
+      ".css": "text/css; charset=utf-8",
       ".json": "application/json",
       ".webmanifest": "application/manifest+json",
     };
@@ -4529,6 +4542,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       ".js": "text/javascript; charset=utf-8",
       ".svg": "image/svg+xml",
       ".png": "image/png",
+      ".css": "text/css; charset=utf-8",
       ".json": "application/json",
       ".webmanifest": "application/manifest+json",
     };
@@ -4696,6 +4710,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       ".js": "text/javascript; charset=utf-8",
       ".svg": "image/svg+xml",
       ".png": "image/png",
+      ".css": "text/css; charset=utf-8",
       ".json": "application/json",
       ".webmanifest": "application/manifest+json",
     };
@@ -4963,6 +4978,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       ".js": "text/javascript; charset=utf-8",
       ".svg": "image/svg+xml",
       ".png": "image/png",
+      ".css": "text/css; charset=utf-8",
       ".json": "application/json",
       ".webmanifest": "application/manifest+json",
     };
@@ -5068,6 +5084,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       ".js": "text/javascript; charset=utf-8",
       ".svg": "image/svg+xml",
       ".png": "image/png",
+      ".css": "text/css; charset=utf-8",
       ".json": "application/json",
       ".webmanifest": "application/manifest+json",
     };
@@ -5442,6 +5459,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       ".js": "text/javascript; charset=utf-8",
       ".svg": "image/svg+xml",
       ".png": "image/png",
+      ".css": "text/css; charset=utf-8",
       ".json": "application/json",
       ".webmanifest": "application/manifest+json",
     };
@@ -5609,6 +5627,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       ".js": "text/javascript; charset=utf-8",
       ".svg": "image/svg+xml",
       ".png": "image/png",
+      ".css": "text/css; charset=utf-8",
       ".json": "application/json",
       ".webmanifest": "application/manifest+json",
     };
@@ -6007,6 +6026,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       ".js": "text/javascript; charset=utf-8",
       ".svg": "image/svg+xml",
       ".png": "image/png",
+      ".css": "text/css; charset=utf-8",
       ".json": "application/json",
       ".webmanifest": "application/manifest+json",
     };
@@ -6091,6 +6111,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       ".js": "text/javascript; charset=utf-8",
       ".svg": "image/svg+xml",
       ".png": "image/png",
+      ".css": "text/css; charset=utf-8",
       ".json": "application/json",
       ".webmanifest": "application/manifest+json",
     };
@@ -6339,6 +6360,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       ".js": "text/javascript; charset=utf-8",
       ".svg": "image/svg+xml",
       ".png": "image/png",
+      ".css": "text/css; charset=utf-8",
       ".json": "application/json",
       ".webmanifest": "application/manifest+json",
     };
@@ -6480,6 +6502,7 @@ describe.skipIf(!chrome)("classic owner roster icons", () => {
       ".js": "text/javascript; charset=utf-8",
       ".svg": "image/svg+xml",
       ".png": "image/png",
+      ".css": "text/css; charset=utf-8",
       ".jpg": "image/jpeg",
       ".jpeg": "image/jpeg",
       ".json": "application/json",
@@ -6688,6 +6711,7 @@ describe.skipIf(!chrome)("owner sign-in placement", () => {
       ".js": "text/javascript; charset=utf-8",
       ".svg": "image/svg+xml",
       ".png": "image/png",
+      ".css": "text/css; charset=utf-8",
       ".jpg": "image/jpeg",
       ".jpeg": "image/jpeg",
       ".json": "application/json",

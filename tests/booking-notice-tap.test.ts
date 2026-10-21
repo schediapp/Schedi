@@ -114,6 +114,7 @@ describe.skipIf(!chrome)("booking page phone taps and notice paint", () => {
       ".js": "text/javascript; charset=utf-8",
       ".svg": "image/svg+xml",
       ".png": "image/png",
+      ".css": "text/css; charset=utf-8",
       ".jpg": "image/jpeg",
       ".json": "application/json",
     };
@@ -149,6 +150,7 @@ describe.skipIf(!chrome)("booking page phone taps and notice paint", () => {
       });
       const page = await browser.newPage();
       await page.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true, deviceScaleFactor: 1 });
+      await page.goto(`http://127.0.0.1:${port}/assets/tailwind.css`, { waitUntil: "domcontentloaded", timeout: 45000 });
       await page.setContent(rendered, { waitUntil: "domcontentloaded", timeout: 45000 });
       await page.waitForFunction(() => {
         const span = document.querySelector("#recurrenceFreqGroup .recurrence-opt span") as HTMLElement | null;

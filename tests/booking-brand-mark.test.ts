@@ -33,6 +33,7 @@ describe.skipIf(!chrome)("booking brand mark and hours", () => {
       ".js": "text/javascript; charset=utf-8",
       ".svg": "image/svg+xml",
       ".png": "image/png",
+      ".css": "text/css; charset=utf-8",
       ".jpg": "image/jpeg",
       ".json": "application/json",
     };
@@ -82,6 +83,7 @@ describe.skipIf(!chrome)("booking brand mark and hours", () => {
       });
 
       const page = await browser.newPage();
+      await page.goto(`http://127.0.0.1:${port}/assets/tailwind.css`, { waitUntil: "domcontentloaded", timeout: 45000 });
       await page.setContent(rendered, { waitUntil: "domcontentloaded", timeout: 45000 });
       await page.waitForFunction(() => (document.getElementById("bizHours")?.textContent || "").includes("Closed on Sundays and Mondays"), { timeout: 20000 });
 
@@ -141,6 +143,7 @@ describe.skipIf(!chrome)("booking brand mark and hours", () => {
 
       const withLogo = await browser.newPage();
       await withLogo.setViewport({ width: 1280, height: 900 });
+      await withLogo.goto(`http://127.0.0.1:${port}/assets/tailwind.css`, { waitUntil: "domcontentloaded", timeout: 45000 });
       await withLogo.setContent(logoPage, { waitUntil: "domcontentloaded", timeout: 45000 });
       await withLogo.waitForFunction(() => {
         const img = document.getElementById("bizLogo") as HTMLImageElement | null;
