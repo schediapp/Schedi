@@ -39,15 +39,15 @@ describe("Help page videos", () => {
   const videos = portal.videos || [];
   const bySlug = new Map(videos.map((video) => [video.slug, video]));
 
-  it("cache-busts every portal clip and poster at v=11", () => {
+  it("cache-busts every portal clip and poster at v=12", () => {
     expect(videos.length).toBe(23);
     for (const video of videos) {
-      expect(video.file, video.slug).toMatch(/\.mp4\?v=11$/);
-      expect(video.poster, video.slug).toMatch(/\.jpg\?v=11$/);
-      expect(video.file, video.slug).toBe(`${video.slug}.mp4?v=11`);
-      expect(video.poster, video.slug).toBe(`${video.slug}.jpg?v=11`);
+      expect(video.file, video.slug).toMatch(/\.mp4\?v=12$/);
+      expect(video.poster, video.slug).toMatch(/\.jpg\?v=12$/);
+      expect(video.file, video.slug).toBe(`${video.slug}.mp4?v=12`);
+      expect(video.poster, video.slug).toBe(`${video.slug}.jpg?v=12`);
     }
-    expect(html.slice(html.indexOf("var SCHEDI_HELP_VIDEOS"), html.indexOf("var SCHEDI_HELP_VIDEO_GROUPS"))).not.toMatch(/\?v=(?!11)\d+/);
+    expect(html.slice(html.indexOf("var SCHEDI_HELP_VIDEOS"), html.indexOf("var SCHEDI_HELP_VIDEO_GROUPS"))).not.toMatch(/\?v=(?!12)\d+/);
   });
 
   it("renames the reports and time-off clips and adds the booking QR code", () => {
@@ -56,8 +56,8 @@ describe("Help page videos", () => {
     expect(bySlug.get("owner-21-booking-qr-code")).toMatchObject({
       title: "Booking QR code",
       desc: "How to show, generate, download or print, and save your booking QR code.",
-      file: "owner-21-booking-qr-code.mp4?v=11",
-      poster: "owner-21-booking-qr-code.jpg?v=11",
+      file: "owner-21-booking-qr-code.mp4?v=12",
+      poster: "owner-21-booking-qr-code.jpg?v=12",
       aud: "owner",
     });
     const setup = portal.groups?.find((group) => group[0] === "Get set up");
@@ -67,8 +67,8 @@ describe("Help page videos", () => {
       title: "Booking alerts on Android (Chrome)",
       desc: "Turn on a pop-up in Chrome on Android when a booking comes in.",
       dur: "0:29",
-      file: "owner-22-booking-alerts-android.mp4?v=11",
-      poster: "owner-22-booking-alerts-android.jpg?v=11",
+      file: "owner-22-booking-alerts-android.mp4?v=12",
+      poster: "owner-22-booking-alerts-android.jpg?v=12",
       aud: "owner",
     });
     expect(android?.kind).toBeUndefined();
@@ -86,8 +86,8 @@ describe("Help page videos", () => {
     expect(player).toContain('width="720"');
     expect(player).toContain('height="1280"');
     expect(player).toContain("object-contain");
-    expect(player).toContain('poster="/assets/help-videos/client-booking-demo.jpg?v=11"');
-    expect(player).toContain('src="/assets/help-videos/client-booking-demo.mp4?v=11"');
+    expect(player).toContain('poster="/assets/help-videos/client-booking-demo.jpg?v=12"');
+    expect(player).toContain('src="/assets/help-videos/client-booking-demo.mp4?v=12"');
     expect(html).toContain("aspect-ratio: 9 / 16");
     expect(html).toContain("object-fit: contain");
   });
@@ -97,20 +97,20 @@ describe("Help page videos", () => {
     const rendered = renderMarketingPage(page!);
     const sources = rendered.match(/\/assets\/help-videos\/[^"']+/g) || [];
     expect(sources.length).toBe(46);
-    for (const url of sources) expect(url).toMatch(/\.(mp4|jpg)\?v=11$/);
+    for (const url of sources) expect(url).toMatch(/\.(mp4|jpg)\?v=12$/);
     expect(rendered).toContain(">Reports<");
     expect(rendered).toContain(">Time off and vacation<");
     expect(rendered).not.toContain("Appointments report");
     expect(rendered).not.toContain("Vacation and date blocks");
-    expect(rendered).toContain("/assets/help-videos/owner-20-booking-alerts-iphone.mp4?v=11");
-    expect(rendered).toContain("/assets/help-videos/owner-20-booking-alerts-iphone.jpg?v=11");
-    expect(rendered).toContain("/assets/help-videos/owner-22-booking-alerts-android.mp4?v=11");
-    expect(rendered).toContain("/assets/help-videos/owner-22-booking-alerts-android.jpg?v=11");
+    expect(rendered).toContain("/assets/help-videos/owner-20-booking-alerts-iphone.mp4?v=12");
+    expect(rendered).toContain("/assets/help-videos/owner-20-booking-alerts-iphone.jpg?v=12");
+    expect(rendered).toContain("/assets/help-videos/owner-22-booking-alerts-android.mp4?v=12");
+    expect(rendered).toContain("/assets/help-videos/owner-22-booking-alerts-android.jpg?v=12");
     expect(rendered).toContain("<strong>Booking alerts on Android (Chrome)</strong> (0:29). Turn on a pop-up in Chrome on Android when a booking comes in.");
     expect(rendered.indexOf("owner-22-booking-alerts-android")).toBeGreaterThan(rendered.indexOf("owner-20-booking-alerts-iphone"));
     expect(rendered.indexOf("owner-22-booking-alerts-android")).toBeLessThan(rendered.indexOf("owner-21-booking-qr-code"));
-    expect(rendered).toContain("/assets/help-videos/owner-21-booking-qr-code.mp4?v=11");
-    expect(rendered).toContain("/assets/help-videos/owner-21-booking-qr-code.jpg?v=11");
+    expect(rendered).toContain("/assets/help-videos/owner-21-booking-qr-code.mp4?v=12");
+    expect(rendered).toContain("/assets/help-videos/owner-21-booking-qr-code.jpg?v=12");
     expect(rendered).toContain("How to show, generate, download or print, and save your booking QR code.");
     expect(rendered).toContain("<strong>Booking alerts on iPhone</strong> (0:20). Turn on a pop-up on your iPhone when a booking comes in.");
     expect(rendered).toContain("<strong>Booking QR code</strong> (0:25). How to show, generate, download or print, and save your booking QR code.");
