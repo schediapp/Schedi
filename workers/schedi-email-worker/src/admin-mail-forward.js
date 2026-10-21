@@ -1,8 +1,8 @@
 /**
  * Cloudflare Email Routing handler for admin@schedi.app and hello@schedi.app.
  * Destinations come from env.ADMIN_FORWARD_TO (comma-separated). Which envelopes
- * to fan out come from env.ADMIN_FORWARD_RECIPIENTS. bookings@ and onboarding@
- * stay off both lists, so this handler does not forward or reject them.
+ * to fan out come from env.ADMIN_FORWARD_RECIPIENTS. Any other recipient is
+ * rejected so it is not dropped silently.
  */
 
 export function parseAddressList(value) {
@@ -29,7 +29,8 @@ export async function forwardAdminInbound(message, env) {
   const to = envelopeRecipient(message);
   const allowed = parseAddressList(env && env.ADMIN_FORWARD_RECIPIENTS);
   if (!to || allowed.indexOf(to) < 0) {
-    return { ok: true, skipped: true, forwarded: [], failed: [] };
+    message.setReject('Unknown recipient');
+    return { ok: false, rejected: true, forwarded: [], failed: [] };
   }
   const destinations = parseAddressList(env && env.ADMIN_FORWARD_TO);
   const forwarded = [];

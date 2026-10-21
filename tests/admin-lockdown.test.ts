@@ -303,7 +303,7 @@ describe("auth rate limits", () => {
       body: JSON.stringify(body),
     }), authEnv(), { waitUntil() {} });
     expect(devAuth.status).toBe(404);
-    const devAgencyAdd = await worker.fetch(new Request("https://schedi-email-worker.workers.dev/admin/agency-add", {
+    const devAgencyAdd = await worker.fetch(new Request("https://schedi-email-worker.workers.dev/auth/agency-add", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: "Bearer " + "t".repeat(40) },
       body: JSON.stringify({ email: "new-hq@example.com", password: "password1" }),

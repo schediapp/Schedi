@@ -3185,7 +3185,6 @@ function workersDevAuthBlocked(url) {
   if (!host.endsWith('.workers.dev')) return false;
   const path = url.pathname || '/';
   if (path === '/auth' || path.startsWith('/auth/')) return true;
-  if (path === '/admin/agency-add' || path.startsWith('/admin/agency-add/')) return true;
   // Live monitoring uses /api/ops-snapshot (bearer) and Resend uses
   // /api/resend-events (Svix). Only the default-password audit is blocked here.
   if (path === '/api/ops-default-passwords') return true;
@@ -3306,7 +3305,7 @@ export default {
       });
     }
 
-    if (path === '/admin/agency-add') {
+    if (path === '/auth/agency-add') {
       return handleAgencyAdd(request, env, origin, json);
     }
 

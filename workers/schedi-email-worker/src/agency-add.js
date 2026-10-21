@@ -1,5 +1,5 @@
 /**
- * One-time HQ login add. POST /admin/agency-add
+ * One-time HQ login add. POST /auth/agency-add
  * Requires an agency session AND Authorization: Bearer <MIGRATION_TOKEN>.
  * ensureAgencySecret writes agency:<email> only when that key has no hash.
  */

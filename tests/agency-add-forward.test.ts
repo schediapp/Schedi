@@ -66,7 +66,7 @@ async function call(body: Record<string, unknown>, opts: CallOpts = {}) {
   }
   if (opts.bearer !== null) headers.Authorization = "Bearer " + (opts.bearer === undefined ? TOKEN : opts.bearer);
   const method = opts.method || "POST";
-  const response = await worker.fetch(new Request("https://schedi.app/admin/agency-add", {
+  const response = await worker.fetch(new Request("https://schedi.app/auth/agency-add", {
     method,
     headers,
     body: method === "GET" ? undefined : JSON.stringify(payload),
@@ -80,14 +80,19 @@ async function call(body: Record<string, unknown>, opts: CallOpts = {}) {
 function mail(to: string, fail: string[] = []) {
   const forwarded: string[] = [];
   const attempted: string[] = [];
+  const rejected: string[] = [];
   return {
     to,
     forwarded,
     attempted,
+    rejected,
     forward: vi.fn(async (dest: string) => {
       attempted.push(dest);
       if (fail.includes(dest)) throw new Error("smtp down");
       forwarded.push(dest);
+    }),
+    setReject: vi.fn((reason: string) => {
+      rejected.push(reason);
     }),
   };
 }
@@ -96,7 +101,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe("POST /admin/agency-add", () => {
+describe("POST /auth/agency-add", () => {
   it("requires an agency session and the migration bearer together", async () => {
     const none = await call({ email: NEW_EMAIL, password: PASSWORD }, { session: "none" });
     expect(none.status).toBe(401);
@@ -189,10 +194,12 @@ describe("inbound admin mail fan-out", () => {
     const admin = mail("Schedi Admin <ADMIN@schedi.app>");
     await worker.email(admin, env);
     expect(admin.forwarded).toEqual(["axl199@gmail.com", "schedi.app@gmail.com"]);
+    expect(admin.setReject).not.toHaveBeenCalled();
 
     const hello = mail("hello@schedi.app");
     await worker.email(hello, env);
     expect(hello.forwarded).toEqual(["axl199@gmail.com", "schedi.app@gmail.com"]);
+    expect(hello.setReject).not.toHaveBeenCalled();
   });
 
   it("uses the destination var and still tries the next address after a failure", async () => {
@@ -207,6 +214,7 @@ describe("inbound admin mail fan-out", () => {
     const skippedAdmin = mail("admin@schedi.app");
     await worker.email(skippedAdmin, env);
     expect(skippedAdmin.forward).not.toHaveBeenCalled();
+    expect(skippedAdmin.setReject).toHaveBeenCalledWith("Unknown recipient");
 
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
     const partial = mail("hello@schedi.app", ["axl199@gmail.com"]);
@@ -216,13 +224,14 @@ describe("inbound admin mail fan-out", () => {
     expect(error.mock.calls.some((call) => String(call[1]) === "axl199@gmail.com")).toBe(true);
   });
 
-  it("does not forward or reject bookings@ or onboarding@", async () => {
+  it("rejects any recipient outside the configured list and does not forward it", async () => {
     const { env } = agencyEnv();
     for (const to of ["bookings@schedi.app", "onboarding@schedi.app", "Bookings <bookings@schedi.app>"]) {
       const message = mail(to);
       await worker.email(message, env);
       expect(message.forward).not.toHaveBeenCalled();
-      expect("setReject" in message).toBe(false);
+      expect(message.setReject).toHaveBeenCalledTimes(1);
+      expect(message.setReject).toHaveBeenCalledWith("Unknown recipient");
     }
   });
 
@@ -236,6 +245,7 @@ describe("inbound admin mail fan-out", () => {
     expect(recipients).not.toContain("onboarding@");
     expect(destinations).not.toContain("bookings@");
     expect(destinations).not.toContain("onboarding@");
-    expect(toml).toContain('pattern = "schedi.app/admin/agency-add*"');
+    expect(toml).toContain('pattern = "schedi.app/auth/*"');
+    expect(toml).not.toContain("admin/agency-add");
   });
 });
