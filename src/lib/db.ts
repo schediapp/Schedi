@@ -71,6 +71,8 @@ interface BusinessRow {
   slug: string;
   plan: Plan;
   subscription_status: SubscriptionStatus;
+  complimentary_pro?: number;
+  billing_exempt?: number;
   stripe_subscription_id: string | null;
   cancel_at_period_end: number;
   current_period_end: string | null;
@@ -128,6 +130,8 @@ function mapBusiness(row: BusinessRow): Business {
     slug: row.slug,
     plan: row.plan,
     subscriptionStatus: row.subscription_status,
+    complimentaryPro: row.complimentary_pro === 1,
+    billingExempt: row.billing_exempt === 1,
     stripeSubscriptionId: row.stripe_subscription_id,
     cancelAtPeriodEnd: row.cancel_at_period_end === 1,
     currentPeriodEnd: row.current_period_end,
@@ -341,6 +345,43 @@ export class Store {
   getBusinessByOwner(ownerId: string): Business | null {
     const row = this.db.prepare("SELECT * FROM businesses WHERE owner_id = ?").get(ownerId) as BusinessRow | undefined;
     return row ? mapBusiness(row) : null;
+  }
+
+  /**
+   * Record the Schedi plan on this Connect business.
+   * Does not create or change a Stripe customer or subscription.
+   */
+  setPlanEntitlement(
+    businessId: string,
+    patch: {
+      plan: Plan;
+      subscriptionStatus: SubscriptionStatus;
+      complimentaryPro: boolean;
+      billingExempt: boolean;
+      slug?: string;
+    },
+  ): Business {
+    const current = this.getBusiness(businessId);
+    let slug = current.slug;
+    if (patch.slug && patch.slug !== current.slug) {
+      const taken = this.getBusinessBySlug(patch.slug);
+      if (!taken || taken.id === current.id) slug = patch.slug;
+    }
+    this.db
+      .prepare(
+        `UPDATE businesses
+         SET plan = ?, subscription_status = ?, complimentary_pro = ?, billing_exempt = ?, slug = ?
+         WHERE id = ?`,
+      )
+      .run(
+        patch.plan,
+        patch.subscriptionStatus,
+        patch.complimentaryPro ? 1 : 0,
+        patch.billingExempt ? 1 : 0,
+        slug,
+        current.id,
+      );
+    return this.getBusiness(current.id);
   }
 
   getBusinessByStripeAccount(stripeAccountId: string): Business | null {
@@ -564,6 +605,12 @@ function ensureBusinessBillingColumns(db: DatabaseSync): void {
   }
   if (!names.has("current_period_end")) {
     db.exec("ALTER TABLE businesses ADD COLUMN current_period_end TEXT");
+  }
+  if (!names.has("complimentary_pro")) {
+    db.exec("ALTER TABLE businesses ADD COLUMN complimentary_pro INTEGER NOT NULL DEFAULT 0");
+  }
+  if (!names.has("billing_exempt")) {
+    db.exec("ALTER TABLE businesses ADD COLUMN billing_exempt INTEGER NOT NULL DEFAULT 0");
   }
 }
 

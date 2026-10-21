@@ -36,6 +36,10 @@ export interface Business {
   slug: string;
   plan: Plan;
   subscriptionStatus: SubscriptionStatus;
+  /** Schedi complimentary Pro. Card setup is included and no plan fee is billed. */
+  complimentaryPro?: boolean;
+  /** Same access as complimentary Pro. */
+  billingExempt?: boolean;
   stripeSubscriptionId: string | null;
   /** True after the owner asks to cancel. Access continues until currentPeriodEnd. */
   cancelAtPeriodEnd: boolean;

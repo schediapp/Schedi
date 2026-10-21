@@ -56,6 +56,7 @@ import {
 import { handleSquareHttp, runSquareReconcile } from './square.js';
 import { applyCardCheckoutPayment, centsByBooking } from './card-payment.js';
 import { handleConnectBookingPaid } from './connect-booking-paid.js';
+import { handleConnectHandoff, handleConnectPlan } from './connect-handoff.js';
 import { handlePageVisitsRequest } from '../../../worker/page-visits.ts';
 
 const ALLOWED_ORIGINS = new Set([
@@ -473,6 +474,16 @@ async function getTenantBasics(env, tenantId) {
     name: fields.name ? decodeFirestoreValue(fields.name) : '',
     timezone: fields.timezone ? decodeFirestoreValue(fields.timezone) : (fields.timeZone ? decodeFirestoreValue(fields.timeZone) : ''),
   };
+}
+
+async function findTenantByOwnerEmail(env, email) {
+  const want = String(email || '').trim().toLowerCase();
+  if (!want || want.indexOf('@') < 1) return null;
+  const map = await listPrivateTenants(env);
+  const id = Object.keys(map).find((key) => String((map[key] && map[key].ownerEmail) || '').trim().toLowerCase() === want);
+  if (!id) return null;
+  const idToken = await firebaseAnonymousToken(env);
+  return getTenantById(env, idToken, id);
 }
 
 async function getTenantById(env, idToken, tenantId) {
@@ -3053,6 +3064,26 @@ async function handleBillingRequest(request, env, origin, path, url) {
   }
   if (path === '/billing/connect-ready') {
     return handleConnectReady(request, env, origin);
+  }
+  if (path === '/billing/connect-handoff') {
+    const handed = await handleConnectHandoff(request, env, {
+      sessionAllows: (session, tenantId) => billingSessionAllows(env, session, tenantId),
+      loadTenant: async (tenantId) => {
+        const idToken = await firebaseAnonymousToken(env);
+        return getTenantById(env, idToken, tenantId);
+      },
+    });
+    return json(handed.body, handed.status, origin);
+  }
+  if (path === '/billing/connect-plan') {
+    const plan = await handleConnectPlan(request, env, {
+      loadBySlug: async (slug) => {
+        const idToken = await firebaseAnonymousToken(env);
+        return getTenantById(env, idToken, slug);
+      },
+      loadByEmail: (email) => findTenantByOwnerEmail(env, email),
+    });
+    return json(plan.body, plan.status, origin);
   }
   if (path === '/billing/subscribe') {
     if (request.method !== 'GET') return json({ ok: false, error: 'method_not_allowed' }, 405, origin);
