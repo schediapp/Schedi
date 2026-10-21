@@ -7,6 +7,7 @@ vi.mock("../workers/schedi-email-worker/src/firebase-admin.js", () => ({
 
 // @ts-expect-error plain JS worker module
 import {
+  acceptNewOwnerBookings,
   handlePrivateBookingHttp,
   hydrateTenantBookings,
   loadPrivateRoster,
@@ -148,6 +149,118 @@ function sameBooking(actual: Record<string, unknown> | undefined, expected: Reco
     expect(actual?.[key]).toEqual(expected[key]);
   }
 }
+
+describe("owner-added booking status", () => {
+  it("accepts only a new blank booking and leaves a stored blank status alone", () => {
+    const stored = [booking("BK-OLD00002", { status: undefined })];
+    delete (stored[0] as { status?: string }).status;
+    const incoming = [
+      { ...stored[0] },
+      { ...booking("MN-WALKIN01"), status: "" },
+      { ...booking("MN-PHONE001", { time: "5:00 PM" }), status: "pending" },
+      { ...booking("MN-ASKED001", { time: "5:30 PM" }), status: "requested" },
+      { ...booking("MN-READY01", { time: "6:00 PM" }), status: "   " },
+    ];
+    acceptNewOwnerBookings(incoming, stored);
+    expect(incoming[0].status).toBeUndefined();
+    expect(incoming[1].status).toBe("accepted");
+    expect(incoming[2].status).toBe("pending");
+    expect(incoming[3].status).toBe("requested");
+    expect(incoming[4].status).toBe("accepted");
+  });
+
+  it("stores an owner-added booking as accepted and keeps an existing blank booking blank", async () => {
+    const env = envWith();
+    putSession(env, "owner-token", "owner");
+    const existing = booking("BK-BLANK001", { status: undefined, time: "9:00 AM" });
+    delete (existing as { status?: string }).status;
+    await savePrivateAppointments(env, TENANT, [existing], 0);
+
+    const synced = await call(env, {
+      action: "sync",
+      session: "owner-token",
+      tenantId: TENANT,
+      appointments: [
+        existing,
+        { ...booking("MN-WALKIN01", { time: "2:00 PM", walkIn: true }), status: undefined },
+        booking("BK-PENDING1", { time: "3:00 PM", status: "pending" }),
+      ],
+    });
+    expect(synced.status).toBe(200);
+    expect(synced.data.ok).toBe(true);
+    const after = await roster(env);
+    const blank = after.appointments.find((b: { id: string }) => b.id === "BK-BLANK001");
+    const added = after.appointments.find((b: { id: string }) => b.id === "MN-WALKIN01");
+    const pending = after.appointments.find((b: { id: string }) => b.id === "BK-PENDING1");
+    expect(blank?.status).toBeUndefined();
+    expect(added?.status).toBe("accepted");
+    expect(added?.walkIn).toBe(true);
+    expect(pending?.status).toBe("pending");
+  });
+
+  it("leaves a public create without a status blank and accepts a staff create that has none", async () => {
+    const env = envWith();
+    putSession(env, "owner-token", "owner");
+    const publicCreate = await call(env, {
+      action: "create",
+      tenantId: TENANT,
+      bookings: [{
+        clientName: "Public Guest",
+        clientEmail: "public.guest@example.com",
+        clientPhone: "555-0160",
+        serviceName: "Color",
+        date: "2026-10-22",
+        time: "11:00 AM",
+        durationMins: 60,
+        paymentMethod: "later",
+      }],
+    }, "203.0.113.61");
+    expect(publicCreate.status).toBe(200);
+    expect(publicCreate.data.bookings[0].status).toBeUndefined();
+
+    const pendingCreate = await call(env, {
+      action: "create",
+      tenantId: TENANT,
+      bookings: [{
+        clientName: "Pending Guest",
+        clientEmail: "pending.guest@example.com",
+        clientPhone: "555-0161",
+        serviceName: "Color",
+        date: "2026-10-22",
+        time: "1:30 PM",
+        status: "pending",
+        durationMins: 60,
+        paymentMethod: "later",
+      }],
+    }, "203.0.113.62");
+    expect(pendingCreate.status).toBe(200);
+    expect(pendingCreate.data.bookings[0].status).toBe("pending");
+
+    const staffCreate = await call(env, {
+      action: "create",
+      session: "owner-token",
+      tenantId: TENANT,
+      bookings: [{
+        id: "MN-STAFF001",
+        clientName: "Phone Guest",
+        clientEmail: "phone.guest@example.com",
+        clientPhone: "555-0162",
+        serviceName: "Color",
+        date: "2026-10-22",
+        time: "3:30 PM",
+        durationMins: 60,
+        paymentMethod: "later",
+      }],
+    }, "203.0.113.63");
+    expect(staffCreate.status).toBe(200);
+    expect(staffCreate.data.bookings[0].status).toBe("accepted");
+
+    const stored = await roster(env);
+    expect(stored.appointments.find((b: { id: string }) => b.id === publicCreate.data.bookings[0].id)?.status).toBeUndefined();
+    expect(stored.appointments.find((b: { id: string }) => b.id === pendingCreate.data.bookings[0].id)?.status).toBe("pending");
+    expect(stored.appointments.find((b: { id: string }) => b.id === "MN-STAFF001")?.status).toBe("accepted");
+  });
+});
 
 describe("mergeRosterSync", () => {
   it("keeps a server booking the client did not send and still applies a known edit", () => {

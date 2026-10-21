@@ -15858,15 +15858,8 @@ function schediQrCardPixels(text, color) {
         function schediWaitingRequest(app, today, nowMins) {
             if (!app || appointmentIsCancelled(app)) return false;
             var st = String(app.status == null ? '' : app.status).replace(/[\s-]+/g, ' ').trim().toLowerCase();
-            if (st === 'denied' || st === 'declined') return false;
-            if (st === 'pending') return true;
-            if (st !== '') return false;
-            var date = String(app.date || '');
-            var day = typeof today === 'string' ? today : '';
-            if (!date || !day) return true;
-            if (date > day) return true;
-            if (date < day) return false;
-            return schediVisitOpen(app, nowMins);
+            // today and nowMins stay so callers do not change. A missing status is not a request.
+            return st === 'pending' || st === 'requested';
         }
 
         function schediSortVisits(a, b) {
@@ -25340,6 +25333,7 @@ function schediQrCardPixels(text, color) {
             const refId = uid('MN');
             const booking = {
                 id: refId,
+                status: 'accepted',
                 clientName,
                 clientPhone,
                 clientEmail,
@@ -26247,7 +26241,7 @@ function schediQrCardPixels(text, color) {
             var tenant = getTenant();
             if (!tenant) return;
             var app = (tenant.appointments || []).find(function (a) { return a && a.id === appId; });
-            if (!app || String(app.status || '').toLowerCase() !== 'pending') return;
+            if (!app || !schediAcceptableRequest(app, tenant)) return;
             var who = String(app.clientName || '').trim() || 'This client';
             var first = who.split(/\s+/)[0];
             var title = document.getElementById('denyConfirmTitle');
@@ -26577,7 +26571,7 @@ function schediQrCardPixels(text, color) {
             if (!tenant) return;
             var appId = String((document.getElementById('denyConfirmAppId') || {}).value || '').trim();
             var app = (tenant.appointments || []).find(function (a) { return a && a.id === appId; });
-            if (!app || String(app.status || '').toLowerCase() !== 'pending') {
+            if (!app || !schediAcceptableRequest(app, tenant)) {
                 closeDenyConfirmModal({ silent: true });
                 return;
             }
@@ -26585,7 +26579,7 @@ function schediQrCardPixels(text, color) {
             var fromDecision = !!(decision && !decision.classList.contains('hidden') && decision.getAttribute('data-booking-id') === String(app.id));
             schediDenyUndoBindHide();
             if (!schediDenyUndoBooted) schediDenyUndoBoot(tenant);
-            if (String(app.status || '').toLowerCase() !== 'pending') {
+            if (!schediAcceptableRequest(app, tenant)) {
                 closeDenyConfirmModal({ silent: true });
                 return;
             }

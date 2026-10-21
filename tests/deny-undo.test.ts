@@ -98,6 +98,84 @@ describe("deny undo queue", () => {
     expect(second.flipped).toEqual([]);
   });
 
+  it("declines a pending or requested booking and leaves every other status", () => {
+    const confirm = extractFunction(html, "confirmDenyAppointment");
+    expect(confirm).toContain("schediAcceptableRequest(app, tenant)");
+    expect(confirm).not.toContain("!== 'pending'");
+    const opener = html.slice(html.indexOf("window.openDenyConfirmModal = function"), html.indexOf("window.closeDenyConfirmModal = function"));
+    expect(opener).toContain("schediAcceptableRequest(app, tenant)");
+    expect(opener).not.toContain("!== 'pending'");
+
+    function decline(status: string, extra: Record<string, unknown> = {}) {
+      const app: { id: string; status: string; deniedAt?: string; clientName: string; clientEmail: string; cancelled?: boolean } = {
+        id: "HB-REQ",
+        status,
+        clientName: "Ada Lovelace",
+        clientEmail: "ada@example.com",
+        ...extra,
+      };
+      const tenant = { id: "harbor", appointments: [app] };
+      const box = { closed: 0, wrote: false, queued: "" };
+      const document = {
+        getElementById(id: string) {
+          if (id === "denyConfirmAppId") return { value: " HB-REQ " };
+          if (id === "bookingDecisionModal") return { classList: { contains: () => true }, getAttribute: () => "" };
+          return null;
+        },
+      };
+      new Function(
+        "document",
+        "tenant",
+        "box",
+        `function getTenant() { return tenant; }
+         function closeDenyConfirmModal() { box.closed += 1; }
+         function schediDenyUndoBindHide() {}
+         function schediDenyUndoBoot() {}
+         var schediDenyUndoBooted = false;
+         function schediDenyUndoToken() { return "tok"; }
+         function schediDenyUndoWrite() { box.wrote = true; }
+         function schediDenyUndoArm() {}
+         function schediDenyUndoPaint() {}
+         function renderTenantRoster() {}
+         function renderLivePreviewIframe() {}
+         function renderSchediToday() {}
+         function rosterTodayIso() { return "2026-10-21"; }
+         function schediNowMinutes() { return 12 * 60; }
+         var SCHEDI_DENY_UNDO_MS = 30000;
+         var schediDenyUndoState = { entries: [] };
+         ${extractFunction(html, "schediDenyUndoReduce")}
+         function schediDenyUndoApply(next) { schediDenyUndoState = next; box.queued = next.entries[0] && next.entries[0].snapshot.status; }
+         ${extractFunction(html, "appointmentIsCancelled")}
+         ${extractFunction(html, "schediWaitingRequest")}
+         ${extractFunction(html, "schediAcceptableRequest")}
+         ${extractFunction(html, "confirmDenyAppointment")}
+         confirmDenyAppointment();
+         box.status = tenant.appointments[0].status;
+         box.deniedAt = tenant.appointments[0].deniedAt || "";`,
+      )(document, tenant, box);
+      return box;
+    }
+
+    for (const status of ["pending", "PENDING", "  Pending  ", "requested", "Requested", "  requested  "]) {
+      const denied = decline(status);
+      expect(denied.status).toBe("denied");
+      expect(denied.deniedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+      expect(denied.queued).toBe(status);
+      expect(denied.wrote).toBe(true);
+      expect(denied.closed).toBe(1);
+    }
+    for (const status of ["", "   ", "accepted", "confirmed", "denied", "declined"]) {
+      const kept = decline(status);
+      expect(kept.status).toBe(status);
+      expect(kept.deniedAt).toBe("");
+      expect(kept.wrote).toBe(false);
+      expect(kept.closed).toBe(1);
+    }
+    const cancelled = decline("pending", { cancelled: true });
+    expect(cancelled.status).toBe("pending");
+    expect(cancelled.wrote).toBe(false);
+  });
+
   it("does not write or email from the confirm click", () => {
     const confirm = extractFunction(html, "confirmDenyAppointment");
     expect(confirm).not.toContain("saveState");
