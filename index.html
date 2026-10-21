@@ -18,34 +18,7 @@
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:image" content="https://schedi.app/assets/og/schedi-og.png">
     
-    <!-- Tailwind CSS via CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        brand: {
-                            50: '#ecfdf5',
-                            100: '#d1fae5',
-                            400: '#34d399',
-                            500: '#10b981',
-                            600: '#059669',
-                            900: '#064e3b'
-                        },
-                        accent: {
-                            400: '#38bdf8',
-                            500: '#0ea5e9'
-                        }
-                    },
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif']
-                    }
-                }
-            }
-        }
-    </script>
+    <link rel="stylesheet" href="/assets/tailwind.css">
 
     <!-- Font Awesome Icons CDN -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -3461,7 +3434,13 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
         right: 0;
         padding-left: 0;
         padding-right: 0;
+        z-index: 75;
     }
+    /* Sign out is the last row of the More sheet. Stop the sheet above the tab bar so that row cannot cover Agenda. */
+    #tenantPortalSection.schedi-newdash #schediDashMoreSheet {
+        bottom: calc(68px + env(safe-area-inset-bottom, 0px));
+    }
+    body.schedi-newdash { overflow-x: clip; }
     #tenantPortalSection.schedi-newdash .sd-pay-filters { display: none; }
     #tenantPortalSection.schedi-newdash .sd-pay-filter-select { display: block; }
     #tenantPortalSection.schedi-newdash .sd-pay-filter-select select { min-height: 44px; width: 100%; }
@@ -3483,6 +3462,37 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-cal-item .sd-cal-remov
     body.schedi-newdash #tenantServiceModal button:not(.sd-form-close):not([role="option"]),
     body.schedi-newdash #tenantServiceModal input,
     body.schedi-newdash #logoCropPanel.is-overlay button { min-height: 44px; }
+}
+@media (max-width: 390px) {
+    #tenantPortalSection.schedi-newdash #schediDashTop {
+        gap: 10px;
+        padding-left: max(8px, env(safe-area-inset-left));
+        padding-right: max(12px, env(safe-area-inset-right));
+    }
+    #tenantPortalSection.schedi-newdash #schediDashTop .sd-brand-mobile {
+        flex: 0 1 auto;
+        min-width: 0;
+    }
+    #tenantPortalSection.schedi-newdash #schediDashTop .sd-brand-img {
+        height: 24px;
+        max-width: 88px;
+    }
+    #tenantPortalSection.schedi-newdash #schediDashTop .sd-text-btn {
+        flex: 0 0 auto;
+        gap: 4px;
+        padding: 6px 8px;
+        font-size: 12px;
+    }
+    #tenantPortalSection.schedi-newdash #schediDashTop .sd-theme { flex: 0 0 auto; }
+    #tenantPortalSection.schedi-newdash #schediDashTop .sd-theme-opt {
+        width: 40px;
+        min-width: 40px;
+        padding: 0;
+    }
+    #tenantPortalSection.schedi-newdash #schediDashTop .sd-user-phone {
+        flex: 0 0 auto;
+        padding: 4px 6px;
+    }
 }
 #tenantPortalSection.schedi-newdash .sd-client-tools {
     display: flex;
@@ -16290,6 +16300,23 @@ function schediQrCardPixels(text, color) {
             try { if (typeof paintRosterBulkBar === 'function') paintRosterBulkBar(); } catch (errBulk) {}
         };
 
+        function schediDashKeepAboveTabbar(menu) {
+            if (!menu || window.innerWidth >= 860) return;
+            var tab = document.getElementById('schediDashTabbar');
+            if (!tab || window.getComputedStyle(tab).display === 'none') return;
+            var limit = tab.getBoundingClientRect().top - 8;
+            var rect = menu.getBoundingClientRect();
+            if (!(rect.height > 0) || rect.bottom <= limit) return;
+            var shift = rect.bottom - limit;
+            var top = parseFloat(menu.style.top);
+            if (!isNaN(top)) {
+                menu.style.top = Math.max(8, Math.round(top - shift)) + 'px';
+                return;
+            }
+            var bottom = parseFloat(menu.style.bottom);
+            if (!isNaN(bottom)) menu.style.bottom = Math.round(bottom + shift) + 'px';
+        }
+
         window.schediDashToggleAccount = function (event) {
             var menu = document.getElementById('schediDashAccountMenu');
             if (!menu) return;
@@ -16321,6 +16348,7 @@ function schediQrCardPixels(text, color) {
                 menu.style.bottom = 'auto';
                 menu.style.top = Math.round(rect.bottom + 8) + 'px';
             }
+            schediDashKeepAboveTabbar(menu);
         };
 
         var schediDashAddPickTimer = 0;
@@ -16345,6 +16373,7 @@ function schediQrCardPixels(text, color) {
                 menu.style.top = Math.round(rect.bottom + 8) + 'px';
                 menu.style.left = Math.max(12, Math.round(rect.right - 220)) + 'px';
             }
+            schediDashKeepAboveTabbar(menu);
         };
 
         window.schediDashAddKind = function (kind, source) {
@@ -16769,6 +16798,13 @@ function schediQrCardPixels(text, color) {
             var node = event.target && event.target.closest ? event.target : null;
             if (!node && event.target && event.target.parentElement) node = event.target.parentElement;
             if (!node || !node.closest) return;
+            if (node.closest('#schediDashTabbar')) {
+                var tabGo = node.closest('[data-dash-go]');
+                if (tabGo) {
+                    window.schediDashGo(tabGo.getAttribute('data-dash-go'));
+                    return;
+                }
+            }
             var go = node.closest('[data-dash-go]');
             if (go && go.closest('#schediDashChrome')) {
                 window.schediDashGo(go.getAttribute('data-dash-go'));
@@ -27798,7 +27834,7 @@ function schediQrCardPixels(text, color) {
     <link rel="icon" href="/assets/homescreen-icon.png" type="image/png">
 
     <script type="application/ld+json">${jsonLd}<\/script>
-    <script src="https://cdn.tailwindcss.com"><\/script>
+    <link rel="stylesheet" href="/assets/tailwind.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>

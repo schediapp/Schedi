@@ -50,34 +50,7 @@
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:image" content="https://schedi.app/assets/og/schedi-og.png">
     
-    <!-- Tailwind CSS via CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        brand: {
-                            50: '#ecfdf5',
-                            100: '#d1fae5',
-                            400: '#34d399',
-                            500: '#10b981',
-                            600: '#059669',
-                            900: '#064e3b'
-                        },
-                        accent: {
-                            400: '#38bdf8',
-                            500: '#0ea5e9'
-                        }
-                    },
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif']
-                    }
-                }
-            }
-        }
-    </script>
+    <link rel="stylesheet" href="/assets/tailwind.css">
 
     <!-- Font Awesome Icons CDN -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -13831,7 +13804,7 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
     <link rel="icon" href="/assets/homescreen-icon.png" type="image/png">
 
     <script type="application/ld+json">${jsonLd}<\/script>
-    <script src="https://cdn.tailwindcss.com"><\/script>
+    <link rel="stylesheet" href="/assets/tailwind.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
