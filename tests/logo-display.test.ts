@@ -256,7 +256,7 @@ describe("business logo display", () => {
 
     const persist = [
       "var schediHqTagsServer = false;",
-      "var SCHEDI_PRIVATE_TENANT_KEYS = ['ownerName', 'ownerEmail', 'ownerPhone', 'stripeCustomerId', 'stripeSubscriptionId', 'billingExempt', 'complimentaryPro', 'monthlyPrice', 'paymentForm', 'hqTags'];",
+      "var SCHEDI_PRIVATE_TENANT_KEYS = ['ownerName', 'ownerEmail', 'ownerPhone', 'stripeCustomerId', 'stripeSubscriptionId', 'billingExempt', 'complimentaryPro', 'monthlyPrice', 'paymentForm', 'hqTags', 'subscriptionStatus'];",
       extractFunction(html, "publicTenantForCloud"),
       extractFunction(html, "stripPrivateTenantFields"),
       extractFunction(html, "localTenantCopy"),

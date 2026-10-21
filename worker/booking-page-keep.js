@@ -112,7 +112,6 @@ export const BOOKING_PAGE_KEEP_FIELDS = Object.freeze([
   "squareReady",
   "state",
   "stripeConnectReady",
-  "subscriptionStatus",
   "timeZone",
   "timezone",
   "venmoHandle",

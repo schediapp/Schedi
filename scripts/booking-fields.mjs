@@ -9,12 +9,16 @@ const PRIVATE_OMIT = new Set([
 ]);
 
 // Still fetched when an older public doc has them, so the worker can fold them
-// into plan. They stay off new public writes.
+// into plan or acceptingBookings. They stay off new public writes.
 const PRIVATE_PAGE_READS = new Set([
   "billingExempt",
   "complimentaryPro",
   "monthlyPrice",
 ]);
+
+// Billing status. The mask still fetches it so an unmigrated public doc can set
+// acceptingBookings. The keep list omits it so cleanup can delete it.
+const BILLING_STATUS_FIELDS = new Set(["subscriptionStatus"]);
 
 // Written in the browser after load. They are not public tenant fields.
 const RUNTIME_ONLY = new Set([
@@ -52,7 +56,7 @@ export function bookingMaskFields(source) {
 }
 
 export function bookingKeepFields(source) {
-  return bookingMaskFields(source).filter((field) => !PRIVATE_PAGE_READS.has(field));
+  return bookingMaskFields(source).filter((field) => !PRIVATE_PAGE_READS.has(field) && !BILLING_STATUS_FIELDS.has(field));
 }
 
 export function bookingFieldModule(source) {
@@ -79,4 +83,4 @@ if (isMain) {
   console.log("wrote worker/booking-page-keep.js", bookingMaskFields(html).length, "mask fields");
 }
 
-export { PRIVATE_OMIT, PRIVATE_PAGE_READS, RUNTIME_ONLY, WORKER_EXTRAS };
+export { PRIVATE_OMIT, PRIVATE_PAGE_READS, BILLING_STATUS_FIELDS, RUNTIME_ONLY, WORKER_EXTRAS };

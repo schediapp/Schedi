@@ -572,7 +572,7 @@
                 </div>
                 <div class="flex items-center space-x-2">
                     <span class="text-xs text-slate-400 font-medium">Quick Jump:</span>
-                    <input type="date" id="calendarPickerInput" onchange="jumpToDate(this.value)" class="glass-input px-2.5 py-1 rounded-xl text-xs font-mono text-emerald-400 font-bold cursor-pointer">
+                    <input type="date" id="calendarPickerInput" onchange="jumpToDate(this.value)" aria-label="Choose a date" class="glass-input px-2.5 py-1 rounded-xl text-xs font-mono text-emerald-400 font-bold cursor-pointer">
                 </div>
             </div>
 
@@ -675,16 +675,16 @@
 
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
-                        <label class="block text-xs text-slate-300 mb-1">Full Name *</label>
-                        <input type="text" id="pubClientName" required placeholder="Jane Doe" class="w-full px-3 py-2 rounded-xl glass-input text-xs">
+                        <label class="block text-xs text-slate-300 mb-1" for="pubClientName">Full Name *</label>
+                        <input type="text" id="pubClientName" required autocomplete="name" placeholder="Jane Doe" class="w-full px-3 py-2 rounded-xl glass-input text-xs">
                     </div>
                     <div>
-                        <label class="block text-xs text-slate-300 mb-1">Phone Number *</label>
-                        <input type="tel" id="pubClientPhone" required placeholder="(555) 000-0000" class="w-full px-3 py-2 rounded-xl glass-input text-xs">
+                        <label class="block text-xs text-slate-300 mb-1" for="pubClientPhone">Phone Number *</label>
+                        <input type="tel" id="pubClientPhone" required autocomplete="tel" placeholder="(555) 000-0000" class="w-full px-3 py-2 rounded-xl glass-input text-xs">
                     </div>
                     <div>
                         <label class="block text-xs text-slate-300 mb-1" for="pubClientEmail">Email Address *</label>
-                        <input type="email" id="pubClientEmail" required autocomplete="email" inputmode="email" aria-describedby="pubClientEmailHint" placeholder="jane@example.com" class="w-full px-3 py-2 rounded-xl glass-input text-xs">
+                        <input type="email" id="pubClientEmail" required autocomplete="email" inputmode="email" aria-describedby="pubClientEmailHint" oninput="noteDuplicatedEmailTld(this.value)" placeholder="jane@example.com" class="w-full px-3 py-2 rounded-xl glass-input text-xs">
                         <p id="pubClientEmailHint" class="text-[11px] text-slate-400 mt-1">We'll send your confirmation here, plus a link to change or cancel if plans shift.</p>
                     </div>
                 </div>
@@ -3535,7 +3535,7 @@ function paintBizHeader() {
                 var dayTitle = closedNotice ? (' title="' + escHtml(closedNotice) + '"') : '';
                 html += `<button type="button" onclick="selectDate('${isoStr}')" ${isPast ? 'disabled' : ''} class="cal-day cal-day-${state}${isToday ? ' cal-day-today' : ''}" aria-pressed="${isSelected ? 'true' : 'false'}"${isToday ? ' aria-current="date"' : ''}${dayTitle} aria-label="${escHtml(dayAria)} ${monthNames[viewMonth]} ${day}">
                     <span class="cal-day-num">${day}</span>
-                    <span class="cal-day-label">${label}</span>
+                    <span class="cal-day-label">${escHtml(label)}</span>
                 </button>`;
             }
 
@@ -3971,6 +3971,25 @@ function paintBizHeader() {
             }, 3000);
         }
 
+        function duplicatedEmailTld(email) {
+            var at = String(email || '').lastIndexOf('@');
+            if (at < 1) return '';
+            var labels = String(email).slice(at + 1).split('.');
+            if (labels.length < 2) return '';
+            var last = String(labels[labels.length - 1] || '').toLowerCase();
+            var prev = String(labels[labels.length - 2] || '').toLowerCase();
+            if (!last || last !== prev) return '';
+            return String(email).slice(0, at + 1) + labels.slice(0, -1).join('.');
+        }
+
+        function noteDuplicatedEmailTld(email) {
+            var hint = document.getElementById('pubClientEmailHint');
+            var suggestion = duplicatedEmailTld(email);
+            var normal = "We'll send your confirmation here, plus a link to change or cancel if plans shift.";
+            if (hint) hint.textContent = suggestion ? ('Did you mean ' + suggestion + '? You can still continue with the address you typed.') : normal;
+            return suggestion;
+        }
+
         window.handlePublicBookingSubmit = function(e) {
             e.preventDefault();
             const errMsg = document.getElementById('bookingErrMsg');
@@ -4005,6 +4024,7 @@ function paintBizHeader() {
                 fail('Please enter a valid email address.');
                 return;
             }
+            noteDuplicatedEmailTld(email);
 
             if (!cartLines().length) {
                 fail('Please choose a service.');

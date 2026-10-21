@@ -24,31 +24,31 @@ describe("public tenant shaping", () => {
     });
     expect(shaped.pub.plan).toBe("pro");
     expect(shaped.pub.acceptingBookings).toBe(false);
-    expect(shaped.pub.subscriptionStatus).toBe("paused");
+    expect(shaped.pub.subscriptionStatus).toBeUndefined();
     expect(shaped.pub.address).toBeUndefined();
     expect(shaped.pub.squareMerchantId).toBeUndefined();
     expect(shaped.pub.unpaidDigestWeek).toBeUndefined();
     expect(shaped.pub.ownerEmail).toBeUndefined();
     expect(shaped.pub.complimentaryPro).toBeUndefined();
     expect(shaped.priv.ownerEmail).toBe("owner@example.com");
-    expect(shaped.priv.subscriptionStatus).toBeUndefined();
+    expect(shaped.priv.plan).toBe("starter");
+    expect(shaped.priv.subscriptionStatus).toBe("paused");
     expect(shaped.priv.unpaidDigestWeek).toBe("2026-10-12");
   });
 
-  it("keeps subscriptionStatus public and sets acceptingBookings", () => {
+  it("stores subscriptionStatus privately and sets acceptingBookings", () => {
     const patch = shapePublicPatch({
       subscriptionStatus: "paused",
       squareMerchantId: "merchant",
       showPublicAddress: false,
       address: "10 Main St",
     });
-    expect(patch.pub.subscriptionStatus).toBe("paused");
+    expect(patch.pub.subscriptionStatus).toBeUndefined();
     expect(patch.pub.acceptingBookings).toBe(false);
     expect(patch.pub.squareMerchantId).toBeUndefined();
     expect(patch.pub.address).toBeUndefined();
-    expect(patch.drop).toEqual(expect.arrayContaining(["squareMerchantId", "address"]));
-    expect(patch.drop).not.toContain("subscriptionStatus");
-    expect(patch.priv.subscriptionStatus).toBeUndefined();
+    expect(patch.drop).toEqual(expect.arrayContaining(["squareMerchantId", "address", "subscriptionStatus"]));
+    expect(patch.priv.subscriptionStatus).toBe("paused");
 
     const remove = publicFieldsToTrim({
       name: "Bright Cuts",
@@ -59,8 +59,7 @@ describe("public tenant shaping", () => {
       address: "10 Main St",
       plan: "pro",
     });
-    expect(remove).toEqual(expect.arrayContaining(["squareMerchantId", "unpaidDigestWeek", "address"]));
-    expect(remove).not.toContain("subscriptionStatus");
+    expect(remove).toEqual(expect.arrayContaining(["squareMerchantId", "unpaidDigestWeek", "address", "subscriptionStatus"]));
     expect(remove).not.toContain("plan");
     expect(remove).not.toContain("name");
   });
@@ -92,7 +91,7 @@ describe("dry-run cleanup script", () => {
     const out = JSON.parse(ran.stdout);
     expect(out.dryRun).toBe(true);
     expect(out.network).toBe(false);
-    expect(out.plans[0].remove).toEqual(expect.arrayContaining(["squareMerchantId", "unpaidDigestWeek", "address"]));
-    expect(out.plans[0].remove).not.toContain("subscriptionStatus");
+    expect(out.plans[0].remove).toEqual(expect.arrayContaining(["squareMerchantId", "unpaidDigestWeek", "address", "subscriptionStatus"]));
+    expect(out.plans[0].remove).not.toContain("plan");
   });
 });
