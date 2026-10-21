@@ -57,8 +57,8 @@ describe("Booking alerts on iPhone help guide", () => {
   it("plays the iPhone alerts clip in the owner list", () => {
     expect(help.guide).toMatchObject({
       slug: "owner-20-booking-alerts-iphone",
-      file: "owner-20-booking-alerts-iphone.mp4?v=11",
-      poster: "owner-20-booking-alerts-iphone.jpg?v=11",
+      file: "owner-20-booking-alerts-iphone.mp4?v=12",
+      poster: "owner-20-booking-alerts-iphone.jpg?v=12",
       title: "Booking alerts on iPhone",
       kind: "guide",
       aud: "owner",
@@ -69,13 +69,13 @@ describe("Booking alerts on iPhone help guide", () => {
     expect(help.owner).toContain('id="owner-22-booking-alerts-android"');
     expect(help.owner.indexOf('id="owner-22-booking-alerts-android"')).toBeGreaterThan(help.owner.indexOf('id="owner-20-booking-alerts-iphone"'));
     expect(help.owner).toContain("Booking alerts on Android (Chrome)");
-    expect(help.owner).toContain('src="/assets/help-videos/owner-22-booking-alerts-android.mp4?v=11"');
+    expect(help.owner).toContain('src="/assets/help-videos/owner-22-booking-alerts-android.mp4?v=12"');
     expect(help.owner).toContain('id="owner-20-booking-alerts-iphone"');
     expect(help.owner).toContain('class="schedi-help-guide');
     expect(help.card).toContain('data-video-slug="owner-20-booking-alerts-iphone"');
     expect(help.card).toContain("<video");
-    expect(help.card).toContain('src="/assets/help-videos/owner-20-booking-alerts-iphone.mp4?v=11"');
-    expect(help.card).toContain('poster="/assets/help-videos/owner-20-booking-alerts-iphone.jpg?v=11"');
+    expect(help.card).toContain('src="/assets/help-videos/owner-20-booking-alerts-iphone.mp4?v=12"');
+    expect(help.card).toContain('poster="/assets/help-videos/owner-20-booking-alerts-iphone.jpg?v=12"');
     expect(help.card).toContain('width="720"');
     expect(help.card).toContain('height="1280"');
     expect(help.empty).toContain("hidden");
