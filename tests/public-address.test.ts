@@ -122,6 +122,7 @@ describe.skipIf(!chrome)("public address on the booking page", () => {
       ".js": "text/javascript; charset=utf-8",
       ".svg": "image/svg+xml",
       ".png": "image/png",
+      ".css": "text/css; charset=utf-8",
       ".json": "application/json",
     };
     const server = createServer((req, res) => {

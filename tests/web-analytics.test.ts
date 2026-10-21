@@ -138,13 +138,13 @@ describe("cloudflare web analytics CSP", () => {
     const marketing = marketingContentSecurityPolicy();
 
     expect(directive(app, "script-src")).toBe(
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://www.gstatic.com https://static.cloudflareinsights.com",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com https://static.cloudflareinsights.com",
     );
     expect(directive(app, "connect-src")).toBe(
       "connect-src 'self' https://schedi.app https://schedi-connect-production.up.railway.app https://*.googleapis.com https://*.firebasestorage.app https://*.firebaseio.com wss://*.firebaseio.com https://cloudflareinsights.com",
     );
     expect(directive(marketing, "script-src")).toBe("script-src 'self' https://static.cloudflareinsights.com");
-    expect(directive(marketing, "connect-src")).toBe(`connect-src ${WEB_ANALYTICS_CONNECT_ORIGIN}`);
+    expect(directive(marketing, "connect-src")).toBe(`connect-src 'self' ${WEB_ANALYTICS_CONNECT_ORIGIN}`);
     expect(directive(marketing, "connect-src")).not.toContain("'none'");
     expect(directive(marketing, "connect-src")).not.toContain("*");
 
