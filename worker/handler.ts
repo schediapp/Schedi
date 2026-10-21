@@ -152,12 +152,27 @@ export const STRICT_TRANSPORT_SECURITY = "max-age=31536000; includeSubDomains";
 export const PERMISSIONS_POLICY = "camera=(), microphone=(), geolocation=(), payment=()";
 export const CROSS_ORIGIN_OPENER_POLICY = "same-origin-allow-popups";
 export const CROSS_ORIGIN_RESOURCE_POLICY = "same-origin";
+/** Email clients and other sites embed these. HTML stays same-origin. */
+export const EMBEDDABLE_RESOURCE_POLICY = "cross-origin";
 
-export function applySecurityHeaders(headers: Headers, html: boolean): void {
+/** /assets/* (images, fonts, CSS), the favicon, and touch icons. */
+export function embeddableResourcePath(pathname: string): boolean {
+  const path = collapse(pathname || "/").toLowerCase();
+  if (path.startsWith("/assets/")) return true;
+  if (path === "/favicon" || path === "/favicon.ico") return true;
+  if (path.endsWith("/homescreen-icon.png")) return true;
+  if (path.endsWith("/apple-touch-icon.png") || path.endsWith("/apple-touch-icon-precomposed.png")) return true;
+  return false;
+}
+
+export function applySecurityHeaders(headers: Headers, html: boolean, pathname = ""): void {
   headers.set("Strict-Transport-Security", STRICT_TRANSPORT_SECURITY);
   headers.set("Permissions-Policy", PERMISSIONS_POLICY);
   headers.set("Cross-Origin-Opener-Policy", CROSS_ORIGIN_OPENER_POLICY);
-  headers.set("Cross-Origin-Resource-Policy", CROSS_ORIGIN_RESOURCE_POLICY);
+  const corp = html || !embeddableResourcePath(pathname)
+    ? CROSS_ORIGIN_RESOURCE_POLICY
+    : EMBEDDABLE_RESOURCE_POLICY;
+  headers.set("Cross-Origin-Resource-Policy", corp);
   headers.set("X-Content-Type-Options", "nosniff");
   headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   if ((headers.get("Access-Control-Allow-Origin") || "").trim() === "*") {
@@ -719,7 +734,7 @@ async function guardStatic(asset: Response | null, pathname: string, method: str
     return textResponse("Not found\n", 404, fallbackType, { "Cache-Control": "no-store", "X-Robots-Tag": "noindex" }, method);
   }
   const headers = new Headers(asset.headers);
-  applySecurityHeaders(headers, false);
+  applySecurityHeaders(headers, false, pathname);
   if (method === "HEAD" || asset.status === 304) {
     await discard(asset);
     return new Response(null, { status: asset.status, statusText: asset.statusText, headers });

@@ -5,6 +5,7 @@ import { MARKETING_PAGES } from "../worker/content";
 import {
   CROSS_ORIGIN_OPENER_POLICY,
   CROSS_ORIGIN_RESOURCE_POLICY,
+  EMBEDDABLE_RESOURCE_POLICY,
   PERMISSIONS_POLICY,
   STRICT_TRANSPORT_SECURITY,
   contentSecurityPolicy,
@@ -47,18 +48,28 @@ function env(): SchediEnv {
           const type = path.endsWith(".css") ? "text/css; charset=utf-8" : "font/woff2";
           return new Response(readFileSync(file), { headers: { "content-type": type } });
         }
+        if (path.startsWith("/assets/") || path === "/favicon.ico") {
+          const type = path.endsWith(".css")
+            ? "text/css; charset=utf-8"
+            : path.endsWith(".svg")
+              ? "image/svg+xml"
+              : path === "/favicon.ico"
+                ? "image/x-icon"
+                : "image/png";
+          return new Response("asset", { headers: { "content-type": type } });
+        }
         return new Response("missing", { status: 404, headers: { "content-type": "text/plain" } });
       },
     },
   };
 }
 
-function expectShared(headers: Headers) {
+function expectShared(headers: Headers, corp = CROSS_ORIGIN_RESOURCE_POLICY) {
   expect(headers.get("strict-transport-security")).toBe(STRICT_TRANSPORT_SECURITY);
   expect(headers.get("strict-transport-security")).not.toContain("preload");
   expect(headers.get("permissions-policy")).toBe(PERMISSIONS_POLICY);
   expect(headers.get("cross-origin-opener-policy")).toBe(CROSS_ORIGIN_OPENER_POLICY);
-  expect(headers.get("cross-origin-resource-policy")).toBe(CROSS_ORIGIN_RESOURCE_POLICY);
+  expect(headers.get("cross-origin-resource-policy")).toBe(corp);
   expect(headers.get("x-content-type-options")).toBe("nosniff");
   expect(headers.get("referrer-policy")).toBe("strict-origin-when-cross-origin");
 }
@@ -105,6 +116,9 @@ describe("security and accessibility headers", () => {
     expect(INDEX).toContain('id="signupOwnerEmail" required maxlength="160" autocomplete="email"');
     expect(INDEX).toContain('id="signupBusinessName" required maxlength="80" autocomplete="organization"');
     expect(INDEX).toContain('id="signupOwnerName" required maxlength="80" autocomplete="name"');
+    expect(INDEX).toContain('<label class="block text-xs text-slate-300 mb-1" for="pubClientEmail">Email Address *</label>');
+    expect(INDEX).toContain('id="pubClientEmail" required autocomplete="email"');
+    expect(HQ).toContain('for="pubClientEmail"');
     expect(INDEX).toContain('<label class="block font-semibold text-slate-300 mb-1" for="signupResumeEmail">Owner email</label>');
     expect(INDEX).toContain('id="signupResumeEmail" autocomplete="email"');
     expect(INDEX).toContain('<label class="block font-semibold text-slate-300 mb-1" for="signupResumePassword">Temporary password</label>');
@@ -160,7 +174,7 @@ describe("security and accessibility headers", () => {
     const font = await handleRequest(new Request("https://schedi.app/assets/fonts/inter.css"), env(), ctx());
     expect(font.status).toBe(200);
     expect(font.headers.get("content-type")).toMatch(/text\/css/);
-    expectShared(font.headers);
+    expectShared(font.headers, EMBEDDABLE_RESOURCE_POLICY);
     const css = await font.text();
     expect(css).toContain("font-family: 'Inter'");
     expect(css).toContain("font-weight: 300 800");
@@ -188,6 +202,32 @@ describe("security and accessibility headers", () => {
     expect(HEADERS).not.toContain("preload");
     expect(HEADERS).not.toContain("fonts.googleapis.com");
     expect(HEADERS).not.toContain("fonts.gstatic.com");
+    expect(HEADERS).toContain("/assets/*\n  Cross-Origin-Resource-Policy: cross-origin\n");
+    expect(HEADERS).toContain("/favicon.ico\n  Cross-Origin-Resource-Policy: cross-origin\n");
+    expect(HEADERS).toContain("/index.html\n  Content-Security-Policy:");
+    expect(HEADERS).toContain("  Cross-Origin-Resource-Policy: same-origin\n");
+  });
+
+  it("sends cross-origin CORP for embedded assets and same-origin for HTML", async () => {
+    for (const path of [
+      "/assets/homescreen-icon.png",
+      "/assets/og/share.png",
+      "/assets/fonts/inter.css",
+      "/favicon.ico",
+    ]) {
+      const response = await handleRequest(new Request(`https://schedi.app${path}`), env(), ctx());
+      expect(response.status, path).toBe(200);
+      expect(response.headers.get("cross-origin-resource-policy"), path).toBe(EMBEDDABLE_RESOURCE_POLICY);
+    }
+    const home = await handleRequest(new Request("https://schedi.app/"), env(), ctx());
+    expect(home.headers.get("content-type")).toMatch(/text\/html/);
+    expect(home.headers.get("cross-origin-resource-policy")).toBe(CROSS_ORIGIN_RESOURCE_POLICY);
+    const login = await handleRequest(new Request("https://schedi.app/login"), env(), ctx());
+    expect(login.headers.get("content-type")).toMatch(/text\/html/);
+    expect(login.headers.get("cross-origin-resource-policy")).toBe(CROSS_ORIGIN_RESOURCE_POLICY);
+    const booking = readFileSync(new URL("../site/booking.html", import.meta.url), "utf8");
+    expect(booking).toContain('for="pubClientEmail"');
+    expect(booking).toContain('id="pubClientEmail"');
   });
 });
 

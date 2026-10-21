@@ -8,6 +8,25 @@
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
 
+# Email clients and other sites embed these. A more specific rule does not
+# inherit the splat above, so the shared headers are repeated. HTML stays
+# Cross-Origin-Resource-Policy: same-origin.
+/assets/*
+  Cross-Origin-Resource-Policy: cross-origin
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
+  Cross-Origin-Opener-Policy: same-origin-allow-popups
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+
+/favicon.ico
+  Cross-Origin-Resource-Policy: cross-origin
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
+  Cross-Origin-Opener-Policy: same-origin-allow-popups
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+
 # SPA shells (index.html, hq.html). The worker sets this same policy on HTML responses.
 # Marketing pages are rendered by the worker and use a separate, stricter policy.
 /index.html
