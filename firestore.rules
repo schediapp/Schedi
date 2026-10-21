@@ -12,9 +12,10 @@ service cloud.firestore {
     // the migration removes them from this collection.
     // Clients cannot create, update, or delete. The worker uses the Admin SDK,
     // which bypasses these rules.
-    // stripeConnectReady, squareReady, stripeConnectStatus, and squareConnectStatus
-    // are server-only. Only the worker and payment webhooks write them.
-    // Signed-in owners cannot set them: client writes are denied.
+    // stripeConnectReady and squareReady stay public because booking pages use them.
+    // stripeConnectStatus, signupStartedAt, and squareConnectStatus are server-only.
+    // stripeConnectStatus and signupStartedAt live on the private doc. Only the
+    // worker and payment webhooks write them. Client writes are denied.
     match /artifacts/{appId}/public/data/tenants/{tenantId} {
       allow get, list: if true;
       allow create, update, delete: if false;

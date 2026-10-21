@@ -1755,6 +1755,21 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
                                 <p class="text-[11px] text-slate-500">Shown at the top of your public page. Logo and cover are optional.</p>
                             </div>
                             <div>
+                                <label for="tenantIndustry" class="block text-xs font-semibold text-slate-300 mb-1">Industry preset</label>
+                                <select id="tenantIndustry" onchange="schediPhiAckToggle('tenant')" class="w-full px-3 py-2 rounded-xl glass-input text-xs">
+                                    <option value="Services">Services</option>
+                                    <option value="Consulting">Consulting / Executive</option>
+                                    <option value="Barbershop">Barbershop &amp; Beauty</option>
+                                    <option value="Medical">Medical / Healthcare</option>
+                                    <option value="Auto">Auto Detailing &amp; Care</option>
+                                    <option value="Fitness">Fitness &amp; Personal Training</option>
+                                </select>
+                                <label id="tenantPhiAckWrap" class="hidden mt-2 flex items-start gap-2 text-slate-300" for="tenantPhiAck">
+                                    <input type="checkbox" id="tenantPhiAck" class="mt-0.5 w-4 h-4 accent-brand-500 rounded">
+                                    <span>I confirm this business will not collect health information (protected health information) through Schedi.</span>
+                                </label>
+                            </div>
+                            <div>
                                 <label for="tenantAddress" class="block text-xs font-semibold text-slate-300 mb-1">Address</label>
                                 <input type="text" id="tenantAddress" maxlength="200" placeholder="123 Main Street, City" class="w-full px-3 py-2 rounded-xl glass-input text-xs">
                                 <p class="text-[10px] text-slate-500 mt-1">Linked to a map. Leave blank to hide it.</p>
@@ -2250,6 +2265,21 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
                         <option value="pro">Pro — $49/mo</option>
                     </select>
                 </div>
+                <div>
+                    <label class="block font-semibold text-slate-300 mb-1" for="signupIndustry">Industry</label>
+                    <select id="signupIndustry" onchange="schediPhiAckToggle('signup')" class="w-full px-3 py-2 rounded-xl glass-input">
+                        <option value="Services">Services</option>
+                        <option value="Consulting">Consulting / Executive</option>
+                        <option value="Barbershop">Barbershop &amp; Beauty</option>
+                        <option value="Medical">Medical / Healthcare</option>
+                        <option value="Auto">Auto Detailing &amp; Care</option>
+                        <option value="Fitness">Fitness &amp; Personal Training</option>
+                    </select>
+                </div>
+                <label id="signupPhiAckWrap" class="hidden flex items-start gap-2 text-slate-300" for="signupPhiAck">
+                    <input type="checkbox" id="signupPhiAck" class="mt-0.5 w-4 h-4 accent-brand-500 rounded">
+                    <span>I confirm this business will not collect health information (protected health information) through Schedi.</span>
+                </label>
                 <label class="flex items-start gap-2 text-slate-300">
                     <input type="checkbox" id="signupConsentCheck" required class="mt-0.5 w-4 h-4 accent-brand-500 rounded">
                     <span>I agree to the <a href="https://schedi.app/terms" class="underline" target="_blank" rel="noopener">Terms of Service</a> and <a href="https://schedi.app/privacy" class="underline" target="_blank" rel="noopener">Privacy Policy</a>, and consent to the processing of my data.</span>
@@ -2332,6 +2362,10 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
                             <option value="Fitness">Fitness & Personal Training</option>
                         </select>
                         <p id="provHipaaNote" class="hidden mt-2 text-[11px] text-amber-300">Schedi is not HIPAA compliant. Do not use it to collect protected health information.</p>
+                        <label id="provPhiAckWrap" class="hidden mt-2 flex items-start gap-2 text-slate-300" for="provPhiAck">
+                            <input type="checkbox" id="provPhiAck" class="mt-0.5 w-4 h-4 accent-brand-500 rounded">
+                            <span>I confirm this business will not collect health information (protected health information) through Schedi.</span>
+                        </label>
                     </div>
                 </div>
 
@@ -2390,6 +2424,21 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
                 <div>
                     <label class="block font-semibold text-slate-300 mb-1">Business Name *</label>
                     <input type="text" id="editTenantName" required class="w-full px-3 py-2 rounded-xl glass-input">
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-300 mb-1" for="editTenantIndustry">Industry preset</label>
+                    <select id="editTenantIndustry" onchange="schediPhiAckToggle('edit')" class="w-full px-3 py-2 rounded-xl glass-input">
+                        <option value="Services">Services</option>
+                        <option value="Consulting">Consulting / Executive</option>
+                        <option value="Barbershop">Barbershop &amp; Beauty</option>
+                        <option value="Medical">Medical / Healthcare</option>
+                        <option value="Auto">Auto Detailing &amp; Care</option>
+                        <option value="Fitness">Fitness &amp; Personal Training</option>
+                    </select>
+                    <label id="editPhiAckWrap" class="hidden mt-2 flex items-start gap-2 text-slate-300" for="editPhiAck">
+                        <input type="checkbox" id="editPhiAck" class="mt-0.5 w-4 h-4 accent-brand-500 rounded">
+                        <span>I confirm this business will not collect health information (protected health information) through Schedi.</span>
+                    </label>
                 </div>
                 <div>
                     <label class="block font-semibold text-slate-300 mb-1">URL Slug *</label>
@@ -3298,7 +3347,7 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
         // Owner contact + billing fields are NOT on the public tenant docs anymore. The worker keeps them in an
         // Admin-only private doc. Signed-in owners (own business) and the agency (all) load them with
         // POST /api/profile {action:'private'}; they live in memory only (never localStorage, never the public page).
-        var SCHEDI_PRIVATE_TENANT_KEYS = ['ownerName', 'ownerEmail', 'ownerPhone', 'stripeCustomerId', 'stripeSubscriptionId', 'billingExempt', 'complimentaryPro', 'monthlyPrice', 'paymentForm', 'hqTags', 'subscriptionStatus'];
+        var SCHEDI_PRIVATE_TENANT_KEYS = ['ownerName', 'ownerEmail', 'ownerPhone', 'stripeCustomerId', 'stripeSubscriptionId', 'billingExempt', 'complimentaryPro', 'monthlyPrice', 'paymentForm', 'hqTags', 'subscriptionStatus', 'signupStartedAt', 'stripeConnectStatus', 'phiAcknowledgment', 'ownerIdleTimeoutMin', 'ownerIdleDefaultApplied'];
         // HQ-only tags are saved only once the worker says it keeps them private (otherwise they stay local to this tab).
         var schediHqTagsServer = false;
         var SCHEDI_OWNER_SENTINEL = '__schedi_owner__';
@@ -3367,6 +3416,11 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
                 schediPrivateProfilesLoaded = true;
                 schediHqTagsServer = Array.isArray(data.features) && data.features.indexOf('hqTags') !== -1;
                 applyPrivateProfiles(platformState.tenants);
+                try {
+                    if (platformState.isTenantOwnerLoggedIn && typeof syncOwnerIdle === 'function' && typeof getTenant === 'function') {
+                        syncOwnerIdle(getTenant());
+                    }
+                } catch (errIdleSync) {}
                 try { renderAgencyDashboard(); } catch (errDash) {}
                 try {
                     if (platformState.currentMode === 'tenant' && typeof renderTenantAdminPortal === 'function') renderTenantAdminPortal();
@@ -3594,7 +3648,9 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
                 if (pushed && pushed.ok === false && !pushed.skipped) {
                     console.error('Error saving state to backend:', pushed.error || 'profile_write_failed');
                     if (!syncFailed && typeof showToast === 'function') {
-                        showToast('Saved locally, but cloud sync failed.', 'error');
+                        showToast(pushed.error === 'phi_ack_required'
+                            ? 'Check the box confirming this business will not collect health information through Schedi.'
+                            : 'Saved locally, but cloud sync failed.', 'error');
                     }
                 }
             } catch (err) {
@@ -5234,12 +5290,69 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
             syncPublicHomeFooter();
         }
 
+        var SCHEDI_PHI_ACK_VERSION = 'phi-ack-v1';
+
+        function schediIsMedicalIndustry(value) {
+            var s = String(value || '').trim().toLowerCase();
+            return s === 'medical' || s === 'healthcare' || s === 'medical / healthcare' || s === 'medical/healthcare';
+        }
+
+        function schediIndustrySelectValue(value) {
+            var raw = String(value || '').trim();
+            if (schediIsMedicalIndustry(raw)) return 'Medical';
+            return raw || 'Services';
+        }
+
+        function schediSetIndustrySelect(el, value) {
+            if (!el) return;
+            var canonical = schediIndustrySelectValue(value);
+            var found = false;
+            for (var i = 0; i < el.options.length; i++) {
+                if (el.options[i].value === canonical) { found = true; break; }
+            }
+            if (!found) {
+                var opt = document.createElement('option');
+                opt.value = canonical;
+                opt.textContent = canonical;
+                el.appendChild(opt);
+            }
+            el.value = canonical;
+        }
+
+        function schediPhiAckToggle(which) {
+            var selId = which === 'signup' ? 'signupIndustry' : which === 'prov' ? 'provIndustry' : which === 'edit' ? 'editTenantIndustry' : 'tenantIndustry';
+            var sel = document.getElementById(selId);
+            var wrap = document.getElementById(which + 'PhiAckWrap');
+            if (wrap && sel) wrap.classList.toggle('hidden', !schediIsMedicalIndustry(sel.value));
+            if (which === 'prov') {
+                var note = document.getElementById('provHipaaNote');
+                if (note && sel) note.classList.toggle('hidden', !schediIsMedicalIndustry(sel.value));
+            }
+        }
+
+        function schediPhiAckChecked(which) {
+            var box = document.getElementById(which + 'PhiAck');
+            return !!(box && box.checked);
+        }
+
+        function schediRequirePhiAck(industry, which) {
+            if (!schediIsMedicalIndustry(industry)) return true;
+            if (schediPhiAckChecked(which)) return true;
+            if (typeof showToast === 'function') showToast('Check the box confirming this business will not collect health information through Schedi.', 'error');
+            var box = document.getElementById(which + 'PhiAck');
+            if (box && box.focus) box.focus();
+            return false;
+        }
+
+        function schediSyncPhiAckBox(which, tenant) {
+            var box = document.getElementById(which + 'PhiAck');
+            var ack = tenant && tenant.phiAcknowledgment;
+            if (box) box.checked = !!(ack && ack.version === SCHEDI_PHI_ACK_VERSION);
+            schediPhiAckToggle(which);
+        }
+
         window.schediIndustryHipaaNote = function() {
-            var sel = document.getElementById('provIndustry');
-            var note = document.getElementById('provHipaaNote');
-            if (!note || !sel) return;
-            if (sel.value === 'Medical') note.classList.remove('hidden');
-            else note.classList.add('hidden');
+            schediPhiAckToggle('prov');
         };
 
         // F0002: persist Business Portal auth like Firebase LOCAL persistence.
@@ -5479,16 +5592,115 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
 
         // F0002: owner-configurable idle auto log-off (Off / 15 / 30 / 60 minutes).
         var SCHEDI_OWNER_IDLE_KEY = 'schedi.ownerIdleTimeoutMin';
+        var SCHEDI_OWNER_IDLE_FLAG = 'schedi.ownerIdleDefaultApplied';
         var schediOwnerIdleTimer = null;
         var schediOwnerIdleLastBump = 0;
         var schediOwnerIdleListening = false;
 
-        function getTenantAutoLogoffMinutes() {
+        function canonicalOwnerIdleMinutes(value) {
+            if (value === 0 || value === false) return 0;
+            var text = String(value == null ? '' : value).trim().toLowerCase();
+            if (!text || text === 'null' || text === 'undefined') return null;
+            if (text === '0' || text === 'off') return 0;
+            var n = parseInt(text, 10);
+            if (n === 15 || n === 30 || n === 60 || n === 0) return n;
+            return null;
+        }
+
+        function applyLocalIdleDefault() {
+            var applied = false;
+            var raw = null;
+            try { applied = window.localStorage.getItem(SCHEDI_OWNER_IDLE_FLAG) === '1'; } catch (errFlag) {}
+            try { raw = window.localStorage.getItem(SCHEDI_OWNER_IDLE_KEY); } catch (errRaw) {}
+            if (applied) {
+                var kept = canonicalOwnerIdleMinutes(raw);
+                var remembered = null;
+                try { remembered = canonicalOwnerIdleMinutes(window.localStorage.getItem('schedi.ownerIdleKeptChoice')); } catch (errRem) {}
+                return {
+                    migrated: false,
+                    keptChoice: remembered === 15 || remembered === 60 || remembered === 30,
+                    minutes: kept == null ? 30 : kept
+                };
+            }
+            var prev = canonicalOwnerIdleMinutes(raw);
+            var next = (prev === 15 || prev === 30 || prev === 60) ? prev : 30;
+            var keptChoice = prev === 15 || prev === 30 || prev === 60;
             try {
-                var n = parseInt(window.localStorage.getItem(SCHEDI_OWNER_IDLE_KEY) || '0', 10);
-                if (n === 15 || n === 30 || n === 60) return n;
-            } catch (err) {}
-            return 0;
+                window.localStorage.setItem(SCHEDI_OWNER_IDLE_KEY, String(next));
+                window.localStorage.setItem(SCHEDI_OWNER_IDLE_FLAG, '1');
+                if (prev === 15 || prev === 60) window.localStorage.setItem('schedi.ownerIdleKeptChoice', String(next));
+            } catch (errSet) {}
+            return { migrated: true, keptChoice: keptChoice, minutes: next };
+        }
+
+        function getTenantAutoLogoffMinutes() {
+            return applyLocalIdleDefault().minutes;
+        }
+
+        function persistOwnerIdle(tenantId, minutes) {
+            var session = schediAuthSession();
+            if (!session || !tenantId || window.__SCHEDI_DEMO) return;
+            var body = { action: 'save', session: session, tenants: [{ id: tenantId, ownerIdleTimeoutMin: minutes, ownerIdleDefaultApplied: true }] };
+            fetch('https://schedi.app/api/profile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            }).catch(function () {});
+        }
+
+        function rememberOwnerIdle(tenant, minutes) {
+            tenant.ownerIdleTimeoutMin = minutes;
+            tenant.ownerIdleDefaultApplied = true;
+            if (schediPrivateProfiles[tenant.id]) {
+                schediPrivateProfiles[tenant.id].ownerIdleTimeoutMin = minutes;
+                schediPrivateProfiles[tenant.id].ownerIdleDefaultApplied = true;
+            }
+        }
+
+        function syncOwnerIdle(tenant) {
+            if (!tenant || !tenant.id || window.__SCHEDI_DEMO) return;
+            var local = applyLocalIdleDefault();
+            var serverApplied = tenant.ownerIdleDefaultApplied === true;
+            var serverMin = canonicalOwnerIdleMinutes(tenant.ownerIdleTimeoutMin);
+            var pushedKey = 'schediIdlePushed.' + tenant.id;
+            var alreadyPushed = false;
+            try { alreadyPushed = window.sessionStorage.getItem(pushedKey) === '1'; } catch (errPush) {}
+            var explicitRaw = null;
+            try { explicitRaw = window.sessionStorage.getItem('schedi.ownerIdleExplicit'); } catch (errEx) {}
+            var explicitMin = explicitRaw == null || explicitRaw === '' ? null : canonicalOwnerIdleMinutes(explicitRaw);
+            if (explicitMin === 0 || explicitMin === 15 || explicitMin === 30 || explicitMin === 60) {
+                if (serverApplied && serverMin === explicitMin) {
+                    try { window.sessionStorage.removeItem('schedi.ownerIdleExplicit'); } catch (errClr) {}
+                } else {
+                    rememberOwnerIdle(tenant, explicitMin);
+                    try { window.localStorage.setItem(SCHEDI_OWNER_IDLE_KEY, String(explicitMin)); } catch (errLoc) {}
+                    try { window.localStorage.setItem(SCHEDI_OWNER_IDLE_FLAG, '1'); } catch (errFlagEx) {}
+                    try { window.sessionStorage.setItem(pushedKey, '1'); } catch (errMarkEx) {}
+                    persistOwnerIdle(tenant.id, explicitMin);
+                    try { syncTenantAutoLogoffSelect(); } catch (errSelEx) {}
+                    return;
+                }
+            }
+            var pushMinutes = (local.keptChoice && (local.minutes === 15 || local.minutes === 60)) ? local.minutes : null;
+            if (serverApplied && (serverMin === 0 || serverMin === 15 || serverMin === 30 || serverMin === 60)) {
+                if (!alreadyPushed && pushMinutes && serverMin === 30) {
+                    rememberOwnerIdle(tenant, pushMinutes);
+                    try { window.sessionStorage.setItem(pushedKey, '1'); } catch (errMark) {}
+                    try { window.localStorage.removeItem('schedi.ownerIdleKeptChoice'); } catch (errDrop) {}
+                    persistOwnerIdle(tenant.id, pushMinutes);
+                } else {
+                    try {
+                        window.localStorage.setItem(SCHEDI_OWNER_IDLE_FLAG, '1');
+                        window.localStorage.setItem(SCHEDI_OWNER_IDLE_KEY, String(serverMin));
+                        window.localStorage.removeItem('schedi.ownerIdleKeptChoice');
+                    } catch (errSrv) {}
+                }
+            } else if (!alreadyPushed) {
+                rememberOwnerIdle(tenant, local.minutes);
+                try { window.sessionStorage.setItem(pushedKey, '1'); } catch (errMark2) {}
+                persistOwnerIdle(tenant.id, local.minutes);
+            }
+            try { syncTenantAutoLogoffSelect(); } catch (errSelIdle) {}
         }
 
         function syncTenantAutoLogoffSelect() {
@@ -5504,7 +5716,17 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
         window.setTenantAutoLogoffMinutes = function (value) {
             var n = parseInt(value, 10);
             if (!(n === 0 || n === 15 || n === 30 || n === 60)) n = 0;
-            try { window.localStorage.setItem(SCHEDI_OWNER_IDLE_KEY, String(n)); } catch (err) {}
+            try {
+                window.localStorage.setItem(SCHEDI_OWNER_IDLE_FLAG, '1');
+                window.localStorage.setItem(SCHEDI_OWNER_IDLE_KEY, String(n));
+                window.localStorage.removeItem('schedi.ownerIdleKeptChoice');
+                window.sessionStorage.setItem('schedi.ownerIdleExplicit', String(n));
+            } catch (err) {}
+            var idleTenant = (typeof getTenant === 'function') ? getTenant() : null;
+            if (idleTenant && idleTenant.id && platformState.isTenantOwnerLoggedIn) {
+                rememberOwnerIdle(idleTenant, n);
+                persistOwnerIdle(idleTenant.id, n);
+            }
             syncTenantAutoLogoffSelect();
             if (platformState.isTenantOwnerLoggedIn && platformState.ownerSelfSession) {
                 startTenantOwnerIdleWatch();
@@ -5706,6 +5928,12 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
             var ownerName = (document.getElementById('signupOwnerName').value || '').trim();
             var ownerEmail = (document.getElementById('signupOwnerEmail').value || '').trim();
             var plan = (document.getElementById('signupPlan').value || '').trim();
+            var industryEl = document.getElementById('signupIndustry');
+            var industry = industryEl ? (industryEl.value || 'Services') : 'Services';
+            if (!schediRequirePhiAck(industry, 'signup')) {
+                if (errEl) { errEl.textContent = 'Check the box confirming this business will not collect health information through Schedi.'; errEl.classList.remove('hidden'); }
+                return;
+            }
             var consent = document.getElementById('signupConsentCheck');
             if (!consent || !consent.checked) {
                 if (errEl) { errEl.textContent = 'Please agree to the Terms of Service and Privacy Policy to continue.'; errEl.classList.remove('hidden'); }
@@ -5722,7 +5950,7 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ businessName: businessName, ownerName: ownerName, ownerEmail: ownerEmail, plan: plan })
+                    body: JSON.stringify({ businessName: businessName, ownerName: ownerName, ownerEmail: ownerEmail, plan: plan, industry: industry, phiAckAccepted: schediIsMedicalIndustry(industry) })
                 });
                 var data = {};
                 try { data = await res.json(); } catch (errJson) { data = {}; }
@@ -7617,6 +7845,9 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
         }
 
         window.openProvisionModal = function() {
+            var box = document.getElementById('provPhiAck');
+            if (box) box.checked = false;
+            try { schediPhiAckToggle('prov'); } catch (errPhi) {}
             document.getElementById('provisionModal').classList.remove('hidden');
             document.getElementById('provisionModal').scrollTop = 0;
         }
@@ -7656,6 +7887,7 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
                 showToast('Owner password must be at least 8 characters.', 'error');
                 return;
             }
+            if (!schediRequirePhiAck(industry, 'prov')) return;
             const passwordStored = await schediStoreOwnerPassword(slug, ownerEmail, ownerPassword);
             if (!passwordStored.ok) {
                 showToast(passwordStored.error || 'Could not store the owner password.', 'error');
@@ -7706,8 +7938,11 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
                 paymentGateways: { card: true, cashapp: true, zelle: false, venmo: false, paypal: false, later: true },
                 notifications: { emailConfirmations: true, replyTo: '', extraNote: '' },
                 allowRecurringBookings: true,
-                appointments: []
+                appointments: [],
+                ownerIdleTimeoutMin: 30,
+                ownerIdleDefaultApplied: true
             };
+            if (schediIsMedicalIndustry(industry)) newTenant.phiAckAccepted = true;
 
             newTenant.plan = normalizePlan(newTenant);
             platformState.tenants.push(newTenant);
@@ -7774,6 +8009,8 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
 
             document.getElementById('editTenantId').value = tenant.id;
             document.getElementById('editTenantName').value = tenant.name;
+            schediSetIndustrySelect(document.getElementById('editTenantIndustry'), tenant.industry || 'Services');
+            schediSyncPhiAckBox('edit', tenant);
             document.getElementById('editTenantSlug').value = tenant.slug || tenant.id;
             document.getElementById('editOwnerName').value = tenant.ownerName || '';
             document.getElementById('editOwnerPhone').value = tenant.ownerPhone || '';
@@ -7814,6 +8051,10 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
                 showToast('Logo and cover photo need an https link, or leave them blank.', 'error');
                 return;
             }
+            var editIndustryEl = document.getElementById('editTenantIndustry');
+            var editIndustry = editIndustryEl ? String(editIndustryEl.value || '').trim() : String(tenant.industry || 'Services');
+            if (!editIndustry) editIndustry = 'Services';
+            if (!schediRequirePhiAck(editIndustry, 'edit')) return;
 
             const oldSlug = tenant.slug || tenant.id;
             const oldId = tenant.id;
@@ -7898,6 +8139,9 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
             }
             tenant.logoUrl = safeHttpsUrl(editLogoRaw);
             tenant.coverUrl = safeHttpsUrl(editCoverRaw);
+            tenant.industry = editIndustry;
+            if (schediIsMedicalIndustry(editIndustry)) tenant.phiAckAccepted = true;
+            else delete tenant.phiAckAccepted;
 
             const slugChanged = newSlug !== String(oldSlug).toLowerCase();
             const idWillChange = slugChanged && (tenant.id === oldSlug || String(tenant.id).toLowerCase() === String(oldSlug).toLowerCase());
@@ -9908,6 +10152,8 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
             if (minNoticeEl) minNoticeEl.value = String(getMinNoticeHours(tenant));
             var addressEl = document.getElementById('tenantAddress');
             if (addressEl) addressEl.value = getTenantLocation(tenant);
+            schediSetIndustrySelect(document.getElementById('tenantIndustry'), tenant.industry || 'Services');
+            schediSyncPhiAckBox('tenant', tenant);
             var showAddrEl = document.getElementById('tenantShowAddress');
             if (showAddrEl) showAddrEl.checked = showPublicAddressOn(tenant);
             var logoEl = document.getElementById('tenantLogoUrl');
@@ -10086,6 +10332,14 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
             tenant.showPublicAddress = !showAddrEl || !!showAddrEl.checked;
             tenant.logoUrl = safeHttpsUrl(logoRaw);
             tenant.coverUrl = safeHttpsUrl(coverRaw);
+            var industryEl = document.getElementById('tenantIndustry');
+            if (industryEl) {
+                var industry = String(industryEl.value || '').trim() || 'Services';
+                if (!schediRequirePhiAck(industry, 'tenant')) return;
+                tenant.industry = industry;
+                if (schediIsMedicalIndustry(industry)) tenant.phiAckAccepted = true;
+                else delete tenant.phiAckAccepted;
+            }
 
             saveState();
             renderTenantHours(tenant);
@@ -13340,7 +13594,7 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
                 }
                 const matched = platformState.tenants.find(function (t) { return t.id === data.tenantId; });
                 if (!matched) {
-                    tenantLoginFail('Your password was accepted, but this business is not on this page yet. Refresh and try again.');
+                    tenantLoginFail('We couldn\'t open a business portal for this account. Contact support.');
                     return;
                 }
                 var loginMeta = { role: 'owner', tenantId: data.tenantId, email: email };

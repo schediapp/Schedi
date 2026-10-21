@@ -14,6 +14,7 @@ import {
   listPrivateTenants,
   privateView,
   migrateTenantsToPrivate,
+  migrateOwnerIdleDefaults,
   AGENCY_ONLY_PRIVATE_KEYS,
   PRIVATE_TENANT_KEYS,
   PUBLIC_ADDRESS_KEYS,
@@ -23,6 +24,8 @@ import {
 } from './tenant-private.js';
 import { applyOwnerEntitlementLock, preserveServerOwnedConnectFields, SERVER_OWNED_CONNECT_KEYS } from './entitlements.js';
 import { normalizeMinNoticeHours } from './booking-notice.js';
+import { resolvePhiAcknowledgment } from './phi-ack.js';
+import { canonicalOwnerIdleMinutes, OWNER_IDLE_DEFAULT_MIN } from './owner-idle.js';
 
 const FORBIDDEN = new Set([
   'ownerPassword',
@@ -157,8 +160,48 @@ function publicWriteMask(pub) {
   return Array.from(new Set(Object.keys(pub || {}).concat(drop)));
 }
 
+const SERVER_OWNED_PRIVATE_KEYS = ['stripeConnectStatus', 'signupStartedAt'];
+
+/** Copy server-owned keys onto the private patch when the private doc does not have them yet. */
+function preserveServerOwnedPrivate(priv, storedPub, storedPriv) {
+  const next = Object.assign({}, priv || {});
+  const pub = storedPub || {};
+  const stored = storedPriv || {};
+  for (const key of SERVER_OWNED_PRIVATE_KEYS) {
+    if (Object.prototype.hasOwnProperty.call(stored, key)) continue;
+    if (Object.prototype.hasOwnProperty.call(pub, key)) next[key] = pub[key];
+    else delete next[key];
+  }
+  return next;
+}
+
+/**
+ * Off or a missing value becomes 30 until ownerIdleDefaultApplied is set.
+ * After that, 0, 15, 30, and 60 are the owner's choice.
+ */
+export function applyOwnerIdleOnSave(priv, storedPriv) {
+  const next = Object.assign({}, priv || {});
+  const stored = storedPriv || {};
+  const applied = stored.ownerIdleDefaultApplied === true;
+  const incoming = Object.prototype.hasOwnProperty.call(next, 'ownerIdleTimeoutMin')
+    ? canonicalOwnerIdleMinutes(next.ownerIdleTimeoutMin)
+    : null;
+  if (!applied) {
+    if (incoming === 15 || incoming === 30 || incoming === 60) next.ownerIdleTimeoutMin = incoming;
+    else {
+      const storedMin = canonicalOwnerIdleMinutes(stored.ownerIdleTimeoutMin);
+      next.ownerIdleTimeoutMin = (storedMin === 15 || storedMin === 30 || storedMin === 60) ? storedMin : OWNER_IDLE_DEFAULT_MIN;
+    }
+    next.ownerIdleDefaultApplied = true;
+    return next;
+  }
+  if (incoming === 0 || incoming === 15 || incoming === 30 || incoming === 60) next.ownerIdleTimeoutMin = incoming;
+  next.ownerIdleDefaultApplied = true;
+  return next;
+}
+
 /** Returns the list of owner-sent fields that were ignored by the plan/entitlement lock. */
-async function putTenant(env, tenantId, profile, role) {
+async function putTenant(env, tenantId, profile, role, actor) {
   // Owner contact + billing fields go to the private doc (merge, only keys present);
   // the world-readable public doc keeps booking-page fields only.
   const split = splitTenant(profile);
@@ -166,15 +209,17 @@ async function putTenant(env, tenantId, profile, role) {
   let priv = split.priv;
   const headers = await adminAuthHeaders(env);
   let ignored = [];
+  let storedPub = null;
+  let storedPriv = null;
   if (role !== 'agency') {
     // Plan lock: plan keeps its stored value. Billing keys (monthlyPrice, complimentaryPro,
     // billingExempt, paymentForm, Stripe ids, plan, subscriptionStatus) are dropped
     // from an owner write. subscriptionStatus is private. The public doc keeps the
     // effective plan tier and acceptingBookings. Pro-only features can't be switched
     // on unless the stored plan is Pro (or complimentary Pro).
-    const storedPub = await getPublicTenantDoc(env, tenantId, headers);
+    storedPub = await getPublicTenantDoc(env, tenantId, headers);
     if (!storedPub) throw new Error('tenant_not_found');
-    const storedPriv = await getPrivateTenant(env, tenantId);
+    storedPriv = await getPrivateTenant(env, tenantId);
     for (const k of Object.keys(priv)) {
       if (AGENCY_ONLY_PRIVATE_KEYS.has(k)) {
         const before = storedPriv ? storedPriv[k] : undefined;
@@ -200,7 +245,8 @@ async function putTenant(env, tenantId, profile, role) {
     if (storedPriv && storedPriv.plan) effective.plan = storedPriv.plan;
     pub = shapePublicBookingFields(effective).pub;
   } else {
-    const storedPub = await getPublicTenantDoc(env, tenantId, headers);
+    storedPub = await getPublicTenantDoc(env, tenantId, headers);
+    storedPriv = await getPrivateTenant(env, tenantId);
     const preserved = preserveServerOwnedConnectFields(pub, storedPub);
     pub = preserved.pub;
     ignored = preserved.ignored;
@@ -208,6 +254,22 @@ async function putTenant(env, tenantId, profile, role) {
     pub = shaped.pub;
     priv = shaped.priv;
   }
+  delete pub.phiAckAccepted;
+  delete priv.phiAckAccepted;
+  delete priv.phiAcknowledgment;
+  const phiExplicit = Object.prototype.hasOwnProperty.call(profile, 'phiAckAccepted');
+  const phi = resolvePhiAcknowledgment({
+    industry: pub.industry,
+    accepted: profile.phiAckAccepted === true,
+    explicit: phiExplicit,
+    existing: storedPriv && storedPriv.phiAcknowledgment,
+    who: actor || (storedPriv && storedPriv.ownerEmail) || '',
+    now: Date.now(),
+  });
+  if (!phi.ok) throw new Error('phi_ack_required');
+  if (phi.phiAcknowledgment) priv.phiAcknowledgment = phi.phiAcknowledgment;
+  priv = preserveServerOwnedPrivate(priv, storedPub, storedPriv);
+  priv = applyOwnerIdleOnSave(priv, storedPriv);
   if (Object.keys(priv).length) await patchPrivateTenant(env, tenantId, priv);
   const mask = publicWriteMask(pub);
   const qs = mask.map((k) => 'updateMask.fieldPaths=' + encodeURIComponent(k)).join('&');
@@ -296,6 +358,24 @@ async function handleMigratePrivate(request, env, origin, json, body) {
   }
 }
 
+/** Maintenance: set auto log-off to 30 when it is Off or missing. Same gate as migrate_private. */
+async function handleMigrateOwnerIdle(request, env, origin, json, body) {
+  const gate = await requireAgency(env, request, body);
+  if (!gate.ok) return json({ ok: false, error: gate.error }, gate.status, origin);
+  const expected = String(env.MIGRATION_TOKEN || '').trim();
+  const auth = String(request.headers.get('Authorization') || '');
+  const given = auth.startsWith('Bearer ') ? auth.slice(7).trim() : '';
+  if (!expected || expected.length < 32 || !given || !timingSafeEqualStr(given, expected)) {
+    return json({ ok: false, error: 'unauthorized' }, 401, origin);
+  }
+  try {
+    const result = await migrateOwnerIdleDefaults(env, { dryRun: body.dryRun !== false });
+    return json(result, result.ok ? 200 : 500, origin);
+  } catch (e) {
+    return json({ ok: false, error: 'migration_failed', detail: String(e && e.message || e).slice(0, 200) }, 500, origin);
+  }
+}
+
 export async function handleProfileRequest(request, env, origin, json) {
   if (request.method !== 'POST') {
     return json({ ok: false, error: 'method_not_allowed' }, 405, origin);
@@ -303,6 +383,7 @@ export async function handleProfileRequest(request, env, origin, json) {
   let body = {};
   try { body = await request.json(); } catch (_) { body = {}; }
   if (body && body.action === 'migrate_private') return handleMigratePrivate(request, env, origin, json, body);
+  if (body && body.action === 'migrate_owner_idle') return handleMigrateOwnerIdle(request, env, origin, json, body);
   const session = await readSession(env, body.session);
   if (!session || (session.role !== 'agency' && session.role !== 'owner')) {
     return json({ ok: false, error: 'session_required' }, 401, origin);
@@ -360,10 +441,13 @@ export async function handleProfileRequest(request, env, origin, json) {
   for (const row of profiles) {
     let ign;
     try {
-      ign = await putTenant(env, row.id, row.profile, session.role);
+      ign = await putTenant(env, row.id, row.profile, session.role, session.email || '');
     } catch (e) {
       if (String(e && e.message) === 'tenant_not_found') {
         return json({ ok: false, error: 'tenant_not_found' }, 404, origin);
+      }
+      if (String(e && e.message) === 'phi_ack_required') {
+        return json({ ok: false, error: 'phi_ack_required' }, 400, origin);
       }
       throw e;
     }

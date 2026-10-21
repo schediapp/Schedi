@@ -157,7 +157,8 @@ describe("audit addendum markup", () => {
 
   it("shows a persistent tenant login alert and a distinct missing-business message", () => {
     expect(indexHtml).toContain('id="tenantLoginAlert" role="alert"');
-    expect(indexHtml).toContain("Your password was accepted, but this business is not on this page yet. Refresh and try again.");
+    expect(indexHtml).toContain("We couldn\\'t open a business portal for this account. Contact support.");
+    expect(indexHtml).not.toContain("Your password was accepted, but this business is not on this page yet.");
     expect(indexHtml).toContain("function tenantLoginFail");
     expect(indexHtml).toContain("showToast(message, 'error')");
   });

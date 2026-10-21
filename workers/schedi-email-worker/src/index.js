@@ -58,6 +58,7 @@ import { applyCardCheckoutPayment, centsByBooking } from './card-payment.js';
 import { handleConnectBookingPaid } from './connect-booking-paid.js';
 import { handleConnectHandoff, handleConnectPlan } from './connect-handoff.js';
 import { handlePageVisitsRequest } from '../../../worker/page-visits.ts';
+import { isMedicalIndustry, resolvePhiAcknowledgment, PHI_ACK_WORDING } from './phi-ack.js';
 
 const ALLOWED_ORIGINS = new Set([
   'https://schedi.app',
@@ -1370,11 +1371,11 @@ function defaultSignupTenant(meta, billing) {
   const paid = plan !== 'free';
   const hours = { open: true, start: '09:00 AM', end: '05:00 PM' };
   const closed = { open: false, start: '10:00 AM', end: '03:00 PM' };
-  return {
+  const tenant = {
     id: slug,
     name: String(meta.businessName || slug),
     slug: slug,
-    industry: 'Services',
+    industry: String(meta.industry || 'Services'),
     ownerName: String(meta.ownerName || ''),
     ownerPhone: '',
     ownerEmail: String(meta.ownerEmail || ''),
@@ -1403,7 +1404,11 @@ function defaultSignupTenant(meta, billing) {
     smsEnabled: false,
     // Paid signups: when checkout started, so the hourly cron can send one "finish setting up" reminder.
     signupStartedAt: paid && !(billing && billing.subscriptionId) ? new Date().toISOString() : '',
+    ownerIdleTimeoutMin: 30,
+    ownerIdleDefaultApplied: true,
   };
+  if (meta.phiAcknowledgment) tenant.phiAcknowledgment = meta.phiAcknowledgment;
+  return tenant;
 }
 
 async function createTenantDocument(env, idToken, fullTenant) {
@@ -1693,6 +1698,18 @@ async function handleBillingSignup(request, env, origin) {
   if (!ownerName) return json({ ok: false, error: 'owner_name_required' }, 400, origin);
   if (!ownerEmail || ownerEmail.indexOf('@') < 1) return json({ ok: false, error: 'owner_email_required' }, 400, origin);
   if (plan !== 'free' && plan !== 'starter' && plan !== 'pro') return json({ ok: false, error: 'invalid_plan' }, 400, origin);
+  const industryChoices = ['Services', 'Consulting', 'Barbershop', 'Medical', 'Auto', 'Fitness'];
+  let industry = String(data.industry || 'Services').trim();
+  if (industryChoices.indexOf(industry) < 0) industry = 'Services';
+  const phi = resolvePhiAcknowledgment({
+    industry,
+    accepted: data.phiAckAccepted === true,
+    explicit: isMedicalIndustry(industry),
+    existing: null,
+    who: ownerEmail,
+    now: Date.now(),
+  });
+  if (!phi.ok) return json({ ok: false, error: 'phi_ack_required', wording: PHI_ACK_WORDING }, 400, origin);
 
   if (data.dryRun === true) {
     const preview = buildOnboardingMessage({
@@ -1753,6 +1770,8 @@ async function handleBillingSignup(request, env, origin) {
     businessName: businessName,
     ownerName: ownerName,
     ownerEmail: ownerEmail,
+    industry: industry,
+    phiAcknowledgment: phi.phiAcknowledgment,
   };
   if (!authReady(env)) {
     return json({ ok: false, error: 'auth_not_configured' }, 500, origin);

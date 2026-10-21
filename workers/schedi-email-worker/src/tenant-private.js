@@ -11,6 +11,7 @@
  */
 import { adminAuthHeaders } from './firebase-admin.js';
 import { tenantPlanName } from './cancellation-fee.js';
+import { planOwnerIdleDefault, summarizeOwnerIdlePlans } from './owner-idle.js';
 import { BOOKING_PAGE_KEEP_FIELDS } from '../../../worker/booking-page-keep.js';
 
 /**
@@ -36,6 +37,11 @@ export const PRIVATE_TENANT_KEYS = [
   'currentPeriodEnd',
   'plan',
   'subscriptionStatus',
+  'signupStartedAt',
+  'stripeConnectStatus',
+  'phiAcknowledgment',
+  'ownerIdleTimeoutMin',
+  'ownerIdleDefaultApplied',
 ];
 /** Kept on the public doc after it is copied to the private doc. */
 export const PUBLIC_BOOKING_TIER_KEY = 'plan';
@@ -61,6 +67,8 @@ export const AGENCY_ONLY_PRIVATE_KEYS = new Set([
   'currentPeriodEnd',
   'plan',
   'subscriptionStatus',
+  'signupStartedAt',
+  'stripeConnectStatus',
 ]);
 
 /** Square seller ids belong on the private connection, not the world-readable doc. */
@@ -565,4 +573,46 @@ export async function migrateTenantsToPrivate(env, opts) {
     report.push(row);
   }
   return { ok: report.every((r) => !r.error), dryRun: !!opts.dryRun, tenants: report.length, report };
+}
+
+/**
+ * One-time auto log-off default. Off or a missing ownerIdleTimeoutMin becomes 30.
+ * 15, 30, and 60 stay. ownerIdleDefaultApplied makes a second run a no-op, so an
+ * owner who later chooses Off is left alone. Writes the private doc only.
+ */
+export async function migrateOwnerIdleDefaults(env, opts) {
+  opts = opts || {};
+  const headers = await adminAuthHeaders(env);
+  const docs = [];
+  let pageToken = '';
+  do {
+    const url = publicTenantsUrl(env) + '?pageSize=300' + (pageToken ? '&pageToken=' + encodeURIComponent(pageToken) : '');
+    const res = await fetch(url, { headers: { Authorization: headers.Authorization } });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error('public_list_failed:' + res.status);
+    for (const d of data.documents || []) docs.push(d);
+    pageToken = data.nextPageToken || '';
+  } while (pageToken);
+
+  const plans = [];
+  for (const doc of docs) {
+    const id = String(doc.name || '').split('/').pop();
+    const existing = await getPrivateTenant(env, id);
+    const plan = planOwnerIdleDefault(existing || {});
+    const row = { id, action: plan.action, reason: plan.reason, minutes: plan.minutes };
+    if (plan.patch && !opts.dryRun) {
+      await patchPrivateTenant(env, id, plan.patch);
+      row.applied = true;
+    } else if (opts.dryRun && plan.action !== 'skip') {
+      row.note = 'dry run';
+    }
+    plans.push(row);
+  }
+  return {
+    ok: true,
+    dryRun: !!opts.dryRun,
+    tenants: plans.length,
+    counts: summarizeOwnerIdlePlans(plans),
+    report: plans,
+  };
 }
