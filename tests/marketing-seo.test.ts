@@ -282,7 +282,7 @@ describe("crawler files and app routes", () => {
     expect(response.headers.get("cache-control")).toBe("public, max-age=86400");
     expect(response.headers.get("content-type")).toBe("image/svg+xml");
     expect(response.headers.get("content-length")).toBe("1200");
-    expect(response.headers.get("strict-transport-security")).toBe("max-age=31536000");
+    expect(response.headers.get("strict-transport-security")).toBe("max-age=31536000; includeSubDomains");
     expect(response.headers.get("x-content-type-options")).toBe("nosniff");
     expect(response.headers.get("referrer-policy")).toBe("strict-origin-when-cross-origin");
     expect(response.body).toBeNull();
