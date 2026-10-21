@@ -2428,12 +2428,14 @@ body.schedi-newdash #addBlockedTimeModal button { min-height: 44px; }
 #tenantPortalSection.schedi-newdash .sd-busy {
     box-sizing: border-box;
     max-width: 720px;
+    min-width: 0;
     margin: 0;
     padding: 16px;
     border: 1px solid var(--sd-line);
     border-radius: 18px;
     background: var(--sd-panel);
     color: var(--sd-text);
+    overflow-wrap: anywhere;
 }
 #tenantPortalSection.schedi-newdash[data-dash="profile"] #sdBusyCard { display: none !important; }
 #tenantPortalSection.schedi-newdash .sd-busy-top { margin-bottom: 12px; }
@@ -2549,11 +2551,13 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-busy-soon:disabled {
     line-height: 1.4;
 }
 html.schedi-light #tenantPortalSection.schedi-newdash .sd-busy-warn { color: #9a3412; }
-#tenantPortalSection.schedi-newdash .sd-busy-apple { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
-#tenantPortalSection.schedi-newdash .sd-busy-field { display: flex; flex-direction: column; gap: 4px; color: var(--sd-text); font-size: 14px; font-weight: 700; }
+#tenantPortalSection.schedi-newdash .sd-busy-apple { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; min-width: 0; }
+#tenantPortalSection.schedi-newdash .sd-busy-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; color: var(--sd-text); font-size: 14px; font-weight: 700; }
 #tenantPortalSection.schedi-newdash .sd-busy-field input {
     box-sizing: border-box;
     width: 100%;
+    max-width: 100%;
+    min-width: 0;
     min-height: 44px;
     padding: 8px 12px;
     border-radius: 12px;
@@ -2582,10 +2586,16 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-busy-hint a { color: #
 }
 #tenantPortalSection.schedi-newdash .sd-busy-help strong { color: var(--sd-text); }
 #tenantPortalSection.schedi-newdash .sd-busy-form,
-#tenantPortalSection.schedi-newdash .sd-busy-subscribe { margin-top: 14px; }
+#tenantPortalSection.schedi-newdash .sd-busy-subscribe { margin-top: 14px; min-width: 0; }
+#tenantPortalSection.schedi-newdash .sd-busy-url,
+#tenantPortalSection.schedi-newdash .sd-busy-break {
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: break-all;
+}
 #tenantPortalSection.schedi-newdash .sd-busy-url {
     margin: 6px 0 0;
-    overflow-wrap: anywhere;
     color: var(--sd-text);
     font-size: 13px;
     line-height: 1.4;
@@ -19811,7 +19821,7 @@ function schediQrCardPixels(text, color) {
             return feeds.map(function (feed) {
                 var err = feed.error ? '<p class="sd-busy-error" role="alert">' + esc(feed.error) + '</p>' : '';
                 return '<article class="sd-busy-account"><div class="sd-busy-account-head"><div><h4>' + esc(feed.provider || 'Calendar') + '</h4>' +
-                    '<p class="sd-busy-status">' + esc(feed.masked || 'Hidden link') + '</p>' +
+                    '<p class="sd-busy-status sd-busy-break">' + esc(feed.masked || 'Hidden link') + '</p>' +
                     '<p class="sd-busy-hint">' + esc(calendarSyncedLabel(feed.lastSynced)) + ' · ' + esc(calendarEventCountLabel(feed.eventCount)) + '</p>' +
                     err + '</div>' +
                     '<button type="button" class="sd-busy-disconnect" data-busy-remove="' + esc(feed.id) + '">Remove</button></div></article>';
@@ -19823,7 +19833,7 @@ function schediQrCardPixels(text, color) {
             var https = owner && owner.https ? String(owner.https) : '';
             var webcal = owner && owner.webcal ? String(owner.webcal) : '';
             var link = https
-                ? '<p class="sd-busy-url">' + esc(https) + '</p>' + (webcal ? '<p class="sd-busy-hint">Webcal: ' + esc(webcal) + '</p>' : '')
+                ? '<p class="sd-busy-url sd-busy-break">' + esc(https) + '</p>' + (webcal ? '<p class="sd-busy-hint sd-busy-break">Webcal: ' + esc(webcal) + '</p>' : '')
                 : '<p class="sd-busy-status">The subscribe link shows here after Schedi checks this account.</p>';
             var actions = https
                 ? '<div class="sd-busy-actions"><button type="button" class="sd-busy-connect" data-busy-copy="1">Copy link</button><button type="button" class="sd-busy-disconnect" data-busy-reset="1">Reset link</button></div>'

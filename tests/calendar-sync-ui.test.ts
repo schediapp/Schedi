@@ -1,4 +1,6 @@
-import { readFileSync } from "node:fs";
+import { createServer } from "node:http";
+import { existsSync, readFileSync } from "node:fs";
+import { extname, join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
@@ -79,6 +81,15 @@ describe("calendar feed helpers", () => {
     expect(owner).not.toContain("calendarSyncProviders");
     expect(owner).not.toContain("encodeURIComponent(googleDates)");
     expect(owner).toContain("googleDates.split('/').map(encodeURIComponent).join('/')");
+    expect(owner).toContain('class="sd-busy-url sd-busy-break"');
+    expect(owner).toContain('class="sd-busy-hint sd-busy-break"');
+    expect(owner).toContain('class="sd-busy-status sd-busy-break"');
+    const busyCss = owner.slice(owner.indexOf("#tenantPortalSection.schedi-newdash .sd-busy {"), owner.indexOf("#tenantPortalSection.schedi-newdash .sd-pay-settings"));
+    expect(busyCss).toContain("min-width: 0;");
+    expect(busyCss).toContain("overflow-wrap: anywhere;");
+    expect(busyCss).toContain("word-break: break-all;");
+    expect(busyCss).toContain("#tenantPortalSection.schedi-newdash .sd-busy-field input");
+    expect(busyCss).toContain("max-width: 100%;");
     const page = html.slice(html.indexOf(TEMPLATE));
     expect(page).toContain("function refreshExternalBusy");
     expect(page).toContain("https://schedi.app/api/calendar-busy?tenant=");
@@ -103,5 +114,127 @@ describe("calendar sync plan", () => {
     expect(plan).toContain("appointmentBufferMins");
     expect(plan).toContain("slotTaken");
     expect(plan).toContain("CALENDAR_KV");
+  });
+});
+
+const chrome = ["/usr/bin/google-chrome", "/usr/bin/google-chrome-stable", "/usr/bin/chromium", "/usr/bin/chromium-browser"].find((path) => existsSync(path));
+const root = new URL("..", import.meta.url).pathname;
+const FEED = "ebce806ccb5b4db9b60e63a801a2d7c30780414ff31b0297";
+
+describe.skipIf(!chrome)("owner feed links stay inside the card", () => {
+  it("wraps the https and webcal lines, the private iCal field, and a long saved link at 390 and 1280", async () => {
+    const types: Record<string, string> = {
+      ".html": "text/html; charset=utf-8",
+      ".js": "text/javascript; charset=utf-8",
+      ".svg": "image/svg+xml",
+      ".png": "image/png",
+      ".json": "application/json",
+      ".webmanifest": "application/manifest+json",
+    };
+    const server = createServer((req, res) => {
+      const path = new URL(req.url || "/", "http://127.0.0.1").pathname;
+      const file = path === "/" || path === "/portal-preview" ? "/index.html" : path;
+      const full = join(root, file);
+      if (!full.startsWith(root) || !existsSync(full)) {
+        res.writeHead(404);
+        res.end("missing");
+        return;
+      }
+      res.writeHead(200, { "content-type": types[extname(full)] || "application/octet-stream" });
+      res.end(readFileSync(full));
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const address = server.address();
+    const port = typeof address === "object" && address ? address.port : 0;
+    const puppeteer = await import("puppeteer-core");
+    const browser = await puppeteer.default.launch({
+      executablePath: chrome,
+      headless: true,
+      args: ["--no-sandbox", "--disable-dev-shm-usage"],
+    });
+    try {
+      const page = await browser.newPage();
+      const measure = async (width: number) => {
+        await page.setViewport({ width, height: 844, isMobile: width < 860, hasTouch: width < 860 });
+        await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve(undefined)))));
+        return page.evaluate((token) => {
+          const win = window as unknown as {
+            getTenant: () => { calendarSync?: unknown };
+            schediDashGo: (page: string) => void;
+          };
+          const tenant = win.getTenant();
+          tenant.calendarSync = {
+            feedCount: 1,
+            feeds: [{
+              id: "long-feed",
+              masked: "https://calendar.google.com/calendar/ical/" + token + "/basic.ics",
+              provider: "Google Calendar",
+              lastSynced: Date.now(),
+              eventCount: 2,
+              error: "",
+            }],
+            ownerFeed: {
+              https: "https://schedi.app/api/owner-feed/" + token + ".ics",
+              webcal: "webcal://schedi.app/api/owner-feed/" + token + ".ics",
+            },
+          };
+          win.schediDashGo("hours");
+          const input = document.querySelector("#sdBusyCard input[name='calendarUrl']") as HTMLInputElement | null;
+          const pasted = "https://calendar.google.com/calendar/ical/" + token + "/basic.ics";
+          if (input) input.value = pasted;
+          const card = document.getElementById("sdBusyCard") as HTMLElement;
+          const box = card.getBoundingClientRect();
+          const lines = [...card.querySelectorAll(".sd-busy-url, .sd-busy-break, .sd-busy-field input")].map((el) => {
+            const node = el as HTMLElement;
+            const rect = node.getBoundingClientRect();
+            const style = getComputedStyle(node);
+            return {
+              kind: node.tagName,
+              className: node.className,
+              text: (node.tagName === "INPUT" ? (node as HTMLInputElement).value : node.textContent || "").slice(0, 40),
+              right: rect.right,
+              left: rect.left,
+              scrollWidth: node.scrollWidth,
+              clientWidth: node.clientWidth,
+              wordBreak: style.wordBreak,
+              overflowWrap: style.overflowWrap,
+            };
+          });
+          return {
+            cardRight: box.right,
+            cardLeft: box.left,
+            cardFits: card.scrollWidth - card.clientWidth,
+            lines,
+            pasted,
+          };
+        }, FEED);
+      };
+      await page.goto(`http://127.0.0.1:${port}/portal-preview`, { waitUntil: "domcontentloaded", timeout: 45000 });
+      await page.waitForFunction(() => document.body.classList.contains("schedi-newdash"), { timeout: 20000 });
+      for (const width of [390, 1280]) {
+        const layout = await measure(width);
+        expect(layout.cardRight - layout.cardLeft).toBeGreaterThan(200);
+        expect(layout.cardRight).toBeLessThanOrEqual(width + 1);
+        expect(layout.cardFits).toBeLessThanOrEqual(1);
+        expect(layout.lines.length).toBeGreaterThanOrEqual(3);
+        for (const line of layout.lines) {
+          expect(line.right, line.className || line.kind).toBeLessThanOrEqual(layout.cardRight + 1);
+          expect(line.left, line.className || line.kind).toBeGreaterThanOrEqual(layout.cardLeft - 1);
+          if (line.kind !== "INPUT") {
+            expect(line.scrollWidth, line.className).toBeLessThanOrEqual(line.clientWidth + 1);
+          }
+        }
+        const webcal = layout.lines.find((line) => line.text.startsWith("Webcal:"));
+        const https = layout.lines.find((line) => line.className.includes("sd-busy-url"));
+        const field = layout.lines.find((line) => line.kind === "INPUT");
+        expect(webcal?.wordBreak).toBe("break-all");
+        expect(webcal?.overflowWrap).toBe("anywhere");
+        expect(https?.wordBreak).toBe("break-all");
+        expect(field?.text.startsWith("https://calendar.google.com")).toBe(true);
+      }
+    } finally {
+      await browser.close();
+      await new Promise<void>((resolve, reject) => server.close((err) => err ? reject(err) : resolve()));
+    }
   });
 });
