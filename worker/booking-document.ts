@@ -49,6 +49,7 @@ const PRIVATE_KEYS = [
   "hqTags",
   "cancelAtPeriodEnd",
   "currentPeriodEnd",
+  "subscriptionStatus",
   "unpaidDigestWeek",
   "squareMerchantId",
   "squareLocationId",

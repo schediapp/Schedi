@@ -1426,7 +1426,7 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
                                 </div>
 
                                 <div>
-                                    <label class="block text-[11px] font-semibold text-slate-400 mb-1">PayPal Client ID</label>
+                                    <label class="block text-[11px] font-semibold text-slate-400 mb-1" for="agencyPaypalId">PayPal Client ID</label>
                                     <input type="text" id="agencyPaypalId" value="" class="w-full px-3 py-2 rounded-lg glass-input font-mono text-xs">
                                 </div>
                                 <div>
@@ -1544,6 +1544,8 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
                         <label class="block font-semibold text-slate-300 mb-1" for="tenantLoginPassword">Password</label>
                         <input type="password" id="tenantLoginPassword" required autocomplete="current-password" placeholder="••••••••" class="w-full px-3.5 py-2.5 rounded-xl glass-input">
                     </div>
+
+                    <p id="tenantLoginAlert" role="alert" class="text-rose-300 text-xs font-semibold min-h-[1em]"></p>
 
                     <button type="submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-slate-950 font-black shadow-lg glow-emerald transition-all">
                         Sign In to Business Portal
@@ -1868,7 +1870,7 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
                                 <input type="checkbox" id="tenantPayCashAppCheck" class="w-4 h-4 accent-brand-500 rounded cursor-pointer">
                             </div>
                             <div class="pt-2 border-t border-slate-800">
-                                <label class="block text-[11px] text-slate-400 mb-1">Business Cash App $Cashtag</label>
+                                <label class="block text-[11px] text-slate-400 mb-1" for="tenantCashAppTagInput">Business Cash App $Cashtag</label>
                                 <input type="text" id="tenantCashAppTagInput" class="w-full px-3 py-2 rounded-lg glass-input font-mono">
                             </div>
                         </div>
@@ -1886,11 +1888,11 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
                             </div>
                             <div class="pt-2 border-t border-slate-800 space-y-2">
                                 <div>
-                                    <label class="block text-[11px] text-slate-400 mb-1">Zelle handle (email or US phone)</label>
+                                    <label class="block text-[11px] text-slate-400 mb-1" for="tenantZelleHandleInput">Zelle handle (email or US phone)</label>
                                     <input type="text" id="tenantZelleHandleInput" placeholder="email or phone for Zelle" class="w-full px-3 py-2 rounded-lg glass-input font-mono">
                                 </div>
                                 <div>
-                                    <label class="block text-[11px] text-slate-400 mb-1">Payment link <span class="text-slate-500">(optional)</span></label>
+                                    <label class="block text-[11px] text-slate-400 mb-1" for="tenantZelleLinkInput">Payment link <span class="text-slate-500">(optional)</span></label>
                                     <input type="url" id="tenantZelleLinkInput" placeholder="https://…" class="w-full px-3 py-2 rounded-lg glass-input font-mono">
                                 </div>
                             </div>
@@ -1909,11 +1911,11 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
                             </div>
                             <div class="pt-2 border-t border-slate-800 space-y-2">
                                 <div>
-                                    <label class="block text-[11px] text-slate-400 mb-1">Venmo username</label>
+                                    <label class="block text-[11px] text-slate-400 mb-1" for="tenantVenmoHandleInput">Venmo username</label>
                                     <input type="text" id="tenantVenmoHandleInput" placeholder="@username" class="w-full px-3 py-2 rounded-lg glass-input font-mono">
                                 </div>
                                 <div>
-                                    <label class="block text-[11px] text-slate-400 mb-1">Payment link <span class="text-slate-500">(optional)</span></label>
+                                    <label class="block text-[11px] text-slate-400 mb-1" for="tenantVenmoLinkInput">Payment link <span class="text-slate-500">(optional)</span></label>
                                     <input type="url" id="tenantVenmoLinkInput" placeholder="https://venmo.com/u/…" class="w-full px-3 py-2 rounded-lg glass-input font-mono">
                                 </div>
                             </div>
@@ -1932,11 +1934,11 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
                             </div>
                             <div class="pt-2 border-t border-slate-800 space-y-2">
                                 <div>
-                                    <label class="block text-[11px] text-slate-400 mb-1">PayPal handle (paypal.me slug, URL, or email)</label>
+                                    <label class="block text-[11px] text-slate-400 mb-1" for="tenantPaypalHandleInput">PayPal handle (paypal.me slug, URL, or email)</label>
                                     <input type="text" id="tenantPaypalHandleInput" placeholder="paypal.me/yourname or email" class="w-full px-3 py-2 rounded-lg glass-input font-mono">
                                 </div>
                                 <div>
-                                    <label class="block text-[11px] text-slate-400 mb-1">Payment link <span class="text-slate-500">(optional)</span></label>
+                                    <label class="block text-[11px] text-slate-400 mb-1" for="tenantPaypalLinkInput">Payment link <span class="text-slate-500">(optional)</span></label>
                                     <input type="url" id="tenantPaypalLinkInput" placeholder="https://www.paypal.me/…" class="w-full px-3 py-2 rounded-lg glass-input font-mono">
                                 </div>
                             </div>
@@ -2361,7 +2363,7 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
                         <input type="number" id="provPrice" required value="199" class="w-full px-3 py-2 rounded-xl glass-input font-bold text-brand-400">
                     </div>
                     <div>
-                        <label class="block font-semibold text-slate-300 mb-1">Business Cash App Tag</label>
+                        <label class="block font-semibold text-slate-300 mb-1" for="provCashApp">Business Cash App Tag</label>
                         <input type="text" id="provCashApp" placeholder="$VanceDental" class="w-full px-3 py-2 rounded-xl glass-input font-mono">
                     </div>
                 </div>
@@ -2457,7 +2459,7 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
                     <input type="url" id="editTenantCoverUrl" inputmode="url" placeholder="https://…" class="w-full px-3 py-2 rounded-xl glass-input font-mono">
                 </div>
                 <div>
-                    <label class="block font-semibold text-slate-300 mb-1">Business Cash App Tag</label>
+                    <label class="block font-semibold text-slate-300 mb-1" for="editCashAppTag">Business Cash App Tag</label>
                     <input type="text" id="editCashAppTag" class="w-full px-3 py-2 rounded-xl glass-input font-mono">
                 </div>
 
@@ -3250,9 +3252,10 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
         var hydratedFromLocal = false;
 
         function noteBookingAvailability(tenant) {
-            if (!tenant || Object.prototype.hasOwnProperty.call(tenant, 'subscriptionStatus')) return;
-            if (tenant.acceptingBookings === false) tenant.subscriptionStatus = 'paused';
-            else if (tenant.acceptingBookings === true) tenant.subscriptionStatus = 'active';
+            // subscriptionStatus is private. Do not invent active or paused from
+            // acceptingBookings. A guessed status would hide past_due, trialing,
+            // or canceled after the private profile loads.
+            if (!tenant) return;
         }
 
         function stripTenantSecrets(tenant) {
@@ -3295,7 +3298,7 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
         // Owner contact + billing fields are NOT on the public tenant docs anymore. The worker keeps them in an
         // Admin-only private doc. Signed-in owners (own business) and the agency (all) load them with
         // POST /api/profile {action:'private'}; they live in memory only (never localStorage, never the public page).
-        var SCHEDI_PRIVATE_TENANT_KEYS = ['ownerName', 'ownerEmail', 'ownerPhone', 'stripeCustomerId', 'stripeSubscriptionId', 'billingExempt', 'complimentaryPro', 'monthlyPrice', 'paymentForm', 'hqTags'];
+        var SCHEDI_PRIVATE_TENANT_KEYS = ['ownerName', 'ownerEmail', 'ownerPhone', 'stripeCustomerId', 'stripeSubscriptionId', 'billingExempt', 'complimentaryPro', 'monthlyPrice', 'paymentForm', 'hqTags', 'subscriptionStatus'];
         // HQ-only tags are saved only once the worker says it keeps them private (otherwise they stay local to this tab).
         var schediHqTagsServer = false;
         var SCHEDI_OWNER_SENTINEL = '__schedi_owner__';
@@ -4556,6 +4559,7 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
         }
 
         function assignMissingPlans(tenants) {
+            if (schediAuthSession() && !schediPrivateProfilesLoaded) return false;
             var changed = false;
             (tenants || []).forEach(function (t) {
                 if (!t) return;
@@ -6291,7 +6295,7 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
                 }
                 return true;
             }
-            if (tenant.subscriptionStatus === 'paused') {
+            if (tenant.acceptingBookings === false || tenant.subscriptionStatus === 'paused') {
                 showPublicBookingUnavailable(tenant, slug);
                 return true;
             }
@@ -8637,6 +8641,10 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
                 showToast('Subscription is paused — public booking page may be unavailable.', 'info');
                 return true;
             }
+            if (tenant && tenant.acceptingBookings === false) {
+                showToast('This booking page is not taking appointments.', 'info');
+                return true;
+            }
             return false;
         }
 
@@ -8780,6 +8788,23 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
         };
         var CLIENT_EMAIL_RE = /^[^\s@<>()[\],;:"]{1,64}@[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)+$/;
 
+        function duplicatedEmailTld(email) {
+            var at = String(email || '').lastIndexOf('@');
+            if (at < 1) return '';
+            var labels = String(email).slice(at + 1).split('.');
+            if (labels.length < 2) return '';
+            var last = String(labels[labels.length - 1] || '').toLowerCase();
+            var prev = String(labels[labels.length - 2] || '').toLowerCase();
+            if (!last || last !== prev) return '';
+            return String(email).slice(0, at + 1) + labels.slice(0, -1).join('.');
+        }
+
+        function duplicatedEmailTldWarning(email) {
+            var suggestion = duplicatedEmailTld(email);
+            if (!suggestion) return '';
+            return 'Did you mean ' + suggestion + '?';
+        }
+
         function clientReasonText(reason) {
             if (!reason) return '';
             if (String(reason).indexOf('dup_file:') === 0) return 'Duplicate in this file (row ' + String(reason).slice(9) + ')';
@@ -8806,6 +8831,8 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
             if (email && !CLIENT_EMAIL_RE.test(email)) return { client: client, error: 'invalid_email' };
             if (phone && (pk.length < 7 || pk.length > 15)) return { client: client, error: 'invalid_phone' };
             if (!email && !phone) return { client: client, error: 'missing_contact' };
+            var emailWarning = duplicatedEmailTldWarning(email);
+            if (emailWarning) return { client: client, warning: emailWarning };
             return { client: client };
         }
 
@@ -8953,6 +8980,7 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
             };
             var v = validateClientRow(raw);
             if (v.empty || v.error) { showToast(v.empty ? 'Enter a name and an email or phone.' : clientReasonText(v.error), 'error'); return; }
+            if (v.warning) showToast(v.warning, 'info');
             var c = await loadOwnerClients(t);
             var dupIdx = clientDedupeIndex(c && c.clients);
             if ((v.client.email && dupIdx.emails[v.client.email]) || (clientPhoneKey(v.client.phone) && dupIdx.phones[clientPhoneKey(v.client.phone)])) {
@@ -9085,6 +9113,7 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
                     else if (pk && existingIdx.phones[pk]) { item.status = 'skip'; item.reason = 'duplicate_phone'; }
                     else if (v.client.email && seenEmail[v.client.email]) { item.status = 'skip'; item.reason = 'dup_file:' + seenEmail[v.client.email]; }
                     else if (pk && seenPhone[pk]) { item.status = 'skip'; item.reason = 'dup_file:' + seenPhone[pk]; }
+                    else if (item.status === 'ready' && v.warning) item.reason = v.warning;
                     if (item.status === 'ready') {
                         if (v.client.email) seenEmail[v.client.email] = rowNo;
                         if (pk) seenPhone[pk] = rowNo;
@@ -9856,10 +9885,10 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
                     <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px]">
                         <span class="text-slate-500 font-semibold">${esc(formatServiceDuration(s.duration))}</span>
                         <div class="space-x-2">
-                            <button type="button" onclick="openEditServiceModal(${s.id})" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-brand-400 font-bold transition-all">
+                            <button type="button" onclick="openEditServiceModal(${Number(s.id) || 0})" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-brand-400 font-bold transition-all">
                                 <i class="fa-solid fa-pen-to-square mr-1"></i>Edit
                             </button>
-                            <button type="button" onclick="deleteService(${s.id})" class="px-2 py-1 rounded bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-bold transition-all">
+                            <button type="button" onclick="deleteService(${Number(s.id) || 0})" class="px-2 py-1 rounded bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-bold transition-all">
                                 Delete
                             </button>
                         </div>
@@ -13273,13 +13302,24 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
             try { startTenantOwnerIdleWatch(); } catch (errIdle) {}
         }
 
+        function setTenantLoginAlert(message) {
+            var el = document.getElementById('tenantLoginAlert');
+            if (el) el.textContent = message || '';
+        }
+
+        function tenantLoginFail(message) {
+            setTenantLoginAlert(message);
+            showToast(message, 'error');
+        }
+
         window.handleTenantLogin = async function(e) {
             e.preventDefault();
+            setTenantLoginAlert('');
             const email = document.getElementById('tenantLoginEmail').value.trim().toLowerCase();
             const pass = document.getElementById('tenantLoginPassword').value;
 
             if (!email || !pass) {
-                showToast('Enter your owner email and password.', 'error');
+                tenantLoginFail('Enter your owner email and password.');
                 return;
             }
 
@@ -13292,15 +13332,15 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
                 const data = await res.json().catch(function () { return {}; });
                 if (!res.ok || !data.session || !data.tenantId) {
                     if (data && data.error === 'ambiguous_login') {
-                        showToast('This email signs in to more than one business with the same password. Use Forgot password to give each business its own password.', 'error');
+                        tenantLoginFail('This email signs in to more than one business with the same password. Use Forgot password to give each business its own password.');
                         return;
                     }
-                    showToast('Invalid owner email or password.', 'error');
+                    tenantLoginFail('Invalid owner email or password.');
                     return;
                 }
                 const matched = platformState.tenants.find(function (t) { return t.id === data.tenantId; });
                 if (!matched) {
-                    showToast('Invalid owner email or password.', 'error');
+                    tenantLoginFail('Your password was accepted, but this business is not on this page yet. Refresh and try again.');
                     return;
                 }
                 var loginMeta = { role: 'owner', tenantId: data.tenantId, email: email };
@@ -13309,16 +13349,17 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
                     persisted = schediSetAuthSession(data.session, loginMeta);
                 }
                 if (!persisted || !schediAuthPersistOk(data.session, loginMeta)) {
-                    showToast('Could not save your sign-in on this device. Check browser storage and try again.', 'error');
+                    tenantLoginFail('Could not save your sign-in on this device. Check browser storage and try again.');
                     return;
                 }
+                setTenantLoginAlert('');
                 openTenantOwnerPortal(matched);
                 try { switchPlatformMode('tenant'); } catch (errMode) {}
                 showToast('Signed in to your business portal', 'success');
                 refreshPrivateProfiles();
                 refreshPrivateBookings();
             } catch (err) {
-                showToast('Could not reach the login service.', 'error');
+                tenantLoginFail('Could not reach the login service.');
             }
         }
 
@@ -14303,7 +14344,7 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
                 </div>
                 <div class="flex items-center space-x-2">
                     <span class="text-xs text-slate-400 font-medium">Quick Jump:</span>
-                    <input type="date" id="calendarPickerInput" onchange="jumpToDate(this.value)" class="glass-input px-2.5 py-1 rounded-xl text-xs font-mono text-emerald-400 font-bold cursor-pointer">
+                    <input type="date" id="calendarPickerInput" onchange="jumpToDate(this.value)" aria-label="Choose a date" class="glass-input px-2.5 py-1 rounded-xl text-xs font-mono text-emerald-400 font-bold cursor-pointer">
                 </div>
             </div>
 
@@ -14406,16 +14447,16 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
 
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
-                        <label class="block text-xs text-slate-300 mb-1">Full Name *</label>
-                        <input type="text" id="pubClientName" required placeholder="Jane Doe" class="w-full px-3 py-2 rounded-xl glass-input text-xs">
+                        <label class="block text-xs text-slate-300 mb-1" for="pubClientName">Full Name *</label>
+                        <input type="text" id="pubClientName" required autocomplete="name" placeholder="Jane Doe" class="w-full px-3 py-2 rounded-xl glass-input text-xs">
                     </div>
                     <div>
-                        <label class="block text-xs text-slate-300 mb-1">Phone Number *</label>
-                        <input type="tel" id="pubClientPhone" required placeholder="(555) 000-0000" class="w-full px-3 py-2 rounded-xl glass-input text-xs">
+                        <label class="block text-xs text-slate-300 mb-1" for="pubClientPhone">Phone Number *</label>
+                        <input type="tel" id="pubClientPhone" required autocomplete="tel" placeholder="(555) 000-0000" class="w-full px-3 py-2 rounded-xl glass-input text-xs">
                     </div>
                     <div>
                         <label class="block text-xs text-slate-300 mb-1" for="pubClientEmail">Email Address *</label>
-                        <input type="email" id="pubClientEmail" required autocomplete="email" inputmode="email" aria-describedby="pubClientEmailHint" placeholder="jane@example.com" class="w-full px-3 py-2 rounded-xl glass-input text-xs">
+                        <input type="email" id="pubClientEmail" required autocomplete="email" inputmode="email" aria-describedby="pubClientEmailHint" oninput="noteDuplicatedEmailTld(this.value)" placeholder="jane@example.com" class="w-full px-3 py-2 rounded-xl glass-input text-xs">
                         <p id="pubClientEmailHint" class="text-[11px] text-slate-400 mt-1">We'll send your confirmation here, plus a link to change or cancel if plans shift.</p>
                     </div>
                 </div>
@@ -16895,7 +16936,7 @@ function paintBizHeader() {
                 var dayTitle = closedNotice ? (' title="' + escHtml(closedNotice) + '"') : '';
                 html += \`<button type="button" onclick="selectDate('\${isoStr}')" \${isPast ? 'disabled' : ''} class="cal-day cal-day-\${state}\${isToday ? ' cal-day-today' : ''}" aria-pressed="\${isSelected ? 'true' : 'false'}"\${isToday ? ' aria-current="date"' : ''}\${dayTitle} aria-label="\${escHtml(dayAria)} \${monthNames[viewMonth]} \${day}">
                     <span class="cal-day-num">\${day}</span>
-                    <span class="cal-day-label">\${label}</span>
+                    <span class="cal-day-label">\${escHtml(label)}</span>
                 </button>\`;
             }
 
@@ -17302,6 +17343,25 @@ function paintBizHeader() {
             }, 3000);
         }
 
+        function duplicatedEmailTld(email) {
+            var at = String(email || '').lastIndexOf('@');
+            if (at < 1) return '';
+            var labels = String(email).slice(at + 1).split('.');
+            if (labels.length < 2) return '';
+            var last = String(labels[labels.length - 1] || '').toLowerCase();
+            var prev = String(labels[labels.length - 2] || '').toLowerCase();
+            if (!last || last !== prev) return '';
+            return String(email).slice(0, at + 1) + labels.slice(0, -1).join('.');
+        }
+
+        function noteDuplicatedEmailTld(email) {
+            var hint = document.getElementById('pubClientEmailHint');
+            var suggestion = duplicatedEmailTld(email);
+            var normal = "We'll send your confirmation here, plus a link to change or cancel if plans shift.";
+            if (hint) hint.textContent = suggestion ? ('Did you mean ' + suggestion + '? You can still continue with the address you typed.') : normal;
+            return suggestion;
+        }
+
         window.handlePublicBookingSubmit = function(e) {
             e.preventDefault();
             const errMsg = document.getElementById('bookingErrMsg');
@@ -17336,6 +17396,7 @@ function paintBizHeader() {
                 fail('Please enter a valid email address.');
                 return;
             }
+            noteDuplicatedEmailTld(email);
 
             if (!cartLines().length) {
                 fail('Please choose a service.');

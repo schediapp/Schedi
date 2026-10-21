@@ -13,7 +13,14 @@ import { adminAuthHeaders } from './firebase-admin.js';
 import { tenantPlanName } from './cancellation-fee.js';
 import { BOOKING_PAGE_KEEP_FIELDS } from '../../../worker/booking-page-keep.js';
 
-/** Top-level tenant keys that must never be on the public doc. */
+/**
+ * Top-level tenant keys stored on the private doc.
+ * `plan` is also rewritten onto the public doc as the customer-facing tier
+ * (free, starter, or pro). The booking page and the unauthenticated web worker
+ * cannot read the private doc, so that tier stays public. The canonical plan
+ * copied here is what the owner, HQ, and the server read.
+ * `subscriptionStatus` is private only. Public pause is `acceptingBookings`.
+ */
 export const PRIVATE_TENANT_KEYS = [
   'ownerName',
   'ownerEmail',
@@ -27,7 +34,11 @@ export const PRIVATE_TENANT_KEYS = [
   'hqTags',
   'cancelAtPeriodEnd',
   'currentPeriodEnd',
+  'plan',
+  'subscriptionStatus',
 ];
+/** Kept on the public doc after it is copied to the private doc. */
+export const PUBLIC_BOOKING_TIER_KEY = 'plan';
 /** Worker bookkeeping. Private doc only, and never returned to the owner or agency UI. */
 export const WORKER_ONLY_PRIVATE_KEYS = ['unpaidDigestWeek'];
 /** notifications.replyTo (an email address) is stored privately as this key. */
@@ -48,6 +59,8 @@ export const AGENCY_ONLY_PRIVATE_KEYS = new Set([
   'hqTags',
   'cancelAtPeriodEnd',
   'currentPeriodEnd',
+  'plan',
+  'subscriptionStatus',
 ]);
 
 /** Square seller ids belong on the private connection, not the world-readable doc. */
@@ -175,9 +188,10 @@ function showAddress(tenant) {
 
 /**
  * Public booking doc plus the private remainder.
- * The public half keeps the booking page (including the effective plan name
- * and subscriptionStatus) and drops plan prices, comp flags, Square seller ids,
- * unpaid-digest bookkeeping, and the street address when the owner hid it.
+ * The public half keeps booking-page fields, the effective plan tier, and
+ * acceptingBookings. It does not keep subscriptionStatus, plan prices, comp
+ * flags, Square seller ids, or unpaid-digest bookkeeping. The street address
+ * is dropped when the owner hid it.
  * acceptingBookings is written on every public save. Older docs may omit it;
  * the booking page then falls back to subscriptionStatus === 'paused'.
  */
@@ -195,8 +209,8 @@ export function shapePublicBookingFields(tenant) {
 
 /**
  * Partial public write. Does not invent plan or address from a patch that
- * did not mention them. A subscriptionStatus change stays on the public doc
- * and also sets acceptingBookings.
+ * did not mention them. subscriptionStatus is stored privately and removed
+ * from the public doc. The patch also sets acceptingBookings.
  */
 export function shapePublicPatch(rawPatch) {
   const patch = rawPatch || {};
@@ -211,6 +225,10 @@ export function shapePublicPatch(rawPatch) {
   }
   const drop = [];
   for (const key of SQUARE_PUBLIC_ID_KEYS.concat(WORKER_ONLY_PRIVATE_KEYS)) {
+    if (Object.prototype.hasOwnProperty.call(patch, key)) drop.push(key);
+  }
+  for (const key of PRIVATE_TENANT_KEYS) {
+    if (key === PUBLIC_BOOKING_TIER_KEY) continue;
     if (Object.prototype.hasOwnProperty.call(patch, key)) drop.push(key);
   }
   if (patch.showPublicAddress === false) {
@@ -391,6 +409,7 @@ export async function deletePublicPrivateFields(env, tenantId, fieldPaths) {
 export function privatePathsOnPublic(pubTenant) {
   const paths = [];
   for (const k of PRIVATE_TENANT_KEYS) {
+    if (k === PUBLIC_BOOKING_TIER_KEY) continue;
     if (pubTenant && Object.prototype.hasOwnProperty.call(pubTenant, k)) paths.push(k);
   }
   const notes = pubTenant && pubTenant.notifications;
@@ -402,10 +421,91 @@ function sameValue(a, b) {
   return JSON.stringify(a === undefined ? null : a) === JSON.stringify(b === undefined ? null : b);
 }
 
+function privateHasKey(doc, key) {
+  return !!doc && Object.prototype.hasOwnProperty.call(doc, key);
+}
+
+/** Public field path that delete uses, mapped to the key stored on the private doc. */
+function privateKeyForRemovePath(path) {
+  if (path === 'notifications.replyTo') return PRIVATE_REPLY_TO_KEY;
+  return path;
+}
+
 /**
- * One-time (idempotent) migration: copy private fields from each public tenant doc to the private doc,
- * re-read and verify, then delete them from the public doc. Values already in the private doc are kept
- * unless the public doc holds the field (public value is the one the site was using).
+ * What one public tenant doc needs: copy private fields the private doc does
+ * not already have, write publicPatch (effective plan and acceptingBookings)
+ * on the public doc, then remove `remove` from the public doc. Keys already
+ * on the private doc stay as they are (including empty string and null).
+ * The effective plan is not removed.
+ */
+export function planTenantPrivateMove(pubTenant, existingPrivate) {
+  const pub = pubTenant || {};
+  const existing = existingPrivate || {};
+  const shaped = shapePublicBookingFields(pub);
+  const copy = {};
+  const kept = [];
+  for (const key of Object.keys(shaped.priv)) {
+    if (shaped.priv[key] === undefined) continue;
+    if (privateHasKey(existing, key)) {
+      kept.push(key);
+      continue;
+    }
+    copy[key] = shaped.priv[key];
+  }
+  const remove = privatePathsOnPublic(pub);
+  const publicPatch = {};
+  if (shaped.pub.plan != null && shaped.pub.plan !== pub.plan) publicPatch.plan = shaped.pub.plan;
+  const status = privateHasKey(existing, 'subscriptionStatus') ? existing.subscriptionStatus : pub.subscriptionStatus;
+  const acceptingBookings = String(status || '') !== 'paused' && pub.acceptingBookings !== false;
+  if (remove.indexOf('subscriptionStatus') >= 0 && pub.acceptingBookings !== acceptingBookings) {
+    publicPatch.acceptingBookings = acceptingBookings;
+  }
+  return { copy, kept, remove, publicPatch };
+}
+
+/**
+ * Copy missing keys, verify the private doc, write the public booking flags, then delete.
+ * Verify runs whenever a public field would be deleted, including when nothing is copied.
+ * Copied values must match. Every field about to be deleted must already exist on the
+ * private doc. A failed verify does not delete. io: { copy, read, publicPatch, remove }.
+ */
+export async function runTenantPrivateMove(id, plan, io) {
+  const steps = [];
+  const copyKeys = Object.keys((plan && plan.copy) || {});
+  const remove = (plan && plan.remove) || [];
+  if (copyKeys.length) {
+    steps.push('copy');
+    await io.copy(id, plan.copy);
+  }
+  if (copyKeys.length || remove.length) {
+    steps.push('verify');
+    const check = await io.read(id);
+    const mismatched = copyKeys.filter((k) => !check || !sameValue(check[k], plan.copy[k]));
+    const missing = remove
+      .map(privateKeyForRemovePath)
+      .filter((k) => !check || !Object.prototype.hasOwnProperty.call(check, k));
+    if (mismatched.length || missing.length) {
+      return { ok: false, steps, error: 'verify_failed', mismatched, missing };
+    }
+  }
+  const patchKeys = Object.keys((plan && plan.publicPatch) || {});
+  if (patchKeys.length) {
+    steps.push('publicPatch');
+    await io.publicPatch(id, plan.publicPatch);
+  }
+  if (remove.length) {
+    steps.push('delete');
+    await io.remove(id, remove);
+  }
+  return { ok: true, steps };
+}
+
+/**
+ * One-time (idempotent) migration. Reads the private doc first. Copies only keys
+ * it does not already have, re-reads and verifies, writes acceptingBookings (and a
+ * corrected public plan tier), then deletes the private fields from the public doc.
+ * The customer-facing plan stays. A key already stored privately is left alone,
+ * including empty string and null. Delete runs only after that verify succeeds.
  */
 export async function migrateTenantsToPrivate(env, opts) {
   opts = opts || {};
@@ -425,32 +525,43 @@ export async function migrateTenantsToPrivate(env, opts) {
   for (const doc of docs) {
     const id = String(doc.name || '').split('/').pop();
     const pub = decodeDoc(doc);
-    const paths = privatePathsOnPublic(pub);
-    const row = { id, publicPrivatePaths: paths, copied: [], verified: false, publicCleaned: false };
-    if (!paths.length) {
+    const existing = await getPrivateTenant(env, id);
+    const move = planTenantPrivateMove(pub, existing || {});
+    const row = {
+      id,
+      publicPrivatePaths: move.remove,
+      copied: Object.keys(move.copy),
+      kept: move.kept,
+      publicPatch: move.publicPatch,
+      remove: move.remove,
+      verified: false,
+      publicCleaned: false,
+    };
+    if (!row.copied.length && !move.remove.length && !Object.keys(move.publicPatch).length) {
       row.note = 'already clean';
       report.push(row);
       continue;
     }
-    const { priv } = splitTenant(pub);
-    row.copied = Object.keys(priv);
     if (opts.dryRun) {
       row.note = 'dry run';
       report.push(row);
       continue;
     }
-    await patchPrivateTenant(env, id, priv);
-    const check = await getPrivateTenant(env, id);
-    const mismatched = Object.keys(priv).filter((k) => !check || !sameValue(check[k], priv[k]));
-    if (mismatched.length) {
-      row.error = 'verify_failed';
-      row.mismatched = mismatched;
+    const applied = await runTenantPrivateMove(id, move, {
+      copy: (tenantId, priv) => patchPrivateTenant(env, tenantId, priv),
+      read: (tenantId) => getPrivateTenant(env, tenantId),
+      publicPatch: (tenantId, fields) => patchPublicFields(env, tenantId, fields),
+      remove: (tenantId, paths) => deletePublicPrivateFields(env, tenantId, paths),
+    });
+    row.steps = applied.steps;
+    if (!applied.ok) {
+      row.error = applied.error;
+      row.mismatched = applied.mismatched;
       report.push(row);
       continue;
     }
-    row.verified = true;
-    await deletePublicPrivateFields(env, id, paths);
-    row.publicCleaned = true;
+    row.verified = applied.steps.indexOf('verify') >= 0;
+    row.publicCleaned = applied.steps.indexOf('delete') >= 0;
     report.push(row);
   }
   return { ok: report.every((r) => !r.error), dryRun: !!opts.dryRun, tenants: report.length, report };

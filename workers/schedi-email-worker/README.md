@@ -201,13 +201,30 @@ booking page needs. Owner contact + billing fields live in `artifacts/siteforge-
 which Firestore rules deny to every client; only this worker's Admin service account reads/writes it.
 
 - Private keys: `ownerName, ownerEmail, ownerPhone, stripeCustomerId, stripeSubscriptionId, billingExempt,
-  complimentaryPro, monthlyPrice, paymentForm`, plus `notifications.replyTo` stored as `notificationsReplyTo`.
-  Source of truth: `src/tenant-private.js` (`PRIVATE_TENANT_KEYS`). Payment handles (venmo/zelle/cashapp/paypal),
-  `plan`, `subscriptionStatus`, `notifications.emailConfirmations/extraNote` stay public.
+  complimentaryPro, monthlyPrice, paymentForm, plan, subscriptionStatus`, plus `notifications.replyTo` stored as
+  `notificationsReplyTo`. Source of truth: `src/tenant-private.js` (`PRIVATE_TENANT_KEYS`).
+  Payment handles (venmo/zelle/cashapp/paypal) and `notifications.emailConfirmations/extraNote` stay public.
+  The public doc also keeps the customer-facing `plan` tier (`free`, `starter`, or `pro`, with complimentary
+  shown as `pro`) and `acceptingBookings`. The booking page and the public web worker have no Admin credential,
+  so they cannot read the private doc. `subscriptionStatus` is not public. A paused subscription sets
+  `acceptingBookings` to false before the status field is removed.
+- Browser private keys include `subscriptionStatus` (loaded with `action:"private"`). The portal must not invent
+  `subscriptionStatus` from `acceptingBookings`.
+- Migration: `node scripts/migrate-tenant-private.mjs --dry-run --fixture tenants.json` plans a local file and
+  does not use the network. Production is a separate human step. Dry-run first:
+  `POST /api/profile` `{"action":"migrate_private","dryRun":true,"session":"<agency session>"}` with
+  `Authorization: Bearer <MIGRATION_TOKEN>`. Apply only after that report looks right, with `"dryRun":false`.
+  The worker reads the private doc first and copies only keys that doc does not already have
+  (empty string and null count as present and are not overwritten). It verifies the copied values
+  and that every field about to be deleted already exists on the private doc, writes `acceptingBookings`,
+  then deletes those fields from the public doc. A failed verify does not delete. It does not delete
+  the public plan tier. The endpoint is inert unless `MIGRATION_TOKEN` is set (it was removed after the
+  2026-10-05 migration).
 - Reads: `getTenantById` / `listAllTenants` / ops-snapshot merge the private doc back in, so worker code sees the full tenant.
 - Writes: `/api/profile` save, `patchTenantFields` (Stripe webhooks) and signup `createTenantDocument` split the
-  object; private keys are merge-written (only keys present), the public doc never gets them. Owners can change their
-  own contact fields; billing keys are agency/worker-only.
+  object; private keys are merge-written (only keys present). The public doc is rewritten with the effective plan
+  tier and `acceptingBookings`, and a status patch deletes `subscriptionStatus` from the public doc. Owners can
+  change their own contact fields; billing keys, `plan`, and `subscriptionStatus` are agency/worker-only.
 - Browser: signed-in owner/agency load private fields with `POST /api/profile {action:"private", session}` (in memory only).
 - Public booking emails: the page sends `ownerTenantId` + `toOwner` / `replyToOwner` / `{{schedi_owner_contact}}`;
   the worker fills the owner's address. Reply-to/contact are only filled when the single recipient is the owner or a
@@ -226,7 +243,7 @@ Owners can't change their plan or billing fields directly. Only these can change
 - **Agency session**: unrestricted via `/api/profile`.
 
 Implemented in `src/entitlements.js`, used by `profile-store.js` (`putTenant`, owner role):
-- `plan` and `subscriptionStatus` are always written back with their stored values. `monthlyPrice`, `complimentaryPro`, `billingExempt`, `paymentForm` and the Stripe IDs are dropped.
+- `plan` and `subscriptionStatus` keep their stored values. An owner cannot change them. `subscriptionStatus` is stored on the private doc and removed from the public doc. The public doc is rewritten with the effective plan tier and `acceptingBookings`. `monthlyPrice`, `complimentaryPro`, `billingExempt`, `paymentForm` and the Stripe IDs stay on the private doc.
 - The effective plan comes from stored data (complimentaryPro/billingExempt → pro). Below Pro, an owner can't switch ON `allowRecurringBookings`, `paymentGateways.card` or `deposit.enabled`. On Free, they also can't switch on cashapp/zelle/venmo/paypal or add services beyond the stored count (minimum 1). Turning things off is always allowed. The response includes `ignoredFields`.
 - An owner save for a tenant with no stored doc returns 404 (it can't create a doc).
 - `/api/bookings` `create` (public booking page) rejects recurring bookings (`recurring_pro_only`) and card payments (`card_checkout_pro_only`) below Pro. Deposits and cancellation-fee auto-charge were already Pro-gated server-side.

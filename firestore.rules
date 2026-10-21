@@ -5,6 +5,11 @@ service cloud.firestore {
     // The owner app and HQ list this collection (onSnapshot). Booking pages read
     // one tenant's slots subcollection, not the tenant list, but list stays open
     // because the portal and HQ depend on it.
+    // These docs are world-readable, so they hold booking-page fields only:
+    // services, hours, the customer-facing plan tier, and acceptingBookings.
+    // subscriptionStatus, prices, comp flags, Stripe ids, and owner contact
+    // belong on the private doc below. Rules cannot hide individual fields, so
+    // the migration removes them from this collection.
     // Clients cannot create, update, or delete. The worker uses the Admin SDK,
     // which bypasses these rules.
     // stripeConnectReady, squareReady, stripeConnectStatus, and squareConnectStatus
@@ -20,7 +25,10 @@ service cloud.firestore {
       }
     }
 
-    // Owner contact, billing, and Square tokens. Admin SDK only.
+    // Owner contact, billing (plan, subscriptionStatus, prices, Stripe ids), and
+    // Square tokens. Client reads and writes are denied, including anonymous
+    // sign-in. The owner and HQ read these through POST /api/profile
+    // {action:"private"}. The server uses the Admin SDK, which bypasses rules.
     match /artifacts/{appId}/private/data/tenants/{tenantId} {
       allow read, write: if false;
     }

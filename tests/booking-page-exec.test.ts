@@ -235,9 +235,9 @@ describe.skipIf(!chrome)("booking document browser", () => {
       const paused = fillBookingDocument(bookingHtml, {
         slug: "bright-cuts",
         fields: fixture({ subscriptionStatus: "paused" }),
-      }).replace(/"acceptingBookings":(?:true|false),/, "").replace(/,"acceptingBookings":(?:true|false)/, "");
-      expect(paused).toContain('"subscriptionStatus":"paused"');
-      expect(paused).not.toMatch(/"acceptingBookings"\s*:/);
+      });
+      expect(paused).not.toContain('"subscriptionStatus"');
+      expect(paused).toContain('"acceptingBookings":false');
       pages.set("/paused", paused);
       const closed = await open("/paused");
       await closed.page.waitForFunction(() => (document.body.textContent || "").includes("not taking appointments"), { timeout: 10000 });

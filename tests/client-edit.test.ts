@@ -187,12 +187,16 @@ describe("client edit allow list", () => {
     expect(demo).not.toContain("saveState");
     const emailStart = html.indexOf("var CLIENT_EMAIL_RE");
     const emailLine = html.slice(emailStart, html.indexOf("\n", emailStart));
-    const validate = new Function(`${emailLine}\n${extractFunction(html, "clientCleanText")}\n${extractFunction(html, "clientPhoneKey")}\n${extractFunction(html, "clientTagList")}\n${extractFunction(html, "validateClientRow")}; return validateClientRow;`)() as (raw: unknown) => { client?: { notes: string; tags: string[]; name: string }; error?: string; empty?: boolean };
+    const validate = new Function(`${emailLine}\n${extractFunction(html, "duplicatedEmailTld")}\n${extractFunction(html, "duplicatedEmailTldWarning")}\n${extractFunction(html, "clientCleanText")}\n${extractFunction(html, "clientPhoneKey")}\n${extractFunction(html, "clientTagList")}\n${extractFunction(html, "validateClientRow")}; return validateClientRow;`)() as (raw: unknown) => { client?: { notes: string; tags: string[]; name: string }; error?: string; warning?: string; empty?: boolean };
     const ok = validate({ name: "Maya", email: "maya@example.com", phone: "(555) 201-0142", notes: "Private note", tags: "fade, regular", role: "admin" });
     expect(ok.client).toEqual({ name: "Maya", email: "maya@example.com", phone: "(555) 201-0142", notes: "Private note", tags: ["fade", "regular"] });
+    expect(ok.warning).toBeUndefined();
     expect(validate({ name: "", email: "maya@example.com", phone: "(555) 201-0142" }).error).toBe("missing_name");
     expect(validate({ name: "Maya", email: "nope", phone: "(555) 201-0142" }).error).toBe("invalid_email");
     expect(validate({ name: "Maya", email: "", phone: "12" }).error).toBe("invalid_phone");
+    const duplicated = validate({ name: "Maya", email: "x@gmail.com.com", phone: "(555) 201-0142" });
+    expect(duplicated.error).toBeUndefined();
+    expect(duplicated.warning).toBe("Did you mean x@gmail.com?");
   });
 });
 

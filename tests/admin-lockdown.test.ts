@@ -78,7 +78,8 @@ describe("public booking bundle", () => {
     expect(html).not.toContain("10 Main St");
     expect(html).not.toContain("merchant-secret");
     expect(html).not.toContain("unpaidDigestWeek");
-    expect(html).toContain('"subscriptionStatus":"active"');
+    expect(html).not.toMatch(/"subscriptionStatus"\s*:/);
+    expect(html).toContain('"plan":');
     expect(html).toContain('"acceptingBookings":true');
     expect(html).not.toContain("hidden@example.com");
     expect(calls).toHaveLength(1);
@@ -173,7 +174,7 @@ describe("booking field projection", () => {
     expect(pub.plan).toBe("pro");
     expect(pub.address).toBeUndefined();
     expect(pub.city).toBeUndefined();
-    expect(pub.subscriptionStatus).toBe("active");
+    expect(pub.subscriptionStatus).toBeUndefined();
     expect(pub.acceptingBookings).toBe(true);
     expect(pub.squareMerchantId).toBeUndefined();
     expect(pub.unpaidDigestWeek).toBeUndefined();

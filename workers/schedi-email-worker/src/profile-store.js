@@ -168,8 +168,9 @@ async function putTenant(env, tenantId, profile, role) {
   let ignored = [];
   if (role !== 'agency') {
     // Plan lock: plan keeps its stored value. Billing keys (monthlyPrice, complimentaryPro,
-    // billingExempt, paymentForm, Stripe ids) are dropped. subscriptionStatus stays on
-    // the public doc; an owner cannot change it. Pro-only features can't be switched
+    // billingExempt, paymentForm, Stripe ids, plan, subscriptionStatus) are dropped
+    // from an owner write. subscriptionStatus is private. The public doc keeps the
+    // effective plan tier and acceptingBookings. Pro-only features can't be switched
     // on unless the stored plan is Pro (or complimentary Pro).
     const storedPub = await getPublicTenantDoc(env, tenantId, headers);
     if (!storedPub) throw new Error('tenant_not_found');
@@ -196,6 +197,7 @@ async function putTenant(env, tenantId, profile, role) {
     if (storedPriv && storedPriv.complimentaryPro !== undefined) effective.complimentaryPro = storedPriv.complimentaryPro;
     if (storedPriv && storedPriv.billingExempt !== undefined) effective.billingExempt = storedPriv.billingExempt;
     if (storedPriv && storedPriv.monthlyPrice !== undefined) effective.monthlyPrice = storedPriv.monthlyPrice;
+    if (storedPriv && storedPriv.plan) effective.plan = storedPriv.plan;
     pub = shapePublicBookingFields(effective).pub;
   } else {
     const storedPub = await getPublicTenantDoc(env, tenantId, headers);
