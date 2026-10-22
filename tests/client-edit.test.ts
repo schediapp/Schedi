@@ -2,7 +2,8 @@ import { createServer } from "node:http";
 import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { extname, join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { handleClientsHttp, sanitizeClientInput, sanitizeClientTags, upsertClientsFromBookings } from "../workers/schedi-email-worker/src/private-clients.js";
+import { appointmentClientChanges, appointmentEditMailPlan } from "../workers/schedi-email-worker/src/appointment-updated.js";
+import { cleanNotes, handleClientsHttp, MAX_CLIENT_NOTES, sanitizeClientInput, sanitizeClientTags, upsertClientsFromBookings } from "../workers/schedi-email-worker/src/private-clients.js";
 
 const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const worker = readFileSync(new URL("../workers/schedi-email-worker/src/private-clients.js", import.meta.url), "utf8");
@@ -149,6 +150,94 @@ describe("client edit allow list", () => {
     expect(afterReject.clients[0].name).toBe("Maya R. Chen");
   });
 
+  it("saves and loads a private note of 2000 characters and clips the rest", async () => {
+    const env = await ownerEnv();
+    const body = "Prefers the side door.\nAllergic to latex.";
+    const long = `${body}\n${"a".repeat(MAX_CLIENT_NOTES)}`;
+    const markup = `<script>alert(1)</script>\n<img src=x onerror="alert(1)">`;
+    expect(cleanNotes(long)).toHaveLength(MAX_CLIENT_NOTES);
+    expect(cleanNotes(long).startsWith(body)).toBe(true);
+    expect(cleanNotes(`  ${markup}  \n\n\n  line  `)).toBe(`${markup}\n\nline`);
+    const added = await call(env, {
+      action: "add",
+      session: "tok",
+      tenantId: "harbor-demo",
+      client: { name: "Maya Chen", email: "maya@example.com", phone: "(555) 201-0142", notes: long, tags: [] },
+    });
+    expect(added.status).toBe(200);
+    const created = added.data.client as { id: string; notes: string };
+    expect(created.notes).toBe(cleanNotes(long));
+    expect(created.notes).toHaveLength(MAX_CLIENT_NOTES);
+    const listed = await call(env, { action: "list", session: "tok", tenantId: "harbor-demo" });
+    const loaded = (listed.data.clients as { id: string; notes: string }[]).find((row) => row.id === created.id);
+    expect(loaded?.notes).toBe(created.notes);
+    const updated = await call(env, {
+      action: "update",
+      session: "tok",
+      tenantId: "harbor-demo",
+      clientId: created.id,
+      client: { name: "Maya Chen", email: "maya@example.com", phone: "(555) 201-0142", notes: markup },
+    });
+    expect((updated.data.client as { notes: string }).notes).toBe(markup);
+    const stored = JSON.parse(env.AUTH_KV.store.get("privateClients:harbor-demo") || "{}");
+    expect(stored.clients[0].notes).toBe(markup);
+    const keys = [...env.AUTH_KV.store.keys()];
+    expect(keys.filter((key) => key !== "session:tok")).toEqual(["privateClients:harbor-demo"]);
+    expect(JSON.stringify(stored)).not.toContain("tenant");
+    expect(keys.some((key) => /booking|appointment|firestore|public/i.test(key))).toBe(false);
+  });
+
+  it("keeps owner notes off bookings, public docs, and client email", async () => {
+    const env = await ownerEnv("harbor-demo");
+    const secret = "OWNER ONLY note <script>alert(1)</script>";
+    await env.AUTH_KV.put("privateClients:harbor-demo", JSON.stringify({
+      clients: [{ id: "cl_maya", name: "Maya Chen", email: "maya@example.com", phone: "(555) 201-0142", notes: secret, tags: [], source: "manual" }],
+    }));
+    await env.AUTH_KV.put("publicTenant:harbor-demo", JSON.stringify({ slug: "harbor-demo", name: "Harbor Studio" }));
+    const booking = {
+      id: "HB-1001",
+      clientName: "Maya Chen",
+      clientEmail: "maya@example.com",
+      clientPhone: "(555) 201-0142",
+      status: "accepted",
+      date: "2026-10-22",
+      time: "09:00 AM",
+      serviceName: "Cut",
+      notes: "Bring a photo.",
+    };
+    const result = await upsertClientsFromBookings(env, "harbor-demo", [booking]);
+    expect(result.added).toBe(0);
+    const stored = JSON.parse(env.AUTH_KV.store.get("privateClients:harbor-demo") || "{}");
+    expect(stored.clients[0].notes).toBe(secret);
+    expect(stored.clients[0].notes).not.toBe(booking.notes);
+    const fresh = await upsertClientsFromBookings(env, "other-shop", [{
+      clientName: "Ada",
+      clientEmail: "ada@example.com",
+      clientPhone: "(555) 201-0199",
+      status: "accepted",
+      date: "2026-10-22",
+      notes: secret,
+    }]);
+    expect(fresh.added).toBe(1);
+    const created = JSON.parse(env.AUTH_KV.store.get("privateClients:other-shop") || "{}");
+    expect(created.clients[0].notes).toBe("");
+    expect(env.AUTH_KV.store.get("publicTenant:harbor-demo")).toBe(JSON.stringify({ slug: "harbor-demo", name: "Harbor Studio" }));
+    const before = { status: "accepted", clientEmail: "maya@example.com", date: "2026-10-22", time: "09:00 AM", serviceName: "Cut" };
+    expect(appointmentEditMailPlan(before, { ...before }, { notify: true })).toBe("none");
+    expect(JSON.stringify(appointmentClientChanges(before, { ...before }))).not.toContain(secret);
+    const mailed = appointmentClientChanges(before, { ...before, notes: "Bring a photo." });
+    expect(mailed.rows.find((row) => row.key === "note")?.to).toBe("Bring a photo.");
+    expect(JSON.stringify(mailed)).not.toContain("OWNER ONLY");
+    const bookAgain = html.slice(html.indexOf("window.bookClientAgain = function"), html.indexOf("function clientHistorySheetPrice"));
+    expect(bookAgain).not.toContain("notes");
+    const recurring = html.slice(html.indexOf("window.openClientRecurring = function"), html.indexOf("window.bookClientAgain = function"));
+    expect(recurring).not.toContain("notes");
+    const decision = extractFunction(html, "decisionRowsHtml");
+    expect(decision).not.toContain("privateClients");
+    expect(decision).not.toContain("client.notes");
+    expect(decision).toContain("app.notes");
+  });
+
   it("leaves saved notes and tags alone when bookings are upserted", async () => {
     const env = await ownerEnv("harbor-demo");
     await env.AUTH_KV.put("privateClients:harbor-demo", JSON.stringify({
@@ -187,9 +276,21 @@ describe("client edit allow list", () => {
     expect(demo).not.toContain("saveState");
     const emailStart = html.indexOf("var CLIENT_EMAIL_RE");
     const emailLine = html.slice(emailStart, html.indexOf("\n", emailStart));
-    const validate = new Function(`${emailLine}\n${extractFunction(html, "duplicatedEmailTld")}\n${extractFunction(html, "duplicatedEmailTldWarning")}\n${extractFunction(html, "clientCleanText")}\n${extractFunction(html, "clientPhoneKey")}\n${extractFunction(html, "clientTagList")}\n${extractFunction(html, "validateClientRow")}; return validateClientRow;`)() as (raw: unknown) => { client?: { notes: string; tags: string[]; name: string }; error?: string; warning?: string; empty?: boolean };
-    const ok = validate({ name: "Maya", email: "maya@example.com", phone: "(555) 201-0142", notes: "Private note", tags: "fade, regular", role: "admin" });
-    expect(ok.client).toEqual({ name: "Maya", email: "maya@example.com", phone: "(555) 201-0142", notes: "Private note", tags: ["fade", "regular"] });
+    const validate = new Function(`${emailLine}\n${extractFunction(html, "duplicatedEmailTld")}\n${extractFunction(html, "duplicatedEmailTldWarning")}\n${extractFunction(html, "clientCleanText")}\n${extractFunction(html, "clientCleanNotes")}\n${extractFunction(html, "clientPhoneKey")}\n${extractFunction(html, "clientTagList")}\n${extractFunction(html, "validateClientRow")}; return validateClientRow;`)() as (raw: unknown) => { client?: { notes: string; tags: string[]; name: string }; error?: string; warning?: string; empty?: boolean };
+    const ok = validate({ name: "Maya", email: "maya@example.com", phone: "(555) 201-0142", notes: "Private note\nSecond line", tags: "fade, regular", role: "admin" });
+    expect(ok.client).toEqual({ name: "Maya", email: "maya@example.com", phone: "(555) 201-0142", notes: "Private note\nSecond line", tags: ["fade", "regular"] });
+    expect(validate({ name: "Maya", email: "maya@example.com", phone: "(555) 201-0142", notes: "x".repeat(2001) }).client?.notes).toHaveLength(2000);
+    const form = new Function(`${extractFunction(html, "esc")}\n${extractFunction(html, "jsArg")}\n${extractFunction(html, "clientTagList")}\n${extractFunction(html, "clientCleanText")}\n${extractFunction(html, "clientNotesCountLabel")}\n${extractFunction(html, "clientEditFormHtml")}; return clientEditFormHtml;`)() as (row: { id: string; name: string; notes: string; tags: string[] }) => string;
+    const painted = form({ id: "CL-1", name: "Maya", notes: "<script>alert(1)</script>\nline", tags: [] });
+    const hostile = "<script>alert(1)</script>\nline";
+    expect(painted).toContain(">Notes</span>");
+    expect(painted).toContain('maxlength="2000"');
+    expect(painted).toContain(`${hostile.length} / 2000`);
+    expect(painted).toContain("&lt;script&gt;alert(1)&lt;/script&gt;");
+    expect(painted).not.toContain("<script>");
+    const panel = html.slice(html.indexOf("function paintClientPanel"), html.indexOf("function clientPanelBlocked"));
+    expect(panel).toContain("sd-client-panel-notes");
+    expect(panel).toContain("esc(client.notes)");
     expect(ok.warning).toBeUndefined();
     expect(validate({ name: "", email: "maya@example.com", phone: "(555) 201-0142" }).error).toBe("missing_name");
     expect(validate({ name: "Maya", email: "nope", phone: "(555) 201-0142" }).error).toBe("invalid_email");
@@ -277,12 +378,26 @@ describe.skipIf(!chrome)("client edit demo", () => {
         return document.getElementById("clientEditError")?.textContent || "";
       });
       expect(emailError).toContain("does not look right");
-      await page.evaluate(() => {
+      const counted = await page.evaluate(() => {
+        const notes = document.getElementById("clientEditNotes") as HTMLTextAreaElement;
         (document.getElementById("clientEditEmail") as HTMLInputElement).value = "maya@example.com";
-        (document.getElementById("clientEditNotes") as HTMLTextAreaElement).value = "Likes a low fade. Books on Tuesdays.";
+        notes.value = "Likes a low fade. Books on Tuesdays.";
         (document.getElementById("clientEditTags") as HTMLInputElement).value = "regular, fade, tuesday";
-        document.getElementById("clientEditEmail")?.dispatchEvent(new Event("input", { bubbles: true }));
+        notes.dispatchEvent(new Event("input", { bubbles: true }));
+        const label = notes.labels?.[0]?.textContent || notes.closest("label")?.textContent || "";
+        return {
+          count: document.getElementById("clientEditNotesCount")?.textContent || "",
+          label: label.replace(/\s+/g, " ").trim(),
+          maxlength: notes.getAttribute("maxlength"),
+          rows: notes.getAttribute("rows"),
+          tag: notes.tagName,
+        };
       });
+      expect(counted.tag).toBe("TEXTAREA");
+      expect(counted.maxlength).toBe("2000");
+      expect(counted.rows).toBe("4");
+      expect(counted.label.startsWith("Notes")).toBe(true);
+      expect(counted.count).toBe(`${"Likes a low fade. Books on Tuesdays.".length} / 2000`);
       const shot = async (name: string, theme: "dark" | "light", width: number) => {
         await page.setViewport({ width, height: 900, deviceScaleFactor: 1 });
         const placed = await page.evaluate((mode) => {
@@ -320,6 +435,8 @@ describe.skipIf(!chrome)("client edit demo", () => {
       const layout = await page.evaluate(() => {
         const form = document.querySelector(".sd-client-edit") as HTMLElement;
         const save = form.querySelector("button[type='submit']") as HTMLElement;
+        const notes = document.getElementById("clientEditNotes") as HTMLTextAreaElement;
+        const notesBox = notes.getBoundingClientRect();
         const phone = getComputedStyle(form).gridTemplateColumns;
         const saveHeight = save.getBoundingClientRect().height;
         document.documentElement.classList.remove("schedi-light");
@@ -327,10 +444,13 @@ describe.skipIf(!chrome)("client edit demo", () => {
         document.documentElement.classList.add("schedi-light");
         const lightName = getComputedStyle(document.querySelector(".sd-client-name") as HTMLElement).color;
         document.documentElement.classList.remove("schedi-light");
-        return { phone, saveHeight, darkName, lightName };
+        return { phone, saveHeight, darkName, lightName, notesHeight: notesBox.height, notesWidth: notesBox.width, formWidth: form.getBoundingClientRect().width };
       });
       expect(layout.phone.split(" ").length).toBe(1);
       expect(layout.saveHeight).toBeGreaterThanOrEqual(44);
+      expect(layout.notesHeight).toBeGreaterThanOrEqual(88);
+      expect(layout.notesWidth).toBeGreaterThan(200);
+      expect(layout.notesWidth).toBeGreaterThan(layout.formWidth - 40);
       expect(layout.darkName).not.toBe(layout.lightName);
       await page.setViewport({ width: 1280, height: 900 });
       const saved = await page.evaluate(async () => {
@@ -381,11 +501,57 @@ describe.skipIf(!chrome)("client edit demo", () => {
       const wide = await page.evaluate(() => {
         const w = window as unknown as { startOwnerClientEdit: (id: string) => void; cancelOwnerClientEdit: () => void };
         w.startOwnerClientEdit("CL-LUIS");
-        const columns = getComputedStyle(document.querySelector(".sd-client-edit") as HTMLElement).gridTemplateColumns;
+        const form = document.querySelector(".sd-client-edit") as HTMLElement;
+        const notes = document.getElementById("clientEditNotes") as HTMLTextAreaElement;
+        const columns = getComputedStyle(form).gridTemplateColumns;
+        const span = notes.getBoundingClientRect().width > form.getBoundingClientRect().width * 0.7;
+        const height = notes.getBoundingClientRect().height;
         w.cancelOwnerClientEdit();
-        return columns.split(" ").length;
+        return { columns: columns.split(" ").length, span, height };
       });
-      expect(wide).toBe(2);
+      expect(wide.columns).toBe(2);
+      expect(wide.span).toBe(true);
+      expect(wide.height).toBeGreaterThanOrEqual(72);
+      const escaped = await page.evaluate(async () => {
+        const w = window as unknown as {
+          startOwnerClientEdit: (id: string) => void;
+          openClientDetail: (id: string) => void;
+          closeClientPanel: () => void;
+          getTenant: () => { appointments: { notes?: string; clientName?: string }[] };
+        };
+        const hostile = "<script>alert(1)</script>\n<img src=x onerror=\"alert(1)\">";
+        w.startOwnerClientEdit("CL-MAYA");
+        const notes = document.getElementById("clientEditNotes") as HTMLTextAreaElement;
+        notes.value = hostile;
+        notes.dispatchEvent(new Event("input", { bubbles: true }));
+        const count = document.getElementById("clientEditNotesCount")?.textContent || "";
+        (document.querySelector(".sd-client-edit") as HTMLFormElement).requestSubmit();
+        for (let i = 0; i < 20 && document.querySelector(".sd-client-edit"); i++) {
+          await new Promise((resolve) => setTimeout(resolve, 25));
+        }
+        const card = Array.from(document.querySelectorAll(".sd-client")).find((el) => (el.textContent || "").includes("Maya R. Chen"));
+        const listNotes = card?.querySelector(".sd-client-notes") || null;
+        const listHtml = listNotes?.innerHTML || "";
+        w.openClientDetail("CL-MAYA");
+        const panel = document.querySelector(".sd-client-panel-notes");
+        const panelHtml = panel?.innerHTML || "";
+        const panelText = panel?.textContent || "";
+        const scripts = document.querySelectorAll(".sd-client-notes script, .sd-client-panel-notes script, .sd-client-notes img, .sd-client-panel-notes img").length;
+        const appointments = JSON.stringify(w.getTenant().appointments);
+        w.closeClientPanel();
+        return { count, listHtml, panelHtml, panelText, scripts, appointments, editing: !!document.querySelector(".sd-client-edit") };
+      });
+      expect(escaped.count).toBe(`${"<script>alert(1)</script>\n<img src=x onerror=\"alert(1)\">".length} / 2000`);
+      expect(escaped.editing).toBe(false);
+      expect(escaped.listHtml).toContain("&lt;script&gt;");
+      expect(escaped.listHtml).not.toContain("<script>");
+      expect(escaped.panelHtml).toContain("&lt;script&gt;");
+      expect(escaped.panelHtml).toContain("&lt;img");
+      expect(escaped.panelText).toContain("Notes");
+      expect(escaped.panelText).toContain("<script>alert(1)</script>");
+      expect(escaped.scripts).toBe(0);
+      expect(escaped.appointments).not.toContain("OWNER ONLY");
+      expect(escaped.appointments).not.toContain("<script>alert(1)</script>");
       const writes = requests.filter((request) => !["GET", "HEAD", "OPTIONS"].includes(request.method));
       expect(writes).toEqual([]);
       expect(errors).toEqual([]);

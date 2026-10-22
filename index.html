@@ -891,7 +891,7 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client:hover { backgro
 #tenantPortalSection.schedi-newdash .sd-client-name { font-weight: 800; font-size: 14px; color: var(--sd-text); background: transparent; border: 0; padding: 0; text-align: left; cursor: pointer; }
 #tenantPortalSection.schedi-newdash .sd-client-contact,
 #tenantPortalSection.schedi-newdash .sd-client-notes { color: var(--sd-muted); font-size: 12px; }
-#tenantPortalSection.schedi-newdash .sd-client-notes { margin-top: 4px; overflow-wrap: anywhere; }
+#tenantPortalSection.schedi-newdash .sd-client-notes { margin-top: 4px; overflow-wrap: anywhere; white-space: pre-wrap; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
 #tenantPortalSection.schedi-newdash .sd-client-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
 #tenantPortalSection.schedi-newdash .sd-tag { display: inline-flex; align-items: center; border-radius: 999px; padding: 2px 8px; font-size: 11px; font-weight: 800; color: var(--sd-brand-2); background: rgba(16, 185, 129, 0.14); border: 1px solid rgba(16, 185, 129, 0.35); }
 #tenantPortalSection.schedi-newdash .sd-client-actions { display: flex; flex: 0 0 auto; flex-wrap: nowrap; align-items: center; justify-content: flex-end; gap: 6px; margin-left: auto; }
@@ -919,6 +919,9 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client:hover { backgro
 #tenantPortalSection.schedi-newdash .sd-client-edit input.is-invalid,
 #tenantPortalSection.schedi-newdash .sd-client-edit textarea.is-invalid { border-color: var(--sd-rose); box-shadow: 0 0 0 1px var(--sd-rose); }
 #tenantPortalSection.schedi-newdash .sd-client-span { grid-column: 1 / -1; }
+#tenantPortalSection.schedi-newdash .sd-client-notes-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+#tenantPortalSection.schedi-newdash .sd-client-notes-count { font-weight: 700; font-variant-numeric: tabular-nums; }
+#tenantPortalSection.schedi-newdash .sd-client-notes-label { margin: 0 0 4px; font-size: 11px; font-weight: 800; }
 #tenantPortalSection.schedi-newdash .sd-client-error { margin: 0; min-height: 1.1em; color: var(--sd-rose); font-size: 12px; font-weight: 700; }
 #tenantPortalSection.schedi-newdash .sd-client-error:empty { display: none; }
 #tenantPortalSection.schedi-newdash .sd-client-hint { margin: 0; color: var(--sd-muted); font-size: 11px; line-height: 1.4; }
@@ -1004,7 +1007,8 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client:hover { backgro
     font-size: 13px;
     overflow-wrap: anywhere;
 }
-#tenantPortalSection.schedi-newdash .sd-client-panel-notes { line-height: 1.4; }
+#tenantPortalSection.schedi-newdash .sd-client-panel-notes { line-height: 1.4; white-space: pre-wrap; }
+#tenantPortalSection.schedi-newdash .sd-client-panel-notes p { margin: 0; white-space: pre-wrap; }
 #tenantPortalSection.schedi-newdash .sd-client-noshow { margin-top: 8px; line-height: 1.45; font-weight: 700; }
 #tenantPortalSection.schedi-newdash .sd-client-usual { margin: 0 0 10px; font-weight: 800; color: var(--sd-text); }
 #tenantPortalSection.schedi-newdash .sd-client-totals,
@@ -13849,6 +13853,11 @@ function schediQrCardPixels(text, color) {
         function clientCleanText(v, max) {
             return String(v == null ? '' : v).replace(/[\u0000-\u001f\u007f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max);
         }
+        function clientCleanNotes(v, max) {
+            var text = String(v == null ? '' : v).replace(/\r\n?/g, '\n').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]+/g, ' ');
+            text = text.split('\n').map(function (line) { return line.replace(/[ \t]+/g, ' ').trim(); }).join('\n').replace(/\n{3,}/g, '\n\n').trim();
+            return text.slice(0, max || 2000);
+        }
         function clientPhoneKey(v) {
             var d = String(v == null ? '' : v).replace(/[^0-9]/g, '');
             if (d.length === 11 && d.charAt(0) === '1') d = d.slice(1);
@@ -13876,7 +13885,7 @@ function schediQrCardPixels(text, color) {
             if (!name) name = clientCleanText([clientCleanText(raw.firstName, 60), clientCleanText(raw.lastName, 60)].filter(Boolean).join(' '), 120);
             var email = clientCleanText(raw.email, 254).toLowerCase();
             var phone = clientCleanText(raw.phone, 40);
-            var notes = clientCleanText(raw.notes, 500);
+            var notes = clientCleanNotes(raw.notes, 2000);
             var tags = clientTagList(raw.tags);
             var pk = clientPhoneKey(phone);
             if (!name && !email && !phone) return { empty: true };
@@ -14206,7 +14215,7 @@ function schediQrCardPixels(text, color) {
                 if (/[",\n\r]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
                 return s;
             }
-            var lines = [['name', 'email', 'phone', 'visits', 'total_paid', 'payment_methods', 'most_used_method', 'walk_in', 'first_visit', 'last_visit'].join(',')];
+            var lines = [['name', 'email', 'phone', 'visits', 'total_paid', 'payment_methods', 'most_used_method', 'walk_in', 'first_visit', 'last_visit', 'notes'].join(',')];
             (rows || []).forEach(function (row) {
                 var stats = (row && row.stats) || {};
                 lines.push([
@@ -14219,7 +14228,8 @@ function schediQrCardPixels(text, color) {
                     stats.methodLabel || '',
                     stats.walkIn ? 'yes' : 'no',
                     stats.firstVisit || '',
-                    stats.lastVisit || ''
+                    stats.lastVisit || '',
+                    row && row.notes
                 ].map(cell).join(','));
             });
             return lines.join('\n');
@@ -14373,6 +14383,16 @@ function schediQrCardPixels(text, color) {
             }).join('') + '</div>' + (shown.length > cap ? ('<p class="text-[11px] text-slate-500 pt-2">Showing the first ' + cap + '. Search to find others.</p>') : '');
         };
 
+        function clientNotesCountLabel(value) {
+            return String(value == null ? '' : value).length + ' / 2000';
+        }
+        function updateClientNotesCount() {
+            var box = document.getElementById('clientEditNotes');
+            var count = document.getElementById('clientEditNotesCount');
+            if (count) count.textContent = clientNotesCountLabel(box ? box.value : '');
+        }
+        window.updateClientNotesCount = updateClientNotesCount;
+
         function clientTagsHtml(x) {
             var tags = clientTagList(x && x.tags);
             if (!tags.length) return '';
@@ -14381,14 +14401,15 @@ function schediQrCardPixels(text, color) {
 
         function clientEditFormHtml(x) {
             var tags = clientTagList(x.tags).join(', ');
-            return '<form class="sd-client-edit" onsubmit="saveOwnerClientEdit(event,' + jsArg(x.id) + ')" oninput="clearClientEditError()">'
+            var noteText = x.notes || '';
+            return '<form class="sd-client-edit" onsubmit="saveOwnerClientEdit(event,' + jsArg(x.id) + ')" oninput="clearClientEditError(); updateClientNotesCount()">'
                 + '<label>Name<input id="clientEditName" type="text" maxlength="120" autocomplete="name" value="' + esc(x.name || '') + '"></label>'
                 + '<label>Phone<input id="clientEditPhone" type="tel" maxlength="40" autocomplete="tel" inputmode="tel" value="' + esc(x.phone || '') + '"></label>'
                 + '<label class="sd-client-span">Email<input id="clientEditEmail" type="text" maxlength="254" autocomplete="email" inputmode="email" value="' + esc(x.email || '') + '"></label>'
-                + '<label class="sd-client-span">Private notes<textarea id="clientEditNotes" maxlength="500" rows="3">' + esc(x.notes || '') + '</textarea></label>'
+                + '<label class="sd-client-span"><span class="sd-client-notes-head"><span>Notes</span><span id="clientEditNotesCount" class="sd-client-notes-count">' + clientNotesCountLabel(noteText) + '</span></span><textarea id="clientEditNotes" maxlength="2000" rows="4" aria-label="Notes">' + esc(noteText) + '</textarea></label>'
                 + '<label class="sd-client-span">Tags<input id="clientEditTags" type="text" maxlength="400" value="' + esc(tags) + '" placeholder="regular, fade"></label>'
                 + '<p id="clientEditError" class="sd-client-error sd-client-span" role="status"></p>'
-                + '<p class="sd-client-hint sd-client-span">This updates the client list and new bookings. Visits already on the calendar stay as booked.</p>'
+                + '<p class="sd-client-hint sd-client-span">Name, email, and phone are used on new bookings. Notes stay private on this client. Visits already on the calendar stay as booked.</p>'
                 + '<div class="sd-client-actions-form sd-client-span">'
                 + '<button type="button" class="sd-client-cancel px-4 py-2 rounded-xl bg-slate-800 text-slate-300 font-bold" onclick="cancelOwnerClientEdit()">Cancel</button>'
                 + '<button type="submit" class="sd-client-save px-4 py-2 rounded-xl bg-brand-500 hover:bg-brand-600 text-slate-950 font-bold">Save</button>'
@@ -14645,7 +14666,7 @@ function schediQrCardPixels(text, color) {
             var last = model.lastVisit ? (rosterPrettyDate(model.lastVisit) || model.lastVisit) : '—';
             title.textContent = client.name || 'Client';
             body.innerHTML = (contact ? ('<p class="sd-client-panel-line">' + esc(contact) + '</p>') : '')
-                + (client.notes ? ('<p class="sd-client-panel-notes">' + esc(client.notes) + '</p>') : '')
+                + (client.notes ? ('<div class="sd-client-panel-notes"><p class="sd-client-notes-label">Notes</p><p>' + esc(client.notes) + '</p></div>') : '')
                 + clientTagsHtml(client)
                 + '<div class="sd-client-totals">'
                 + '<p><span>Revenue</span><strong>' + esc(reportMoney(model.revenue)) + '</strong></p>'
