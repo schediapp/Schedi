@@ -565,9 +565,9 @@ export async function buildOpsSnapshot(env, deps) {
     billingMeta: { ok: billing.ok, error: billing.error, windowStartET: billing.windowStartET, nonOwnerPlanEventsIgnored: billing.nonOwnerPlanEventsIgnored, ownerPrices: OWNER_PRICES },
     connect,
     adminInbox: {
-      note: 'Not counted by the worker (it cannot read Gmail). Count it with the Gmail connector on axl199@gmail.com.',
+      note: 'Not counted by the worker (it cannot read Gmail). Count it with the Gmail connector. The connector mailbox may be either schedi.app@gmail.com or axl199@gmail.com. axl199@gmail.com still receives admin@ and hello@ during the transition.',
       query: ADMIN_INBOX_QUERY,
-      unansweredRule: 'A thread is unanswered when no message from axl199@gmail.com (label SENT) comes after the newest inbound message, and that inbound message is older than 24h.',
+      unansweredRule: 'A thread is unanswered when no message from schedi.app@gmail.com or axl199@gmail.com (label SENT) comes after the newest inbound message, and that inbound message is older than 24h. A SENT message from either address answers the thread.',
     },
     tenants: tenantSection,
     referrals,
