@@ -461,9 +461,9 @@ describe("stale roster save", () => {
   it("creates a client for a newly accepted booking and skips a pending one", async () => {
     const env = envWith();
     await persistTenantAppointments(env, "tok", TENANT, [
-      booking("BK-PEND0001", { status: "pending", clientEmail: "pending.person@example.com", clientName: "Pending Person" }),
-      booking("BK-YES000001", { status: "accepted", clientEmail: "yes.person@example.com", clientName: "Yes Person" }),
-      booking("BK-BLANK0001", { status: "", clientEmail: "blank.person@example.com", clientName: "Blank Person" }),
+      booking("BK-PEND0001", { status: "pending", clientEmail: "pending.person@example.com", clientName: "Pending Person", clientPhone: "555-0101" }),
+      booking("BK-YES000001", { status: "accepted", clientEmail: "yes.person@example.com", clientName: "Yes Person", clientPhone: "555-0102" }),
+      booking("BK-BLANK0001", { status: "", clientEmail: "blank.person@example.com", clientName: "Blank Person", clientPhone: "555-0103" }),
     ]);
     const doc = JSON.parse(env.AUTH_KV.store.get("privateClients:" + TENANT) || "{}");
     const emails = (doc.clients || []).map((row: { email?: string }) => row.email);
