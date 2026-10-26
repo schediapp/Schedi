@@ -466,6 +466,28 @@ async function listAllTenants(env, idToken) {
   return tenants;
 }
 
+// Tenant document ids only. No private merge and no booking hydrate (hydrate can delete a public appointments field).
+async function listTenantIds(env, idToken) {
+  const ids = [];
+  let pageToken = '';
+  for (let page = 0; page < 50; page += 1) {
+    const url =
+      tenantsCollectionUrl(env) +
+      '?pageSize=100&mask.fieldPaths=name' +
+      (pageToken ? `&pageToken=${encodeURIComponent(pageToken)}` : '');
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${idToken}` } });
+    const data = await res.json().catch(() => null);
+    if (!res.ok || !data) throw new Error('firestore_list_failed');
+    for (const doc of data.documents || []) {
+      const docId = String(doc.name || '').split('/').pop();
+      if (docId && /^[A-Za-z0-9_-]{1,80}$/.test(docId)) ids.push(docId);
+    }
+    pageToken = data.nextPageToken || '';
+    if (!pageToken) break;
+  }
+  return ids;
+}
+
 // Public tenant doc only (name/timezone) for owner reset emails. No private merge, no bookings.
 async function getTenantBasics(env, tenantId) {
   const idToken = await firebaseAnonymousToken(env);
@@ -3267,7 +3289,11 @@ export default {
       return handlePageVisitsRequest(request, env, origin, json, readSession);
     }
     if (path === '/api/clients') {
-      return handleClientsHttp(request, env, origin, { isAllowedOrigin });
+      return handleClientsHttp(request, env, origin, {
+        isAllowedOrigin,
+        loadPrivateAppointments,
+        listTenantIds: async (env2) => listTenantIds(env2, await firebaseAnonymousToken(env2)),
+      });
     }
     if (path === '/api/profile') {
       if (request.method === 'OPTIONS') {

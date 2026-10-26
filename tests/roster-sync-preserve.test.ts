@@ -458,6 +458,29 @@ describe("stale roster save", () => {
     expect(after.appointments.find((b: { id: string }) => b.id === OLD_ID)?.status).toBe("accepted");
   });
 
+  it("creates a client for a newly accepted booking and skips a pending one", async () => {
+    const env = envWith();
+    await persistTenantAppointments(env, "tok", TENANT, [
+      booking("BK-PEND0001", { status: "pending", clientEmail: "pending.person@example.com", clientName: "Pending Person" }),
+      booking("BK-YES000001", { status: "accepted", clientEmail: "yes.person@example.com", clientName: "Yes Person" }),
+      booking("BK-BLANK0001", { status: "", clientEmail: "blank.person@example.com", clientName: "Blank Person" }),
+    ]);
+    const doc = JSON.parse(env.AUTH_KV.store.get("privateClients:" + TENANT) || "{}");
+    const emails = (doc.clients || []).map((row: { email?: string }) => row.email);
+    expect(emails).toContain("yes.person@example.com");
+    expect(emails).toContain("blank.person@example.com");
+    expect(emails).not.toContain("pending.person@example.com");
+    const rosterRaw = env.AUTH_KV.store.get("privateAppts:" + TENANT) || "";
+    expect(rosterRaw).toContain("BK-PEND0001");
+    expect(rosterRaw).toContain("BK-YES000001");
+    await persistTenantAppointments(env, "tok", TENANT, [
+      booking("BK-YES000001", { status: "accepted", clientEmail: "yes.person@example.com", clientName: "Yes Person" }),
+    ]);
+    const again = JSON.parse(env.AUTH_KV.store.get("privateClients:" + TENANT) || "{}");
+    expect((again.clients || []).filter((row: { email?: string }) => row.email === "yes.person@example.com")).toHaveLength(1);
+    expect(env.AUTH_KV.store.get("privateAppts:" + TENANT)).toContain("BK-PEND0001");
+  });
+
   it("delete then save with the returned rosterRevision does not 409", async () => {
     const env = envWith();
     await seedOwnerAndOldBooking(env);

@@ -632,6 +632,9 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-hq-manage strong { col
 #tenantPortalSection.schedi-newdash .sd-timeline .sd-row.is-next {
     box-shadow: inset 3px 0 0 var(--sd-brand), var(--sd-shadow);
 }
+#tenantPortalSection.schedi-newdash .sd-past { margin-top: 18px; min-width: 0; }
+#tenantPortalSection.schedi-newdash .sd-past > h3 { margin: 0 0 4px; }
+#tenantPortalSection.schedi-newdash .sd-past .sd-timeline { border-left-color: rgba(148, 163, 184, 0.55); }
 #tenantPortalSection.schedi-newdash .sd-next-tag {
     flex: none;
     align-self: center;
@@ -6001,6 +6004,11 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                                     <button type="button" class="sd-btn sd-btn-brand sd-add-phone" data-dash-add-open="1" onclick="schediDashToggleAdd(event)"><i class="fa-solid fa-plus" aria-hidden="true"></i><span>Add appointment</span></button>
                                 </div>
                                 <div id="schediTodaySchedule" class="sd-timeline"><p class="sd-bookings-status" role="status">Loading bookings…</p></div>
+                                <div id="schediPastBlock" class="sd-past" hidden>
+                                    <h3 id="schediPastHeading">Past</h3>
+                                    <p id="schediPastCount" class="sd-next-line"></p>
+                                    <div id="schediPastSchedule" class="sd-timeline"></div>
+                                </div>
                             </section>
                             <section class="sd-ready" id="schediReady" aria-labelledby="schediSetupTitle">
                                 <div class="sd-ready-head">
@@ -8543,6 +8551,14 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                 var r = apptResults[i];
                 if (t && t.id) result.appointments[t.id] = r;
                 if (r && r.ok === false && !r.skipped && !syncFailed) syncFailed = r;
+                if (r && r.ok === true && t) {
+                    loadOwnerClients(t, true).then(function () {
+                        try {
+                            var section = document.getElementById('tenantPortalSection');
+                            if (section && section.getAttribute('data-dash') === 'clients') renderClientList();
+                        } catch (errClients) {}
+                    });
+                }
             });
             if (syncFailed) {
                 console.error('Error saving appointments:', syncFailed.error);
@@ -13923,10 +13939,13 @@ function schediQrCardPixels(text, color) {
 
         async function loadOwnerClients(tenant, force) {
             if (!tenant) return null;
-            var c = ownerClientCache[tenant.id] || (ownerClientCache[tenant.id] = { loaded: false, loading: null, clients: [], error: '' });
+            var c = ownerClientCache[tenant.id] || (ownerClientCache[tenant.id] = { loaded: false, loading: null, clients: [], error: '', ticket: 0 });
             if (c.loaded && !force) return c;
-            if (c.loading) return c.loading;
+            if (c.loading && !force) return c.loading;
+            var ticket = (c.ticket || 0) + 1;
+            c.ticket = ticket;
             c.loading = clientsApi({ action: 'list', tenantId: tenant.id }).then(function (data) {
+                if (c.ticket !== ticket) return c;
                 c.loading = null;
                 if (data && data.ok && Array.isArray(data.clients)) {
                     c.clients = data.clients;
@@ -16153,6 +16172,77 @@ function schediQrCardPixels(text, color) {
             return todayRows.concat(later);
         }
 
+        // Earlier visits stay on the book. Coming up only lists today and later, so Past is where a finished day remains visible.
+        function schediPastVisits(apps, today) {
+            var start = String(today || '');
+            return (apps || []).filter(function (app) {
+                if (!app || !start || schediWaitingRequest(app, start)) return false;
+                var date = String(app.date || '');
+                return !!date && date < start;
+            }).sort(function (a, b) { return schediSortVisits(b, a); });
+        }
+
+        function schediAgendaVisitHtml(tenant, app, today, opts) {
+            opts = opts || {};
+            var id = esc(jsArg(app.id));
+            var cardStatus = String(app.status || '').toLowerCase();
+            var acceptedCard = cardStatus !== 'pending' && cardStatus !== 'requested' && cardStatus !== '';
+            var showDate = opts.showDate === true || (app.date && today && String(app.date) !== String(today));
+            var dayNote = '';
+            if (showDate && app.date) {
+                var prettyDay = '';
+                try { prettyDay = rosterPrettyDate(app.date); } catch (errDay) { prettyDay = ''; }
+                dayNote = (prettyDay || app.date) + ' · ';
+            }
+            var payAction = !acceptedCard ? '' : (rosterPayMenuLabel(app) === 'Mark unpaid'
+                ? '<button type="button" role="menuitem" onclick="closeSchediTodayMenus(event); markAppointmentUnpaid(' + id + ')">Mark unpaid</button>'
+                : '<button type="button" class="sd-act-ok" role="menuitem" onclick="closeSchediTodayMenus(event); markAppointmentPaid(' + id + ')">Mark paid</button>');
+            var noShowAction = !acceptedCard ? '' : (appointmentIsNoShow(app)
+                ? '<button type="button" role="menuitem" onclick="closeSchediTodayMenus(event); undoAppointmentNoShow(' + id + ')"><i class="fa-solid fa-rotate-left mr-1" aria-hidden="true"></i>Undo no-show</button>'
+                : '<button type="button" role="menuitem" onclick="closeSchediTodayMenus(event); markAppointmentNoShow(' + id + ')">Mark no-show</button>');
+            var isNext = opts.next === true;
+            return '<article class="sd-card sd-row' + (isNext ? ' is-next' : '') + '">' +
+                '<div class="sd-time">' + esc(app.time || '') + '</div>' +
+                '<div class="sd-row-main"><div class="sd-row-head">' + (isNext ? '<span class="sd-next-tag">Next</span>' : '') + '<h4><span class="sd-row-title">' + esc(app.clientName || 'Client') + (app.walkIn ? ' · Walk-in' : '') + '</span></h4>' +
+                '<div class="sd-row-chips">' + appointmentStatusChipsHtml(app, { pendingLabel: 'New request' }) + '</div></div>' +
+                '<p class="sd-meta"><span class="sd-svc-line">' + serviceMarkHtml(tenant, app.serviceName) + '<span>' + esc(dayNote) + esc(app.serviceName || 'Appointment') + '</span></span></p></div>' +
+                '<details class="sd-more"><summary aria-label="More actions" aria-expanded="false"><i class="fa-solid fa-ellipsis-vertical" aria-hidden="true"></i></summary>' +
+                '<div class="sd-more-menu" role="menu">' +
+                payAction +
+                '<button type="button" class="sd-act-ok" role="menuitem" onclick="closeSchediTodayMenus(event); openTenantRescheduleModal(' + id + ')">Reschedule</button>' +
+                noShowAction +
+                '<button type="button" class="sd-act-no" role="menuitem" onclick="closeSchediTodayMenus(event); deleteAppointment(' + id + ')">Cancel</button>' +
+                '<button type="button" role="menuitem" onclick="closeSchediTodayMenus(event); openEditAppointment(' + id + ')">Edit</button>' +
+                '<button type="button" class="sd-act-no sd-act-delete" role="menuitem" onclick="closeSchediTodayMenus(event); openRosterDeleteModal(' + id + ')">Delete</button>' +
+                '</div></details></article>';
+        }
+
+        function schediHidePastAgenda() {
+            var pastBlock = document.getElementById('schediPastBlock');
+            var pastSchedule = document.getElementById('schediPastSchedule');
+            var pastCount = document.getElementById('schediPastCount');
+            if (pastBlock) pastBlock.hidden = true;
+            if (pastSchedule) pastSchedule.innerHTML = '';
+            if (pastCount) pastCount.textContent = '';
+        }
+
+        function schediPaintPastAgenda(tenant, apps, today) {
+            var pastBlock = document.getElementById('schediPastBlock');
+            var pastSchedule = document.getElementById('schediPastSchedule');
+            var pastCount = document.getElementById('schediPastCount');
+            if (!pastBlock || !pastSchedule) return;
+            var past = schediPastVisits(apps, today);
+            if (!past.length) {
+                schediHidePastAgenda();
+                return;
+            }
+            pastBlock.hidden = false;
+            if (pastCount) pastCount.textContent = past.length === 1 ? '1 earlier visit.' : (past.length + ' earlier visits.');
+            pastSchedule.innerHTML = past.map(function (app) {
+                return schediAgendaVisitHtml(tenant, app, today, { showDate: true });
+            }).join('');
+        }
+
         function schediAcceptableRequest(app, tenant) {
             var today = '';
             try { today = rosterTodayIso(tenant); } catch (errToday) { today = ''; }
@@ -16209,6 +16299,7 @@ function schediQrCardPixels(text, color) {
                 if (lead) lead.textContent = phase === 'error' ? 'Could not load bookings.' : 'Loading bookings…';
                 if (requests) requests.innerHTML = hold;
                 if (schedule) schedule.innerHTML = hold;
+                schediHidePastAgenda();
             } else {
             var nowMins = null;
             try { nowMins = schediNowMinutes(tenant); } catch (errClock) { nowMins = null; }
@@ -16261,32 +16352,10 @@ function schediQrCardPixels(text, color) {
             }
             if (schedule) {
                 schedule.innerHTML = coming.length ? coming.map(function (app, index) {
-                    var id = esc(jsArg(app.id));
-                    var cardStatus = String(app.status || '').toLowerCase();
-                    var acceptedCard = cardStatus !== 'pending' && cardStatus !== 'requested' && cardStatus !== '';
-                    var dayNote = (app.date && app.date !== today) ? ((rosterPrettyDate(app.date) || app.date) + ' · ') : '';
-                    var payAction = !acceptedCard ? '' : (rosterPayMenuLabel(app) === 'Mark unpaid'
-                        ? '<button type="button" role="menuitem" onclick="closeSchediTodayMenus(event); markAppointmentUnpaid(' + id + ')">Mark unpaid</button>'
-                        : '<button type="button" class="sd-act-ok" role="menuitem" onclick="closeSchediTodayMenus(event); markAppointmentPaid(' + id + ')">Mark paid</button>');
-                    var noShowAction = !acceptedCard ? '' : (appointmentIsNoShow(app)
-                        ? '<button type="button" role="menuitem" onclick="closeSchediTodayMenus(event); undoAppointmentNoShow(' + id + ')"><i class="fa-solid fa-rotate-left mr-1" aria-hidden="true"></i>Undo no-show</button>'
-                        : '<button type="button" role="menuitem" onclick="closeSchediTodayMenus(event); markAppointmentNoShow(' + id + ')">Mark no-show</button>');
-                    return '<article class="sd-card sd-row' + (index === 0 ? ' is-next' : '') + '">' +
-                        '<div class="sd-time">' + esc(app.time || '') + '</div>' +
-                        '<div class="sd-row-main"><div class="sd-row-head">' + (index === 0 ? '<span class="sd-next-tag">Next</span>' : '') + '<h4><span class="sd-row-title">' + esc(app.clientName || 'Client') + (app.walkIn ? ' · Walk-in' : '') + '</span></h4>' +
-                        '<div class="sd-row-chips">' + appointmentStatusChipsHtml(app, { pendingLabel: 'New request' }) + '</div></div>' +
-                        '<p class="sd-meta"><span class="sd-svc-line">' + serviceMarkHtml(tenant, app.serviceName) + '<span>' + esc(dayNote) + esc(app.serviceName || 'Appointment') + '</span></span></p></div>' +
-                        '<details class="sd-more"><summary aria-label="More actions" aria-expanded="false"><i class="fa-solid fa-ellipsis-vertical" aria-hidden="true"></i></summary>' +
-                        '<div class="sd-more-menu" role="menu">' +
-                        payAction +
-                        '<button type="button" class="sd-act-ok" role="menuitem" onclick="closeSchediTodayMenus(event); openTenantRescheduleModal(' + id + ')">Reschedule</button>' +
-                        noShowAction +
-                        '<button type="button" class="sd-act-no" role="menuitem" onclick="closeSchediTodayMenus(event); deleteAppointment(' + id + ')">Cancel</button>' +
-                        '<button type="button" role="menuitem" onclick="closeSchediTodayMenus(event); openEditAppointment(' + id + ')">Edit</button>' +
-                        '<button type="button" class="sd-act-no sd-act-delete" role="menuitem" onclick="closeSchediTodayMenus(event); openRosterDeleteModal(' + id + ')">Delete</button>' +
-                        '</div></details></article>';
+                    return schediAgendaVisitHtml(tenant, app, today, { next: index === 0 });
                 }).join('') : '<p class="sd-empty">The book is clear.</p>';
             }
+            schediPaintPastAgenda(tenant, apps, today);
             }
             var steps = schediSetupSteps(tenant);
             var done = steps.filter(function (step) { return step.done; }).length;
@@ -17429,7 +17498,10 @@ function schediQrCardPixels(text, color) {
             else if (tab === 'payments') renderTenantPayments(tenant);
             else if (tab === 'notifications') renderTenantNotifications(tenant);
             else if (tab === 'report') renderTenantReport(tenant);
-            else if (tab === 'clients') renderTenantClients(tenant);
+            else if (tab === 'clients') {
+                renderTenantClients(tenant);
+                if (tenant) loadOwnerClients(tenant, true).then(function () { renderTenantClients(tenant); });
+            }
         }
 
         var rosterCalendarView = 'list';

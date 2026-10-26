@@ -33,12 +33,14 @@ function agendaApi() {
      ${extractFunction(html, "schediWaitingRequest")}
      ${extractFunction(html, "schediSortVisits")}
      ${extractFunction(html, "schediComingVisits")}
+     ${extractFunction(html, "schediPastVisits")}
      ${extractFunction(html, "schediNextVisitLine")}
      ${extractFunction(html, "schediBookingsPhase")}
-     return { schediWaitingRequest, schediComingVisits, schediNextVisitLine, schediBookingsPhase };`,
+     return { schediWaitingRequest, schediComingVisits, schediPastVisits, schediNextVisitLine, schediBookingsPhase };`,
   )() as {
     schediWaitingRequest: (app: { status?: string; cancelled?: boolean; date?: string; time?: string; durationMins?: number } | null, today?: string, nowMins?: number) => boolean;
     schediComingVisits: (apps: { id: string; status?: string; date?: string; time?: string; clientName?: string; durationMins?: number }[], today: string, limit?: number, nowMins?: number) => { id: string }[];
+    schediPastVisits: (apps: { id: string; status?: string; date?: string; time?: string; clientName?: string }[], today: string) => { id: string }[];
     schediNextVisitLine: (app: { clientName?: string; date?: string; time?: string } | undefined, today: string) => string;
     schediBookingsPhase: (tenant: { _privateBookingsLoaded?: boolean } | null) => string;
   };
@@ -54,6 +56,9 @@ describe("booking load states", () => {
     expect(render).toContain("Loading bookings…");
     expect(render).toContain("schediBookingsErrorHtml()");
     expect(render).toContain("schediComingVisits(apps, today, null, nowMins)");
+    expect(render).toContain("schediPaintPastAgenda(tenant, apps, today)");
+    expect(render).toContain("schediHidePastAgenda()");
+    expect(html).toContain('id="schediPastHeading">Past<');
     const timeline = html.slice(html.indexOf("#tenantPortalSection.schedi-newdash .sd-timeline {"), html.indexOf("#tenantPortalSection.schedi-newdash .sd-timeline .sd-row.is-next"));
     expect(timeline).not.toContain("overflow");
     expect(timeline).not.toContain("max-height");
@@ -129,6 +134,19 @@ describe("booking load states", () => {
       { id: "eighth", status: "accepted", date: "2026-10-26", time: "09:00 AM", clientName: "Eighth" },
     ], "2026-10-20", undefined, noon);
     expect(visits.map((row) => row.id)).toEqual(["early", "blank", "today-pending", "soon", "later-blank", "later", "fifth", "sixth", "seventh", "eighth"]);
+    const past = api.schediPastVisits([
+      { id: "older", status: "accepted", date: "2026-10-01", time: "09:00 AM" },
+      { id: "newer", status: "accepted", date: "2026-10-19", time: "04:00 PM" },
+      { id: "blank", date: "2026-10-14", time: "09:00 AM" },
+      { id: "same-early", status: "accepted", date: "2026-10-19", time: "09:00 AM" },
+      { id: "pending", status: "pending", date: "2026-10-18", time: "09:00 AM" },
+      { id: "today", status: "accepted", date: "2026-10-20", time: "09:00 AM" },
+      { id: "later", status: "accepted", date: "2026-10-21", time: "09:00 AM" },
+    ], "2026-10-20");
+    expect(past.map((row) => row.id)).toEqual(["newer", "same-early", "blank", "older"]);
+    expect(past.map((row) => row.id)).not.toContain("pending");
+    expect(past.map((row) => row.id)).not.toContain("today");
+    expect(past.map((row) => row.id)).not.toContain("later");
     const capped = api.schediComingVisits([
       { id: "later", status: "accepted", date: "2026-10-22", time: "01:00 PM" },
       { id: "fifth", status: "accepted", date: "2026-10-23", time: "09:00 AM" },
@@ -236,14 +254,27 @@ describe.skipIf(!chrome)("booking load states in the browser", () => {
       const loaded = await page.evaluate(() => {
         const titles = Array.from(document.querySelectorAll("#schediTodaySchedule .sd-row-title")).map((el) => (el.textContent || "").trim());
         const waiting = document.getElementById("schediTodayRequests")?.textContent || "";
-        return { titles, waiting, lead: document.getElementById("schediNextLine")?.textContent || "" };
+        const past = document.getElementById("schediPastSchedule")?.textContent || "";
+        return {
+          titles,
+          waiting,
+          lead: document.getElementById("schediNextLine")?.textContent || "",
+          past,
+          pastHidden: document.getElementById("schediPastBlock")?.hidden === true,
+        };
       });
       expect(loaded.lead).toBe("Maya Chen is first, at 09:00 AM.");
       expect(loaded.titles[0]).toContain("Maya Chen");
       expect(loaded.titles).toContain("Jordan Lee · Walk-in");
       expect(loaded.titles.some((name) => name.includes("Noah Brooks"))).toBe(true);
+      expect(loaded.titles.some((name) => name.includes("Avery Kim"))).toBe(false);
       expect(loaded.waiting).toContain("Luis Ortega");
       expect(loaded.waiting).not.toContain("Maya Chen");
+      expect(loaded.pastHidden).toBe(false);
+      expect(loaded.past).toContain("Avery Kim");
+      expect(loaded.past).toContain("Sam Okonkwo");
+      expect(loaded.past).toContain("Casey Ng");
+      expect(loaded.past).toContain("Drew Patel");
 
       const planted = await page.evaluate(() => {
         const win = window as unknown as {
@@ -261,6 +292,7 @@ describe.skipIf(!chrome)("booking load states in the browser", () => {
         win.renderSchediToday(tenant);
         const waiting = document.getElementById("schediTodayRequests")?.textContent || "";
         const schedule = document.getElementById("schediTodaySchedule")?.textContent || "";
+        const pastText = document.getElementById("schediPastSchedule")?.textContent || "";
         const requestRow = Array.from(document.querySelectorAll("#schediTodayRequests .sd-request")).find((el) => (el.textContent || "").includes("Requested Client"));
         return {
           waiting: waiting.includes("No Status"),
@@ -268,6 +300,10 @@ describe.skipIf(!chrome)("booking load states in the browser", () => {
           pastWaiting: waiting.includes("Past Blank"),
           pastSchedule: schedule.includes("Past Blank"),
           pastPending: waiting.includes("Past Pending"),
+          pastSection: pastText.includes("Past Blank"),
+          pastPendingSection: pastText.includes("Past Pending"),
+          pastHeading: document.getElementById("schediPastHeading")?.textContent || "",
+          pastHidden: document.getElementById("schediPastBlock")?.hidden === true,
           laterWaiting: waiting.includes("Later Blank"),
           laterSchedule: schedule.includes("Later Blank"),
           requestedWaiting: waiting.includes("Requested Client"),
@@ -280,6 +316,10 @@ describe.skipIf(!chrome)("booking load states in the browser", () => {
       expect(planted.pastWaiting).toBe(false);
       expect(planted.pastSchedule).toBe(false);
       expect(planted.pastPending).toBe(true);
+      expect(planted.pastSection).toBe(true);
+      expect(planted.pastPendingSection).toBe(false);
+      expect(planted.pastHeading).toBe("Past");
+      expect(planted.pastHidden).toBe(false);
       expect(planted.laterWaiting).toBe(false);
       expect(planted.laterSchedule).toBe(true);
       expect(planted.requestedWaiting).toBe(true);
@@ -339,6 +379,8 @@ describe.skipIf(!chrome)("booking load states in the browser", () => {
         }).find((btn) => btn.shown) || null;
         return {
           agenda: text("schediNextLine") + text("schediTodayRequests") + text("schediTodaySchedule"),
+          pastHidden: document.getElementById("schediPastBlock")?.hidden === true,
+          pastText: text("schediPastSchedule"),
           calendar: text("rosterCalendarLabel") + text("rosterCalendarWrap"),
           table: text("tenantRosterTableBody"),
           retry,
@@ -354,6 +396,8 @@ describe.skipIf(!chrome)("booking load states in the browser", () => {
           await go("today");
           const loadingAgenda = await read();
           expect(loadingAgenda.agenda, `${width} ${theme} agenda`).toContain("Loading bookings…");
+          expect(loadingAgenda.pastHidden, `${width} ${theme} past`).toBe(true);
+          expect(loadingAgenda.pastText, `${width} ${theme} past`).toBe("");
           expect(loadingAgenda.agenda, `${width} ${theme} agenda`).not.toContain("Nothing is lined up yet");
           expect(loadingAgenda.agenda, `${width} ${theme} agenda`).not.toContain("The book is clear");
           expect(loadingAgenda.overflow, `${width} ${theme} agenda`).toBe(false);
@@ -390,6 +434,8 @@ describe.skipIf(!chrome)("booking load states in the browser", () => {
           const emptyAgenda = await read();
           expect(emptyAgenda.agenda, `${width} ${theme} empty`).toContain("Nothing is lined up yet");
           expect(emptyAgenda.agenda, `${width} ${theme} empty`).toContain("The book is clear");
+          expect(emptyAgenda.pastHidden, `${width} ${theme} empty past`).toBe(true);
+          expect(emptyAgenda.pastText, `${width} ${theme} empty past`).toBe("");
           expect(emptyAgenda.agenda, `${width} ${theme} empty`).not.toContain("Loading bookings…");
           await go("week");
           const emptyCalendar = await read();
