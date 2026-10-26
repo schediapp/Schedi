@@ -20,6 +20,13 @@
  * Bookings: upsertClientsFromBookings() is called server-side whenever bookings are saved
  * (private-bookings.js persistTenantAppointments) for bookings that just became accepted/confirmed,
  * and once by the clients backfill cron. Adds source:'booking' + firstBookingDate. Never contacts anyone.
+ *
+ * A booking that was already accepted when that cron finished is not retried on later saves.
+ * POST /api/clients { action:'backfill', dryRun } repairs those rows. It defaults to a dry run.
+ * Agency session plus Authorization: Bearer <MIGRATION_TOKEN>. It only adds missing client rows.
+ * It does not edit or delete bookings, and it does not overwrite an existing client's name, notes, or tags.
+ * Removing a client records that contact so a later backfill does not put the old visits back.
+ * A booking created after the removal still adds the client again.
  */
 import { readSession } from './owner-auth.js';
 import { rateLimitOk } from './rate-limit.js';
@@ -91,21 +98,96 @@ function randomId() {
   return 'cl_' + Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-export async function loadClients(env, tenantId) {
-  if (!env.AUTH_KV) return [];
+const MAX_REMOVED = 2000;
+
+function sanitizeRemoved(value) {
+  const list = Array.isArray(value) ? value : [];
+  const out = [];
+  for (const row of list) {
+    if (!row || typeof row !== 'object') continue;
+    const email = normEmail(row.email);
+    const phone = phoneKey(row.phone);
+    const at = clip(row.at, 30);
+    if ((!email && !phone) || !/^\d{4}-\d{2}-\d{2}T/.test(at)) continue;
+    out.push({ email, phone, at });
+    if (out.length >= MAX_REMOVED) break;
+  }
+  return out;
+}
+
+async function loadClientDoc(env, tenantId) {
+  if (!env || !env.AUTH_KV) return { clients: [], removed: [] };
   const raw = await env.AUTH_KV.get(PREFIX + tenantId);
-  if (!raw) return [];
+  if (!raw) return { clients: [], removed: [] };
   try {
     const data = JSON.parse(raw);
-    return Array.isArray(data && data.clients) ? data.clients : [];
+    return {
+      clients: Array.isArray(data && data.clients) ? data.clients : [],
+      removed: sanitizeRemoved(data && data.removed),
+    };
   } catch (_) {
-    return [];
+    return { clients: [], removed: [] };
   }
 }
 
-async function saveClients(env, tenantId, clients) {
+export async function loadClients(env, tenantId) {
+  const doc = await loadClientDoc(env, tenantId);
+  return doc.clients;
+}
+
+async function saveClients(env, tenantId, clients, removed) {
   if (!env.AUTH_KV) throw new Error('private_store_unavailable');
-  await env.AUTH_KV.put(PREFIX + tenantId, JSON.stringify({ clients: clients.slice(0, MAX_CLIENTS), updatedAt: new Date().toISOString() }));
+  let kept = removed;
+  if (kept === undefined) kept = (await loadClientDoc(env, tenantId)).removed;
+  await env.AUTH_KV.put(PREFIX + tenantId, JSON.stringify({
+    clients: clients.slice(0, MAX_CLIENTS),
+    removed: sanitizeRemoved(kept).slice(-MAX_REMOVED),
+    updatedAt: new Date().toISOString(),
+  }));
+}
+
+function rememberRemoval(removed, client, at) {
+  const email = normEmail(client && client.email);
+  const phone = phoneKey(client && client.phone);
+  const next = (removed || []).filter((row) => {
+    if (email && row.email === email) return false;
+    if (phone && row.phone === phone) return false;
+    return true;
+  });
+  if (email || phone) next.push({ email, phone, at: clip(at, 30) });
+  return sanitizeRemoved(next).slice(-MAX_REMOVED);
+}
+
+function forgetRemoval(removed, client) {
+  const email = normEmail(client && client.email);
+  const phone = phoneKey(client && client.phone);
+  return (removed || []).filter((row) => {
+    if (email && row.email === email) return false;
+    if (phone && row.phone === phone) return false;
+    return true;
+  });
+}
+
+function removalBlocks(removed, cand, booking) {
+  const pk = phoneKey(cand.phone);
+  let at = '';
+  for (const row of removed || []) {
+    const hit = (cand.email && row.email && row.email === cand.email) || (pk && row.phone && row.phone === pk);
+    if (hit && String(row.at || '') > at) at = String(row.at);
+  }
+  if (!at) return false;
+  const created = String(booking && booking.createdAt || '');
+  if (/^\d{4}-\d{2}-\d{2}T/.test(created) && created > at) return false;
+  return true;
+}
+
+function timingSafeEqualStr(a, b) {
+  const left = String(a || '');
+  const right = String(b || '');
+  let diff = left.length ^ right.length;
+  const n = Math.max(left.length, right.length);
+  for (let i = 0; i < n; i += 1) diff |= (left.charCodeAt(i) || 0) ^ (right.charCodeAt(i) || 0);
+  return diff === 0;
 }
 
 function clientForOwner(c) {
@@ -142,17 +224,21 @@ export function bookingMakesClient(b) {
  * Dedupe by normalized email or phone against saved clients (and within the batch).
  * Existing clients are never overwritten: only a blank email or phone is filled in, and only when
  * that value does not already belong to another saved client. Respects MAX_CLIENTS.
+ * options.respectRemoval: skip contacts the owner removed, unless the booking was created after that removal.
  * Returns { added, filled, skipped, capped, total }.
  */
-export async function upsertClientsFromBookings(env, tenantId, bookings) {
+export async function upsertClientsFromBookings(env, tenantId, bookings, options) {
   const id = clip(tenantId, 80);
   const out = { added: 0, filled: 0, skipped: 0, capped: 0, invalid: 0, total: 0 };
+  const respectRemoval = !!(options && options.respectRemoval);
   if (!id || !/^[A-Za-z0-9_-]{1,80}$/.test(id) || !env || !env.AUTH_KV) return out;
   const list = (Array.isArray(bookings) ? bookings : []).filter(bookingMakesClient);
   if (!list.length) return out;
   // Oldest first so firstBookingDate is the earliest visit and series collapse to one client.
   list.sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')) || String(a.time || '').localeCompare(String(b.time || '')));
-  const clients = await loadClients(env, id);
+  const doc = await loadClientDoc(env, id);
+  const clients = doc.clients;
+  const removed = doc.removed;
   const byEmail = new Map();
   const byPhone = new Map();
   for (const c of clients) {
@@ -177,6 +263,10 @@ export async function upsertClientsFromBookings(env, tenantId, bookings) {
     if (!cand) { out.invalid += 1; continue; }
     const pk = phoneKey(cand.phone);
     const match = (cand.email && byEmail.get(cand.email)) || (pk && byPhone.get(pk)) || null;
+    if (!match && respectRemoval && removalBlocks(removed, cand, b)) {
+      out.skipped += 1;
+      continue;
+    }
     if (match) {
       out.skipped += 1;
       if (!match.email && cand.email && !byEmail.has(cand.email)) {
@@ -213,7 +303,7 @@ export async function upsertClientsFromBookings(env, tenantId, bookings) {
     changed = true;
   }
   out.total = clients.length;
-  if (changed) await saveClients(env, id, clients);
+  if (changed && !(options && options.dryRun)) await saveClients(env, id, clients, removed);
   return out;
 }
 
@@ -239,7 +329,7 @@ export async function runClientsBackfillOnce(env, deps) {
       const eligible = appts.filter(bookingMakesClient).length;
       let r = { added: 0, filled: 0, skipped: 0, capped: 0, invalid: 0, total: 0 };
       let error = '';
-      try { r = await upsertClientsFromBookings(env, t.id, appts); } catch (err) { error = String(err && err.message || err).slice(0, 80); }
+      try { r = await upsertClientsFromBookings(env, t.id, appts, { respectRemoval: true }); } catch (err) { error = String(err && err.message || err).slice(0, 80); }
       let totalClients = r.total;
       try { totalClients = (await loadClients(env, clip(t.id, 80))).length; } catch (_) {}
       results.push({ tenantId: clip(t.id, 80), slug: clip(t.slug, 60), bookings: appts.length, eligible, added: r.added, filled: r.filled, alreadySaved: r.skipped, capped: r.capped, invalid: r.invalid, totalClients, error });
@@ -258,6 +348,76 @@ export async function runClientsBackfillOnce(env, deps) {
     await env.AUTH_KV.delete(BACKFILL_KEY).catch(() => {});
     throw err;
   }
+}
+
+function countBackfill(rows, key) {
+  return rows.reduce((n, row) => n + (Number(row[key]) || 0), 0);
+}
+
+/**
+ * Repair missing client rows from the private booking roster.
+ * dryRun defaults to true and writes nothing. A real run only adds clients (and may fill a blank
+ * email or phone). Bookings are read, never written. The result is counts only: no names, emails, or phones.
+ * Removed clients stay removed unless that booking was created after the removal.
+ */
+export async function backfillClientsFromBookings(env, deps, options) {
+  const dryRun = !options || options.dryRun !== false;
+  const only = clip(options && options.tenantId, 80);
+  if (only && !/^[A-Za-z0-9_-]{1,80}$/.test(only)) return { ok: false, error: 'invalid_tenant' };
+  if (!env || !env.AUTH_KV) return { ok: false, error: 'private_store_unavailable' };
+  if (!deps || typeof deps.loadPrivateAppointments !== 'function') return { ok: false, error: 'backfill_unavailable' };
+  let ids = [];
+  if (only) ids = [only];
+  else {
+    if (typeof deps.listTenantIds !== 'function') return { ok: false, error: 'backfill_unavailable' };
+    try { ids = await deps.listTenantIds(env); } catch (_) { return { ok: false, error: 'tenant_list_failed' }; }
+  }
+  const results = [];
+  for (const tenantId of ids || []) {
+    const id = clip(tenantId, 80);
+    if (!/^[A-Za-z0-9_-]{1,80}$/.test(id)) continue;
+    let appts = [];
+    try {
+      appts = await deps.loadPrivateAppointments(env, id);
+    } catch (_) {
+      results.push({ tenantId: id, error: 'roster_unavailable', bookings: 0, eligible: 0, added: 0, filled: 0, skipped: 0, capped: 0, invalid: 0, totalClients: 0 });
+      continue;
+    }
+    const list = Array.isArray(appts) ? appts : [];
+    const eligible = list.filter(bookingMakesClient).length;
+    let r = { added: 0, filled: 0, skipped: 0, capped: 0, invalid: 0, total: 0 };
+    let error = '';
+    try {
+      r = await upsertClientsFromBookings(env, id, list, { respectRemoval: true, dryRun });
+    } catch (_) {
+      error = 'upsert_failed';
+    }
+    let totalClients = 0;
+    try { totalClients = (await loadClients(env, id)).length; } catch (_) { totalClients = 0; }
+    const row = {
+      tenantId: id,
+      bookings: list.length,
+      eligible,
+      added: r.added,
+      filled: r.filled,
+      skipped: r.skipped,
+      capped: r.capped,
+      invalid: r.invalid,
+      totalClients,
+    };
+    if (error) row.error = error;
+    results.push(row);
+  }
+  return {
+    ok: true,
+    dryRun,
+    bookingsUntouched: true,
+    tenants: results.length,
+    added: countBackfill(results, 'added'),
+    filled: countBackfill(results, 'filled'),
+    skipped: countBackfill(results, 'skipped'),
+    results,
+  };
 }
 
 function dedupeIndex(clients) {
@@ -283,6 +443,34 @@ function rememberClient(idx, client) {
   if (client.email) idx.emails.add(client.email);
   const pk = phoneKey(client.phone);
   if (pk) idx.phones.add(pk);
+}
+
+async function handleClientsBackfill(request, env, origin, isAllowedOrigin, body, deps) {
+  const session = await readSession(env, body && body.session);
+  if (!session) return respond({ ok: false, error: 'session_required' }, 401, origin, isAllowedOrigin);
+  if (session.role !== 'agency') return respond({ ok: false, error: 'forbidden' }, 403, origin, isAllowedOrigin);
+  const expected = String(env.MIGRATION_TOKEN || '').trim();
+  const header = String(request.headers.get('Authorization') || '');
+  const given = header.startsWith('Bearer ') ? header.slice(7).trim() : '';
+  if (!expected || expected.length < 32 || !given || !timingSafeEqualStr(given, expected)) {
+    return respond({ ok: false, error: 'unauthorized' }, 401, origin, isAllowedOrigin);
+  }
+  if (!(await rateLimitOk(env.RL_CLIENTS, 'backfill', 12, 'clients-backfill'))) {
+    return respond({ ok: false, error: 'rate_limited' }, 429, origin, isAllowedOrigin);
+  }
+  const tenantId = clip(body && body.tenantId, 80);
+  if (tenantId && !/^[A-Za-z0-9_-]{1,80}$/.test(tenantId)) {
+    return respond({ ok: false, error: 'invalid_tenant' }, 400, origin, isAllowedOrigin);
+  }
+  try {
+    const result = await backfillClientsFromBookings(env, deps, {
+      dryRun: !body || body.dryRun !== false,
+      tenantId,
+    });
+    return respond(result, result.ok ? 200 : 500, origin, isAllowedOrigin);
+  } catch (_) {
+    return respond({ ok: false, error: 'backfill_failed' }, 500, origin, isAllowedOrigin);
+  }
 }
 
 async function sessionForTenant(env, token, tenantId) {
@@ -330,6 +518,7 @@ export async function handleClientsHttp(request, env, origin, deps) {
   let body = {};
   try { body = JSON.parse(text || '{}'); } catch (_) { body = {}; }
   const action = clip(body.action, 20);
+  if (action === 'backfill') return handleClientsBackfill(request, env, origin, isAllowedOrigin, body, deps);
   const tenantId = clip(body.tenantId, 80);
   if (!/^[A-Za-z0-9_-]{1,80}$/.test(tenantId)) return respond({ ok: false, error: 'invalid_tenant' }, 400, origin, isAllowedOrigin);
 
@@ -349,7 +538,9 @@ export async function handleClientsHttp(request, env, origin, deps) {
     const rows = action === 'add' ? [Object.assign({ row: 1 }, body.client || {})] : (Array.isArray(body.rows) ? body.rows : []);
     if (!rows.length) return respond({ ok: false, error: 'no_rows' }, 400, origin, isAllowedOrigin);
     if (rows.length > MAX_IMPORT_ROWS) return respond({ ok: false, error: 'too_many_rows', max: MAX_IMPORT_ROWS }, 400, origin, isAllowedOrigin);
-    const existing = await loadClients(env, tenantId);
+    const doc = await loadClientDoc(env, tenantId);
+    const existing = doc.clients;
+    let removed = doc.removed;
     const idx = dedupeIndex(existing);
     const added = [];
     const skipped = [];
@@ -366,8 +557,9 @@ export async function handleClientsHttp(request, env, origin, deps) {
       const client = Object.assign({ id: randomId(), source: action === 'import' ? 'csv' : 'manual', createdAt: now }, res.client);
       rememberClient(idx, client);
       added.push(client);
+      removed = forgetRemoval(removed, client);
     }
-    if (added.length) await saveClients(env, tenantId, existing.concat(added));
+    if (added.length) await saveClients(env, tenantId, existing.concat(added), removed);
     if (action === 'add') {
       if (added.length) return respond({ ok: true, client: clientForOwner(added[0]) }, 200, origin, isAllowedOrigin);
       const why = (skipped[0] && skipped[0].reason) || (errors[0] && errors[0].reason) || 'invalid_row';
@@ -388,10 +580,12 @@ export async function handleClientsHttp(request, env, origin, deps) {
       return respond({ ok: false, error: 'rate_limited' }, 429, origin, isAllowedOrigin);
     }
     const clientId = clip(body.clientId, 40);
-    const existing = await loadClients(env, tenantId);
+    const doc = await loadClientDoc(env, tenantId);
+    const existing = doc.clients;
+    const current = existing.find((c) => c && String(c.id) === clientId);
     const next = existing.filter((c) => !(c && String(c.id) === clientId));
-    if (next.length === existing.length) return respond({ ok: false, error: 'not_found' }, 404, origin, isAllowedOrigin);
-    await saveClients(env, tenantId, next);
+    if (!current || next.length === existing.length) return respond({ ok: false, error: 'not_found' }, 404, origin, isAllowedOrigin);
+    await saveClients(env, tenantId, next, rememberRemoval(doc.removed, current, new Date().toISOString()));
     return respond({ ok: true, deleted: clientId, count: next.length }, 200, origin, isAllowedOrigin);
   }
 
@@ -401,7 +595,8 @@ export async function handleClientsHttp(request, env, origin, deps) {
     }
     const clientId = clip(body.clientId, 40);
     if (!clientId) return respond({ ok: false, error: 'not_found' }, 404, origin, isAllowedOrigin);
-    const existing = await loadClients(env, tenantId);
+    const doc = await loadClientDoc(env, tenantId);
+    const existing = doc.clients;
     const current = existing.find((c) => c && String(c.id) === clientId);
     if (!current) return respond({ ok: false, error: 'not_found' }, 404, origin, isAllowedOrigin);
     const res = sanitizeClientInput(body.client || {});
@@ -421,7 +616,7 @@ export async function handleClientsHttp(request, env, origin, deps) {
       createdAt: clip(current.createdAt, 30),
     };
     const next = existing.map((c) => (c && String(c.id) === clientId ? updated : c));
-    await saveClients(env, tenantId, next);
+    await saveClients(env, tenantId, next, forgetRemoval(doc.removed, updated));
     return respond({ ok: true, client: clientForOwner(updated) }, 200, origin, isAllowedOrigin);
   }
 
