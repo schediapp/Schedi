@@ -16,6 +16,8 @@
  * Allowed client fields are name, email, phone, notes, and tags. Anything else on the
  * payload is dropped. Updating a client does not rewrite bookings or the roster.
  * Visits already on the calendar keep the name, email, and phone stored on each booking.
+ * notes is the owner's private note about the client (max 2000). It stays on this KV
+ * record. It is not copied onto bookings, public tenant docs, booking pages, or email.
  *
  * Bookings: upsertClientsFromBookings() is called server-side whenever bookings are saved
  * (private-bookings.js persistTenantAppointments) for bookings that just became accepted/confirmed,
@@ -50,6 +52,16 @@ export function phoneKey(value) {
 }
 
 const MAX_CLIENT_TAGS = 12;
+export const MAX_CLIENT_NOTES = 2000;
+
+/** Owner notes keep line breaks. Other control characters are stripped. */
+export function cleanNotes(value, max = MAX_CLIENT_NOTES) {
+  let text = String(value == null ? '' : value).replace(/\r\n?/g, '\n');
+  text = text.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]+/g, ' ');
+  text = text.split('\n').map((line) => line.replace(/[ \t]+/g, ' ').trim()).join('\n');
+  text = text.replace(/\n{3,}/g, '\n\n').trim();
+  return text.slice(0, max);
+}
 
 export function sanitizeClientTags(value) {
   const list = Array.isArray(value) ? value : (typeof value === 'string' ? value.split(/[,;\n]/) : []);
@@ -75,7 +87,7 @@ export function sanitizeClientInput(raw) {
   const email = normEmail(raw.email);
   const phoneRaw = cleanText(raw.phone, 40);
   const pk = phoneKey(phoneRaw);
-  const notes = cleanText(raw.notes, 500);
+  const notes = cleanNotes(raw.notes, MAX_CLIENT_NOTES);
   const tags = sanitizeClientTags(raw.tags);
   if (!name && !email && !phoneRaw) return { error: 'empty_row' };
   if (!name) return { error: 'missing_name' };
@@ -114,7 +126,7 @@ function clientForOwner(c) {
     name: clip(c.name, 120),
     email: clip(c.email, 254),
     phone: clip(c.phone, 40),
-    notes: clip(c.notes, 500),
+    notes: cleanNotes(c.notes, MAX_CLIENT_NOTES),
     tags: sanitizeClientTags(c.tags),
     source: clip(c.source, 10),
     firstBookingDate: clip(c.firstBookingDate, 10),

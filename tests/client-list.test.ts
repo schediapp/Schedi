@@ -79,7 +79,7 @@ const api = new Function(`${lib}
     options: Record<string, unknown>,
   ) => Array<{ name: string; stats: Stats }>;
   clientListStats: (client: Record<string, unknown>, appointments: Record<string, unknown>[], options: Record<string, unknown>) => Stats;
-  clientListCsv: (rows: Array<{ name?: string; email?: string; phone?: string; stats?: Stats }>) => string;
+  clientListCsv: (rows: Array<{ name?: string; email?: string; phone?: string; notes?: string; stats?: Stats }>) => string;
   clientListDirLabel: (sort: string, dir: string) => string;
   clientListDefaultDir: (sort: string) => string;
   clientIsWalkIn: (client: Record<string, unknown> | null, appointments: Record<string, unknown>[]) => boolean;
@@ -205,7 +205,7 @@ describe("client list sorting and totals", () => {
     const rows = api.clientListArrange(clients, appointments, { ...stubOptions, sort: "name", dir: "asc", walkOnly: true });
     const csv = api.clientListCsv(rows);
     const lines = csv.split("\n");
-    expect(lines[0]).toBe("name,email,phone,visits,total_paid,payment_methods,most_used_method,walk_in,first_visit,last_visit");
+    expect(lines[0]).toBe("name,email,phone,visits,total_paid,payment_methods,most_used_method,walk_in,first_visit,last_visit,notes");
     expect(lines).toHaveLength(3);
     expect(lines[1].startsWith("Bea,bea@example.com,5552222222,3,5.00,")).toBe(true);
     expect(lines[1]).toContain("Venmo; Pay at appt,Venmo,yes,2026-07-01,2026-10-04");
@@ -213,10 +213,15 @@ describe("client list sorting and totals", () => {
     const quoted = api.clientListCsv(api.clientListArrange([dee], [], { ...stubOptions, sort: "name", dir: "asc" }));
     expect(quoted).toContain('"dee, ""quoted""",dee@example.com,5554444444,0,,');
     expect(quoted).toContain(",no,,");
+    expect(quoted.trim().endsWith(",quoted note")).toBe(true);
     const injected = api.clientListCsv([
       { name: "=cmd", email: "+ada@example.com", phone: "+15551212", stats: { visits: 1, paid: 0, paidKnown: true, method: "venmo", methodLabel: "@venmo", methods: ["cash"], methodLabels: ["-cash"], walkIn: false, firstVisit: "", lastVisit: "" } },
     ]);
     expect(injected).toContain("'=cmd,'+ada@example.com,'+15551212,1,0.00,'-cash,'@venmo,no,,");
+    const noted = api.clientListCsv([
+      { name: "Ann", email: "ann@example.com", phone: "5551212", notes: "=secret\n<script>", stats: { visits: 0, paid: 0, paidKnown: false, method: "", methodLabel: "", methods: [], methodLabels: [], walkIn: false, firstVisit: "", lastVisit: "" } },
+    ]);
+    expect(noted).toContain("\"'=secret\n<script>\"");
   });
 
   it("uses the reports done rule and the roster net-paid total", () => {
