@@ -218,7 +218,13 @@ describe.skipIf(!chrome)("booking document browser", () => {
     try {
       const live = fillBookingDocument(bookingHtml, {
         slug: "bright-cuts",
-        fields: fixture({ subscriptionStatus: "active" }),
+        fields: fixture({
+          subscriptionStatus: "active",
+          services: [
+            { id: 1, name: "Cut & style", duration: "45 mins", durationMins: 45, price: 65, icon: "fa-scissors", desc: "Cut, style, and finish. <b>Bold</b>" },
+            { id: 2, name: "Beard trim", duration: "20 mins", durationMins: 20, price: 28, icon: "fa-user", desc: "   " },
+          ],
+        }),
       });
       pages.set("/bright-cuts", live);
       const opened = await open("/bright-cuts");
@@ -231,6 +237,17 @@ describe.skipIf(!chrome)("booking document browser", () => {
           && !!days && (days.textContent || "").includes("1");
       }, { timeout: 10000 });
       expect(opened.errors, opened.errors.join("\n")).toEqual([]);
+      const serviceHtml = await opened.page.$eval("#serviceListContainer", (el) => el.innerHTML);
+      expect(serviceHtml).toContain("Cut, style, and finish. &lt;b&gt;Bold&lt;/b&gt;");
+      expect(serviceHtml).not.toContain("<b>Bold</b>");
+      const cards = await opened.page.$$eval("#serviceListContainer > div", (nodes) => nodes.map((node) => ({
+        text: node.textContent || "",
+        html: node.innerHTML,
+      })));
+      const cut = cards.find((card) => card.text.includes("Cut & style"));
+      const beard = cards.find((card) => card.text.includes("Beard trim"));
+      expect(cut?.html).toContain('class="svc-desc');
+      expect(beard?.html || "").not.toContain("svc-desc");
 
       const paused = fillBookingDocument(bookingHtml, {
         slug: "bright-cuts",
