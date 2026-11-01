@@ -115,15 +115,17 @@ describe("owner dashboard voice", () => {
     expect(steps).toContain("{ label: 'Show your logo on the page', done: logo, page: 'profile' }");
     expect(steps).toContain("page: 'appointments'");
 
+    const agenda = extractFunction(html, "schediAgendaVisitHtml");
+    expect(agenda).toContain("is-next");
+    expect(agenda).toContain("sd-next-tag");
+    expect(agenda).toContain(">Edit</button>");
+    expect(agenda).toContain("markAppointmentPaid");
+    expect(agenda).toContain("markAppointmentNoShow");
+    expect(agenda.indexOf("details class=\"sd-more\"")).toBeLessThan(agenda.indexOf(">Edit</button>"));
     const render = extractFunction(html, "renderSchediToday");
-    expect(render).toContain("is-next");
-    expect(render).toContain("sd-next-tag");
-    expect(render).toContain(">Edit</button>");
-    expect(render).toContain("markAppointmentPaid");
-    expect(render).toContain("markAppointmentNoShow");
+    expect(render).toContain("schediAgendaVisitHtml");
     expect(render).toContain(">Decline</button>");
     expect(render).toContain(">Accept</button>");
-    expect(render.indexOf("details class=\"sd-more\"")).toBeLessThan(render.indexOf(">Edit</button>"));
     expect(render).toContain("Get your page ready");
     expect(render).toContain("ready.hidden = done === steps.length");
     expect(render).not.toContain("Finish setting up");

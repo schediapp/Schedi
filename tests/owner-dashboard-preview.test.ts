@@ -1220,7 +1220,7 @@ describe("owner dashboard preview", () => {
     const remove = actions.slice(actions.indexOf("openRosterDeleteModal"));
     expect(remove).not.toContain("rose");
     expect(actions).toContain("bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400");
-    const today = extractFunction(html, "renderSchediToday");
+    const today = extractFunction(html, "schediAgendaVisitHtml");
     expect(today).toContain('class="sd-act-ok" role="menuitem" onclick="closeSchediTodayMenus(event); markAppointmentPaid(');
     expect(today).toContain('role="menuitem" onclick="closeSchediTodayMenus(event); markAppointmentUnpaid(');
     expect(today).toContain('class="sd-act-ok" role="menuitem" onclick="closeSchediTodayMenus(event); openTenantRescheduleModal(');
@@ -1426,7 +1426,7 @@ describe("owner dashboard preview", () => {
     expect(modal).toContain("sd-form-scroll");
     expect(modal).not.toContain("text-slate-400 hover:text-white");
     expect(modal).not.toContain("w-3.5 h-3.5");
-    const today = extractFunction(html, "renderSchediToday");
+    const today = extractFunction(html, "schediAgendaVisitHtml");
     const actions = extractFunction(html, "rosterActionsHtml");
     expect(today).toContain("openTenantRescheduleModal(");
     expect(actions).toContain("btn('openTenantRescheduleModal', 'sd-act sd-act-ok', '<i class=\"fa-solid fa-calendar-days mr-1\"></i>Reschedule')");
@@ -1538,7 +1538,7 @@ describe("owner dashboard preview", () => {
     expect(source.indexOf("appointmentRequestChipHtml")).toBeLessThan(source.indexOf("appointmentOutcomeChipHtml"));
     expect(source.indexOf("appointmentOutcomeChipHtml")).toBeLessThan(source.indexOf("appointmentPayMarkup"));
     expect(source.indexOf("appointmentPayMarkup")).toBeLessThan(source.indexOf("appointmentStatusPriceHtml"));
-    expect(extractFunction(html, "renderSchediToday")).toContain("pendingLabel: 'New request'");
+    expect(extractFunction(html, "schediAgendaVisitHtml")).toContain("pendingLabel: 'New request'");
     expect(extractFunction(html, "clientHistoryGroupHtml")).toContain("appointmentStatusChipsHtml");
     expect(extractFunction(html, "renderRosterSearchResults")).toContain("appointmentStatusChipsHtml");
     expect(extractFunction(html, "rosterStatusCellHtml").indexOf("appointmentStatusChipsHtml")).toBeLessThan(extractFunction(html, "rosterStatusCellHtml").indexOf("depositRosterLine"));
@@ -1556,7 +1556,7 @@ describe("owner dashboard preview", () => {
     expect(css).toContain("html.schedi-light body.schedi-newdash #rosterApptModal .text-rose-400 { color: #be123c !important; }");
     expect(css).toContain("html.schedi-light #tenantPortalSection.schedi-newdash .sd-pill-amber,");
     expect(css).toContain("html.schedi-light body.schedi-newdash #rosterApptModal .sd-pill-amber { color: #92400e !important; }");
-    const today = extractFunction(html, "renderSchediToday");
+    const today = extractFunction(html, "schediAgendaVisitHtml");
     expect(today).toContain('class="sd-row-head"');
     expect(today).toContain('class="sd-row-chips"');
     expect(css).toContain('grid-template-areas: "time side more" "main main main";');
@@ -2060,9 +2060,9 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
         w.setRosterPayFilter("all");
         const list = document.querySelector('[data-booking-id="HB-1003"] .roster-cell-pay')?.textContent || "";
         w.setRosterCalendarView("week");
-        const weekJordan = [...document.querySelectorAll("#rosterCalendarWrap .roster-appt")].find((node) => node.textContent?.includes("Jordan"));
+        const weekJordan = document.querySelector('#rosterCalendarWrap .roster-appt[onclick*="HB-1003"]');
         w.setRosterCalendarView("month");
-        const monthJordan = [...document.querySelectorAll("#rosterCalendarWrap .roster-month-day")].find((node) => node.textContent?.includes("Jordan"));
+        const monthJordan = document.querySelector('#rosterCalendarWrap button[onclick*="HB-1003"]')?.closest(".roster-month-day");
         w.schediDashGo("clients");
         for (let i = 0; i < 20 && !document.getElementById("clientListBody")?.textContent?.includes("Jordan"); i++) {
           await new Promise((resolve) => setTimeout(resolve, 25));

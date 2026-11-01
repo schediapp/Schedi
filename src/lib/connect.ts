@@ -203,6 +203,102 @@ async function parkMissingAccount(
   return saved;
 }
 
+export interface ForceParkMissingAccountInput {
+  slug?: string | null;
+  businessId?: string | null;
+}
+
+export interface ForceParkMissingAccountResult {
+  ok: true;
+  parked: boolean;
+  alreadyCleared: boolean;
+  published: boolean;
+  slug: string;
+  businessId: string;
+  stripeAccountIdMissing: string | null;
+}
+
+function lookupForceParkBusiness(store: Store, input: ForceParkMissingAccountInput): Business {
+  const slug = String(input.slug || "").trim().toLowerCase();
+  const businessId = String(input.businessId || "").trim();
+  if (!slug && !businessId) {
+    throw new SchediError("A business slug or id is required.", 400);
+  }
+  if (businessId) {
+    const business = store.getBusiness(businessId);
+    if (slug && business.slug !== slug) {
+      throw new SchediError("Business slug and id do not match.", 400);
+    }
+    return business;
+  }
+  const bySlug = store.getBusinessBySlug(slug);
+  if (!bySlug) throw new SchediError("Business not found.", 404);
+  return bySlug;
+}
+
+/**
+ * Admin force-park. Skips the live-platform key gate and the hour confirmation
+ * timer. Restricted live keys can omit `livemode`, which makes that gate fail
+ * closed and leaves a deleted connected account in place. This path still
+ * retrieves the account and parks only when Stripe reports that id is missing.
+ */
+export async function forceParkMissingConnectedAccount(
+  store: Store,
+  stripe: Stripe,
+  input: ForceParkMissingAccountInput,
+  publish: typeof publishStripeConnectReady = publishStripeConnectReady,
+): Promise<ForceParkMissingAccountResult> {
+  const business = lookupForceParkBusiness(store, input);
+  const accountId = String(business.stripeAccountId || "").trim();
+  if (!accountId) {
+    return {
+      ok: true,
+      parked: false,
+      alreadyCleared: true,
+      published: false,
+      slug: business.slug,
+      businessId: business.id,
+      stripeAccountIdMissing: business.stripeAccountIdMissing ?? null,
+    };
+  }
+
+  try {
+    await stripe.v2.core.accounts.retrieve(accountId, {
+      include: ["configuration.merchant"],
+    });
+  } catch (error) {
+    if (!missingConnectedAccount(error, accountId)) {
+      const detail = error instanceof Error ? error.message.slice(0, 200) : "stripe_lookup_failed";
+      throw new SchediError(`Could not confirm the connected account is missing: ${detail}`, 502);
+    }
+    const saved = store.parkMissingStripeAccount(business.id);
+    if (saved.stripeAccountId) {
+      throw new SchediError("Could not park the connected account.", 500);
+    }
+    let published = false;
+    try {
+      await publish(saved.slug, false, "not_started");
+      published = true;
+    } catch (publishError) {
+      console.error(
+        "Could not publish stripeConnectReady:",
+        publishError instanceof Error ? publishError.message : "unknown error",
+      );
+    }
+    return {
+      ok: true,
+      parked: true,
+      alreadyCleared: false,
+      published,
+      slug: saved.slug,
+      businessId: saved.id,
+      stripeAccountIdMissing: saved.stripeAccountIdMissing ?? accountId,
+    };
+  }
+
+  throw new SchediError("Connected account still exists. Refusing to park.", 409);
+}
+
 export async function refreshMerchantCapabilities(
   store: Store,
   stripe: Stripe,
