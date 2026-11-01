@@ -6372,11 +6372,28 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                                 <label for="tenantIndustry" class="block text-xs font-semibold text-slate-300 mb-1">Industry preset</label>
                                 <select id="tenantIndustry" onchange="schediPhiAckToggle('tenant')" class="w-full px-3 py-2 rounded-xl glass-input text-xs">
                                     <option value="Services">Services</option>
-                                    <option value="Consulting">Consulting / Executive</option>
-                                    <option value="Barbershop">Barbershop &amp; Beauty</option>
-                                    <option value="Medical">Medical / Healthcare</option>
-                                    <option value="Auto">Auto Detailing &amp; Care</option>
+                                    <option value="Barbershop">Barbershop / Hair salon</option>
+                                    <option value="Nail salon">Nail salon</option>
+                                    <option value="Lash / brow">Lash / brow</option>
+                                    <option value="Spa / massage">Spa / massage</option>
+                                    <option value="Esthetician">Esthetician</option>
+                                    <option value="Tattoo / piercing">Tattoo / piercing</option>
+                                    <option value="Makeup artist">Makeup artist</option>
+                                    <option value="Personal trainer">Personal trainer</option>
+                                    <option value="Yoga / pilates">Yoga / pilates</option>
                                     <option value="Fitness">Fitness &amp; Personal Training</option>
+                                    <option value="Pet grooming">Pet grooming</option>
+                                    <option value="Dog training">Dog training</option>
+                                    <option value="Auto">Auto detailing</option>
+                                    <option value="Mobile car wash">Mobile car wash</option>
+                                    <option value="House cleaning">House cleaning</option>
+                                    <option value="Photography">Photography</option>
+                                    <option value="Tutoring">Tutoring</option>
+                                    <option value="Music lessons">Music lessons</option>
+                                    <option value="Coaching">Coaching</option>
+                                    <option value="Consulting">Consulting / Executive</option>
+                                    <option value="Event / party rentals">Event / party rentals</option>
+                                    <option value="Medical">Medical / Healthcare</option>
                                 </select>
                                 <label id="tenantPhiAckWrap" class="hidden mt-2 flex items-start gap-2 text-slate-300" for="tenantPhiAck">
                                     <input type="checkbox" id="tenantPhiAck" class="mt-0.5 w-4 h-4 accent-brand-500 rounded">
@@ -7064,11 +7081,28 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                     <label class="block font-semibold text-slate-300 mb-1" for="signupIndustry">Industry</label>
                     <select id="signupIndustry" onchange="schediPhiAckToggle('signup')" class="w-full px-3 py-2 rounded-xl glass-input">
                         <option value="Services">Services</option>
-                        <option value="Consulting">Consulting / Executive</option>
-                        <option value="Barbershop">Barbershop &amp; Beauty</option>
-                        <option value="Medical">Medical / Healthcare</option>
-                        <option value="Auto">Auto Detailing &amp; Care</option>
+                        <option value="Barbershop">Barbershop / Hair salon</option>
+                        <option value="Nail salon">Nail salon</option>
+                        <option value="Lash / brow">Lash / brow</option>
+                        <option value="Spa / massage">Spa / massage</option>
+                        <option value="Esthetician">Esthetician</option>
+                        <option value="Tattoo / piercing">Tattoo / piercing</option>
+                        <option value="Makeup artist">Makeup artist</option>
+                        <option value="Personal trainer">Personal trainer</option>
+                        <option value="Yoga / pilates">Yoga / pilates</option>
                         <option value="Fitness">Fitness &amp; Personal Training</option>
+                        <option value="Pet grooming">Pet grooming</option>
+                        <option value="Dog training">Dog training</option>
+                        <option value="Auto">Auto detailing</option>
+                        <option value="Mobile car wash">Mobile car wash</option>
+                        <option value="House cleaning">House cleaning</option>
+                        <option value="Photography">Photography</option>
+                        <option value="Tutoring">Tutoring</option>
+                        <option value="Music lessons">Music lessons</option>
+                        <option value="Coaching">Coaching</option>
+                        <option value="Consulting">Consulting / Executive</option>
+                        <option value="Event / party rentals">Event / party rentals</option>
+                        <option value="Medical">Medical / Healthcare</option>
                     </select>
                 </div>
                 <label id="signupPhiAckWrap" class="hidden flex items-start gap-2 text-slate-300" for="signupPhiAck">
@@ -14407,7 +14441,7 @@ function schediQrCardPixels(text, color) {
                 + '<label class="sd-client-span">Private notes<textarea id="clientEditNotes" maxlength="500" rows="3">' + esc(x.notes || '') + '</textarea></label>'
                 + '<label class="sd-client-span">Tags<input id="clientEditTags" type="text" maxlength="400" value="' + esc(tags) + '" placeholder="regular, fade"></label>'
                 + '<p id="clientEditError" class="sd-client-error sd-client-span" role="status"></p>'
-                + '<p class="sd-client-hint sd-client-span">This updates the client list and new bookings. Visits already on the calendar stay as booked.</p>'
+                + '<p class="sd-client-hint sd-client-span">This updates the client list and new bookings. Visits already on the calendar stay as booked. Notes are private and are not shown on your booking page.</p>'
                 + '<div class="sd-client-actions-form sd-client-span">'
                 + '<button type="button" class="sd-client-cancel px-4 py-2 rounded-xl bg-slate-800 text-slate-300 font-bold" onclick="cancelOwnerClientEdit()">Cancel</button>'
                 + '<button type="submit" class="sd-client-save px-4 py-2 rounded-xl bg-brand-500 hover:bg-brand-600 text-slate-950 font-bold">Save</button>'

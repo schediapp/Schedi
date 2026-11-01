@@ -61,6 +61,7 @@ import { handleConnectBookingPaid } from './connect-booking-paid.js';
 import { handleConnectHandoff, handleConnectPlan } from './connect-handoff.js';
 import { handlePageVisitsRequest } from '../../../worker/page-visits.ts';
 import { isMedicalIndustry, resolvePhiAcknowledgment, PHI_ACK_WORDING } from './phi-ack.js';
+import { INDUSTRY_CHOICES } from './industry-presets.js';
 
 const ALLOWED_ORIGINS = new Set([
   'https://schedi.app',
@@ -1722,9 +1723,8 @@ async function handleBillingSignup(request, env, origin) {
   if (!ownerName) return json({ ok: false, error: 'owner_name_required' }, 400, origin);
   if (!ownerEmail || ownerEmail.indexOf('@') < 1) return json({ ok: false, error: 'owner_email_required' }, 400, origin);
   if (plan !== 'free' && plan !== 'starter' && plan !== 'pro') return json({ ok: false, error: 'invalid_plan' }, 400, origin);
-  const industryChoices = ['Services', 'Consulting', 'Barbershop', 'Medical', 'Auto', 'Fitness'];
-  let industry = String(data.industry || 'Services').trim();
-  if (industryChoices.indexOf(industry) < 0) industry = 'Services';
+  let industry = String(data.industry || 'Services').trim().slice(0, 80);
+  if (INDUSTRY_CHOICES.indexOf(industry) < 0) industry = 'Services';
   const phi = resolvePhiAcknowledgment({
     industry,
     accepted: data.phiAckAccepted === true,
