@@ -688,6 +688,14 @@ function blankToNull(value: string | null | undefined): string | null {
   return trimmed ? trimmed : null;
 }
 
+/** On-disk Connect database. An empty SCHEDI_DB_PATH uses the repo default. */
+export function sqliteDatabasePath(env: NodeJS.ProcessEnv = process.env): string {
+  const configured = env.SCHEDI_DB_PATH;
+  if (typeof configured !== "string") return "data/schedi.sqlite";
+  const path = configured.trim();
+  return path || "data/schedi.sqlite";
+}
+
 export function openStore(path: string): Store {
   if (path !== ":memory:") mkdirSync(dirname(path), { recursive: true });
   return new Store(new DatabaseSync(path));
@@ -697,8 +705,7 @@ let singleton: Store | null = null;
 
 export function getStore(): Store {
   if (!singleton) {
-    const path = process.env.SCHEDI_DB_PATH ?? "data/schedi.sqlite";
-    singleton = openStore(path);
+    singleton = openStore(sqliteDatabasePath());
   }
   return singleton;
 }
