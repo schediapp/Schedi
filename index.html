@@ -31415,6 +31415,14 @@ function paintBizHeader() {
             }
         });
 
+        function publicServiceBlurb(svc) {
+            if (!svc) return '';
+            var raw = typeof svc.desc === 'string' ? svc.desc : (typeof svc.description === 'string' ? svc.description : '');
+            var text = raw.trim();
+            if (!text) return '';
+            return '<div class="svc-desc text-[11px] text-slate-400 font-normal mt-1 leading-snug whitespace-pre-line">' + escHtml(text) + '</div>';
+        }
+
         function renderSvc() {
             const container = document.getElementById('serviceListContainer');
             var multi = multiServiceEnabled();
@@ -31441,11 +31449,13 @@ function paintBizHeader() {
                 } else if (multi) {
                     side = '<button type="button" onclick="addSvc(' + Number(s.id) + ')" class="shrink-0 px-3 h-8 rounded-lg border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 text-[11px] font-bold hover:bg-emerald-500/20" aria-label="Add ' + escHtml(s.name) + ' to this booking">+ Add</button>';
                 }
+                var blurb = publicServiceBlurb(s);
                 return '<div class="flex items-center gap-2 p-3 rounded-xl border transition-all ' +
                     (active ? 'bg-emerald-500/10 border-emerald-500 glow-emerald' : 'bg-slate-900 border-slate-800') + '">' +
                     publicSvcIcon(s) +
                     '<button type="button" onclick="selectSvc(' + Number(s.id) + ')" aria-pressed="' + (active ? 'true' : 'false') + '" class="flex-1 min-w-0 text-left p-1 cursor-pointer">' +
                     '<div class="font-bold text-xs text-white">' + escHtml(s.name) + '</div>' +
+                    blurb +
                     '<div class="text-[11px] text-emerald-400 font-bold mt-1">' + info + '</div>' +
                     '</button>' + side + '</div>';
             }).join('');
