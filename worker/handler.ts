@@ -40,6 +40,7 @@ import {
 } from "./render";
 import { routeBusinessLogo, type LogoBucket } from "./logo-route";
 import { injectWebAnalytics, WEB_ANALYTICS_CONNECT_ORIGIN, WEB_ANALYTICS_SCRIPT_ORIGIN } from "./web-analytics";
+import { DEMO_SCRIPT_PATH, renderDemoBookingScript } from "./demo-booking";
 
 export interface AssetFetcher {
   fetch(input: Request): Promise<Response>;
@@ -102,6 +103,8 @@ const RESERVED = new Set([
   "portal-preview",
   "marketing-boot.js",
   "marketing-theme.js",
+  "demo",
+  "demo-booking.js",
 ]);
 
 const STATIC_TYPES: Record<string, string> = {
@@ -236,7 +239,7 @@ function hasFileExtension(pathname: string): boolean {
 }
 
 function isStaticFile(pathname: string): boolean {
-  if (pathname === HERO_PATH || pathname === "/marketing-boot.js" || pathname === THEME_SCRIPT_PATH) return false;
+  if (pathname === HERO_PATH || pathname === "/marketing-boot.js" || pathname === THEME_SCRIPT_PATH || pathname === DEMO_SCRIPT_PATH) return false;
   if (pathname === "/robots.txt" || pathname === "/sitemap.xml" || pathname.toLowerCase() === "/llms.txt") return false;
   if (pathname.toLowerCase() === "/.well-known/security.txt") return false;
   if (STATIC_TYPES[pathname]) return true;
@@ -626,6 +629,15 @@ export async function handleRequest(request: Request, env: SchediEnv, ctx: Sched
       200,
       "text/javascript; charset=utf-8",
       { "Cache-Control": "public, max-age=3600" },
+      method,
+    );
+  }
+  if (collapsed === DEMO_SCRIPT_PATH) {
+    return textResponse(
+      renderDemoBookingScript(),
+      200,
+      "text/javascript; charset=utf-8",
+      { "Cache-Control": "public, max-age=600" },
       method,
     );
   }

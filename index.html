@@ -9725,7 +9725,7 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
         function isReservedBusinessSlug(slug) {
             var first = String(slug || '').toLowerCase();
             if (!first) return true;
-            if (first === 'index.html' || first === 'agency' || first === 'admin' || first === 'hq' || first === 'signup' || first === 'terms' || first === 'privacy' || first === 'help' || first === 'auth' || first === 'reset' || first === 'billing' || first === 'api' || first === 'www' || first === 'schedi' || first === 'index' || first === 'login' || first === 'features' || first === 'compare' || first === 'for' || first === 'pricing' || first === 'portal' || first === 'portal-preview' || first === 'faq') return true;
+            if (first === 'index.html' || first === 'agency' || first === 'admin' || first === 'hq' || first === 'signup' || first === 'terms' || first === 'privacy' || first === 'help' || first === 'auth' || first === 'reset' || first === 'billing' || first === 'api' || first === 'www' || first === 'schedi' || first === 'index' || first === 'login' || first === 'features' || first === 'compare' || first === 'for' || first === 'pricing' || first === 'portal' || first === 'portal-preview' || first === 'faq' || first === 'demo') return true;
             return false;
         }
 
@@ -10979,13 +10979,18 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                 return;
             }
             if (btn) { btn.disabled = true; btn.textContent = plan === 'free' ? 'Creating your page...' : 'Preparing checkout...'; }
+            var signupRef = '';
+            try {
+                var refParam = new URLSearchParams(window.location.search || '').get('ref') || '';
+                if (/^[a-z0-9-]{1,32}$/i.test(refParam)) signupRef = refParam.toLowerCase();
+            } catch (refErr) {}
             try {
                 var res = await fetch('https://schedi.app/billing/signup', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ businessName: businessName, ownerName: ownerName, ownerEmail: ownerEmail, plan: plan, industry: industry, phiAckAccepted: schediIsMedicalIndustry(industry) })
+                    body: JSON.stringify({ businessName: businessName, ownerName: ownerName, ownerEmail: ownerEmail, plan: plan, industry: industry, phiAckAccepted: schediIsMedicalIndustry(industry), signupRef: signupRef })
                 });
                 var data = {};
                 try { data = await res.json(); } catch (errJson) { data = {}; }
