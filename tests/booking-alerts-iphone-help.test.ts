@@ -90,7 +90,9 @@ describe("Booking alerts on iPhone help guide", () => {
     const card = help.card || "";
     expect(card).toContain("Requires iOS 16.4 or later.");
     expect(card).toContain("https://schedi.app/login");
-    expect(card).toContain("Tap Share, then Add to Home Screen.");
+    expect(card).toContain("Tap the Share button (the square with an up arrow) at the bottom of Safari.");
+    expect(card).toContain("On newer iOS it may be under the <strong>...</strong> menu.");
+    expect(card).toContain("Scroll down, tap <strong>Add to Home Screen</strong>, then tap <strong>Add</strong>.");
     expect(card).toContain("Open Schedi from the Home Screen icon and sign in.");
     expect(card).toContain("Tap the bell, or go to Emails &gt; Booking alerts, and turn on the switch.");
     expect(card).toContain("Tap Allow on the iOS prompt.");

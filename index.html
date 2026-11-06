@@ -6986,7 +6986,16 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                             </select>
                         </label>
                     </div>
-                    <p id="tenantAddHomeScreenHelp" class="hidden text-[11px] text-slate-400 leading-relaxed">iPhone: Share, then Add to Home Screen. Android: browser menu, then Add to Home screen.</p>
+                    <div id="tenantAddHomeScreenHelp" class="hidden text-sm text-slate-300 leading-relaxed space-y-2" role="region" aria-label="Add to Home Screen">
+                        <p class="font-bold text-white">iPhone, in Safari</p>
+                        <p>Use Safari. This does not work inside Instagram, Gmail, or another app. If you are in one of those, tap the menu and choose <strong class="text-slate-200">Open in Safari</strong>.</p>
+                        <ol class="list-decimal pl-5 space-y-1 text-slate-200">
+                            <li>Tap the Share button <span class="inline-flex items-center justify-center align-middle ml-1 mr-1 w-5 h-5 rounded-md border border-slate-700 bg-slate-800 text-slate-200" title="Share"><i class="fa-solid fa-arrow-up-from-bracket text-[11px]" aria-hidden="true"></i></span> (the square with an up arrow) at the bottom of Safari. On newer iOS it may be under the <strong>...</strong> menu.</li>
+                            <li>Scroll down and tap <strong>Add to Home Screen</strong>.</li>
+                            <li>Rename it if you want, then tap <strong>Add</strong>.</li>
+                        </ol>
+                        <p class="pt-1 border-t border-slate-700"><span class="font-semibold text-slate-200">Android:</span> browser menu, then Add to Home screen.</p>
+                    </div>
                 </div>
 
                 <div id="tenantBillingCard" class="glass-card rounded-2xl p-5 space-y-3 hidden">
@@ -9984,7 +9993,7 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                 + '<ol class="list-decimal pl-5 space-y-1">'
                 + '<li>Requires iOS 16.4 or later.</li>'
                 + '<li>Open <a class="text-brand-400 underline font-semibold" href="https://schedi.app/login">schedi.app/login</a> in Safari.</li>'
-                + '<li>Tap Share, then Add to Home Screen.</li>'
+                + '<li>Tap the Share button (the square with an up arrow) at the bottom of Safari. On newer iOS it may be under the <strong>...</strong> menu. Scroll down, tap <strong>Add to Home Screen</strong>, then tap <strong>Add</strong>.</li>'
                 + '<li>Open Schedi from the Home Screen icon and sign in.</li>'
                 + '<li>Tap the bell, or go to Emails &gt; Booking alerts, and turn on the switch.</li>'
                 + '<li>Tap Allow on the iOS prompt.</li>'
@@ -10188,6 +10197,7 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                     + '<section><h2 class="text-base font-bold text-white mb-1">Booking alerts on iPhone</h2><p>The steps, troubleshooting, and short Android and desktop notes are in <a class="text-brand-400 underline font-semibold" href="#owner-20-booking-alerts-iphone">Booking alerts on iPhone</a> with the videos above.</p></section>'
                     + '<section><h2 class="text-base font-bold text-white mb-1">Repeating visits</h2><ol class="list-decimal pl-5 space-y-1"><li>Open Email Confirmations.</li><li>On Pro, turn on Allow recurring appointments and click Save Email Settings.</li><li>Free and Starter do not show repeating visits on the booking page.</li></ol></section>'
                     + '<section><h2 class="text-base font-bold text-white mb-1">Your Schedi plan</h2><p>Starter is $29/mo and Pro is $49/mo, month to month, with no contract. ' + SCHEDI_OWNER_POLICY_SHORT + ' Use Cancel subscription to stop renewal at the end of the paid period. Resume subscription if you change your mind before then. Card updates stay in Manage billing. To request a refund of the first payment within 15 days, email <a class="text-brand-400 underline" href="mailto:admin@schedi.app">admin@schedi.app</a> with the business name and the charge date.</p></section>'
+                    + '<section id="add-to-home-screen"><h2 class="text-base font-bold text-white mb-1">Add to Home Screen on iPhone</h2><p>Use Safari. This does not work inside Instagram, Gmail, or another app. If you are in one of those, tap the menu and choose <strong>Open in Safari</strong>.</p><ol class="list-decimal pl-5 space-y-1 mt-1"><li>Tap the Share button <span class="inline-flex items-center justify-center align-middle ml-1 mr-1 w-5 h-5 rounded-md border border-slate-700 bg-slate-800 text-white" title="Share"><i class="fa-solid fa-arrow-up-from-bracket text-[11px]" aria-hidden="true"></i></span> (the square with an up arrow) at the bottom of Safari. On newer iOS it may be under the <strong>...</strong> menu.</li><li>Scroll down and tap <strong>Add to Home Screen</strong>.</li><li>Rename it if you want, then tap <strong>Add</strong>.</li></ol><p class="mt-1">Android: browser menu, then Add to Home screen.</p></section>'
                     + '<section><h2 class="text-base font-bold text-white mb-1">Your public page</h2><p>The link at the top of the portal is the booking page. Copy link and Share use https://schedi.app/ and your slug.</p></section>'
                     + '<p><a class="text-slate-400 underline" href="' + esc(portalBack) + '">Back to portal</a></p>'
                     + '</div>';
