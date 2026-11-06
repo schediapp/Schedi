@@ -3,6 +3,7 @@
 
 import { OWNER_SUBSCRIPTION_POLICY_TERMS } from "../src/lib/subscription-policy";
 import { AEO_FAQS, barberPage, cleaningPage, comparePage, featuresPage } from "./aeo-pages";
+import { DEMO_PATH, DEMO_SCRIPT_PATH, DEMO_SIGNUP_HREF } from "./demo-booking";
 
 export const APEX_ORIGIN = "https://schedi.app";
 
@@ -19,7 +20,11 @@ export type MarketingPage = {
   hero?: boolean;
   softwareJsonLd?: boolean;
   /** Rich marketing layout (hero, features, plan cards). Omit for plain article pages. */
-  layout?: "home" | "pricing";
+  layout?: "home" | "pricing" | "demo";
+  /** External script for an interactive page. Marketing CSP allows same-origin scripts only. */
+  scriptSrc?: string;
+  /** Signup links on this page. The sample booking page attributes them with ?ref=demo. */
+  signupHref?: string;
   /** Short line under the H1 in the rich layouts. */
   lede?: string;
   faqs: Faq[];
@@ -214,8 +219,50 @@ export const MARKETING_PAGES: MarketingPage[] = [
       p(shareLink),
       p(reminders),
       p(noShow),
-      `<p>Read the pages for <a href="/for/barbers">barbers</a>, <a href="/for/hair-salons">hair salons</a>, <a href="/for/cleaning-services">cleaning services</a>, <a href="/features">features</a>, <a href="/compare">Schedi vs other booking tools</a>, and the rest of the <a href="/pricing">pricing</a> comparison. <a href="/signup">Create your page</a> or open <a href="/help">help</a>.</p>`,
+      `<p>Read the pages for <a href="/for/barbers">barbers</a>, <a href="/for/hair-salons">hair salons</a>, <a href="/for/cleaning-services">cleaning services</a>, <a href="/features">features</a>, <a href="/compare">Schedi vs other booking tools</a>, and the rest of the <a href="/pricing">pricing</a> comparison. <a href="/signup">Create your page</a>, <a href="${DEMO_PATH}">see a sample booking page</a>, or open <a href="/help">help</a>.</p>`,
     ].join("\n"),
+  },
+  {
+    path: DEMO_PATH,
+    title: "Sample booking page | Schedi",
+    description:
+      "Try a sample barbershop booking page. Pick a service and a time. Confirm asks you to create an account. Nothing is booked.",
+    h1: "Try a sample booking page",
+    lede: "This is Fresh Cuts Studio, a sample barbershop. Pick a service and a time. Nothing you choose is saved.",
+    layout: "demo",
+    scriptSrc: DEMO_SCRIPT_PATH,
+    signupHref: DEMO_SIGNUP_HREF,
+    faqs: [
+      {
+        question: "Is this a real booking?",
+        answer:
+          "No. This is a sample page. Choosing a service and a time does not reserve anything, and it does not create an account.",
+      },
+      {
+        question: "When do I create an account?",
+        answer:
+          "The sample asks you to create a booking page at the Confirm step. Until then you can look through services and open times.",
+      },
+    ],
+    bodyHtml: `<div id="demo-book" class="demo-book">
+      <p class="demo-note">Sample only. Nothing you pick is booked.</p>
+      <div class="demo-biz">
+        <span class="dot" aria-hidden="true"></span>
+        <div>
+          <p class="demo-biz-name">Fresh Cuts Studio</p>
+          <p class="muted small">Barbershop · Tuesday–Saturday</p>
+        </div>
+      </div>
+      <ol class="demo-steps" aria-label="Booking steps">
+        <li data-step="service" aria-current="step">1. Service</li>
+        <li data-step="time">2. Time</li>
+        <li data-step="confirm">3. Confirm</li>
+      </ol>
+      <div id="demo-panel" aria-live="polite"></div>
+      <noscript>
+        <p>This sample needs JavaScript to pick a service and a time. <a href="${DEMO_SIGNUP_HREF}">Create your booking page</a>.</p>
+      </noscript>
+    </div>`,
   },
   {
     path: "/pricing",

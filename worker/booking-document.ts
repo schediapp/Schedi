@@ -51,6 +51,7 @@ const PRIVATE_KEYS = [
   "currentPeriodEnd",
   "subscriptionStatus",
   "signupStartedAt",
+  "signupRef",
   "stripeConnectStatus",
   "phiAcknowledgment",
   "ownerIdleTimeoutMin",

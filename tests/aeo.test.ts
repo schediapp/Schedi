@@ -437,6 +437,9 @@ describe("canonical redirects", () => {
       ["https://schedi.app/bright-cuts?utm_source=ad&gclid=1", 301, "https://schedi.app/bright-cuts"],
       ["https://schedi.app/bright-cuts?utm_campaign=spring&demo=1", 301, "https://schedi.app/bright-cuts?demo=1"],
       ["https://schedi.app/llms.txt?fbclid=abc&ref=ig", 301, "https://schedi.app/llms.txt"],
+      ["https://www.schedi.app/signup?ref=Demo", 301, "https://schedi.app/signup?ref=demo"],
+      ["https://schedi.app/signup?ref=demo&utm_source=ad", 301, "https://schedi.app/signup?ref=demo"],
+      ["https://schedi.app/signup?ref=../nope", 301, "https://schedi.app/signup"],
     ];
     for (const [input, status, location] of cases) {
       const response = await handleRequest(new Request(input), env, ctx());

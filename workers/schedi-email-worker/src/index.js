@@ -62,6 +62,7 @@ import { handleConnectHandoff, handleConnectPlan } from './connect-handoff.js';
 import { handlePageVisitsRequest } from '../../../worker/page-visits.ts';
 import { isMedicalIndustry, resolvePhiAcknowledgment, PHI_ACK_WORDING } from './phi-ack.js';
 import { INDUSTRY_CHOICES } from './industry-presets.js';
+import { signupAttributionRef } from './signup-ref.js';
 
 const ALLOWED_ORIGINS = new Set([
   'https://schedi.app',
@@ -1370,7 +1371,7 @@ async function verifyStripeWebhook(rawBody, sigHeader, secret) {
 }
 
 
-const SIGNUP_RESERVED_SLUGS = new Set(['signup', 'agency', 'admin', 'hq', 'hq-9h7p52', 'billing', 'api', 'auth', 'terms', 'privacy', 'help', 'index', 'www', 'schedi']);
+const SIGNUP_RESERVED_SLUGS = new Set(['signup', 'agency', 'admin', 'hq', 'hq-9h7p52', 'billing', 'api', 'auth', 'terms', 'privacy', 'help', 'index', 'www', 'schedi', 'demo']);
 
 function slugifyBusinessName(name) {
   let s = String(name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
@@ -1433,6 +1434,8 @@ function defaultSignupTenant(meta, billing) {
     ownerIdleDefaultApplied: true,
   };
   if (meta.phiAcknowledgment) tenant.phiAcknowledgment = meta.phiAcknowledgment;
+  const attribution = signupAttributionRef(meta && meta.signupRef);
+  if (attribution) tenant.signupRef = attribution;
   return tenant;
 }
 
@@ -1723,6 +1726,7 @@ async function handleBillingSignup(request, env, origin) {
   if (!ownerName) return json({ ok: false, error: 'owner_name_required' }, 400, origin);
   if (!ownerEmail || ownerEmail.indexOf('@') < 1) return json({ ok: false, error: 'owner_email_required' }, 400, origin);
   if (plan !== 'free' && plan !== 'starter' && plan !== 'pro') return json({ ok: false, error: 'invalid_plan' }, 400, origin);
+  const signupRef = signupAttributionRef(data.signupRef);
   let industry = String(data.industry || 'Services').trim().slice(0, 80);
   if (INDUSTRY_CHOICES.indexOf(industry) < 0) industry = 'Services';
   const phi = resolvePhiAcknowledgment({
@@ -1797,6 +1801,7 @@ async function handleBillingSignup(request, env, origin) {
     industry: industry,
     phiAcknowledgment: phi.phiAcknowledgment,
   };
+  if (signupRef) meta.signupRef = signupRef;
   if (!authReady(env)) {
     return json({ ok: false, error: 'auth_not_configured' }, 500, origin);
   }
@@ -1866,6 +1871,10 @@ async function handleBillingSignup(request, env, origin) {
   params.set('subscription_data[metadata][businessName]', businessName);
   params.set('subscription_data[metadata][ownerName]', ownerName);
   params.set('subscription_data[metadata][ownerEmail]', ownerEmail);
+  if (signupRef) {
+    params.set('metadata[signupRef]', signupRef);
+    params.set('subscription_data[metadata][signupRef]', signupRef);
+  }
 
   const created = await stripeRequest(env, '/v1/checkout/sessions', { method: 'POST', params });
   const url = created.ok && created.data ? created.data.url : '';

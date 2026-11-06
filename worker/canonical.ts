@@ -42,17 +42,35 @@ function sameUrl(url: URL, dest: URL): boolean {
   return url.protocol === dest.protocol && url.host === dest.host && url.pathname === dest.pathname && url.search === dest.search;
 }
 
-/** Drop utm_*, gclid, fbclid, and ref. Leave every other parameter as it arrived. */
-function withoutTracking(search: string): string {
+/** Signup attribution from the sample booking page. Other ref values stay tracking noise. */
+const SIGNUP_REF = /^[a-z0-9-]{1,32}$/;
+
+/**
+ * Drop utm_*, gclid, fbclid, and ref. Leave every other parameter as it arrived.
+ * On /signup, a short ref such as demo is kept so the sample page can be measured.
+ */
+function withoutTracking(search: string, keepSignupRef = false): string {
   if (!search) return "";
   const params = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search);
   let changed = false;
   for (const key of [...params.keys()]) {
     const lower = key.toLowerCase();
-    if (lower.startsWith("utm_") || lower === "gclid" || lower === "fbclid" || lower === "ref") {
+    if (lower.startsWith("utm_") || lower === "gclid" || lower === "fbclid") {
       params.delete(key);
       changed = true;
+      continue;
     }
+    if (lower !== "ref") continue;
+    const value = (params.get(key) || "").trim().toLowerCase();
+    if (keepSignupRef && SIGNUP_REF.test(value)) {
+      if (params.get(key) !== value) {
+        params.set(key, value);
+        changed = true;
+      }
+      continue;
+    }
+    params.delete(key);
+    changed = true;
   }
   if (!changed) return search.startsWith("?") || search === "" ? search : `?${search}`;
   const next = params.toString();
@@ -110,6 +128,7 @@ function marketingSearch(url: URL, path: string): string {
  * Returns the absolute URL to 301 to, or null when the request is already canonical.
  * Marketing pages and the home page drop tracking query params. `demo=1` stays.
  * `/?portal=login`, `/?forgot=1`, and `/?billing=*` keep their full query.
+ * `/signup?ref=demo` keeps that ref. Other ref values are still removed.
  */
 export function publicDuplicateRedirect(url: URL): string | null {
   const host = url.hostname.toLowerCase().replace(/\.+$/, "");
@@ -151,5 +170,5 @@ export function publicDuplicateRedirect(url: URL): string | null {
     return destination(url, origin, collapsed, url.search);
   }
 
-  return destination(url, origin, collapsed, withoutTracking(url.search));
+  return destination(url, origin, collapsed, withoutTracking(url.search, lookup === "/signup"));
 }

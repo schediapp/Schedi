@@ -221,6 +221,7 @@ describe("private signup and connect status", () => {
       stripeConnectReady: true,
       stripeConnectStatus: "ready",
       signupStartedAt: "2026-10-01T00:00:00.000Z",
+      signupRef: "demo",
       phiAcknowledgment: { who: "a@b.co", at: "2026-10-21T00:00:00.000Z", version: PHI_ACK_VERSION },
       ownerIdleTimeoutMin: 30,
       ownerIdleDefaultApplied: true,
@@ -228,6 +229,7 @@ describe("private signup and connect status", () => {
     expect(booking.stripeConnectReady).toBe(true);
     expect(booking.stripeConnectStatus).toBeUndefined();
     expect(booking.signupStartedAt).toBeUndefined();
+    expect(booking.signupRef).toBeUndefined();
     expect(booking.phiAcknowledgment).toBeUndefined();
     expect(booking.ownerIdleTimeoutMin).toBeUndefined();
     expect(booking.name).toBe("Bright Cuts");

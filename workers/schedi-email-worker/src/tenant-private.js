@@ -46,7 +46,7 @@ export const PRIVATE_TENANT_KEYS = [
 /** Kept on the public doc after it is copied to the private doc. */
 export const PUBLIC_BOOKING_TIER_KEY = 'plan';
 /** Worker bookkeeping. Private doc only, and never returned to the owner or agency UI. */
-export const WORKER_ONLY_PRIVATE_KEYS = ['unpaidDigestWeek'];
+export const WORKER_ONLY_PRIVATE_KEYS = ['unpaidDigestWeek', 'signupRef'];
 /** notifications.replyTo (an email address) is stored privately as this key. */
 export const PRIVATE_REPLY_TO_KEY = 'notificationsReplyTo';
 /**

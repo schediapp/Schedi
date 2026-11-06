@@ -20,6 +20,7 @@ describe("public tenant shaping", () => {
       city: "Austin",
       squareMerchantId: "merchant",
       unpaidDigestWeek: "2026-10-12",
+      signupRef: "demo",
       ownerEmail: "owner@example.com",
     });
     expect(shaped.pub.plan).toBe("pro");
@@ -28,12 +29,14 @@ describe("public tenant shaping", () => {
     expect(shaped.pub.address).toBeUndefined();
     expect(shaped.pub.squareMerchantId).toBeUndefined();
     expect(shaped.pub.unpaidDigestWeek).toBeUndefined();
+    expect(shaped.pub.signupRef).toBeUndefined();
     expect(shaped.pub.ownerEmail).toBeUndefined();
     expect(shaped.pub.complimentaryPro).toBeUndefined();
     expect(shaped.priv.ownerEmail).toBe("owner@example.com");
     expect(shaped.priv.plan).toBe("starter");
     expect(shaped.priv.subscriptionStatus).toBe("paused");
     expect(shaped.priv.unpaidDigestWeek).toBe("2026-10-12");
+    expect(shaped.priv.signupRef).toBe("demo");
   });
 
   it("stores subscriptionStatus privately and sets acceptingBookings", () => {

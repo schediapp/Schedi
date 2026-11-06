@@ -224,7 +224,8 @@ function icon(name: string): string {
   return `<svg class="ico" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[name] || ""}</svg>`;
 }
 
-function siteHeader(): string {
+function siteHeader(signupHref = "/signup"): string {
+  const signup = escapeHtml(signupHref);
   return `<header class="site-header">
   <div class="wrap bar">
     <a class="brand" href="/" aria-label="Schedi home">
@@ -238,13 +239,14 @@ function siteHeader(): string {
       <a class="nav-link" href="/help">Help</a>
       <button type="button" class="theme-btn" title="Switch theme" aria-label="Switch theme"><svg class="ico i-sun" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg><svg class="ico i-moon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg><span class="theme-btn-label">Light</span></button>
       <a class="btn btn-ghost btn-sm login" href="${LOGIN_HREF}">${icon("login")}<span>Log in</span></a>
-      <a class="btn btn-primary btn-sm" href="/signup"><span class="hide-xs">Get started free</span><span class="show-xs">Sign up</span></a>
+      <a class="btn btn-primary btn-sm" href="${signup}"><span class="hide-xs">Get started free</span><span class="show-xs">Sign up</span></a>
     </nav>
   </div>
 </header>`;
 }
 
-function footer(): string {
+function footer(signupHref = "/signup"): string {
+  const signup = escapeHtml(signupHref);
   const verticalLinks = VERTICALS.map(
     (item) => `<a href="${item.path}">${escapeHtml(item.label)}</a>`,
   ).join(" ");
@@ -266,7 +268,8 @@ function footer(): string {
         <a href="/pricing">Pricing</a>
         <a href="/compare">Compare</a>
         <a href="/help">Help</a>
-        <a href="/signup">Sign up</a>
+        <a href="${signup}">Sign up</a>
+        <a href="/demo">Sample booking page</a>
         <a href="${LOGIN_HREF}">Log in</a>
         <a href="/terms">Terms of Service</a>
         <a href="/privacy">Privacy Policy</a>
@@ -367,6 +370,7 @@ function homeSections(page: MarketingPage): string {
         <p class="lede">${escapeHtml(page.lede || "")}</p>
         <div class="ctas">
           <a class="btn btn-primary btn-lg" href="/signup">Create your booking page</a>
+          <a class="btn btn-ghost btn-lg" href="/demo">See a sample booking page</a>
           <a class="btn btn-ghost btn-lg" href="/pricing">See pricing</a>
         </div>
         <ul class="trust">
@@ -419,13 +423,28 @@ function pricingSections(page: MarketingPage): string {
   </section>`;
 }
 
-function ctaBand(): string {
+function demoSections(page: MarketingPage): string {
+  return `<section class="hero-sec slim">
+    <div class="wrap">
+      <p class="eyebrow">${icon("calendar")}<span>Sample booking page</span></p>
+      <h1>${escapeHtml(page.h1)}</h1>
+      <p class="lede">${escapeHtml(page.lede || "")}</p>
+      ${page.bodyHtml}
+    </div>
+  </section>`;
+}
+
+function ctaBand(includeSample = false): string {
+  const sample = includeSample
+    ? `<a class="btn btn-ghost btn-lg" href="/demo">See a sample booking page</a>`
+    : "";
   return `<section class="sec">
     <div class="wrap">
       <div class="band">
         <div><h2>Ready to stop booking by text?</h2><p>Create your free booking page in a few minutes.</p></div>
         <div class="ctas">
           <a class="btn btn-primary btn-lg" href="/signup">Get started free</a>
+          ${sample}
           <a class="btn btn-ghost btn-lg" href="${LOGIN_HREF}">Log in</a>
         </div>
       </div>
@@ -552,6 +571,29 @@ tbody th{font-weight:600;color:var(--head)}
 .faq h3{margin:.9rem 0;font-size:1rem}
 .faq p{margin:0 0 1rem;color:var(--muted)}
 .plain{padding:2.5rem 0 1rem}
+.demo-book{max-width:440px;background:var(--card);border:1px solid var(--line);border-radius:24px;padding:1.25rem;box-shadow:var(--shadow)}
+.demo-note{margin:0 0 1rem;color:var(--muted);font-size:.9rem}
+.demo-biz{display:flex;align-items:center;gap:.75rem;margin-bottom:1rem}
+.demo-biz-name{margin:0;font-weight:800;color:var(--head)}
+.demo-biz p{margin:0}
+.demo-steps{list-style:none;display:flex;gap:.4rem;padding:0;margin:0 0 1rem;font-size:.8rem;font-weight:700;color:var(--muted)}
+.demo-steps li{padding:.3rem .55rem;border-radius:999px;border:1px solid var(--line)}
+.demo-steps li[aria-current="step"]{background:var(--brand);color:var(--brand-ink);border-color:var(--brand)}
+.demo-kicker{margin:0 0 .75rem;font-weight:800;color:var(--head)}
+.demo-list{display:grid;gap:.5rem}
+.demo-choice{display:grid;grid-template-columns:1fr auto;grid-template-areas:"name meta" "blurb blurb";gap:.15rem .75rem;width:100%;text-align:left;font:inherit;color:var(--text);background:transparent;border:1px solid var(--line);border-radius:14px;padding:.75rem .85rem;cursor:pointer}
+.demo-choice:hover,.demo-choice:focus-visible{border-color:var(--brand);background:var(--brand-soft);outline:none}
+.demo-choice-name{grid-area:name;font-weight:700;color:var(--head)}
+.demo-choice-meta{grid-area:meta;color:var(--muted);font-size:.85rem}
+.demo-choice-blurb{grid-area:blurb;color:var(--muted);font-size:.85rem}
+.demo-days,.demo-times{display:flex;flex-wrap:wrap;gap:.4rem;margin:0 0 .85rem}
+.demo-chip{font:inherit;font-size:.85rem;font-weight:700;color:var(--text);background:transparent;border:1px solid var(--line);border-radius:10px;padding:.5rem .7rem;cursor:pointer}
+.demo-chip:hover,.demo-chip:focus-visible{border-color:var(--brand);outline:none}
+.demo-chip.on{background:var(--brand);color:var(--brand-ink);border-color:var(--brand)}
+.demo-empty{margin:0 0 .85rem;color:var(--muted);font-size:.9rem}
+.demo-summary{margin:0 0 .75rem;padding:.85rem;border:1px solid var(--line);border-radius:14px;background:var(--brand-soft);color:var(--head)}
+.demo-book .ctas{margin-top:.5rem}
+.demo-book p{margin:.4rem 0 .75rem}
 .hero{width:min(100%,640px);height:auto;border-radius:16px;margin:0 0 1.25rem}
 figure{margin:0 0 1rem}
 figure img,figure video{max-width:100%;height:auto;border-radius:12px}
@@ -580,7 +622,8 @@ export function renderMarketingPage(
     options?.robots ?? (page.listing === "scaffold" ? "noindex, follow" : "index, follow");
   const title = escapeHtml(page.title);
   const description = escapeHtml(page.description);
-  const rich = page.layout === "home" || page.layout === "pricing";
+  const rich = page.layout === "home" || page.layout === "pricing" || page.layout === "demo";
+  const signupHref = page.signupHref || "/signup";
   const hero = page.hero && !rich
     ? `<img class="hero" src="${HERO_PATH}" alt="Phone showing a Schedi booking page" width="640" height="360" fetchpriority="high" decoding="async">`
     : "";
@@ -588,6 +631,7 @@ export function renderMarketingPage(
     ? `<link rel="preload" href="${HERO_PATH}" as="image" type="image/svg+xml" fetchpriority="high">`
     : `<link rel="preload" href="/assets/logo-dark.svg" as="image" type="image/svg+xml">`;
   const boot = page.portalBoot ? `<script src="/marketing-boot.js" defer></script>` : "";
+  const pageScript = page.scriptSrc ? `<script src="${escapeHtml(page.scriptSrc)}" defer></script>` : "";
   let mainHtml: string;
   if (page.layout === "home") {
     mainHtml = `${homeSections(page)}
@@ -596,7 +640,7 @@ export function renderMarketingPage(
     ${page.bodyHtml}
     ${faqHtml(page)}
   </article></div>
-  ${ctaBand()}`;
+  ${ctaBand(true)}`;
   } else if (page.layout === "pricing") {
     mainHtml = `${pricingSections(page)}
   <div class="wrap"><article id="copy">
@@ -604,6 +648,11 @@ export function renderMarketingPage(
     ${faqHtml(page)}
   </article></div>
   ${ctaBand()}`;
+  } else if (page.layout === "demo") {
+    mainHtml = `${demoSections(page)}
+  <div class="wrap"><article id="copy">
+    ${faqHtml(page)}
+  </article></div>`;
   } else {
     mainHtml = `<div class="wrap plain">
   ${hero}
@@ -651,12 +700,13 @@ ${jsonLd(page)}
 </head>
 <body>
 <a class="skip" href="#content">Skip to content</a>
-${siteHeader()}
+${siteHeader(signupHref)}
 <main id="content">
   ${mainHtml}
 </main>
-${footer()}
+${footer(signupHref)}
 ${boot}
+${pageScript}
 </body>
 </html>
 `;

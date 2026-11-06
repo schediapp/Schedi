@@ -52,6 +52,8 @@ const NOT_A_BUSINESS = new Set([
   "login",
   "marketing-boot.js",
   "marketing-theme.js",
+  "demo",
+  "demo-booking.js",
 ]);
 
 // Tokens that show up in scrapers, previews, and headless checks. A normal
