@@ -32,6 +32,12 @@ export function OPTIONS(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const { withWritable } = await import("@/lib/request-gate");
+  const { getStore } = await import("@/lib/store");
+  return withWritable(getStore(), () => publicCheckoutPost(request));
+}
+
+async function publicCheckoutPost(request: Request) {
   let payload: Record<string, unknown> = {};
   try {
     payload = (await request.json()) as Record<string, unknown>;

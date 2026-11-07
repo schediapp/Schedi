@@ -1,79 +1,69 @@
 # Connect app: Railway to Cloudflare
 
-This is the cutover runbook for `schedi-connect`. It does not change Stripe, DNS, or the live Railway service. Those steps stay with the parent operator. Do not print secret values. Do not deploy `schedi-web` from git's `site/` folder; the live asset bucket is assembled beside the shell, and production was restored to version `390425bc-78d1-4486-9aca-086675668cb0` after an incomplete upload.
+This runbook does not change Stripe, DNS, or the Railway volume. Do not print secrets. Do not deploy `schedi-web` from git's `site/` folder. Production assets were restored to version `390425bc-78d1-4486-9aca-086675668cb0`; assemble that full asset directory beside the shell.
 
-## What Railway still owns
+## What still lives on Railway
 
-Deployed commit `d15d2883d0a508bba23475c09c614b8db25e5f8b` is an ancestor of `main`. Connect behavior since that deploy is additive (force-park, SQLite download, a few Connect columns). The service is the Next.js app at the repository root. Railpack builds that app. There is no separate app root.
+The service is the repo-root Next.js app. Deployed commit `d15d2883d0a508bba23475c09c614b8db25e5f8b` is an ancestor of current `main`. One SQLite file at `SCHEDI_DB_PATH` on volume `/data` is the only writer. `SESSION_SECRET` is unused. Sessions are random `schedi_session` cookies with no Domain attribute, so a Railway hostname cookie is not sent to a new hostname.
 
-Railway serves the owner portal (`/`, `/portal`), Connect handoff (`/api/connect/handoff`), embedded Stripe components (`/api/connect/session`, `/api/connect/enable`), owner billing and sessions (`/api/billing`, `/api/session`, `/api/business`), the Connect booking pages (`/b/:slug`, `/api/bookings`), public card checkout (`/api/public-checkout`), both Stripe webhook deliveries (`POST /api/webhooks/stripe`), and the admin routes. Callers:
+Both enabled Stripe endpoints still POST `https://schedi-connect-production.up.railway.app/api/webhooks/stripe`. Connected-account events have `event.account`. Platform subscription events update the Connect row that gates `/b/:slug` and the portal. `schedi.app/billing/webhook` updates Firestore and stays there. `invoice.paid` is only handled there.
 
-- Stripe `we_1UUoCdGh1H5O3dkrdjlgftlc` and `we_1UUoCdGh1H5O3dkrW95roxaF`, both enabled, both `https://schedi-connect-production.up.railway.app/api/webhooks/stripe`.
-- `schedi.app` booking pages and `schedi-email-worker` `POST` public checkout on that host. Default stays the Railway URL until `CONNECT_APP_ORIGIN` is set.
-- Owner "Set up Stripe" goes `schedi.app/billing/connect-handoff` then to Railway `/api/connect/handoff#t=...`. The token is in the fragment, then a form body.
-- `worker/handler.ts` CSP `connect-src` allows the Railway host. `site/index.html`, `site/booking.html`, and `site/hq.html` still contain the Railway checkout or portal URL.
+## Stripe does not queue a disabled endpoint
 
-`schedi.app/billing/webhook` (`we_1UUpRdGh1H5O3dkrpDBcw8hL`) is the email worker. It updates Firestore owner billing and public booking payment. It is not a Railway substitute. Keep it. Railway's copy of owner subscription state only drives the Connect portal and `/b/:slug` pages. A connected-account event (`event.account` set) never pauses that page. A platform `invoice.payment_failed` or `customer.subscription.deleted` does. `invoice.paid` is handled only on `schedi.app`.
+Stripe's webhook docs say a disabled or deleted destination can stop future retries of an event. Do not disable either Railway endpoint to "hold" events. Leave both enabled. Freeze the process instead: it answers `503` with `Retry-After` and does not write, so Stripe retries while the endpoint is still on.
 
-The database is one SQLite file at `SCHEDI_DB_PATH` (production volume `/data`, 500 MB). Tables: `owners`, `businesses`, `services`, `bookings`, `sessions`, `stripe_events`, `connect_handoffs`. Writes are single statements. There is no second database service. `SESSION_SECRET` is set on Railway and is not read by the app. The session is the random `sessions.token` cookie.
+## Freeze, drain, snapshot
 
-## Cloudflare shape
+`POST /api/admin/maintenance` with header `x-schedi-migration-secret` and body `{"mode":"frozen"}`. The secret is `SCHEDI_MIGRATION_SECRET`. The paid-callback secret cannot export or freeze.
 
-`workers/schedi-connect` is a Worker with one Durable Object, `ConnectDatabase`, name `schedi-connect`. Durable Object SQLite is the store because the schema is already SQLite, the access is synchronous, and one object keeps the single writer the file has today. D1 would make every store call async and would spread writes across isolates. The Worker has **no routes**. It must not be given `schedi.app/*` or `www.schedi.app/*`.
+The freeze is in SQLite. New writers fail the admit update. Requests already inside a handler finish and decrement `admitted`. These routes refuse while frozen: webhooks, checkout, bookings, billing, portal settings, Connect enable/session, handoff POST, and admin backfill/force-park. Portal, booking, and booked pages skip the Stripe refresh and checkout-fulfill writes. A checkout Stripe already opened can still complete at Stripe. Its webhook gets 503 until the host that should own it is unfrozen, then Stripe's retry applies it once.
 
-`wrangler.jsonc` sets `NODE_ENV=production` and `SCHEDI_SEED=0`. An empty database must not grow the demo businesses. Secrets, set with `wrangler secret put` and never committed:
+`GET /api/admin/sqlite-snapshot` with the same migration header works only when `frozen` is true and `admitted` is 0. Otherwise it returns 409 `freeze_required` or `drain_in_progress`. Repeat the GET until it is 200. That body is the consistent export. Keep the old host frozen for the whole observation window. Changing shell links does not stop a browser that still has the Railway URL.
 
-- `STRIPE_SECRET_KEY`
-- `STRIPE_WEBHOOK_SECRET` (platform endpoint)
-- `STRIPE_CONNECT_WEBHOOK_SECRET` (connected-account endpoint)
-- `SCHEDI_CONNECT_PAID_SECRET` (same value the email worker already uses)
-- `STRIPE_PRICE_STARTER`
-- `STRIPE_PRICE_PRO`
-- `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
+Opening writers again is `{"mode":"open"}` plus header `x-schedi-maintenance-confirm: open-writers`. Do not open the old host while the new host is also accepting writes.
 
-Optional: `CONNECT_PUBLIC_ORIGIN` (https origin only), `SCHEDI_CONNECT_PAID_URL`, `SCHEDI_CONNECT_READY_URL`, `SCHEDI_PLAN_URL`. Defaults remain `https://schedi.app/billing/connect-booking-paid`, `/billing/connect-ready`, and `/billing/connect-plan`.
+## Import and a second object
 
-Webhook checks use the raw body and either signing secret. A completed event id is not applied again. A delivery that throws is not marked done, so Stripe's retry still applies it. A second delivery that arrives while the first is in flight gets HTTP 500 and does not repeat the side effect. A processing row older than two minutes can be taken over after a crash.
+The worker's live object name is `schedi-connect`. Tests and a scratch import use `CONNECT_OBJECT_NAME` so they do not touch that object. Restore is `POST /api/admin/sqlite-restore` with `x-schedi-restore-confirm: restore-empty-database` while that object is frozen and drained. It refuses a non-empty database, checks column parity, rolls back on a foreign-key failure, and re-reads the checksum. Durable Object SQLite rejects `PRAGMA integrity_check` (`SQLITE_AUTH`). The snapshot header then says `unsupported`. Node's file copy still runs `integrity_check` and `foreign_key_check`. Dry-run (`x-schedi-restore-confirm` omitted) writes nothing and reports schema parity.
 
-## Backup and restore
+There is no public route in `workers/schedi-connect/wrangler.jsonc` (`routes` empty, `workers_dev` false). Do not turn on `workers_dev` or attach `schedi.app`. An operator ingress, if you add one, is a temporary hostname that is not linked from the marketing site, requires the migration secret, and is removed after import. Do not put a live Stripe secret on a worker that is reachable for browser experiments. Sandbox checks use test keys and `CONNECT_OBJECT_NAME` set to something other than `schedi-connect`.
 
-Do this against a local file or the admin endpoint. Do not paste the body into chat. It contains owner emails, client names, and session tokens.
+## Event recovery
 
-1. Deploy the snapshot route to Railway only after this branch is the intended Railway release. `GET /api/admin/sqlite-snapshot` with header `x-schedi-connect-secret` takes `BEGIN IMMEDIATE` and returns `schedi-connect-snapshot-v1` JSON. That is the consistent export. The older `GET /api/admin/sqlite-download` is a raw file read and can tear if a write is in progress.
-2. On the downloaded JSON, or on a quiescent SQLite file (not a live WAL copy):
+Signed webhook bodies expire. Do not replay old signatures. Keep the endpoints enabled so Stripe retries the 503s at the current URL. After the URL is moved, those retries hit the new host and are idempotent on event id.
+
+Also export events yourself, for both the platform endpoint and the connected-account endpoint, from the freeze boundary through the switch. `delivery_success=false` is not the whole set. Compare that export to the snapshot:
+
+The admin `POST /api/admin/reconcile` body is `{ "events": [ ... ] }`. Without `"apply": true` it only reports platform vs connect counts, missing ids, duplicate ids, and local `pending_payment` bookings (open checkouts). `"apply": true` runs the same handler as the webhook for missing ids. A second run reports those ids as already done. It does not call Stripe.
+
+An older `account.updated` or subscription event does not overwrite a newer observation. The same event may retry. `account.updated` callbacks include `observedAt`. The email worker ignores an older `observedAt` once `stripeConnectObservedAt` is stored. Deploy that email-worker change before cutover or a stale ready flag can still win on the current receiver. Booking-paid retries are duplicates when the payment intent is already recorded.
+
+A crashed handler leaves a `processing` row and does not let a second delivery steal it. After the host is frozen and `admitted` is 0, `POST /api/admin/release-processing` drops those rows. Reconcile then applies the event again. The callback outbox skips a callback that already returned success.
+
+## Rollback after the new host has written
+
+Pointing the URLs back is not a data rollback. Freeze the new host, drain, snapshot it, and diff it against the import snapshot:
 
 ```bash
-npm run connect:snapshot -- verify data/schedi.sqlite
-npm run connect:snapshot -- export data/schedi.sqlite /tmp/schedi-connect-snapshot.json
-npm run connect:snapshot -- roundtrip data/schedi.sqlite
-npm run connect:snapshot -- restore /tmp/schedi-connect-snapshot.json /tmp/schedi-restored.sqlite
+npm run connect:snapshot -- verify-json /tmp/imported.json
+npm run connect:snapshot -- diff /tmp/imported.json /tmp/after.json
 ```
 
-The script copies the SQLite file before it reads, prints counts and a checksum, and does not contact the network. `integrity_check` must be `ok` and `foreign_key_check` must be empty. Restore refuses to overwrite an existing file.
+The diff prints added, removed, and changed counts per table, not customer rows. To put the old file back, restore a chosen snapshot onto a new local SQLite file only:
 
-3. On the empty Cloudflare object, `POST /api/admin/sqlite-restore` with the same secret. Without `x-schedi-restore-confirm: restore-empty-database` the call is a dry run and writes nothing. The apply mode refuses a non-empty database. There is no replace mode.
+```bash
+npm run connect:snapshot -- restore /tmp/chosen.json /tmp/schedi-restored.sqlite
+npm run connect:snapshot -- verify /tmp/schedi-restored.sqlite
+```
 
-## Cutover
+`restore` refuses to overwrite an existing file and writes the JSON snapshot as mode `0600`. Replacing the Railway `/data` file is a parent step with the process stopped. It is not done by this repository. Until that file is in place and the new host is frozen, do not open the old host.
 
-There is no safe dual writer. Railway and the Durable Object are two databases. If both accept webhooks, portal sessions, handoff nonces, local bookings, and subscription rows diverge. Public booking paid notices can both hit `schedi.app`; that endpoint treats a duplicate as success, but the SQLite copies still diverge.
+`verify` reads a SQLite file. `verify-json` reads a snapshot JSON file. Neither command contacts the network. Do not use `verify` on a live WAL file. The HTTP snapshot is the consistent copy of the running database.
 
-Webhook processing pauses while the two Railway endpoints are disabled. Stripe keeps the events and retries for days. Card checkout also pauses if callers are switched only after the import. That pause is the consistent window. A rolling switch leaves a gap of events that were applied only on Railway.
+## Would merging this PR deploy Railway?
 
-1. Confirm this Worker is deployed with the secrets above, **no** production route, and an empty object (`SCHEDI_SEED=0`).
-2. Disable both Railway webhook endpoints. Do not delete them. Leave `schedi.app/billing/webhook` enabled.
-3. Wait for in-flight Railway requests to finish.
-4. `GET /api/admin/sqlite-snapshot` from Railway. Run `verify` / checksum the file locally.
-5. Dry-run restore against the Worker, then apply with `restore-empty-database`. Compare checksums and row counts. `pragma.integrity` must be `ok`.
-6. Set `CONNECT_APP_ORIGIN` on `schedi-email-worker` to the new https origin and deploy that worker. Update the Railway URLs in `site/index.html`, `site/booking.html`, and `site/hq.html`, and add the new origin to `connect-src` in `worker/handler.ts`. Deploy `schedi-web` only from the full asset directory (the restored version plus the updated shell). Do not upload git `site/` by itself.
-7. Point **both** enabled Railway webhook endpoints at `https://<connect-host>/api/webhooks/stripe` and re-enable them. Keep each endpoint's existing signing secret. Do not merge the two secrets into one.
-8. Watch Stripe deliveries, a sandbox onboarding, a paid and a failed and an asynchronous booking payment, an owner subscription failure, a replayed event, and a portal session. Railway should show no new requests.
+Railway's GitHub autodeploy docs say a linked service deploys on pushes to the connected branch unless that trigger is disabled. This service is linked to `schediapp/Schedi` branch `main`. The live deployment is still `82f28802-84b7-49b5-875d-29cf86c2c06f` at `d15d288`, which is older than `main`, but the describe-service result does not show whether autodeploy or "wait for CI" is on. That is not proof the trigger is off. CI in this repo only runs tests, typecheck, and the Next build. It does not deploy. Treat a merge to `main` as a possible Railway deploy of this code, including the new tables and the freeze (the freeze stays off until the maintenance call). The worker can be deployed from a pinned SHA without merging. Do not merge until someone has looked at the Railway trigger with a sanctioned screen.
 
-## Rollback and observation
+## Caller switch
 
-During the watch, leave the Railway deployment `82f28802-84b7-49b5-875d-29cf86c2c06f` and the volume in place. Redeploying that release is not a database rollback.
-
-- If the Worker has not accepted a write you need to keep: disable its webhook endpoints, point both URLs back at Railway, restore `CONNECT_APP_ORIGIN` and the shell URLs, re-enable the Railway endpoints. Queued events retry against Railway. Events already marked done on Railway are skipped. Events that exist only on Cloudflare are not in Railway and will be applied again there if Stripe retries them.
-- If the Worker has newer rows you must keep, export its snapshot and reconcile before sending traffic back. Do not run two writers to "catch up".
-- Do not delete the Railway service. Deletion removes deployments, domains, and variables. The volume can remain and can still bill. Shutdown is a later decision after the watch shows no traffic and the backup restore has been proven.
-
-`connect.schedi.app` was not verified from DNS here. If a hostname already proxies to Railway, move that record in the same window as the webhook URLs. This repository does not attach it.
+After the checksums match and the missing-event report is empty, set `CONNECT_APP_ORIGIN` on the email worker and update the Railway URLs in `site/index.html`, `site/booking.html`, `site/hq.html`, and `connect-src` in `worker/handler.ts`. Deploy `schedi-web` only with the full asset directory. Then change both webhook endpoint URLs. Leave the old host frozen. Sessions on the new hostname are new. Owners come back through Set up Stripe. Do not put the session token in a query string.

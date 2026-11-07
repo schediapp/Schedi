@@ -2694,7 +2694,7 @@ function paymentReceivedMessage(tenant, booking, purpose) {
   return { subject: subject, text: text, html: html };
 }
 
-async function markBookingCheckoutPaid(env, { tenantId, bookingIds, purpose, card, amountCents, paymentIntentId, splits }) {
+async function markBookingCheckoutPaid(env, { tenantId, bookingIds, purpose, card, amountCents, paymentIntentId, splits, eventId }) {
   const id = safeTenantId(tenantId);
   const ids = parseBookingIdList(bookingIds);
   if (!id || !ids.length) return { ok: false, ignored: true, reason: 'no_booking' };
@@ -3082,11 +3082,18 @@ async function handleConnectReady(request, env, origin) {
   }
   const tenant = await getTenantById(env, idToken, slug);
   if (!tenant) return json({ ok: false, error: 'tenant_not_found' }, 404, origin);
+  const observedAt = String((body && body.observedAt) || '');
+  const previousObserved = String(tenant.stripeConnectObservedAt || '');
+  if (observedAt && previousObserved && previousObserved > observedAt) {
+    return json({ ok: true, stale: true, slug, stripeConnectReady: tenant.stripeConnectReady === true, stripeConnectStatus: tenant.stripeConnectStatus || '' }, 200, origin);
+  }
   let status = allowedStatus ? body.status : (body.ready === true ? 'ready' : 'in_progress');
   if (body.ready === true) status = 'ready';
   if (status === 'ready') body.ready = true;
   const ready = status === 'ready';
-  await patchTenantFields(env, idToken, slug, { stripeConnectReady: ready, stripeConnectStatus: status });
+  const patch = { stripeConnectReady: ready, stripeConnectStatus: status };
+  if (observedAt) patch.stripeConnectObservedAt = observedAt;
+  await patchTenantFields(env, idToken, slug, patch);
   return json({ ok: true, slug, stripeConnectReady: ready, stripeConnectStatus: status }, 200, origin);
 }
 
@@ -3116,6 +3123,7 @@ async function handleBillingRequest(request, env, origin, path, url) {
         amountCents: payload.amountCents,
         paymentIntentId: payload.paymentIntentId,
         splits: payload.splits,
+        eventId: payload.eventId || '',
       }),
     });
   }

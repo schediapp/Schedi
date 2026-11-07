@@ -7,7 +7,6 @@ import { afterEach, describe, expect, it } from "vitest";
 import { handleConnectRequest } from "../src/connect/server";
 import { PORTAL_CSS } from "../src/connect/portal-css";
 import { splitSql } from "../src/connect/durable-sql";
-import { STRIPE_EVENT_LEASE_MS } from "../src/lib/db";
 import { openStore } from "../src/lib/node-sqlite";
 import { applyStripeEvent } from "../src/lib/webhooks";
 import { memoryStore, seedProBusiness } from "./helpers";
@@ -281,19 +280,23 @@ describe("stripe webhook safety", () => {
     await first;
     expect(calls).toBe(1);
 
-    const stale = store.claimStripeEvent("evt_stale", Date.now() - STRIPE_EVENT_LEASE_MS - 1000);
+    const stale = store.claimStripeEvent("evt_stale", Date.now() - 10 * 60_000);
     expect(stale.status).toBe("claimed");
-    let reclaimed = 0;
-    await applyStripeEvent(
-      store,
-      { ...event, id: "evt_stale" } as never,
-      {
-        recordPublicCardPayment: async () => {
-          reclaimed += 1;
-        },
+    await expect(applyStripeEvent(store, { ...event, id: "evt_stale" } as never, {
+      recordPublicCardPayment: async () => {
+        calls += 1;
       },
-    );
-    expect(reclaimed).toBe(1);
+    })).rejects.toMatchObject({ status: 500 });
+    expect(calls).toBe(1);
+    store.freezeWriters();
+    while (store.maintenance().admitted > 0) store.releaseAdmit();
+    expect(store.releaseProcessingClaims()).toBe(1);
+    await applyStripeEvent(store, { ...event, id: "evt_stale" } as never, {
+      recordPublicCardPayment: async () => {
+        calls += 1;
+      },
+    });
+    expect(calls).toBe(2);
     expect(store.hasStripeEvent("evt_stale")).toBe(true);
   });
 });
@@ -365,19 +368,43 @@ describe("connect snapshot", () => {
 });
 
 describe("connect worker routes", () => {
-  it("requires the connect secret for snapshot and does not write on an unconfirmed restore", async () => {
+  it("requires the migration secret and a drained freeze before snapshot", async () => {
     const store = memoryStore();
     seedProBusiness(store);
+    const env = { SCHEDI_MIGRATION_SECRET: "migration-secret", SCHEDI_CONNECT_PAID_SECRET: "paid-secret" };
     const denied = await handleConnectRequest(new Request("https://connect.test/api/admin/sqlite-snapshot"), {
       store,
-      env: { SCHEDI_CONNECT_PAID_SECRET: "connect-secret" },
+      env,
     });
     expect(denied.status).toBe(401);
+    const paidSecret = await handleConnectRequest(
+      new Request("https://connect.test/api/admin/sqlite-snapshot", {
+        headers: { "x-schedi-connect-secret": "paid-secret", "x-schedi-migration-secret": "paid-secret" },
+      }),
+      { store, env },
+    );
+    expect(paidSecret.status).toBe(401);
+    const unfrozen = await handleConnectRequest(
+      new Request("https://connect.test/api/admin/sqlite-snapshot", {
+        headers: { "x-schedi-migration-secret": "migration-secret" },
+      }),
+      { store, env },
+    );
+    expect(unfrozen.status).toBe(409);
+    const frozen = await handleConnectRequest(
+      new Request("https://connect.test/api/admin/maintenance", {
+        method: "POST",
+        headers: { "x-schedi-migration-secret": "migration-secret", "content-type": "application/json" },
+        body: JSON.stringify({ mode: "frozen" }),
+      }),
+      { store, env },
+    );
+    expect(frozen.status).toBe(200);
     const snapshotResponse = await handleConnectRequest(
       new Request("https://connect.test/api/admin/sqlite-snapshot", {
-        headers: { "x-schedi-connect-secret": "connect-secret" },
+        headers: { "x-schedi-migration-secret": "migration-secret" },
       }),
-      { store, env: { SCHEDI_CONNECT_PAID_SECRET: "connect-secret" } },
+      { store, env },
     );
     expect(snapshotResponse.status).toBe(200);
     expect(snapshotResponse.headers.get("content-disposition")).toContain("schedi-connect-snapshot.json");
@@ -386,10 +413,10 @@ describe("connect worker routes", () => {
     const dry = await handleConnectRequest(
       new Request("https://connect.test/api/admin/sqlite-restore", {
         method: "POST",
-        headers: { "x-schedi-connect-secret": "connect-secret", "content-type": "application/json" },
+        headers: { "x-schedi-migration-secret": "migration-secret", "content-type": "application/json" },
         body: JSON.stringify(snapshot),
       }),
-      { store, env: { SCHEDI_CONNECT_PAID_SECRET: "connect-secret" } },
+      { store, env },
     );
     expect(dry.status).toBe(200);
     expect((await dry.json()).applied).toBe(false);
@@ -398,13 +425,13 @@ describe("connect worker routes", () => {
       new Request("https://connect.test/api/admin/sqlite-restore", {
         method: "POST",
         headers: {
-          "x-schedi-connect-secret": "connect-secret",
+          "x-schedi-migration-secret": "migration-secret",
           "x-schedi-restore-confirm": "restore-empty-database",
           "content-type": "application/json",
         },
         body: JSON.stringify(snapshot),
       }),
-      { store, env: { SCHEDI_CONNECT_PAID_SECRET: "connect-secret" } },
+      { store, env },
     );
     expect(refused.status).toBe(409);
   });
@@ -426,9 +453,11 @@ describe("connect worker routes", () => {
       { store },
     );
     expect(signedIn.status).toBe(303);
-    const cookie = signedIn.headers.get("set-cookie") || "";
-    expect(cookie).toContain("schedi_session=");
-    expect(cookie.toLowerCase()).toContain("httponly");
+    expect(signedIn.headers.get("set-cookie")).toBeNull();
+    expect(store.getOwnerByEmail("owner@example.com")).toBeNull();
+    const owner = store.createOwner({ email: "owner@example.com", name: "Ada Lovelace" });
+    store.createBusiness({ ownerId: owner.id, name: "Analytical Engines", slug: "analytical-engines" });
+    const cookie = `schedi_session=${encodeURIComponent(store.createSession(owner.id))}; HttpOnly; Path=/`;
     const portal = await handleConnectRequest(
       new Request("https://connect.test/portal", { headers: { cookie } }),
       { store },

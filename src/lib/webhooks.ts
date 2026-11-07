@@ -1,6 +1,7 @@
 import type Stripe from "stripe";
 import { confirmBooking, failBooking } from "./bookings";
 import { noticeFromCheckoutSession, recordConnectCardPayment, type ConnectCardPaidNotice } from "./connect-card-payment";
+import type { ConnectConfig } from "./connect-config";
 import { publishStripeConnectReady } from "./connect-ready";
 import type { Store } from "./db";
 import { SchediError } from "./errors";
@@ -9,8 +10,16 @@ import { applySubscriptionState } from "./subscription-state";
 
 export interface StripeEventDeps {
   recordPublicCardPayment?: (notice: ConnectCardPaidNotice) => Promise<void>;
-  publishConnectReady?: (slug: string, ready: boolean) => Promise<void>;
+  publishConnectReady?: (slug: string, ready: boolean, observedAt?: string) => Promise<void>;
   now?: number;
+  config?: ConnectConfig;
+}
+
+function observedAtFor(event: Stripe.Event, now?: number): string {
+  if (typeof event.created === "number" && Number.isFinite(event.created)) {
+    return new Date(event.created * 1000).toISOString();
+  }
+  return new Date(now ?? Date.now()).toISOString();
 }
 
 /**
@@ -28,7 +37,7 @@ export async function applyStripeEvent(store: Store, event: Stripe.Event, deps?:
     if (event.account) {
       await applyConnectedEvent(store, event, deps);
     } else {
-      applyPlatformEvent(store, event);
+      applyPlatformEvent(store, event, deps);
     }
     store.finishStripeEvent(event.id, claim.at);
   } catch (error) {
@@ -63,10 +72,7 @@ async function applyConnectedEvent(store: Store, event: Stripe.Event, deps?: Str
         }
       }
       const notice = noticeFromCheckoutSession(session, event.id);
-      if (notice) {
-        const record = deps?.recordPublicCardPayment || recordConnectCardPayment;
-        await record(notice);
-      }
+      if (notice) await deliverCardPayment(store, event, notice, deps);
       return;
     }
     case "checkout.session.async_payment_failed": {
@@ -99,15 +105,21 @@ async function applyConnectedEvent(store: Store, event: Stripe.Event, deps?: Str
       if (!accountId) return;
       const business = store.getBusinessByStripeAccount(accountId);
       if (!business) return;
+      const observedAt = observedAtFor(event, deps?.now);
+      const fenceKey = `account:${accountId}`;
+      const decision = store.fenceDecision(fenceKey, observedAt, event.id);
+      if (decision === "stale") return;
       const ready = connectedChargesEnabled(account);
       const statuses = readCapabilityStatuses(account);
       if (account.charges_enabled === true && statuses.cardPaymentsStatus !== "active") {
         statuses.cardPaymentsStatus = "active";
       }
       if (account.charges_enabled === false) statuses.cardPaymentsStatus = "inactive";
-      store.setCapabilities(business.id, statuses);
-      const publish = deps?.publishConnectReady || publishStripeConnectReady;
-      await publish(business.slug, ready);
+      if (decision === "apply") {
+        store.setCapabilities(business.id, statuses);
+        store.commitFence(fenceKey, observedAt, event.id);
+      }
+      await deliverConnectReady(store, event, business.slug, ready, observedAt, deps);
       return;
     }
     default:
@@ -115,7 +127,36 @@ async function applyConnectedEvent(store: Store, event: Stripe.Event, deps?: Str
   }
 }
 
-function applyPlatformEvent(store: Store, event: Stripe.Event): void {
+async function deliverCardPayment(
+  store: Store,
+  event: Stripe.Event,
+  notice: ConnectCardPaidNotice,
+  deps?: StripeEventDeps,
+): Promise<void> {
+  const id = `booking_paid:${event.id}`;
+  if (store.beginOutbox(id, "booking_paid", JSON.stringify(notice), observedAtFor(event, deps?.now)) === "sent") return;
+  const record = deps?.recordPublicCardPayment || ((item: ConnectCardPaidNotice) => recordConnectCardPayment(item, deps?.config));
+  await record(notice);
+  store.markOutboxSent(id);
+}
+
+async function deliverConnectReady(
+  store: Store,
+  event: Stripe.Event,
+  slug: string,
+  ready: boolean,
+  observedAt: string,
+  deps?: StripeEventDeps,
+): Promise<void> {
+  const id = `connect_ready:${event.id}`;
+  const payload = JSON.stringify({ slug, ready, eventId: event.id, observedAt });
+  if (store.beginOutbox(id, "connect_ready", payload, observedAt) === "sent") return;
+  if (deps?.publishConnectReady) await deps.publishConnectReady(slug, ready, observedAt);
+  else await publishStripeConnectReady(slug, ready, undefined, { eventId: event.id, observedAt }, deps?.config);
+  store.markOutboxSent(id);
+}
+
+function applyPlatformEvent(store: Store, event: Stripe.Event, deps?: StripeEventDeps): void {
   switch (event.type) {
     case "checkout.session.completed": {
       const session = event.data.object as Stripe.Checkout.Session;
@@ -140,18 +181,28 @@ function applyPlatformEvent(store: Store, event: Stripe.Event): void {
       // Scheduling cancel_at_period_end keeps status active. Access ends only when
       // Stripe deletes the subscription at the end of the paid period.
       if (subscription.status === "canceled") return;
+      const observedAt = observedAtFor(event, deps?.now);
+      const fenceKey = `subscription:${subscription.id}`;
+      const decision = store.fenceDecision(fenceKey, observedAt, event.id);
+      if (decision === "stale" || decision === "retry") return;
       applySubscriptionState(store, ownerId, subscription);
+      store.commitFence(fenceKey, observedAt, event.id);
       return;
     }
     case "customer.subscription.deleted": {
       const subscription = event.data.object as Stripe.Subscription;
       const ownerId = ownerIdForSubscription(store, subscription);
       if (!ownerId) return;
+      const observedAt = observedAtFor(event, deps?.now);
+      const fenceKey = `subscription:${subscription.id}`;
+      const decision = store.fenceDecision(fenceKey, observedAt, event.id);
+      if (decision === "stale" || decision === "retry") return;
       applySubscriptionState(store, ownerId, {
         ...subscription,
         status: "canceled",
         cancel_at_period_end: false,
       });
+      store.commitFence(fenceKey, observedAt, event.id);
       return;
     }
     case "invoice.payment_failed": {
@@ -160,7 +211,12 @@ function applyPlatformEvent(store: Store, event: Stripe.Event): void {
       if (!customerId) return;
       const owner = store.getOwnerByStripeCustomer(customerId);
       if (!owner) return;
+      const observedAt = observedAtFor(event, deps?.now);
+      const fenceKey = `invoice:${customerId}`;
+      const decision = store.fenceDecision(fenceKey, observedAt, event.id);
+      if (decision === "stale" || decision === "retry") return;
       store.setSubscription(owner.id, { status: "past_due" });
+      store.commitFence(fenceKey, observedAt, event.id);
       return;
     }
     default:

@@ -43,7 +43,7 @@ export default async function BookedPage({
   }
 
   const stripe = stripeOrNull();
-  if (stripe && booking.status === "pending_payment") {
+  if (!store.maintenance().frozen && stripe && booking.status === "pending_payment") {
     try {
       booking = await fulfillBookingCheckout(store, stripe, booking);
     } catch (error) {

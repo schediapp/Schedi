@@ -13,6 +13,7 @@ import type Stripe from "stripe";
 import { fulfillBookingCheckout } from "../lib/bookings";
 import { fulfillOwnerCheckout } from "../lib/billing";
 import { refreshMerchantCapabilities } from "../lib/connect";
+import type { ConnectConfig } from "../lib/connect-config";
 import { readCookie, SESSION_COOKIE } from "../lib/session-cookie";
 import { CONNECT_DASHBOARD_JS } from "./dashboard-script";
 import { PORTAL_CSS } from "./portal-css";
@@ -67,7 +68,21 @@ const SAMPLES = [
   ["june@freedesk.example", "June Patel · Free Desk · Free"],
 ];
 
-export function renderSignIn(error?: string): string {
+export function renderSignIn(error?: string, emailSignIn = false): string {
+  if (!emailSignIn) {
+    return connectDocument(
+      "Schedi",
+      `${header()}
+<main class="shell">
+  <section class="panel">
+    <p class="eyebrow">Owner portal</p>
+    <h1>Sign in from Schedi</h1>
+    ${error ? `<p class="banner bad" role="alert">${esc(error)}</p>` : ""}
+    <p class="muted">An email address alone does not open this portal. In Schedi, choose Set up Stripe. That link is signed for the signed-in owner and expires in two minutes.</p>
+  </section>
+</main>`,
+    );
+  }
   const samples = SAMPLES.map(
     ([email, label]) => `<form method="post" action="/api/session">
       <input type="hidden" name="intent" value="sign-in">
@@ -103,10 +118,13 @@ export async function renderPortal(
   request: Request,
   stripe: Stripe | null,
   query: URLSearchParams,
+  config?: ConnectConfig,
 ): Promise<string> {
+  const frozen = store.maintenance().frozen;
   const owner = ownerFrom(store, request);
-  if (!owner) return renderSignIn(query.get("error") || undefined);
-  if (query.get("session_id") && stripe) {
+  if (!owner) return renderSignIn(query.get("error") || undefined, config ? config.emailSignIn : false);
+  const gate = frozen ? false : store.tryAdmit();
+  if (gate && query.get("session_id") && stripe) {
     try {
       await fulfillOwnerCheckout(store, stripe, owner, query.get("session_id") || "");
     } catch (error) {
@@ -115,11 +133,19 @@ export async function renderPortal(
   }
   const freshOwner = store.getOwner(owner.id);
   const found = store.getBusinessByOwner(freshOwner.id);
-  if (!found) return renderSignIn("This sign-in has no business.");
-  const remotePlan = await fetchSchediPlan({ slug: found.slug, email: freshOwner.email });
-  const entitled = applySchediPlan(store, found, remotePlan, freshOwner.email);
-  let business = entitled;
-  if (stripe && business.stripeAccountId) {
+  if (!found) {
+    if (gate) store.releaseAdmit();
+    return renderSignIn("This sign-in has no business.", false);
+  }
+  let business = found;
+  if (gate) {
+    const remotePlan = await fetchSchediPlan(
+      { slug: found.slug, email: freshOwner.email },
+      config ? { connectPaidSecret: config.connectPaidSecret, planUrl: config.planUrl } : undefined,
+    );
+    business = applySchediPlan(store, found, remotePlan, freshOwner.email);
+  }
+  if (gate && stripe && business.stripeAccountId) {
     try {
       business = await refreshMerchantCapabilities(store, stripe, business);
     } catch (error) {
@@ -129,6 +155,7 @@ export async function renderPortal(
       );
     }
   }
+  if (gate) store.releaseAdmit();
   const cardsOpen = isCardPlanPro(business);
   const complimentary = isComplimentaryPro(business);
   const pill = portalPlanPill(business);
@@ -137,7 +164,7 @@ export async function renderPortal(
   const live = isPublicPageLive(business.subscriptionStatus);
   const cardReady = isCardCheckoutReady(business);
   const connectStatus = cardConnectStatus(!!business.stripeAccountId, cardReady);
-  const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "";
+  const publishableKey = config ? config.publishableKey : process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "";
   const connectError = query.get("source") === "connect" ? query.get("error") : "";
   const rows = bookings
     .map((booking) => {
@@ -205,6 +232,7 @@ export async function renderPortal(
       <span class="pill">${live ? "Public page is live" : "Public page is paused"}</span>
       <a href="/b/${esc(business.slug)}">View booking page</a>
     </div>
+    ${frozen ? `<p class="banner warn">Connect is paused. This page is not taking changes, and an open card checkout finishes only after the pause ends.</p>` : ""}
     ${query.get("error") && query.get("source") !== "connect" ? `<p class="banner bad" role="alert">${esc(query.get("error"))}</p>` : ""}
     ${query.get("updated") ? `<p class="note">Subscription updated.</p>` : ""}
     ${live ? "" : `<p class="banner warn">A failed payment or a subscription that has ended pauses the public page. A failed client card does not.</p>`}
@@ -269,11 +297,19 @@ export function renderHome(store: Store): string {
   );
 }
 
-export async function renderBooking(store: Store, stripe: Stripe | null, slug: string, query: URLSearchParams): Promise<string> {
+export async function renderBooking(
+  store: Store,
+  stripe: Stripe | null,
+  slug: string,
+  query: URLSearchParams,
+  config?: ConnectConfig,
+): Promise<string> {
+  const frozen = store.maintenance().frozen;
   const found = store.getBusinessBySlug(slug);
   if (!found) return connectDocument("Schedi", `${header()}<main class="shell"><h1>That page is not here.</h1></main>`);
   let business = found;
-  if (stripe && business.stripeAccountId) {
+  const gate = frozen ? false : store.tryAdmit();
+  if (gate && stripe && business.stripeAccountId) {
     try {
       business = await refreshMerchantCapabilities(store, stripe, business);
     } catch (error) {
@@ -283,6 +319,7 @@ export async function renderBooking(store: Store, stripe: Stripe | null, slug: s
       );
     }
   }
+  if (gate) store.releaseAdmit();
   const services = store.listServices(business.id);
   const live = isPublicPageLive(business.subscriptionStatus);
   const slots = upcomingSlots(new Date(), takenSlotTimes(store, business.id, new Date()));
@@ -313,7 +350,9 @@ export async function renderBooking(store: Store, stripe: Stripe | null, slug: s
       </label>`,
     )
     .join("");
-  const form = live
+  const form = frozen
+    ? `<section class="panel"><h2>Paused</h2><p class="muted" style="margin-top: 8px">Connect is paused, so this page is not taking a new booking. A card checkout that is already open can still finish at Stripe. Nothing new is charged here.</p></section>`
+    : live
     ? `<form class="panel" method="post" action="/api/bookings">
         <h2>Request a time</h2>
         ${query.get("error") ? `<p class="banner bad">${esc(query.get("error"))}</p>` : ""}
@@ -354,7 +393,10 @@ export async function renderBooked(
   stripe: Stripe | null,
   slug: string,
   bookingId: string,
+  config?: ConnectConfig,
 ): Promise<string> {
+  void config;
+  const frozen = store.maintenance().frozen;
   const business = store.getBusinessBySlug(slug);
   if (!business || !bookingId) {
     return connectDocument("Schedi", `${header()}<main class="shell"><h1>Booking not found.</h1></main>`);
@@ -368,7 +410,7 @@ export async function renderBooked(
   if (!booking || booking.businessId !== business.id) {
     return connectDocument("Schedi", `${header()}<main class="shell"><h1>Booking not found.</h1></main>`);
   }
-  if (stripe && booking.status === "pending_payment") {
+  if (!frozen && stripe && booking.status === "pending_payment") {
     try {
       booking = await fulfillBookingCheckout(store, stripe, booking);
     } catch (error) {

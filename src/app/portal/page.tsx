@@ -25,23 +25,32 @@ export default async function PortalPage({
   if (!owner) return <SignIn error={query.error} />;
 
   const store = getStore();
-  if (query.session_id) {
-    const stripe = stripeOrNull();
-    if (stripe) {
-      try {
-        await fulfillOwnerCheckout(store, stripe, owner, query.session_id);
-      } catch (error) {
-        console.error("Could not finish subscription checkout", error instanceof Error ? error.message : "unknown error");
+  const frozen = store.maintenance().frozen;
+  const gate = frozen ? false : store.tryAdmit();
+  let freshOwner = owner;
+  let business = store.getBusinessByOwner(owner.id);
+  try {
+    if (gate && query.session_id) {
+      const stripe = stripeOrNull();
+      if (stripe) {
+        try {
+          await fulfillOwnerCheckout(store, stripe, owner, query.session_id);
+        } catch (error) {
+          console.error("Could not finish subscription checkout", error instanceof Error ? error.message : "unknown error");
+        }
       }
     }
+    freshOwner = store.getOwner(owner.id);
+    business = store.getBusinessByOwner(freshOwner.id);
+    if (business && gate) {
+      const remotePlan = await fetchSchediPlan({ slug: business.slug, email: freshOwner.email });
+      const entitled = applySchediPlan(store, business, remotePlan, freshOwner.email);
+      business = await withFreshCapabilities(entitled);
+    }
+  } finally {
+    if (gate) store.releaseAdmit();
   }
-
-  const freshOwner = store.getOwner(owner.id);
-  const found = store.getBusinessByOwner(freshOwner.id);
-  if (!found) return <SignIn error="This sign-in has no business." />;
-  const remotePlan = await fetchSchediPlan({ slug: found.slug, email: freshOwner.email });
-  const entitled = applySchediPlan(store, found, remotePlan, freshOwner.email);
-  const business = await withFreshCapabilities(entitled);
+  if (!business) return <SignIn error="This sign-in has no business." />;
   const cardsOpen = isCardPlanPro(business);
   const complimentary = isComplimentaryPro(business);
   const pill = portalPlanPill(business);

@@ -179,9 +179,6 @@ function mapBooking(row: BookingRow): Booking {
   };
 }
 
-/** A processing claim older than this can be taken over after a crashed handler. */
-export const STRIPE_EVENT_LEASE_MS = 120_000;
-
 export type StripeEventClaim =
   | { status: "claimed"; at: string }
   | { status: "done" }
@@ -259,7 +256,32 @@ export class Store {
         nonce TEXT PRIMARY KEY,
         expires_at INTEGER NOT NULL
       );
+      CREATE TABLE IF NOT EXISTS maintenance (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        frozen INTEGER NOT NULL DEFAULT 0,
+        frozen_at TEXT,
+        admitted INTEGER NOT NULL DEFAULT 0
+      );
+      CREATE TABLE IF NOT EXISTS state_fence (
+        key TEXT PRIMARY KEY,
+        observed_at TEXT NOT NULL,
+        event_id TEXT NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS callback_outbox (
+        id TEXT PRIMARY KEY,
+        kind TEXT NOT NULL,
+        payload TEXT NOT NULL,
+        state TEXT NOT NULL,
+        observed_at TEXT,
+        updated_at TEXT NOT NULL
+      );
     `);
+    this.db
+      .prepare(
+        `INSERT INTO maintenance (id, frozen, admitted)
+         SELECT 1, 0, 0 WHERE NOT EXISTS (SELECT 1 FROM maintenance WHERE id = 1)`,
+      )
+      .run();
     ensureBusinessBillingColumns(this.db);
     ensureStripeEventState(this.db);
   }
@@ -624,11 +646,10 @@ export class Store {
   }
 
   /**
-   * One delivery owns the event. A completed row is a replay. A fresh
-   * processing row means another delivery is still working, so the caller
-   * must not apply side effects. A stale processing row is a crashed
-   * attempt and can be claimed again. The row is marked done only after
-   * the handler finishes, so a thrown error is still retryable.
+   * One delivery owns the event until it finishes or the handler releases it.
+   * A processing row is never stolen by a later delivery. A crashed claim stays
+   * processing until an operator releases it while writers are frozen and drained.
+   * The row is marked done only after local writes and required callbacks finish.
    */
   claimStripeEvent(id: string, now = Date.now()): StripeEventClaim {
     const at = new Date(now).toISOString();
@@ -644,17 +665,17 @@ export class Store {
       | { state: string | null; processed_at: string }
       | undefined;
     if (!row || row.state == null || row.state === "done") return { status: "done" };
-    const seen = Date.parse(row.processed_at);
-    if (Number.isFinite(seen) && now - seen >= STRIPE_EVENT_LEASE_MS) {
-      const took = this.db
-        .prepare(
-          `UPDATE stripe_events SET processed_at = ?
-           WHERE id = ? AND state = 'processing' AND processed_at = ?`,
-        )
-        .run(at, id, row.processed_at);
-      if (took.changes === 1) return { status: "claimed", at };
-    }
     return { status: "inflight" };
+  }
+
+  /** Drop crashed processing claims. Caller must already be frozen with no admitted writers. */
+  releaseProcessingClaims(): number {
+    const state = this.maintenance();
+    if (!state.frozen || state.admitted !== 0) {
+      throw new SchediError("Release processing claims only while frozen and drained.", 409);
+    }
+    const result = this.db.prepare("DELETE FROM stripe_events WHERE state = 'processing'").run();
+    return result.changes;
   }
 
   finishStripeEvent(id: string, at: string, now = Date.now()): void {
@@ -682,7 +703,89 @@ export class Store {
   }
 
   pragmaStatus(): { integrity: string; foreignKeyViolations: number } {
-    return pragmaChecks(this.db);
+    try {
+      return pragmaChecks(this.db);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "";
+      if (message.includes("SQLITE_AUTH") || message.includes("not authorized")) {
+        return { integrity: "unsupported", foreignKeyViolations: -1 };
+      }
+      throw error;
+    }
+  }
+
+  maintenance(): { frozen: boolean; admitted: number; frozenAt: string | null } {
+    const row = this.db.prepare("SELECT frozen, admitted, frozen_at FROM maintenance WHERE id = 1").get() as
+      | { frozen: number; admitted: number; frozen_at: string | null }
+      | undefined;
+    return {
+      frozen: row?.frozen === 1,
+      admitted: Number(row?.admitted || 0),
+      frozenAt: row?.frozen_at ?? null,
+    };
+  }
+
+  /** Admit one writer. False means the database is frozen and this request must not write. */
+  tryAdmit(): boolean {
+    const result = this.db.prepare("UPDATE maintenance SET admitted = admitted + 1 WHERE id = 1 AND frozen = 0").run();
+    return result.changes === 1;
+  }
+
+  releaseAdmit(): void {
+    this.db
+      .prepare("UPDATE maintenance SET admitted = CASE WHEN admitted > 0 THEN admitted - 1 ELSE 0 END WHERE id = 1")
+      .run();
+  }
+
+  freezeWriters(now = new Date().toISOString()): { frozen: boolean; admitted: number; frozenAt: string | null } {
+    this.db.prepare("UPDATE maintenance SET frozen = 1, frozen_at = COALESCE(frozen_at, ?) WHERE id = 1").run(now);
+    return this.maintenance();
+  }
+
+  openWriters(): { frozen: boolean; admitted: number; frozenAt: string | null } {
+    this.db.prepare("UPDATE maintenance SET frozen = 0, frozen_at = NULL WHERE id = 1").run();
+    return this.maintenance();
+  }
+
+  /**
+   * Latest-state fence. A newer observation wins. The same event may retry.
+   * An older or different event at the same timestamp does not overwrite.
+   */
+  fenceDecision(key: string, observedAt: string, eventId: string): "apply" | "retry" | "stale" {
+    const row = this.db.prepare("SELECT observed_at, event_id FROM state_fence WHERE key = ?").get(key) as
+      | { observed_at: string; event_id: string }
+      | undefined;
+    if (!row) return "apply";
+    if (observedAt > row.observed_at) return "apply";
+    if (observedAt === row.observed_at && row.event_id === eventId) return "retry";
+    return "stale";
+  }
+
+  commitFence(key: string, observedAt: string, eventId: string): void {
+    const existing = this.db.prepare("SELECT key FROM state_fence WHERE key = ?").get(key);
+    if (!existing) {
+      this.db.prepare("INSERT INTO state_fence (key, observed_at, event_id) VALUES (?, ?, ?)").run(key, observedAt, eventId);
+      return;
+    }
+    this.db.prepare("UPDATE state_fence SET observed_at = ?, event_id = ? WHERE key = ?").run(observedAt, eventId, key);
+  }
+
+  beginOutbox(id: string, kind: string, payload: string, observedAt: string | null, now = new Date().toISOString()): "pending" | "sent" {
+    const row = this.db.prepare("SELECT state FROM callback_outbox WHERE id = ?").get(id) as { state: string } | undefined;
+    if (row?.state === "sent") return "sent";
+    if (!row) {
+      this.db
+        .prepare(
+          `INSERT INTO callback_outbox (id, kind, payload, state, observed_at, updated_at)
+           VALUES (?, ?, ?, 'pending', ?, ?)`,
+        )
+        .run(id, kind, payload, observedAt, now);
+    }
+    return "pending";
+  }
+
+  markOutboxSent(id: string, now = new Date().toISOString()): void {
+    this.db.prepare("UPDATE callback_outbox SET state = 'sent', updated_at = ? WHERE id = ?").run(now, id);
   }
 
   markStripeEvent(id: string): void {

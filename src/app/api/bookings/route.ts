@@ -1,4 +1,5 @@
 import { placeBooking } from "@/lib/bookings";
+import { withWritable } from "@/lib/request-gate";
 import { errorMessage, publicOrigin, redirectTo } from "@/lib/http";
 import { parsePaymentChoice } from "@/lib/payment-options";
 import { getStore } from "@/lib/store";
@@ -7,6 +8,10 @@ import { stripeOrNull } from "@/lib/stripe";
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
+  return withWritable(getStore(), () => bookingsPost(request));
+}
+
+async function bookingsPost(request: Request) {
   const form = await request.formData();
   const slug = String(form.get("slug") || "");
   const payment = parsePaymentChoice(String(form.get("payment") || ""));

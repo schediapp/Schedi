@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { SESSION_COOKIE, sessionCookieOptions } from "@/lib/auth";
+import { withWritable } from "@/lib/request-gate";
 import { SchediError } from "@/lib/errors";
 import { errorMessage, redirectTo } from "@/lib/http";
 import { uniqueSlug } from "@/lib/slug";
@@ -8,6 +9,10 @@ import { getStore } from "@/lib/store";
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
+  return withWritable(getStore(), () => sessionPost(request));
+}
+
+async function sessionPost(request: Request) {
   const form = await request.formData();
   const intent = String(form.get("intent") || "sign-in");
   const store = getStore();

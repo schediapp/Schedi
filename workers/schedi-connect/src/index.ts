@@ -1,5 +1,6 @@
 import { DurableObjectSql, type DurableSqlStorage, type DurableTransactionStorage } from "../../../src/connect/durable-sql";
 import { handleConnectRequest } from "../../../src/connect/server";
+import { connectConfigFrom } from "../../../src/lib/connect-config";
 import { Store } from "../../../src/lib/db";
 import { createStripeClient } from "../../../src/lib/stripe";
 
@@ -21,6 +22,9 @@ interface ConnectEnv {
   CONNECT_PUBLIC_ORIGIN?: string;
   NODE_ENV?: string;
   SCHEDI_SEED?: string;
+  SCHEDI_MIGRATION_SECRET?: string;
+  CONNECT_OBJECT_NAME?: string;
+  CONNECT_TEST_DELAY_MS?: string;
 }
 
 interface ConnectContext {
@@ -42,6 +46,8 @@ function runtimeEnv(env: ConnectEnv): Record<string, string | undefined> {
     CONNECT_PUBLIC_ORIGIN: env.CONNECT_PUBLIC_ORIGIN,
     NODE_ENV: env.NODE_ENV || "production",
     SCHEDI_SEED: env.SCHEDI_SEED ?? "0",
+    SCHEDI_MIGRATION_SECRET: env.SCHEDI_MIGRATION_SECRET,
+    CONNECT_TEST_DELAY_MS: env.CONNECT_TEST_DELAY_MS,
   };
 }
 
@@ -53,15 +59,17 @@ export class ConnectDatabase {
   ) {}
 
   async fetch(request: Request): Promise<Response> {
+    const config = connectConfigFrom(runtimeEnv(this.env));
     const store = new Store(new DurableObjectSql(this.ctx.storage.sql, this.ctx.storage));
-    const stripe = this.env.STRIPE_SECRET_KEY ? createStripeClient(this.env.STRIPE_SECRET_KEY) : null;
-    return handleConnectRequest(request, { store, env: runtimeEnv(this.env), stripe });
+    const stripe = config.stripeSecretKey ? createStripeClient(config.stripeSecretKey) : null;
+    return handleConnectRequest(request, { store, config, stripe });
   }
 }
 
 export default {
   async fetch(request: Request, env: ConnectEnv): Promise<Response> {
-    const id = env.CONNECT_DB.idFromName("schedi-connect");
+    const name = env.CONNECT_OBJECT_NAME || "schedi-connect";
+    const id = env.CONNECT_DB.idFromName(name);
     return env.CONNECT_DB.get(id).fetch(request);
   },
 };

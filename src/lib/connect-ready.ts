@@ -1,32 +1,46 @@
+import type { ConnectConfig } from "./connect-config";
+import { connectConfigFromProcess } from "./connect-config";
 import { cardConnectStatus, type CardConnectStatus } from "./connect-status";
 
-const READY_URL = process.env.SCHEDI_CONNECT_READY_URL || "https://schedi.app/billing/connect-ready";
+export interface ConnectReadyNotice {
+  slug: string;
+  ready: boolean;
+  status: CardConnectStatus;
+  eventId: string;
+  observedAt: string;
+}
 
 /**
  * Tell the public booking tenant whether this connected account can take charges.
- * Callers that have an account publish in_progress until charges are enabled.
- * A missing account stays not_started and is not published from here.
+ * The URL and secret come from the request config when the caller has one.
+ * observedAt lets the receiver ignore an older account update.
  */
 export async function publishStripeConnectReady(
   slug: string,
   ready: boolean,
   status?: CardConnectStatus,
+  notice?: { eventId?: string; observedAt?: string },
+  config?: ConnectConfig,
 ): Promise<void> {
-  const secret = process.env.SCHEDI_CONNECT_PAID_SECRET || "";
+  const resolvedConfig = config ?? connectConfigFromProcess();
+  const secret = resolvedConfig.connectPaidSecret;
   const safeSlug = String(slug || "").trim().toLowerCase();
   if (!secret || !/^[a-z0-9](?:[a-z0-9-]{0,40})$/.test(safeSlug)) return;
   const resolved = ready === true ? "ready" : (status || cardConnectStatus(true, false));
-  const response = await fetch(READY_URL, {
+  const body: Record<string, unknown> = {
+    slug: safeSlug,
+    ready: resolved === "ready",
+    status: resolved,
+  };
+  if (notice?.eventId) body.eventId = notice.eventId;
+  if (notice?.observedAt) body.observedAt = notice.observedAt;
+  const response = await fetch(resolvedConfig.connectReadyUrl, {
     method: "POST",
     headers: {
       "content-type": "application/json",
       "x-schedi-connect-secret": secret,
     },
-    body: JSON.stringify({
-      slug: safeSlug,
-      ready: resolved === "ready",
-      status: resolved,
-    }),
+    body: JSON.stringify(body),
   });
   if (!response.ok) {
     throw new Error("Could not publish stripeConnectReady.");

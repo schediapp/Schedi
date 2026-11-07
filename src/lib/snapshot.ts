@@ -12,7 +12,32 @@ const TABLES = [
   { name: "sessions", pk: "token" },
   { name: "stripe_events", pk: "id" },
   { name: "connect_handoffs", pk: "nonce" },
+  { name: "maintenance", pk: "id" },
+  { name: "state_fence", pk: "key" },
+  { name: "callback_outbox", pk: "id" },
 ] as const;
+
+export const EXPECTED_COLUMNS: Record<SnapshotTable, string[]> = {
+  owners: ["id", "email", "name", "stripe_customer_id", "created_at"],
+  businesses: [
+    "id", "owner_id", "name", "slug", "plan", "subscription_status", "stripe_subscription_id",
+    "cancel_at_period_end", "current_period_end", "stripe_account_id", "card_payments_status",
+    "payouts_status", "deposit_enabled", "deposit_amount_cents", "cash_app", "zelle", "venmo",
+    "paypal", "pay_at_appointment", "country", "created_at", "complimentary_pro", "billing_exempt",
+    "stripe_account_id_missing", "stripe_account_missing_at",
+  ],
+  services: ["id", "business_id", "name", "duration_minutes", "price_cents"],
+  bookings: [
+    "id", "business_id", "service_id", "client_name", "client_email", "starts_at", "payment_method",
+    "charge_kind", "amount_cents", "status", "stripe_checkout_session_id", "stripe_payment_intent_id", "created_at",
+  ],
+  sessions: ["token", "owner_id", "expires_at"],
+  stripe_events: ["id", "processed_at", "state"],
+  connect_handoffs: ["nonce", "expires_at"],
+  maintenance: ["id", "frozen", "frozen_at", "admitted"],
+  state_fence: ["key", "observed_at", "event_id"],
+  callback_outbox: ["id", "kind", "payload", "state", "observed_at", "updated_at"],
+};
 
 export type SnapshotTable = (typeof TABLES)[number]["name"];
 export type SnapshotRow = Record<string, string | number | null>;
@@ -145,7 +170,24 @@ export function databaseCounts(db: SqlDatabase): Record<SnapshotTable, number> {
 }
 
 export function databaseIsEmpty(db: SqlDatabase): boolean {
-  return Object.values(databaseCounts(db)).every((count) => count === 0);
+  for (const table of TABLES) {
+    if (table.name === "maintenance") continue;
+    const row = db.prepare(`SELECT COUNT(*) AS n FROM ${table.name}`).get() as { n: number };
+    if (Number(row.n) !== 0) return false;
+  }
+  return true;
+}
+
+export function schemaParity(db: SqlDatabase): { ok: boolean; missing: string[] } {
+  const missing: string[] = [];
+  for (const table of TABLES) {
+    const rows = db.prepare(`PRAGMA table_info(${table.name})`).all() as { name: string }[];
+    const names = new Set(rows.map((row) => row.name));
+    for (const column of EXPECTED_COLUMNS[table.name]) {
+      if (!names.has(column)) missing.push(`${table.name}.${column}`);
+    }
+  }
+  return { ok: missing.length === 0, missing };
 }
 
 /**
@@ -159,17 +201,21 @@ export function restoreSnapshot(
   mode: "dry-run" | "empty-only",
 ): SnapshotReport {
   const checked = parseSnapshot(snapshot);
+  const parity = schemaParity(db);
   const report: SnapshotReport = {
-    ok: true,
+    ok: parity.ok,
     applied: false,
     checksum: checked.checksum,
     counts: countsOf(checked.tables),
+    error: parity.ok ? undefined : `schema_mismatch:${parity.missing.join(",")}`,
   };
   if (mode === "dry-run") return report;
+  if (!parity.ok) throw new SchediError("Destination schema does not match this snapshot.", 409);
   if (mode !== "empty-only") throw new SchediError("Unsupported restore mode.", 400);
 
   return db.transaction(() => {
     if (!databaseIsEmpty(db)) throw new SchediError("Database is not empty. Restore was not applied.", 409);
+    db.prepare("DELETE FROM maintenance").run();
     for (const table of TABLES) {
       for (const row of checked.tables[table.name]) insertRow(db, table.name, row);
     }

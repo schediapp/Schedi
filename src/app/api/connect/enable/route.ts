@@ -1,4 +1,5 @@
 import { currentOwner } from "@/lib/auth";
+import { withWritable } from "@/lib/request-gate";
 import { enableCardPayments } from "@/lib/connect";
 import { redirectTo } from "@/lib/http";
 import { formatConnectEnableError } from "@/lib/stripe-error";
@@ -8,6 +9,10 @@ import { getStripe } from "@/lib/stripe";
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
+  return withWritable(getStore(), () => enablePost(request));
+}
+
+async function enablePost(request: Request) {
   const owner = await currentOwner();
   if (!owner) return redirectTo(request, "/portal", { error: "Sign in required." });
 

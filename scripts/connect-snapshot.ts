@@ -9,13 +9,14 @@
  *   node --experimental-strip-types scripts/connect-snapshot.ts restore <snapshot.json> <dest.sqlite>
  *   node --experimental-strip-types scripts/connect-snapshot.ts roundtrip <sqlite>
  */
-import { copyFileSync, existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { chmodSync, copyFileSync, existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { NodeSqliteDatabase } from "../src/lib/node-sqlite.ts";
 import { Store } from "../src/lib/db.ts";
 import { parseSnapshot } from "../src/lib/snapshot.ts";
+import { diffSnapshotKeys } from "../src/lib/reconcile.ts";
 
 function fail(message: string): never {
   console.error(message);
@@ -72,7 +73,8 @@ if (command === "verify") {
     const snapshot = opened.store.consistentSnapshot();
     const pragma = opened.store.pragmaStatus();
     if (pragma.integrity !== "ok" || pragma.foreignKeyViolations !== 0) fail("Integrity check failed. Nothing was written.");
-    writeFileSync(dest, JSON.stringify(snapshot));
+    writeFileSync(dest, JSON.stringify(snapshot), { mode: 0o600 });
+    chmodSync(dest, 0o600);
     console.log(JSON.stringify({
       ok: true,
       checksum: snapshot.checksum,
@@ -132,6 +134,23 @@ if (command === "verify") {
     rmSync(dir, { recursive: true, force: true });
   }
   if (!readFileSync(source).equals(before)) fail("Roundtrip changed the source file.");
+} else if (command === "verify-json") {
+  const snapshotPath = localPath(first, "snapshot");
+  const snapshot = parseSnapshot(JSON.parse(readFileSync(snapshotPath, "utf8")));
+  console.log(JSON.stringify({
+    ok: true,
+    checksum: snapshot.checksum,
+    rows: Object.fromEntries(Object.entries(snapshot.tables).map(([name, rows]) => [name, rows.length])),
+    format: snapshot.format,
+  }, null, 2));
+} else if (command === "diff") {
+  const left = parseSnapshot(JSON.parse(readFileSync(localPath(first, "before"), "utf8")));
+  const right = parseSnapshot(JSON.parse(readFileSync(localPath(second, "after"), "utf8")));
+  const keys: Record<string, string> = {
+    owners: "id", businesses: "id", services: "id", bookings: "id", sessions: "token",
+    stripe_events: "id", connect_handoffs: "nonce", maintenance: "id", state_fence: "key", callback_outbox: "id",
+  };
+  console.log(JSON.stringify({ ok: true, checksums: [left.checksum, right.checksum], tables: diffSnapshotKeys(left, right, keys) }, null, 2));
 } else {
   fail("Use verify, export, restore, or roundtrip.");
 }

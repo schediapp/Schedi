@@ -1,3 +1,4 @@
+import type { ConnectConfig } from "./connect-config";
 import { SchediError } from "./errors";
 
 export function errorMessage(error: unknown): string {
@@ -19,8 +20,8 @@ function isLoopbackHost(host: string): boolean {
  * CONNECT_PUBLIC_ORIGIN wins when it is an https origin, so the Cloudflare
  * host can be set without relying on Railway's domain variable.
  */
-export function publicOrigin(request: Request): string {
-  const configured = process.env.CONNECT_PUBLIC_ORIGIN?.trim().replace(/\/$/, "");
+export function publicOrigin(request: Request, config?: ConnectConfig): string {
+  const configured = (config ? config.publicOrigin : process.env.CONNECT_PUBLIC_ORIGIN)?.trim().replace(/\/$/, "");
   if (configured) {
     try {
       const url = new URL(configured);
@@ -40,7 +41,7 @@ export function publicOrigin(request: Request): string {
     }
   }
 
-  const railwayDomain = process.env.RAILWAY_PUBLIC_DOMAIN?.trim()
+  const railwayDomain = config ? "" : process.env.RAILWAY_PUBLIC_DOMAIN?.trim()
     .replace(/^https?:\/\//, "")
     .replace(/\/$/, "");
   if (railwayDomain && !isLoopbackHost(railwayDomain)) {

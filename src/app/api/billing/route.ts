@@ -1,4 +1,5 @@
 import { currentOwner } from "@/lib/auth";
+import { withWritable } from "@/lib/request-gate";
 import { cancelOwnerSubscription, resumeOwnerSubscription, startOwnerSubscription } from "@/lib/billing";
 import { errorMessage, publicOrigin, redirectTo } from "@/lib/http";
 import { getStore } from "@/lib/store";
@@ -7,6 +8,10 @@ import { getStripe } from "@/lib/stripe";
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
+  return withWritable(getStore(), () => billingPost(request));
+}
+
+async function billingPost(request: Request) {
   const owner = await currentOwner();
   if (!owner) return redirectTo(request, "/portal", { error: "Sign in required." });
 

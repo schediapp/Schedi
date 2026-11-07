@@ -10,5 +10,5 @@ export const dynamic = "force-dynamic";
  * The body is the customer database. Do not log it.
  */
 export async function GET(request: Request) {
-  return handleAdminSnapshot(request, getStore(), process.env.SCHEDI_CONNECT_PAID_SECRET);
+  return handleAdminSnapshot(request, getStore(), process.env.SCHEDI_MIGRATION_SECRET);
 }

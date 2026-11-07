@@ -13,8 +13,11 @@
   // STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, STRIPE_CONNECT_WEBHOOK_SECRET,
   // SCHEDI_CONNECT_PAID_SECRET, STRIPE_PRICE_STARTER, STRIPE_PRICE_PRO,
   // NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY.
-  // Optional: SCHEDI_CONNECT_PAID_URL, SCHEDI_CONNECT_READY_URL, SCHEDI_PLAN_URL,
-  // CONNECT_PUBLIC_ORIGIN. SCHEDI_DB_PATH and SESSION_SECRET are Railway names.
+  // SCHEDI_MIGRATION_SECRET is the only secret that can freeze, snapshot, restore,
+  // or reconcile. It is not the paid-callback secret. Do not set CONNECT_TEST_DELAY_MS
+  // or CONNECT_OBJECT_NAME in production. Optional: SCHEDI_CONNECT_PAID_URL,
+  // SCHEDI_CONNECT_READY_URL, SCHEDI_PLAN_URL, CONNECT_PUBLIC_ORIGIN.
+  // SCHEDI_DB_PATH and SESSION_SECRET are Railway names.
   // This worker does not read a filesystem path, and the portal session is the
   // random token already stored in SQLite. SESSION_SECRET is unused by the app.
   "vars": {

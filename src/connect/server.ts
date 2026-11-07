@@ -11,81 +11,45 @@ import { parsePaymentChoice } from "../lib/payment-options";
 import { fetchSchediPlan } from "../lib/plan-entitlement";
 import { createConnectPaymentLink, publicReturnOrigin } from "../lib/public-card-checkout";
 import { clearSessionCookie, readCookie, SESSION_COOKIE, sessionSetCookie } from "../lib/session-cookie";
-import { uniqueSlug } from "../lib/slug";
 import type { ConnectSnapshot } from "../lib/snapshot";
 import { parseSnapshot } from "../lib/snapshot";
 import { createStripeClient } from "../lib/stripe";
 import { formatConnectEnableError } from "../lib/stripe-error";
-import { constructVerifiedEvent } from "../lib/webhook-signature";
+import { connectConfigFrom, connectConfigFromProcess, type ConnectConfig } from "../lib/connect-config";
+import { constructVerifiedEventAsync } from "../lib/webhook-signature";
 import { applyStripeEvent } from "../lib/webhooks";
 import type Stripe from "stripe";
 import { dashboardScript, renderBooked, renderBooking, renderHandoff, renderHome, renderPortal } from "./pages";
-
-const ENV_KEYS = [
-  "STRIPE_SECRET_KEY",
-  "STRIPE_WEBHOOK_SECRET",
-  "STRIPE_CONNECT_WEBHOOK_SECRET",
-  "SCHEDI_CONNECT_PAID_SECRET",
-  "SCHEDI_CONNECT_PAID_URL",
-  "SCHEDI_CONNECT_READY_URL",
-  "SCHEDI_PLAN_URL",
-  "STRIPE_PRICE_STARTER",
-  "STRIPE_PRICE_PRO",
-  "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY",
-  "CONNECT_PUBLIC_ORIGIN",
-  "NODE_ENV",
-  "SCHEDI_SEED",
-] as const;
+import { reconcileEvents, type ReconcileEvent } from "../lib/reconcile";
 
 const CHECKOUT_ORIGINS = new Set(["https://schedi.app", "https://www.schedi.app"]);
 
 export interface ConnectRuntime {
   store: Store;
+  /** Immutable settings for this request. Preferred. */
+  config?: ConnectConfig;
+  /** Read once into config. Never written back to process.env. */
   env?: Record<string, string | undefined>;
   stripe?: Stripe | null;
 }
 
 export async function handleConnectRequest(request: Request, runtime: ConnectRuntime): Promise<Response> {
-  return usingEnv(runtime.env, () => dispatch(request, runtime));
+  const config = runtime.config ?? (runtime.env ? connectConfigFrom(runtime.env) : connectConfigFromProcess());
+  return dispatch(request, { ...runtime, config });
 }
 
-async function usingEnv(
-  env: Record<string, string | undefined> | undefined,
-  fn: () => Promise<Response>,
-): Promise<Response> {
-  if (!env) return fn();
-  const current = process.env as Record<string, string | undefined>;
-  const previous = new Map<string, string | undefined>();
-  for (const key of ENV_KEYS) {
-    if (!Object.prototype.hasOwnProperty.call(env, key)) continue;
-    previous.set(key, current[key]);
-    const value = env[key];
-    if (value == null || value === "") delete current[key];
-    else current[key] = value;
-  }
-  try {
-    return await fn();
-  } finally {
-    for (const [key, value] of previous) {
-      if (value === undefined) delete current[key];
-      else current[key] = value;
-    }
-  }
-}
-
-function stripeClient(runtime: ConnectRuntime): Stripe | null {
+function stripeClient(runtime: ConnectRuntime & { config: ConnectConfig }): Stripe | null {
   if (runtime.stripe !== undefined) return runtime.stripe;
-  const key = process.env.STRIPE_SECRET_KEY;
-  return key ? createStripeClient(key) : null;
+  return runtime.config.stripeSecretKey ? createStripeClient(runtime.config.stripeSecretKey) : null;
 }
 
-function requireStripe(runtime: ConnectRuntime): Stripe {
+function requireStripe(runtime: ConnectRuntime & { config: ConnectConfig }): Stripe {
   const stripe = stripeClient(runtime);
   if (!stripe) throw new SchediError("STRIPE_SECRET_KEY is not set.", 500);
   return stripe;
 }
 
-async function dispatch(request: Request, runtime: ConnectRuntime): Promise<Response> {
+async function dispatch(request: Request, runtime: ConnectRuntime & { config: ConnectConfig }): Promise<Response> {
   const url = new URL(request.url);
   const path = url.pathname.length > 1 ? url.pathname.replace(/\/$/, "") : url.pathname;
   const { store } = runtime;
@@ -102,28 +66,37 @@ async function dispatch(request: Request, runtime: ConnectRuntime): Promise<Resp
     }
     if (request.method === "GET" && path === "/") return html(renderHome(store));
     if (request.method === "GET" && path === "/portal") {
-      return html(await renderPortal(store, request, stripeClient(runtime), url.searchParams));
+      return html(await renderPortal(store, request, stripeClient(runtime), url.searchParams, runtime.config));
     }
+    if (request.method === "GET" && path === "/api/health") return health(runtime);
+    if (request.method === "POST" && path === "/api/health") return delayedHealth(runtime);
     if (request.method === "GET" && path === "/api/connect/handoff") return handoffPage();
-    if (request.method === "POST" && path === "/api/connect/handoff") return postHandoff(request, runtime);
-    if (request.method === "POST" && path === "/api/session") return postSession(request, store);
-    if (request.method === "POST" && path === "/api/billing") return postBilling(request, runtime);
-    if (request.method === "POST" && path === "/api/business") return postBusiness(request, store);
-    if (request.method === "POST" && path === "/api/bookings") return postBooking(request, runtime);
-    if (request.method === "POST" && path === "/api/connect/enable") return postEnable(request, runtime);
-    if (request.method === "POST" && path === "/api/connect/session") return postConnectSession(request, runtime);
-    if (path === "/api/public-checkout" && (request.method === "OPTIONS" || request.method === "POST")) {
-      return publicCheckout(request, runtime);
+    if (request.method === "POST" && path === "/api/connect/handoff") return withWriters(store, () => postHandoff(request, runtime));
+    if (request.method === "POST" && path === "/api/session") return withWriters(store, () => postSession(request, store, runtime.config));
+    if (request.method === "POST" && path === "/api/billing") return withWriters(store, () => postBilling(request, runtime));
+    if (request.method === "POST" && path === "/api/business") return withWriters(store, () => postBusiness(request, store));
+    if (request.method === "POST" && path === "/api/bookings") return withWriters(store, () => postBooking(request, runtime));
+    if (request.method === "POST" && path === "/api/connect/enable") return withWriters(store, () => postEnable(request, runtime));
+    if (request.method === "POST" && path === "/api/connect/session") return withWriters(store, () => postConnectSession(request, runtime));
+    if (path === "/api/public-checkout" && request.method === "OPTIONS") return publicCheckout(request, runtime);
+    if (path === "/api/public-checkout" && request.method === "POST") {
+      return withWriters(store, () => publicCheckout(request, runtime));
     }
     if (request.method === "POST" && path === "/api/webhooks/stripe") return postWebhook(request, runtime);
-    if (request.method === "GET" && path === "/api/admin/sqlite-snapshot") return adminSnapshot(request, store);
-    if (request.method === "POST" && path === "/api/admin/sqlite-restore") return adminRestore(request, store);
-    if (request.method === "POST" && path === "/api/admin/connect-ready-backfill") return adminBackfill(request, runtime);
-    if (request.method === "POST" && path === "/api/admin/force-park-missing-account") return adminForcePark(request, runtime);
-    if (request.method === "GET" && path === "/api/health") return json({ ok: true, service: "schedi-connect" }, 200);
+    if (request.method === "GET" && path === "/api/admin/sqlite-snapshot") return adminSnapshot(request, runtime);
+    if (request.method === "POST" && path === "/api/admin/sqlite-restore") return adminRestore(request, runtime);
+    if (request.method === "POST" && path === "/api/admin/maintenance") return adminMaintenance(request, runtime);
+    if (request.method === "POST" && path === "/api/admin/reconcile") return adminReconcile(request, runtime);
+    if (request.method === "POST" && path === "/api/admin/release-processing") return adminReleaseProcessing(request, runtime);
+    if (request.method === "POST" && path === "/api/admin/connect-ready-backfill") {
+      return withWriters(store, () => adminBackfill(request, runtime));
+    }
+    if (request.method === "POST" && path === "/api/admin/force-park-missing-account") {
+      return withWriters(store, () => adminForcePark(request, runtime));
+    }
     const booking = path.match(/^\/b\/([^/]+)$/);
     if (request.method === "GET" && booking) {
-      return html(await renderBooking(store, stripeClient(runtime), decodeURIComponent(booking[1]), url.searchParams));
+      return html(await renderBooking(store, stripeClient(runtime), decodeURIComponent(booking[1]), url.searchParams, runtime.config));
     }
     const booked = path.match(/^\/b\/([^/]+)\/booked$/);
     if (request.method === "GET" && booked) {
@@ -133,10 +106,11 @@ async function dispatch(request: Request, runtime: ConnectRuntime): Promise<Resp
           stripeClient(runtime),
           decodeURIComponent(booked[1]),
           url.searchParams.get("booking") || "",
+          runtime.config,
         ),
       );
     }
-    if (path.startsWith("/api/")) return json({ error: "Not found." }, 404);
+    if (path.startsWith("/api/")) return json({ error: "Not found.", path, method: request.method }, 404);
     return html("<main class=\"shell\"><h1>That page is not here.</h1></main>", 404);
   } catch (error) {
     const status = error instanceof SchediError ? error.status : 500;
@@ -179,8 +153,14 @@ function json(body: unknown, status: number, extra?: Headers): Response {
   return new Response(JSON.stringify(body), { status, headers });
 }
 
-function redirect(request: Request, path: string, params?: Record<string, string | undefined>, setCookie?: string): Response {
-  const url = new URL(path, `${publicOrigin(request)}/`);
+function redirect(
+  request: Request,
+  path: string,
+  params?: Record<string, string | undefined>,
+  setCookie?: string,
+  config?: ConnectConfig,
+): Response {
+  const url = new URL(path, `${publicOrigin(request, config)}/`);
   for (const [key, value] of Object.entries(params ?? {})) {
     if (value) url.searchParams.set(key, value);
   }
@@ -195,56 +175,72 @@ function currentOwner(store: Store, request: Request) {
   return store.getOwnerBySession(token);
 }
 
-function authorized(request: Request): boolean {
-  return connectAdminAuthorized(request.headers.get("x-schedi-connect-secret"), process.env.SCHEDI_CONNECT_PAID_SECRET);
+function migrationAuthorized(request: Request, config: ConnectConfig): boolean {
+  return connectAdminAuthorized(request.headers.get("x-schedi-migration-secret"), config.migrationSecret);
 }
 
-async function postSession(request: Request, store: Store): Promise<Response> {
+function maintenanceBody(): Response {
+  return json({ ok: false, error: "maintenance" }, 503, new Headers({ "retry-after": "30" }));
+}
+
+async function withWriters(
+  store: Store,
+  fn: () => Promise<Response>,
+): Promise<Response> {
+  if (!store.tryAdmit()) return maintenanceBody();
+  try {
+    return await fn();
+  } finally {
+    store.releaseAdmit();
+  }
+}
+
+function health(runtime: ConnectRuntime & { config: ConnectConfig }): Response {
+  const state = runtime.store.maintenance();
+  return json({
+    ok: true,
+    service: "schedi-connect",
+    frozen: state.frozen,
+    admitted: state.admitted,
+    emailSignIn: runtime.config.emailSignIn,
+    paidCallbackHost: hostOf(runtime.config.connectPaidUrl),
+    readyCallbackHost: hostOf(runtime.config.connectReadyUrl),
+    planCallbackHost: hostOf(runtime.config.planUrl),
+  }, 200);
+}
+
+async function delayedHealth(runtime: ConnectRuntime & { config: ConnectConfig }): Promise<Response> {
+  if (runtime.config.testDelayMs > 0) await new Promise((resolve) => setTimeout(resolve, runtime.config.testDelayMs));
+  return health(runtime);
+}
+
+function hostOf(value: string): string {
+  try {
+    return new URL(value).host;
+  } catch {
+    return "";
+  }
+}
+
+async function postSession(request: Request, store: Store, config: ConnectConfig): Promise<Response> {
   const form = await request.formData();
   const intent = String(form.get("intent") || "sign-in");
-  if (intent === "sign-out") {
-    const token = readCookie(request, SESSION_COOKIE);
-    if (token) store.deleteSession(token);
-    return redirect(request, "/portal", undefined, clearSessionCookie(request));
+  if (intent !== "sign-out") {
+    return redirect(request, "/portal", {
+      error: "Use Set up Stripe in Schedi. An email address alone does not open this portal.",
+    }, undefined, config);
   }
-  try {
-    const email = String(form.get("email") || "").trim().toLowerCase();
-    if (!email.includes("@")) throw new SchediError("Enter a valid email.", 400);
-    let owner = store.getOwnerByEmail(email);
-    if (!owner) {
-      const ownerName = String(form.get("owner_name") || "").trim();
-      const businessName = String(form.get("business_name") || "").trim();
-      if (ownerName.length < 2 || businessName.length < 2) {
-        throw new SchediError("Add your name and business to create an account.", 400);
-      }
-      owner = store.createOwner({ email, name: ownerName });
-      const business = store.createBusiness({
-        ownerId: owner.id,
-        name: businessName,
-        slug: uniqueSlug(businessName, (candidate) => store.getBusinessBySlug(candidate) != null),
-        plan: "free",
-        subscriptionStatus: "none",
-      });
-      store.createService({
-        businessId: business.id,
-        name: "Appointment",
-        durationMinutes: 60,
-        priceCents: 7500,
-      });
-    }
-    const token = store.createSession(owner.id);
-    return redirect(request, "/portal", undefined, sessionSetCookie(request, token));
-  } catch (error) {
-    return redirect(request, "/portal", { error: errorMessage(error) });
-  }
+  const token = readCookie(request, SESSION_COOKIE);
+  if (token) store.deleteSession(token);
+  return redirect(request, "/portal", undefined, clearSessionCookie(request), config);
 }
 
-async function postBilling(request: Request, runtime: ConnectRuntime): Promise<Response> {
+async function postBilling(request: Request, runtime: ConnectRuntime & { config: ConnectConfig }): Promise<Response> {
   const owner = currentOwner(runtime.store, request);
   if (!owner) return redirect(request, "/portal", { error: "Sign in required." });
   const form = await request.formData();
   const plan = String(form.get("plan") || "");
-  const origin = publicOrigin(request);
+  const origin = publicOrigin(request, runtime.config);
   try {
     const stripe = requireStripe(runtime);
     if (plan === "cancel") {
@@ -259,7 +255,7 @@ async function postBilling(request: Request, runtime: ConnectRuntime): Promise<R
     const result = await startOwnerSubscription(runtime.store, stripe, owner.id, plan, {
       success: `${origin}/portal?session_id={CHECKOUT_SESSION_ID}`,
       cancel: `${origin}/portal`,
-    });
+    }, { starter: runtime.config?.priceStarter || "", pro: runtime.config?.pricePro || "" });
     if (result.kind === "updated") return redirect(request, "/portal", { updated: "1" });
     return redirect(request, result.url);
   } catch (error) {
@@ -298,11 +294,11 @@ async function postBusiness(request: Request, store: Store): Promise<Response> {
   }
 }
 
-async function postBooking(request: Request, runtime: ConnectRuntime): Promise<Response> {
+async function postBooking(request: Request, runtime: ConnectRuntime & { config: ConnectConfig }): Promise<Response> {
   const form = await request.formData();
   const slug = String(form.get("slug") || "");
   const payment = parsePaymentChoice(String(form.get("payment") || ""));
-  const origin = publicOrigin(request);
+  const origin = publicOrigin(request, runtime.config);
   if (!payment) return redirect(request, `/b/${slug}`, { error: "Choose how you'll pay." });
   try {
   const { booking, redirectUrl } = await placeBooking(runtime.store, stripeClient(runtime), {
@@ -323,7 +319,7 @@ async function postBooking(request: Request, runtime: ConnectRuntime): Promise<R
   }
 }
 
-async function postEnable(request: Request, runtime: ConnectRuntime): Promise<Response> {
+async function postEnable(request: Request, runtime: ConnectRuntime & { config: ConnectConfig }): Promise<Response> {
   const owner = currentOwner(runtime.store, request);
   if (!owner) return redirect(request, "/portal", { error: "Sign in required." });
   try {
@@ -343,7 +339,7 @@ async function postEnable(request: Request, runtime: ConnectRuntime): Promise<Re
   }
 }
 
-async function postConnectSession(request: Request, runtime: ConnectRuntime): Promise<Response> {
+async function postConnectSession(request: Request, runtime: ConnectRuntime & { config: ConnectConfig }): Promise<Response> {
   const owner = currentOwner(runtime.store, request);
   if (!owner) return json({ error: "Sign in required." }, 401);
   const business = runtime.store.getBusinessByOwner(owner.id);
@@ -356,14 +352,14 @@ async function postConnectSession(request: Request, runtime: ConnectRuntime): Pr
   }
 }
 
-async function postHandoff(request: Request, runtime: ConnectRuntime): Promise<Response> {
+async function postHandoff(request: Request, runtime: ConnectRuntime & { config: ConnectConfig }): Promise<Response> {
   const form = await request.formData();
   const token = String(form.get("t") || "");
   const accepted = await acceptConnectHandoff(
     runtime.store,
     token,
-    process.env.SCHEDI_CONNECT_PAID_SECRET || "",
-    (query) => fetchSchediPlan(query),
+    runtime.config?.connectPaidSecret || "",
+    (query) => fetchSchediPlan(query, runtime.config),
   );
   if (!accepted.ok) return redirect(request, "/portal", { error: accepted.error });
   const session = runtime.store.createSession(accepted.ownerId);
@@ -395,7 +391,7 @@ function checkoutCors(request: Request): Headers {
   return headers;
 }
 
-async function publicCheckout(request: Request, runtime: ConnectRuntime): Promise<Response> {
+async function publicCheckout(request: Request, runtime: ConnectRuntime & { config: ConnectConfig }): Promise<Response> {
   const headers = checkoutCors(request);
   if (request.method === "OPTIONS") return new Response(null, { status: 204, headers });
   let payload: Record<string, unknown> = {};
@@ -453,24 +449,40 @@ async function publicCheckout(request: Request, runtime: ConnectRuntime): Promis
   }
 }
 
-async function postWebhook(request: Request, runtime: ConnectRuntime): Promise<Response> {
+async function postWebhook(request: Request, runtime: ConnectRuntime & { config: ConnectConfig }): Promise<Response> {
   const signature = request.headers.get("stripe-signature");
   if (!signature) return json({ error: "Missing Stripe signature." }, 400);
   const payload = await request.text();
-  const stripe = runtime.stripe ?? createStripeClient(process.env.STRIPE_SECRET_KEY || "sk_test_signature_only");
+  const stripe = runtime.stripe ?? createStripeClient(runtime.config.stripeSecretKey || "sk_test_signature_only");
+  let event: Stripe.Event;
   try {
-    const event = constructVerifiedEvent(stripe, payload, signature);
-    await applyStripeEvent(runtime.store, event);
+    event = await constructVerifiedEventAsync(stripe, payload, signature, {
+      STRIPE_WEBHOOK_SECRET: runtime.config.platformWebhookSecret,
+      STRIPE_CONNECT_WEBHOOK_SECRET: runtime.config.connectWebhookSecret,
+    } as unknown as NodeJS.ProcessEnv);
+  } catch (error) {
+    const status = error instanceof SchediError ? error.status : 400;
+    return json({ error: errorMessage(error) }, status);
+  }
+  if (!runtime.store.tryAdmit()) return maintenanceBody();
+  try {
+    await applyStripeEvent(runtime.store, event, { config: runtime.config });
     return json({ received: true }, 200);
   } catch (error) {
     const status = error instanceof SchediError ? error.status : 500;
     return json({ error: errorMessage(error) }, status);
+  } finally {
+    runtime.store.releaseAdmit();
   }
 }
 
-function adminSnapshot(request: Request, store: Store): Response {
-  if (!authorized(request)) return json({ ok: false, error: "unauthorized" }, 401);
-  const snapshot = store.consistentSnapshot();
+function adminSnapshot(request: Request, runtime: ConnectRuntime & { config: ConnectConfig }): Response {
+  if (!migrationAuthorized(request, runtime.config)) return json({ ok: false, error: "unauthorized" }, 401);
+  const state = runtime.store.maintenance();
+  if (!state.frozen) return json({ ok: false, error: "freeze_required" }, 409);
+  if (state.admitted !== 0) return json({ ok: false, error: "drain_in_progress", admitted: state.admitted }, 409);
+  const parity = runtime.store.pragmaStatus();
+  const snapshot = runtime.store.consistentSnapshot();
   const body = JSON.stringify(snapshot);
   return new Response(body, {
     status: 200,
@@ -479,12 +491,15 @@ function adminSnapshot(request: Request, store: Store): Response {
       "content-disposition": 'attachment; filename="schedi-connect-snapshot.json"',
       "cache-control": "no-store",
       "x-content-type-options": "nosniff",
+      "x-schedi-integrity": parity.integrity,
+      "x-schedi-foreign-keys": String(parity.foreignKeyViolations),
     },
   });
 }
 
-async function adminRestore(request: Request, store: Store): Promise<Response> {
-  if (!authorized(request)) return json({ ok: false, error: "unauthorized" }, 401);
+async function adminRestore(request: Request, runtime: ConnectRuntime & { config: ConnectConfig }): Promise<Response> {
+  if (!migrationAuthorized(request, runtime.config)) return json({ ok: false, error: "unauthorized" }, 401);
+  const store = runtime.store;
   const confirm = request.headers.get("x-schedi-restore-confirm") || "dry-run";
   let payload: unknown;
   try {
@@ -500,25 +515,96 @@ async function adminRestore(request: Request, store: Store): Promise<Response> {
   }
   if (confirm !== "restore-empty-database") {
     const report = store.restoreConsistentSnapshot(snapshot, "dry-run");
-    return json({ ...report, mode: "dry-run" }, 200);
+    return json({ ...report, mode: "dry-run" }, report.ok ? 200 : 409);
   }
+  const state = store.maintenance();
+  if (!state.frozen || state.admitted !== 0) return json({ ok: false, error: "freeze_required" }, 409);
   try {
     const report = store.restoreConsistentSnapshot(snapshot, "empty-only");
     const pragma = store.pragmaStatus();
-    return json({ ...report, mode: "empty-only", pragma }, pragma.integrity === "ok" && pragma.foreignKeyViolations === 0 ? 200 : 500);
+    const pragmaOk = (pragma.integrity === "ok" && pragma.foreignKeyViolations === 0) || pragma.integrity === "unsupported";
+    const status = report.applied && report.checksum === snapshot.checksum && pragmaOk ? 200 : 500;
+    return json({ ...report, mode: "empty-only", pragma }, status);
   } catch (error) {
     return json({ ok: false, error: errorMessage(error) }, error instanceof SchediError ? error.status : 500);
   }
 }
 
-async function adminBackfill(request: Request, runtime: ConnectRuntime): Promise<Response> {
-  if (!authorized(request)) return json({ ok: false, error: "unauthorized" }, 401);
+async function adminMaintenance(request: Request, runtime: ConnectRuntime & { config: ConnectConfig }): Promise<Response> {
+  if (!migrationAuthorized(request, runtime.config)) return json({ ok: false, error: "unauthorized" }, 401);
+  let body: { mode?: string } = {};
+  try {
+    body = (await request.json()) as { mode?: string };
+  } catch {
+    return json({ ok: false, error: "Expected a JSON body." }, 400);
+  }
+  if (body.mode === "frozen") return json({ ok: true, ...runtime.store.freezeWriters() }, 200);
+  if (body.mode === "open") {
+    if (request.headers.get("x-schedi-maintenance-confirm") !== "open-writers") {
+      return json({ ok: false, error: "confirm_open_writers" }, 409);
+    }
+    return json({ ok: true, ...runtime.store.openWriters() }, 200);
+  }
+  return json({ ok: false, error: "Expected mode frozen or open." }, 400);
+}
+
+async function adminReleaseProcessing(request: Request, runtime: ConnectRuntime & { config: ConnectConfig }): Promise<Response> {
+  if (!migrationAuthorized(request, runtime.config)) return json({ ok: false, error: "unauthorized" }, 401);
+  try {
+    const released = runtime.store.releaseProcessingClaims();
+    return json({ ok: true, released }, 200);
+  } catch (error) {
+    return json({ ok: false, error: errorMessage(error) }, error instanceof SchediError ? error.status : 409);
+  }
+}
+
+async function adminReconcile(request: Request, runtime: ConnectRuntime & { config: ConnectConfig }): Promise<Response> {
+  if (!migrationAuthorized(request, runtime.config)) return json({ ok: false, error: "unauthorized" }, 401);
+  let payload: { events?: ReconcileEvent[]; apply?: boolean } = {};
+  try {
+    payload = (await request.json()) as { events?: ReconcileEvent[]; apply?: boolean };
+  } catch {
+    return json({ ok: false, error: "Expected a JSON body." }, 400);
+  }
+  const events = Array.isArray(payload.events) ? payload.events : [];
+  const plan = reconcileEvents(runtime.store, events);
+  if (payload.apply !== true) return json({ ok: true, applied: false, ...plan }, 200);
+  if (!runtime.store.tryAdmit()) return json({ ok: false, error: "maintenance", ...plan }, 503);
+  try {
+    const applied = await applyReconcile(runtime, events, plan.missingIds);
+    return json({ ok: true, applied: true, ...plan, results: applied }, 200);
+  } finally {
+    runtime.store.releaseAdmit();
+  }
+}
+
+async function applyReconcile(
+  runtime: ConnectRuntime & { config: ConnectConfig },
+  events: ReconcileEvent[],
+  missingIds: string[],
+): Promise<Array<{ id: string; status: string }>> {
+  const wanted = new Set(missingIds);
+  const results: Array<{ id: string; status: string }> = [];
+  for (const event of events) {
+    if (!wanted.has(event.id)) continue;
+    try {
+      await applyStripeEvent(runtime.store, event as unknown as Stripe.Event, { config: runtime.config });
+      results.push({ id: event.id, status: runtime.store.hasStripeEvent(event.id) ? "done" : "skipped" });
+    } catch (error) {
+      results.push({ id: event.id, status: error instanceof Error ? error.message : "failed" });
+    }
+  }
+  return results;
+}
+
+async function adminBackfill(request: Request, runtime: ConnectRuntime & { config: ConnectConfig }): Promise<Response> {
+  if (!migrationAuthorized(request, runtime.config)) return json({ ok: false, error: "unauthorized" }, 401);
   const result = await backfillStripeConnectReady(runtime.store, requireStripe(runtime));
   return json({ ok: true, ...result }, 200);
 }
 
-async function adminForcePark(request: Request, runtime: ConnectRuntime): Promise<Response> {
-  if (!authorized(request)) return json({ ok: false, error: "unauthorized" }, 401);
+async function adminForcePark(request: Request, runtime: ConnectRuntime & { config: ConnectConfig }): Promise<Response> {
+  if (!migrationAuthorized(request, runtime.config)) return json({ ok: false, error: "unauthorized" }, 401);
   let payload: unknown;
   try {
     payload = await request.json();
@@ -537,5 +623,6 @@ async function adminForcePark(request: Request, runtime: ConnectRuntime): Promis
 }
 
 export async function handleAdminSnapshot(request: Request, store: Store, secret: string | undefined): Promise<Response> {
-  return usingEnv({ SCHEDI_CONNECT_PAID_SECRET: secret }, async () => adminSnapshot(request, store));
+  const config = connectConfigFrom({ SCHEDI_MIGRATION_SECRET: secret || "" });
+  return adminSnapshot(request, { store, config });
 }

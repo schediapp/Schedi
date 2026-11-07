@@ -29,7 +29,7 @@ export default async function BookingPage({
     );
   }
 
-  const business = await withFreshCapabilities(found);
+  const business = store.maintenance().frozen ? found : await withFreshCapabilities(found);
   const services = store.listServices(business.id);
   const live = isPublicPageLive(business.subscriptionStatus);
   const slots = upcomingSlots(new Date(), takenSlotTimes(store, business.id, new Date()));
