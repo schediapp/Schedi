@@ -1,8 +1,6 @@
-import { randomUUID } from "node:crypto";
-import { mkdirSync } from "node:fs";
-import { dirname } from "node:path";
-import { DatabaseSync } from "node:sqlite";
-import { SchediError } from "./errors";
+import { SchediError } from "./errors.ts";
+import { captureSnapshot, pragmaChecks, restoreSnapshot, type ConnectSnapshot, type SnapshotReport } from "./snapshot.ts";
+import type { SqlDatabase } from "./sql.ts";
 import type {
   Booking,
   BookingStatus,
@@ -181,8 +179,19 @@ function mapBooking(row: BookingRow): Booking {
   };
 }
 
+/** A processing claim older than this can be taken over after a crashed handler. */
+export const STRIPE_EVENT_LEASE_MS = 120_000;
+
+export type StripeEventClaim =
+  | { status: "claimed"; at: string }
+  | { status: "done" }
+  | { status: "inflight" };
+
 export class Store {
-  constructor(private readonly db: DatabaseSync) {
+  private readonly db: SqlDatabase;
+
+  constructor(db: SqlDatabase) {
+    this.db = db;
     this.db.exec(`
       PRAGMA foreign_keys = ON;
       CREATE TABLE IF NOT EXISTS owners (
@@ -252,10 +261,11 @@ export class Store {
       );
     `);
     ensureBusinessBillingColumns(this.db);
+    ensureStripeEventState(this.db);
   }
 
   createOwner(input: { email: string; name: string; stripeCustomerId?: string | null }): Owner {
-    const id = randomUUID();
+    const id = crypto.randomUUID();
     const email = input.email.trim().toLowerCase();
     this.db
       .prepare(
@@ -305,7 +315,7 @@ export class Store {
   }
 
   createBusiness(input: CreateBusinessInput): Business {
-    const id = randomUUID();
+    const id = crypto.randomUUID();
     this.db
       .prepare(
         `INSERT INTO businesses (
@@ -524,7 +534,7 @@ export class Store {
     durationMinutes: number;
     priceCents: number;
   }): Service {
-    const id = randomUUID();
+    const id = crypto.randomUUID();
     this.db
       .prepare(
         `INSERT INTO services (id, business_id, name, duration_minutes, price_cents)
@@ -548,7 +558,7 @@ export class Store {
   }
 
   createBooking(input: CreateBookingInput): Booking {
-    const id = randomUUID();
+    const id = crypto.randomUUID();
     const createdAt = new Date().toISOString();
     this.db
       .prepare(
@@ -607,8 +617,72 @@ export class Store {
   }
 
   hasStripeEvent(id: string): boolean {
-    const row = this.db.prepare("SELECT id FROM stripe_events WHERE id = ?").get(id) as { id: string } | undefined;
+    const row = this.db.prepare(
+      "SELECT id FROM stripe_events WHERE id = ? AND (state = 'done' OR state IS NULL)",
+    ).get(id) as { id: string } | undefined;
     return Boolean(row);
+  }
+
+  /**
+   * One delivery owns the event. A completed row is a replay. A fresh
+   * processing row means another delivery is still working, so the caller
+   * must not apply side effects. A stale processing row is a crashed
+   * attempt and can be claimed again. The row is marked done only after
+   * the handler finishes, so a thrown error is still retryable.
+   */
+  claimStripeEvent(id: string, now = Date.now()): StripeEventClaim {
+    const at = new Date(now).toISOString();
+    const inserted = this.db
+      .prepare(
+        `INSERT INTO stripe_events (id, processed_at, state)
+         SELECT ?, ?, 'processing'
+         WHERE NOT EXISTS (SELECT 1 FROM stripe_events WHERE id = ?)`,
+      )
+      .run(id, at, id);
+    if (inserted.changes === 1) return { status: "claimed", at };
+    const row = this.db.prepare("SELECT state, processed_at FROM stripe_events WHERE id = ?").get(id) as
+      | { state: string | null; processed_at: string }
+      | undefined;
+    if (!row || row.state == null || row.state === "done") return { status: "done" };
+    const seen = Date.parse(row.processed_at);
+    if (Number.isFinite(seen) && now - seen >= STRIPE_EVENT_LEASE_MS) {
+      const took = this.db
+        .prepare(
+          `UPDATE stripe_events SET processed_at = ?
+           WHERE id = ? AND state = 'processing' AND processed_at = ?`,
+        )
+        .run(at, id, row.processed_at);
+      if (took.changes === 1) return { status: "claimed", at };
+    }
+    return { status: "inflight" };
+  }
+
+  finishStripeEvent(id: string, at: string, now = Date.now()): void {
+    const result = this.db
+      .prepare(
+        `UPDATE stripe_events SET state = 'done', processed_at = ?
+         WHERE id = ? AND state = 'processing' AND processed_at = ?`,
+      )
+      .run(new Date(now).toISOString(), id, at);
+    if (result.changes !== 1) throw new SchediError("Stripe event claim was lost.", 500);
+  }
+
+  releaseStripeEvent(id: string, at: string): void {
+    this.db
+      .prepare("DELETE FROM stripe_events WHERE id = ? AND state = 'processing' AND processed_at = ?")
+      .run(id, at);
+  }
+
+  consistentSnapshot(now?: string): ConnectSnapshot {
+    return captureSnapshot(this.db, now);
+  }
+
+  restoreConsistentSnapshot(snapshot: ConnectSnapshot, mode: "dry-run" | "empty-only"): SnapshotReport {
+    return restoreSnapshot(this.db, snapshot, mode);
+  }
+
+  pragmaStatus(): { integrity: string; foreignKeyViolations: number } {
+    return pragmaChecks(this.db);
   }
 
   markStripeEvent(id: string): void {
@@ -637,7 +711,7 @@ export class Store {
   }
 
   createSession(ownerId: string): string {
-    const token = randomUUID() + randomUUID();
+    const token = crypto.randomUUID() + crypto.randomUUID();
     const expires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
     this.db.prepare("INSERT INTO sessions (token, owner_id, expires_at) VALUES (?, ?, ?)").run(token, ownerId, expires);
     return token;
@@ -660,7 +734,15 @@ export class Store {
   }
 }
 
-function ensureBusinessBillingColumns(db: DatabaseSync): void {
+function ensureStripeEventState(db: SqlDatabase): void {
+  const rows = db.prepare("PRAGMA table_info(stripe_events)").all() as { name: string }[];
+  const names = new Set(rows.map((row) => row.name));
+  if (!names.has("state")) {
+    db.exec("ALTER TABLE stripe_events ADD COLUMN state TEXT NOT NULL DEFAULT 'done'");
+  }
+}
+
+function ensureBusinessBillingColumns(db: SqlDatabase): void {
   const rows = db.prepare("PRAGMA table_info(businesses)").all() as { name: string }[];
   const names = new Set(rows.map((row) => row.name));
   if (!names.has("cancel_at_period_end")) {
@@ -696,16 +778,3 @@ export function sqliteDatabasePath(env: NodeJS.ProcessEnv = process.env): string
   return path || "data/schedi.sqlite";
 }
 
-export function openStore(path: string): Store {
-  if (path !== ":memory:") mkdirSync(dirname(path), { recursive: true });
-  return new Store(new DatabaseSync(path));
-}
-
-let singleton: Store | null = null;
-
-export function getStore(): Store {
-  if (!singleton) {
-    singleton = openStore(sqliteDatabasePath());
-  }
-  return singleton;
-}

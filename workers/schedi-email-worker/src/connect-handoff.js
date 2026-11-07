@@ -5,7 +5,8 @@
  * the URL fragment so Railway's request log does not record it.
  */
 
-export const CONNECT_APP_ORIGIN = "https://schedi-connect-production.up.railway.app";
+export { CONNECT_APP_ORIGIN, connectAppOrigin } from "./connect-origin.js";
+import { connectAppOrigin } from "./connect-origin.js";
 const HANDOFF_TTL_SECONDS = 2 * 60;
 
 export function connectCardEntitled(tenant) {
@@ -134,7 +135,7 @@ export async function handleConnectHandoff(request, env, deps) {
   const token = await signConnectHandoff(claims, secret);
   return http(200, {
     ok: true,
-    url: CONNECT_APP_ORIGIN + "/api/connect/handoff#t=" + encodeURIComponent(token),
+    url: connectAppOrigin(env) + "/api/connect/handoff#t=" + encodeURIComponent(token),
   });
 }
 

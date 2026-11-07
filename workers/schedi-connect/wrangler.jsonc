@@ -1,0 +1,32 @@
+{
+  // Connect app moved off Railway. Do not attach schedi.app or www.schedi.app.
+  // Those hostnames belong to schedi-web. This file has no routes on purpose.
+  // Add a hostname only at cutover, after the snapshot import, and do not deploy
+  // git's site/ folder as part of that step. See docs/connect-cloudflare-cutover.md.
+  "name": "schedi-connect",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-13",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "routes": [],
+  // Plain vars only. Secrets are `wrangler secret put` and are not written here:
+  // STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, STRIPE_CONNECT_WEBHOOK_SECRET,
+  // SCHEDI_CONNECT_PAID_SECRET, STRIPE_PRICE_STARTER, STRIPE_PRICE_PRO,
+  // NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY.
+  // Optional: SCHEDI_CONNECT_PAID_URL, SCHEDI_CONNECT_READY_URL, SCHEDI_PLAN_URL,
+  // CONNECT_PUBLIC_ORIGIN. SCHEDI_DB_PATH and SESSION_SECRET are Railway names.
+  // This worker does not read a filesystem path, and the portal session is the
+  // random token already stored in SQLite. SESSION_SECRET is unused by the app.
+  "vars": {
+    "NODE_ENV": "production",
+    "SCHEDI_SEED": "0"
+  },
+  "durable_objects": {
+    "bindings": [
+      { "name": "CONNECT_DB", "class_name": "ConnectDatabase" }
+    ]
+  },
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["ConnectDatabase"] }
+  ]
+}

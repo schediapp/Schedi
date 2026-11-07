@@ -31,6 +31,7 @@ import { resolveOwnerNotifyAddress } from './owner-notify.js';
 import { handleOwnerResetRequest } from './owner-reset.js';
 import { planFromStripePrice } from './entitlements.js';
 import { catalogChargeDollars, ownerQuotedDollars } from './card-quote-link.js';
+import { connectPublicCheckoutUrl } from './connect-origin.js';
 import { hydrateTenantBookings, persistTenantAppointments, handlePrivateBookingHttp, loadPrivateAppointments } from './private-bookings.js';
 import { handleClientsHttp, runClientsBackfillOnce } from './private-clients.js';
 import { adminAuthHeaders } from './firebase-admin.js';
@@ -2851,6 +2852,7 @@ async function handleBookingCheckout(request, env, origin) {
   }
   const email = String(selected[0].clientEmail || data.email || '').trim();
   const connectUrl = await connectCheckoutUrl({
+    checkoutUrl: connectPublicCheckoutUrl(env),
     slug: publicBookingSlug(tenant, tenantId),
     tenantId,
     bookingIds,
@@ -2917,7 +2919,7 @@ function cardPayBookingOpen(booking) {
 
 async function connectCheckoutUrl(input) {
   try {
-    const res = await fetch(CONNECT_PUBLIC_CHECKOUT, {
+    const res = await fetch(input.checkoutUrl || CONNECT_PUBLIC_CHECKOUT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Origin: 'https://schedi.app' },
       body: JSON.stringify({

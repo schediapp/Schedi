@@ -10,6 +10,7 @@ import { applySubscriptionState } from "./subscription-state";
 export interface StripeEventDeps {
   recordPublicCardPayment?: (notice: ConnectCardPaidNotice) => Promise<void>;
   publishConnectReady?: (slug: string, ready: boolean) => Promise<void>;
+  now?: number;
 }
 
 /**
@@ -17,15 +18,23 @@ export interface StripeEventDeps {
  * public page. Owner subscription events on the platform account do.
  */
 export async function applyStripeEvent(store: Store, event: Stripe.Event, deps?: StripeEventDeps): Promise<void> {
-  if (store.hasStripeEvent(event.id)) return;
-
-  if (event.account) {
-    await applyConnectedEvent(store, event, deps);
-  } else {
-    applyPlatformEvent(store, event);
+  const claim = store.claimStripeEvent(event.id, deps?.now);
+  if (claim.status === "done") return;
+  if (claim.status === "inflight") {
+    throw new SchediError("Stripe event is already being processed.", 500);
   }
 
-  store.markStripeEvent(event.id);
+  try {
+    if (event.account) {
+      await applyConnectedEvent(store, event, deps);
+    } else {
+      applyPlatformEvent(store, event);
+    }
+    store.finishStripeEvent(event.id, claim.at);
+  } catch (error) {
+    store.releaseStripeEvent(event.id, claim.at);
+    throw error;
+  }
 }
 
 function isPublicSpaCharge(metadata: Stripe.Metadata | null | undefined): boolean {

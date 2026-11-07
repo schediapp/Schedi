@@ -41,6 +41,8 @@ Only the Dashboard can supply these:
 
 Stripe Tax is not enabled. Client card charges do not set `application_fee_amount`. The app needs a persistent disk for `SCHEDI_DB_PATH`.
 
+The Cloudflare replacement for this Connect service is `workers/schedi-connect` (one Durable Object SQLite database, no `schedi.app` route). Cutover, backup, and rollback steps are in [docs/connect-cloudflare-cutover.md](docs/connect-cloudflare-cutover.md). Do not point Stripe or DNS at it until that runbook's snapshot checksum matches. `schedi.app` itself stays on `schedi-web`, and a deploy of that worker still has to assemble the full asset directory rather than git's `site/` folder alone.
+
 ## Deploy the public site
 
 `wrangler.jsonc` is the `schedi-web` worker. It serves `site/` as static assets with `run_worker_first`, on `schedi.app/*` and `www.schedi.app/*`. `/api/*` and `/billing/*` stay on their more specific workers, except `POST /api/business-logo` and `GET /logos/*`, which this worker handles. Marketing HTML is rendered in the worker. App and tenant routes use the SPA shell.

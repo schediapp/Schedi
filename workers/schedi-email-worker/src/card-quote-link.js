@@ -6,6 +6,8 @@
  */
 
 export const CARD_LINK_LATER_COPY = "Pay by card: we'll email you a secure payment link once your price is confirmed.";
+import { connectPublicCheckoutUrl } from "./connect-origin.js";
+
 export const CONNECT_PUBLIC_CHECKOUT = "https://schedi-connect-production.up.railway.app/api/public-checkout";
 
 function roundMoney(n) {
@@ -105,7 +107,7 @@ export async function createQuotedPayLink(fetchImpl, input) {
   const call = typeof fetchImpl === "function" ? fetchImpl : fetch;
   let status = 0;
   try {
-    const res = await call(CONNECT_PUBLIC_CHECKOUT, {
+    const res = await call(input.checkoutUrl || connectPublicCheckoutUrl(input.env), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
