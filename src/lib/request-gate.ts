@@ -17,3 +17,13 @@ export async function withWritable(store: Store, fn: () => Promise<Response>): P
     store.releaseAdmit();
   }
 }
+
+/** A GET that refreshes Stripe into SQLite. Frozen hosts keep the stored row. */
+export async function withReadRefresh<T>(store: Store, fallback: T, fn: () => Promise<T>): Promise<T> {
+  if (!store.tryAdmit()) return fallback;
+  try {
+    return await fn();
+  } finally {
+    store.releaseAdmit();
+  }
+}

@@ -1,6 +1,6 @@
 import type { ConnectConfig } from "./connect-config";
-import { connectConfigFromProcess } from "./connect-config";
-import { cardConnectStatus, type CardConnectStatus } from "./connect-status";
+import { connectConfigFromProcess } from "./connect-config.ts";
+import { cardConnectStatus, type CardConnectStatus } from "./connect-status.ts";
 
 export interface ConnectReadyNotice {
   slug: string;

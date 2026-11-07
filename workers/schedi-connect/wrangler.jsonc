@@ -1,34 +1,45 @@
 {
-  // Connect app moved off Railway. Do not attach schedi.app or www.schedi.app.
-  // Those hostnames belong to schedi-web. This file has no routes on purpose.
-  // Add a hostname only at cutover, after the snapshot import, and do not deploy
-  // git's site/ folder as part of that step. See docs/connect-cloudflare-cutover.md.
-  "name": "schedi-connect",
+  // Isolated migration worker. The name schedi-connect already exists
+  // (script f15debb95f7a4dffb860219069fe9435) with a public workers.dev
+  // hostname and a D1 binding DB -> schedi-connect-db
+  // (6d51eaa5-cc7d-401e-9f7c-724979436514, zero tables). Do not deploy
+  // that name. Do not bind that database, AUTH_KV, R2, or the email
+  // worker's AuthRateLimit Durable Object.
+  // Account Axl199@gmail.com’s Account. Zone schedi.app is
+  // 2ade91ff938bbc925314787b560a45a7 and is not attached here.
+  // connect.schedi.app has no DNS record, route, or custom domain.
+  // Do not add one from this file. Do not deploy this file.
+  "name": "schedi-connect-migration",
+  "account_id": "674c2b16e7eac42148f3c06c6e2c954f",
   "main": "src/index.ts",
   "compatibility_date": "2026-10-13",
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": false,
+  "preview_urls": false,
   "routes": [],
   // Plain vars only. Secrets are `wrangler secret put` and are not written here:
   // STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, STRIPE_CONNECT_WEBHOOK_SECRET,
   // SCHEDI_CONNECT_PAID_SECRET, STRIPE_PRICE_STARTER, STRIPE_PRICE_PRO,
   // NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY.
   // SCHEDI_MIGRATION_SECRET is the only secret that can freeze, snapshot, restore,
-  // or reconcile. It is not the paid-callback secret. Do not set CONNECT_TEST_DELAY_MS
-  // or CONNECT_OBJECT_NAME in production. Optional: SCHEDI_CONNECT_PAID_URL,
-  // SCHEDI_CONNECT_READY_URL, SCHEDI_PLAN_URL, CONNECT_PUBLIC_ORIGIN.
+  // or reconcile. It is not the paid-callback secret. Do not set CONNECT_TEST_DELAY_MS.
+  // Optional: SCHEDI_CONNECT_PAID_URL, SCHEDI_CONNECT_READY_URL, SCHEDI_PLAN_URL,
+  // CONNECT_PUBLIC_ORIGIN.
   // SCHEDI_DB_PATH and SESSION_SECRET are Railway names.
   // This worker does not read a filesystem path, and the portal session is the
-  // random token already stored in SQLite. SESSION_SECRET is unused by the app.
+  // random token already stored in its own Durable Object SQLite.
   "vars": {
     "NODE_ENV": "production",
-    "SCHEDI_SEED": "0"
+    "SCHEDI_SEED": "0",
+    "CONNECT_OBJECT_NAME": "schedi-connect-migration"
   },
   "durable_objects": {
     "bindings": [
       { "name": "CONNECT_DB", "class_name": "ConnectDatabase" }
     ]
   },
+  // This tag belongs only to schedi-connect-migration. It is not the email
+  // worker's AuthRateLimit migration v1 (namespace 329f9646423f4e1082ccd44ae35b4348).
   "migrations": [
     { "tag": "v1", "new_sqlite_classes": ["ConnectDatabase"] }
   ]

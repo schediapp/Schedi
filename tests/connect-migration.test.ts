@@ -533,6 +533,28 @@ describe("caller origin defaults", () => {
     ]);
   });
 
+  it("keeps the migration worker off the existing script, routes, and D1 database", () => {
+    const config = readFileSync(new URL("../workers/schedi-connect/wrangler.jsonc", import.meta.url), "utf8");
+    expect(config).toContain('"name": "schedi-connect-migration"');
+    expect(config).toContain('"account_id": "674c2b16e7eac42148f3c06c6e2c954f"');
+    expect(config).toContain('"workers_dev": false');
+    expect(config).toContain('"preview_urls": false');
+    expect(config).toContain('"routes": []');
+    expect(config).toContain('"CONNECT_OBJECT_NAME": "schedi-connect-migration"');
+    expect(config).not.toContain("d1_databases");
+    expect(config).not.toContain("database_id");
+    expect(config).not.toContain("kv_namespaces");
+    expect(config).not.toContain("r2_buckets");
+    expect(config).not.toContain("schedi.app/*");
+    expect(config).not.toContain("/billing/*");
+    const site = readFileSync(new URL("../wrangler.jsonc", import.meta.url), "utf8");
+    const routes = site.slice(site.indexOf('"routes"'));
+    expect(routes).toContain('"pattern": "schedi.app/*"');
+    expect(routes).toContain('"pattern": "www.schedi.app/*"');
+    expect(routes).not.toContain("billing");
+    expect(routes).not.toContain("auth");
+  });
+
   it("keeps the worker portal CSS aligned with the Next stylesheet", () => {
     const css = readFileSync(new URL("../src/app/globals.css", import.meta.url), "utf8");
     expect(PORTAL_CSS).toBe(css);

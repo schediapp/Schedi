@@ -4,6 +4,7 @@ import { formatUsd } from "@/lib/money";
 import { listPaymentOptions } from "@/lib/payment-options";
 import { isPublicPageLive } from "@/lib/readiness";
 import { formatSlot, upcomingSlots } from "@/lib/slots";
+import { withReadRefresh } from "@/lib/request-gate";
 import { getStore } from "@/lib/store";
 import { takenSlotTimes } from "@/lib/bookings";
 
@@ -29,7 +30,7 @@ export default async function BookingPage({
     );
   }
 
-  const business = store.maintenance().frozen ? found : await withFreshCapabilities(found);
+  const business = await withReadRefresh(store, found, () => withFreshCapabilities(found));
   const services = store.listServices(business.id);
   const live = isPublicPageLive(business.subscriptionStatus);
   const slots = upcomingSlots(new Date(), takenSlotTimes(store, business.id, new Date()));

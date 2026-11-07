@@ -16,7 +16,7 @@ import { DatabaseSync } from "node:sqlite";
 import { NodeSqliteDatabase } from "../src/lib/node-sqlite.ts";
 import { Store } from "../src/lib/db.ts";
 import { parseSnapshot } from "../src/lib/snapshot.ts";
-import { diffSnapshotKeys } from "../src/lib/reconcile.ts";
+import { diffSnapshotKeys } from "../src/lib/snapshot-diff.ts";
 
 function fail(message: string): never {
   console.error(message);

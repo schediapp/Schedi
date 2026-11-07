@@ -1,5 +1,5 @@
 import { SchediError } from "./errors.ts";
-import { captureSnapshot, pragmaChecks, restoreSnapshot, type ConnectSnapshot, type SnapshotReport } from "./snapshot.ts";
+import { captureSnapshot, pragmaChecks, restoreSnapshot, schemaParity, type ConnectSnapshot, type SnapshotReport } from "./snapshot.ts";
 import type { SqlDatabase } from "./sql.ts";
 import type {
   Booking,
@@ -702,6 +702,10 @@ export class Store {
     return restoreSnapshot(this.db, snapshot, mode);
   }
 
+  schemaReport(): { ok: boolean; missing: string[] } {
+    return schemaParity(this.db);
+  }
+
   pragmaStatus(): { integrity: string; foreignKeyViolations: number } {
     try {
       return pragmaChecks(this.db);
@@ -826,7 +830,13 @@ export class Store {
       | undefined;
     if (!row) return null;
     if (row.expires_at < new Date().toISOString()) {
-      this.db.prepare("DELETE FROM sessions WHERE token = ?").run(token);
+      if (this.tryAdmit()) {
+        try {
+          this.db.prepare("DELETE FROM sessions WHERE token = ?").run(token);
+        } finally {
+          this.releaseAdmit();
+        }
+      }
       return null;
     }
     return this.getOwner(row.owner_id);

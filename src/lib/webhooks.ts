@@ -1,12 +1,12 @@
 import type Stripe from "stripe";
-import { confirmBooking, failBooking } from "./bookings";
-import { noticeFromCheckoutSession, recordConnectCardPayment, type ConnectCardPaidNotice } from "./connect-card-payment";
-import type { ConnectConfig } from "./connect-config";
-import { publishStripeConnectReady } from "./connect-ready";
-import type { Store } from "./db";
-import { SchediError } from "./errors";
-import { connectedChargesEnabled, readCapabilityStatuses, type MerchantCapabilityAccount } from "./readiness";
-import { applySubscriptionState } from "./subscription-state";
+import { confirmBooking, failBooking } from "./bookings.ts";
+import { noticeFromCheckoutSession, recordConnectCardPayment, type ConnectCardPaidNotice } from "./connect-card-payment.ts";
+import type { ConnectConfig } from "./connect-config.ts";
+import { publishStripeConnectReady } from "./connect-ready.ts";
+import type { Store } from "./db.ts";
+import { SchediError } from "./errors.ts";
+import { connectedChargesEnabled, readCapabilityStatuses, type MerchantCapabilityAccount } from "./readiness.ts";
+import { applySubscriptionState } from "./subscription-state.ts";
 
 export interface StripeEventDeps {
   recordPublicCardPayment?: (notice: ConnectCardPaidNotice) => Promise<void>;

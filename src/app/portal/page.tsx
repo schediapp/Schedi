@@ -280,52 +280,17 @@ export default async function PortalPage({
 }
 
 function SignIn({ error }: { error?: string }) {
-  const samples = [
-    ["ava@lumen.studio", "Ava Chen · Lumen Studio · Pro, cards off"],
-    ["nia@harbor.example", "Nia Brooks · Harbor Nails · Pro, cards not active yet"],
-    ["leo@northwind.example", "Leo Park · Northwind Cuts · Pro, demo capabilities active"],
-    ["sam@fieldwork.example", "Sam Rivera · Fieldwork · Starter"],
-    ["rory@paused.example", "Rory Hale · Paused Studio · subscription past due"],
-    ["june@freedesk.example", "June Patel · Free Desk · Free"],
-  ];
-
   return (
     <>
       <SiteHeader />
-      <main className="shell grid-2">
-        <form className="panel" method="post" action="/api/session">
+      <main className="shell">
+        <section className="panel">
           <p className="eyebrow">Owner portal</p>
-          <h1>Sign in</h1>
-          {error ? <p className="banner bad" style={{ marginTop: 12 }}>{error}</p> : null}
-          <input type="hidden" name="intent" value="sign-in" />
-          <label className="field" style={{ marginTop: 16 }}>
-            <span>Email</span>
-            <input name="email" type="email" required autoComplete="username" />
-          </label>
-          <label className="field">
-            <span>Your name</span>
-            <input name="owner_name" type="text" autoComplete="name" />
-          </label>
-          <label className="field">
-            <span>Business name</span>
-            <input name="business_name" type="text" />
-          </label>
-          <p className="muted" style={{ marginBottom: 12 }}>
-            A new email opens a Free page. Name and business are used only the first time.
+          <h1>Sign in from Schedi</h1>
+          {error ? <p className="banner bad" style={{ marginTop: 12 }} role="alert">{error}</p> : null}
+          <p className="muted" style={{ marginTop: 12 }}>
+            An email address alone does not open this portal. In Schedi, choose Set up Stripe. That link is signed for the signed-in owner.
           </p>
-          <button type="submit">Continue</button>
-        </form>
-        <section>
-          <h2>Sample businesses</h2>
-          <div className="sample-list">
-            {samples.map(([email, label]) => (
-              <form key={email} method="post" action="/api/session">
-                <input type="hidden" name="intent" value="sign-in" />
-                <input type="hidden" name="email" value={email} />
-                <button type="submit">{label}</button>
-              </form>
-            ))}
-          </div>
         </section>
       </main>
     </>

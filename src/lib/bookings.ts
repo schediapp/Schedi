@@ -1,10 +1,10 @@
 import type Stripe from "stripe";
 import type { Store } from "./db";
-import { createDirectChargeCheckout } from "./checkout";
-import { SchediError } from "./errors";
-import { depositAmountFor, listPaymentOptions } from "./payment-options";
-import { isCardCheckoutReady, isPublicPageLive } from "./readiness";
-import { upcomingSlots } from "./slots";
+import { createDirectChargeCheckout } from "./checkout.ts";
+import { SchediError } from "./errors.ts";
+import { depositAmountFor, listPaymentOptions } from "./payment-options.ts";
+import { isCardCheckoutReady, isPublicPageLive } from "./readiness.ts";
+import { upcomingSlots } from "./slots.ts";
 import type { Booking, ChargeKind, PaymentMethod } from "./types";
 
 const SLOT_HOLD_MS = 45 * 60 * 1000;

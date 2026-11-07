@@ -1,6 +1,6 @@
 import type { Store } from "./db";
 import type { Business, Plan, SubscriptionStatus } from "./types";
-import { PLANS } from "./types";
+import { PLANS } from "./types.ts";
 
 export interface PlanFacts {
   plan?: string | null;

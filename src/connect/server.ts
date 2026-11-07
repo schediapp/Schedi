@@ -20,7 +20,7 @@ import { constructVerifiedEventAsync } from "../lib/webhook-signature";
 import { applyStripeEvent } from "../lib/webhooks";
 import type Stripe from "stripe";
 import { dashboardScript, renderBooked, renderBooking, renderHandoff, renderHome, renderPortal } from "./pages";
-import { reconcileEvents, type ReconcileEvent } from "../lib/reconcile";
+import { applyMissingEvents, reconcileEvents, type ReconcileEvent } from "../lib/reconcile";
 
 const CHECKOUT_ORIGINS = new Set(["https://schedi.app", "https://www.schedi.app"]);
 
@@ -199,7 +199,7 @@ function health(runtime: ConnectRuntime & { config: ConnectConfig }): Response {
   const state = runtime.store.maintenance();
   return json({
     ok: true,
-    service: "schedi-connect",
+    service: "schedi-connect-migration",
     frozen: state.frozen,
     admitted: state.admitted,
     emailSignIn: runtime.config.emailSignIn,
@@ -569,32 +569,12 @@ async function adminReconcile(request: Request, runtime: ConnectRuntime & { conf
   const events = Array.isArray(payload.events) ? payload.events : [];
   const plan = reconcileEvents(runtime.store, events);
   if (payload.apply !== true) return json({ ok: true, applied: false, ...plan }, 200);
-  if (!runtime.store.tryAdmit()) return json({ ok: false, error: "maintenance", ...plan }, 503);
-  try {
-    const applied = await applyReconcile(runtime, events, plan.missingIds);
-    return json({ ok: true, applied: true, ...plan, results: applied }, 200);
-  } finally {
-    runtime.store.releaseAdmit();
+  const state = runtime.store.maintenance();
+  if (!state.frozen || state.admitted !== 0) {
+    return json({ ok: false, error: "freeze_required", ...plan }, 409);
   }
-}
-
-async function applyReconcile(
-  runtime: ConnectRuntime & { config: ConnectConfig },
-  events: ReconcileEvent[],
-  missingIds: string[],
-): Promise<Array<{ id: string; status: string }>> {
-  const wanted = new Set(missingIds);
-  const results: Array<{ id: string; status: string }> = [];
-  for (const event of events) {
-    if (!wanted.has(event.id)) continue;
-    try {
-      await applyStripeEvent(runtime.store, event as unknown as Stripe.Event, { config: runtime.config });
-      results.push({ id: event.id, status: runtime.store.hasStripeEvent(event.id) ? "done" : "skipped" });
-    } catch (error) {
-      results.push({ id: event.id, status: error instanceof Error ? error.message : "failed" });
-    }
-  }
-  return results;
+  const results = await applyMissingEvents(runtime.store, events, { config: runtime.config });
+  return json({ ok: true, applied: true, ...plan, results }, 200);
 }
 
 async function adminBackfill(request: Request, runtime: ConnectRuntime & { config: ConnectConfig }): Promise<Response> {

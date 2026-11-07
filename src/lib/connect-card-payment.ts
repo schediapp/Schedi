@@ -1,6 +1,6 @@
 import type { ConnectConfig } from "./connect-config";
-import { connectConfigFromProcess } from "./connect-config";
-import { SchediError } from "./errors";
+import { connectConfigFromProcess } from "./connect-config.ts";
+import { SchediError } from "./errors.ts";
 
 export interface ConnectCardPaidNotice {
   tenantId: string;

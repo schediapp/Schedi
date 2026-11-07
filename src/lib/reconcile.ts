@@ -1,4 +1,8 @@
-import type { Store } from "./db";
+import type { StripeEventDeps } from "./webhooks.ts";
+import { applyStripeEvent } from "./webhooks.ts";
+import type { Store } from "./db.ts";
+export { diffSnapshotKeys } from "./snapshot-diff.ts";
+import type Stripe from "stripe";
 
 /** One Stripe event object from an Events API export. Not a signed webhook body. */
 export interface ReconcileEvent {
@@ -62,24 +66,23 @@ export function reconcileEvents(store: Store, events: ReconcileEvent[]): Reconci
   };
 }
 
-export function diffSnapshotKeys(
-  before: { tables: Record<string, Array<Record<string, unknown>>> },
-  after: { tables: Record<string, Array<Record<string, unknown>>> },
-  keys: Record<string, string>,
-): Record<string, { added: number; removed: number; changed: number }> {
-  const out: Record<string, { added: number; removed: number; changed: number }> = {};
-  for (const [table, pk] of Object.entries(keys)) {
-    const left = new Map((before.tables[table] || []).map((row) => [String(row[pk]), JSON.stringify(row)]));
-    const right = new Map((after.tables[table] || []).map((row) => [String(row[pk]), JSON.stringify(row)]));
-    let added = 0;
-    let removed = 0;
-    let changed = 0;
-    for (const [id, value] of right) {
-      if (!left.has(id)) added += 1;
-      else if (left.get(id) !== value) changed += 1;
+/** Apply missing event ids. A second call is a no-op for ids already marked done. */
+export async function applyMissingEvents(
+  store: Store,
+  events: ReconcileEvent[],
+  deps?: StripeEventDeps,
+): Promise<Array<{ id: string; status: string }>> {
+  const missing = new Set(reconcileEvents(store, events).missingIds);
+  const results: Array<{ id: string; status: string }> = [];
+  for (const event of events) {
+    if (!missing.has(event.id)) continue;
+    try {
+      await applyStripeEvent(store, event as unknown as Stripe.Event, deps);
+      results.push({ id: event.id, status: store.hasStripeEvent(event.id) ? "done" : "skipped" });
+    } catch (error) {
+      results.push({ id: event.id, status: error instanceof Error ? error.message : "failed" });
     }
-    for (const id of left.keys()) if (!right.has(id)) removed += 1;
-    out[table] = { added, removed, changed };
   }
-  return out;
+  return results;
 }
+

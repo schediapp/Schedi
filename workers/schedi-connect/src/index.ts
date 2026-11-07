@@ -68,7 +68,7 @@ export class ConnectDatabase {
 
 export default {
   async fetch(request: Request, env: ConnectEnv): Promise<Response> {
-    const name = env.CONNECT_OBJECT_NAME || "schedi-connect";
+    const name = env.CONNECT_OBJECT_NAME || "schedi-connect-migration";
     const id = env.CONNECT_DB.idFromName(name);
     return env.CONNECT_DB.get(id).fetch(request);
   },
