@@ -12,6 +12,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const SNAPSHOT_NAME = 'attachment; filename="schedi-connect-snapshot.sqlite"';
+const BODY_MAX_BYTES = 1024;
 
 function methodNotAllowed() {
   return NextResponse.json(
@@ -28,7 +29,8 @@ export const OPTIONS = methodNotAllowed;
 
 /**
  * POST /api/admin/sqlite-snapshot
- * One consistent SQLite file. An empty body is the only accepted command.
+ * Streams one consistent SQLite file. The body is either empty or a JSON
+ * object with no fields. It cannot name a path, SQL, or another command.
  */
 export async function POST(request: Request) {
   const configured = process.env.SCHEDI_CONNECT_BACKUP_SECRET;
@@ -52,13 +54,14 @@ export async function POST(request: Request) {
   }
 
   try {
-    const bytes = snapshotSqliteDatabase(sqliteDatabasePath());
-    return new NextResponse(new Uint8Array(bytes), {
+    const download = await snapshotSqliteDatabase(sqliteDatabasePath(), { signal: request.signal });
+    request.signal.addEventListener("abort", () => download.release(), { once: true });
+    return new NextResponse(download.stream, {
       status: 200,
       headers: {
         "content-type": "application/octet-stream",
         "content-disposition": SNAPSHOT_NAME,
-        "content-length": String(bytes.byteLength),
+        "content-length": String(download.bytes),
         "cache-control": "no-store",
         "x-content-type-options": "nosniff",
       },
@@ -71,15 +74,35 @@ export async function POST(request: Request) {
 }
 
 async function emptyCommand(request: Request): Promise<boolean> {
-  const declared = Number(request.headers.get("content-length") || "0");
-  if (Number.isFinite(declared) && declared > 1024) return false;
+  const declared = request.headers.get("content-length");
+  if (declared != null && (!/^\d+$/.test(declared) || Number(declared) > BODY_MAX_BYTES)) return false;
+  if (!request.body) return true;
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (!value) continue;
+      total += value.byteLength;
+      if (total > BODY_MAX_BYTES) {
+        await reader.cancel().catch(() => undefined);
+        return false;
+      }
+      chunks.push(value);
+    }
+  } catch {
+    await reader.cancel().catch(() => undefined);
+    return false;
+  }
+  if (total === 0) return true;
   let text = "";
   try {
-    text = await request.text();
+    text = new TextDecoder("utf8", { fatal: true }).decode(concatBytes(chunks));
   } catch {
     return false;
   }
-  if (text.length > 1024) return false;
   if (text.trim() === "") return true;
   try {
     const parsed = JSON.parse(text) as unknown;
@@ -87,4 +110,14 @@ async function emptyCommand(request: Request): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+function concatBytes(chunks: Uint8Array[]): Uint8Array {
+  const out = new Uint8Array(chunks.reduce((sum, chunk) => sum + chunk.byteLength, 0));
+  let offset = 0;
+  for (const chunk of chunks) {
+    out.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return out;
 }

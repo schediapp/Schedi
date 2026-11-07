@@ -1,15 +1,19 @@
-import { DatabaseSync } from "node:sqlite";
-import { mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { DatabaseSync, backup } from "node:sqlite";
+import { mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Worker } from "node:worker_threads";
 import { afterEach, describe, expect, it } from "vitest";
-import { POST, GET } from "../src/app/api/admin/sqlite-snapshot/route";
+import { GET, POST } from "../src/app/api/admin/sqlite-snapshot/route";
 import { SchediError } from "../src/lib/errors";
 import {
   BACKUP_SECRET_HEADER,
   BACKUP_SECRET_MIN_LENGTH,
+  backupSecretAuthorized,
+  backupSecretConfigured,
+  releaseActiveSnapshotForTests,
   snapshotSqliteDatabase,
+  type SnapshotDownload,
 } from "../src/lib/sqlite-snapshot";
 
 const dirs: string[] = [];
@@ -36,7 +40,14 @@ function walDatabase(dir: string): { path: string; db: DatabaseSync } {
   return { path, db };
 }
 
+async function readDownload(download: SnapshotDownload): Promise<Buffer> {
+  const bytes = Buffer.from(await new Response(download.stream).arrayBuffer());
+  download.release();
+  return bytes;
+}
+
 afterEach(() => {
+  releaseActiveSnapshotForTests();
   for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
   if (priorEnv.backup == null) delete process.env.SCHEDI_CONNECT_BACKUP_SECRET;
   else process.env.SCHEDI_CONNECT_BACKUP_SECRET = priorEnv.backup;
@@ -53,7 +64,12 @@ function openSnapshot(bytes: Buffer, dir: string): DatabaseSync {
 }
 
 describe("online SQLite snapshot", () => {
-  it("copies committed WAL rows into one file and leaves the source untouched", () => {
+  it("uses the node:sqlite backup API on this runtime", () => {
+    expect(typeof backup).toBe("function");
+    expect(process.versions.node.split(".").map(Number)[0]).toBeGreaterThanOrEqual(22);
+  });
+
+  it("copies committed WAL rows into one file and leaves the source main bytes unchanged", async () => {
     const dir = tempDir();
     const { path, db } = walDatabase(dir);
     const mainBefore = readFileSync(path);
@@ -62,14 +78,14 @@ describe("online SQLite snapshot", () => {
     let mode = 0;
     const workRoot = tempDir();
 
-    const bytes = snapshotSqliteDatabase(path, {
+    const download = await snapshotSqliteDatabase(path, {
       workRoot,
       inspectSnapshotFile(snapshotPath) {
         mode = statSync(snapshotPath).mode & 0o777;
         expect(statSync(join(snapshotPath, "..")).mode & 0o777).toBe(0o700);
-        expect(readdirSync(join(snapshotPath, "..")).sort()).toEqual(["snapshot.sqlite"]);
       },
     });
+    const bytes = await readDownload(download);
 
     expect(mode).toBe(0o600);
     expect(readdirSync(workRoot)).toEqual([]);
@@ -96,7 +112,74 @@ describe("online SQLite snapshot", () => {
       expect(restored.prepare("PRAGMA integrity_check").get()).toEqual({ integrity_check: "ok" });
       expect(restored.prepare("PRAGMA journal_mode").get()).toEqual({ journal_mode: "delete" });
       expect(restored.prepare("SELECT email FROM owners").all()).toEqual([{ email: "kept@example.com" }]);
-      expect(readdirSync(dir).some((name) => name.startsWith("restored.sqlite-"))).toBe(false);
+    } finally {
+      restored.close();
+      db.close();
+    }
+  });
+
+  it("keeps a multi-table commit atomic while another connection writes", async () => {
+    const dir = tempDir();
+    const path = join(dir, "live.sqlite");
+    const db = new DatabaseSync(path);
+    db.exec("PRAGMA journal_mode=WAL");
+    db.exec("PRAGMA wal_autocheckpoint = 0");
+    db.exec("CREATE TABLE owners (id TEXT PRIMARY KEY, email TEXT)");
+    db.exec("CREATE TABLE bookings (id TEXT PRIMARY KEY, owner_id TEXT)");
+    db.exec("INSERT INTO owners (id, email) VALUES ('owner-1', 'kept@example.com')");
+    db.exec("INSERT INTO bookings (id, owner_id) VALUES ('booking-1', 'owner-1')");
+    const mainBefore = readFileSync(path);
+    const walBefore = statSync(`${path}-wal`).size;
+    const stop = new Int32Array(new SharedArrayBuffer(4));
+    const writer = new Worker(
+      new URL(
+        "data:text/javascript," +
+          encodeURIComponent(`
+            import { parentPort, workerData } from "node:worker_threads";
+            import { DatabaseSync } from "node:sqlite";
+            const db = new DatabaseSync(workerData.path);
+            db.exec("PRAGMA wal_autocheckpoint = 0");
+            let n = 0;
+            while (Atomics.load(workerData.stop, 0) === 0 && n < 40) {
+              db.exec("BEGIN");
+              db.exec("INSERT INTO owners (id, email) VALUES ('w" + n + "', 'w" + n + "@example.com')");
+              db.exec("INSERT INTO bookings (id, owner_id) VALUES ('b" + n + "', 'w" + n + "')");
+              db.exec("COMMIT");
+              n += 1;
+            }
+            db.close();
+            parentPort.postMessage({ n });
+          `),
+      ),
+      { workerData: { path, stop } },
+    );
+    const finished = new Promise((resolve, reject) => {
+      writer.once("message", resolve);
+      writer.once("error", reject);
+    });
+    const ticks = { n: 0 };
+    const timer = setInterval(() => {
+      ticks.n += 1;
+    }, 10);
+    const download = await snapshotSqliteDatabase(path, { workRoot: tempDir(), stepDelayMs: 15, rate: 1 });
+    clearInterval(timer);
+    Atomics.store(stop, 0, 1);
+    const writerResult = (await finished) as { n: number };
+    const bytes = await readDownload(download);
+    expect(ticks.n).toBeGreaterThan(2);
+    expect(writerResult.n).toBeGreaterThan(0);
+    expect(readFileSync(path).equals(mainBefore)).toBe(true);
+    expect(statSync(`${path}-wal`).size).toBeGreaterThanOrEqual(walBefore);
+    const restored = openSnapshot(bytes, dir);
+    try {
+      const torn = restored
+        .prepare(
+          "SELECT count(*) AS n FROM bookings b LEFT JOIN owners o ON o.id = b.owner_id WHERE o.id IS NULL",
+        )
+        .get() as { n: number };
+      expect(torn.n).toBe(0);
+      expect(restored.prepare("PRAGMA integrity_check").get()).toEqual({ integrity_check: "ok" });
+      expect((restored.prepare("SELECT count(*) AS n FROM bookings").get() as { n: number }).n).toBeGreaterThan(0);
     } finally {
       restored.close();
       db.close();
@@ -108,51 +191,45 @@ describe("online SQLite snapshot", () => {
     const { path, db } = walDatabase(dir);
     const ready = new Int32Array(new SharedArrayBuffer(4));
     const worker = new Worker(
-      `
-      const { workerData, parentPort } = require("node:worker_threads");
-      const { DatabaseSync } = require("node:sqlite");
-      const db = new DatabaseSync(workerData.path);
-      db.exec("PRAGMA busy_timeout = 1000");
-      try {
-        db.exec("BEGIN IMMEDIATE");
-        db.exec("INSERT INTO owners (id, email) VALUES ('owner-2', 'hidden@example.com')");
-        Atomics.store(workerData.ready, 0, 1);
-        Atomics.notify(workerData.ready, 0);
-        Atomics.wait(workerData.ready, 0, 1);
-        db.exec("ROLLBACK");
-        parentPort.postMessage({ ok: true });
-      } catch (error) {
-        parentPort.postMessage({ ok: false, message: String(error && error.message || error) });
-      } finally {
-        db.close();
-      }
-      `,
-      { eval: true, workerData: { path, ready } },
+      new URL(
+        "data:text/javascript," +
+          encodeURIComponent(`
+            import { parentPort, workerData } from "node:worker_threads";
+            import { DatabaseSync } from "node:sqlite";
+            const db = new DatabaseSync(workerData.path);
+            db.exec("BEGIN IMMEDIATE");
+            db.exec("INSERT INTO owners (id, email) VALUES ('owner-2', 'hidden@example.com')");
+            parentPort.postMessage({ ready: true });
+            Atomics.wait(workerData.ready, 0, 0);
+            db.exec("ROLLBACK");
+            db.close();
+            parentPort.postMessage({ ok: true });
+          `),
+      ),
+      { workerData: { path, ready } },
     );
-    const finished = new Promise((resolve, reject) => {
+    await new Promise((resolve, reject) => {
       worker.once("message", resolve);
       worker.once("error", reject);
     });
-    const woke = Atomics.wait(ready, 0, 0, 2000);
-    expect(woke).not.toBe("timed-out");
     const walBefore = statSync(`${path}-wal`).size;
-    const bytes = snapshotSqliteDatabase(path, { workRoot: tempDir() });
+    const download = await snapshotSqliteDatabase(path, { workRoot: tempDir() });
+    const bytes = await readDownload(download);
     expect(statSync(`${path}-wal`).size).toBe(walBefore);
     Atomics.store(ready, 0, 2);
     Atomics.notify(ready, 0);
-    await expect(finished).resolves.toEqual({ ok: true });
-
     const restored = openSnapshot(bytes, dir);
     try {
-      expect(restored.prepare("SELECT email FROM owners ORDER BY email").all()).toEqual([{ email: "kept@example.com" }]);
+      expect(restored.prepare("SELECT email FROM owners").all()).toEqual([{ email: "kept@example.com" }]);
       expect(db.prepare("SELECT email FROM owners").all()).toEqual([{ email: "kept@example.com" }]);
     } finally {
       restored.close();
       db.close();
+      await worker.terminate();
     }
   });
 
-  it("returns busy instead of waiting out an exclusive lock", () => {
+  it("returns busy instead of waiting out an exclusive lock", async () => {
     const dir = tempDir();
     const path = join(dir, "live.sqlite");
     const db = new DatabaseSync(path);
@@ -161,20 +238,21 @@ describe("online SQLite snapshot", () => {
     db.exec("INSERT INTO owners (id, email) VALUES ('owner-1', 'kept@example.com')");
     db.exec("BEGIN EXCLUSIVE");
     const started = Date.now();
-    const error = (() => {
-      try {
-        snapshotSqliteDatabase(path, { timeoutMs: 200, workRoot: tempDir() });
-        return null;
-      } catch (caught) {
-        return caught;
-      }
-    })();
+    const error = await snapshotSqliteDatabase(path, {
+      lockTimeoutMs: 200,
+      deadlineMs: 1_000,
+      workRoot: tempDir(),
+    }).then(
+      () => null,
+      (caught: unknown) => caught,
+    );
     expect(Date.now() - started).toBeLessThan(1_500);
     expect(error).toBeInstanceOf(SchediError);
     expect(error).toMatchObject({ status: 503, message: "Database is busy." });
     expect(String((error as Error).message)).not.toContain(path);
     db.exec("ROLLBACK");
-    const bytes = snapshotSqliteDatabase(path, { workRoot: tempDir() });
+    const download = await snapshotSqliteDatabase(path, { workRoot: tempDir() });
+    const bytes = await readDownload(download);
     db.close();
     const restored = openSnapshot(bytes, dir);
     try {
@@ -184,40 +262,101 @@ describe("online SQLite snapshot", () => {
     }
   });
 
-  it("refuses oversized, missing, and non-database files without leaving a snapshot behind", () => {
+  it("stops at the deadline and on abort without leaving a snapshot", async () => {
+    const dir = tempDir();
+    const { path, db } = walDatabase(dir);
+    const mainBefore = readFileSync(path);
+    const workRoot = tempDir();
+    const timed = await snapshotSqliteDatabase(path, {
+      workRoot,
+      deadlineMs: 60,
+      stepDelayMs: 40,
+      rate: 1,
+    }).then(
+      () => null,
+      (caught: unknown) => caught,
+    );
+    expect(timed).toMatchObject({ status: 503, message: "Backup timed out." });
+    expect(readdirSync(workRoot)).toEqual([]);
+    expect(readFileSync(path).equals(mainBefore)).toBe(true);
+
+    const controller = new AbortController();
+    const pending = snapshotSqliteDatabase(path, {
+      workRoot,
+      signal: controller.signal,
+      stepDelayMs: 40,
+      rate: 1,
+      deadlineMs: 5_000,
+    });
+    setTimeout(() => controller.abort(), 20);
+    const cancelled = await pending.then(
+      () => null,
+      (caught: unknown) => caught,
+    );
+    expect(cancelled).toMatchObject({ status: 503, message: "Backup was cancelled." });
+    expect(readdirSync(workRoot)).toEqual([]);
+    expect(readFileSync(path).equals(mainBefore)).toBe(true);
+    db.close();
+  });
+
+  it("admits one download at a time and refuses growth, missing files, and full disks", async () => {
     const dir = tempDir();
     const workRoot = tempDir();
-    const missing = join(dir, "missing.sqlite");
-    expect(() => snapshotSqliteDatabase(missing, { workRoot })).toThrowError(
-      expect.objectContaining({ status: 404, message: "Database file is missing." }),
-    );
+    const { path, db } = walDatabase(dir);
+    const stale = join(workRoot, "schedi-sqlite-snapshot-abc123");
+    mkdirSync(stale);
+    writeFileSync(join(stale, "leftover"), "x");
+    symlinkSync(dir, join(workRoot, "schedi-sqlite-snapshot-zzzzzz"));
+    writeFileSync(join(workRoot, "schedi-sqlite-snapshot-aaaaaa"), "not-a-directory");
 
+    const first = await snapshotSqliteDatabase(path, { workRoot });
+    const overlap = await snapshotSqliteDatabase(path, { workRoot }).then(
+      () => null,
+      (caught: unknown) => caught,
+    );
+    expect(overlap).toMatchObject({ status: 429, message: "Another backup is already running." });
+    await readDownload(first);
+    expect(readdirSync(workRoot).sort()).toEqual(["schedi-sqlite-snapshot-aaaaaa", "schedi-sqlite-snapshot-zzzzzz"]);
+
+    const full = await snapshotSqliteDatabase(path, { workRoot, reserveBytes: 2 ** 50 }).then(
+      () => null,
+      (caught: unknown) => caught,
+    );
+    expect(full).toMatchObject({ status: 507, message: "Backup storage is full." });
+    const missing = await snapshotSqliteDatabase(join(dir, "missing.sqlite"), { workRoot }).then(
+      () => null,
+      (caught: unknown) => caught,
+    );
+    expect(missing).toMatchObject({ status: 404, message: "Database file is missing." });
     const notes = join(dir, "notes.sqlite");
     writeFileSync(notes, "person@example.com");
-    const refused = (() => {
-      try {
-        snapshotSqliteDatabase(notes, { workRoot });
-        return null;
-      } catch (error) {
-        return error;
-      }
-    })();
-    expect(refused).toMatchObject({ status: 404, message: "Database file is not a SQLite database." });
-    expect(String((refused as Error).message)).not.toContain("person@example.com");
-    expect(readFileSync(notes).toString()).toBe("person@example.com");
-
-    const { path, db } = walDatabase(dir);
-    expect(() => snapshotSqliteDatabase(path, { maxBytes: 80, workRoot })).toThrowError(
-      expect.objectContaining({ status: 413, message: "Database is too large to snapshot." }),
+    const notDb = await snapshotSqliteDatabase(notes, { workRoot }).then(
+      () => null,
+      (caught: unknown) => caught,
     );
-    db.close();
-    expect(readdirSync(workRoot)).toEqual([]);
+    expect(notDb).toMatchObject({ status: 404, message: "Database file is not a SQLite database." });
+    expect(String((notDb as Error).message)).not.toContain("person@example.com");
+    const tooBig = await snapshotSqliteDatabase(path, { workRoot, maxBytes: 80 }).then(
+      () => null,
+      (caught: unknown) => caught,
+    );
+    expect(tooBig).toMatchObject({ status: 413, message: "Database is too large to snapshot." });
+    expect(readFileSync(notes).toString()).toBe("person@example.com");
     expect(readdirSync(dir).some((name) => name.includes("snapshot"))).toBe(false);
+    db.close();
+  });
+
+  it("rejects a non-ASCII secret without throwing", () => {
+    const accented = "é".repeat(BACKUP_SECRET_MIN_LENGTH);
+    expect(backupSecretConfigured(accented)).toBe(false);
+    expect(backupSecretAuthorized(accented, SECRET)).toBe(false);
+    expect(backupSecretAuthorized("\uD800".repeat(BACKUP_SECRET_MIN_LENGTH), SECRET)).toBe(false);
+    expect(backupSecretAuthorized(SECRET, SECRET)).toBe(true);
   });
 });
 
 describe("sqlite snapshot route", () => {
-  it("accepts only the dedicated backup secret and an empty command", async () => {
+  it("streams the snapshot and bounds the command body", async () => {
     const dir = tempDir();
     const { path, db } = walDatabase(dir);
     db.close();
@@ -227,18 +366,24 @@ describe("sqlite snapshot route", () => {
 
     const unconfigured = await POST(new Request("https://connect.example/api/admin/sqlite-snapshot", { method: "POST" }));
     expect(unconfigured.status).toBe(503);
-    await expect(unconfigured.json()).resolves.toEqual({ ok: false, error: "Backup is not configured." });
 
-    process.env.SCHEDI_CONNECT_BACKUP_SECRET = "short-secret";
-    const weak = await POST(
+    process.env.SCHEDI_CONNECT_BACKUP_SECRET = "é".repeat(BACKUP_SECRET_MIN_LENGTH);
+    const unicodeSecret = await POST(
       new Request("https://connect.example/api/admin/sqlite-snapshot", {
         method: "POST",
-        headers: { [BACKUP_SECRET_HEADER]: "short-secret" },
+        headers: { [BACKUP_SECRET_HEADER]: "é".repeat(BACKUP_SECRET_MIN_LENGTH) },
       }),
     );
-    expect(weak.status).toBe(503);
+    expect(unicodeSecret.status).toBe(503);
 
     process.env.SCHEDI_CONNECT_BACKUP_SECRET = SECRET;
+    const unicodeHeader = await POST(
+      new Request("https://connect.example/api/admin/sqlite-snapshot", {
+        method: "POST",
+        headers: { [BACKUP_SECRET_HEADER]: "é".repeat(BACKUP_SECRET_MIN_LENGTH) },
+      }),
+    );
+    expect(unicodeHeader.status).toBe(401);
     const paid = await POST(
       new Request("https://connect.example/api/admin/sqlite-snapshot", {
         method: "POST",
@@ -246,34 +391,47 @@ describe("sqlite snapshot route", () => {
       }),
     );
     expect(paid.status).toBe(401);
-    const wrong = await POST(
-      new Request("https://connect.example/api/admin/sqlite-snapshot", {
-        method: "POST",
-        headers: { [BACKUP_SECRET_HEADER]: "c".repeat(BACKUP_SECRET_MIN_LENGTH) },
+
+    let pulls = 0;
+    const huge = new Request("https://connect.example/api/admin/sqlite-snapshot", {
+      method: "POST",
+      headers: { [BACKUP_SECRET_HEADER]: SECRET },
+      body: new ReadableStream({
+        pull(controller) {
+          pulls += 1;
+          if (pulls > 40) {
+            controller.close();
+            return;
+          }
+          controller.enqueue(new Uint8Array(100));
+        },
       }),
-    );
-    expect(wrong.status).toBe(401);
+      duplex: "half",
+    });
+    const chunked = await POST(huge);
+    expect(chunked.status).toBe(400);
+    expect(pulls).toBeLessThan(20);
+
+    let declaredPulls = 0;
+    const declared = new Request("https://connect.example/api/admin/sqlite-snapshot", {
+      method: "POST",
+      headers: { [BACKUP_SECRET_HEADER]: SECRET, "content-length": "999999" },
+      body: new ReadableStream({
+        pull(controller) {
+          declaredPulls += 1;
+          if (declaredPulls > 40) {
+            controller.close();
+            return;
+          }
+          controller.enqueue(new Uint8Array(100));
+        },
+      }),
+      duplex: "half",
+    });
+    expect((await POST(declared)).status).toBe(400);
+    expect(declaredPulls).toBeLessThan(20);
 
     const before = readFileSync(path);
-    for (const body of [
-      JSON.stringify({ freeze: true }),
-      JSON.stringify({ import: true }),
-      JSON.stringify({ sql: "DROP TABLE owners" }),
-      JSON.stringify({ path: "/tmp/other.sqlite" }),
-      JSON.stringify({ ok: true }),
-    ]) {
-      const refused = await POST(
-        new Request("https://connect.example/api/admin/sqlite-snapshot", {
-          method: "POST",
-          headers: { [BACKUP_SECRET_HEADER]: SECRET, "content-type": "application/json" },
-          body,
-        }),
-      );
-      expect(refused.status).toBe(400);
-      await expect(refused.json()).resolves.toEqual({ ok: false, error: "This route only copies the database." });
-    }
-    expect(readFileSync(path).equals(before)).toBe(true);
-
     const response = await POST(
       new Request("https://connect.example/api/admin/sqlite-snapshot", {
         method: "POST",
@@ -282,7 +440,6 @@ describe("sqlite snapshot route", () => {
     );
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toBe("application/octet-stream");
-    expect(response.headers.get("content-disposition")).toBe('attachment; filename="schedi-connect-snapshot.sqlite"');
     expect(response.headers.get("cache-control")).toBe("no-store");
     const bytes = Buffer.from(await response.arrayBuffer());
     expect(response.headers.get("content-length")).toBe(String(bytes.byteLength));
@@ -294,26 +451,35 @@ describe("sqlite snapshot route", () => {
     } finally {
       restored.close();
     }
-
-    const get = await GET();
-    expect(get.status).toBe(405);
+    const overlap = await POST(
+      new Request("https://connect.example/api/admin/sqlite-snapshot", {
+        method: "POST",
+        headers: { [BACKUP_SECRET_HEADER]: SECRET },
+      }),
+    );
+    expect(overlap.status).toBe(200);
+    await overlap.arrayBuffer();
+    expect((await GET()).status).toBe(405);
     expect(readFileSync(path).equals(before)).toBe(true);
   });
 
-  it("does not open the store, read the live file, or accept a freeze", () => {
+  it("does not open the store, buffer the live file, or checkpoint", () => {
     const route = readFileSync(new URL("../src/app/api/admin/sqlite-snapshot/route.ts", import.meta.url), "utf8");
     const helper = readFileSync(new URL("../src/lib/sqlite-snapshot.ts", import.meta.url), "utf8");
     expect(route).toContain("SCHEDI_CONNECT_BACKUP_SECRET");
     expect(route).not.toContain("SCHEDI_CONNECT_PAID_SECRET");
     expect(route).not.toContain("openStore");
     expect(route).not.toContain("getStore");
-    expect(route).not.toContain("readSqliteDatabaseBytes");
-    expect(route).not.toContain("request-gate");
+    expect(route).not.toContain("readFile");
+    expect(route).not.toContain("new Uint8Array(bytes)");
     expect(route).not.toMatch(/\bfreeze\b/);
     expect(route).not.toContain("console.");
-    expect(helper).not.toContain("readFileSync(sourcePath)");
+    expect(helper).toContain("backup(source");
+    expect(helper).not.toContain("VACUUM INTO");
     expect(helper).not.toContain("wal_checkpoint");
-    expect(helper).toContain("VACUUM INTO");
+    expect(helper).not.toContain("readFileSync");
+    expect(helper).not.toContain("copyFile(");
+    expect(helper).not.toContain("copyFileSync");
     expect(helper).toContain("readOnly: true");
   });
 });
