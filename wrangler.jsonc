@@ -2,8 +2,11 @@
   // Public site worker for schedi.app. Marketing HTML is rendered in the script.
   // Git's site/ is the SPA shell (index.html) only. Logos, help videos, favicon,
   // manifests, and _headers stay in the deploy directory and are copied in beside
-  // that shell at deploy time. See README. /api/* and /billing/* stay on their
-  // more specific workers.
+  // that shell at deploy time. See README.
+  // Live routes: schedi.app/* and www.schedi.app/* are this worker's catchalls.
+  // schedi.app/billing/*, schedi.app/auth/*, and the more specific /api/* routes
+  // belong to schedi-email-worker. Do not copy those patterns into this file.
+  // This worker has no service binding to Railway or to schedi-connect.
   "name": "schedi-web",
   "compatibility_date": "2026-10-13",
   "main": "worker/index.ts",

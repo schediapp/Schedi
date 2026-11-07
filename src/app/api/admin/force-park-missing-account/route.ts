@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { connectAdminAuthorized } from "@/lib/connect-backfill";
 import { forceParkMissingConnectedAccount } from "@/lib/connect";
 import { SchediError } from "@/lib/errors";
+import { withWritable } from "@/lib/request-gate";
 import { getStore } from "@/lib/store";
 import { getStripe } from "@/lib/stripe";
 
@@ -26,6 +27,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "Expected a JSON object." }, { status: 400 });
   }
   const body = payload as { slug?: unknown; businessId?: unknown };
+  return withWritable(getStore(), async () => {
   try {
     const result = await forceParkMissingConnectedAccount(getStore(), getStripe(), {
       slug: jsonString(body.slug),
@@ -37,4 +39,5 @@ export async function POST(request: Request) {
     const status = error instanceof SchediError ? error.status : 500;
     return NextResponse.json({ ok: false, error: message }, { status });
   }
+  });
 }

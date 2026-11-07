@@ -1,4 +1,6 @@
-import { SchediError } from "./errors";
+import type { ConnectConfig } from "./connect-config";
+import { connectConfigFromProcess } from "./connect-config.ts";
+import { SchediError } from "./errors.ts";
 
 export interface ConnectCardPaidNotice {
   tenantId: string;
@@ -63,11 +65,11 @@ export function noticeFromCheckoutSession(
   };
 }
 
-export async function recordConnectCardPayment(notice: ConnectCardPaidNotice): Promise<void> {
-  const secret = process.env.SCHEDI_CONNECT_PAID_SECRET || "";
+export async function recordConnectCardPayment(notice: ConnectCardPaidNotice, config?: ConnectConfig): Promise<void> {
+  const resolved = config ?? connectConfigFromProcess();
+  const secret = resolved.connectPaidSecret;
   if (!secret) throw new SchediError("SCHEDI_CONNECT_PAID_SECRET is not set.", 500);
-  const url = process.env.SCHEDI_CONNECT_PAID_URL || "https://schedi.app/billing/connect-booking-paid";
-  const response = await fetch(url, {
+  const response = await fetch(resolved.connectPaidUrl, {
     method: "POST",
     headers: {
       "content-type": "application/json",

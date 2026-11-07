@@ -39,6 +39,7 @@ export const PRIVATE_TENANT_KEYS = [
   'subscriptionStatus',
   'signupStartedAt',
   'stripeConnectStatus',
+  'stripeConnectObservedAt',
   'phiAcknowledgment',
   'ownerIdleTimeoutMin',
   'ownerIdleDefaultApplied',
@@ -69,6 +70,7 @@ export const AGENCY_ONLY_PRIVATE_KEYS = new Set([
   'subscriptionStatus',
   'signupStartedAt',
   'stripeConnectStatus',
+  'stripeConnectObservedAt',
 ]);
 
 /** Square seller ids belong on the private connection, not the world-readable doc. */

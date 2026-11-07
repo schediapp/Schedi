@@ -1,4 +1,4 @@
-import { isCardPlanPro } from "./plan-entitlement";
+import { isCardPlanPro } from "./plan-entitlement.ts";
 import type { Business, Plan, SubscriptionStatus } from "./types";
 
 const PAUSING_STATUSES = new Set<SubscriptionStatus>([

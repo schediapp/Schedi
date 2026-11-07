@@ -2,6 +2,7 @@ import { SiteHeader } from "@/components/site-header";
 import { fulfillBookingCheckout } from "@/lib/bookings";
 import { formatUsd } from "@/lib/money";
 import { formatSlot } from "@/lib/slots";
+import { withReadRefresh } from "@/lib/request-gate";
 import { getStore } from "@/lib/store";
 import { stripeOrNull } from "@/lib/stripe";
 
@@ -44,11 +45,15 @@ export default async function BookedPage({
 
   const stripe = stripeOrNull();
   if (stripe && booking.status === "pending_payment") {
-    try {
-      booking = await fulfillBookingCheckout(store, stripe, booking);
-    } catch (error) {
-      console.error("Could not confirm checkout", error instanceof Error ? error.message : "unknown error");
-    }
+    const current = booking;
+    booking = await withReadRefresh(store, current, async () => {
+      try {
+        return await fulfillBookingCheckout(store, stripe, current);
+      } catch (error) {
+        console.error("Could not confirm checkout", error instanceof Error ? error.message : "unknown error");
+        return current;
+      }
+    });
   }
 
   const service = store.getService(booking.serviceId);

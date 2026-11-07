@@ -1,5 +1,6 @@
 import type Stripe from "stripe";
-import { openStore, type Store } from "../src/lib/db";
+import type { Store } from "../src/lib/db";
+import { openStore } from "../src/lib/node-sqlite";
 import type { Business, Service } from "../src/lib/types";
 
 export const FAKE_PERIOD_END_UNIX = 1794009600;

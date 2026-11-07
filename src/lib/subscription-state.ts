@@ -1,5 +1,5 @@
 import type { Store } from "./db";
-import { subscriptionPeriodEndIso, type SubscriptionPeriodSource } from "./subscription-policy";
+import { subscriptionPeriodEndIso, type SubscriptionPeriodSource } from "./subscription-policy.ts";
 import type { Plan, SubscriptionStatus } from "./types";
 
 const KNOWN: SubscriptionStatus[] = [

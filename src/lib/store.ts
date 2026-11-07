@@ -1,4 +1,4 @@
-import { getStore as openSingleton } from "./db";
+import { getStore as openSingleton } from "./node-sqlite";
 import { seedDemo } from "./seed";
 import { shouldSeedDemo } from "./seed-policy";
 

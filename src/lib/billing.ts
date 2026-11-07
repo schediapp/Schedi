@@ -22,8 +22,14 @@ export async function ensureOwnerCustomer(store: Store, stripe: Stripe, owner: O
   return store.setOwnerCustomer(owner.id, customer.id).stripeCustomerId!;
 }
 
-async function ensurePlanPrice(stripe: Stripe, plan: "starter" | "pro"): Promise<string> {
-  const configured = plan === "starter" ? process.env.STRIPE_PRICE_STARTER : process.env.STRIPE_PRICE_PRO;
+async function ensurePlanPrice(
+  stripe: Stripe,
+  plan: "starter" | "pro",
+  prices?: { starter: string; pro: string },
+): Promise<string> {
+  const configured = prices
+    ? plan === "starter" ? prices.starter : prices.pro
+    : plan === "starter" ? process.env.STRIPE_PRICE_STARTER : process.env.STRIPE_PRICE_PRO;
   if (configured) return configured;
 
   const lookupKey = plan === "starter" ? "schedi_starter_monthly" : "schedi_pro_monthly";
@@ -56,6 +62,7 @@ export async function startOwnerSubscription(
   ownerId: string,
   plan: "starter" | "pro",
   urls: { success: string; cancel: string },
+  prices?: { starter: string; pro: string },
 ): Promise<{ kind: "checkout"; url: string } | { kind: "updated" } | { kind: "portal"; url: string }> {
   const owner = store.getOwner(ownerId);
   const business = store.getBusinessByOwner(ownerId);
@@ -77,12 +84,12 @@ export async function startOwnerSubscription(
   }
 
   if (business.stripeSubscriptionId && business.subscriptionStatus === "active") {
-    await changeSubscriptionPlan(store, stripe, ownerId, plan);
+    await changeSubscriptionPlan(store, stripe, ownerId, plan, prices);
     return { kind: "updated" };
   }
 
   const customerId = await ensureOwnerCustomer(store, stripe, owner);
-  const priceId = await ensurePlanPrice(stripe, plan);
+  const priceId = await ensurePlanPrice(stripe, plan, prices);
   const params: Stripe.Checkout.SessionCreateParams = {
     mode: "subscription",
     customer: customerId,
@@ -111,10 +118,11 @@ export async function changeSubscriptionPlan(
   stripe: Stripe,
   ownerId: string,
   plan: "starter" | "pro",
+  prices?: { starter: string; pro: string },
 ): Promise<void> {
   const business = store.getBusinessByOwner(ownerId);
   if (!business?.stripeSubscriptionId) throw new SchediError("There is no subscription to change.", 409);
-  const priceId = await ensurePlanPrice(stripe, plan);
+  const priceId = await ensurePlanPrice(stripe, plan, prices);
   const current = await stripe.subscriptions.retrieve(business.stripeSubscriptionId);
   const itemId = current.items.data[0]?.id;
   if (!itemId) throw new SchediError("Subscription has no price.", 409);

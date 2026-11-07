@@ -1,9 +1,9 @@
 export class SchediError extends Error {
-  constructor(
-    message: string,
-    readonly status: number,
-  ) {
+  readonly status: number;
+
+  constructor(message: string, status: number) {
     super(message);
     this.name = "SchediError";
+    this.status = status;
   }
 }

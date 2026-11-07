@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { currentOwner } from "@/lib/auth";
+import { withWritable } from "@/lib/request-gate";
 import { createEmbeddedAccountSession } from "@/lib/connect";
 import { errorMessage } from "@/lib/http";
 import { getStore } from "@/lib/store";
@@ -8,6 +9,10 @@ import { getStripe } from "@/lib/stripe";
 export const runtime = "nodejs";
 
 export async function POST() {
+  return withWritable(getStore(), () => connectSessionPost());
+}
+
+async function connectSessionPost() {
   const owner = await currentOwner();
   if (!owner) return NextResponse.json({ error: "Sign in required." }, { status: 401 });
 

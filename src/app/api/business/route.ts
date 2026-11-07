@@ -1,4 +1,5 @@
 import { currentOwner } from "@/lib/auth";
+import { withWritable } from "@/lib/request-gate";
 import { SchediError } from "@/lib/errors";
 import { errorMessage, redirectTo } from "@/lib/http";
 import { getStore } from "@/lib/store";
@@ -6,6 +7,10 @@ import { getStore } from "@/lib/store";
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
+  return withWritable(getStore(), () => businessPost(request));
+}
+
+async function businessPost(request: Request) {
   const owner = await currentOwner();
   if (!owner) return redirectTo(request, "/portal", { error: "Sign in required." });
 

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { backfillStripeConnectReady, connectAdminAuthorized } from "@/lib/connect-backfill";
 import { SchediError } from "@/lib/errors";
+import { withWritable } from "@/lib/request-gate";
 import { getStore } from "@/lib/store";
 import { getStripe } from "@/lib/stripe";
 
@@ -11,6 +12,7 @@ export async function POST(request: Request) {
   if (!connectAdminAuthorized(request.headers.get("x-schedi-connect-secret"), process.env.SCHEDI_CONNECT_PAID_SECRET)) {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
   }
+  return withWritable(getStore(), async () => {
   try {
     const result = await backfillStripeConnectReady(getStore(), getStripe());
     return NextResponse.json({ ok: true, ...result });
@@ -19,4 +21,5 @@ export async function POST(request: Request) {
     const status = error instanceof SchediError ? error.status : 500;
     return NextResponse.json({ ok: false, error: message }, { status });
   }
+  });
 }

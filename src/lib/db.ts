@@ -1,8 +1,6 @@
-import { randomUUID } from "node:crypto";
-import { mkdirSync } from "node:fs";
-import { dirname } from "node:path";
-import { DatabaseSync } from "node:sqlite";
-import { SchediError } from "./errors";
+import { SchediError } from "./errors.ts";
+import { captureSnapshot, pragmaChecks, restoreSnapshot, schemaParity, type ConnectSnapshot, type SnapshotReport } from "./snapshot.ts";
+import type { SqlDatabase } from "./sql.ts";
 import type {
   Booking,
   BookingStatus,
@@ -181,8 +179,16 @@ function mapBooking(row: BookingRow): Booking {
   };
 }
 
+export type StripeEventClaim =
+  | { status: "claimed"; at: string }
+  | { status: "done" }
+  | { status: "inflight" };
+
 export class Store {
-  constructor(private readonly db: DatabaseSync) {
+  private readonly db: SqlDatabase;
+
+  constructor(db: SqlDatabase) {
+    this.db = db;
     this.db.exec(`
       PRAGMA foreign_keys = ON;
       CREATE TABLE IF NOT EXISTS owners (
@@ -250,12 +256,38 @@ export class Store {
         nonce TEXT PRIMARY KEY,
         expires_at INTEGER NOT NULL
       );
+      CREATE TABLE IF NOT EXISTS maintenance (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        frozen INTEGER NOT NULL DEFAULT 0,
+        frozen_at TEXT,
+        admitted INTEGER NOT NULL DEFAULT 0
+      );
+      CREATE TABLE IF NOT EXISTS state_fence (
+        key TEXT PRIMARY KEY,
+        observed_at TEXT NOT NULL,
+        event_id TEXT NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS callback_outbox (
+        id TEXT PRIMARY KEY,
+        kind TEXT NOT NULL,
+        payload TEXT NOT NULL,
+        state TEXT NOT NULL,
+        observed_at TEXT,
+        updated_at TEXT NOT NULL
+      );
     `);
+    this.db
+      .prepare(
+        `INSERT INTO maintenance (id, frozen, admitted)
+         SELECT 1, 0, 0 WHERE NOT EXISTS (SELECT 1 FROM maintenance WHERE id = 1)`,
+      )
+      .run();
     ensureBusinessBillingColumns(this.db);
+    ensureStripeEventState(this.db);
   }
 
   createOwner(input: { email: string; name: string; stripeCustomerId?: string | null }): Owner {
-    const id = randomUUID();
+    const id = crypto.randomUUID();
     const email = input.email.trim().toLowerCase();
     this.db
       .prepare(
@@ -305,7 +337,7 @@ export class Store {
   }
 
   createBusiness(input: CreateBusinessInput): Business {
-    const id = randomUUID();
+    const id = crypto.randomUUID();
     this.db
       .prepare(
         `INSERT INTO businesses (
@@ -524,7 +556,7 @@ export class Store {
     durationMinutes: number;
     priceCents: number;
   }): Service {
-    const id = randomUUID();
+    const id = crypto.randomUUID();
     this.db
       .prepare(
         `INSERT INTO services (id, business_id, name, duration_minutes, price_cents)
@@ -548,7 +580,7 @@ export class Store {
   }
 
   createBooking(input: CreateBookingInput): Booking {
-    const id = randomUUID();
+    const id = crypto.randomUUID();
     const createdAt = new Date().toISOString();
     this.db
       .prepare(
@@ -607,8 +639,157 @@ export class Store {
   }
 
   hasStripeEvent(id: string): boolean {
-    const row = this.db.prepare("SELECT id FROM stripe_events WHERE id = ?").get(id) as { id: string } | undefined;
+    const row = this.db.prepare(
+      "SELECT id FROM stripe_events WHERE id = ? AND (state = 'done' OR state IS NULL)",
+    ).get(id) as { id: string } | undefined;
     return Boolean(row);
+  }
+
+  /**
+   * One delivery owns the event until it finishes or the handler releases it.
+   * A processing row is never stolen by a later delivery. A crashed claim stays
+   * processing until an operator releases it while writers are frozen and drained.
+   * The row is marked done only after local writes and required callbacks finish.
+   */
+  claimStripeEvent(id: string, now = Date.now()): StripeEventClaim {
+    const at = new Date(now).toISOString();
+    const inserted = this.db
+      .prepare(
+        `INSERT INTO stripe_events (id, processed_at, state)
+         SELECT ?, ?, 'processing'
+         WHERE NOT EXISTS (SELECT 1 FROM stripe_events WHERE id = ?)`,
+      )
+      .run(id, at, id);
+    if (inserted.changes === 1) return { status: "claimed", at };
+    const row = this.db.prepare("SELECT state, processed_at FROM stripe_events WHERE id = ?").get(id) as
+      | { state: string | null; processed_at: string }
+      | undefined;
+    if (!row || row.state == null || row.state === "done") return { status: "done" };
+    return { status: "inflight" };
+  }
+
+  /** Drop crashed processing claims. Caller must already be frozen with no admitted writers. */
+  releaseProcessingClaims(): number {
+    const state = this.maintenance();
+    if (!state.frozen || state.admitted !== 0) {
+      throw new SchediError("Release processing claims only while frozen and drained.", 409);
+    }
+    const result = this.db.prepare("DELETE FROM stripe_events WHERE state = 'processing'").run();
+    return result.changes;
+  }
+
+  finishStripeEvent(id: string, at: string, now = Date.now()): void {
+    const result = this.db
+      .prepare(
+        `UPDATE stripe_events SET state = 'done', processed_at = ?
+         WHERE id = ? AND state = 'processing' AND processed_at = ?`,
+      )
+      .run(new Date(now).toISOString(), id, at);
+    if (result.changes !== 1) throw new SchediError("Stripe event claim was lost.", 500);
+  }
+
+  releaseStripeEvent(id: string, at: string): void {
+    this.db
+      .prepare("DELETE FROM stripe_events WHERE id = ? AND state = 'processing' AND processed_at = ?")
+      .run(id, at);
+  }
+
+  consistentSnapshot(now?: string): ConnectSnapshot {
+    return captureSnapshot(this.db, now);
+  }
+
+  restoreConsistentSnapshot(snapshot: ConnectSnapshot, mode: "dry-run" | "empty-only"): SnapshotReport {
+    return restoreSnapshot(this.db, snapshot, mode);
+  }
+
+  schemaReport(): { ok: boolean; missing: string[] } {
+    return schemaParity(this.db);
+  }
+
+  pragmaStatus(): { integrity: string; foreignKeyViolations: number } {
+    try {
+      return pragmaChecks(this.db);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "";
+      if (message.includes("SQLITE_AUTH") || message.includes("not authorized")) {
+        return { integrity: "unsupported", foreignKeyViolations: -1 };
+      }
+      throw error;
+    }
+  }
+
+  maintenance(): { frozen: boolean; admitted: number; frozenAt: string | null } {
+    const row = this.db.prepare("SELECT frozen, admitted, frozen_at FROM maintenance WHERE id = 1").get() as
+      | { frozen: number; admitted: number; frozen_at: string | null }
+      | undefined;
+    return {
+      frozen: row?.frozen === 1,
+      admitted: Number(row?.admitted || 0),
+      frozenAt: row?.frozen_at ?? null,
+    };
+  }
+
+  /** Admit one writer. False means the database is frozen and this request must not write. */
+  tryAdmit(): boolean {
+    const result = this.db.prepare("UPDATE maintenance SET admitted = admitted + 1 WHERE id = 1 AND frozen = 0").run();
+    return result.changes === 1;
+  }
+
+  releaseAdmit(): void {
+    this.db
+      .prepare("UPDATE maintenance SET admitted = CASE WHEN admitted > 0 THEN admitted - 1 ELSE 0 END WHERE id = 1")
+      .run();
+  }
+
+  freezeWriters(now = new Date().toISOString()): { frozen: boolean; admitted: number; frozenAt: string | null } {
+    this.db.prepare("UPDATE maintenance SET frozen = 1, frozen_at = COALESCE(frozen_at, ?) WHERE id = 1").run(now);
+    return this.maintenance();
+  }
+
+  openWriters(): { frozen: boolean; admitted: number; frozenAt: string | null } {
+    this.db.prepare("UPDATE maintenance SET frozen = 0, frozen_at = NULL WHERE id = 1").run();
+    return this.maintenance();
+  }
+
+  /**
+   * Latest-state fence. A newer observation wins. The same event may retry.
+   * An older or different event at the same timestamp does not overwrite.
+   */
+  fenceDecision(key: string, observedAt: string, eventId: string): "apply" | "retry" | "stale" {
+    const row = this.db.prepare("SELECT observed_at, event_id FROM state_fence WHERE key = ?").get(key) as
+      | { observed_at: string; event_id: string }
+      | undefined;
+    if (!row) return "apply";
+    if (observedAt > row.observed_at) return "apply";
+    if (observedAt === row.observed_at && row.event_id === eventId) return "retry";
+    return "stale";
+  }
+
+  commitFence(key: string, observedAt: string, eventId: string): void {
+    const existing = this.db.prepare("SELECT key FROM state_fence WHERE key = ?").get(key);
+    if (!existing) {
+      this.db.prepare("INSERT INTO state_fence (key, observed_at, event_id) VALUES (?, ?, ?)").run(key, observedAt, eventId);
+      return;
+    }
+    this.db.prepare("UPDATE state_fence SET observed_at = ?, event_id = ? WHERE key = ?").run(observedAt, eventId, key);
+  }
+
+  beginOutbox(id: string, kind: string, payload: string, observedAt: string | null, now = new Date().toISOString()): "pending" | "sent" {
+    const row = this.db.prepare("SELECT state FROM callback_outbox WHERE id = ?").get(id) as { state: string } | undefined;
+    if (row?.state === "sent") return "sent";
+    if (!row) {
+      this.db
+        .prepare(
+          `INSERT INTO callback_outbox (id, kind, payload, state, observed_at, updated_at)
+           VALUES (?, ?, ?, 'pending', ?, ?)`,
+        )
+        .run(id, kind, payload, observedAt, now);
+    }
+    return "pending";
+  }
+
+  markOutboxSent(id: string, now = new Date().toISOString()): void {
+    this.db.prepare("UPDATE callback_outbox SET state = 'sent', updated_at = ? WHERE id = ?").run(now, id);
   }
 
   markStripeEvent(id: string): void {
@@ -637,7 +818,7 @@ export class Store {
   }
 
   createSession(ownerId: string): string {
-    const token = randomUUID() + randomUUID();
+    const token = crypto.randomUUID() + crypto.randomUUID();
     const expires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
     this.db.prepare("INSERT INTO sessions (token, owner_id, expires_at) VALUES (?, ?, ?)").run(token, ownerId, expires);
     return token;
@@ -649,7 +830,13 @@ export class Store {
       | undefined;
     if (!row) return null;
     if (row.expires_at < new Date().toISOString()) {
-      this.db.prepare("DELETE FROM sessions WHERE token = ?").run(token);
+      if (this.tryAdmit()) {
+        try {
+          this.db.prepare("DELETE FROM sessions WHERE token = ?").run(token);
+        } finally {
+          this.releaseAdmit();
+        }
+      }
       return null;
     }
     return this.getOwner(row.owner_id);
@@ -660,7 +847,15 @@ export class Store {
   }
 }
 
-function ensureBusinessBillingColumns(db: DatabaseSync): void {
+function ensureStripeEventState(db: SqlDatabase): void {
+  const rows = db.prepare("PRAGMA table_info(stripe_events)").all() as { name: string }[];
+  const names = new Set(rows.map((row) => row.name));
+  if (!names.has("state")) {
+    db.exec("ALTER TABLE stripe_events ADD COLUMN state TEXT NOT NULL DEFAULT 'done'");
+  }
+}
+
+function ensureBusinessBillingColumns(db: SqlDatabase): void {
   const rows = db.prepare("PRAGMA table_info(businesses)").all() as { name: string }[];
   const names = new Set(rows.map((row) => row.name));
   if (!names.has("cancel_at_period_end")) {
@@ -696,16 +891,3 @@ export function sqliteDatabasePath(env: NodeJS.ProcessEnv = process.env): string
   return path || "data/schedi.sqlite";
 }
 
-export function openStore(path: string): Store {
-  if (path !== ":memory:") mkdirSync(dirname(path), { recursive: true });
-  return new Store(new DatabaseSync(path));
-}
-
-let singleton: Store | null = null;
-
-export function getStore(): Store {
-  if (!singleton) {
-    singleton = openStore(sqliteDatabasePath());
-  }
-  return singleton;
-}
