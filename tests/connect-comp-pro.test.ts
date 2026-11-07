@@ -220,7 +220,7 @@ describe("complimentary Pro counts as Pro for card setup", () => {
     const { owner, business } = seedProBusiness(store, {
       email: "axel@example.com",
       name: "Axel Del Cid Photography",
-      slug: "free-axel",
+      slug: "axeldelcidphotography",
       plan: "free",
       subscriptionStatus: "none",
       stripeAccountId: null,
@@ -275,16 +275,13 @@ describe("complimentary Pro counts as Pro for card setup", () => {
       ...connectPlanView(axel({ complimentaryPro: false, billingExempt: false, plan: "free", subscriptionStatus: "none" })),
     });
     const first = await acceptConnectHandoff(store, token, SECRET, async () => freeRemote, now);
-    expect(first.ok).toBe(true);
-    if (!first.ok) return;
-    expect(first.business.plan).toBe("free");
-    expect(first.business.subscriptionStatus).toBe("none");
-    expect(first.business.complimentaryPro).toBe(false);
-    expect(first.business.slug).toBe("axeldelcidphotography");
+    expect(first.ok).toBe(false);
+    if (first.ok) return;
+    expect(first.error).toMatch(/could not be verified/);
+    expect(store.getBusiness(business.id).plan).toBe("free");
+    expect(store.getBusiness(business.id).slug).toBe("free-axel");
+    expect(store.getBusiness(business.id).complimentaryPro).toBe(false);
     expect(store.getBusiness(business.id).stripeSubscriptionId).toBeNull();
-    const stripe = createFakeStripe();
-    await expect(enableCardPayments(store, stripe, first.ownerId)).rejects.toThrow(/active Pro/);
-    expect(stripe.calls).toEqual([]);
 
     const second = await acceptConnectHandoff(store, token, SECRET, async () => freeRemote, now);
     expect(second.ok).toBe(false);

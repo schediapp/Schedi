@@ -66,9 +66,10 @@ function planSlug(remote: SchediPlanRecord, fallback: string): string {
 const OWNERSHIP = "This Schedi sign-in could not be verified for this business. Nothing was charged.";
 
 /**
- * Open a Connect business from a re-checked Schedi plan.
+ * Open the Connect business for this Schedi tenant.
+ * The tenant slug is the principal. An email match does not authorize a different business,
+ * and this never renames or reassigns an existing business.
  * Does not create a Stripe customer, subscription, or connected account.
- * Card entitlement stays on the plan lookup. A Free or Starter row is not written as Pro.
  */
 export function adoptSchediBusiness(
   store: Store,
@@ -81,40 +82,34 @@ export function adoptSchediBusiness(
   if (!remoteEmail.includes("@") || remoteEmail !== email || slug !== claims.slug) {
     throw new SchediError(OWNERSHIP, 403);
   }
-  let owner = store.getOwnerByEmail(email);
-  if (!owner) {
-    const name = (claims.ownerName || remote.ownerName || "").trim();
-    if (name.length < 2) throw new SchediError(OWNERSHIP, 403);
-    owner = store.createOwner({ email, name });
+  const existing = store.getBusinessBySlug(slug);
+  if (existing) {
+    const owner = store.getOwner(existing.ownerId);
+    if (owner.email.trim().toLowerCase() !== email) {
+      throw new SchediError("This business is already set up for another owner.", 409);
+    }
+    const business = applySchediPlan(store, existing, remote, email);
+    if (business.id !== existing.id || business.ownerId !== existing.ownerId || business.slug !== slug) {
+      throw new SchediError(OWNERSHIP, 403);
+    }
+    return { ownerId: owner.id, business };
   }
-  const bySlug = store.getBusinessBySlug(slug);
-  if (bySlug && bySlug.ownerId !== owner.id) {
-    throw new SchediError("This business is already set up for another owner.", 409);
-  }
-  let business = store.getBusinessByOwner(owner.id);
-  if (business && bySlug && business.id !== bySlug.id) {
+  if (store.getOwnerByEmail(email)) {
     throw new SchediError(OWNERSHIP, 403);
   }
-  if (!business) {
-    business = store.createBusiness({
-      ownerId: owner.id,
-      name: remote.name || claims.businessName || "Business",
-      slug,
-      plan: remote.plan,
-      subscriptionStatus: remote.subscriptionStatus,
-    });
-  }
+  const name = (claims.ownerName || remote.ownerName || "").trim();
+  if (name.length < 2) throw new SchediError(OWNERSHIP, 403);
+  const owner = store.createOwner({ email, name });
+  let business = store.createBusiness({
+    ownerId: owner.id,
+    name: remote.name || claims.businessName || "Business",
+    slug,
+    plan: remote.plan,
+    subscriptionStatus: remote.subscriptionStatus,
+  });
   business = applySchediPlan(store, business, remote, email);
-  if (business.slug !== slug) {
-    const taken = store.getBusinessBySlug(slug);
-    if (taken && taken.id !== business.id) throw new SchediError(OWNERSHIP, 403);
-    business = store.setPlanEntitlement(business.id, {
-      plan: business.plan,
-      subscriptionStatus: business.subscriptionStatus,
-      complimentaryPro: business.complimentaryPro === true,
-      billingExempt: business.billingExempt === true,
-      slug,
-    });
+  if (business.ownerId !== owner.id || business.slug !== slug) {
+    throw new SchediError(OWNERSHIP, 403);
   }
   return { ownerId: owner.id, business };
 }
