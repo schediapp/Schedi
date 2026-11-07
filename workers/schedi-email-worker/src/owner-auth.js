@@ -118,20 +118,8 @@ async function rebindOwnerEmail(env, tenantId, nextEmail) {
   return { ok: true };
 }
 
-async function renameOwnerSecret(env, fromId, toId) {
-  const source = String(fromId || '').trim();
-  const dest = String(toId || '').trim();
-  if (!source || !dest || source === dest) return { ok: true };
-  const record = await readJson(env.AUTH_KV, 'tenant:' + source);
-  if (!record || !record.hash) return { ok: true, missing: true };
-  record.tenantId = dest;
-  await env.AUTH_KV.put('tenant:' + dest, JSON.stringify(record));
-  await env.AUTH_KV.delete('tenant:' + source);
-  if (record.email) {
-    await removeTenantFromEmailIndex(env, record.email, source);
-    await addTenantToEmailIndex(env, record.email, dest);
-  }
-  return { ok: true };
+async function renameOwnerSecret() {
+  return { ok: false, error: 'rename_disabled' };
 }
 
 async function saveAgencySecret(env, email, password) {
@@ -326,19 +314,7 @@ export async function handleAuthRequest(request, env, origin, path, json, deps) 
   }
 
   if (path === '/auth/rename') {
-    const session = await readSession(env, body.session);
-    if (!session) return json({ ok: false, error: 'session_required' }, 401, origin);
-    const fromId = String(body.fromId || '').trim();
-    const toId = String(body.toId || '').trim();
-    if (session.role === 'owner' && session.tenantId !== fromId) {
-      return json({ ok: false, error: 'forbidden' }, 403, origin);
-    }
-    if (session.role !== 'owner' && session.role !== 'agency') {
-      return json({ ok: false, error: 'forbidden' }, 403, origin);
-    }
-    const renamed = await renameOwnerSecret(env, fromId, toId);
-    if (!renamed.ok) return json(renamed, 400, origin);
-    return json({ ok: true }, 200, origin);
+    return json({ ok: false, error: 'rename_disabled' }, 403, origin);
   }
 
   return json({ ok: false, error: 'not_found' }, 404, origin);
