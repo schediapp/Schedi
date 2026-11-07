@@ -2,7 +2,6 @@ import { timingSafeEqual } from "node:crypto";
 import { chmodSync, createReadStream, lstatSync, mkdtempSync, readdirSync, rmSync, statfsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Readable } from "node:stream";
 import { Worker } from "node:worker_threads";
 import { backup } from "node:sqlite";
 import { SchediError } from "./errors";
@@ -22,10 +21,14 @@ import { SchediError } from "./errors";
  * backup; the deadline stops a restart loop. The source is opened read-only.
  * The live file is not read or duplicated with a filesystem copy, and its WAL is not checkpointed.
  * The destination journal is set to delete so the download is one file.
- * One backup and its download are admitted per process. A second replica has its own lock.
+ * One backup and its download are admitted per process until the web consumer
+ * reaches EOF, cancels, or hits the download deadline. Node source close does
+ * not release that admission. Worker termination is awaited before the temp
+ * file is removed. A second replica has its own lock.
  */
 export const SQLITE_SNAPSHOT_MAX_BYTES = 32 * 1024 * 1024;
 export const SQLITE_SNAPSHOT_DEADLINE_MS = 20_000;
+export const SQLITE_SNAPSHOT_DOWNLOAD_DEADLINE_MS = 20_000;
 export const BACKUP_SECRET_HEADER = "x-schedi-connect-backup-secret";
 export const BACKUP_SECRET_MIN_LENGTH = 32;
 const SECRET_MAX_LENGTH = 512;
@@ -146,21 +149,29 @@ export interface SqliteSnapshotOptions {
   rate?: number;
   /** Test-only pause between backup steps. The route cannot set it. */
   stepDelayMs?: number;
+  /** Test-only pause after the worker has exited and before admission is released. */
+  holdAfterTerminateMs?: number;
+  downloadDeadlineMs?: number;
+  idleDeadlineMs?: number;
+  streamHighWaterBytes?: number;
   signal?: AbortSignal;
   inspectSnapshotFile?: (path: string) => void;
+  inspectNodeStream?: (stream: ReturnType<typeof createReadStream>) => void;
+  onWorkerTerminated?: () => void;
+  onReleased?: () => void;
 }
 
 export interface SnapshotDownload {
   bytes: number;
   stream: ReadableStream<Uint8Array>;
-  release: () => void;
+  release: () => Promise<void>;
 }
 
-let activeRelease: (() => void) | null = null;
+let activeRelease: (() => Promise<void>) | null = null;
 
 /** Drops a leaked in-process admission after a failed test. */
-export function releaseActiveSnapshotForTests(): void {
-  activeRelease?.();
+export function releaseActiveSnapshotForTests(): Promise<void> {
+  return activeRelease ? activeRelease() : Promise.resolve();
 }
 
 /** ASCII only, so equal character counts cannot reach timingSafeEqual with unequal byte lengths. */
@@ -199,15 +210,35 @@ export async function snapshotSqliteDatabase(
   if (reserveBytes < maxBytes) throw new SchediError("Could not snapshot the database.", 500);
   const rate = boundedInt(options.rate, PAGE_RATE, PAGE_RATE, 1);
   const stepDelayMs = boundedInt(options.stepDelayMs, 0, 50, 0);
+  const downloadDeadlineMs = boundedInt(
+    options.downloadDeadlineMs,
+    SQLITE_SNAPSHOT_DOWNLOAD_DEADLINE_MS,
+    SQLITE_SNAPSHOT_DOWNLOAD_DEADLINE_MS,
+    1,
+  );
+  const idleDeadlineMs = boundedInt(options.idleDeadlineMs, Math.min(10_000, downloadDeadlineMs), downloadDeadlineMs, 1);
+  const highWaterBytes = boundedInt(options.streamHighWaterBytes, STREAM_HIGH_WATER_BYTES, STREAM_HIGH_WATER_BYTES, 1);
+  const holdAfterTerminateMs = boundedInt(options.holdAfterTerminateMs, 0, 1_000, 0);
 
-  let released = false;
+  let cleaning = false;
+  let releasePromise: Promise<void> | null = null;
   let workDir: string | undefined;
-  const release = () => {
-    if (released) return;
-    released = true;
-    if (activeRelease === release) activeRelease = null;
-    if (workDir) rmSync(/*turbopackIgnore: true*/ workDir, { recursive: true, force: true });
-    workDir = undefined;
+  let nodeStream: ReturnType<typeof createReadStream> | undefined;
+  let clearDownloadTimers = () => {};
+  const release = (): Promise<void> => {
+    if (cleaning) return releasePromise ?? Promise.resolve();
+    cleaning = true;
+    releasePromise = (async () => {
+      clearDownloadTimers();
+      nodeStream?.destroy();
+      if (workDir) {
+        rmSync(/*turbopackIgnore: true*/ workDir, { recursive: true, force: true });
+        workDir = undefined;
+      }
+      if (activeRelease === release) activeRelease = null;
+      options.onReleased?.();
+    })();
+    return releasePromise;
   };
   activeRelease = release;
 
@@ -246,27 +277,34 @@ export async function snapshotSqliteDatabase(
       },
       deadlineMs,
       options.signal,
+      holdAfterTerminateMs,
+      options.onWorkerTerminated,
     );
     if (!outcome.ok) throw errorForCode(outcome.code);
     if (!Number.isSafeInteger(outcome.bytes) || outcome.bytes < 1 || outcome.bytes > maxBytes) {
       throw new SchediError("Could not snapshot the database.", 500);
     }
     options.inspectSnapshotFile?.(snapshotPath);
-    const nodeStream = createReadStream(/*turbopackIgnore: true*/ snapshotPath, {
-      highWaterMark: STREAM_HIGH_WATER_BYTES,
-    });
-    nodeStream.on("close", release);
-    options.signal?.addEventListener("abort", () => {
-      nodeStream.destroy();
-      release();
-    }, { once: true });
-    return {
-      bytes: outcome.bytes,
-      stream: Readable.toWeb(nodeStream) as ReadableStream<Uint8Array>,
-      release,
+    nodeStream = createReadStream(/*turbopackIgnore: true*/ snapshotPath, { highWaterMark: highWaterBytes });
+    const abortDownload = () => {
+      void release();
     };
+    options.signal?.addEventListener("abort", abortDownload, { once: true });
+    const stream = createDownloadStream(nodeStream, {
+      downloadDeadlineMs,
+      idleDeadlineMs,
+      onTimer: (clear) => {
+        clearDownloadTimers = () => {
+          clear();
+          options.signal?.removeEventListener("abort", abortDownload);
+        };
+      },
+      release,
+    });
+    options.inspectNodeStream?.(nodeStream);
+    return { bytes: outcome.bytes, stream, release };
   } catch (error) {
-    release();
+    await release();
     throw asSnapshotError(error);
   }
 }
@@ -346,9 +384,11 @@ function runBackupWorker(
   input: WorkerInput,
   deadlineMs: number,
   signal: AbortSignal | undefined,
+  holdAfterTerminateMs: number,
+  onWorkerTerminated: (() => void) | undefined,
 ): Promise<WorkerSuccess | WorkerFailure> {
   return new Promise((resolve) => {
-    let settled = false;
+    let finishing = false;
     const worker = new Worker(new URL(`data:text/javascript,${encodeURIComponent(WORKER_SOURCE)}`), {
       workerData: input,
       resourceLimits: {
@@ -357,12 +397,20 @@ function runBackupWorker(
       },
     });
     const finish = (result: WorkerSuccess | WorkerFailure) => {
-      if (settled) return;
-      settled = true;
+      if (finishing) return;
+      finishing = true;
       clearTimeout(timer);
       signal?.removeEventListener("abort", onAbort);
-      worker.terminate().catch(() => undefined);
-      resolve(result);
+      void (async () => {
+        try {
+          await worker.terminate();
+        } catch {
+          // The thread has already stopped.
+        }
+        onWorkerTerminated?.();
+        if (holdAfterTerminateMs > 0) await delay(holdAfterTerminateMs);
+        resolve(result);
+      })();
     };
     const timer = setTimeout(() => finish({ ok: false, code: "timeout" }), deadlineMs);
     const onAbort = () => finish({ ok: false, code: "cancelled" });
@@ -374,8 +422,131 @@ function runBackupWorker(
     worker.on("message", (message: WorkerSuccess | WorkerFailure) => finish(message));
     worker.on("error", () => finish({ ok: false, code: "failed" }));
     worker.on("exit", () => {
-      if (!settled) finish({ ok: false, code: "failed" });
+      if (!finishing) finish({ ok: false, code: "failed" });
     });
+  });
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function createDownloadStream(
+  nodeStream: ReturnType<typeof createReadStream>,
+  options: {
+    downloadDeadlineMs: number;
+    idleDeadlineMs: number;
+    onTimer: (clear: () => void) => void;
+    release: () => Promise<void>;
+  },
+): ReadableStream<Uint8Array> {
+  let endedCleanly = false;
+  let failed = false;
+  const totalTimer = setTimeout(() => {
+    failed = true;
+    void options.release();
+  }, options.downloadDeadlineMs);
+  let idleTimer = setTimeout(() => {
+    failed = true;
+    void options.release();
+  }, options.idleDeadlineMs);
+  const clearTimers = () => {
+    clearTimeout(totalTimer);
+    clearTimeout(idleTimer);
+  };
+  options.onTimer(clearTimers);
+  const bumpIdle = () => {
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(() => {
+      failed = true;
+      void options.release();
+    }, options.idleDeadlineMs);
+  };
+  nodeStream.on("end", () => {
+    endedCleanly = true;
+  });
+  nodeStream.on("error", () => {
+    failed = true;
+  });
+  nodeStream.on("close", () => {
+    if (!endedCleanly) failed = true;
+  });
+
+  const readChunk = () =>
+    new Promise<Uint8Array | null>((resolve, reject) => {
+      if (failed) {
+        reject(new Error("closed"));
+        return;
+      }
+      if (nodeStream.readableEnded) {
+        resolve(null);
+        return;
+      }
+      const pending = nodeStream.read() as Buffer | null;
+      if (pending) {
+        resolve(new Uint8Array(pending));
+        return;
+      }
+      const cleanup = () => {
+        nodeStream.off("readable", onReadable);
+        nodeStream.off("end", onEnd);
+        nodeStream.off("error", onError);
+        nodeStream.off("close", onClose);
+      };
+      const onReadable = () => {
+        const chunk = nodeStream.read() as Buffer | null;
+        if (!chunk) return;
+        cleanup();
+        resolve(new Uint8Array(chunk));
+      };
+      const onEnd = () => {
+        cleanup();
+        resolve(null);
+      };
+      const onError = () => {
+        cleanup();
+        reject(new Error("closed"));
+      };
+      const onClose = () => {
+        if (endedCleanly) return;
+        cleanup();
+        reject(new Error("closed"));
+      };
+      nodeStream.on("readable", onReadable);
+      nodeStream.once("end", onEnd);
+      nodeStream.once("error", onError);
+      nodeStream.once("close", onClose);
+    });
+
+  return new ReadableStream<Uint8Array>({
+    async pull(controller) {
+      if (failed) {
+        controller.error(new Error("Backup download failed."));
+        await options.release();
+        return;
+      }
+      bumpIdle();
+      try {
+        const chunk = await readChunk();
+        if (failed) {
+          controller.error(new Error("Backup download failed."));
+          await options.release();
+          return;
+        }
+        if (!chunk) {
+          controller.close();
+          await options.release();
+          return;
+        }
+        controller.enqueue(chunk);
+      } catch {
+        controller.error(new Error("Backup download failed."));
+        await options.release();
+      }
+    },
+    cancel() {
+      return options.release();
+    },
   });
 }
 

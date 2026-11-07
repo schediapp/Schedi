@@ -1,7 +1,10 @@
-import { DatabaseSync, backup } from "node:sqlite";
+import { randomBytes } from "node:crypto";
+import { execFile } from "node:child_process";
 import { mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
+import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { DatabaseSync, backup } from "node:sqlite";
 import { Worker } from "node:worker_threads";
 import { afterEach, describe, expect, it } from "vitest";
 import { GET, POST } from "../src/app/api/admin/sqlite-snapshot/route";
@@ -42,12 +45,12 @@ function walDatabase(dir: string): { path: string; db: DatabaseSync } {
 
 async function readDownload(download: SnapshotDownload): Promise<Buffer> {
   const bytes = Buffer.from(await new Response(download.stream).arrayBuffer());
-  download.release();
+  await download.release();
   return bytes;
 }
 
-afterEach(() => {
-  releaseActiveSnapshotForTests();
+afterEach(async () => {
+  await releaseActiveSnapshotForTests();
   for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
   if (priorEnv.backup == null) delete process.env.SCHEDI_CONNECT_BACKUP_SECRET;
   else process.env.SCHEDI_CONNECT_BACKUP_SECRET = priorEnv.backup;
@@ -346,6 +349,185 @@ describe("online SQLite snapshot", () => {
     db.close();
   });
 
+  it("keeps admission until the web consumer finishes, stalls, or is cancelled", async () => {
+    const dir = tempDir();
+    const { path, db } = walDatabase(dir);
+    db.close();
+    const workRoot = tempDir();
+    let releases = 0;
+    const waiting = await snapshotSqliteDatabase(path, {
+      workRoot,
+      idleDeadlineMs: 5_000,
+      downloadDeadlineMs: 5_000,
+      onReleased() {
+        releases += 1;
+      },
+    });
+    const early = await snapshotSqliteDatabase(path, { workRoot }).then(
+      () => null,
+      (caught: unknown) => caught,
+    );
+    expect(early).toMatchObject({ status: 429, message: "Another backup is already running." });
+    expect(releases).toBe(0);
+    await waiting.stream.cancel();
+    await waiting.release();
+    expect(releases).toBe(1);
+    expect(readdirSync(workRoot)).toEqual([]);
+
+    const stalled = await snapshotSqliteDatabase(path, {
+      workRoot,
+      idleDeadlineMs: 80,
+      downloadDeadlineMs: 5_000,
+      onReleased() {
+        releases += 1;
+      },
+    });
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    expect(readdirSync(workRoot)).toEqual([]);
+    const afterStall = await snapshotSqliteDatabase(path, { workRoot });
+    await readDownload(afterStall);
+    expect(releases).toBe(2);
+    await stalled.release();
+    expect(releases).toBe(2);
+
+    releases = 0;
+    const partial = await snapshotSqliteDatabase(path, {
+      workRoot,
+      idleDeadlineMs: 80,
+      downloadDeadlineMs: 5_000,
+      streamHighWaterBytes: 32,
+      onReleased() {
+        releases += 1;
+      },
+    });
+    const reader = partial.stream.getReader();
+    const firstChunk = await reader.read();
+    expect(firstChunk.done).toBe(false);
+    expect(firstChunk.value?.byteLength).toBeGreaterThan(0);
+    const during = await snapshotSqliteDatabase(path, { workRoot }).then(
+      () => null,
+      (caught: unknown) => caught,
+    );
+    expect(during).toMatchObject({ status: 429 });
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    expect(releases).toBe(1);
+    const afterPartial = await snapshotSqliteDatabase(path, { workRoot });
+    await readDownload(afterPartial);
+    await partial.release();
+    expect(releases).toBe(1);
+
+    const slow = await snapshotSqliteDatabase(path, {
+      workRoot,
+      idleDeadlineMs: 160,
+      downloadDeadlineMs: 160,
+      streamHighWaterBytes: 32,
+    });
+    const slowReader = slow.stream.getReader();
+    let received = 0;
+    const started = Date.now();
+    while (Date.now() - started < 700) {
+      try {
+        const next = await slowReader.read();
+        if (next.done) break;
+        received += next.value?.byteLength ?? 0;
+      } catch {
+        break;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 40));
+    }
+    expect(received).toBeGreaterThan(0);
+    expect(received).toBeLessThan(slow.bytes);
+    await slow.release();
+    const afterSlow = await snapshotSqliteDatabase(path, { workRoot });
+    await readDownload(afterSlow);
+  });
+
+  it("distinguishes a source error from a premature close and cleans up once", async () => {
+    const dir = tempDir();
+    const { path, db } = walDatabase(dir);
+    db.close();
+    const workRoot = tempDir();
+    let releases = 0;
+    const errored = await snapshotSqliteDatabase(path, {
+      workRoot,
+      idleDeadlineMs: 5_000,
+      downloadDeadlineMs: 5_000,
+      onReleased() {
+        releases += 1;
+      },
+      inspectNodeStream(stream) {
+        setImmediate(() => stream.destroy(Object.assign(new Error("read"), { code: "EIO" })));
+      },
+    });
+    await expect(errored.stream.getReader().read()).rejects.toThrow(/Backup download failed/);
+    await errored.release();
+    expect(releases).toBe(1);
+    expect(readdirSync(workRoot)).toEqual([]);
+
+    const closed = await snapshotSqliteDatabase(path, {
+      workRoot,
+      idleDeadlineMs: 5_000,
+      downloadDeadlineMs: 5_000,
+      onReleased() {
+        releases += 1;
+      },
+      inspectNodeStream(stream) {
+        setImmediate(() => stream.destroy());
+      },
+    });
+    await expect(closed.stream.getReader().read()).rejects.toThrow(/Backup download failed/);
+    await closed.release();
+    expect(releases).toBe(2);
+    const retry = await snapshotSqliteDatabase(path, { workRoot });
+    const bytes = await readDownload(retry);
+    expect(bytes.subarray(0, 16).toString()).toBe("SQLite format 3\u0000");
+  });
+
+  it("rejects a retry while worker teardown is still holding admission", async () => {
+    const dir = tempDir();
+    const { path, db } = walDatabase(dir);
+    db.close();
+    const workRoot = tempDir();
+    const order: string[] = [];
+    const controller = new AbortController();
+    const first = snapshotSqliteDatabase(path, {
+      workRoot,
+      signal: controller.signal,
+      stepDelayMs: 20,
+      rate: 1,
+      deadlineMs: 5_000,
+      holdAfterTerminateMs: 250,
+      onWorkerTerminated() {
+        order.push("exit");
+      },
+    }).then(
+      () => order.push("resolve"),
+      () => order.push("reject"),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 40));
+    controller.abort();
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    expect(order).toContain("exit");
+    const during = await snapshotSqliteDatabase(path, { workRoot }).then(
+      () => null,
+      (caught: unknown) => caught,
+    );
+    expect(during).toMatchObject({ status: 429, message: "Another backup is already running." });
+    await first;
+    expect(order.indexOf("exit")).toBeLessThan(order.indexOf("reject"));
+    expect(readdirSync(workRoot)).toEqual([]);
+    await new Promise((resolve) => setTimeout(resolve, 40));
+    expect(readdirSync(workRoot)).toEqual([]);
+    const retry = await snapshotSqliteDatabase(path, { workRoot });
+    const bytes = await readDownload(retry);
+    const restored = openSnapshot(bytes, dir);
+    try {
+      expect(restored.prepare("SELECT email FROM owners").get()).toEqual({ email: "kept@example.com" });
+    } finally {
+      restored.close();
+    }
+  });
+
   it("rejects a non-ASCII secret without throwing", () => {
     const accented = "é".repeat(BACKUP_SECRET_MIN_LENGTH);
     expect(backupSecretConfigured(accented)).toBe(false);
@@ -482,4 +664,106 @@ describe("sqlite snapshot route", () => {
     expect(helper).not.toContain("copyFileSync");
     expect(helper).toContain("readOnly: true");
   });
+
+  it(
+    "serves a compiled Next server from a synthetic database",
+    async () => {
+      const dir = tempDir();
+      const dbPath = join(dir, "synthetic.sqlite");
+      const db = new DatabaseSync(dbPath);
+      db.exec("CREATE TABLE owners (id TEXT PRIMARY KEY, email TEXT)");
+      db.exec("INSERT INTO owners (id, email) VALUES ('synthetic', 'synthetic@example.test')");
+      db.close();
+      const secret = randomBytes(24).toString("hex");
+      const repo = join(import.meta.dirname, "..");
+      const nextBin = join(repo, "node_modules/next/dist/bin/next");
+      await new Promise<void>((resolve, reject) => {
+        execFile(process.execPath, [nextBin, "build"], { cwd: repo }, (error) => {
+          if (error) reject(error);
+          else resolve();
+        });
+      });
+      const port = await new Promise<number>((resolve) => {
+        const probe = createServer();
+        probe.listen(0, "127.0.0.1", () => {
+          const address = probe.address();
+          const chosen = typeof address === "object" && address ? address.port : 0;
+          probe.close(() => resolve(chosen));
+        });
+      });
+      const { spawn } = await import("node:child_process");
+      const child = spawn(process.execPath, [nextBin, "start", "-H", "127.0.0.1", "-p", String(port)], {
+        cwd: repo,
+        env: {
+          ...process.env,
+          SCHEDI_DB_PATH: dbPath,
+          SCHEDI_CONNECT_BACKUP_SECRET: secret,
+        },
+        stdio: "ignore",
+      });
+      try {
+        const deadline = Date.now() + 20_000;
+        let ready = false;
+        while (Date.now() < deadline) {
+          try {
+            const probe = await fetch(`http://127.0.0.1:${port}/api/admin/sqlite-snapshot`, { method: "GET" });
+            if (probe.status === 405) {
+              ready = true;
+              break;
+            }
+          } catch {
+            // The server is still booting.
+          }
+          await new Promise((resolve) => setTimeout(resolve, 100));
+        }
+        expect(ready).toBe(true);
+        const response = await fetch(`http://127.0.0.1:${port}/api/admin/sqlite-snapshot`, {
+          method: "POST",
+          headers: { [BACKUP_SECRET_HEADER]: secret },
+        });
+        expect(response.status).toBe(200);
+        const reader = response.body?.getReader();
+        expect(reader).toBeTruthy();
+        const chunks: Uint8Array[] = [];
+        while (reader) {
+          const next = await reader.read();
+          if (next.done) break;
+          chunks.push(next.value);
+        }
+        const bytes = Buffer.concat(chunks);
+        expect(bytes.subarray(0, 16).toString()).toBe("SQLite format 3\u0000");
+        const restored = openSnapshot(bytes, dir);
+        try {
+          expect(restored.prepare("SELECT email FROM owners").get()).toEqual({ email: "synthetic@example.test" });
+        } finally {
+          restored.close();
+        }
+
+        const controller = new AbortController();
+        const cancelled = fetch(`http://127.0.0.1:${port}/api/admin/sqlite-snapshot`, {
+          method: "POST",
+          headers: { [BACKUP_SECRET_HEADER]: secret },
+          signal: controller.signal,
+        });
+        controller.abort();
+        await cancelled.then(
+          async (result) => {
+            await result.body?.cancel();
+          },
+          () => undefined,
+        );
+        const again = await fetch(`http://127.0.0.1:${port}/api/admin/sqlite-snapshot`, {
+          method: "POST",
+          headers: { [BACKUP_SECRET_HEADER]: secret },
+        });
+        expect(again.status).toBe(200);
+        const againBytes = Buffer.from(await again.arrayBuffer());
+        expect(againBytes.subarray(0, 16).toString()).toBe("SQLite format 3\u0000");
+      } finally {
+        child.kill("SIGTERM");
+        await new Promise((resolve) => child.once("exit", resolve));
+      }
+    },
+    180_000,
+  );
 });
