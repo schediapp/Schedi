@@ -134,7 +134,18 @@ describe("complimentary Pro counts as Pro for card setup", () => {
       sessionAllows: async () => true,
       loadTenant: async () => axel({ complimentaryPro: false, plan: "free", subscriptionStatus: "none" }),
     });
-    expect(free).toEqual({ status: 403, body: { ok: false, error: "pro_required" } });
+    expect(free.status).toBe(200);
+    expect(String(free.body.url)).toContain("#t=");
+    expect(JSON.stringify(free.body)).not.toContain("cardEntitled");
+
+    const starter = await handleConnectHandoff(new Request("https://schedi.app/billing/connect-handoff", {
+      method: "POST",
+      body: JSON.stringify({ tenantId: "axeldelcidphotography", session: "owner-session" }),
+    }), { SCHEDI_CONNECT_PAID_SECRET: SECRET }, {
+      sessionAllows: async () => true,
+      loadTenant: async () => axel({ complimentaryPro: false, billingExempt: false, plan: "starter", subscriptionStatus: "active" }),
+    });
+    expect(starter.status).toBe(200);
 
     const paused = await handleConnectHandoff(new Request("https://schedi.app/billing/connect-handoff", {
       method: "POST",
@@ -143,7 +154,16 @@ describe("complimentary Pro counts as Pro for card setup", () => {
       sessionAllows: async () => true,
       loadTenant: async () => axel({ complimentaryPro: false, plan: "pro", subscriptionStatus: "past_due" }),
     });
-    expect(paused.status).toBe(403);
+    expect(paused.status).toBe(200);
+
+    const wrongOwner = await handleConnectHandoff(new Request("https://schedi.app/billing/connect-handoff", {
+      method: "POST",
+      body: JSON.stringify({ tenantId: "axeldelcidphotography", session: "other-owner" }),
+    }), { SCHEDI_CONNECT_PAID_SECRET: SECRET }, {
+      sessionAllows: async () => "forbidden",
+      loadTenant: async () => axel(),
+    });
+    expect(wrongOwner.status).toBe(403);
 
     const signedOut = await handleConnectHandoff(new Request("https://schedi.app/billing/connect-handoff", {
       method: "POST",
@@ -255,12 +275,16 @@ describe("complimentary Pro counts as Pro for card setup", () => {
       ...connectPlanView(axel({ complimentaryPro: false, billingExempt: false, plan: "free", subscriptionStatus: "none" })),
     });
     const first = await acceptConnectHandoff(store, token, SECRET, async () => freeRemote, now);
-    expect(first.ok).toBe(false);
-    if (first.ok) return;
-    expect(first.error).toMatch(/active Pro subscription/);
-    expect(store.getBusiness(business.id).plan).toBe("free");
-    expect(store.getBusiness(business.id).slug).toBe("free-axel");
-    expect(store.getBusiness(business.id).complimentaryPro).toBe(false);
+    expect(first.ok).toBe(true);
+    if (!first.ok) return;
+    expect(first.business.plan).toBe("free");
+    expect(first.business.subscriptionStatus).toBe("none");
+    expect(first.business.complimentaryPro).toBe(false);
+    expect(first.business.slug).toBe("axeldelcidphotography");
+    expect(store.getBusiness(business.id).stripeSubscriptionId).toBeNull();
+    const stripe = createFakeStripe();
+    await expect(enableCardPayments(store, stripe, first.ownerId)).rejects.toThrow(/active Pro/);
+    expect(stripe.calls).toEqual([]);
 
     const second = await acceptConnectHandoff(store, token, SECRET, async () => freeRemote, now);
     expect(second.ok).toBe(false);

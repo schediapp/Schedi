@@ -58,7 +58,7 @@ import {
 import { handleSquareHttp, runSquareReconcile } from './square.js';
 import { applyCardCheckoutPayment, centsByBooking } from './card-payment.js';
 import { handleConnectBookingPaid } from './connect-booking-paid.js';
-import { handleConnectHandoff, handleConnectPlan } from './connect-handoff.js';
+import { connectPortalPage, handleConnectHandoff, handleConnectPlan } from './connect-handoff.js';
 import { handlePageVisitsRequest } from '../../../worker/page-visits.ts';
 import { isMedicalIndustry, resolvePhiAcknowledgment, PHI_ACK_WORDING } from './phi-ack.js';
 
@@ -3102,6 +3102,18 @@ async function handleBillingRequest(request, env, origin, path, url) {
   }
   if (path === '/billing/connect-ready') {
     return handleConnectReady(request, env, origin);
+  }
+  if (path === '/billing/connect-portal') {
+    if (request.method !== 'GET') return json({ ok: false, error: 'method_not_allowed' }, 405, origin);
+    return new Response(connectPortalPage(), {
+      status: 200,
+      headers: {
+        'content-type': 'text/html; charset=utf-8',
+        'cache-control': 'no-store',
+        'referrer-policy': 'no-referrer',
+        'x-robots-tag': 'noindex, nofollow',
+      },
+    });
   }
   if (path === '/billing/connect-handoff') {
     const handed = await handleConnectHandoff(request, env, {

@@ -3,7 +3,8 @@ import { SESSION_COOKIE, sessionCookieOptions } from "@/lib/auth";
 import { acceptConnectHandoff } from "@/lib/connect-handoff";
 import { enableCardPayments } from "@/lib/connect";
 import { errorMessage, redirectTo } from "@/lib/http";
-import { fetchSchediPlan } from "@/lib/plan-entitlement";
+import { fetchSchediPlan, isCardPlanPro } from "@/lib/plan-entitlement";
+import { OWNER_SESSION_TTL_SECONDS, signOwnerSession } from "@/lib/owner-session";
 import { getStore } from "@/lib/store";
 import { getStripe } from "@/lib/stripe";
 
@@ -81,16 +82,30 @@ export async function POST(request: Request) {
     return redirectTo(request, "/portal", { error: accepted.error });
   }
 
-  const session = store.createSession(accepted.ownerId);
-  let destination = redirectTo(request, "/portal#stripe-setup");
+  const sid = store.createSession(accepted.ownerId);
+  let cookie = "";
   try {
-    await enableCardPayments(store, getStripe(), accepted.ownerId);
-  } catch (error) {
-    destination = redirectTo(request, "/portal", {
-      error: errorMessage(error),
-      source: "connect",
-    });
+    cookie = signOwnerSession({
+      sid,
+      ownerId: accepted.ownerId,
+      exp: Math.floor(Date.now() / 1000) + OWNER_SESSION_TTL_SECONDS,
+    }, process.env.SCHEDI_CONNECT_PAID_SECRET || "");
+  } catch {
+    store.deleteSession(sid);
+    return redirectTo(request, "/portal", { error: "This Schedi link could not open a session. Nothing was charged." });
   }
-  destination.cookies.set(SESSION_COOKIE, session, sessionCookieOptions(request));
+  const cards = isCardPlanPro(accepted.business);
+  let destination = redirectTo(request, cards ? "/portal#stripe-setup" : "/portal");
+  if (cards) {
+    try {
+      await enableCardPayments(store, getStripe(), accepted.ownerId);
+    } catch (error) {
+      destination = redirectTo(request, "/portal", {
+        error: errorMessage(error),
+        source: "connect",
+      });
+    }
+  }
+  destination.cookies.set(SESSION_COOKIE, cookie, sessionCookieOptions(request));
   return destination;
 }

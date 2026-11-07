@@ -1,7 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import type { Store } from "./db";
 import { SchediError } from "./errors";
-import type { SchediPlanRecord } from "./plan-entitlement";
+import { applySchediPlan, type SchediPlanRecord } from "./plan-entitlement";
 import type { Business } from "./types";
 
 export interface HandoffClaims {
@@ -63,7 +63,13 @@ function planSlug(remote: SchediPlanRecord, fallback: string): string {
   return /^[a-z0-9](?:[a-z0-9-]{0,40})$/.test(slug) ? slug : fallback;
 }
 
-/** Open a Connect business from a re-checked Schedi plan. Does not create a Stripe customer or subscription. */
+const OWNERSHIP = "This Schedi sign-in could not be verified for this business. Nothing was charged.";
+
+/**
+ * Open a Connect business from a re-checked Schedi plan.
+ * Does not create a Stripe customer, subscription, or connected account.
+ * Card entitlement stays on the plan lookup. A Free or Starter row is not written as Pro.
+ */
 export function adoptSchediBusiness(
   store: Store,
   claims: HandoffClaims,
@@ -71,13 +77,14 @@ export function adoptSchediBusiness(
 ): { ownerId: string; business: Business } {
   const email = claims.email.trim().toLowerCase();
   const remoteEmail = remote.ownerEmail.trim().toLowerCase();
-  if (!remote.cardEntitled || !remoteEmail.includes("@") || remoteEmail !== email) {
-    throw new SchediError("Card payments are available on an active Pro subscription. Nothing was charged.", 403);
+  const slug = planSlug(remote, "");
+  if (!remoteEmail.includes("@") || remoteEmail !== email || slug !== claims.slug) {
+    throw new SchediError(OWNERSHIP, 403);
   }
-  const slug = planSlug(remote, claims.slug);
   let owner = store.getOwnerByEmail(email);
   if (!owner) {
-    const name = claims.ownerName || claims.businessName || "Owner";
+    const name = (claims.ownerName || remote.ownerName || "").trim();
+    if (name.length < 2) throw new SchediError(OWNERSHIP, 403);
     owner = store.createOwner({ email, name });
   }
   const bySlug = store.getBusinessBySlug(slug);
@@ -85,22 +92,30 @@ export function adoptSchediBusiness(
     throw new SchediError("This business is already set up for another owner.", 409);
   }
   let business = store.getBusinessByOwner(owner.id);
+  if (business && bySlug && business.id !== bySlug.id) {
+    throw new SchediError(OWNERSHIP, 403);
+  }
   if (!business) {
     business = store.createBusiness({
       ownerId: owner.id,
       name: remote.name || claims.businessName || "Business",
       slug,
-      plan: "pro",
-      subscriptionStatus: "active",
+      plan: remote.plan,
+      subscriptionStatus: remote.subscriptionStatus,
     });
   }
-  business = store.setPlanEntitlement(business.id, {
-    plan: "pro",
-    subscriptionStatus: "active",
-    complimentaryPro: remote.complimentary || remote.billingExempt,
-    billingExempt: remote.billingExempt,
-    slug,
-  });
+  business = applySchediPlan(store, business, remote, email);
+  if (business.slug !== slug) {
+    const taken = store.getBusinessBySlug(slug);
+    if (taken && taken.id !== business.id) throw new SchediError(OWNERSHIP, 403);
+    business = store.setPlanEntitlement(business.id, {
+      plan: business.plan,
+      subscriptionStatus: business.subscriptionStatus,
+      complimentaryPro: business.complimentaryPro === true,
+      billingExempt: business.billingExempt === true,
+      slug,
+    });
+  }
   return { ownerId: owner.id, business };
 }
 
@@ -110,9 +125,8 @@ export type ConnectHandoffResult =
   | { ok: true; ownerId: string; business: Business }
   | { ok: false; error: string };
 
-const INVALID_LINK = "This Stripe setup link is not valid. Nothing was charged.";
-const USED_LINK = "This Stripe setup link was already used. Nothing was charged.";
-const PLAN_REQUIRED = "Card payments are available on an active Pro subscription. Nothing was charged.";
+const INVALID_LINK = "This Schedi link is not valid. Nothing was charged.";
+const USED_LINK = "This Schedi link was already used. Nothing was charged.";
 
 /**
  * Verify the link, burn its nonce, then accept the plan only from lookup.
@@ -138,8 +152,8 @@ export async function acceptConnectHandoff(
     remote = null;
   }
   const remoteEmail = remote?.ownerEmail.trim().toLowerCase() || "";
-  if (!remote || !remote.cardEntitled || remoteEmail !== claims.email) {
-    return { ok: false, error: PLAN_REQUIRED };
+  if (!remote || remoteEmail !== claims.email || remote.slug.trim().toLowerCase() !== claims.slug) {
+    return { ok: false, error: OWNERSHIP };
   }
   try {
     const adopted = adoptSchediBusiness(store, claims, remote);

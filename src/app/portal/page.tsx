@@ -280,7 +280,10 @@ function SignIn({ error }: { error?: string }) {
           <h1>Sign in from Schedi</h1>
           {error ? <p className="banner bad" style={{ marginTop: 12 }} role="alert">{error}</p> : null}
           <p className="muted" style={{ marginTop: 12 }}>
-            An email address alone does not open this portal. In Schedi, choose Set up Stripe. That link is signed for the signed-in owner.
+            An email address alone does not open this portal. Sign in on Schedi, then open the portal from there. Card setup stays on an active Pro plan.
+          </p>
+          <p style={{ marginTop: 16 }}>
+            <a href="https://schedi.app/billing/connect-portal">Open the portal from Schedi</a>
           </p>
         </section>
       </main>
