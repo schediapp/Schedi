@@ -1,12 +1,13 @@
 import { cookies } from "next/headers";
 import { SESSION_COOKIE, sessionCookieOptions } from "@/lib/auth";
 import { redirectTo } from "@/lib/http";
+import { verifyOwnerSession } from "@/lib/owner-session";
 import { getStore } from "@/lib/store";
 
 export const runtime = "nodejs";
 
 const EMAIL_SIGN_IN_REFUSED =
-  "Use Set up Stripe in Schedi. An email address alone does not open this portal.";
+  "Open the portal from Schedi while you are signed in. An email address alone does not open it.";
 
 export async function POST(request: Request) {
   const form = await request.formData();
@@ -18,8 +19,9 @@ export async function POST(request: Request) {
   }
 
   const jar = await cookies();
-  const token = jar.get(SESSION_COOKIE)?.value;
-  if (token) store.deleteSession(token);
+  const token = jar.get(SESSION_COOKIE)?.value || "";
+  const parsed = verifyOwnerSession(token, process.env.SCHEDI_CONNECT_PAID_SECRET || "");
+  if (parsed) store.deleteSession(parsed.sid);
   const response = redirectTo(request, "/portal");
   response.cookies.set(SESSION_COOKIE, "", { ...sessionCookieOptions(request), maxAge: 0 });
   return response;

@@ -16,6 +16,12 @@ export function connectCardEntitled(tenant) {
   return plan === "pro" && (status === "active" || status === "trialing");
 }
 
+export function connectSecretAuthorized(request, env) {
+  const expected = String((env && env.SCHEDI_CONNECT_PAID_SECRET) || "");
+  const header = String(request.headers.get("x-schedi-connect-secret") || "");
+  return !!(expected && timingSafeEqual(expected, header));
+}
+
 export function connectPlanView(tenant) {
   const entitled = connectCardEntitled(tenant);
   const stored = String((tenant && tenant.plan) || "").toLowerCase();
@@ -115,7 +121,6 @@ export async function handleConnectHandoff(request, env, deps) {
   }
   if (!tenant) return http(404, { ok: false, error: "tenant_not_found" });
   if (tenant.__privateLoadFailed) return http(502, { ok: false, error: "private_read_failed" });
-  if (!connectCardEntitled(tenant)) return http(403, { ok: false, error: "pro_required" });
 
   const view = connectPlanView(tenant);
   if (!view.ownerEmail || view.ownerEmail.indexOf("@") < 1) return http(400, { ok: false, error: "owner_email_missing" });
@@ -138,6 +143,66 @@ export async function handleConnectHandoff(request, env, deps) {
   });
 }
 
+/**
+ * Page a signed-in Schedi owner opens. It reads the existing local session and
+ * asks for a handoff. It does not accept an email address. Card setup is not granted here.
+ * The previous Connect app still refuses a non-Pro handoff, so this page is safe to ship first.
+ */
+export function connectPortalPage() {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
+<title>Open Schedi portal</title>
+</head>
+<body>
+<p id="status">Checking your Schedi sign-in…</p>
+<script>
+(function () {
+  var status = document.getElementById("status");
+  function fail(message) {
+    status.textContent = message;
+  }
+  var session = "";
+  var tenantId = "";
+  try {
+    session = window.localStorage.getItem("schedi.authSession") || "";
+    var meta = JSON.parse(window.localStorage.getItem("schedi.authMeta") || "{}");
+    tenantId = meta && meta.tenantId ? String(meta.tenantId) : "";
+  } catch (err) {
+    session = "";
+    tenantId = "";
+  }
+  if (!session || !tenantId) {
+    fail("Sign in on Schedi as the business owner, then open this page again. Nothing was charged.");
+    return;
+  }
+  fetch("/billing/connect-handoff", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ tenantId: tenantId, session: session })
+  }).then(function (response) {
+    return response.json().then(function (data) {
+      return { ok: response.ok, data: data || {} };
+    });
+  }).then(function (result) {
+    var url = String(result.data && result.data.url || "");
+    if (result.ok && /^https:\\/\\/schedi-connect-production\\.up\\.railway\\.app\\/api\\/connect\\/handoff#t=/.test(url)) {
+      window.location.assign(url);
+      return;
+    }
+    fail("This Schedi sign-in could not open the portal. Nothing was charged.");
+  }).catch(function () {
+    fail("This Schedi sign-in could not open the portal. Nothing was charged.");
+  });
+})();
+</script>
+</body>
+</html>`;
+}
+
 export async function handleConnectPlan(request, env, deps) {
   if (request.method !== "POST") return http(405, { ok: false, error: "method_not_allowed" });
   const expected = String((env && env.SCHEDI_CONNECT_PAID_SECRET) || "");
@@ -158,6 +223,8 @@ export async function handleConnectPlan(request, env, deps) {
   if (!tenant) return http(404, { ok: false, error: "tenant_not_found" });
   if (tenant.__privateLoadFailed) return http(502, { ok: false, error: "private_read_failed" });
   const view = connectPlanView(tenant);
+  const bound = deps && typeof deps.readBinding === "function" ? await deps.readBinding(view.slug) : "";
+  view.connectOwnerId = typeof bound === "string" ? bound : "";
   if (!view.ownerEmail || view.ownerEmail.indexOf("@") < 1) {
     return http(409, { ok: false, error: "owner_email_missing" });
   }

@@ -55,6 +55,8 @@ export interface SchediPlanRecord {
   complimentary: boolean;
   billingExempt: boolean;
   cardEntitled: boolean;
+  /** Server-stamped Connect owner id. Empty until this credential is bound. */
+  connectOwnerId: string;
 }
 
 export function parseSchediPlan(value: unknown): SchediPlanRecord | null {
@@ -75,6 +77,9 @@ export function parseSchediPlan(value: unknown): SchediPlanRecord | null {
     complimentaryPro: complimentary,
     billingExempt,
   });
+  const connectOwnerId = typeof row.connectOwnerId === "string" && /^[A-Za-z0-9-]{8,80}$/.test(row.connectOwnerId)
+    ? row.connectOwnerId
+    : "";
   return {
     slug: String(row.slug || "").trim().toLowerCase(),
     name: String(row.name || "").trim(),
@@ -85,6 +90,7 @@ export function parseSchediPlan(value: unknown): SchediPlanRecord | null {
     complimentary,
     billingExempt,
     cardEntitled,
+    connectOwnerId,
   };
 }
 

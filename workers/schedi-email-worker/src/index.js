@@ -21,7 +21,8 @@
  * SMS confirm dedup: bookingReminders.smsConfirmSentAt (same doc)
  */
 
-import { handleAuthRequest, saveOwnerSecret, authReady, readSession, readLogoWriteSession, passwordMatches } from './owner-auth.js';
+import { handleAuthRequest, createOwnerSecret, saveOwnerSecret, authReady, readSession, readLogoWriteSession, passwordMatches, readConnectOwnerId, setConnectOwnerId } from './owner-auth.js';
+import { INDUSTRY_CHOICES } from './industry-presets.js';
 import { requireAgency } from './agency-session.js';
 import { handleAgencyAdd } from './agency-add.js';
 import { forwardAdminInbound } from './admin-mail-forward.js';
@@ -58,7 +59,7 @@ import {
 import { handleSquareHttp, runSquareReconcile } from './square.js';
 import { applyCardCheckoutPayment, centsByBooking } from './card-payment.js';
 import { handleConnectBookingPaid } from './connect-booking-paid.js';
-import { handleConnectHandoff, handleConnectPlan } from './connect-handoff.js';
+import { connectPortalPage, connectSecretAuthorized, handleConnectHandoff, handleConnectPlan } from './connect-handoff.js';
 import { handlePageVisitsRequest } from '../../../worker/page-visits.ts';
 import { isMedicalIndustry, resolvePhiAcknowledgment, PHI_ACK_WORDING } from './phi-ack.js';
 
@@ -1445,7 +1446,8 @@ async function ensureSignupTenant(env, meta, billing) {
   const tenant = defaultSignupTenant(meta, billing || {});
   delete tenant.ownerPassword;
   if (meta && meta.ownerPassword) {
-    await saveOwnerSecret(env, tenant.ownerEmail, tenant.id, meta.ownerPassword);
+    const created = await createOwnerSecret(env, tenant.ownerEmail, tenant.id, meta.ownerPassword);
+    if (!created.ok) return created;
   }
   await createTenantDocument(env, idToken, tenant);
   return { ok: true, existed: false };
@@ -1700,9 +1702,8 @@ async function handleBillingSignup(request, env, origin) {
   if (!ownerName) return json({ ok: false, error: 'owner_name_required' }, 400, origin);
   if (!ownerEmail || ownerEmail.indexOf('@') < 1) return json({ ok: false, error: 'owner_email_required' }, 400, origin);
   if (plan !== 'free' && plan !== 'starter' && plan !== 'pro') return json({ ok: false, error: 'invalid_plan' }, 400, origin);
-  const industryChoices = ['Services', 'Consulting', 'Barbershop', 'Medical', 'Auto', 'Fitness'];
   let industry = String(data.industry || 'Services').trim();
-  if (industryChoices.indexOf(industry) < 0) industry = 'Services';
+  if (INDUSTRY_CHOICES.indexOf(industry) < 0) industry = 'Services';
   const phi = resolvePhiAcknowledgment({
     industry,
     accepted: data.phiAckAccepted === true,
@@ -1778,9 +1779,9 @@ async function handleBillingSignup(request, env, origin) {
   if (!authReady(env)) {
     return json({ ok: false, error: 'auth_not_configured' }, 500, origin);
   }
-  const ownerSecret = await saveOwnerSecret(env, ownerEmail, slug, ownerPassword);
+  const ownerSecret = await createOwnerSecret(env, ownerEmail, slug, ownerPassword);
   if (!ownerSecret.ok) {
-    return json({ ok: false, error: 'Could not store the owner login.' }, 500, origin);
+    return json({ ok: false, error: 'Could not store the owner login.' }, ownerSecret.error === 'already_exists' ? 409 : 500, origin);
   }
   try {
     await ensureSignupTenant(env, meta, {});
@@ -3103,6 +3104,18 @@ async function handleBillingRequest(request, env, origin, path, url) {
   if (path === '/billing/connect-ready') {
     return handleConnectReady(request, env, origin);
   }
+  if (path === '/billing/connect-portal') {
+    if (request.method !== 'GET') return json({ ok: false, error: 'method_not_allowed' }, 405, origin);
+    return new Response(connectPortalPage(), {
+      status: 200,
+      headers: {
+        'content-type': 'text/html; charset=utf-8',
+        'cache-control': 'no-store',
+        'referrer-policy': 'no-referrer',
+        'x-robots-tag': 'noindex, nofollow',
+      },
+    });
+  }
   if (path === '/billing/connect-handoff') {
     const handed = await handleConnectHandoff(request, env, {
       sessionAllows: (session, tenantId) => billingSessionAllows(env, session, tenantId),
@@ -3110,9 +3123,20 @@ async function handleBillingRequest(request, env, origin, path, url) {
     });
     return json(handed.body, handed.status, origin);
   }
+  if (path === '/billing/connect-bind') {
+    if (request.method !== 'POST') return json({ ok: false, error: 'method_not_allowed' }, 405, origin);
+    if (!connectSecretAuthorized(request, env)) return json({ ok: false, error: 'unauthorized' }, 401, origin);
+    let body = {};
+    try { body = await request.json(); } catch (_) { body = null; }
+    if (!body) return json({ ok: false, error: 'invalid_json' }, 400, origin);
+    const bound = await setConnectOwnerId(env, body.slug, body.connectOwnerId);
+    if (!bound.ok) return json(bound, bound.error === 'already_bound' ? 409 : 400, origin);
+    return json({ ok: true }, 200, origin);
+  }
   if (path === '/billing/connect-plan') {
     const plan = await handleConnectPlan(request, env, {
       loadBySlug: (slug) => getTenantPlanRecord(env, slug),
+      readBinding: (slug) => readConnectOwnerId(env, slug),
     });
     return json(plan.body, plan.status, origin);
   }

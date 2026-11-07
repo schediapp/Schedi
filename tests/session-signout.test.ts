@@ -75,8 +75,15 @@ describe("Railway session route on the deployed schema", () => {
     }
 
     const owner = store.getOwnerByEmail("owner@example.com");
-    const session = store.createSession(owner!.id);
-    cookieJar.set("schedi_session", session);
+    const { OWNER_SESSION_TTL_SECONDS, signOwnerSession } = await import("../src/lib/owner-session");
+    const sid = store.createSession(owner!.id);
+    expect(store.getOwnerBySession("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeeeaaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")).toBeNull();
+    expect(store.getOwnerBySession(sid)?.id).toBe(owner!.id);
+    cookieJar.set("schedi_session", signOwnerSession({
+      sid,
+      ownerId: owner!.id,
+      exp: Math.floor(Date.now() / 1000) + OWNER_SESSION_TTL_SECONDS,
+    }, "paid-secret"));
     const signedOut = await sessionPost(new Request("https://schedi-connect-production.up.railway.app/api/session", {
       method: "POST",
       headers: { "content-type": "application/x-www-form-urlencoded" },
@@ -84,6 +91,7 @@ describe("Railway session route on the deployed schema", () => {
     }));
     expect(signedOut.status).toBe(303);
     expect(signedOut.headers.get("set-cookie") || "").toContain("Max-Age=0");
-    expect(store.getOwnerBySession(session)).toBeNull();
+    expect(store.getOwnerBySession(sid)).toBeNull();
+    expect(signedOut.headers.get("location") || "").not.toContain("s2.");
   });
 });

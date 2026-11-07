@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { OWNER_SESSION_TTL_SECONDS, verifyOwnerSession } from "./owner-session";
 import { getStore } from "./store";
 import type { Owner } from "./types";
 
@@ -8,7 +9,11 @@ export async function currentOwner(): Promise<Owner | null> {
   const jar = await cookies();
   const token = jar.get(SESSION_COOKIE)?.value;
   if (!token) return null;
-  return getStore().getOwnerBySession(token);
+  const parsed = verifyOwnerSession(token, process.env.SCHEDI_CONNECT_PAID_SECRET || "");
+  if (!parsed) return null;
+  const owner = getStore().getOwnerBySession(parsed.sid);
+  if (!owner || owner.id !== parsed.ownerId) return null;
+  return owner;
 }
 
 export function sessionCookieOptions(request: Request) {
@@ -21,6 +26,6 @@ export function sessionCookieOptions(request: Request) {
     sameSite: "lax" as const,
     path: "/",
     secure,
-    maxAge: 30 * 24 * 60 * 60,
+    maxAge: OWNER_SESSION_TTL_SECONDS,
   };
 }

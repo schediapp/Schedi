@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { DatabaseSync } from "node:sqlite";
@@ -637,13 +637,18 @@ export class Store {
   }
 
   createSession(ownerId: string): string {
-    const token = randomUUID() + randomUUID();
-    const expires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    const token = randomBytes(32).toString("base64url");
+    const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
     this.db.prepare("INSERT INTO sessions (token, owner_id, expires_at) VALUES (?, ?, ?)").run(token, ownerId, expires);
     return token;
   }
 
+  /**
+   * Looks up one new session id. A pre-fix token (two UUIDs, or anything else
+   * that is not a 32-byte id) misses and is left in the table.
+   */
   getOwnerBySession(token: string): Owner | null {
+    if (!/^[A-Za-z0-9_-]{43}$/.test(token)) return null;
     const row = this.db.prepare("SELECT owner_id, expires_at FROM sessions WHERE token = ?").get(token) as
       | { owner_id: string; expires_at: string }
       | undefined;
@@ -657,6 +662,22 @@ export class Store {
 
   deleteSession(token: string): void {
     this.db.prepare("DELETE FROM sessions WHERE token = ?").run(token);
+  }
+
+  /** Remove a business this request just created. Refuses rows that already have payments, services, or bookings. */
+  deleteFreshBusiness(businessId: string, ownerId: string): void {
+    const business = this.getBusiness(businessId);
+    if (business.ownerId !== ownerId) throw new SchediError("Business not found.", 404);
+    if (business.stripeAccountId || business.stripeSubscriptionId) {
+      throw new SchediError("Business not found.", 404);
+    }
+    if (this.listServices(businessId).length || this.listBookings(businessId).length) {
+      throw new SchediError("Business not found.", 404);
+    }
+    this.db.prepare("DELETE FROM businesses WHERE id = ?").run(businessId);
+    if (!this.getBusinessByOwner(ownerId)) {
+      this.db.prepare("DELETE FROM owners WHERE id = ?").run(ownerId);
+    }
   }
 }
 

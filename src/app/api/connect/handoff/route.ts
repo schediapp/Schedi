@@ -3,11 +3,30 @@ import { SESSION_COOKIE, sessionCookieOptions } from "@/lib/auth";
 import { acceptConnectHandoff } from "@/lib/connect-handoff";
 import { enableCardPayments } from "@/lib/connect";
 import { errorMessage, redirectTo } from "@/lib/http";
-import { fetchSchediPlan } from "@/lib/plan-entitlement";
+import { fetchSchediPlan, isCardPlanPro } from "@/lib/plan-entitlement";
+import { OWNER_SESSION_TTL_SECONDS, signOwnerSession } from "@/lib/owner-session";
 import { getStore } from "@/lib/store";
 import { getStripe } from "@/lib/stripe";
 
 export const runtime = "nodejs";
+
+async function stampConnectOwner(slug: string, ownerId: string): Promise<boolean> {
+  const secret = process.env.SCHEDI_CONNECT_PAID_SECRET || "";
+  if (!secret) return false;
+  try {
+    const response = await fetch(process.env.SCHEDI_CONNECT_BIND_URL || "https://schedi.app/billing/connect-bind", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-schedi-connect-secret": secret,
+      },
+      body: JSON.stringify({ slug, connectOwnerId: ownerId }),
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
 
 const HANDOFF_PAGE = `<!DOCTYPE html>
 <html lang="en">
@@ -80,17 +99,38 @@ export async function POST(request: Request) {
   if (!accepted.ok) {
     return redirectTo(request, "/portal", { error: accepted.error });
   }
-
-  const session = store.createSession(accepted.ownerId);
-  let destination = redirectTo(request, "/portal#stripe-setup");
-  try {
-    await enableCardPayments(store, getStripe(), accepted.ownerId);
-  } catch (error) {
-    destination = redirectTo(request, "/portal", {
-      error: errorMessage(error),
-      source: "connect",
-    });
+  if (accepted.created) {
+    const stamped = await stampConnectOwner(accepted.business.slug, accepted.ownerId);
+    if (!stamped) {
+      try { store.deleteFreshBusiness(accepted.business.id, accepted.ownerId); } catch { /* leave the new row unbound */ }
+      return redirectTo(request, "/portal", { error: "This Schedi sign-in could not be verified for this business. Nothing was charged." });
+    }
   }
-  destination.cookies.set(SESSION_COOKIE, session, sessionCookieOptions(request));
+
+  const sid = store.createSession(accepted.ownerId);
+  let cookie = "";
+  try {
+    cookie = signOwnerSession({
+      sid,
+      ownerId: accepted.ownerId,
+      exp: Math.floor(Date.now() / 1000) + OWNER_SESSION_TTL_SECONDS,
+    }, process.env.SCHEDI_CONNECT_PAID_SECRET || "");
+  } catch {
+    store.deleteSession(sid);
+    return redirectTo(request, "/portal", { error: "This Schedi link could not open a session. Nothing was charged." });
+  }
+  const cards = isCardPlanPro(accepted.business);
+  let destination = redirectTo(request, cards ? "/portal#stripe-setup" : "/portal");
+  if (cards) {
+    try {
+      await enableCardPayments(store, getStripe(), accepted.ownerId);
+    } catch (error) {
+      destination = redirectTo(request, "/portal", {
+        error: errorMessage(error),
+        source: "connect",
+      });
+    }
+  }
+  destination.cookies.set(SESSION_COOKIE, cookie, sessionCookieOptions(request));
   return destination;
 }

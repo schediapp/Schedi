@@ -134,7 +134,18 @@ describe("complimentary Pro counts as Pro for card setup", () => {
       sessionAllows: async () => true,
       loadTenant: async () => axel({ complimentaryPro: false, plan: "free", subscriptionStatus: "none" }),
     });
-    expect(free).toEqual({ status: 403, body: { ok: false, error: "pro_required" } });
+    expect(free.status).toBe(200);
+    expect(String(free.body.url)).toContain("#t=");
+    expect(JSON.stringify(free.body)).not.toContain("cardEntitled");
+
+    const starter = await handleConnectHandoff(new Request("https://schedi.app/billing/connect-handoff", {
+      method: "POST",
+      body: JSON.stringify({ tenantId: "axeldelcidphotography", session: "owner-session" }),
+    }), { SCHEDI_CONNECT_PAID_SECRET: SECRET }, {
+      sessionAllows: async () => true,
+      loadTenant: async () => axel({ complimentaryPro: false, billingExempt: false, plan: "starter", subscriptionStatus: "active" }),
+    });
+    expect(starter.status).toBe(200);
 
     const paused = await handleConnectHandoff(new Request("https://schedi.app/billing/connect-handoff", {
       method: "POST",
@@ -143,7 +154,16 @@ describe("complimentary Pro counts as Pro for card setup", () => {
       sessionAllows: async () => true,
       loadTenant: async () => axel({ complimentaryPro: false, plan: "pro", subscriptionStatus: "past_due" }),
     });
-    expect(paused.status).toBe(403);
+    expect(paused.status).toBe(200);
+
+    const wrongOwner = await handleConnectHandoff(new Request("https://schedi.app/billing/connect-handoff", {
+      method: "POST",
+      body: JSON.stringify({ tenantId: "axeldelcidphotography", session: "other-owner" }),
+    }), { SCHEDI_CONNECT_PAID_SECRET: SECRET }, {
+      sessionAllows: async () => "forbidden",
+      loadTenant: async () => axel(),
+    });
+    expect(wrongOwner.status).toBe(403);
 
     const signedOut = await handleConnectHandoff(new Request("https://schedi.app/billing/connect-handoff", {
       method: "POST",
@@ -200,7 +220,7 @@ describe("complimentary Pro counts as Pro for card setup", () => {
     const { owner, business } = seedProBusiness(store, {
       email: "axel@example.com",
       name: "Axel Del Cid Photography",
-      slug: "free-axel",
+      slug: "axeldelcidphotography",
       plan: "free",
       subscriptionStatus: "none",
       stripeAccountId: null,
@@ -210,7 +230,7 @@ describe("complimentary Pro counts as Pro for card setup", () => {
     });
     const now = Date.parse("2026-10-21T12:00:00Z");
     const token = await signConnectHandoff(handoffClaims(now, { complimentary: true }), SECRET);
-    const remote = parseSchediPlan({ ok: true, ...connectPlanView(axel()) });
+    const remote = parseSchediPlan({ ok: true, ...connectPlanView(axel()), connectOwnerId: owner.id });
     const adopted = await acceptConnectHandoff(store, token, SECRET, async () => remote, now);
     expect(adopted.ok).toBe(true);
     if (!adopted.ok) return;
@@ -257,10 +277,11 @@ describe("complimentary Pro counts as Pro for card setup", () => {
     const first = await acceptConnectHandoff(store, token, SECRET, async () => freeRemote, now);
     expect(first.ok).toBe(false);
     if (first.ok) return;
-    expect(first.error).toMatch(/active Pro subscription/);
+    expect(first.error).toMatch(/could not be verified/);
     expect(store.getBusiness(business.id).plan).toBe("free");
     expect(store.getBusiness(business.id).slug).toBe("free-axel");
     expect(store.getBusiness(business.id).complimentaryPro).toBe(false);
+    expect(store.getBusiness(business.id).stripeSubscriptionId).toBeNull();
 
     const second = await acceptConnectHandoff(store, token, SECRET, async () => freeRemote, now);
     expect(second.ok).toBe(false);
