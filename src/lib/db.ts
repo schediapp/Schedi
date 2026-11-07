@@ -663,6 +663,22 @@ export class Store {
   deleteSession(token: string): void {
     this.db.prepare("DELETE FROM sessions WHERE token = ?").run(token);
   }
+
+  /** Remove a business this request just created. Refuses rows that already have payments, services, or bookings. */
+  deleteFreshBusiness(businessId: string, ownerId: string): void {
+    const business = this.getBusiness(businessId);
+    if (business.ownerId !== ownerId) throw new SchediError("Business not found.", 404);
+    if (business.stripeAccountId || business.stripeSubscriptionId) {
+      throw new SchediError("Business not found.", 404);
+    }
+    if (this.listServices(businessId).length || this.listBookings(businessId).length) {
+      throw new SchediError("Business not found.", 404);
+    }
+    this.db.prepare("DELETE FROM businesses WHERE id = ?").run(businessId);
+    if (!this.getBusinessByOwner(ownerId)) {
+      this.db.prepare("DELETE FROM owners WHERE id = ?").run(ownerId);
+    }
+  }
 }
 
 function ensureBusinessBillingColumns(db: DatabaseSync): void {

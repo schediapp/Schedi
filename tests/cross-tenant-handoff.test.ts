@@ -27,6 +27,7 @@ const { privateKey } = generateKeyPairSync("rsa", {
 function memoryKv() {
   const map = new Map<string, string>();
   return {
+    map,
     async get(key: string) {
       return map.has(key) ? map.get(key)! : null;
     },
@@ -67,6 +68,8 @@ describe("cross-tenant handoff", () => {
 
   beforeEach(() => {
     docs.clear();
+    kv.map.clear();
+    limits.store.clear();
     resetLocalLimits();
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = new URL(String(input));
@@ -80,7 +83,7 @@ describe("cross-tenant handoff", () => {
       if (url.hostname === "api.resend.com") {
         return Response.json({ id: "mail-test" });
       }
-      if (url.hostname === "schedi.app" && url.pathname === "/billing/connect-plan") {
+      if (url.hostname === "schedi.app" && (url.pathname === "/billing/connect-plan" || url.pathname === "/billing/connect-bind")) {
         return worker.fetch(new Request(url, init), env, { waitUntil() {} });
       }
       if (url.hostname === "firestore.googleapis.com") {
@@ -231,25 +234,43 @@ describe("cross-tenant handoff", () => {
     });
   });
 
-  it("opens the business whose slug is the authenticated tenant and leaves its bookings in place", async () => {
-    const store = openStore(dbPath);
-    const owner = store.createOwner({ email: "fresh-owner@example.com", name: "Fresh Owner" });
-    const business = store.createBusiness({
-      ownerId: owner.id,
-      name: "Fresh Shop",
-      slug: "fresh-shop",
-      plan: "pro",
-      subscriptionStatus: "active",
-      stripeSubscriptionId: "sub_fresh",
+  it("opens a business only after the credential that created it comes back", async () => {
+    const signup = await post("/billing/signup", {
+      businessName: "Fresh Shop",
+      ownerName: "Fresh Owner",
+      ownerEmail: "fresh-owner@example.com",
+      plan: "free",
+      industry: "Photography",
     });
+    expect(signup.status).toBe(200);
+    expect(signup.payload.slug).toBe("fresh-shop");
+    const login = await post("/auth/tenant", {
+      email: "fresh-owner@example.com",
+      password: signup.payload.temporaryPassword,
+    });
+    expect(login.payload.tenantId).toBe("fresh-shop");
+    const { POST } = await import("../src/app/api/connect/handoff/route");
+    const firstToken = decodeURIComponent(new URL(String((await post("/billing/connect-handoff", {
+      tenantId: login.payload.tenantId,
+      session: login.payload.session,
+    })).payload.url)).hash.slice(3));
+    const first = await POST(new Request("https://schedi-connect-production.up.railway.app/api/connect/handoff", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ t: firstToken }),
+    }));
+    expect(first.headers.get("set-cookie") || "").toContain("s2.");
+    const store = openStore(dbPath);
+    const business = store.getBusinessBySlug("fresh-shop");
+    expect(business?.ownerId).toBeTruthy();
     const service = store.createService({
-      businessId: business.id,
+      businessId: business!.id,
       name: "Visit",
       durationMinutes: 30,
       priceCents: 4000,
     });
     const booking = store.createBooking({
-      businessId: business.id,
+      businessId: business!.id,
       serviceId: service.id,
       clientName: "Client",
       clientEmail: "client@example.com",
@@ -259,42 +280,64 @@ describe("cross-tenant handoff", () => {
       amountCents: 4000,
       status: "confirmed",
     });
-
-    const signup = await post("/billing/signup", {
-      businessName: "Fresh Shop",
-      ownerName: "Fresh Owner",
-      ownerEmail: "fresh-owner@example.com",
-      plan: "free",
-      industry: "Services",
-    });
-    expect(signup.status).toBe(200);
-    expect(signup.payload.slug).toBe("fresh-shop");
-    const login = await post("/auth/tenant", {
+    const againLogin = await post("/auth/tenant", {
       email: "fresh-owner@example.com",
       password: signup.payload.temporaryPassword,
     });
-    expect(login.status).toBe(200);
-    expect(login.payload.tenantId).toBe("fresh-shop");
-    const handed = await post("/billing/connect-handoff", {
-      tenantId: login.payload.tenantId,
-      session: login.payload.session,
-    });
-    const token = decodeURIComponent(new URL(String(handed.payload.url)).hash.slice(3));
-    const { POST } = await import("../src/app/api/connect/handoff/route");
-    const response = await POST(new Request("https://schedi-connect-production.up.railway.app/api/connect/handoff", {
+    const secondToken = decodeURIComponent(new URL(String((await post("/billing/connect-handoff", {
+      tenantId: againLogin.payload.tenantId,
+      session: againLogin.payload.session,
+    })).payload.url)).hash.slice(3));
+    const second = await POST(new Request("https://schedi-connect-production.up.railway.app/api/connect/handoff", {
       method: "POST",
       headers: { "content-type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({ t: token }),
+      body: new URLSearchParams({ t: secondToken }),
     }));
-    expect(response.status).toBe(303);
-    expect(response.headers.get("set-cookie") || "").toContain("s2.");
-    expect(response.headers.get("location") || "").not.toContain("s2.");
-    const after = store.getBusiness(business.id);
+    expect(second.headers.get("set-cookie") || "").toContain("s2.");
+    const after = store.getBusiness(business!.id);
     expect(after.slug).toBe("fresh-shop");
-    expect(after.ownerId).toBe(owner.id);
-    expect(after.plan).toBe("pro");
-    expect(after.stripeSubscriptionId).toBe("sub_fresh");
-    expect(after.stripeAccountId).toBeNull();
-    expect(store.listBookings(business.id).map((row) => row.id)).toEqual([booking.id]);
+    expect(after.ownerId).toBe(business!.ownerId);
+    expect(store.listBookings(business!.id).map((row) => row.id)).toEqual([booking.id]);
+  });
+
+  it("does not let an owner rename their credential onto another tenant", async () => {
+    const victim = await post("/billing/signup", {
+      businessName: "Harbor Cuts",
+      ownerName: "Victim Owner",
+      ownerEmail: "victim-login@example.com",
+      plan: "free",
+      industry: "Services",
+    });
+    const attacker = await post("/billing/signup", {
+      businessName: "Attacker Shop",
+      ownerName: "Attacker",
+      ownerEmail: "attacker-login@example.com",
+      plan: "free",
+      industry: "Services",
+    });
+    expect(victim.payload.slug).toBe("harbor-cuts");
+    expect(attacker.payload.slug).toBe("attacker-shop");
+    const attackerLogin = await post("/auth/tenant", {
+      email: "attacker-login@example.com",
+      password: attacker.payload.temporaryPassword,
+    });
+    const renamed = await post("/auth/rename", {
+      session: attackerLogin.payload.session,
+      fromId: "attacker-shop",
+      toId: "harbor-cuts",
+    });
+    expect(renamed.status).toBe(409);
+    const victimStill = await post("/auth/tenant", {
+      email: "victim-login@example.com",
+      password: victim.payload.temporaryPassword,
+    });
+    expect(victimStill.status).toBe(200);
+    expect(victimStill.payload.tenantId).toBe("harbor-cuts");
+    const attackerStill = await post("/auth/tenant", {
+      email: "attacker-login@example.com",
+      password: attacker.payload.temporaryPassword,
+    });
+    expect(attackerStill.status).toBe(200);
+    expect(attackerStill.payload.tenantId).toBe("attacker-shop");
   });
 });

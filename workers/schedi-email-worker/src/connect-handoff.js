@@ -16,6 +16,12 @@ export function connectCardEntitled(tenant) {
   return plan === "pro" && (status === "active" || status === "trialing");
 }
 
+export function connectSecretAuthorized(request, env) {
+  const expected = String((env && env.SCHEDI_CONNECT_PAID_SECRET) || "");
+  const header = String(request.headers.get("x-schedi-connect-secret") || "");
+  return !!(expected && timingSafeEqual(expected, header));
+}
+
 export function connectPlanView(tenant) {
   const entitled = connectCardEntitled(tenant);
   const stored = String((tenant && tenant.plan) || "").toLowerCase();
@@ -217,6 +223,8 @@ export async function handleConnectPlan(request, env, deps) {
   if (!tenant) return http(404, { ok: false, error: "tenant_not_found" });
   if (tenant.__privateLoadFailed) return http(502, { ok: false, error: "private_read_failed" });
   const view = connectPlanView(tenant);
+  const bound = deps && typeof deps.readBinding === "function" ? await deps.readBinding(view.slug) : "";
+  view.connectOwnerId = typeof bound === "string" ? bound : "";
   if (!view.ownerEmail || view.ownerEmail.indexOf("@") < 1) {
     return http(409, { ok: false, error: "owner_email_missing" });
   }

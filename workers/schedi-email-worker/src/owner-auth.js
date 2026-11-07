@@ -67,6 +67,36 @@ async function hashPassword(password, pepper) {
   return { salt: saltB64, hash: await pbkdf2(password, saltB64, pepper), iterations: PBKDF2_ITERATIONS };
 }
 
+const TENANT_ID = /^[A-Za-z0-9_-]{1,80}$/;
+
+async function createOwnerSecret(env, email, tenantId, password) {
+  const id = String(tenantId || '').trim();
+  if (!TENANT_ID.test(id)) return { ok: false, error: 'invalid_tenant' };
+  const previous = await readJson(env.AUTH_KV, 'tenant:' + id);
+  if (previous && previous.hash) return { ok: false, error: 'already_exists' };
+  return saveOwnerSecret(env, email, tenantId, password);
+}
+
+async function readConnectOwnerId(env, tenantId) {
+  const id = String(tenantId || '').trim();
+  if (!TENANT_ID.test(id) || !env || !env.AUTH_KV) return '';
+  const record = await readJson(env.AUTH_KV, 'tenant:' + id);
+  const bound = record && typeof record.connectOwnerId === 'string' ? record.connectOwnerId : '';
+  return /^[A-Za-z0-9-]{8,80}$/.test(bound) ? bound : '';
+}
+
+async function setConnectOwnerId(env, tenantId, ownerId) {
+  const id = String(tenantId || '').trim();
+  const owner = String(ownerId || '').trim();
+  if (!TENANT_ID.test(id) || !/^[A-Za-z0-9-]{8,80}$/.test(owner)) return { ok: false, error: 'invalid_tenant' };
+  const record = await readJson(env.AUTH_KV, 'tenant:' + id);
+  if (!record || !record.hash) return { ok: false, error: 'no_password' };
+  if (record.connectOwnerId && record.connectOwnerId !== owner) return { ok: false, error: 'already_bound' };
+  record.connectOwnerId = owner;
+  await env.AUTH_KV.put('tenant:' + id, JSON.stringify(record));
+  return { ok: true };
+}
+
 async function saveOwnerSecret(env, email, tenantId, password) {
   const normalized = String(email || '').trim().toLowerCase();
   const id = String(tenantId || '').trim();
@@ -121,9 +151,12 @@ async function rebindOwnerEmail(env, tenantId, nextEmail) {
 async function renameOwnerSecret(env, fromId, toId) {
   const source = String(fromId || '').trim();
   const dest = String(toId || '').trim();
-  if (!source || !dest || source === dest) return { ok: true };
+  if (!TENANT_ID.test(source) || !TENANT_ID.test(dest)) return { ok: false, error: 'invalid_tenant' };
+  if (source === dest) return { ok: true };
   const record = await readJson(env.AUTH_KV, 'tenant:' + source);
-  if (!record || !record.hash) return { ok: true, missing: true };
+  if (!record || !record.hash) return { ok: false, error: 'no_password' };
+  const occupied = await readJson(env.AUTH_KV, 'tenant:' + dest);
+  if (occupied) return { ok: false, error: 'destination_exists' };
   record.tenantId = dest;
   await env.AUTH_KV.put('tenant:' + dest, JSON.stringify(record));
   await env.AUTH_KV.delete('tenant:' + source);
@@ -131,6 +164,7 @@ async function renameOwnerSecret(env, fromId, toId) {
     await removeTenantFromEmailIndex(env, record.email, source);
     await addTenantToEmailIndex(env, record.email, dest);
   }
+  await env.AUTH_KV.put('sessrevoke:' + source, String(Date.now()), { expirationTtl: 12 * 60 * 60 + 3600 });
   return { ok: true };
 }
 
@@ -337,7 +371,7 @@ export async function handleAuthRequest(request, env, origin, path, json, deps) 
       return json({ ok: false, error: 'forbidden' }, 403, origin);
     }
     const renamed = await renameOwnerSecret(env, fromId, toId);
-    if (!renamed.ok) return json(renamed, 400, origin);
+    if (!renamed.ok) return json(renamed, renamed.error === 'destination_exists' ? 409 : 400, origin);
     return json({ ok: true }, 200, origin);
   }
 
@@ -352,4 +386,4 @@ export async function ensureAgencySecret(env, email, password) {
   return saveAgencySecret(env, normalized, password);
 }
 
-export { saveOwnerSecret, deleteOwnerSecret, authReady, readSession, readLogoWriteSession, passwordMatches };
+export { saveOwnerSecret, createOwnerSecret, deleteOwnerSecret, authReady, readSession, readLogoWriteSession, passwordMatches, readConnectOwnerId, setConnectOwnerId };

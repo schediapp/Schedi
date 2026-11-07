@@ -75,7 +75,7 @@ export function adoptSchediBusiness(
   store: Store,
   claims: HandoffClaims,
   remote: SchediPlanRecord,
-): { ownerId: string; business: Business } {
+): { ownerId: string; business: Business; created: boolean } {
   const email = claims.email.trim().toLowerCase();
   const remoteEmail = remote.ownerEmail.trim().toLowerCase();
   const slug = planSlug(remote, "");
@@ -88,11 +88,14 @@ export function adoptSchediBusiness(
     if (owner.email.trim().toLowerCase() !== email) {
       throw new SchediError("This business is already set up for another owner.", 409);
     }
+    if (!remote.connectOwnerId || remote.connectOwnerId !== existing.ownerId) {
+      throw new SchediError(OWNERSHIP, 403);
+    }
     const business = applySchediPlan(store, existing, remote, email);
     if (business.id !== existing.id || business.ownerId !== existing.ownerId || business.slug !== slug) {
       throw new SchediError(OWNERSHIP, 403);
     }
-    return { ownerId: owner.id, business };
+    return { ownerId: owner.id, business, created: false };
   }
   if (store.getOwnerByEmail(email)) {
     throw new SchediError(OWNERSHIP, 403);
@@ -111,13 +114,13 @@ export function adoptSchediBusiness(
   if (business.ownerId !== owner.id || business.slug !== slug) {
     throw new SchediError(OWNERSHIP, 403);
   }
-  return { ownerId: owner.id, business };
+  return { ownerId: owner.id, business, created: true };
 }
 
 export type HandoffLookup = (query: { slug: string; email: string }) => Promise<SchediPlanRecord | null>;
 
 export type ConnectHandoffResult =
-  | { ok: true; ownerId: string; business: Business }
+  | { ok: true; ownerId: string; business: Business; created: boolean }
   | { ok: false; error: string };
 
 const INVALID_LINK = "This Schedi link is not valid. Nothing was charged.";
@@ -152,7 +155,7 @@ export async function acceptConnectHandoff(
   }
   try {
     const adopted = adoptSchediBusiness(store, claims, remote);
-    return { ok: true, ownerId: adopted.ownerId, business: adopted.business };
+    return { ok: true, ownerId: adopted.ownerId, business: adopted.business, created: adopted.created };
   } catch (error) {
     const message = error instanceof Error && error.message ? error.message : INVALID_LINK;
     return { ok: false, error: message };

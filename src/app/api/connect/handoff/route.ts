@@ -10,6 +10,24 @@ import { getStripe } from "@/lib/stripe";
 
 export const runtime = "nodejs";
 
+async function stampConnectOwner(slug: string, ownerId: string): Promise<boolean> {
+  const secret = process.env.SCHEDI_CONNECT_PAID_SECRET || "";
+  if (!secret) return false;
+  try {
+    const response = await fetch(process.env.SCHEDI_CONNECT_BIND_URL || "https://schedi.app/billing/connect-bind", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-schedi-connect-secret": secret,
+      },
+      body: JSON.stringify({ slug, connectOwnerId: ownerId }),
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
 const HANDOFF_PAGE = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -80,6 +98,13 @@ export async function POST(request: Request) {
   );
   if (!accepted.ok) {
     return redirectTo(request, "/portal", { error: accepted.error });
+  }
+  if (accepted.created) {
+    const stamped = await stampConnectOwner(accepted.business.slug, accepted.ownerId);
+    if (!stamped) {
+      try { store.deleteFreshBusiness(accepted.business.id, accepted.ownerId); } catch { /* leave the new row unbound */ }
+      return redirectTo(request, "/portal", { error: "This Schedi sign-in could not be verified for this business. Nothing was charged." });
+    }
   }
 
   const sid = store.createSession(accepted.ownerId);

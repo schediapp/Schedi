@@ -230,7 +230,7 @@ describe("complimentary Pro counts as Pro for card setup", () => {
     });
     const now = Date.parse("2026-10-21T12:00:00Z");
     const token = await signConnectHandoff(handoffClaims(now, { complimentary: true }), SECRET);
-    const remote = parseSchediPlan({ ok: true, ...connectPlanView(axel()) });
+    const remote = parseSchediPlan({ ok: true, ...connectPlanView(axel()), connectOwnerId: owner.id });
     const adopted = await acceptConnectHandoff(store, token, SECRET, async () => remote, now);
     expect(adopted.ok).toBe(true);
     if (!adopted.ok) return;

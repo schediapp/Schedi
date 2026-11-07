@@ -84,7 +84,7 @@ describe("verified portal access by plan", () => {
 
   it("fails closed for the wrong owner, a slug mismatch, a replay, and a tampered link", async () => {
     const store = memoryStore();
-    const { business } = seedProBusiness(store, {
+    const { owner, business } = seedProBusiness(store, {
       email: "owner@example.com",
       slug: "northwind",
       plan: "starter",
@@ -144,6 +144,7 @@ describe("verified portal access by plan", () => {
       exp: Math.floor(now / 1000) + 90,
     }, SECRET);
     const looked = remote("starter", "active");
+    if (looked) looked.connectOwnerId = owner.id;
     expect((await acceptConnectHandoff(store, replay, SECRET, async () => looked, now)).ok).toBe(true);
     expect((await acceptConnectHandoff(store, replay, SECRET, async () => looked, now)).ok).toBe(false);
 
