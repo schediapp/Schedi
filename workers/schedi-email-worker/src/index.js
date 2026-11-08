@@ -53,7 +53,7 @@ import {
   shapePublicPatch,
   mergePrivateInto,
   getPrivateTenant,
-  connectReadyDecision,
+  applyConnectReadyWrite,
   listPrivateTenants,
   patchPrivateTenant,
 } from './tenant-private.js';
@@ -3084,39 +3084,38 @@ async function handleConnectReady(request, env, origin) {
   } catch (_) {
     return json({ ok: false, error: 'tenant_lookup_failed' }, 502, origin);
   }
-  const tenant = await getTenantById(env, idToken, slug);
-  if (!tenant) return json({ ok: false, error: 'tenant_not_found' }, 404, origin);
-  const observedAt = String((body && body.observedAt) || '');
   let status = allowedStatus ? body.status : (body.ready === true ? 'ready' : 'in_progress');
   if (body.ready === true) status = 'ready';
-  if (status === 'ready') body.ready = true;
   const ready = status === 'ready';
-  for (let attempt = 0; attempt < 3; attempt += 1) {
-    const current = attempt === 0 ? tenant : await getTenantById(env, idToken, slug);
-    if (!current) return json({ ok: false, error: 'tenant_not_found' }, 404, origin);
-    const decision = connectReadyDecision(current.stripeConnectObservedAt, current.stripeConnectReady === true, observedAt, ready);
-    if (decision === 'stale' || decision === 'idempotent') {
-      return json({
-        ok: true,
-        stale: decision === 'stale',
-        slug,
-        stripeConnectReady: current.stripeConnectReady === true,
-        stripeConnectStatus: current.stripeConnectStatus || '',
-      }, 200, origin);
-    }
-    if (decision === 'tie') return json({ ok: false, error: 'observed_tie' }, 409, origin);
-    const patch = { stripeConnectReady: ready, stripeConnectStatus: status };
-    if (observedAt) patch.stripeConnectObservedAt = observedAt;
-    try {
-      await patchTenantFields(env, idToken, slug, patch, { updateTime: current.__privateUpdateTime || '' });
-      return json({ ok: true, slug, stripeConnectReady: ready, stripeConnectStatus: status }, 200, origin);
-    } catch (error) {
-      const message = String(error && error.message || '');
-      if (message.indexOf(':409') >= 0 && attempt < 2) continue;
-      return json({ ok: false, error: 'ready_conflict' }, 409, origin);
-    }
-  }
-  return json({ ok: false, error: 'ready_conflict' }, 409, origin);
+  const result = await applyConnectReadyWrite({
+    observedAt: body && body.observedAt,
+    ready,
+    statusText: status,
+    read: async () => {
+      const current = await getTenantById(env, idToken, slug);
+      if (!current) return null;
+      return {
+        observedAt: current.stripeConnectObservedAt,
+        ready: current.stripeConnectReady === true,
+        statusText: current.stripeConnectStatus || '',
+        updateTime: current.__privateUpdateTime || '',
+        privateLoadFailed: current.__privateLoadFailed === true,
+      };
+    },
+    write: async (next) => {
+      const patch = { stripeConnectReady: next.ready, stripeConnectStatus: next.statusText, stripeConnectObservedAt: next.observedAt };
+      const precondition = next.create ? { exists: false } : { updateTime: next.updateTime };
+      await patchTenantFields(env, idToken, slug, patch, precondition);
+    },
+  });
+  if (!result.ok) return json({ ok: false, error: result.error }, result.status, origin);
+  return json({
+    ok: true,
+    stale: result.stale === true,
+    slug,
+    stripeConnectReady: result.ready === true,
+    stripeConnectStatus: result.statusText || status,
+  }, 200, origin);
 }
 
 async function handleBillingRequest(request, env, origin, path, url) {

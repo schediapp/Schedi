@@ -40,12 +40,12 @@ function eventBody(partial: Record<string, unknown>): string {
 describe("stripe webhook safety", () => {
   it("accepts either signing secret and rejects a raw-body or secret mismatch", async () => {
     const store = memoryStore();
-    const { owner } = seedProBusiness(store, { email: "fail@example.com", slug: "fail" });
+    const { owner } = seedProBusiness(store, { email: "fail@example.com", slug: "fail", stripeSubscriptionId: "sub_fail" });
     store.setOwnerCustomer(owner.id, "cus_fail");
     const payload = eventBody({
       id: "evt_invoice",
       type: "invoice.payment_failed",
-      data: { object: { object: "invoice", customer: "cus_fail" } },
+      data: { object: { object: "invoice", customer: "cus_fail", subscription: "sub_fail" } },
     });
     const platform = signedEvent(payload, PLATFORM_SECRET);
     const connect = signedEvent(payload, CONNECT_SECRET);
@@ -66,7 +66,7 @@ describe("stripe webhook safety", () => {
     const replayPayload = eventBody({
       id: "evt_invoice_connect_secret",
       type: "invoice.payment_failed",
-      data: { object: { object: "invoice", customer: "cus_fail" } },
+      data: { object: { object: "invoice", customer: "cus_fail", subscription: "sub_fail" } },
     });
     const fromConnect = signedEvent(replayPayload, CONNECT_SECRET);
     const accepted = await handleConnectRequest(

@@ -295,17 +295,65 @@ export function privateView(id, priv, role) {
   return out;
 }
 
+const OBSERVED_AT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/;
+
+export function validObservedAt(value) {
+  return OBSERVED_AT.test(String(value || '').trim());
+}
+
 /**
- * Same-second ready callbacks do not last-write-win.
- * A newer observedAt may write. An equal observedAt with a different ready
- * flag is a tie and must not overwrite. This is not exactly-once delivery.
+ * A blank or non-ISO observation is rejected. A newer ISO time may write.
+ * An equal time with a different ready flag is a tie. This is not exactly-once.
  */
 export function connectReadyDecision(previousObserved, previousReady, observedAt, ready) {
-  const previous = String(previousObserved || '');
-  const next = String(observedAt || '');
-  if (next && previous && previous > next) return 'stale';
-  if (next && previous && previous === next) return previousReady === ready ? 'idempotent' : 'tie';
+  const next = String(observedAt || '').trim();
+  const previous = String(previousObserved || '').trim();
+  if (!validObservedAt(next)) return 'reject';
+  if (previous && !validObservedAt(previous)) return 'reject';
+  if (previous && previous > next) return 'stale';
+  if (previous && previous === next) return previousReady === ready ? 'idempotent' : 'tie';
   return 'write';
+}
+
+function readyConflict(error) {
+  return String(error && error.message || '').indexOf(':409') >= 0;
+}
+
+/**
+ * Fail closed when the private document was not read. A missing document is
+ * created only with exists=false. An existing document requires its updateTime.
+ */
+export async function applyConnectReadyWrite(input) {
+  const observedAt = String(input.observedAt || '').trim();
+  const ready = input.ready === true;
+  if (!validObservedAt(observedAt)) return { ok: false, status: 400, error: 'observed_at_required' };
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const current = await input.read();
+    if (!current) return { ok: false, status: 404, error: 'tenant_not_found' };
+    if (current.privateLoadFailed) return { ok: false, status: 503, error: 'private_read_failed' };
+    const decision = connectReadyDecision(current.observedAt, current.ready === true, observedAt, ready);
+    if (decision === 'reject') return { ok: false, status: 400, error: 'observed_at_required' };
+    if (decision === 'stale' || decision === 'idempotent') {
+      return { ok: true, status: 200, stale: decision === 'stale', ready: current.ready === true, statusText: current.statusText || '' };
+    }
+    if (decision === 'tie') return { ok: false, status: 409, error: 'observed_tie' };
+    if (current.observedAt && !current.updateTime) return { ok: false, status: 503, error: 'private_read_failed' };
+    try {
+      await input.write({
+        observedAt,
+        ready,
+        statusText: input.statusText,
+        updateTime: current.updateTime || '',
+        create: !current.updateTime,
+      });
+      return { ok: true, status: 200, stale: false, ready, statusText: input.statusText };
+    } catch (error) {
+      if (readyConflict(error) && attempt < 2) continue;
+      if (readyConflict(error)) return { ok: false, status: 409, error: 'ready_conflict' };
+      return { ok: false, status: 502, error: 'ready_write_failed' };
+    }
+  }
+  return { ok: false, status: 409, error: 'ready_conflict' };
 }
 
 export async function getPrivateTenant(env, tenantId) {
@@ -344,10 +392,16 @@ export async function listPrivateTenants(env) {
   return map;
 }
 
-export function privatePatchQuery(keys, updateTime) {
+export function privatePatchQuery(keys, precondition) {
   let qs = keys.map((k) => 'updateMask.fieldPaths=' + encodeURIComponent(k)).join('&');
-  const precondition = updateTime ? String(updateTime) : '';
-  if (precondition) qs += '&currentDocument.updateTime=' + encodeURIComponent(precondition);
+  if (precondition && typeof precondition === 'object') {
+    if (precondition.exists === false) return qs + '&currentDocument.exists=false';
+    const updateTime = precondition.updateTime ? String(precondition.updateTime) : '';
+    if (updateTime) return qs + '&currentDocument.updateTime=' + encodeURIComponent(updateTime);
+    return qs;
+  }
+  const updateTime = precondition ? String(precondition) : '';
+  if (updateTime) qs += '&currentDocument.updateTime=' + encodeURIComponent(updateTime);
   return qs;
 }
 
@@ -362,7 +416,7 @@ export async function patchPrivateTenant(env, tenantId, priv, options) {
   body.tenantId = id;
   body.privateUpdatedAt = new Date().toISOString();
   const allKeys = Object.keys(body);
-  const qs = privatePatchQuery(allKeys, options && options.updateTime);
+  const qs = privatePatchQuery(allKeys, options || null);
   const fields = {};
   for (const k of allKeys) fields[k] = encodeValue(body[k]);
   const headers = await adminAuthHeaders(env);

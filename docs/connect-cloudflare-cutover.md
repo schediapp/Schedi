@@ -10,7 +10,7 @@ The existing Cloudflare worker `schedi-connect` (`f15debb95f7a4dffb860219069fe94
 
 The live email worker is v132 plus the minimal `/auth/rename` deny, version `e74eb668-108e-4b9c-bb4b-991699e80829`. The git email-worker tree is not that bundle. Do not publish it over the live worker. PR 104 remains blocked: a Schedi login or a matching email or slug is not ownership of a Connect business. This replacement does not copy that trust. Unstamped owners stay locked out until a later reviewed mapping from an authoritative id that exists on both sides. There is no such mapping in this import.
 
-External effects are not exactly-once. Stripe retries and the ready callback can be delivered more than once. Local event claims and the ready-document precondition stop a second writer from winning a stale or same-second disagreement. They do not prove the receiver applied the effect once.
+External effects are not exactly-once. Stripe retries and the ready callback can be delivered more than once. A subscription update, deletion, checkout, invoice failure, or capability change commits its ordering fence and the local row in one transaction. An invoice failure shares that subscription fence and is ignored when it names no subscription or a different one. The git ready callback rejects a missing or invalid observation, refuses to write when the private document cannot be read, and creates a missing private document only with `exists=false`. That git callback is not the live email worker. None of this is release clearance, and none of it recovers the stopped Railway database.
 
 ## Do not overwrite the existing worker
 

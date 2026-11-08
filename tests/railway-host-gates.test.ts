@@ -250,6 +250,68 @@ describe("schema compatibility and crash recovery", () => {
     expect(store.maintenance().admitted).toBe(0);
   });
 
+  it("replays a subscription update after the local write rolls back with the fence", async () => {
+    const store = memoryStore();
+    const seeded = seedProBusiness(store, { stripeSubscriptionId: "sub_same", stripeCustomerId: "cus_same" });
+    const event = subscriptionEvent("evt_past_due", "customer.subscription.updated", 1_700_000_200, seeded.owner.id, "past_due");
+    const deps = { failLocalWrite: true };
+    await expect(applyStripeEvent(store, event as never, deps)).rejects.toThrow(/injected_local_write_failure/);
+    expect(store.getBusinessByOwner(seeded.owner.id)?.subscriptionStatus).toBe("active");
+    expect(store.hasStripeEvent(event.id)).toBe(false);
+    await applyStripeEvent(store, event as never, deps);
+    expect(store.getBusinessByOwner(seeded.owner.id)?.subscriptionStatus).toBe("past_due");
+    expect(store.hasStripeEvent(event.id)).toBe(true);
+  });
+
+  it("does not let an older invoice replace a newer subscription update, deletion, or a different subscription", async () => {
+    const newer = 1_700_000_300;
+    const older = 1_700_000_100;
+    const active = memoryStore();
+    const first = seedProBusiness(active, { stripeSubscriptionId: "sub_same" });
+    active.setOwnerCustomer(first.owner.id, "cus_same");
+    await applyStripeEvent(active, subscriptionEvent("evt_live", "customer.subscription.updated", newer, first.owner.id, "active") as never);
+    await applyStripeEvent(active, invoiceEvent("evt_old_invoice", older, "sub_same", "cus_same") as never);
+    expect(active.getBusinessByOwner(first.owner.id)?.subscriptionStatus).toBe("active");
+
+    const ended = memoryStore();
+    const second = seedProBusiness(ended, { stripeSubscriptionId: "sub_same" });
+    ended.setOwnerCustomer(second.owner.id, "cus_same");
+    await applyStripeEvent(ended, subscriptionEvent("evt_deleted", "customer.subscription.deleted", newer, second.owner.id, "canceled") as never);
+    await applyStripeEvent(ended, invoiceEvent("evt_same_second", newer, "sub_same", "cus_same") as never);
+    expect(ended.getBusinessByOwner(second.owner.id)?.subscriptionStatus).toBe("canceled");
+
+    const replaced = memoryStore();
+    const third = seedProBusiness(replaced, { stripeSubscriptionId: "sub_new" });
+    replaced.setOwnerCustomer(third.owner.id, "cus_same");
+    await applyStripeEvent(replaced, invoiceEvent("evt_previous_sub", newer + 10, "sub_old", "cus_same") as never);
+    expect(replaced.getBusinessByOwner(third.owner.id)?.subscriptionStatus).toBe("active");
+    expect(replaced.getBusinessByOwner(third.owner.id)?.stripeSubscriptionId).toBe("sub_new");
+
+    const recovered = memoryStore();
+    const fourth = seedProBusiness(recovered, { stripeSubscriptionId: "sub_same" });
+    recovered.setOwnerCustomer(fourth.owner.id, "cus_same");
+    await applyStripeEvent(recovered, invoiceEvent("evt_invoice_first", older, "sub_same", "cus_same") as never);
+    expect(recovered.getBusinessByOwner(fourth.owner.id)?.subscriptionStatus).toBe("past_due");
+    await applyStripeEvent(recovered, subscriptionEvent("evt_recovered", "customer.subscription.updated", newer, fourth.owner.id, "active") as never);
+    expect(recovered.getBusinessByOwner(fourth.owner.id)?.subscriptionStatus).toBe("active");
+    await applyStripeEvent(recovered, invoiceEvent("evt_invoice_same_second", newer, "sub_same", "cus_same") as never);
+    expect(recovered.getBusinessByOwner(fourth.owner.id)?.subscriptionStatus).toBe("active");
+
+    const removed = memoryStore();
+    const fifth = seedProBusiness(removed, { stripeSubscriptionId: "sub_same" });
+    removed.setOwnerCustomer(fifth.owner.id, "cus_same");
+    await applyStripeEvent(removed, invoiceEvent("evt_invoice_before_delete", newer, "sub_same", "cus_same") as never);
+    expect(removed.getBusinessByOwner(fifth.owner.id)?.subscriptionStatus).toBe("past_due");
+    await applyStripeEvent(removed, subscriptionEvent("evt_delete_same_second", "customer.subscription.deleted", newer, fifth.owner.id, "canceled") as never);
+    expect(removed.getBusinessByOwner(fifth.owner.id)?.subscriptionStatus).toBe("canceled");
+
+    const unbound = memoryStore();
+    const sixth = seedProBusiness(unbound, { stripeSubscriptionId: "sub_same" });
+    unbound.setOwnerCustomer(sixth.owner.id, "cus_same");
+    await applyStripeEvent(unbound, invoiceEvent("evt_invoice_unbound", newer, "", "cus_same") as never);
+    expect(unbound.getBusinessByOwner(sixth.owner.id)?.subscriptionStatus).toBe("active");
+  });
+
   it("clears a crash-stuck admitted count only while frozen", () => {
     const store = memoryStore();
     store.noteCrashedAdmit();
@@ -295,6 +357,22 @@ function updatedFor(ownerId: string) {
 
 function deletedFor(ownerId: string) {
   return subscriptionEvent("evt_deleted", "customer.subscription.deleted", 1_700_000_100, ownerId, "canceled");
+}
+
+function invoiceEvent(id: string, created: number, subscriptionId: string, customerId: string) {
+  return {
+    id,
+    type: "invoice.payment_failed",
+    created,
+    data: {
+      object: {
+        id: "in_" + id,
+        object: "invoice",
+        customer: customerId,
+        subscription: subscriptionId,
+      },
+    },
+  };
 }
 
 describe("stripe export pagination", () => {

@@ -288,6 +288,10 @@ export class Store {
     ensureFenceRank(this.db);
   }
 
+  transaction<T>(fn: () => T): T {
+    return this.db.transaction(fn);
+  }
+
   createOwner(input: { email: string; name: string; stripeCustomerId?: string | null }): Owner {
     const id = crypto.randomUUID();
     const email = input.email.trim().toLowerCase();

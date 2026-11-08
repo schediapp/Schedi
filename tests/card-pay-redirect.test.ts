@@ -300,10 +300,18 @@ describe("POST /billing/connect-ready", () => {
     expect(publicPatches).toHaveLength(0);
     expect(privatePatches).toHaveLength(0);
 
+    const blank = await worker.fetch(new Request("https://schedi.app/billing/connect-ready", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-schedi-connect-secret": "connect-secret" },
+      body: JSON.stringify({ slug: TENANT, ready: false }),
+    }), env, { waitUntil() {} });
+    expect(blank.status).toBe(400);
+    expect(privatePatches).toHaveLength(0);
+
     const ok = await worker.fetch(new Request("https://schedi.app/billing/connect-ready", {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-schedi-connect-secret": "connect-secret" },
-      body: JSON.stringify({ slug: TENANT, ready: true }),
+      body: JSON.stringify({ slug: TENANT, ready: true, observedAt: "2026-11-07T00:00:01.000Z" }),
     }), env, { waitUntil() {} });
     expect(ok.status).toBe(200);
     expect(await ok.json()).toMatchObject({ ok: true, slug: TENANT, stripeConnectReady: true, stripeConnectStatus: "ready" });
@@ -317,7 +325,7 @@ describe("POST /billing/connect-ready", () => {
     const progress = await worker.fetch(new Request("https://schedi.app/billing/connect-ready", {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-schedi-connect-secret": "connect-secret" },
-      body: JSON.stringify({ slug: TENANT, ready: false }),
+      body: JSON.stringify({ slug: TENANT, ready: false, observedAt: "2026-11-07T00:00:02.000Z" }),
     }), env, { waitUntil() {} });
     expect(progress.status).toBe(200);
     expect(await progress.json()).toMatchObject({ stripeConnectReady: false, stripeConnectStatus: "in_progress" });

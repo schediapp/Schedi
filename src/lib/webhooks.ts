@@ -13,15 +13,54 @@ export interface StripeEventDeps {
   publishConnectReady?: (slug: string, ready: boolean, observedAt?: string) => Promise<void>;
   now?: number;
   config?: ConnectConfig;
+  /** Test hook. Throws once inside the local fence transaction, before the row write. */
+  failLocalWrite?: boolean;
 }
 
-/** Same-second cross-type order. A higher rank wins. Same rank stays first-writer. */
+/** Same-second cross-type order on one subscription fence. A higher rank wins. */
 export function stripeEventRank(type: string): number {
   if (type === "customer.subscription.deleted") return 30;
   if (type === "customer.subscription.updated") return 20;
+  if (type === "checkout.session.completed") return 15;
   if (type === "invoice.payment_failed") return 10;
   if (type === "account.updated") return 10;
   return 0;
+}
+
+function commitLocal(
+  store: Store,
+  key: string,
+  observedAt: string,
+  eventId: string,
+  rank: number,
+  write: () => void,
+  deps?: StripeEventDeps,
+): "apply" | "retry" | "stale" {
+  return store.transaction(() => {
+    const decision = store.advanceFence(key, observedAt, eventId, rank);
+    if (decision !== "apply") return decision;
+    if (deps?.failLocalWrite) {
+      deps.failLocalWrite = false;
+      throw new Error("injected_local_write_failure");
+    }
+    write();
+    return "apply";
+  });
+}
+
+function invoiceSubscriptionId(invoice: Stripe.Invoice): string | null {
+  const legacy = (invoice as { subscription?: unknown }).subscription;
+  if (typeof legacy === "string" && legacy) return legacy;
+  if (legacy && typeof legacy === "object" && typeof (legacy as { id?: unknown }).id === "string") {
+    return (legacy as { id: string }).id;
+  }
+  const parent = (invoice as { parent?: { subscription_details?: { subscription?: unknown } } }).parent;
+  const current = parent?.subscription_details?.subscription;
+  if (typeof current === "string" && current) return current;
+  if (current && typeof current === "object" && typeof (current as { id?: unknown }).id === "string") {
+    return (current as { id: string }).id;
+  }
+  return null;
 }
 
 function observedAtFor(event: Stripe.Event, now?: number): string {
@@ -116,15 +155,16 @@ async function applyConnectedEvent(store: Store, event: Stripe.Event, deps?: Str
       if (!business) return;
       const observedAt = observedAtFor(event, deps?.now);
       const fenceKey = `account:${accountId}`;
-      const decision = store.advanceFence(fenceKey, observedAt, event.id, stripeEventRank(event.type));
-      if (decision === "stale") return;
       const ready = connectedChargesEnabled(account);
       const statuses = readCapabilityStatuses(account);
       if (account.charges_enabled === true && statuses.cardPaymentsStatus !== "active") {
         statuses.cardPaymentsStatus = "active";
       }
       if (account.charges_enabled === false) statuses.cardPaymentsStatus = "inactive";
-      if (decision === "apply") store.setCapabilities(business.id, statuses);
+      const decision = commitLocal(store, fenceKey, observedAt, event.id, stripeEventRank(event.type), () => {
+        store.setCapabilities(business.id, statuses);
+      }, deps);
+      if (decision === "stale") return;
       await deliverConnectReady(store, event, business.slug, ready, observedAt, deps);
       return;
     }
@@ -171,13 +211,17 @@ function applyPlatformEvent(store: Store, event: Stripe.Event, deps?: StripeEven
       const plan = session.metadata?.plan;
       if (!ownerId || (plan !== "starter" && plan !== "pro")) return;
       const subscriptionId = typeof session.subscription === "string" ? session.subscription : null;
-      store.setSubscription(ownerId, {
-        status: "active",
-        plan,
-        stripeSubscriptionId: subscriptionId,
-        cancelAtPeriodEnd: false,
-        currentPeriodEnd: null,
-      });
+      if (!subscriptionId) return;
+      const observedAt = observedAtFor(event, deps?.now);
+      commitLocal(store, `subscription:${subscriptionId}`, observedAt, event.id, stripeEventRank(event.type), () => {
+        store.setSubscription(ownerId, {
+          status: "active",
+          plan,
+          stripeSubscriptionId: subscriptionId,
+          cancelAtPeriodEnd: false,
+          currentPeriodEnd: null,
+        });
+      }, deps);
       return;
     }
     case "customer.subscription.updated": {
@@ -188,10 +232,15 @@ function applyPlatformEvent(store: Store, event: Stripe.Event, deps?: StripeEven
       // Stripe deletes the subscription at the end of the paid period.
       if (subscription.status === "canceled") return;
       const observedAt = observedAtFor(event, deps?.now);
-      const fenceKey = `subscription:${subscription.id}`;
-      const decision = store.advanceFence(fenceKey, observedAt, event.id, stripeEventRank(event.type));
-      if (decision === "stale" || decision === "retry") return;
-      applySubscriptionState(store, ownerId, subscription);
+      commitLocal(
+        store,
+        `subscription:${subscription.id}`,
+        observedAt,
+        event.id,
+        stripeEventRank(event.type),
+        () => applySubscriptionState(store, ownerId, subscription),
+        deps,
+      );
       return;
     }
     case "customer.subscription.deleted": {
@@ -199,27 +248,40 @@ function applyPlatformEvent(store: Store, event: Stripe.Event, deps?: StripeEven
       const ownerId = ownerIdForSubscription(store, subscription);
       if (!ownerId) return;
       const observedAt = observedAtFor(event, deps?.now);
-      const fenceKey = `subscription:${subscription.id}`;
-      const decision = store.advanceFence(fenceKey, observedAt, event.id, stripeEventRank(event.type));
-      if (decision === "stale" || decision === "retry") return;
-      applySubscriptionState(store, ownerId, {
-        ...subscription,
-        status: "canceled",
-        cancel_at_period_end: false,
-      });
+      commitLocal(
+        store,
+        `subscription:${subscription.id}`,
+        observedAt,
+        event.id,
+        stripeEventRank(event.type),
+        () => applySubscriptionState(store, ownerId, {
+          ...subscription,
+          status: "canceled",
+          cancel_at_period_end: false,
+        }),
+        deps,
+      );
       return;
     }
     case "invoice.payment_failed": {
       const invoice = event.data.object as Stripe.Invoice;
       const customerId = typeof invoice.customer === "string" ? invoice.customer : invoice.customer?.id;
-      if (!customerId) return;
+      const subscriptionId = invoiceSubscriptionId(invoice);
+      if (!customerId || !subscriptionId) return;
       const owner = store.getOwnerByStripeCustomer(customerId);
       if (!owner) return;
+      const business = store.getBusinessByOwner(owner.id);
+      if (!business?.stripeSubscriptionId || business.stripeSubscriptionId !== subscriptionId) return;
       const observedAt = observedAtFor(event, deps?.now);
-      const fenceKey = `invoice:${customerId}`;
-      const decision = store.advanceFence(fenceKey, observedAt, event.id, stripeEventRank(event.type));
-      if (decision === "stale" || decision === "retry") return;
-      store.setSubscription(owner.id, { status: "past_due" });
+      commitLocal(
+        store,
+        `subscription:${subscriptionId}`,
+        observedAt,
+        event.id,
+        stripeEventRank(event.type),
+        () => store.setSubscription(owner.id, { status: "past_due" }),
+        deps,
+      );
       return;
     }
     default:

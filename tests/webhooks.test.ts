@@ -99,7 +99,7 @@ describe("webhook separation", () => {
       event({
         id: "evt_invoice",
         type: "invoice.payment_failed",
-        data: { object: { customer: "cus_fail" } },
+        data: { object: { customer: "cus_fail", subscription: "sub_fail" } },
       }),
     );
     applyStripeEvent(
