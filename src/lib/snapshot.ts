@@ -35,7 +35,7 @@ export const EXPECTED_COLUMNS: Record<SnapshotTable, string[]> = {
   stripe_events: ["id", "processed_at", "state"],
   connect_handoffs: ["nonce", "expires_at"],
   maintenance: ["id", "frozen", "frozen_at", "admitted"],
-  state_fence: ["key", "observed_at", "event_id"],
+  state_fence: ["key", "observed_at", "event_id", "rank"],
   callback_outbox: ["id", "kind", "payload", "state", "observed_at", "updated_at"],
 };
 

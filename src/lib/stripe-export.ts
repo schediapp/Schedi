@@ -3,6 +3,8 @@ import type { ReconcileEvent } from "./reconcile";
 export interface StripePage {
   data?: unknown[];
   has_more?: boolean;
+  /** Stripe v2 list cursor. v1 event lists use has_more and starting_after instead. */
+  next_page_url?: string | null;
 }
 
 /** Reads Stripe. The secret stays in the caller. This module never logs it. */
@@ -30,20 +32,33 @@ function asAccountId(value: unknown): string | null {
   return typeof id === "string" && id.startsWith("acct_") ? id : null;
 }
 
+function v1PageUrl(path: string, startingAfter: string): string {
+  const query = new URLSearchParams(path.includes("?") ? path.slice(path.indexOf("?") + 1) : "");
+  query.set("limit", "100");
+  if (startingAfter) query.set("starting_after", startingAfter);
+  return `${path.split("?")[0]}?${query.toString()}`;
+}
+
 async function eachPage(lister: StripeLister, path: string, accountId: string | undefined, onRow: (row: unknown) => void): Promise<void> {
   let startingAfter = "";
+  let nextUrl = "";
+  const seen = new Set<string>();
   for (let page = 0; page < 1000; page += 1) {
-    const query = new URLSearchParams(path.includes("?") ? path.slice(path.indexOf("?") + 1) : "");
-    query.set("limit", "100");
-    if (startingAfter) query.set("starting_after", startingAfter);
-    const url = `${path.split("?")[0]}?${query.toString()}`;
+    const url = nextUrl || v1PageUrl(path, startingAfter);
+    if (seen.has(url)) return;
+    seen.add(url);
     const body = await lister.get(url, accountId);
     const rows = Array.isArray(body.data) ? body.data : [];
     for (const row of rows) onRow(row);
-    if (!body.has_more || rows.length === 0) return;
+    if (typeof body.next_page_url === "string" && body.next_page_url && body.next_page_url !== url) {
+      nextUrl = body.next_page_url;
+      continue;
+    }
+    if (body.next_page_url === null || !body.has_more || rows.length === 0) return;
     const last = rows[rows.length - 1] as { id?: unknown };
     if (typeof last?.id !== "string" || last.id === startingAfter) return;
     startingAfter = last.id;
+    nextUrl = "";
   }
 }
 

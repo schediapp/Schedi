@@ -53,6 +53,7 @@ import {
   shapePublicPatch,
   mergePrivateInto,
   getPrivateTenant,
+  connectReadyDecision,
   listPrivateTenants,
   patchPrivateTenant,
 } from './tenant-private.js';
@@ -547,7 +548,10 @@ async function getTenantById(env, idToken, tenantId) {
   // Owner contact + billing fields live in the private doc (Admin-only). Merge them back for worker use.
   try {
     const priv = await getPrivateTenant(env, String(tenantId));
-    if (priv) mergePrivateInto(tenant, priv);
+    if (priv) {
+      mergePrivateInto(tenant, priv);
+      if (priv.__updateTime) tenant.__privateUpdateTime = priv.__updateTime;
+    }
   } catch (err) {
     console.warn('private tenant read failed', err && err.message ? err.message : err);
     tenant.__privateLoadFailed = true;
@@ -1190,10 +1194,10 @@ async function stripeRequest(env, path, { method, params, extraHeaders } = {}) {
   return { ok: true, status: res.status, data };
 }
 
-async function patchTenantFields(env, idToken, tenantId, rawPatch) {
+async function patchTenantFields(env, idToken, tenantId, rawPatch, options) {
   // Billing fields go to the private doc. The public doc keeps booking-page fields only.
   const shaped = shapePublicPatch(rawPatch || {});
-  if (Object.keys(shaped.priv).length) await patchPrivateTenant(env, tenantId, shaped.priv);
+  if (Object.keys(shaped.priv).length) await patchPrivateTenant(env, tenantId, shaped.priv, options);
   const keys = Object.keys(shaped.pub).filter((k) => shaped.pub[k] !== undefined);
   const mask = keys.concat(shaped.drop || []);
   if (!mask.length) return;
@@ -3083,18 +3087,36 @@ async function handleConnectReady(request, env, origin) {
   const tenant = await getTenantById(env, idToken, slug);
   if (!tenant) return json({ ok: false, error: 'tenant_not_found' }, 404, origin);
   const observedAt = String((body && body.observedAt) || '');
-  const previousObserved = String(tenant.stripeConnectObservedAt || '');
-  if (observedAt && previousObserved && previousObserved > observedAt) {
-    return json({ ok: true, stale: true, slug, stripeConnectReady: tenant.stripeConnectReady === true, stripeConnectStatus: tenant.stripeConnectStatus || '' }, 200, origin);
-  }
   let status = allowedStatus ? body.status : (body.ready === true ? 'ready' : 'in_progress');
   if (body.ready === true) status = 'ready';
   if (status === 'ready') body.ready = true;
   const ready = status === 'ready';
-  const patch = { stripeConnectReady: ready, stripeConnectStatus: status };
-  if (observedAt) patch.stripeConnectObservedAt = observedAt;
-  await patchTenantFields(env, idToken, slug, patch);
-  return json({ ok: true, slug, stripeConnectReady: ready, stripeConnectStatus: status }, 200, origin);
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const current = attempt === 0 ? tenant : await getTenantById(env, idToken, slug);
+    if (!current) return json({ ok: false, error: 'tenant_not_found' }, 404, origin);
+    const decision = connectReadyDecision(current.stripeConnectObservedAt, current.stripeConnectReady === true, observedAt, ready);
+    if (decision === 'stale' || decision === 'idempotent') {
+      return json({
+        ok: true,
+        stale: decision === 'stale',
+        slug,
+        stripeConnectReady: current.stripeConnectReady === true,
+        stripeConnectStatus: current.stripeConnectStatus || '',
+      }, 200, origin);
+    }
+    if (decision === 'tie') return json({ ok: false, error: 'observed_tie' }, 409, origin);
+    const patch = { stripeConnectReady: ready, stripeConnectStatus: status };
+    if (observedAt) patch.stripeConnectObservedAt = observedAt;
+    try {
+      await patchTenantFields(env, idToken, slug, patch, { updateTime: current.__privateUpdateTime || '' });
+      return json({ ok: true, slug, stripeConnectReady: ready, stripeConnectStatus: status }, 200, origin);
+    } catch (error) {
+      const message = String(error && error.message || '');
+      if (message.indexOf(':409') >= 0 && attempt < 2) continue;
+      return json({ ok: false, error: 'ready_conflict' }, 409, origin);
+    }
+  }
+  return json({ ok: false, error: 'ready_conflict' }, 409, origin);
 }
 
 async function handleBillingRequest(request, env, origin, path, url) {

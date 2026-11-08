@@ -2,6 +2,16 @@
 
 This runbook does not change Stripe, DNS, or the Railway volume.
 
+## Current readiness, November 2026
+
+Railway is stopped. The trial expired. The retained SQLite file has not been recovered. PR 106 (`bbba20c`) is the reviewed online backup helper, and it cannot run while that process is stopped. Do not pay to restart Railway, do not redeploy it, and do not treat that helper as executed. Do not import, seed, or point traffic at production.
+
+The existing Cloudflare worker `schedi-connect` (`f15debb95f7a4dffb860219069fe9435`) stays as it is. This migration uses only `schedi-connect-migration`, with `routes: []`, `workers_dev: false`, `preview_urls: false`, and no secrets in the config file. Do not deploy it from this repository.
+
+The live email worker is v132 plus the minimal `/auth/rename` deny, version `e74eb668-108e-4b9c-bb4b-991699e80829`. The git email-worker tree is not that bundle. Do not publish it over the live worker. PR 104 remains blocked: a Schedi login or a matching email or slug is not ownership of a Connect business. This replacement does not copy that trust. Unstamped owners stay locked out until a later reviewed mapping from an authoritative id that exists on both sides. There is no such mapping in this import.
+
+External effects are not exactly-once. Stripe retries and the ready callback can be delivered more than once. Local event claims and the ready-document precondition stop a second writer from winning a stale or same-second disagreement. They do not prove the receiver applied the effect once.
+
 ## Do not overwrite the existing worker
 
 Account `674c2b16e7eac42148f3c06c6e2c954f`. Zone `schedi.app` is `2ade91ff938bbc925314787b560a45a7`.

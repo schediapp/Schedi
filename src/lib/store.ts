@@ -8,6 +8,7 @@ export function getStore() {
   const store = openSingleton();
   if (!ready) {
     ready = true;
+    store.recoverAdmittedAfterRestart();
     if (shouldSeedDemo() && store.listBusinesses().length === 0) {
       seedDemo(store);
     }

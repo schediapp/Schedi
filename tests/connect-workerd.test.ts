@@ -1,6 +1,7 @@
 import { createRequire } from "node:module";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import Stripe from "stripe";
+import { memoryStore, seedProBusiness } from "./helpers";
 
 const require = createRequire(import.meta.url);
 const { unstable_dev } = require("../workers/schedi-email-worker/node_modules/wrangler") as {
@@ -134,4 +135,135 @@ describe("schedi-connect workerd", () => {
     const copy = await again.json() as { checksum: string };
     expect(copy.checksum).toBe(snapshot.checksum);
   }, 60_000);
+
+  it("restores a populated relational snapshot and applies one signed webhook under concurrency", async () => {
+    const populated = await start("schedi-connect-populated-test");
+    try {
+      const base = `http://127.0.0.1:${populated.port}`;
+      const source = memoryStore();
+      const seeded = seedProBusiness(source, { slug: "harbor", stripeAccountId: "acct_harbor" });
+      const booking = source.createBooking({
+        businessId: seeded.business.id,
+        serviceId: seeded.service.id,
+        clientName: "Casey",
+        clientEmail: "casey@example.com",
+        startsAt: "2026-11-08T15:00:00.000Z",
+        paymentMethod: "card",
+        chargeKind: "full",
+        amountCents: 8000,
+        status: "pending_payment",
+      });
+      source.freezeWriters();
+      const snapshot = source.consistentSnapshot();
+      expect(snapshot.tables.bookings).toHaveLength(1);
+      expect(snapshot.tables.services[0]?.business_id).toBe(seeded.business.id);
+
+      const freeze = await fetch(`${base}/api/admin/maintenance`, {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-schedi-migration-secret": "migration-secret" },
+        body: JSON.stringify({ mode: "frozen" }),
+      });
+      expect(freeze.status).toBe(200);
+      const restored = await fetch(`${base}/api/admin/sqlite-restore`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-schedi-migration-secret": "migration-secret",
+          "x-schedi-restore-confirm": "restore-empty-database",
+        },
+        body: JSON.stringify(snapshot),
+      });
+      expect(restored.status, await restored.clone().text()).toBe(200);
+      const opened = await fetch(`${base}/api/admin/maintenance`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-schedi-migration-secret": "migration-secret",
+          "x-schedi-maintenance-confirm": "open-writers",
+        },
+        body: JSON.stringify({ mode: "open" }),
+      });
+      expect(opened.status).toBe(200);
+
+      const payload = JSON.stringify({
+        id: "evt_populated",
+        object: "event",
+        api_version: "2026-09-30.endive",
+        created: 1_700_000_200,
+        livemode: false,
+        pending_webhooks: 1,
+        request: { id: null, idempotency_key: null },
+        type: "checkout.session.completed",
+        account: "acct_harbor",
+        data: {
+          object: {
+            object: "checkout.session",
+            id: "cs_populated",
+            mode: "payment",
+            payment_status: "paid",
+            payment_intent: "pi_populated",
+            metadata: { schedi_booking_id: booking.id },
+          },
+        },
+      });
+      const header = stripe.webhooks.generateTestHeaderString({ payload, secret: PLATFORM_SECRET });
+      const send = () => fetch(`${base}/api/webhooks/stripe`, {
+        method: "POST",
+        headers: { "stripe-signature": header },
+        body: payload,
+      });
+      const [first, second] = await Promise.all([send(), send()]);
+      const statuses = [first.status, second.status].sort();
+      expect(statuses.every((status) => status === 200 || status === 500), `${await first.clone().text()} | ${await second.clone().text()}`).toBe(true);
+      expect(statuses).toContain(200);
+      const replay = await send();
+      expect(replay.status).toBe(200);
+
+      const againFreeze = await fetch(`${base}/api/admin/maintenance`, {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-schedi-migration-secret": "migration-secret" },
+        body: JSON.stringify({ mode: "frozen" }),
+      });
+      expect(againFreeze.status).toBe(200);
+      const crashed = await fetch(`${base}/api/admin/maintenance`, {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-schedi-migration-secret": "migration-secret" },
+        body: JSON.stringify({ mode: "note-crash" }),
+      });
+      expect(crashed.status).toBe(200);
+      const blocked = await fetch(`${base}/api/admin/sqlite-snapshot`, {
+        headers: { "x-schedi-migration-secret": "migration-secret" },
+      });
+      expect(blocked.status).toBe(409);
+      const cleared = await fetch(`${base}/api/admin/maintenance`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-schedi-migration-secret": "migration-secret",
+          "x-schedi-maintenance-confirm": "clear-stuck-admitted",
+        },
+        body: JSON.stringify({ mode: "clear-admitted" }),
+      });
+      expect(cleared.status).toBe(200);
+      const snap = await fetch(`${base}/api/admin/sqlite-snapshot`, {
+        headers: { "x-schedi-migration-secret": "migration-secret" },
+      });
+      expect(snap.status).toBe(200);
+      const body = await snap.json() as {
+        tables: {
+          owners: unknown[];
+          businesses: Array<{ id: string }>;
+          services: Array<{ business_id: string }>;
+          bookings: Array<{ id: string; status: string; service_id: string }>;
+          stripe_events: Array<{ id: string; state: string }>;
+        };
+      };
+      expect(body.tables.owners).toHaveLength(1);
+      expect(body.tables.services[0]?.business_id).toBe(body.tables.businesses[0]?.id);
+      expect(body.tables.bookings[0]).toMatchObject({ id: booking.id, status: "confirmed", service_id: seeded.service.id });
+      expect(body.tables.stripe_events.filter((row) => row.id === "evt_populated" && row.state === "done")).toHaveLength(1);
+    } finally {
+      await populated.stop();
+    }
+  }, 120_000);
 });

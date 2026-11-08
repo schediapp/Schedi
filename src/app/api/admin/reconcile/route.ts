@@ -25,10 +25,13 @@ export async function POST(request: Request) {
   const events = Array.isArray(payload.events) ? payload.events : [];
   const plan = reconcileEvents(store, events);
   if (payload.apply !== true) return NextResponse.json({ ok: true, applied: false, ...plan });
-  const state = store.maintenance();
-  if (!state.frozen || state.admitted !== 0) {
+  if (!store.beginFrozenWrite()) {
     return NextResponse.json({ ok: false, error: "freeze_required", ...plan }, { status: 409 });
   }
-  const results = await applyMissingEvents(store, events, { config: connectConfigFromProcess() });
-  return NextResponse.json({ ok: true, applied: true, ...plan, results });
+  try {
+    const results = await applyMissingEvents(store, events, { config: connectConfigFromProcess() });
+    return NextResponse.json({ ok: true, applied: true, ...plan, results });
+  } finally {
+    store.releaseAdmit();
+  }
 }

@@ -466,6 +466,9 @@ async function postWebhook(request: Request, runtime: ConnectRuntime & { config:
   }
   if (!runtime.store.tryAdmit()) return maintenanceBody();
   try {
+    if (runtime.config.testDelayMs > 0) {
+      await new Promise((resolve) => setTimeout(resolve, runtime.config.testDelayMs));
+    }
     await applyStripeEvent(runtime.store, event, { config: runtime.config });
     return json({ received: true }, 200);
   } catch (error) {
@@ -539,6 +542,22 @@ async function adminMaintenance(request: Request, runtime: ConnectRuntime & { co
     return json({ ok: false, error: "Expected a JSON body." }, 400);
   }
   if (body.mode === "frozen") return json({ ok: true, ...runtime.store.freezeWriters() }, 200);
+  if (body.mode === "clear-admitted") {
+    if (request.headers.get("x-schedi-maintenance-confirm") !== "clear-stuck-admitted") {
+      return json({ ok: false, error: "confirm_clear_admitted" }, 409);
+    }
+    try {
+      const previous = runtime.store.clearStuckAdmitted();
+      return json({ ok: true, previous, ...runtime.store.maintenance() }, 200);
+    } catch (error) {
+      return json({ ok: false, error: errorMessage(error) }, error instanceof SchediError ? error.status : 409);
+    }
+  }
+  if (body.mode === "note-crash") {
+    if (runtime.config.nodeEnv === "production") return json({ ok: false, error: "not_found" }, 404);
+    runtime.store.noteCrashedAdmit();
+    return json({ ok: true, ...runtime.store.maintenance() }, 200);
+  }
   if (body.mode === "open") {
     if (request.headers.get("x-schedi-maintenance-confirm") !== "open-writers") {
       return json({ ok: false, error: "confirm_open_writers" }, 409);
@@ -569,12 +588,15 @@ async function adminReconcile(request: Request, runtime: ConnectRuntime & { conf
   const events = Array.isArray(payload.events) ? payload.events : [];
   const plan = reconcileEvents(runtime.store, events);
   if (payload.apply !== true) return json({ ok: true, applied: false, ...plan }, 200);
-  const state = runtime.store.maintenance();
-  if (!state.frozen || state.admitted !== 0) {
+  if (!runtime.store.beginFrozenWrite()) {
     return json({ ok: false, error: "freeze_required", ...plan }, 409);
   }
-  const results = await applyMissingEvents(runtime.store, events, { config: runtime.config });
-  return json({ ok: true, applied: true, ...plan, results }, 200);
+  try {
+    const results = await applyMissingEvents(runtime.store, events, { config: runtime.config });
+    return json({ ok: true, applied: true, ...plan, results }, 200);
+  } finally {
+    runtime.store.releaseAdmit();
+  }
 }
 
 async function adminBackfill(request: Request, runtime: ConnectRuntime & { config: ConnectConfig }): Promise<Response> {

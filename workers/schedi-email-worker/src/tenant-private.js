@@ -295,6 +295,19 @@ export function privateView(id, priv, role) {
   return out;
 }
 
+/**
+ * Same-second ready callbacks do not last-write-win.
+ * A newer observedAt may write. An equal observedAt with a different ready
+ * flag is a tie and must not overwrite. This is not exactly-once delivery.
+ */
+export function connectReadyDecision(previousObserved, previousReady, observedAt, ready) {
+  const previous = String(previousObserved || '');
+  const next = String(observedAt || '');
+  if (next && previous && previous > next) return 'stale';
+  if (next && previous && previous === next) return previousReady === ready ? 'idempotent' : 'tie';
+  return 'write';
+}
+
 export async function getPrivateTenant(env, tenantId) {
   const id = safeId(tenantId);
   if (!id) return null;
@@ -305,7 +318,9 @@ export async function getPrivateTenant(env, tenantId) {
   if (res.status === 404) return null;
   if (!res.ok) throw new Error('private_tenant_read_failed:' + res.status);
   const data = await res.json().catch(() => null);
-  return decodeDoc(data);
+  const decoded = decodeDoc(data);
+  if (decoded && data && data.updateTime) decoded.__updateTime = String(data.updateTime);
+  return decoded;
 }
 
 export async function listPrivateTenants(env) {
@@ -329,8 +344,15 @@ export async function listPrivateTenants(env) {
   return map;
 }
 
+export function privatePatchQuery(keys, updateTime) {
+  let qs = keys.map((k) => 'updateMask.fieldPaths=' + encodeURIComponent(k)).join('&');
+  const precondition = updateTime ? String(updateTime) : '';
+  if (precondition) qs += '&currentDocument.updateTime=' + encodeURIComponent(precondition);
+  return qs;
+}
+
 /** Merge-write private fields (only the keys given). Creates the doc if missing. */
-export async function patchPrivateTenant(env, tenantId, priv) {
+export async function patchPrivateTenant(env, tenantId, priv, options) {
   const id = safeId(tenantId);
   if (!id) throw new Error('invalid_tenant');
   const keys = Object.keys(priv || {}).filter((k) => priv[k] !== undefined && (PRIVATE_SET.has(k) || WORKER_ONLY_PRIVATE_KEYS.includes(k) || k === PRIVATE_REPLY_TO_KEY || k === SQUARE_CONNECTION_KEY));
@@ -340,7 +362,7 @@ export async function patchPrivateTenant(env, tenantId, priv) {
   body.tenantId = id;
   body.privateUpdatedAt = new Date().toISOString();
   const allKeys = Object.keys(body);
-  const qs = allKeys.map((k) => 'updateMask.fieldPaths=' + encodeURIComponent(k)).join('&');
+  const qs = privatePatchQuery(allKeys, options && options.updateTime);
   const fields = {};
   for (const k of allKeys) fields[k] = encodeValue(body[k]);
   const headers = await adminAuthHeaders(env);

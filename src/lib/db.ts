@@ -265,7 +265,8 @@ export class Store {
       CREATE TABLE IF NOT EXISTS state_fence (
         key TEXT PRIMARY KEY,
         observed_at TEXT NOT NULL,
-        event_id TEXT NOT NULL
+        event_id TEXT NOT NULL,
+        rank INTEGER NOT NULL DEFAULT 0
       );
       CREATE TABLE IF NOT EXISTS callback_outbox (
         id TEXT PRIMARY KEY,
@@ -284,6 +285,7 @@ export class Store {
       .run();
     ensureBusinessBillingColumns(this.db);
     ensureStripeEventState(this.db);
+    ensureFenceRank(this.db);
   }
 
   createOwner(input: { email: string; name: string; stripeCustomerId?: string | null }): Owner {
@@ -652,19 +654,20 @@ export class Store {
    * The row is marked done only after local writes and required callbacks finish.
    */
   claimStripeEvent(id: string, now = Date.now()): StripeEventClaim {
-    const at = new Date(now).toISOString();
-    const inserted = this.db
+    const at = `${new Date(now).toISOString()}#${crypto.randomUUID()}`;
+    this.db
       .prepare(
         `INSERT INTO stripe_events (id, processed_at, state)
          SELECT ?, ?, 'processing'
          WHERE NOT EXISTS (SELECT 1 FROM stripe_events WHERE id = ?)`,
       )
       .run(id, at, id);
-    if (inserted.changes === 1) return { status: "claimed", at };
     const row = this.db.prepare("SELECT state, processed_at FROM stripe_events WHERE id = ?").get(id) as
       | { state: string | null; processed_at: string }
       | undefined;
-    if (!row || row.state == null || row.state === "done") return { status: "done" };
+    if (!row) return { status: "inflight" };
+    if (row.state === "processing" && row.processed_at === at) return { status: "claimed", at };
+    if (row.state == null || row.state === "done") return { status: "done" };
     return { status: "inflight" };
   }
 
@@ -729,6 +732,38 @@ export class Store {
     };
   }
 
+  /** After a process or isolate restart, in-flight handlers are gone. */
+  recoverAdmittedAfterRestart(): number {
+    const previous = this.maintenance().admitted;
+    this.db.prepare("UPDATE maintenance SET admitted = 0 WHERE id = 1").run();
+    return previous;
+  }
+
+  /**
+   * One operator write while frozen and idle. Snapshot stays blocked until release.
+   * A second caller loses the compare-and-set.
+   */
+  beginFrozenWrite(): boolean {
+    const result = this.db
+      .prepare("UPDATE maintenance SET admitted = admitted + 1 WHERE id = 1 AND frozen = 1 AND admitted = 0")
+      .run();
+    return result.changes === 1;
+  }
+
+  /** Operator recovery when a crashed handler left admitted above zero. Requires freeze. */
+  clearStuckAdmitted(): number {
+    const state = this.maintenance();
+    if (!state.frozen) throw new SchediError("Clear the writer count only while frozen.", 409);
+    const previous = state.admitted;
+    this.db.prepare("UPDATE maintenance SET admitted = 0 WHERE id = 1 AND frozen = 1").run();
+    return previous;
+  }
+
+  /** Test-only stuck counter. Production maintenance does not call this. */
+  noteCrashedAdmit(): void {
+    this.db.prepare("UPDATE maintenance SET admitted = admitted + 1 WHERE id = 1").run();
+  }
+
   /** Admit one writer. False means the database is frozen and this request must not write. */
   tryAdmit(): boolean {
     const result = this.db.prepare("UPDATE maintenance SET admitted = admitted + 1 WHERE id = 1 AND frozen = 0").run();
@@ -752,26 +787,51 @@ export class Store {
   }
 
   /**
-   * Latest-state fence. A newer observation wins. The same event may retry.
-   * An older or different event at the same timestamp does not overwrite.
+   * One conditional write. A later second wins. At the same second a higher
+   * event rank wins, so subscription.deleted beats subscription.updated.
+   * The same event id may retry. A different event with the same second and
+   * rank does not overwrite. This is not exactly-once for the external callback.
    */
-  fenceDecision(key: string, observedAt: string, eventId: string): "apply" | "retry" | "stale" {
-    const row = this.db.prepare("SELECT observed_at, event_id FROM state_fence WHERE key = ?").get(key) as
-      | { observed_at: string; event_id: string }
+  advanceFence(key: string, observedAt: string, eventId: string, rank = 0): "apply" | "retry" | "stale" {
+    const before = this.db.prepare("SELECT observed_at, event_id, rank FROM state_fence WHERE key = ?").get(key) as
+      | { observed_at: string; event_id: string; rank: number | null }
+      | undefined;
+    const result = this.db
+      .prepare(
+        `INSERT INTO state_fence (key, observed_at, event_id, rank)
+         VALUES (?, ?, ?, ?)
+         ON CONFLICT(key) DO UPDATE SET
+           observed_at = excluded.observed_at,
+           event_id = excluded.event_id,
+           rank = excluded.rank
+         WHERE state_fence.observed_at < excluded.observed_at
+            OR (state_fence.observed_at = excluded.observed_at AND state_fence.rank < excluded.rank)
+            OR (
+              state_fence.observed_at = excluded.observed_at
+              AND state_fence.rank = excluded.rank
+              AND state_fence.event_id = excluded.event_id
+            )`,
+      )
+      .run(key, observedAt, eventId, rank);
+    if (result.changes !== 1) return "stale";
+    if (before && before.event_id === eventId) return "retry";
+    return "apply";
+  }
+
+  fenceDecision(key: string, observedAt: string, eventId: string, rank = 0): "apply" | "retry" | "stale" {
+    const row = this.db.prepare("SELECT observed_at, event_id, rank FROM state_fence WHERE key = ?").get(key) as
+      | { observed_at: string; event_id: string; rank: number | null }
       | undefined;
     if (!row) return "apply";
+    const storedRank = Number(row.rank || 0);
     if (observedAt > row.observed_at) return "apply";
-    if (observedAt === row.observed_at && row.event_id === eventId) return "retry";
+    if (observedAt === row.observed_at && rank > storedRank) return "apply";
+    if (observedAt === row.observed_at && rank === storedRank && row.event_id === eventId) return "retry";
     return "stale";
   }
 
-  commitFence(key: string, observedAt: string, eventId: string): void {
-    const existing = this.db.prepare("SELECT key FROM state_fence WHERE key = ?").get(key);
-    if (!existing) {
-      this.db.prepare("INSERT INTO state_fence (key, observed_at, event_id) VALUES (?, ?, ?)").run(key, observedAt, eventId);
-      return;
-    }
-    this.db.prepare("UPDATE state_fence SET observed_at = ?, event_id = ? WHERE key = ?").run(observedAt, eventId, key);
+  commitFence(key: string, observedAt: string, eventId: string, rank = 0): void {
+    this.advanceFence(key, observedAt, eventId, rank);
   }
 
   beginOutbox(id: string, kind: string, payload: string, observedAt: string | null, now = new Date().toISOString()): "pending" | "sent" {
@@ -844,6 +904,14 @@ export class Store {
 
   deleteSession(token: string): void {
     this.db.prepare("DELETE FROM sessions WHERE token = ?").run(token);
+  }
+}
+
+function ensureFenceRank(db: SqlDatabase): void {
+  const rows = db.prepare("PRAGMA table_info(state_fence)").all() as { name: string }[];
+  const names = new Set(rows.map((row) => row.name));
+  if (!names.has("rank")) {
+    db.exec("ALTER TABLE state_fence ADD COLUMN rank INTEGER NOT NULL DEFAULT 0");
   }
 }
 

@@ -5,7 +5,9 @@ import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { exportStripeMigrationSet } from "../src/lib/stripe-export";
 import { withReadRefresh } from "../src/lib/request-gate";
 import { openStore } from "../src/lib/node-sqlite";
+import { applyMissingEvents } from "../src/lib/reconcile";
 import { applyStripeEvent } from "../src/lib/webhooks";
+import { memoryStore, seedProBusiness } from "./helpers";
 import { DatabaseSync } from "node:sqlite";
 
 const cookieJar = vi.hoisted(() => new Map<string, string>());
@@ -210,7 +212,90 @@ describe("schema compatibility and crash recovery", () => {
     await applyStripeEvent(store, event as never);
     expect(store.hasStripeEvent(event.id)).toBe(true);
   });
+
+  it("lets a same-second subscription deletion beat an update, and not the reverse", async () => {
+    const created = 1_700_000_100;
+    const forward = memoryStore();
+    const first = seedProBusiness(forward, { stripeSubscriptionId: "sub_same" });
+    const updated = subscriptionEvent("evt_updated", "customer.subscription.updated", created, first.owner.id, "active");
+    const deleted = subscriptionEvent("evt_deleted", "customer.subscription.deleted", created, first.owner.id, "canceled");
+    await applyMissingEvents(forward, [deleted, updated]);
+    expect(forward.getBusinessByOwner(first.owner.id)?.subscriptionStatus).toBe("canceled");
+
+    const reverse = memoryStore();
+    const second = seedProBusiness(reverse, { stripeSubscriptionId: "sub_same" });
+    await applyStripeEvent(reverse, updatedFor(second.owner.id) as never);
+    await applyStripeEvent(reverse, deletedFor(second.owner.id) as never);
+    expect(reverse.getBusinessByOwner(second.owner.id)?.subscriptionStatus).toBe("canceled");
+    await applyStripeEvent(reverse, updatedFor(second.owner.id) as never);
+    expect(reverse.getBusinessByOwner(second.owner.id)?.subscriptionStatus).toBe("canceled");
+  });
+
+  it("keeps a frozen reconcile admitted until the async apply finishes", async () => {
+    const store = memoryStore();
+    store.freezeWriters();
+    let releaseGate: () => void = () => {};
+    const gate = new Promise<void>((resolve) => {
+      releaseGate = resolve;
+    });
+    const running = (async () => {
+      expect(store.beginFrozenWrite()).toBe(true);
+      await gate;
+      store.releaseAdmit();
+    })();
+    expect(store.beginFrozenWrite()).toBe(false);
+    expect(store.maintenance().admitted).toBe(1);
+    releaseGate();
+    await running;
+    expect(store.maintenance().admitted).toBe(0);
+  });
+
+  it("clears a crash-stuck admitted count only while frozen", () => {
+    const store = memoryStore();
+    store.noteCrashedAdmit();
+    expect(() => store.clearStuckAdmitted()).toThrow(/frozen/);
+    store.freezeWriters();
+    expect(store.clearStuckAdmitted()).toBe(1);
+    expect(store.maintenance().admitted).toBe(0);
+    store.tryAdmit();
+    expect(store.recoverAdmittedAfterRestart()).toBe(0);
+    store.openWriters();
+    store.tryAdmit();
+    expect(store.recoverAdmittedAfterRestart()).toBe(1);
+    expect(store.maintenance().admitted).toBe(0);
+  });
 });
+
+function subscriptionEvent(
+  id: string,
+  type: string,
+  created: number,
+  ownerId: string,
+  status: string,
+) {
+  return {
+    id,
+    type,
+    created,
+    data: {
+      object: {
+        id: "sub_same",
+        object: "subscription",
+        status,
+        customer: "cus_same",
+        metadata: { schedi_owner_id: ownerId, plan: "pro" },
+      },
+    },
+  };
+}
+
+function updatedFor(ownerId: string) {
+  return subscriptionEvent("evt_updated", "customer.subscription.updated", 1_700_000_100, ownerId, "active");
+}
+
+function deletedFor(ownerId: string) {
+  return subscriptionEvent("evt_deleted", "customer.subscription.deleted", 1_700_000_100, ownerId, "canceled");
+}
 
 describe("stripe export pagination", () => {
   it("keeps connected-account events separate from platform events", async () => {
@@ -236,5 +321,23 @@ describe("stripe export pagination", () => {
     expect(exported.platformEvents.map((event) => event.id)).toEqual(["evt_platform"]);
     expect(exported.connectEvents[0]).toMatchObject({ id: "evt_connect", account: "acct_one" });
     expect(exported.platformEvents[0]?.account).toBeNull();
+  });
+
+  it("follows a v2 next_page_url and does not send starting_after for accounts", async () => {
+    const calls: string[] = [];
+    const exported = await exportStripeMigrationSet({
+      get: async (path) => {
+        calls.push(path);
+        if (path === "/v2/core/accounts?limit=100") {
+          return { data: [{ id: "acct_page" }], next_page_url: "/v2/core/accounts?page=cursor-2" };
+        }
+        if (path === "/v2/core/accounts?page=cursor-2") {
+          return { data: [{ id: "acct_last" }], next_page_url: null };
+        }
+        return { data: [], has_more: false };
+      },
+    });
+    expect(exported.accountIds).toEqual(["acct_page", "acct_last"]);
+    expect(calls.some((path) => path.includes("starting_after"))).toBe(false);
   });
 });

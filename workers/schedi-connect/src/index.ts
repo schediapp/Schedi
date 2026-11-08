@@ -53,6 +53,8 @@ function runtimeEnv(env: ConnectEnv): Record<string, string | undefined> {
 
 /** Single-writer Connect database. The name is fixed so every request shares one SQLite. */
 export class ConnectDatabase {
+  private recovered = false;
+
   constructor(
     private readonly ctx: ConnectContext,
     private readonly env: ConnectEnv,
@@ -61,6 +63,10 @@ export class ConnectDatabase {
   async fetch(request: Request): Promise<Response> {
     const config = connectConfigFrom(runtimeEnv(this.env));
     const store = new Store(new DurableObjectSql(this.ctx.storage.sql, this.ctx.storage));
+    if (!this.recovered) {
+      this.recovered = true;
+      store.recoverAdmittedAfterRestart();
+    }
     const stripe = config.stripeSecretKey ? createStripeClient(config.stripeSecretKey) : null;
     return handleConnectRequest(request, { store, config, stripe });
   }

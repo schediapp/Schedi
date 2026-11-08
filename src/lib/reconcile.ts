@@ -1,5 +1,5 @@
 import type { StripeEventDeps } from "./webhooks.ts";
-import { applyStripeEvent } from "./webhooks.ts";
+import { applyStripeEvent, stripeEventRank } from "./webhooks.ts";
 import type { Store } from "./db.ts";
 export { diffSnapshotKeys } from "./snapshot-diff.ts";
 import type Stripe from "stripe";
@@ -74,7 +74,14 @@ export async function applyMissingEvents(
 ): Promise<Array<{ id: string; status: string }>> {
   const missing = new Set(reconcileEvents(store, events).missingIds);
   const results: Array<{ id: string; status: string }> = [];
-  for (const event of events) {
+  const ordered = events.slice().sort((left, right) => {
+    const created = Number(left.created || 0) - Number(right.created || 0);
+    if (created !== 0) return created;
+    const rank = stripeEventRank(left.type) - stripeEventRank(right.type);
+    if (rank !== 0) return rank;
+    return left.id < right.id ? -1 : left.id > right.id ? 1 : 0;
+  });
+  for (const event of ordered) {
     if (!missing.has(event.id)) continue;
     try {
       await applyStripeEvent(store, event as unknown as Stripe.Event, deps);

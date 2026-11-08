@@ -15,6 +15,15 @@ export interface StripeEventDeps {
   config?: ConnectConfig;
 }
 
+/** Same-second cross-type order. A higher rank wins. Same rank stays first-writer. */
+export function stripeEventRank(type: string): number {
+  if (type === "customer.subscription.deleted") return 30;
+  if (type === "customer.subscription.updated") return 20;
+  if (type === "invoice.payment_failed") return 10;
+  if (type === "account.updated") return 10;
+  return 0;
+}
+
 function observedAtFor(event: Stripe.Event, now?: number): string {
   if (typeof event.created === "number" && Number.isFinite(event.created)) {
     return new Date(event.created * 1000).toISOString();
@@ -107,7 +116,7 @@ async function applyConnectedEvent(store: Store, event: Stripe.Event, deps?: Str
       if (!business) return;
       const observedAt = observedAtFor(event, deps?.now);
       const fenceKey = `account:${accountId}`;
-      const decision = store.fenceDecision(fenceKey, observedAt, event.id);
+      const decision = store.advanceFence(fenceKey, observedAt, event.id, stripeEventRank(event.type));
       if (decision === "stale") return;
       const ready = connectedChargesEnabled(account);
       const statuses = readCapabilityStatuses(account);
@@ -115,10 +124,7 @@ async function applyConnectedEvent(store: Store, event: Stripe.Event, deps?: Str
         statuses.cardPaymentsStatus = "active";
       }
       if (account.charges_enabled === false) statuses.cardPaymentsStatus = "inactive";
-      if (decision === "apply") {
-        store.setCapabilities(business.id, statuses);
-        store.commitFence(fenceKey, observedAt, event.id);
-      }
+      if (decision === "apply") store.setCapabilities(business.id, statuses);
       await deliverConnectReady(store, event, business.slug, ready, observedAt, deps);
       return;
     }
@@ -183,10 +189,9 @@ function applyPlatformEvent(store: Store, event: Stripe.Event, deps?: StripeEven
       if (subscription.status === "canceled") return;
       const observedAt = observedAtFor(event, deps?.now);
       const fenceKey = `subscription:${subscription.id}`;
-      const decision = store.fenceDecision(fenceKey, observedAt, event.id);
+      const decision = store.advanceFence(fenceKey, observedAt, event.id, stripeEventRank(event.type));
       if (decision === "stale" || decision === "retry") return;
       applySubscriptionState(store, ownerId, subscription);
-      store.commitFence(fenceKey, observedAt, event.id);
       return;
     }
     case "customer.subscription.deleted": {
@@ -195,14 +200,13 @@ function applyPlatformEvent(store: Store, event: Stripe.Event, deps?: StripeEven
       if (!ownerId) return;
       const observedAt = observedAtFor(event, deps?.now);
       const fenceKey = `subscription:${subscription.id}`;
-      const decision = store.fenceDecision(fenceKey, observedAt, event.id);
+      const decision = store.advanceFence(fenceKey, observedAt, event.id, stripeEventRank(event.type));
       if (decision === "stale" || decision === "retry") return;
       applySubscriptionState(store, ownerId, {
         ...subscription,
         status: "canceled",
         cancel_at_period_end: false,
       });
-      store.commitFence(fenceKey, observedAt, event.id);
       return;
     }
     case "invoice.payment_failed": {
@@ -213,10 +217,9 @@ function applyPlatformEvent(store: Store, event: Stripe.Event, deps?: StripeEven
       if (!owner) return;
       const observedAt = observedAtFor(event, deps?.now);
       const fenceKey = `invoice:${customerId}`;
-      const decision = store.fenceDecision(fenceKey, observedAt, event.id);
+      const decision = store.advanceFence(fenceKey, observedAt, event.id, stripeEventRank(event.type));
       if (decision === "stale" || decision === "retry") return;
       store.setSubscription(owner.id, { status: "past_due" });
-      store.commitFence(fenceKey, observedAt, event.id);
       return;
     }
     default:
