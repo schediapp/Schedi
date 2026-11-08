@@ -754,7 +754,11 @@ export class Store {
     return result.changes === 1;
   }
 
-  /** Operator recovery when a crashed handler left admitted above zero. Requires freeze. */
+  /**
+   * Operator override when a crashed handler left admitted above zero.
+   * Requires freeze. It does not check that the old handler is gone, so a
+   * clear while that handler is still running lets a snapshot pass.
+   */
   clearStuckAdmitted(): number {
     const state = this.maintenance();
     if (!state.frozen) throw new SchediError("Clear the writer count only while frozen.", 409);

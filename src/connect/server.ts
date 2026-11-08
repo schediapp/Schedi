@@ -548,7 +548,13 @@ async function adminMaintenance(request: Request, runtime: ConnectRuntime & { co
     }
     try {
       const previous = runtime.store.clearStuckAdmitted();
-      return json({ ok: true, previous, ...runtime.store.maintenance() }, 200);
+      return json({
+        ok: true,
+        previous,
+        ...runtime.store.maintenance(),
+        clearAdmitted: "override",
+        requires: "Record that this process was restarted or the isolate was torn down before clearing. The host must be frozen and one operator runs this. It does not prove a live handler has finished, and clearing it can let a snapshot pass while that handler still writes.",
+      }, 200);
     } catch (error) {
       return json({ ok: false, error: errorMessage(error) }, error instanceof SchediError ? error.status : 409);
     }

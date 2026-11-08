@@ -1,8 +1,8 @@
-import { mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
-import { exportStripeMigrationSet } from "../src/lib/stripe-export";
+import { exportAndSaveStripeMigrationSet, exportStripeMigrationSet, IncompleteStripeExport } from "../src/lib/stripe-export";
 import { withReadRefresh } from "../src/lib/request-gate";
 import { openStore } from "../src/lib/node-sqlite";
 import { applyMissingEvents } from "../src/lib/reconcile";
@@ -417,5 +417,66 @@ describe("stripe export pagination", () => {
     });
     expect(exported.accountIds).toEqual(["acct_page", "acct_last"]);
     expect(calls.some((path) => path.includes("starting_after"))).toBe(false);
+  });
+
+  it("rejects a repeated v2 cursor, a v1 cursor that does not advance, and a page budget with another page left", async () => {
+    const directory = mkdtempSync(join(tmpdir(), "stripe-export-"));
+    const file = join(directory, "events.json");
+    const accounts = "/v2/core/accounts?limit=100";
+    await expect(exportAndSaveStripeMigrationSet({
+      get: async (path) => {
+        if (path === accounts) return { data: [{ id: "acct_self" }], next_page_url: accounts };
+        return { data: [], has_more: false };
+      },
+    }, file)).rejects.toBeInstanceOf(IncompleteStripeExport);
+    expect(existsSync(file)).toBe(false);
+
+    await expect(exportStripeMigrationSet({
+      get: async (path) => {
+        if (path === accounts) return { data: [{ id: "acct_a" }], next_page_url: "/v2/core/accounts?page=b" };
+        if (path === "/v2/core/accounts?page=b") return { data: [{ id: "acct_b" }], next_page_url: accounts };
+        return { data: [], has_more: false };
+      },
+    })).rejects.toThrow(/cursor repeated/);
+
+    await expect(exportStripeMigrationSet({
+      get: async () => ({ data: [{ id: "evt_same", type: "account.updated", created: 1, data: { object: {} } }], has_more: true }),
+    })).rejects.toThrow(/did not advance/);
+
+    await expect(exportStripeMigrationSet({
+      get: async () => ({ data: [], has_more: true }),
+    })).rejects.toThrow(/did not advance/);
+
+    let page = 0;
+    await expect(exportStripeMigrationSet({
+      get: async () => {
+        page += 1;
+        return { data: [{ id: "evt_" + page, type: "account.updated", created: page, data: { object: {} } }], has_more: true };
+      },
+    }, undefined, { maxPages: 2 })).rejects.toThrow(/page limit/);
+
+    const listed = await exportStripeMigrationSet({
+      get: async (path) => {
+        if (path === accounts) {
+          return { data: [{ id: "acct_one" }], next_page_url: "https://api.stripe.com/v2/core/accounts?page=next" };
+        }
+        if (path === "/v2/core/accounts?page=next") return { data: [{ id: "acct_two" }], next_page_url: null };
+        return { data: [], has_more: false };
+      },
+    });
+    expect(listed.accountIds).toEqual(["acct_one", "acct_two"]);
+    await expect(exportStripeMigrationSet({
+      get: async (path) => path === accounts
+        ? { data: [{ id: "acct_one" }], next_page_url: "https://evil.example/v2/core/accounts?page=x" }
+        : { data: [], has_more: false },
+    })).rejects.toThrow(/did not advance/);
+
+    const done = await exportAndSaveStripeMigrationSet({
+      get: async (path) => path.includes("starting_after=evt_1")
+        ? { data: [{ id: "evt_2", type: "invoice.payment_failed", created: 2, data: { object: { customer: "cus" } } }], has_more: false }
+        : { data: [{ id: "evt_1", type: "account.updated", created: 1, data: { object: {} } }], has_more: true },
+    }, file, undefined, { maxPages: 2 });
+    expect(done.platformEvents.map((event) => event.id)).toEqual(["evt_1", "evt_2"]);
+    expect(JSON.parse(readFileSync(file, "utf8")).complete).toBe(true);
   });
 });

@@ -436,6 +436,40 @@ describe("connect worker routes", () => {
     expect(refused.status).toBe(409);
   });
 
+  it("lets clear-admitted pass a snapshot without proving the old handler died", async () => {
+    const store = memoryStore();
+    const env = { SCHEDI_MIGRATION_SECRET: "migration-secret", NODE_ENV: "test" };
+    const headers = { "x-schedi-migration-secret": "migration-secret", "content-type": "application/json" };
+    await handleConnectRequest(new Request("https://connect.test/api/admin/maintenance", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ mode: "frozen" }),
+    }), { store, env });
+    await handleConnectRequest(new Request("https://connect.test/api/admin/maintenance", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ mode: "note-crash" }),
+    }), { store, env });
+    const blocked = await handleConnectRequest(new Request("https://connect.test/api/admin/sqlite-snapshot", {
+      headers: { "x-schedi-migration-secret": "migration-secret" },
+    }), { store, env });
+    expect(blocked.status).toBe(409);
+    const cleared = await handleConnectRequest(new Request("https://connect.test/api/admin/maintenance", {
+      method: "POST",
+      headers: { ...headers, "x-schedi-maintenance-confirm": "clear-stuck-admitted" },
+      body: JSON.stringify({ mode: "clear-admitted" }),
+    }), { store, env });
+    expect(cleared.status).toBe(200);
+    const body = await cleared.json() as { clearAdmitted?: string; requires?: string; admitted?: number };
+    expect(body.clearAdmitted).toBe("override");
+    expect(body.requires).toContain("does not prove a live handler has finished");
+    expect(body.admitted).toBe(0);
+    const snap = await handleConnectRequest(new Request("https://connect.test/api/admin/sqlite-snapshot", {
+      headers: { "x-schedi-migration-secret": "migration-secret" },
+    }), { store, env });
+    expect(snap.status).toBe(200);
+  });
+
   it("sets an HttpOnly session and keeps the handoff token out of the document", async () => {
     const store = memoryStore();
     const body = new URLSearchParams({

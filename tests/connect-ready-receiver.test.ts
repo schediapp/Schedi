@@ -89,6 +89,33 @@ describe("connect ready receiver", () => {
     expect(doc).toMatchObject({ observedAt: NEWER, ready: true });
   });
 
+  it("repairs a public projection that does not match the private observation", async () => {
+    let writes = 0;
+    const result = await applyConnectReadyWrite({
+      observedAt: NEWER,
+      ready: true,
+      statusText: "ready",
+      read: async () => ({
+        privateObservedAt: NEWER,
+        privateStatus: "ready",
+        privateUpdateTime: "private-1",
+        privateExists: true,
+        publicReady: false,
+        publicObservedAt: OLDER,
+        publicUpdateTime: "public-1",
+        publicExists: true,
+      }),
+      write: async (next: { repair?: boolean; create?: boolean; publicUpdateTime?: string }) => {
+        writes += 1;
+        expect(next.repair).toBe(true);
+        expect(next.create).toBe(false);
+        expect(next.publicUpdateTime).toBe("public-1");
+      },
+    });
+    expect(result).toMatchObject({ ok: true, ready: true });
+    expect(writes).toBe(1);
+  });
+
   it("reloads after a lost create and keeps the observation that landed first", async () => {
     let landed = false;
     const result = await applyConnectReadyWrite({

@@ -304,6 +304,7 @@ export function validObservedAt(value) {
 /**
  * A blank or non-ISO observation is rejected. A newer ISO time may write.
  * An equal time with a different ready flag is a tie. This is not exactly-once.
+ * The format check is the producer's toISOString shape, not calendar normalization.
  */
 export function connectReadyDecision(previousObserved, previousReady, observedAt, ready) {
   const next = String(observedAt || '').trim();
@@ -313,6 +314,60 @@ export function connectReadyDecision(previousObserved, previousReady, observedAt
   if (previous && previous > next) return 'stale';
   if (previous && previous === next) return previousReady === ready ? 'idempotent' : 'tie';
   return 'write';
+}
+
+function readyView(current) {
+  if (!current) return null;
+  if (current.privateLoadFailed === true) {
+    return { privateLoadFailed: true };
+  }
+  const explicit = current.privateObservedAt != null || current.publicUpdateTime != null || current.privateExists != null || current.publicExists != null;
+  const privateObservedAt = String(current.privateObservedAt != null ? current.privateObservedAt : (current.observedAt || ''));
+  const privateStatus = String(current.privateStatus != null ? current.privateStatus : (current.statusText || ''));
+  const privateUpdateTime = String(current.privateUpdateTime != null ? current.privateUpdateTime : (current.updateTime || ''));
+  const privateExists = current.privateExists != null ? current.privateExists === true : Boolean(privateUpdateTime || privateObservedAt);
+  const publicUpdateTime = String(current.publicUpdateTime != null ? current.publicUpdateTime : (explicit ? '' : (current.updateTime || '')));
+  const publicObservedAt = String(current.publicObservedAt != null ? current.publicObservedAt : (explicit ? '' : privateObservedAt));
+  const publicReady = current.publicReady != null ? current.publicReady === true : (!explicit && current.ready === true);
+  const publicExists = current.publicExists != null ? current.publicExists === true : (!explicit || Boolean(publicUpdateTime));
+  return {
+    privateLoadFailed: false,
+    explicit,
+    privateObservedAt,
+    privateStatus,
+    privateUpdateTime,
+    privateExists,
+    publicReady,
+    publicObservedAt,
+    publicUpdateTime,
+    publicExists,
+  };
+}
+
+function projectionMatches(view, observedAt, ready) {
+  return view.publicExists === true && view.publicReady === ready && view.publicObservedAt === observedAt;
+}
+
+/** Canonical private observation, plus whether the public projection still matches it. */
+export function connectReadyPlan(current, observedAt, ready) {
+  const next = String(observedAt || '').trim();
+  if (!validObservedAt(next)) return { action: 'reject' };
+  const view = readyView(current);
+  if (!view) return { action: 'missing' };
+  if (view.privateLoadFailed) return { action: 'unread' };
+  if (view.privateObservedAt && !validObservedAt(view.privateObservedAt)) return { action: 'reject' };
+  const canonicalReady = view.privateExists && view.privateStatus ? view.privateStatus === 'ready' : null;
+  if (view.privateObservedAt && view.privateObservedAt > next) {
+    return { action: 'stale', ready: canonicalReady === true, statusText: view.privateStatus || '' };
+  }
+  if (view.privateObservedAt && view.privateObservedAt === next) {
+    if (canonicalReady === ready && projectionMatches(view, next, ready)) {
+      return { action: 'idempotent', ready, statusText: view.privateStatus || '' };
+    }
+    if (canonicalReady === ready) return { action: 'repair' };
+    return { action: 'tie' };
+  }
+  return { action: 'write' };
 }
 
 function readyConflict(error) {
@@ -329,22 +384,33 @@ export async function applyConnectReadyWrite(input) {
   if (!validObservedAt(observedAt)) return { ok: false, status: 400, error: 'observed_at_required' };
   for (let attempt = 0; attempt < 3; attempt += 1) {
     const current = await input.read();
-    if (!current) return { ok: false, status: 404, error: 'tenant_not_found' };
-    if (current.privateLoadFailed) return { ok: false, status: 503, error: 'private_read_failed' };
-    const decision = connectReadyDecision(current.observedAt, current.ready === true, observedAt, ready);
-    if (decision === 'reject') return { ok: false, status: 400, error: 'observed_at_required' };
-    if (decision === 'stale' || decision === 'idempotent') {
-      return { ok: true, status: 200, stale: decision === 'stale', ready: current.ready === true, statusText: current.statusText || '' };
+    const view = readyView(current);
+    const plan = connectReadyPlan(current, observedAt, ready);
+    if (plan.action === 'missing') return { ok: false, status: 404, error: 'tenant_not_found' };
+    if (plan.action === 'unread') return { ok: false, status: 503, error: 'private_read_failed' };
+    if (plan.action === 'reject') return { ok: false, status: 400, error: 'observed_at_required' };
+    if (plan.action === 'stale' || plan.action === 'idempotent') {
+      return { ok: true, status: 200, stale: plan.action === 'stale', ready: plan.ready === true, statusText: plan.statusText || '' };
     }
-    if (decision === 'tie') return { ok: false, status: 409, error: 'observed_tie' };
-    if (current.observedAt && !current.updateTime) return { ok: false, status: 503, error: 'private_read_failed' };
+    if (plan.action === 'tie') return { ok: false, status: 409, error: 'observed_tie' };
+    if (view && view.explicit && view.privateExists && !view.privateUpdateTime) {
+      return { ok: false, status: 503, error: 'private_read_failed' };
+    }
+    if (view && view.explicit && view.publicExists && !view.publicUpdateTime) {
+      return { ok: false, status: 503, error: 'private_read_failed' };
+    }
     try {
       await input.write({
         observedAt,
         ready,
         statusText: input.statusText,
-        updateTime: current.updateTime || '',
-        create: !current.updateTime,
+        updateTime: view ? view.privateUpdateTime : '',
+        privateUpdateTime: view ? view.privateUpdateTime : '',
+        publicUpdateTime: view ? view.publicUpdateTime : '',
+        create: !(view && view.privateUpdateTime),
+        createPrivate: !(view && view.privateUpdateTime),
+        createPublic: Boolean(view && view.explicit && !view.publicUpdateTime),
+        repair: plan.action === 'repair',
       });
       return { ok: true, status: 200, stale: false, ready, statusText: input.statusText };
     } catch (error) {
@@ -354,6 +420,56 @@ export async function applyConnectReadyWrite(input) {
     }
   }
   return { ok: false, status: 409, error: 'ready_conflict' };
+}
+
+function firestoreWrite(name, fields, precondition) {
+  const encoded = {};
+  const paths = [];
+  for (const key of Object.keys(fields || {})) {
+    if (fields[key] === undefined) continue;
+    encoded[key] = encodeValue(fields[key]);
+    paths.push(key);
+  }
+  const write = { update: { name, fields: encoded }, updateMask: { fieldPaths: paths } };
+  if (precondition && precondition.exists === false) write.currentDocument = { exists: false };
+  else if (precondition && precondition.updateTime) write.currentDocument = { updateTime: String(precondition.updateTime) };
+  else throw new Error('ready_precondition_required');
+  return write;
+}
+
+/** One commit body for the private observation and the public ready projection. */
+export function connectReadyCommitBody(projectId, appId, tenantId, privateFields, publicFields, privatePrecondition, publicPrecondition) {
+  const base = 'projects/' + projectId + '/databases/(default)/documents/artifacts/' + appId;
+  return {
+    writes: [
+      firestoreWrite(base + '/private/data/tenants/' + tenantId, privateFields, privatePrecondition),
+      firestoreWrite(base + '/public/data/tenants/' + tenantId, publicFields, publicPrecondition),
+    ],
+  };
+}
+
+/**
+ * Firestore documents:commit applies every write or none. The public flag is
+ * not a second request. A lost response is retried against the preconditions.
+ */
+export async function commitConnectReadyPair(env, tenantId, privateFields, publicFields, privatePrecondition, publicPrecondition) {
+  const id = safeId(tenantId);
+  if (!id) throw new Error('invalid_tenant');
+  const { projectId, appId } = projectBits(env);
+  const body = connectReadyCommitBody(projectId, appId, id, privateFields, publicFields, privatePrecondition, publicPrecondition);
+  const headers = await adminAuthHeaders(env);
+  const res = await fetch(docsRoot(env) + ':commit', {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    const conflict = res.status === 409 || text.indexOf('FAILED_PRECONDITION') >= 0 || text.indexOf('ABORTED') >= 0;
+    if (conflict) throw new Error('ready_commit_conflict:409');
+    throw new Error('ready_commit_failed:' + res.status);
+  }
+  return { ok: true };
 }
 
 export async function getPrivateTenant(env, tenantId) {

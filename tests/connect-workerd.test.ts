@@ -19,6 +19,7 @@ function start(objectName: string) {
   return unstable_dev("workers/schedi-connect/src/index.ts", {
     config: "workers/schedi-connect/wrangler.jsonc",
     local: true,
+    // Matches wrangler.jsonc. workerd 1.20260926.1 rejects a later date.
     compatibilityDate: "2026-10-03",
     port: 0,
     inspectorPort: 0,

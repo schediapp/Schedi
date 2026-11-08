@@ -54,6 +54,7 @@ import {
   mergePrivateInto,
   getPrivateTenant,
   applyConnectReadyWrite,
+  commitConnectReadyPair,
   listPrivateTenants,
   patchPrivateTenant,
 } from './tenant-private.js';
@@ -545,17 +546,26 @@ async function getTenantById(env, idToken, tenantId) {
   const tenant = {};
   for (const k of Object.keys(fields)) tenant[k] = decodeFirestoreValue(fields[k]);
   if (!tenant.id) tenant.id = tenantId;
+  const publicReady = tenant.stripeConnectReady === true;
+  const publicObservedAt = typeof tenant.stripeConnectObservedAt === 'string' ? tenant.stripeConnectObservedAt : '';
+  const publicUpdateTime = data && data.updateTime ? String(data.updateTime) : '';
   // Owner contact + billing fields live in the private doc (Admin-only). Merge them back for worker use.
   try {
     const priv = await getPrivateTenant(env, String(tenantId));
     if (priv) {
       mergePrivateInto(tenant, priv);
+      tenant.__privateExists = true;
       if (priv.__updateTime) tenant.__privateUpdateTime = priv.__updateTime;
+    } else {
+      tenant.__privateExists = false;
     }
   } catch (err) {
     console.warn('private tenant read failed', err && err.message ? err.message : err);
     tenant.__privateLoadFailed = true;
   }
+  tenant.__publicReady = publicReady;
+  tenant.__publicObservedAt = publicObservedAt;
+  tenant.__publicUpdateTime = publicUpdateTime;
   return hydrateTenantBookings(env, idToken, tenant);
 }
 
@@ -1197,6 +1207,17 @@ async function stripeRequest(env, path, { method, params, extraHeaders } = {}) {
 async function patchTenantFields(env, idToken, tenantId, rawPatch, options) {
   // Billing fields go to the private doc. The public doc keeps booking-page fields only.
   const shaped = shapePublicPatch(rawPatch || {});
+  if (options && options.pair === true) {
+    const observedAt = String((rawPatch && rawPatch.stripeConnectObservedAt) || '');
+    await commitConnectReadyPair(env, tenantId, Object.assign({}, shaped.priv, {
+      tenantId: tenantId,
+      privateUpdatedAt: new Date().toISOString(),
+    }), {
+      stripeConnectReady: rawPatch && rawPatch.stripeConnectReady === true,
+      stripeConnectObservedAt: observedAt,
+    }, options.privatePrecondition, options.publicPrecondition);
+    return;
+  }
   if (Object.keys(shaped.priv).length) await patchPrivateTenant(env, tenantId, shaped.priv, options);
   const keys = Object.keys(shaped.pub).filter((k) => shaped.pub[k] !== undefined);
   const mask = keys.concat(shaped.drop || []);
@@ -3094,18 +3115,26 @@ async function handleConnectReady(request, env, origin) {
     read: async () => {
       const current = await getTenantById(env, idToken, slug);
       if (!current) return null;
+      const privateExists = current.__privateExists === true;
       return {
-        observedAt: current.stripeConnectObservedAt,
-        ready: current.stripeConnectReady === true,
-        statusText: current.stripeConnectStatus || '',
-        updateTime: current.__privateUpdateTime || '',
+        privateObservedAt: privateExists ? (current.stripeConnectObservedAt || '') : '',
+        privateStatus: privateExists ? (current.stripeConnectStatus || '') : '',
+        privateUpdateTime: current.__privateUpdateTime || '',
+        privateExists,
+        publicReady: current.__publicReady === true,
+        publicObservedAt: current.__publicObservedAt || '',
+        publicUpdateTime: current.__publicUpdateTime || '',
+        publicExists: true,
         privateLoadFailed: current.__privateLoadFailed === true,
       };
     },
     write: async (next) => {
       const patch = { stripeConnectReady: next.ready, stripeConnectStatus: next.statusText, stripeConnectObservedAt: next.observedAt };
-      const precondition = next.create ? { exists: false } : { updateTime: next.updateTime };
-      await patchTenantFields(env, idToken, slug, patch, precondition);
+      await patchTenantFields(env, idToken, slug, patch, {
+        pair: true,
+        privatePrecondition: next.createPrivate ? { exists: false } : { updateTime: next.privateUpdateTime },
+        publicPrecondition: next.createPublic ? { exists: false } : { updateTime: next.publicUpdateTime },
+      });
     },
   });
   if (!result.ok) return json({ ok: false, error: result.error }, result.status, origin);
