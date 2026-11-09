@@ -1,6 +1,6 @@
 import type Stripe from "stripe";
-import { SchediError } from "./errors";
-import { assertNoForbiddenKeys, integrationIdentifier } from "./statement";
+import { SchediError } from "./errors.ts";
+import { assertNoForbiddenKeys, integrationIdentifier } from "./statement.ts";
 import type { ChargeKind } from "./types";
 
 export interface DirectChargeInput {

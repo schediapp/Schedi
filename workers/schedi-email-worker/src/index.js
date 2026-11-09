@@ -31,6 +31,7 @@ import { resolveOwnerNotifyAddress } from './owner-notify.js';
 import { handleOwnerResetRequest } from './owner-reset.js';
 import { planFromStripePrice } from './entitlements.js';
 import { catalogChargeDollars, ownerQuotedDollars } from './card-quote-link.js';
+import { connectPublicCheckoutUrl } from './connect-origin.js';
 import { hydrateTenantBookings, persistTenantAppointments, handlePrivateBookingHttp, loadPrivateAppointments } from './private-bookings.js';
 import { handleClientsHttp, runClientsBackfillOnce } from './private-clients.js';
 import { adminAuthHeaders } from './firebase-admin.js';
@@ -52,6 +53,8 @@ import {
   shapePublicPatch,
   mergePrivateInto,
   getPrivateTenant,
+  applyConnectReadyWrite,
+  commitConnectReadyPair,
   listPrivateTenants,
   patchPrivateTenant,
 } from './tenant-private.js';
@@ -543,14 +546,26 @@ async function getTenantById(env, idToken, tenantId) {
   const tenant = {};
   for (const k of Object.keys(fields)) tenant[k] = decodeFirestoreValue(fields[k]);
   if (!tenant.id) tenant.id = tenantId;
+  const publicReady = tenant.stripeConnectReady === true;
+  const publicObservedAt = typeof tenant.stripeConnectObservedAt === 'string' ? tenant.stripeConnectObservedAt : '';
+  const publicUpdateTime = data && data.updateTime ? String(data.updateTime) : '';
   // Owner contact + billing fields live in the private doc (Admin-only). Merge them back for worker use.
   try {
     const priv = await getPrivateTenant(env, String(tenantId));
-    if (priv) mergePrivateInto(tenant, priv);
+    if (priv) {
+      mergePrivateInto(tenant, priv);
+      tenant.__privateExists = true;
+      if (priv.__updateTime) tenant.__privateUpdateTime = priv.__updateTime;
+    } else {
+      tenant.__privateExists = false;
+    }
   } catch (err) {
     console.warn('private tenant read failed', err && err.message ? err.message : err);
     tenant.__privateLoadFailed = true;
   }
+  tenant.__publicReady = publicReady;
+  tenant.__publicObservedAt = publicObservedAt;
+  tenant.__publicUpdateTime = publicUpdateTime;
   return hydrateTenantBookings(env, idToken, tenant);
 }
 
@@ -1189,10 +1204,21 @@ async function stripeRequest(env, path, { method, params, extraHeaders } = {}) {
   return { ok: true, status: res.status, data };
 }
 
-async function patchTenantFields(env, idToken, tenantId, rawPatch) {
+async function patchTenantFields(env, idToken, tenantId, rawPatch, options) {
   // Billing fields go to the private doc. The public doc keeps booking-page fields only.
   const shaped = shapePublicPatch(rawPatch || {});
-  if (Object.keys(shaped.priv).length) await patchPrivateTenant(env, tenantId, shaped.priv);
+  if (options && options.pair === true) {
+    const observedAt = String((rawPatch && rawPatch.stripeConnectObservedAt) || '');
+    await commitConnectReadyPair(env, tenantId, Object.assign({}, shaped.priv, {
+      tenantId: tenantId,
+      privateUpdatedAt: new Date().toISOString(),
+    }), {
+      stripeConnectReady: rawPatch && rawPatch.stripeConnectReady === true,
+      stripeConnectObservedAt: observedAt,
+    }, options.privatePrecondition, options.publicPrecondition);
+    return;
+  }
+  if (Object.keys(shaped.priv).length) await patchPrivateTenant(env, tenantId, shaped.priv, options);
   const keys = Object.keys(shaped.pub).filter((k) => shaped.pub[k] !== undefined);
   const mask = keys.concat(shaped.drop || []);
   if (!mask.length) return;
@@ -2693,7 +2719,7 @@ function paymentReceivedMessage(tenant, booking, purpose) {
   return { subject: subject, text: text, html: html };
 }
 
-async function markBookingCheckoutPaid(env, { tenantId, bookingIds, purpose, card, amountCents, paymentIntentId, splits }) {
+async function markBookingCheckoutPaid(env, { tenantId, bookingIds, purpose, card, amountCents, paymentIntentId, splits, eventId }) {
   const id = safeTenantId(tenantId);
   const ids = parseBookingIdList(bookingIds);
   if (!id || !ids.length) return { ok: false, ignored: true, reason: 'no_booking' };
@@ -2851,6 +2877,7 @@ async function handleBookingCheckout(request, env, origin) {
   }
   const email = String(selected[0].clientEmail || data.email || '').trim();
   const connectUrl = await connectCheckoutUrl({
+    checkoutUrl: connectPublicCheckoutUrl(env),
     slug: publicBookingSlug(tenant, tenantId),
     tenantId,
     bookingIds,
@@ -2917,7 +2944,7 @@ function cardPayBookingOpen(booking) {
 
 async function connectCheckoutUrl(input) {
   try {
-    const res = await fetch(CONNECT_PUBLIC_CHECKOUT, {
+    const res = await fetch(input.checkoutUrl || CONNECT_PUBLIC_CHECKOUT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Origin: 'https://schedi.app' },
       body: JSON.stringify({
@@ -3078,14 +3105,46 @@ async function handleConnectReady(request, env, origin) {
   } catch (_) {
     return json({ ok: false, error: 'tenant_lookup_failed' }, 502, origin);
   }
-  const tenant = await getTenantById(env, idToken, slug);
-  if (!tenant) return json({ ok: false, error: 'tenant_not_found' }, 404, origin);
   let status = allowedStatus ? body.status : (body.ready === true ? 'ready' : 'in_progress');
   if (body.ready === true) status = 'ready';
-  if (status === 'ready') body.ready = true;
   const ready = status === 'ready';
-  await patchTenantFields(env, idToken, slug, { stripeConnectReady: ready, stripeConnectStatus: status });
-  return json({ ok: true, slug, stripeConnectReady: ready, stripeConnectStatus: status }, 200, origin);
+  const result = await applyConnectReadyWrite({
+    observedAt: body && body.observedAt,
+    ready,
+    statusText: status,
+    read: async () => {
+      const current = await getTenantById(env, idToken, slug);
+      if (!current) return null;
+      const privateExists = current.__privateExists === true;
+      return {
+        privateObservedAt: privateExists ? (current.stripeConnectObservedAt || '') : '',
+        privateStatus: privateExists ? (current.stripeConnectStatus || '') : '',
+        privateUpdateTime: current.__privateUpdateTime || '',
+        privateExists,
+        publicReady: current.__publicReady === true,
+        publicObservedAt: current.__publicObservedAt || '',
+        publicUpdateTime: current.__publicUpdateTime || '',
+        publicExists: true,
+        privateLoadFailed: current.__privateLoadFailed === true,
+      };
+    },
+    write: async (next) => {
+      const patch = { stripeConnectReady: next.ready, stripeConnectStatus: next.statusText, stripeConnectObservedAt: next.observedAt };
+      await patchTenantFields(env, idToken, slug, patch, {
+        pair: true,
+        privatePrecondition: next.createPrivate ? { exists: false } : { updateTime: next.privateUpdateTime },
+        publicPrecondition: next.createPublic ? { exists: false } : { updateTime: next.publicUpdateTime },
+      });
+    },
+  });
+  if (!result.ok) return json({ ok: false, error: result.error }, result.status, origin);
+  return json({
+    ok: true,
+    stale: result.stale === true,
+    slug,
+    stripeConnectReady: result.ready === true,
+    stripeConnectStatus: result.statusText || status,
+  }, 200, origin);
 }
 
 async function handleBillingRequest(request, env, origin, path, url) {
@@ -3114,6 +3173,7 @@ async function handleBillingRequest(request, env, origin, path, url) {
         amountCents: payload.amountCents,
         paymentIntentId: payload.paymentIntentId,
         splits: payload.splits,
+        eventId: payload.eventId || '',
       }),
     });
   }

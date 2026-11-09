@@ -1,6 +1,6 @@
 import type { Store } from "./db";
 import type { Business, Plan, SubscriptionStatus } from "./types";
-import { PLANS } from "./types";
+import { PLANS } from "./types.ts";
 
 export interface PlanFacts {
   plan?: string | null;
@@ -130,14 +130,18 @@ export function applySchediPlan(
 const PLAN_URL = "https://schedi.app/billing/connect-plan";
 
 /** Ask the Schedi worker for the Firestore plan, including the private comp flags. */
-export async function fetchSchediPlan(query: { slug?: string; email?: string }): Promise<SchediPlanRecord | null> {
-  const secret = String(process.env.SCHEDI_CONNECT_PAID_SECRET || "");
+export async function fetchSchediPlan(
+  query: { slug?: string; email?: string },
+  config?: { connectPaidSecret: string; planUrl: string },
+): Promise<SchediPlanRecord | null> {
+  const secret = config ? config.connectPaidSecret : String(process.env.SCHEDI_CONNECT_PAID_SECRET || "");
+  const url = config ? config.planUrl : process.env.SCHEDI_PLAN_URL || PLAN_URL;
   if (!secret) return null;
   const slug = String(query.slug || "").trim();
   const email = String(query.email || "").trim().toLowerCase();
   if (!slug && !email) return null;
   try {
-    const response = await fetch(process.env.SCHEDI_PLAN_URL || PLAN_URL, {
+    const response = await fetch(url, {
       method: "POST",
       headers: {
         "content-type": "application/json",

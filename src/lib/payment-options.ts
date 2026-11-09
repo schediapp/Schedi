@@ -1,5 +1,5 @@
-import { formatUsd } from "./money";
-import { isCardCheckoutReady } from "./readiness";
+import { formatUsd } from "./money.ts";
+import { isCardCheckoutReady } from "./readiness.ts";
 import type { Business, ChargeKind, PaymentMethod, Service } from "./types";
 
 export interface PaymentChoice {

@@ -68,6 +68,12 @@ export function GET() {
 }
 
 export async function POST(request: Request) {
+  const { withWritable } = await import("@/lib/request-gate");
+  const { getStore } = await import("@/lib/store");
+  return withWritable(getStore(), () => handoffPost(request));
+}
+
+async function handoffPost(request: Request) {
   const form = await request.formData();
   const token = String(form.get("t") || "");
   const store = getStore();

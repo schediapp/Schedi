@@ -265,25 +265,24 @@ describe("POST /billing/connect-ready", () => {
   });
 
   it("patches stripeConnectReady only with the connect secret", async () => {
-    const publicPatches: string[] = [];
-    const privatePatches: string[] = [];
+    const commits: string[] = [];
+    const patches: string[] = [];
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input instanceof Request ? input.url : input);
       const method = String(init?.method || "GET").toUpperCase();
       if (url.includes("identitytoolkit.googleapis.com")) return Response.json({ idToken: "tok" });
-      if (url.includes("/private/data/tenants/")) {
-        if (method === "PATCH") {
-          privatePatches.push(String(init?.body || ""));
-          return Response.json({ name: "private" });
-        }
-        return new Response("{}", { status: 404 });
+      if (url.endsWith(":commit") && method === "POST") {
+        commits.push(String(init?.body || ""));
+        return Response.json({ writeResults: [{}, {}] });
       }
+      if (method === "PATCH") {
+        patches.push(url);
+        return new Response("split patch", { status: 500 });
+      }
+      if (url.includes("/private/data/tenants/")) return new Response("{}", { status: 404 });
       if (url.includes("/public/data/tenants/")) {
-        if (method === "PATCH") {
-          publicPatches.push(url + "\n" + String(init?.body || ""));
-          return Response.json({ name: "patched" });
-        }
         return Response.json({
+          updateTime: "pub-0",
           fields: (fsValue({ id: TENANT, slug: TENANT, name: "Axel Del Cid Photography", plan: "pro" }) as { mapValue: { fields: unknown } }).mapValue.fields,
         });
       }
@@ -297,27 +296,36 @@ describe("POST /billing/connect-ready", () => {
       body: JSON.stringify({ slug: TENANT, ready: true }),
     }), env, { waitUntil() {} });
     expect(denied.status).toBe(401);
-    expect(publicPatches).toHaveLength(0);
-    expect(privatePatches).toHaveLength(0);
+    expect(commits).toHaveLength(0);
+    expect(patches).toHaveLength(0);
+
+    const blank = await worker.fetch(new Request("https://schedi.app/billing/connect-ready", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-schedi-connect-secret": "connect-secret" },
+      body: JSON.stringify({ slug: TENANT, ready: false }),
+    }), env, { waitUntil() {} });
+    expect(blank.status).toBe(400);
+    expect(commits).toHaveLength(0);
 
     const ok = await worker.fetch(new Request("https://schedi.app/billing/connect-ready", {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-schedi-connect-secret": "connect-secret" },
-      body: JSON.stringify({ slug: TENANT, ready: true }),
+      body: JSON.stringify({ slug: TENANT, ready: true, observedAt: "2026-11-07T00:00:01.000Z" }),
     }), env, { waitUntil() {} });
     expect(ok.status).toBe(200);
     expect(await ok.json()).toMatchObject({ ok: true, slug: TENANT, stripeConnectReady: true, stripeConnectStatus: "ready" });
-    expect(privatePatches[0]).toContain("stripeConnectStatus");
-    expect(privatePatches[0]).toContain("ready");
-    expect(publicPatches[0]).toContain("stripeConnectReady");
-    expect(publicPatches[0]).toContain("booleanValue");
-    expect(publicPatches[0]).toContain("updateMask.fieldPaths=stripeConnectStatus");
-    expect(publicPatches[0]).not.toContain("\"stripeConnectStatus\"");
+    expect(commits[0]).toContain("/private/data/tenants/");
+    expect(commits[0]).toContain("/public/data/tenants/");
+    expect(commits[0]).toContain("stripeConnectStatus");
+    expect(commits[0]).toContain("stripeConnectReady");
+    expect(commits[0]).toContain("\"exists\":false");
+    expect(commits[0]).toContain("pub-0");
+    expect(patches).toHaveLength(0);
 
     const progress = await worker.fetch(new Request("https://schedi.app/billing/connect-ready", {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-schedi-connect-secret": "connect-secret" },
-      body: JSON.stringify({ slug: TENANT, ready: false }),
+      body: JSON.stringify({ slug: TENANT, ready: false, observedAt: "2026-11-07T00:00:02.000Z" }),
     }), env, { waitUntil() {} });
     expect(progress.status).toBe(200);
     expect(await progress.json()).toMatchObject({ stripeConnectReady: false, stripeConnectStatus: "in_progress" });

@@ -1409,6 +1409,7 @@ export async function handlePrivateBookingHttp(request, env, origin, path, deps,
       email,
       serviceName: booking.serviceName || 'Appointment',
       amountCents: cents,
+      env,
     });
     if (!link.url) {
       return respond(json, {

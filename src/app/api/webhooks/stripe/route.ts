@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { SchediError } from "@/lib/errors";
 import { errorMessage } from "@/lib/http";
+import { maintenanceResponse, withWritable } from "@/lib/request-gate";
 import { getStore } from "@/lib/store";
 import { getStripe } from "@/lib/stripe";
 import { constructVerifiedEvent } from "@/lib/webhook-signature";
@@ -13,13 +14,24 @@ export async function POST(request: Request) {
   if (!signature) return NextResponse.json({ error: "Missing Stripe signature." }, { status: 400 });
 
   const payload = await request.text();
+  let event;
   try {
-    const event = constructVerifiedEvent(getStripe(), payload, signature);
-    await applyStripeEvent(getStore(), event);
-    return NextResponse.json({ received: true });
+    event = constructVerifiedEvent(getStripe(), payload, signature);
   } catch (error) {
     const message = errorMessage(error);
     const status = error instanceof SchediError ? error.status : 500;
     return NextResponse.json({ error: message }, { status });
   }
+  // A frozen host stays enabled at Stripe and answers 503 so Stripe retries.
+  // Disabling the endpoint can stop those retries.
+  return withWritable(getStore(), async () => {
+    try {
+      await applyStripeEvent(getStore(), event);
+      return NextResponse.json({ received: true });
+    } catch (error) {
+      const message = errorMessage(error);
+      const status = error instanceof SchediError ? error.status : 500;
+      return NextResponse.json({ error: message }, { status });
+    }
+  }).then((response) => response ?? maintenanceResponse());
 }

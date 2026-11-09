@@ -8,7 +8,11 @@
     "test": "vitest run",
     "build:css": "tailwindcss -c tailwind.config.js -i styles/tailwind.src.css -o site/assets/tailwind.css --minify",
     "test:portal": "node test/portal-launch.cjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "connect:snapshot": "node --experimental-strip-types scripts/connect-snapshot.ts",
+    "connect:legacy-import": "node --experimental-strip-types scripts/connect-legacy-import.ts",
+    "connect:stripe-export": "node --experimental-strip-types scripts/connect-stripe-export.ts",
+    "connect:reconcile": "node --experimental-strip-types scripts/connect-reconcile.ts"
   },
   "dependencies": {
     "@stripe/connect-js": "^3.4.6",

@@ -99,7 +99,7 @@ describe("webhook separation", () => {
       event({
         id: "evt_invoice",
         type: "invoice.payment_failed",
-        data: { object: { customer: "cus_fail" } },
+        data: { object: { customer: "cus_fail", subscription: "sub_fail" } },
       }),
     );
     applyStripeEvent(
@@ -356,6 +356,7 @@ describe("webhook separation", () => {
       store,
       event({
         id: "evt_acct_on",
+        created: 1_700_000_000,
         type: "account.updated",
         account: "acct_northwind",
         data: {
@@ -376,6 +377,7 @@ describe("webhook separation", () => {
       store,
       event({
         id: "evt_acct_off",
+        created: 1_700_000_100,
         type: "account.updated",
         account: "acct_northwind",
         data: {
@@ -394,6 +396,26 @@ describe("webhook separation", () => {
     ]);
     expect(store.getBusiness(business.id).cardPaymentsStatus).toBe("inactive");
     expect(store.getBusiness(business.id).subscriptionStatus).toBe("active");
+
+    await applyStripeEvent(
+      store,
+      event({
+        id: "evt_acct_old",
+        created: 1_700_000_050,
+        type: "account.updated",
+        account: "acct_northwind",
+        data: {
+          object: {
+            id: "acct_northwind",
+            charges_enabled: true,
+            configuration: { merchant: { capabilities: { card_payments: { status: "active" } } } },
+          },
+        },
+      }),
+      { publishConnectReady },
+    );
+    expect(published).toHaveLength(2);
+    expect(store.getBusiness(business.id).cardPaymentsStatus).toBe("inactive");
 
     await applyStripeEvent(
       store,
