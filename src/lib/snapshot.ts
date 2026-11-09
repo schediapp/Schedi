@@ -18,7 +18,7 @@ const TABLES = [
 ] as const;
 
 export const EXPECTED_COLUMNS: Record<SnapshotTable, string[]> = {
-  owners: ["id", "email", "name", "stripe_customer_id", "created_at"],
+  owners: ["id", "email", "name", "stripe_customer_id", "created_at", "ownership_generation"],
   businesses: [
     "id", "owner_id", "name", "slug", "plan", "subscription_status", "stripe_subscription_id",
     "cancel_at_period_end", "current_period_end", "stripe_account_id", "card_payments_status",
@@ -31,7 +31,7 @@ export const EXPECTED_COLUMNS: Record<SnapshotTable, string[]> = {
     "id", "business_id", "service_id", "client_name", "client_email", "starts_at", "payment_method",
     "charge_kind", "amount_cents", "status", "stripe_checkout_session_id", "stripe_payment_intent_id", "created_at",
   ],
-  sessions: ["token", "owner_id", "expires_at"],
+  sessions: ["token", "owner_id", "expires_at", "ownership_generation"],
   stripe_events: ["id", "processed_at", "state"],
   connect_handoffs: ["nonce", "expires_at"],
   maintenance: ["id", "frozen", "frozen_at", "admitted"],

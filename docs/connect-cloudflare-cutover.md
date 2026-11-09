@@ -4,11 +4,56 @@ This runbook does not change Stripe, DNS, or the Railway volume.
 
 ## Current readiness, November 2026
 
-Railway is stopped. The trial expired. The retained SQLite file has not been recovered. PR 106 (`bbba20c`) is the reviewed online backup helper, and it cannot run while that process is stopped. Do not pay to restart Railway, do not redeploy it, and do not treat that helper as executed. Do not import, seed, or point traffic at production.
+The platform owner restarted Railway on the Hobby plan. Leave that process running until this migration is verified. Do not stop it, redeploy it, or point traffic at the replacement from this repository.
+
+A consistent copy of the retained SQLite file was recovered and checked offline: 7 tables and 54 rows, made up of 2 owners, 2 businesses, 2 services, 0 bookings, 20 sessions, 2 handoffs, and 26 `stripe_events` receipts. The platform owner confirmed that those two owner rows are his own accounts. That confirmation covers only this file. It is not a Firestore binding, and it does not identify any other tenant.
+
+PR 106 (`bbba20c`) is the helper that took that copy. Do not run it again. Load the file only with the local import below.
 
 The existing Cloudflare worker `schedi-connect` (`f15debb95f7a4dffb860219069fe9435`) stays as it is. This migration uses only `schedi-connect-migration`, with `routes: []`, `workers_dev: false`, `preview_urls: false`, and no secrets in the config file. Do not deploy it from this repository.
 
-The live email worker is v132 plus the minimal `/auth/rename` deny, version `e74eb668-108e-4b9c-bb4b-991699e80829`. The git email-worker tree is not that bundle. Do not publish it over the live worker. PR 104 remains blocked: a Schedi login or a matching email or slug is not ownership of a Connect business. This replacement does not copy that trust. Unstamped owners stay locked out until a later reviewed mapping from an authoritative id that exists on both sides. There is no such mapping in this import.
+The live email worker is v132 plus the minimal `/auth/rename` deny, version `e74eb668-108e-4b9c-bb4b-991699e80829`. The git email-worker tree is not that bundle. Do not publish it over the live worker. PR 104 remains blocked: a Schedi login or a matching email or slug is not ownership of a Connect business. The two recovered Connect rows are a separate confirmation. They do not stamp a Firestore tenant. Email or slug equality is still not that proof.
+
+## Local import of the recovered file
+
+Run this on the machine that already has the recovered SQLite file. Do not send that file, or the JSON it produces, to anyone. Do not commit either file. Do not run `npm run connect:snapshot` on the recovered file: that exporter keeps old session rows. This command drops them.
+
+```bash
+npm run connect:legacy-import -- \
+  --source /absolute/path/to/the-recovered-file.sqlite \
+  --out /tmp/connect-import.json \
+  --expect owners=2,businesses=2,services=2,bookings=0,sessions=20,connect_handoffs=2,stripe_events=26
+```
+
+The source file is opened read-only. Stdout is counts and digests only. The JSON is mode `0600` and contains the owner and business rows, so treat it like the database. It has zero `sessions` and zero `connect_handoffs`. Each owner has a new `ownership_generation`. A token from the recovered file cannot sign in, including one copied in by hand with the old generation. If the counts do not match, the command writes nothing. Stop if they do not match.
+
+To load that JSON into an empty local `schedi-connect-migration` only:
+
+```bash
+npx --prefix workers/schedi-email-worker wrangler dev \
+  --config workers/schedi-connect/wrangler.jsonc \
+  --local --ip 127.0.0.1 --port 8787 \
+  --persist-to /tmp/schedi-connect-migration-local \
+  --var SCHEDI_MIGRATION_SECRET:choose-a-local-secret \
+  --var NODE_ENV:development --var SCHEDI_SEED:0
+```
+
+Use the config file as it is. `routes` stays `[]`. Do not pass `--remote` or `--tunnel`. Do not run `wrangler deploy`. Do not target the existing worker `schedi-connect`. `--persist-to` keeps this trial off any previous local state. Delete that directory when you stop.
+
+Freeze, then restore the local JSON. The secret below is the one you just chose for this process, not a production secret.
+
+```bash
+curl -s -X POST http://127.0.0.1:8787/api/admin/maintenance \
+  -H "content-type: application/json" -H "x-schedi-migration-secret: choose-a-local-secret" \
+  -d '{"mode":"frozen"}'
+curl -s -X POST http://127.0.0.1:8787/api/admin/sqlite-restore \
+  -H "content-type: application/json" \
+  -H "x-schedi-migration-secret: choose-a-local-secret" \
+  -H "x-schedi-restore-confirm: restore-empty-database" \
+  --data-binary @/tmp/connect-import.json
+```
+
+Stop when the response shows `applied: true`, 2 owners, 2 businesses, 2 services, 0 bookings, 26 receipts, 0 sessions, and 0 handoffs. Stop the local process. Delete `/tmp/connect-import.json` when you are done with it. This local load is not a cutover. Sign-in after it is a new session only.
 
 External effects are not exactly-once. Stripe retries and the ready callback can be delivered more than once. A subscription update, deletion, checkout, invoice failure, or capability change commits its ordering fence and the local row in one transaction. An invoice failure shares that subscription fence and is ignored when it names no subscription or a different one. The git ready callback rejects a missing or invalid observation, refuses to write when the private document cannot be read, and creates a missing private document only with `exists=false`. The private observation and the public ready flag are one Firestore commit, so a failed commit leaves both documents unchanged and a retry can repair a projection that does not match the private observation. That git callback is not the live email worker. A Stripe list that repeats a cursor, stops advancing, or hits the page limit while another page remains throws and does not write an export file. None of this is release clearance, and none of it recovers the stopped Railway database.
 

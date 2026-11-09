@@ -1,4 +1,5 @@
 import { SchediError } from "./errors.ts";
+import { importLegacyConnectDatabase, type LegacyImportReport } from "./legacy-import.ts";
 import { captureSnapshot, pragmaChecks, restoreSnapshot, schemaParity, type ConnectSnapshot, type SnapshotReport } from "./snapshot.ts";
 import type { SqlDatabase } from "./sql.ts";
 import type {
@@ -196,7 +197,8 @@ export class Store {
         email TEXT NOT NULL UNIQUE,
         name TEXT NOT NULL,
         stripe_customer_id TEXT,
-        created_at TEXT NOT NULL
+        created_at TEXT NOT NULL,
+        ownership_generation TEXT NOT NULL DEFAULT ''
       );
       CREATE TABLE IF NOT EXISTS businesses (
         id TEXT PRIMARY KEY,
@@ -246,7 +248,8 @@ export class Store {
       CREATE TABLE IF NOT EXISTS sessions (
         token TEXT PRIMARY KEY,
         owner_id TEXT NOT NULL REFERENCES owners(id),
-        expires_at TEXT NOT NULL
+        expires_at TEXT NOT NULL,
+        ownership_generation TEXT NOT NULL DEFAULT ''
       );
       CREATE TABLE IF NOT EXISTS stripe_events (
         id TEXT PRIMARY KEY,
@@ -286,6 +289,7 @@ export class Store {
     ensureBusinessBillingColumns(this.db);
     ensureStripeEventState(this.db);
     ensureFenceRank(this.db);
+    ensureOwnershipGeneration(this.db);
   }
 
   transaction<T>(fn: () => T): T {
@@ -297,10 +301,10 @@ export class Store {
     const email = input.email.trim().toLowerCase();
     this.db
       .prepare(
-        `INSERT INTO owners (id, email, name, stripe_customer_id, created_at)
-         VALUES (?, ?, ?, ?, ?)`,
+        `INSERT INTO owners (id, email, name, stripe_customer_id, created_at, ownership_generation)
+         VALUES (?, ?, ?, ?, ?, ?)`,
       )
-      .run(id, email, input.name.trim(), input.stripeCustomerId ?? null, new Date().toISOString());
+      .run(id, email, input.name.trim(), input.stripeCustomerId ?? null, new Date().toISOString(), crypto.randomUUID());
     return this.getOwner(id);
   }
 
@@ -705,6 +709,17 @@ export class Store {
     return captureSnapshot(this.db, now);
   }
 
+  /** Copy a legacy 7-table file. Sessions and handoffs are not copied. */
+  importLegacyConnect(source: SqlDatabase): LegacyImportReport {
+    return importLegacyConnectDatabase(source, this.db);
+  }
+
+  /** Sessions minted before an ownership generation. They must not be exported. */
+  blankOwnershipSessions(): number {
+    const row = this.db.prepare("SELECT COUNT(*) AS n FROM sessions WHERE ownership_generation = ''").get() as { n: number };
+    return Number(row.n);
+  }
+
   restoreConsistentSnapshot(snapshot: ConnectSnapshot, mode: "dry-run" | "empty-only"): SnapshotReport {
     return restoreSnapshot(this.db, snapshot, mode);
   }
@@ -886,15 +901,29 @@ export class Store {
   }
 
   createSession(ownerId: string): string {
+    const owner = this.db.prepare("SELECT ownership_generation FROM owners WHERE id = ?").get(ownerId) as
+      | { ownership_generation: string }
+      | undefined;
+    const generation = owner?.ownership_generation || "";
+    if (!generation) throw new SchediError("Owner has no ownership generation.", 409);
     const token = crypto.randomUUID() + crypto.randomUUID();
     const expires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-    this.db.prepare("INSERT INTO sessions (token, owner_id, expires_at) VALUES (?, ?, ?)").run(token, ownerId, expires);
+    this.db
+      .prepare("INSERT INTO sessions (token, owner_id, expires_at, ownership_generation) VALUES (?, ?, ?, ?)")
+      .run(token, ownerId, expires, generation);
     return token;
   }
 
   getOwnerBySession(token: string): Owner | null {
-    const row = this.db.prepare("SELECT owner_id, expires_at FROM sessions WHERE token = ?").get(token) as
-      | { owner_id: string; expires_at: string }
+    const row = this.db
+      .prepare(
+        `SELECT sessions.owner_id, sessions.expires_at, sessions.ownership_generation AS session_generation,
+                owners.ownership_generation AS owner_generation
+         FROM sessions JOIN owners ON owners.id = sessions.owner_id
+         WHERE sessions.token = ?`,
+      )
+      .get(token) as
+      | { owner_id: string; expires_at: string; session_generation: string; owner_generation: string }
       | undefined;
     if (!row) return null;
     if (row.expires_at < new Date().toISOString()) {
@@ -907,6 +936,7 @@ export class Store {
       }
       return null;
     }
+    if (!row.session_generation || !row.owner_generation || row.session_generation !== row.owner_generation) return null;
     return this.getOwner(row.owner_id);
   }
 
@@ -920,6 +950,17 @@ function ensureFenceRank(db: SqlDatabase): void {
   const names = new Set(rows.map((row) => row.name));
   if (!names.has("rank")) {
     db.exec("ALTER TABLE state_fence ADD COLUMN rank INTEGER NOT NULL DEFAULT 0");
+  }
+}
+
+function ensureOwnershipGeneration(db: SqlDatabase): void {
+  const owners = new Set((db.prepare("PRAGMA table_info(owners)").all() as { name: string }[]).map((row) => row.name));
+  if (!owners.has("ownership_generation")) {
+    db.exec("ALTER TABLE owners ADD COLUMN ownership_generation TEXT NOT NULL DEFAULT ''");
+  }
+  const sessions = new Set((db.prepare("PRAGMA table_info(sessions)").all() as { name: string }[]).map((row) => row.name));
+  if (!sessions.has("ownership_generation")) {
+    db.exec("ALTER TABLE sessions ADD COLUMN ownership_generation TEXT NOT NULL DEFAULT ''");
   }
 }
 

@@ -10,6 +10,7 @@
     "test:portal": "node test/portal-launch.cjs",
     "typecheck": "tsc --noEmit",
     "connect:snapshot": "node --experimental-strip-types scripts/connect-snapshot.ts",
+    "connect:legacy-import": "node --experimental-strip-types scripts/connect-legacy-import.ts",
     "connect:stripe-export": "node --experimental-strip-types scripts/connect-stripe-export.ts",
     "connect:reconcile": "node --experimental-strip-types scripts/connect-reconcile.ts"
   },

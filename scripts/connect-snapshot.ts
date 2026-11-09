@@ -70,6 +70,9 @@ if (command === "verify") {
   const before = readFileSync(source);
   const opened = openCopy(source);
   try {
+    if (opened.store.blankOwnershipSessions() > 0) {
+      fail("This file has sessions from before an ownership generation. Use npm run connect:legacy-import. Nothing was written.");
+    }
     const snapshot = opened.store.consistentSnapshot();
     const pragma = opened.store.pragmaStatus();
     if (pragma.integrity !== "ok" || pragma.foreignKeyViolations !== 0) fail("Integrity check failed. Nothing was written.");
@@ -113,6 +116,9 @@ if (command === "verify") {
   const opened = openCopy(source);
   const dir = mkdtempSync(join(tmpdir(), "schedi-roundtrip-"));
   try {
+    if (opened.store.blankOwnershipSessions() > 0) {
+      fail("This file has sessions from before an ownership generation. Use npm run connect:legacy-import. Nothing was written.");
+    }
     const snapshot = opened.store.consistentSnapshot();
     const dest = join(dir, "restored.sqlite");
     const restored = new Store(new NodeSqliteDatabase(new DatabaseSync(dest)));
