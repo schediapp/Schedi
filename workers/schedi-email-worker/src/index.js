@@ -31,6 +31,7 @@ import { resolveOwnerNotifyAddress } from './owner-notify.js';
 import { handleOwnerResetRequest } from './owner-reset.js';
 import { planFromStripePrice } from './entitlements.js';
 import { catalogChargeDollars, ownerQuotedDollars } from './card-quote-link.js';
+import { invoiceAmountDue, invoiceFullyPaid } from './invoice.js';
 import { hydrateTenantBookings, persistTenantAppointments, handlePrivateBookingHttp, loadPrivateAppointments } from './private-bookings.js';
 import { handleClientsHttp, runClientsBackfillOnce } from './private-clients.js';
 import { adminAuthHeaders } from './firebase-admin.js';
@@ -2776,6 +2777,54 @@ async function markBookingCheckoutPaid(env, { tenantId, bookingIds, purpose, car
   return { ok: true, tenantId: id, purpose: payPurpose };
 }
 
+async function invoiceCardCheckout(env, origin, tenant, tenantId, selected) {
+  const gateways = tenant.paymentGateways && typeof tenant.paymentGateways === 'object' ? tenant.paymentGateways : {};
+  if (gateways.card !== true) return json({ ok: false, error: 'card_checkout_off' }, 400, origin);
+  if (tenant.stripeConnectReady !== true) {
+    return json({
+      ok: false,
+      error: 'connect_not_ready',
+      message: 'Card payments are not ready for this business. Nothing was charged.',
+    }, 409, origin);
+  }
+  const splits = [];
+  let totalCents = 0;
+  for (const booking of selected) {
+    if (booking.cancelled === true) return json({ ok: false, error: 'booking_cancelled' }, 400, origin);
+    const status = String(booking.status || '').toLowerCase();
+    if (status === 'denied' || status === 'cancelled' || status === 'canceled') {
+      return json({ ok: false, error: 'booking_cancelled' }, 400, origin);
+    }
+    if (booking.invoiceOpen !== true) return json({ ok: false, error: 'invoice_not_open' }, 400, origin);
+    if (invoiceFullyPaid(tenant, booking)) continue;
+    const due = invoiceAmountDue(tenant, booking);
+    if (due == null) return json({ ok: false, error: 'service_has_no_price' }, 400, origin);
+    const cents = Math.round(due * 100);
+    if (cents < 50) continue;
+    splits.push(booking.id + ':' + cents);
+    totalCents += cents;
+  }
+  if (!splits.length || totalCents < 50) return json({ ok: true, alreadyPaid: true }, 200, origin);
+  const email = String((selected[0] && selected[0].clientEmail) || '').trim();
+  const connectUrl = await connectCheckoutUrl({
+    slug: publicBookingSlug(tenant, tenantId),
+    tenantId,
+    bookingIds: selected.map((booking) => booking.id),
+    email,
+    serviceName: (selected[0] && selected[0].serviceName) || 'Appointment',
+    amountCents: totalCents,
+    chargeKind: 'full',
+  });
+  if (!stripeHostedPayUrl(connectUrl)) {
+    return json({
+      ok: false,
+      error: 'connect_not_ready',
+      message: 'Card payments are not ready for this business. Nothing was charged.',
+    }, 409, origin);
+  }
+  return json({ ok: true, url: connectUrl, purpose: 'card', amountCents: totalCents, mode: 'connect' }, 200, origin);
+}
+
 async function handleBookingCheckout(request, env, origin) {
   let data = {};
   try {
@@ -2799,6 +2848,7 @@ async function handleBookingCheckout(request, env, origin) {
   const appts = Array.isArray(tenant.appointments) ? tenant.appointments : [];
   const selected = bookingIds.map((bid) => appts.find((b) => b && String(b.id) === bid)).filter(Boolean);
   if (selected.length !== bookingIds.length) return json({ ok: false, error: 'booking_not_found' }, 404, origin);
+  if (data.invoice === true) return invoiceCardCheckout(env, origin, tenant, tenantId, selected);
   const depositOn = depositRequiredForTenant(tenant);
   const gateways = tenant.paymentGateways && typeof tenant.paymentGateways === 'object' ? tenant.paymentGateways : {};
   const quotedFull = selected.length > 0 && selected.every((booking) => ownerQuotedDollars(booking, catalogChargeDollars(tenant, booking)) != null);
@@ -3001,19 +3051,24 @@ async function handleCardPay(request, env, url) {
   }
   const appts = Array.isArray(tenant.appointments) ? tenant.appointments : [];
   const ids = cardPayIdsFor(appts, booking, bookingId, url.searchParams.get('ids'));
+  const checkoutBody = {
+    tenantId,
+    bookingIds: ids,
+    email: booking.clientEmail || '',
+  };
+  if (url.searchParams.get('invoice') === '1') checkoutBody.invoice = true;
   const inner = new Request(BILLING_APP_ORIGIN + '/billing/booking-checkout', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      tenantId,
-      bookingIds: ids,
-      email: booking.clientEmail || '',
-    }),
+    body: JSON.stringify(checkoutBody),
   });
   const checkoutRes = await handleBookingCheckout(inner, env, BILLING_APP_ORIGIN);
   const data = await checkoutRes.json().catch(() => ({}));
   if (data && data.alreadyPaid) {
     return cardPayPage('This card payment is already paid. Nothing more was charged.', 200);
+  }
+  if (data && data.error === 'invoice_not_open') {
+    return cardPayPage('This invoice link is not open. Nothing was charged.', 400);
   }
   if (stripeHostedPayUrl(data && data.url)) return stripePayRedirect(data.url);
   if (data && data.error === 'connect_not_ready') {

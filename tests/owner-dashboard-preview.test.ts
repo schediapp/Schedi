@@ -3381,7 +3381,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       };
       const list = '[data-booking-id="HB-1022"] .roster-actions';
       const expectRest = (rows: { label: string; bg: string; fg: string; border: string; icon: string; h: number; w: number }[], theme: "dark" | "light") => {
-        expect(rows.map((row) => row.label)).toEqual(["Mark paid", "Edit", "Reschedule", "Mark no-show", "Cancel", "Delete"]);
+        expect(rows.map((row) => row.label)).toEqual(["Mark paid", "Send invoice", "Edit", "Reschedule", "Mark no-show", "Cancel", "Delete"]);
         for (const row of rows) {
           expect(row.bg).toBe(rest[theme].bg);
           expect(row.fg).toBe(rest[theme].fg);
@@ -3431,7 +3431,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
           const menuLabels = await page.evaluate((sel) => {
             return Array.from(document.querySelectorAll(sel + " > button")).map((el) => (el.textContent || "").replace(/\s+/g, " ").trim());
           }, menuRoot);
-          expect(menuLabels).toEqual(["Edit", "Reschedule", "Mark no-show", "Cancel", "Delete"]);
+          expect(menuLabels).toEqual(["Send invoice", "Edit", "Reschedule", "Mark no-show", "Cancel", "Delete"]);
           const menuRest = theme === "dark" ? "rgb(241, 245, 249)" : "rgb(15, 23, 42)";
           const deleteRest = theme === "dark" ? "rgb(251, 113, 133)" : "rgb(190, 18, 60)";
           const menuRestRows = await read(menuRoot);
@@ -3522,7 +3522,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
       await page.evaluate(() => (window as unknown as { setSchediTheme: (mode: string) => void }).setSchediTheme("light"));
       await page.waitForFunction((bg, fg, border) => {
         const buttons = Array.from(document.querySelectorAll("#rosterApptModal .roster-sheet-actions > button"));
-        return buttons.length === 6 && buttons.every((el) => {
+        return buttons.length === 7 && buttons.every((el) => {
           const style = getComputedStyle(el);
           return style.backgroundColor === bg && style.color === fg && style.borderTopColor === border;
         });
@@ -3591,7 +3591,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
             };
           });
         });
-        expect(menu.map((row) => row.label)).toEqual(["Mark paid", "Reschedule", "Mark no-show", "Cancel", "Edit", "Delete"]);
+        expect(menu.map((row) => row.label)).toEqual(["Mark paid", "Send invoice", "Reschedule", "Mark no-show", "Cancel", "Edit", "Delete"]);
         const menuRest = theme === "dark" ? "rgb(241, 245, 249)" : "rgb(15, 23, 42)";
         const deleteRest = theme === "dark" ? "rgb(251, 113, 133)" : "rgb(190, 18, 60)";
         for (const row of menu) {
@@ -4099,7 +4099,7 @@ describe.skipIf(!chrome)("owner dashboard demo browser", () => {
               };
             });
           });
-          expect(menu.map((row) => row.label)).toEqual(["Mark paid", "Reschedule", "Undo no-show", "Cancel", "Edit", "Delete"]);
+          expect(menu.map((row) => row.label)).toEqual(["Mark paid", "Send invoice", "Reschedule", "Undo no-show", "Cancel", "Edit", "Delete"]);
           const undo = menu.find((row) => row.label === "Undo no-show");
           expect(undo?.icon).toContain("fa-rotate-left");
           expect(undo?.cls).not.toContain("sd-act-ok");

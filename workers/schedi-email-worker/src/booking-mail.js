@@ -19,6 +19,7 @@ import { readSession } from './owner-auth.js';
 import { loadPrivateAppointments } from './private-bookings.js';
 import { rateLimitOk } from './rate-limit.js';
 import { appointmentIsClientConfirmed } from './appointment-updated.js';
+import { invoiceAmountDue, invoiceFullyPaid, invoicePlanName, invoiceRemoteMethods, invoiceCashAppUrl, invoicePaypalUrl, invoiceVenmoUrl, invoiceZelleUrl } from './invoice.js';
 
 const OWNER_CONTACT_TOKEN = '{{schedi_owner_contact}}';
 const EM_DASH_SEP = ' \u2014 ';
@@ -37,6 +38,7 @@ const TYPE_RULES = {
   booking_accepted: { to: 'client', prefixes: ['Appointment accepted'], client: false },
   booking_denied: { to: 'client', prefixes: ['Request not accepted', 'Appointment not accepted'], client: false },
   payment_received_client: { to: 'client', prefixes: ['Payment received'], client: false },
+  appointment_invoice: { to: 'client', prefixes: ['Invoice'], client: false },
 };
 const DAILY_MAX = 6;
 const ONCE_TTL_SEC = 60 * 24 * 60 * 60;
@@ -131,6 +133,16 @@ export function tenantPaymentLinks(tenant) {
   if (tag) {
     out.add(normUrl('https://cash.app/$' + tag));
     out.add(normUrl('https://cash.app/' + encodeURIComponent('$' + tag)));
+  }
+  // Derived pay links for the handles the owner already saved. Confirmation mail does not
+  // add these unless the owner also saved that exact URL.
+  for (const url of [
+    invoiceVenmoUrl(tenant.venmoHandle, tenant.venmoLink),
+    invoicePaypalUrl(tenant.paypalHandle, tenant.paypalLink),
+    invoiceZelleUrl(tenant.zelleLink),
+    invoiceCashAppUrl(tenant),
+  ]) {
+    if (url && /^https:\/\//i.test(url)) out.add(normUrl(url));
   }
   // URLs the owner typed into their own saved text (confirmation note, address) are allowed verbatim.
   const notes = tenant.notifications && typeof tenant.notifications === 'object' ? tenant.notifications.extraNote : '';
@@ -416,6 +428,13 @@ export async function handleBookingMailPost(request, env, origin, deps) {
     return json({ ok: false, error: 'tenant_lookup_failed' }, 502, origin);
   }
   if (!tenant) return json({ ok: false, error: 'tenant_not_found' }, 404, origin);
+  if (type === 'appointment_invoice') {
+    if (invoiceFullyPaid(tenant, booking)) return json({ ok: false, error: 'already_paid' }, 409, origin);
+    if (invoicePlanName(tenant) === 'free') return json({ ok: false, error: 'free_plan' }, 403, origin);
+    if (!invoiceRemoteMethods(tenant).length) return json({ ok: false, error: 'no_payment_method' }, 400, origin);
+    const due = invoiceAmountDue(tenant, booking);
+    if (due == null || due < 0.5) return json({ ok: false, error: 'amount_due' }, 400, origin);
+  }
   if (booking && booking.walkIn === true && type === 'owner_booking_alert'
     && !deps.ownerNotifyEnabledForTenant(Object.assign({ id: tenantId }, tenant), env)) {
     return json({ ok: true, skipped: true, reason: 'owner_notify_not_enabled' }, 200, origin);
