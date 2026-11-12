@@ -27,12 +27,32 @@ describe("motion on marketing and owner pages", () => {
     expect(MOTION_SCRIPT_PATH).toBe("/schedi-motion.js");
   });
 
+  it("drops a settled translate on agenda and owner panels so fixed menus stay on the viewport", () => {
+    const owner = motionSource.slice(motionSource.indexOf("function bootOwner"), motionSource.indexOf("function bootHq"));
+    const todayBlocks = "#schediTodayPanel .sd-glance, #schediTodayPanel .sd-wait, #schediTodayPanel .sd-agenda, #schediTodayPanel .sd-ready";
+    expect(owner).toContain(todayBlocks);
+    expect(owner).toContain("releaseSettledTransform(");
+    expect(owner.match(/releaseSettledTransform\(/g)).toHaveLength(2);
+    expect(owner).toContain("OWNER_PANELS[next]");
+    expect(owner).toContain("hover(");
+    expect(owner).toContain("reducedMotion()");
+    const helper = motionSource.slice(motionSource.indexOf("function settledTranslation"), motionSource.indexOf("function play"));
+    expect(helper).toContain('style.transform = ""');
+    expect(helper).toContain("translateY(0px)");
+    expect(helper).toContain("translateX(0px)");
+    expect(helper).toContain("requestAnimationFrame");
+    const start = motionSource.slice(motionSource.indexOf("function start"));
+    expect(start.indexOf("if (reducedMotion()) return;")).toBeGreaterThan(-1);
+    expect(start.indexOf("if (reducedMotion()) return;")).toBeLessThan(start.indexOf("bootOwner()"));
+  });
+
   it("serves the motion script from the worker, not the asset bucket", async () => {
     const response = await handleRequest(new Request("https://schedi.app/schedi-motion.js"), env(), { waitUntil() {} });
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toContain("javascript");
     const body = await response.text();
     expect(body).toContain("prefers-reduced-motion");
+    expect(body).toContain("matrix(1,0,0,1,0,0)");
     expect(body.length).toBeGreaterThan(1000);
   });
 });

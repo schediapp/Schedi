@@ -7,9 +7,46 @@ function reducedMotion(): boolean {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
+// Motion leaves the last keyframe inline. translateY(0px) still creates a
+// containing block, so a position:fixed .sd-more-menu is placed against that
+// ancestor instead of the viewport.
+function settledTranslation(value: string): boolean {
+  const trimmed = value.replace(/\s+/g, "");
+  return (
+    trimmed === "translateY(0px)" ||
+    trimmed === "translateX(0px)" ||
+    trimmed === "translateY(0)" ||
+    trimmed === "translateX(0)" ||
+    trimmed === "translate(0px)" ||
+    trimmed === "translate(0px,0px)" ||
+    trimmed === "translate3d(0px,0px,0px)" ||
+    trimmed === "matrix(1,0,0,1,0,0)"
+  );
+}
+
+function releaseSettledTransform(animation: { finished: Promise<unknown> } | undefined, target: string | HTMLElement) {
+  if (!animation) return;
+  const clear = () => {
+    const nodes = typeof target === "string" ? document.querySelectorAll(target) : [target];
+    nodes.forEach((node) => {
+      if (!(node instanceof HTMLElement) || !settledTranslation(node.style.transform)) return;
+      node.style.transform = "";
+    });
+  };
+  // The finished callback runs before Motion's next frame writes the final
+  // keyframe back onto style.transform. Clear again after that write.
+  animation.finished.then(() => {
+    clear();
+    requestAnimationFrame(() => {
+      clear();
+      requestAnimationFrame(clear);
+    });
+  }, () => {});
+}
+
 function play(selector: string, keyframes: { transform: string | string[] }, options: { duration: number; ease: "easeOut"; delay?: ReturnType<typeof stagger> }) {
   if (!document.querySelector(selector)) return;
-  animate(selector, keyframes, options);
+  return animate(selector, keyframes, options);
 }
 
 function bootMarketing() {
@@ -74,10 +111,10 @@ function bootOwner() {
     if (dashPlayed || reducedMotion() || !shown(portal) || !shown(dash)) return;
     dashPlayed = true;
     play("#schediDashSidebar .sd-nav button", { transform: ["translateX(-6px)", "translateX(0px)"] }, { ...RISE, duration: 0.28, delay: stagger(0.025) });
-    play(
-      "#schediTodayPanel .sd-glance, #schediTodayPanel .sd-wait, #schediTodayPanel .sd-agenda, #schediTodayPanel .sd-ready",
-      { transform: ["translateY(8px)", "translateY(0px)"] },
-      { ...RISE, duration: 0.34, delay: stagger(0.05) },
+    const todayBlocks = "#schediTodayPanel .sd-glance, #schediTodayPanel .sd-wait, #schediTodayPanel .sd-agenda, #schediTodayPanel .sd-ready";
+    releaseSettledTransform(
+      play(todayBlocks, { transform: ["translateY(8px)", "translateY(0px)"] }, { ...RISE, duration: 0.34, delay: stagger(0.05) }),
+      todayBlocks,
     );
   }
 
@@ -87,7 +124,12 @@ function bootOwner() {
     const next = portal.getAttribute("data-dash");
     if (dashPlayed && next && next !== dashName && !reducedMotion()) {
       const panel = document.getElementById(OWNER_PANELS[next] || "");
-      if (panel) animate(panel, { transform: ["translateY(6px)", "translateY(0px)"] }, { duration: 0.22, ease: "easeOut" });
+      if (panel) {
+        releaseSettledTransform(
+          animate(panel, { transform: ["translateY(6px)", "translateY(0px)"] }, { duration: 0.22, ease: "easeOut" }),
+          panel,
+        );
+      }
     }
     dashName = next;
   });
