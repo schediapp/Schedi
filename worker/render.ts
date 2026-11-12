@@ -115,6 +115,8 @@ ${urls}
 // Theme toggle for marketing pages. Served as an external file (CSP: script-src 'self').
 // Shares the app's localStorage key "schedi.theme" so the choice carries into the portal.
 export const THEME_SCRIPT_PATH = "/marketing-theme.js";
+export const MOTION_SCRIPT_PATH = "/schedi-motion.js";
+export const REPORT_CHARTS_PATH = "/report-charts.js";
 export function renderMarketingTheme(): string {
   return `(function(){
 var d=document.documentElement,K="schedi.theme";
@@ -707,6 +709,7 @@ ${siteHeader(signupHref)}
 ${footer(signupHref)}
 ${boot}
 ${pageScript}
+<script src="${MOTION_SCRIPT_PATH}" defer></script>
 </body>
 </html>
 `;

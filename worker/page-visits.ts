@@ -52,6 +52,8 @@ const NOT_A_BUSINESS = new Set([
   "login",
   "marketing-boot.js",
   "marketing-theme.js",
+  "schedi-motion.js",
+  "report-charts.js",
   "demo",
   "demo-booking.js",
 ]);

@@ -3890,11 +3890,15 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-client-tool-ghost {
         font-weight: 800;
     }
     html.schedi-light #tenantPortalSection.schedi-newdash .sd-report-chart h4 { color: #0f172a; }
-    #tenantPortalSection.schedi-newdash .sd-report-chart svg {
+    #tenantPortalSection.schedi-newdash .sd-report-chart-slot {
+        margin-top: 8px;
+        min-height: 220px;
+    }
+    #tenantPortalSection.schedi-newdash .sd-report-chart-slot > svg {
         display: block;
         width: 100%;
         height: auto;
-        margin-top: 8px;
+        margin-top: 0;
     }
     #tenantPortalSection.schedi-newdash .sd-report-avg {
         margin: 4px 0 0;
@@ -26316,6 +26320,41 @@ function schediQrCardPixels(text, color) {
             });
         }
 
+        function reportChartSlot(weeks, field, format, formatKind, seriesLabel, chartLabel, average) {
+            var points = (weeks || []).map(function (week) {
+                var value = Number(week[field]) || 0;
+                return { label: reportPrettyShort(week.start), value: value, display: format(value) };
+            });
+            var payload = {
+                title: chartLabel,
+                label: seriesLabel,
+                format: formatKind,
+                average: average == null || average === '' ? null : Number(average),
+                points: points
+            };
+            return '<div class="sd-report-chart-slot" data-schedi-chart="' + reportEscapeText(JSON.stringify(payload)) + '">' + appointmentReportChartSvg(weeks, field, format, chartLabel) + '</div>';
+        }
+
+        function mountSchediReportCharts(root) {
+            function run() {
+                if (!root || !root.isConnected || !window.SchediReportCharts) return;
+                try { window.SchediReportCharts.mount(root); } catch (errMount) {}
+            }
+            if (window.SchediReportCharts) { run(); return; }
+            document.addEventListener('schedi-report-charts', run, { once: true });
+            if (window.__schediReportChartsLoading) return;
+            window.__schediReportChartsLoading = true;
+            var script = document.createElement('script');
+            script.src = '/report-charts.js';
+            script.async = true;
+            script.onload = function () {
+                window.__schediReportChartsLoading = false;
+                document.dispatchEvent(new Event('schedi-report-charts'));
+            };
+            script.onerror = function () { window.__schediReportChartsLoading = false; };
+            document.head.appendChild(script);
+        }
+
         function renderTenantReport(tenant) {
             var body = document.getElementById('tenantReportBody');
             if (!body) return;
@@ -26367,13 +26406,16 @@ function schediQrCardPixels(text, color) {
             var countLabel = function (n) { return String(n); };
             var visitChart = '';
             if (!sample && visitState && visitState.status === 'ready' && visitSummary && visitSummary.weeks.length) {
-                visitChart = '<div class="sd-report-chart"><h4>Visits by week</h4><p class="sd-report-note">Booking page views in this range. Weeks start on Sunday.</p>' + appointmentReportChartSvg(visitSummary.weeks, 'visits', countLabel, 'Visits by week') + '</div>';
+                visitChart = '<div class="sd-report-chart"><h4>Visits by week</h4><p class="sd-report-note">Booking page views in this range. Weeks start on Sunday.</p>' + reportChartSlot(visitSummary.weeks, 'visits', countLabel, 'count', 'Visits', 'Visits by week') + '</div>';
             }
-            var bookingAvgChart = appointmentReportChartSvg(model.weeks, 'bookings', countLabel, 'Average appointments per week');
-            var revenueAvgChart = appointmentReportChartSvg(model.weeks, 'revenue', reportMoney, 'Average revenue per week');
-            var bookingChart = appointmentReportChartSvg(model.weeks, 'bookings', countLabel, 'Bookings by week');
-            var revenueChart = appointmentReportChartSvg(model.weeks, 'revenue', reportMoney, 'Revenue by week');
+            var bookingAvgChart = reportChartSlot(model.weeks, 'bookings', countLabel, 'count', 'Bookings', 'Average appointments per week', model.avgBookings);
+            var revenueAvgChart = reportChartSlot(model.weeks, 'revenue', reportMoney, 'money', 'Revenue', 'Average revenue per week', model.avgRevenue);
+            var bookingChart = reportChartSlot(model.weeks, 'bookings', countLabel, 'count', 'Bookings', 'Bookings by week');
+            var revenueChart = reportChartSlot(model.weeks, 'revenue', reportMoney, 'money', 'Revenue', 'Revenue by week');
             body.setAttribute('data-report-range', range.label || '');
+            if (window.SchediReportCharts && window.SchediReportCharts.unmount) {
+                try { window.SchediReportCharts.unmount(body); } catch (errCharts) {}
+            }
             body.innerHTML = ''
                 + '<div class="sd-report-stats grid grid-cols-2 sm:grid-cols-4 gap-2">'
                 + visitCard
@@ -26395,6 +26437,7 @@ function schediQrCardPixels(text, color) {
                 + '<p>Status: ' + model.pending + ' pending, ' + model.accepted + ' accepted, ' + (model.confirmed - model.accepted) + ' confirmed with no separate status, ' + model.denied + ' denied, ' + model.cancelled + ' cancelled.' + (walkIns ? (' Walk-ins: ' + walkIns + '.') : '') + '</p>'
                 + '<p>' + esc(noShow.reason) + ' Recorded prices add the amount stored on each appointment that is not cancelled or denied.</p>'
                 + '<div><div class="font-bold text-white mb-1">Repeat clients</div><p class="text-slate-500 mb-1">Someone with 2 or more appointments in this range that were not cancelled or denied. Matched by email, then phone, then name.</p><ul class="list-disc pl-5 space-y-1">' + repeatHtml + '</ul></div>';
+            mountSchediReportCharts(body);
         }
 
         // Print only the Appointments Report: copy it into #schediPrintRoot (a direct child of <body>) and hide everything else.
@@ -33815,5 +33858,6 @@ window.handleSaveAgencyGateways=function(e){if(e&&e.preventDefault)e.preventDefa
 window.handleSaveEmailSender=function(e){if(e&&e.preventDefault)e.preventDefault();};
 window.testEmailSenderWebhook=function(){};
 </script>
+<script src="/schedi-motion.js" defer></script>
 </body>
 </html>
