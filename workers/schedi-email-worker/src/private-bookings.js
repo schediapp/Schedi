@@ -147,7 +147,7 @@ const BOOKING_KEYS = [
   'cancelledAt', 'cancelledBy', 'reminderSentAt', 'smsReminderSentAt', 'smsConfirmSentAt',
   'depositConfirmSentAt', 'paymentReceivedSentAt', 'notes', 'createdAt', 'walkIn',
   'depositNudgeSentAt', 'depositDayBeforeSentAt', 'depositOwnerWarnSentAt', 'depositExpiredAt',
-  'payCode',
+  'payCode', 'invoiceOpen',
   'stripeCustomerId', 'stripePaymentMethodId', 'stripePaymentIntentId',
   'cancellationFeeStatus', 'cancellationFeeReason', 'cancellationFeeAmount', 'cancellationFeeAt',
   'cancellationFeePaymentIntentId',
@@ -355,6 +355,10 @@ export function sanitizeBooking(raw, tenantId) {
     if (key === 'payCode') {
       const code = clip(raw[key], 8).toUpperCase();
       if (PAY_CODE_RE.test(code)) out[key] = code;
+      continue;
+    }
+    if (key === 'invoiceOpen') {
+      if (raw[key] === true) out[key] = true;
       continue;
     }
     if (key === 'paidMethod' || key === 'paymentMethod') {
@@ -666,6 +670,7 @@ function applyServerOnlyFields(booking, prev, options) {
   // and never let a stale copy "un-release" a slot the cron already released for non-payment.
   // A payment code never changes once issued (the client already has it in their note/email).
   if (prev && prev.payCode) booking.payCode = prev.payCode;
+  if (prev && prev.invoiceOpen === true) booking.invoiceOpen = true;
   if (prev) {
     for (const key of DEPOSIT_STAMP_KEYS) {
       if (prev[key] && !booking[key]) booking[key] = prev[key];
@@ -1314,6 +1319,7 @@ export async function handlePrivateBookingHttp(request, env, origin, path, deps,
         manageToken: raw && raw.manageToken ? raw.manageToken : randomToken(),
       }), tenant.id);
       if (!booking) return respond(json, { ok: false, error: 'invalid_booking' }, 400, origin, isAllowedOrigin);
+      delete booking.invoiceOpen;
       if (!booking.clientName || !booking.clientEmail || !booking.date || !booking.time) {
         return respond(json, { ok: false, error: 'invalid_booking' }, 400, origin, isAllowedOrigin);
       }

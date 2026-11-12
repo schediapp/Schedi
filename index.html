@@ -7567,6 +7567,31 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
             </div>
         </div>
     </div>
+    <div id="invoiceSendModal" role="dialog" aria-modal="true" aria-labelledby="invoiceSendTitle" tabindex="-1" class="fixed inset-0 z-[70] bg-slate-950/80 backdrop-blur-md flex items-start sm:items-center justify-center p-3 sm:p-4 overflow-y-auto overscroll-contain hidden" onclick="if (event.target === this) closeInvoiceSendModal()">
+        <form onsubmit="return submitInvoiceSend(event)" class="max-w-sm w-full glass-card rounded-2xl fade-in border border-slate-700 my-4 min-w-0 sd-form-sheet">
+            <div class="sd-form-head">
+                <div class="min-w-0">
+                    <h3 id="invoiceSendTitle" class="text-lg font-bold text-white">Send invoice</h3>
+                </div>
+                <button type="button" class="sd-form-close" onclick="closeInvoiceSendModal()" aria-label="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+            </div>
+            <div class="space-y-4 sd-form-scroll">
+                <p id="invoiceSendSummary" class="text-sm text-slate-300 leading-relaxed"></p>
+                <label id="invoiceSendAmountWrap" class="block text-xs font-bold text-slate-300 hidden">Amount due
+                    <input id="invoiceSendAmount" type="number" inputmode="decimal" min="0.50" step="0.01" placeholder="0.00" aria-label="Amount due" class="mt-1 w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white">
+                </label>
+                <p id="invoiceSendMethods" class="text-sm text-slate-300 leading-relaxed"></p>
+                <label class="block text-xs font-bold text-slate-300">Note to the client (optional)
+                    <textarea id="invoiceSendNote" maxlength="500" rows="3" placeholder="For example, a note about this visit" class="mt-1 w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white"></textarea>
+                </label>
+                <p class="text-xs text-slate-400 leading-relaxed">This email goes out only when you send it. Nothing is charged until the client pays.</p>
+                <div class="pt-1 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+                    <button type="button" onclick="closeInvoiceSendModal()" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-sm transition-all">Don't send</button>
+                    <button type="submit" id="invoiceSendBtn" class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm border border-emerald-400/40 transition-all">Send invoice</button>
+                </div>
+            </div>
+        </form>
+    </div>
 
     <div id="rosterApptModal" role="dialog" aria-modal="true" aria-labelledby="rosterApptTitle" tabindex="-1" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-start sm:items-center justify-center p-3 sm:p-4 overscroll-contain hidden" onclick="if (event.target === this) closeRosterApptModal()">
         <div class="max-w-md w-full glass-card rounded-2xl fade-in min-w-0 sd-form-sheet">
@@ -16252,6 +16277,7 @@ function schediQrCardPixels(text, color) {
                 '<details class="sd-more"><summary aria-label="More actions" aria-expanded="false"><i class="fa-solid fa-ellipsis-vertical" aria-hidden="true"></i></summary>' +
                 '<div class="sd-more-menu" role="menu">' +
                 payAction +
+                '<button type="button" role="menuitem" onclick="closeSchediTodayMenus(event); sendAppointmentInvoice(' + id + ')">Send invoice</button>' +
                 '<button type="button" class="sd-act-ok" role="menuitem" onclick="closeSchediTodayMenus(event); openTenantRescheduleModal(' + id + ')">Reschedule</button>' +
                 noShowAction +
                 '<button type="button" class="sd-act-no" role="menuitem" onclick="closeSchediTodayMenus(event); deleteAppointment(' + id + ')">Cancel</button>' +
@@ -17989,6 +18015,7 @@ function schediQrCardPixels(text, color) {
                 } else if (decided) {
                     out.push(btn('markAppointmentPaid', 'sd-act sd-act-ok', '<i class="fa-solid fa-circle-check mr-1"></i>Mark paid'));
                 }
+                out.push(btn('sendAppointmentInvoice', 'sd-act', 'Send invoice'));
                 out.push(btn('openEditAppointment', 'sd-act', 'Edit'));
                 out.push(btn('openTenantRescheduleModal', 'sd-act sd-act-ok', '<i class="fa-solid fa-calendar-days mr-1"></i>Reschedule'));
                 if (decided && appointmentIsNoShow(app)) out.push(btn('undoAppointmentNoShow', 'sd-act', '<i class="fa-solid fa-rotate-left mr-1" aria-hidden="true"></i>Undo no-show'));
@@ -18019,6 +18046,7 @@ function schediQrCardPixels(text, color) {
             } else if (st === 'pending') {
                 primary.push(primaryBtn('acceptAppointment', 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30', 'Accept'));
                 primary.push(primaryBtn('denyAppointment', 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30', 'Deny'));
+                menu.push(menuBtn('sendAppointmentInvoice', '', 'Send invoice'));
                 menu.push(menuBtn('openEditAppointment', '', 'Edit'));
                 menu.push(menuBtn('openTenantRescheduleModal', 'sd-act-ok', '<i class="fa-solid fa-calendar-days mr-1"></i>Reschedule'));
                 menu.push(menuBtn('deleteAppointment', 'sd-act-no', '<i class="fa-solid fa-xmark mr-1"></i>Cancel'));
@@ -18029,6 +18057,7 @@ function schediQrCardPixels(text, color) {
                 } else if (decided) {
                     primary.push(primaryBtn('markAppointmentPaid', 'sd-act sd-act-ok', '<i class="fa-solid fa-circle-check mr-1"></i>Mark paid'));
                 }
+                menu.push(menuBtn('sendAppointmentInvoice', '', 'Send invoice'));
                 menu.push(menuBtn('openEditAppointment', '', 'Edit'));
                 menu.push(menuBtn('openTenantRescheduleModal', 'sd-act-ok', '<i class="fa-solid fa-calendar-days mr-1"></i>Reschedule'));
                 if (decided && appointmentIsNoShow(app)) menu.push(menuBtn('undoAppointmentNoShow', '', '<i class="fa-solid fa-rotate-left mr-1" aria-hidden="true"></i>Undo no-show'));
@@ -18041,7 +18070,7 @@ function schediQrCardPixels(text, color) {
                 '<div class="sd-more-menu" role="menu">' + menu.join('') + '</div></details>';
         }
 
-        var ROSTER_SHEET_ACTIONS = ['acceptAppointment', 'denyAppointment', 'markAppointmentPaid', 'markAppointmentUnpaid', 'openEditAppointment', 'openTenantRescheduleModal', 'markAppointmentNoShow', 'undoAppointmentNoShow', 'deleteAppointment', 'openRosterDeleteModal'];
+        var ROSTER_SHEET_ACTIONS = ['acceptAppointment', 'denyAppointment', 'markAppointmentPaid', 'markAppointmentUnpaid', 'sendAppointmentInvoice', 'openEditAppointment', 'openTenantRescheduleModal', 'markAppointmentNoShow', 'undoAppointmentNoShow', 'deleteAppointment', 'openRosterDeleteModal'];
 
         // Pop-up action: close the details first, then run the same function the list button runs.
         window.rosterApptDo = function (fn, appId) {
@@ -23155,6 +23184,443 @@ function schediQrCardPixels(text, color) {
             if (v && !/^[a-f0-9]{18}$/.test(v)) return '';
             return 'https://schedi.app/logos/' + id + '/email.png' + (v ? ('?v=' + v) : '');
         }
+
+        function invoicePriceDollars(tenant, booking) {
+            if (booking && hasPricedAmount(booking.amount)) return roundMoney(booking.amount);
+            return catalogServicePrice(tenant, booking && booking.serviceName);
+        }
+
+        function invoiceStatusPaid(booking) {
+            var up = String((booking && booking.paymentStatus) || '').toUpperCase();
+            if (/\bUNPAID\b/.test(up) || /\bNOT\s+PAID\b/.test(up)) return false;
+            if (up.indexOf('PENDING') !== -1 || up.indexOf('AWAITING') !== -1) return false;
+            return up.indexOf('PAID') !== -1;
+        }
+
+        function invoiceDepositOnly(booking) {
+            if (!booking || booking.depositPaid !== true) return false;
+            var deposit = Number(booking.depositAmount);
+            if (!isFinite(deposit) || deposit <= 0) return false;
+            return String(booking.paymentStatus || '').toUpperCase().indexOf('DEPOSIT') !== -1;
+        }
+
+        function invoiceCollectedDollars(booking) {
+            if (!booking) return 0;
+            var status = String(booking.paymentStatus || '').toUpperCase();
+            var refundMarked = booking.refunded === true || status.indexOf('REFUND') !== -1;
+            var refundRaw = hasPricedAmount(booking.refundAmount) ? booking.refundAmount : (hasPricedAmount(booking.amountRefunded) ? booking.amountRefunded : null);
+            var deposit = Number(booking.depositAmount);
+            var depositPaid = booking.depositPaid === true && isFinite(deposit) && deposit > 0;
+            var gross = 0;
+            var known = false;
+            if (invoiceDepositOnly(booking)) {
+                gross = roundMoney(deposit);
+                known = true;
+            } else if (invoiceStatusPaid(booking)) {
+                if (hasPricedAmount(booking.amount)) gross = roundMoney(booking.amount);
+                known = true;
+            } else if (depositPaid) {
+                gross = roundMoney(deposit);
+                known = true;
+            }
+            var refund = refundRaw != null ? roundMoney(refundRaw) : (refundMarked ? gross : 0);
+            if (!known && !refundMarked) return 0;
+            return roundMoney(Math.max(0, gross - refund));
+        }
+
+        function invoiceAmountDue(tenant, booking) {
+            var price = invoicePriceDollars(tenant, booking);
+            if (price == null) return null;
+            return roundMoney(Math.max(0, price - invoiceCollectedDollars(booking)));
+        }
+
+        function invoiceFullyPaid(tenant, booking) {
+            if (!invoiceStatusPaid(booking)) return false;
+            if (invoiceDepositOnly(booking)) {
+                var due = invoiceAmountDue(tenant, booking);
+                return due != null && due < 0.5;
+            }
+            return true;
+        }
+
+        function invoiceLooksLikeUrl(value) {
+            return /^https?:\/\//i.test(String(value || '').trim());
+        }
+
+        function invoiceVenmoUrl(handle, link) {
+            var explicit = String(link || '').trim();
+            if (invoiceLooksLikeUrl(explicit)) return explicit;
+            var user = String(handle || '').trim().replace(/^@/, '');
+            if (!user) return '';
+            return 'https://venmo.com/u/' + encodeURIComponent(user);
+        }
+
+        function invoicePaypalUrl(handle, link) {
+            var explicit = String(link || '').trim();
+            if (invoiceLooksLikeUrl(explicit)) return explicit;
+            var h = String(handle || '').trim();
+            if (!h) return '';
+            if (invoiceLooksLikeUrl(h)) return h;
+            var lower = h.toLowerCase();
+            if (lower.indexOf('paypal.me/') === 0 || lower.indexOf('www.paypal.me/') === 0) {
+                return 'https://' + h.replace(/^https?:\/\//i, '');
+            }
+            if (h.indexOf('@') !== -1 && h.indexOf(' ') === -1) return '';
+            var slug = h.replace(/^@/, '').replace(/^paypal\.me\//i, '').replace(/^\//, '');
+            if (slug && /^[A-Za-z0-9._-]+$/.test(slug)) return 'https://www.paypal.me/' + encodeURIComponent(slug);
+            return '';
+        }
+
+        function invoiceCashAppUrl(tenant) {
+            var raw = String((tenant && (tenant.cashAppTag || tenant.cashappTag)) || '').replace(/[^A-Za-z0-9_]/g, '');
+            if (!raw) return '';
+            return 'https://cash.app/' + encodeURIComponent('$' + raw);
+        }
+
+        function invoiceZelleUrl(link) {
+            var explicit = String(link || '').trim();
+            return invoiceLooksLikeUrl(explicit) ? explicit : '';
+        }
+
+        function invoiceRemoteMethods(tenant) {
+            if (!tenant || normalizePlan(tenant) === 'free') return [];
+            var plan = normalizePlan(tenant);
+            var pg = tenant.paymentGateways && typeof tenant.paymentGateways === 'object' ? tenant.paymentGateways : {};
+            var out = [];
+            if (plan === 'pro' && pg.card === true && tenant.stripeConnectReady === true) out.push('card');
+            if (pg.square === true && tenant.squareReady === true && (typeof SCHEDI_SQUARE_PUBLIC_ENABLED === 'undefined' || SCHEDI_SQUARE_PUBLIC_ENABLED)) out.push('square');
+            if (pg.cashapp === true && String(tenant.cashAppTag || tenant.cashappTag || '').trim()) out.push('cashapp');
+            if (pg.zelle === true && (String(tenant.zelleHandle || '').trim() || String(tenant.zelleLink || '').trim())) out.push('zelle');
+            if (pg.venmo === true && (String(tenant.venmoHandle || '').trim() || String(tenant.venmoLink || '').trim())) out.push('venmo');
+            if (pg.paypal === true && (String(tenant.paypalHandle || '').trim() || String(tenant.paypalLink || '').trim())) out.push('paypal');
+            return out;
+        }
+
+        function invoiceSendBlock(tenant, booking) {
+            if (!tenant || !booking) return 'Could not find that appointment.';
+            if (invoiceFullyPaid(tenant, booking)) return 'This visit is already marked paid.';
+            var email = String(booking.clientEmail || '').trim();
+            if (!email || email.indexOf('@') < 1) return 'This appointment has no client email, so the invoice was not sent.';
+            var freeMsg = freePaymentMessage(tenant, 'card');
+            if (freeMsg) return freeMsg;
+            if (!invoiceRemoteMethods(tenant).length) return 'Turn on a payment method in Payments before sending an invoice.';
+            var due = invoiceAmountDue(tenant, booking);
+            if (due !== null && due < 0.5) return 'Nothing is due on this appointment, so the invoice was not sent.';
+            return '';
+        }
+
+        function invoiceCardPayLink(tenant, booking) {
+            if (!tenant || tenant.stripeConnectReady !== true) return '';
+            if (normalizePlan(tenant) !== 'pro') return '';
+            var pg = tenant.paymentGateways || {};
+            if (pg.card !== true) return '';
+            if (!booking) return '';
+            var token = String(booking.manageToken || '').trim();
+            if (!/^[A-Za-z0-9_-]{16,128}$/.test(token)) return '';
+            var safeSlug = String((tenant.slug || tenant.id) || '').trim().toLowerCase();
+            if (!/^[a-z0-9](?:[a-z0-9-]{0,40})$/.test(safeSlug)) return '';
+            var id = String(booking.id || '').trim();
+            if (!/^[A-Za-z0-9_-]{4,40}$/.test(id)) return '';
+            return 'https://schedi.app/billing/card-pay?t=' + encodeURIComponent(safeSlug)
+                + '&b=' + encodeURIComponent(id)
+                + '&k=' + encodeURIComponent(token)
+                + '&kind=card&invoice=1';
+        }
+
+        function invoiceSquarePayLink(tenant, booking) {
+            if (!tenant || tenant.squareReady !== true) return '';
+            if (typeof SCHEDI_SQUARE_PUBLIC_ENABLED !== 'undefined' && !SCHEDI_SQUARE_PUBLIC_ENABLED) return '';
+            if (normalizePlan(tenant) === 'free') return '';
+            var pg = tenant.paymentGateways || {};
+            if (pg.square !== true) return '';
+            if (!booking) return '';
+            var token = String(booking.manageToken || '').trim();
+            if (!/^[A-Za-z0-9_-]{16,128}$/.test(token)) return '';
+            var safeSlug = String((tenant.slug || tenant.id) || '').trim().toLowerCase();
+            if (!/^[a-z0-9](?:[a-z0-9-]{0,40})$/.test(safeSlug)) return '';
+            var id = String(booking.id || '').trim();
+            if (!/^[A-Za-z0-9_-]{4,40}$/.test(id)) return '';
+            return 'https://schedi.app/api/square/pay?t=' + encodeURIComponent(safeSlug)
+                + '&b=' + encodeURIComponent(id)
+                + '&k=' + encodeURIComponent(token)
+                + '&kind=card&invoice=1';
+        }
+
+        function invoiceMethodLabel(method) {
+            if (method === 'card') return 'Card';
+            if (method === 'square') return 'Square';
+            if (method === 'cashapp') return 'Cash App';
+            if (method === 'zelle') return 'Zelle';
+            if (method === 'venmo') return 'Venmo';
+            if (method === 'paypal') return 'PayPal';
+            return '';
+        }
+
+        function invoiceMethodList(methods) {
+            var labels = (methods || []).map(invoiceMethodLabel).filter(Boolean);
+            if (labels.length <= 1) return labels[0] || '';
+            if (labels.length === 2) return labels[0] + ' and ' + labels[1];
+            return labels.slice(0, -1).join(', ') + ', and ' + labels[labels.length - 1];
+        }
+
+        function invoicePayButtonHtml(url, label, bgcolor) {
+            if (!url) return { text: '', html: '' };
+            var safeHref = String(url).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+            return {
+                text: '\n' + label + ':\n' + url + '\n',
+                html: '<tr><td align="center" style="padding:8px 28px 4px;">'
+                    + '<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"><tr>'
+                    + '<td align="center" bgcolor="' + bgcolor + '" style="background-color:' + bgcolor + ';border-radius:14px;">'
+                    + '<a href="' + safeHref + '" style="display:block;padding:14px 18px;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;">' + esc(label) + '</a>'
+                    + '</td></tr></table>'
+                    + '<p style="margin:10px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#64748b;line-height:1.4;">Or copy this link: ' + esc(url) + '</p>'
+                    + '</td></tr>'
+            };
+        }
+
+        function invoiceManualPayUrl(tenant, method) {
+            if (!tenant) return '';
+            if (method === 'cashapp') return invoiceCashAppUrl(tenant);
+            if (method === 'venmo') return invoiceVenmoUrl(tenant.venmoHandle, tenant.venmoLink);
+            if (method === 'paypal') return invoicePaypalUrl(tenant.paypalHandle, tenant.paypalLink);
+            if (method === 'zelle') return invoiceZelleUrl(tenant.zelleLink);
+            return '';
+        }
+
+        function buildInvoiceEmail(tenant, booking, options) {
+            options = options || {};
+            if (!tenant || !booking) return null;
+            var due = invoiceAmountDue(tenant, booking);
+            if (due == null || due < 0.5) return null;
+            var methods = options.methods || invoiceRemoteMethods(tenant);
+            var biz = tenant.name || 'your business';
+            var amountLabel = confirmEmailPriceLabel(due) || '';
+            var collected = invoiceCollectedDollars(booking);
+            var collectedLabel = collected >= 0.5 ? confirmEmailPriceLabel(collected) : '';
+            var friendlyDate = formatFriendlyLocalDateEmail(booking.date || '');
+            var note = String(options.note || '').trim();
+            if (note.length > 500) note = note.slice(0, 500);
+            var headline = 'Invoice';
+            var subject = 'Invoice \u2014 ' + biz;
+            var sub = biz + ' sent an invoice for ' + amountLabel;
+            var replyTo = businessReplyTo(tenant);
+            var text = headline + '\n' + sub + '\n\n' +
+                'Business: ' + biz + '\n' +
+                'Service: ' + (booking.serviceName || 'Appointment') + '\n' +
+                'Date: ' + friendlyDate + '\n' +
+                'Time: ' + (booking.time || '') + '\n' +
+                (collectedLabel ? ('Already paid: ' + collectedLabel + '\n') : '') +
+                'Amount due: ' + amountLabel + '\n' +
+                'Booking ref: #' + (booking.id || '') + '\n';
+            if (note) text += '\nNote from ' + biz + ': ' + note + '\n';
+            var rowBits = [
+                ['Service', esc(booking.serviceName || 'Appointment')],
+                ['Date', esc(friendlyDate)],
+                ['Time', esc(booking.time || '')]
+            ];
+            if (collectedLabel) rowBits.push(['Already paid', esc(collectedLabel)]);
+            rowBits.push(['Amount due', esc(amountLabel)]);
+            rowBits.push(['Booking ref', esc('#' + (booking.id || ''))]);
+            var whenLine = booking.time
+                ? ('<strong style="color:#34d399;font-weight:600">' + esc(booking.time) + '</strong>')
+                : '';
+            var noteHtml = '';
+            if (note) {
+                noteHtml = '<tr><td style="padding:10px 28px 0;"><div style="padding:12px 14px;border-radius:10px;background-color:#111c33;border:1px solid #334155;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#cbd5e1;">Note from ' + esc(biz) + ': ' + esc(note).replace(/\n/g, '<br>') + '</div></td></tr>';
+            }
+            var payHtml = '<tr><td style="padding:16px 28px 0;font-family:Arial,Helvetica,sans-serif;font-size:12px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#94a3b8;">Pay options</td></tr>';
+            text += '\nPay options\n';
+            var payAdded = false;
+            var manual = [];
+            for (var i = 0; i < methods.length; i++) {
+                var method = methods[i];
+                if (method === 'card') {
+                    var cardBits = cardPayEmailBits(invoiceCardPayLink(tenant, booking));
+                    if (cardBits.text) {
+                        payAdded = true;
+                        text += cardBits.text;
+                        payHtml += cardBits.html;
+                    }
+                } else if (method === 'square') {
+                    var squareBits = squarePayEmailBits(invoiceSquarePayLink(tenant, booking));
+                    if (squareBits.text) {
+                        payAdded = true;
+                        text += squareBits.text;
+                        payHtml += squareBits.html;
+                    }
+                } else if (method === 'cashapp' || method === 'zelle' || method === 'venmo' || method === 'paypal') {
+                    var instr = confirmEmailPaymentInstructions(tenant, {
+                        paymentMethod: method,
+                        amount: due,
+                        depositAmount: 0,
+                        payCode: ''
+                    });
+                    var payUrl = invoiceManualPayUrl(tenant, method);
+                    if (!instr.text && !instr.html && !payUrl) continue;
+                    manual.push(method);
+                    payAdded = true;
+                    if (instr.text) text += '\n' + instr.text + '\n';
+                    if (instr.html) payHtml += '<tr><td style="padding:10px 28px 0;">' + instr.html + '</td></tr>';
+                    if (payUrl && (!instr.text || instr.text.indexOf(payUrl) === -1)) {
+                        var buttonLabel = method === 'cashapp' ? 'Open Cash App' : ('Pay with ' + invoiceMethodLabel(method));
+                        var buttonColor = method === 'cashapp' ? '#059669' : (method === 'venmo' ? '#0369a1' : (method === 'zelle' ? '#6d28d9' : '#1d4ed8'));
+                        var button = invoicePayButtonHtml(payUrl, buttonLabel, buttonColor);
+                        text += button.text;
+                        payHtml += button.html;
+                    }
+                }
+            }
+            var code = (manual.length && booking.payCode) ? String(booking.payCode) : '';
+            if (code) {
+                var codeSentence = 'Put ' + code + ' in the payment note so ' + biz + ' can match your payment.';
+                text += '\n' + codeSentence + '\n';
+                payHtml += '<tr><td style="padding:10px 28px 0;"><div style="padding:12px 14px;border-radius:10px;background-color:#064e3b;border:1px solid #059669;color:#d1fae5;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.45;">Put <strong style="font-family:monospace;letter-spacing:1px;">' + esc(code) + '</strong> in the payment note so ' + esc(biz) + ' can match your payment.</div></td></tr>';
+            }
+            if (!payAdded) return null;
+            text += '\nQuestions? Contact ' + ownerContactPhrase(tenant, false) + '.\n\n— ' + biz;
+            var schediMark = 'https://schedi.app/assets/homescreen-icon.png';
+            var bizLogo = emailRasterSrc(tenant && (tenant.logoUrl || tenant.logo || tenant.businessLogo));
+            var bodyHtml = clientEmailDateCardHtml({ date: booking.date, whenHtml: whenLine })
+                + clientEmailRowsHtml(rowBits)
+                + noteHtml
+                + payHtml;
+            var html = clientEmailShellHtml({
+                markUrl: bizLogo || schediMark,
+                headline: headline,
+                sub: sub,
+                bodyHtml: bodyHtml,
+                footerLeft: 'Questions? Contact ' + ownerContactPhrase(tenant, true) + '.'
+            });
+            return { subject: subject, text: text, html: html, replyTo: replyTo };
+        }
+
+        var invoiceSendAppId = '';
+
+        function openInvoiceSendModal(tenant, booking) {
+            var modal = document.getElementById('invoiceSendModal');
+            if (!modal) return;
+            invoiceSendAppId = booking.id;
+            var due = invoiceAmountDue(tenant, booking);
+            var who = booking.clientName || 'the client';
+            var email = String(booking.clientEmail || '').trim();
+            var summary = document.getElementById('invoiceSendSummary');
+            var amountWrap = document.getElementById('invoiceSendAmountWrap');
+            var amountInput = document.getElementById('invoiceSendAmount');
+            var methodsEl = document.getElementById('invoiceSendMethods');
+            var noteEl = document.getElementById('invoiceSendNote');
+            var amountLabel = due == null ? '' : (confirmEmailPriceLabel(due) || '');
+            if (summary) {
+                summary.textContent = due == null
+                    ? ('Email ' + who + ' at ' + email + '. Enter the amount due. Nothing is sent until you press Send invoice.')
+                    : ('Email ' + who + ' at ' + email + ' an invoice for ' + amountLabel + '.');
+            }
+            if (amountWrap) amountWrap.classList.toggle('hidden', due != null);
+            if (amountInput) amountInput.value = '';
+            if (methodsEl) methodsEl.textContent = 'Pay options: ' + invoiceMethodList(invoiceRemoteMethods(tenant)) + '.';
+            if (noteEl) noteEl.value = '';
+            var btn = document.getElementById('invoiceSendBtn');
+            if (btn) btn.disabled = false;
+            modal.classList.remove('hidden');
+            modal.scrollTop = 0;
+            var focusEl = due == null ? amountInput : noteEl;
+            if (focusEl && focusEl.focus) focusEl.focus();
+        }
+
+        window.closeInvoiceSendModal = function () {
+            invoiceSendAppId = '';
+            var modal = document.getElementById('invoiceSendModal');
+            if (modal) modal.classList.add('hidden');
+        };
+
+        window.sendAppointmentInvoice = function (appId) {
+            var tenant = (typeof getTenant === 'function') ? getTenant() : null;
+            if (!tenant) return;
+            var booking = (tenant.appointments || []).find(function (a) { return a && String(a.id) === String(appId); });
+            var block = invoiceSendBlock(tenant, booking);
+            if (block) {
+                showToast(block, 'error');
+                return;
+            }
+            openInvoiceSendModal(tenant, booking);
+        };
+
+        async function submitInvoiceSend(ev) {
+            if (ev && ev.preventDefault) ev.preventDefault();
+            var tenant = (typeof getTenant === 'function') ? getTenant() : null;
+            var booking = tenant && (tenant.appointments || []).find(function (a) { return a && String(a.id) === String(invoiceSendAppId); });
+            if (!tenant || !booking) {
+                showToast('Could not find that appointment.', 'error');
+                return false;
+            }
+            var block = invoiceSendBlock(tenant, booking);
+            if (block) {
+                showToast(block, 'error');
+                return false;
+            }
+            var noteEl = document.getElementById('invoiceSendNote');
+            var note = String((noteEl && noteEl.value) || '').trim();
+            if (note.length > 500) note = note.slice(0, 500);
+            if (/https?:\/\//i.test(note) || /(^|\s)www\./i.test(note)) {
+                showToast('Leave links out of the note. Payment links are added for you.', 'error');
+                return false;
+            }
+            var due = invoiceAmountDue(tenant, booking);
+            var previousAmount = booking.amount;
+            var pricedBefore = due != null;
+            if (due == null) {
+                var amountInput = document.getElementById('invoiceSendAmount');
+                var entered = amountInput ? Number(amountInput.value) : NaN;
+                if (!isFinite(entered) || entered < 0.5) {
+                    showToast('Enter an amount of at least $0.50.', 'error');
+                    return false;
+                }
+                booking.amount = roundMoney(entered);
+                due = invoiceAmountDue(tenant, booking);
+            }
+            if (due == null || due < 0.5) {
+                if (!pricedBefore) booking.amount = previousAmount;
+                showToast('Nothing is due on this appointment, so the invoice was not sent.', 'error');
+                return false;
+            }
+            var methods = invoiceRemoteMethods(tenant);
+            var content = buildInvoiceEmail(tenant, booking, { note: note, methods: methods });
+            if (!content) {
+                showToast('The invoice was not sent. Nothing was charged.', 'error');
+                return false;
+            }
+            var btn = document.getElementById('invoiceSendBtn');
+            if (btn) btn.disabled = true;
+            var hadInvoice = booking.invoiceOpen === true;
+            booking.invoiceOpen = true;
+            var saved = null;
+            try { saved = await saveState({ quietSyncErrors: true }); } catch (errSave) { saved = null; }
+            var apptSave = saved && saved.appointments && saved.appointments[tenant.id];
+            if (!window.__SCHEDI_DEMO && (!apptSave || apptSave.ok !== true)) {
+                if (!hadInvoice) delete booking.invoiceOpen;
+                if (!pricedBefore) booking.amount = previousAmount;
+                if (btn) btn.disabled = false;
+                showToast('The invoice was not sent. Nothing was charged.', 'error');
+                return false;
+            }
+            var to = String(booking.clientEmail || '').trim();
+            var result = null;
+            try {
+                result = await dispatchTenantMail(tenant, booking, content, 'appointment_invoice', { to: to });
+            } catch (errMail) {
+                result = null;
+            }
+            if (btn) btn.disabled = false;
+            if (!result || result.ok !== true) {
+                showToast('The invoice was not sent. Nothing was charged.', 'error');
+                return false;
+            }
+            try { renderSchediToday(tenant); } catch (errToday) {}
+            try { renderTenantRoster(tenant); } catch (errRoster) {}
+            window.closeInvoiceSendModal();
+            showToast('Invoice emailed to ' + to, 'success');
+            return false;
+        }
+        window.submitInvoiceSend = submitInvoiceSend;
 
         function buildConfirmationEmail(tenant, booking) {
             var replyTo = businessReplyTo(tenant);

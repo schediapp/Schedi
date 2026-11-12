@@ -6,6 +6,7 @@
  * tokens are AES-256-GCM ciphertext on the private tenant doc (squareConnection).
  * AUTH_KV holds the OAuth state and short lookup keys, never the tokens.
  */
+import { invoiceAmountDue, invoiceFullyPaid } from './invoice.js';
 import { readSession } from './owner-auth.js';
 import { loadPrivateAppointments, persistTenantAppointments } from './private-bookings.js';
 import { rateLimitOk } from './rate-limit.js';
@@ -1016,20 +1017,28 @@ async function handleSquarePay(request, env, url, deps) {
   if (tenant.squareReady !== true) {
     return squarePayPage('Finish Square setup to accept cards. Nothing was charged.', 409);
   }
+  const invoicePay = url.searchParams.get('invoice') === '1';
   if (String(booking.paymentMethod || '').toLowerCase() !== 'square') {
-    return squarePayPage('This booking is not set to pay with Square. Nothing was charged.', 400);
+    if (!(invoicePay && booking.invoiceOpen === true)) {
+      return squarePayPage('This booking is not set to pay with Square. Nothing was charged.', 400);
+    }
   }
   const ids = [bookingId];
-  for (const extraId of bookingIdsFrom(url.searchParams.get('ids'))) {
-    if (ids.indexOf(extraId) !== -1) continue;
-    const other = (appointments || []).find((item) => item && String(item.id) === extraId && booking.seriesId && item.seriesId === booking.seriesId);
-    if (!other || String(other.paymentMethod || '').toLowerCase() !== 'square') continue;
-    ids.push(extraId);
+  // An invoice pays this visit's remaining balance. Series mates stay on their own links.
+  if (!invoicePay) {
+    for (const extraId of bookingIdsFrom(url.searchParams.get('ids'))) {
+      if (ids.indexOf(extraId) !== -1) continue;
+      const other = (appointments || []).find((item) => item && String(item.id) === extraId && booking.seriesId && item.seriesId === booking.seriesId);
+      if (!other || String(other.paymentMethod || '').toLowerCase() !== 'square') continue;
+      ids.push(extraId);
+    }
   }
+  const squareBody = { tenantId, bookingIds: ids };
+  if (invoicePay && booking.invoiceOpen === true) squareBody.invoice = true;
   const inner = new Request(APP_ORIGIN + '/api/square/checkout', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ tenantId, bookingIds: ids }),
+    body: JSON.stringify(squareBody),
   });
   const checkoutRes = await handleCheckout(inner, env, deps);
   const data = await checkoutRes.json().catch(() => ({}));
@@ -1039,6 +1048,9 @@ async function handleSquarePay(request, env, url, deps) {
   if (squareHostedPayUrl(data && data.url)) return squarePayRedirect(data.url);
   if (data && data.error === 'square_not_ready') {
     return squarePayPage(data.message || 'Finish Square setup to accept cards. Nothing was charged.', 409);
+  }
+  if (data && data.error === 'invoice_not_open') {
+    return squarePayPage('This invoice link is not open. Nothing was charged.', 400);
   }
   const status = checkoutRes.status >= 400 ? checkoutRes.status : 502;
   return squarePayPage('Square checkout did not open. Nothing was charged.', status);
@@ -1074,15 +1086,40 @@ async function handleCheckout(request, env, deps) {
   const appointments = await load(env, tenantId);
   const selected = bookingIds.map((id) => (appointments || []).find((b) => b && String(b.id) === id)).filter(Boolean);
   if (selected.length !== bookingIds.length) return jsonResponse(deps, { ok: false, error: 'booking_not_found' }, 404, '');
-  for (const booking of selected) {
-    if (String(booking.paymentMethod || '').toLowerCase() !== 'square') {
-      return jsonResponse(deps, { ok: false, error: 'not_square_booking' }, 400, '');
+  if (body.invoice === true) {
+    const gw = tenant.paymentGateways && typeof tenant.paymentGateways === 'object' ? tenant.paymentGateways : {};
+    if (gw.square !== true) {
+      return jsonResponse(deps, {
+        ok: false,
+        error: 'square_not_ready',
+        message: 'Finish Square setup to accept cards. Nothing was charged.',
+      }, 409, '');
+    }
+    for (const booking of selected) {
+      if (booking.invoiceOpen !== true) return jsonResponse(deps, { ok: false, error: 'invoice_not_open' }, 400, '');
+    }
+  } else {
+    for (const booking of selected) {
+      if (String(booking.paymentMethod || '').toLowerCase() !== 'square') {
+        return jsonResponse(deps, { ok: false, error: 'not_square_booking' }, 400, '');
+      }
     }
   }
   const depositOn = deps.depositOn ? deps.depositOn(tenant) : false;
   let totalCents = 0;
   let kind = 'full';
+  if (body.invoice === true) {
+    for (const booking of selected) {
+      if (invoiceFullyPaid(tenant, booking)) continue;
+      const due = invoiceAmountDue(tenant, booking);
+      if (due == null) return jsonResponse(deps, { ok: false, error: 'service_has_no_price' }, 400, '');
+      const cents = Math.round(due * 100);
+      if (cents < 50) continue;
+      totalCents += cents;
+    }
+  }
   for (const booking of selected) {
+    if (body.invoice === true) break;
     const price = deps.bookingPrice ? deps.bookingPrice(tenant, booking) : Number(booking.amount);
     const status = String(booking.paymentStatus || '').toUpperCase();
     const wantsDeposit = depositOn && (Number(booking.depositAmount) > 0 || status.indexOf('DEPOSIT') !== -1);
