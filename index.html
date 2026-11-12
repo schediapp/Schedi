@@ -7580,7 +7580,7 @@ body.schedi-newbook .schedi-manage-card #manageSlots button { min-height: 44px; 
                 <label id="invoiceSendAmountWrap" class="block text-xs font-bold text-slate-300 hidden">Amount due
                     <input id="invoiceSendAmount" type="number" inputmode="decimal" min="0.50" step="0.01" placeholder="0.00" aria-label="Amount due" class="mt-1 w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white">
                 </label>
-                <p id="invoiceSendMethods" class="text-sm text-slate-300 leading-relaxed"></p>
+                <div id="invoiceSendMethods"></div>
                 <label class="block text-xs font-bold text-slate-300">Note to the client (optional)
                     <textarea id="invoiceSendNote" maxlength="500" rows="3" placeholder="For example, a note about this visit" class="mt-1 w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white"></textarea>
                 </label>
@@ -23363,6 +23363,37 @@ function schediQrCardPixels(text, color) {
             return labels.slice(0, -1).join(', ') + ', and ' + labels[labels.length - 1];
         }
 
+        function invoiceMethodChoicesHtml(methods) {
+            var boxes = (methods || []).map(function (method) {
+                var label = invoiceMethodLabel(method);
+                if (!label) return '';
+                return '<label class="flex items-center gap-2 min-h-[44px] text-sm text-slate-200">'
+                    + '<input type="checkbox" name="invoicePayMethod" value="' + esc(method) + '" checked style="width:1.15rem;height:1.15rem">'
+                    + '<span>' + esc(label) + '</span></label>';
+            }).filter(Boolean).join('');
+            if (!boxes) return '';
+            return '<fieldset style="border:0;padding:0;margin:0">'
+                + '<legend class="text-xs font-bold text-slate-300 mb-1">Pay options on this invoice</legend>'
+                + boxes
+                + '</fieldset>';
+        }
+
+        function invoiceSelectedMethods(ready) {
+            var allowed = {};
+            (ready || []).forEach(function (method) { allowed[method] = true; });
+            var chosen = [];
+            var root = document.getElementById('invoiceSendMethods');
+            var boxes = root ? root.querySelectorAll('input[name="invoicePayMethod"]') : [];
+            for (var i = 0; i < boxes.length; i++) {
+                var box = boxes[i];
+                if (!box.checked) continue;
+                var method = String(box.value || '');
+                if (!allowed[method] || chosen.indexOf(method) !== -1) continue;
+                chosen.push(method);
+            }
+            return chosen;
+        }
+
         function invoicePayButtonHtml(url, label, bgcolor) {
             if (!url) return { text: '', html: '' };
             var safeHref = String(url).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
@@ -23516,7 +23547,7 @@ function schediQrCardPixels(text, color) {
             }
             if (amountWrap) amountWrap.classList.toggle('hidden', due != null);
             if (amountInput) amountInput.value = '';
-            if (methodsEl) methodsEl.textContent = 'Pay options: ' + invoiceMethodList(invoiceRemoteMethods(tenant)) + '.';
+            if (methodsEl) methodsEl.innerHTML = invoiceMethodChoicesHtml(invoiceRemoteMethods(tenant));
             if (noteEl) noteEl.value = '';
             var btn = document.getElementById('invoiceSendBtn');
             if (btn) btn.disabled = false;
@@ -23564,6 +23595,12 @@ function schediQrCardPixels(text, color) {
                 showToast('Leave links out of the note. Payment links are added for you.', 'error');
                 return false;
             }
+            var readyMethods = invoiceRemoteMethods(tenant);
+            var methods = invoiceSelectedMethods(readyMethods);
+            if (!methods.length) {
+                showToast('Choose at least one payment method for this invoice.', 'error');
+                return false;
+            }
             var due = invoiceAmountDue(tenant, booking);
             var previousAmount = booking.amount;
             var pricedBefore = due != null;
@@ -23582,7 +23619,6 @@ function schediQrCardPixels(text, color) {
                 showToast('Nothing is due on this appointment, so the invoice was not sent.', 'error');
                 return false;
             }
-            var methods = invoiceRemoteMethods(tenant);
             var content = buildInvoiceEmail(tenant, booking, { note: note, methods: methods });
             if (!content) {
                 showToast('The invoice was not sent. Nothing was charged.', 'error');

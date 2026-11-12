@@ -90,6 +90,7 @@ const page = pageFns([
   "invoiceSquarePayLink",
   "invoiceMethodLabel",
   "invoiceMethodList",
+  "invoiceMethodChoicesHtml",
   "invoicePayButtonHtml",
   "invoiceManualPayUrl",
   "confirmEmailPriceLabel",
@@ -303,6 +304,52 @@ describe("invoice email", () => {
     expect(plain.html).not.toContain("See you Thursday");
     expect(plain.text).not.toContain("Note from");
     expect(page.buildInvoiceEmail(tenant, visit({ amount: 0, depositAmount: 0, depositPaid: false, paymentStatus: "PAY AT APPOINTMENT" }), {})).toBe(null);
+  });
+
+  it("starts with every ready method selected and emails only the ones the owner keeps", () => {
+    const tenant = studio();
+    const booking = visit();
+    const ready = page.invoiceRemoteMethods(tenant);
+    expect(ready).toEqual(["card", "square", "cashapp", "zelle", "venmo", "paypal"]);
+    const choices = page.invoiceMethodChoicesHtml(ready);
+    expect(choices).toContain("Pay options on this invoice");
+    for (const method of ready) {
+      expect(choices).toContain('value="' + method + '"');
+    }
+    expect(choices.match(/ checked/g)).toHaveLength(ready.length);
+    expect(choices).not.toContain('value="later"');
+    expect(choices).not.toContain('value="cash"');
+    expect(extractFunction(html, "openInvoiceSendModal")).toContain("invoiceMethodChoicesHtml(invoiceRemoteMethods(tenant))");
+
+    const venmoOnly = page.buildInvoiceEmail(tenant, booking, { methods: ["venmo"] });
+    expect(venmoOnly.html).toContain("https://venmo.com/u/axelphoto");
+    expect(venmoOnly.text).toContain("Venmo");
+    expect(venmoOnly.text).toContain("SCH-23AB");
+    expect(venmoOnly.html).not.toContain("Pay by card");
+    expect(venmoOnly.html).not.toContain("billing/card-pay");
+    expect(venmoOnly.html).not.toContain("Pay with Square");
+    expect(venmoOnly.html).not.toContain("api/square/pay");
+    expect(venmoOnly.text).not.toContain("Cash App");
+    expect(venmoOnly.text).not.toContain("Zelle");
+    expect(venmoOnly.text).not.toContain("PayPal");
+
+    const cardOnly = page.buildInvoiceEmail(tenant, booking, { methods: ["card"] });
+    expect(cardOnly.html).toContain("Pay by card");
+    expect(cardOnly.html).toContain("invoice=1");
+    expect(cardOnly.html).not.toContain("venmo.com");
+    expect(cardOnly.html).not.toContain("square/pay");
+    expect(cardOnly.text).not.toContain("SCH-23AB");
+    expect(page.buildInvoiceEmail(tenant, booking, { methods: [] })).toBe(null);
+
+    const submit = extractFunction(html, "submitInvoiceSend");
+    const guard = submit.indexOf("Choose at least one payment method for this invoice.");
+    const flag = submit.indexOf("invoiceOpen = true");
+    expect(guard).toBeGreaterThan(0);
+    expect(flag).toBeGreaterThan(guard);
+    expect(submit.slice(0, guard)).not.toContain("saveState");
+    expect(submit.slice(0, flag)).not.toContain("dispatchTenantMail");
+    expect(bookingHtml).not.toContain("invoicePayMethod");
+    expect(bookingHtml).not.toContain("Send invoice");
   });
 });
 
