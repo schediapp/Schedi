@@ -15,31 +15,37 @@ function h2(id: string, text: string): string {
 
 const POLICY = OWNER_SUBSCRIPTION_POLICY_TERMS.join(" ");
 
+export const INVOICE_FAQ: Faq = {
+  question: "Can I send invoices to clients?",
+  answer:
+    "Yes, on Pro. Pro can email an invoice from any appointment with card, Square, Cash App, Zelle, Venmo, or PayPal payment options. Free and Starter do not include sending invoices.",
+};
+
 export const AEO_FAQS: Faq[] = [
   {
     question: "How much does Schedi cost?",
     answer:
-      "Schedi has three plans: Free at $0, Starter at $29 a month, and Pro at $49 a month. Paid plans are month-to-month with no contract. Free includes one service and up to 5 bookings a week. Starter adds unlimited services and bookings, manual payment options, and accept or deny for each request. Pro includes everything in Starter, plus repeating appointments that can be weekly, biweekly, or monthly.",
+      "Schedi has three plans: Free at $0, Starter at $29 a month, and Pro at $49 a month. Paid plans are month-to-month with no contract. Free includes one service and up to 5 bookings a week. Starter adds unlimited services and bookings, manual payment options, and accept or deny for each request. Pro includes everything in Starter, plus repeating appointments that can be weekly, biweekly, or monthly, and sending invoices with payment links.",
   },
   {
     question: "What do I get on the Free plan?",
     answer:
-      "The Free plan costs $0. It includes one service and up to 5 bookings a week (Monday through Sunday). Clients pay at the appointment, and bookings confirm instantly. Your booking page shows a Schedi badge. The Free plan does not include repeating appointments or the option to accept or deny requests.",
+      "The Free plan costs $0. It includes one service and up to 5 bookings a week (Monday through Sunday). Clients pay at the appointment, and bookings confirm instantly. Your booking page shows a Schedi badge. The Free plan does not include repeating appointments, sending invoices, or the option to accept or deny requests.",
   },
   {
     question: "What does the Starter plan add?",
     answer:
-      "Starter costs $29 a month and removes the Free plan's limits: you get unlimited services and unlimited bookings. It also adds manual payment options and lets you accept or deny each booking request. The manual payment options are Cash App, Venmo, Zelle, PayPal, and pay at the appointment. Each service has its own price and duration, so you can list a 30-minute lesson and a 60-minute lesson side by side. Starter does not include card checkout or repeating appointments.",
+      "Starter costs $29 a month and removes the Free plan's limits: you get unlimited services and unlimited bookings. It also adds manual payment options and lets you accept or deny each booking request. The manual payment options are Cash App, Venmo, Zelle, PayPal, and pay at the appointment. Each service has its own price and duration, so you can list a 30-minute lesson and a 60-minute lesson side by side. Starter does not include card checkout, repeating appointments, or sending invoices.",
   },
   {
     question: "What does the Pro plan add?",
     answer:
-      "Pro costs $49 a month and includes everything in Starter, plus repeating appointments, card checkout (Stripe), and appointment deposits. Repeating appointments can be weekly, biweekly, or monthly. Card checkout stays off until Stripe card payments and payouts are active. The deposit stays off until you turn it on. Charging a cancellation fee on a card is coming soon.",
+      "Pro costs $49 a month and includes everything in Starter, plus repeating appointments, card checkout (Stripe), appointment deposits, and sending invoices with payment links. Repeating appointments can be weekly, biweekly, or monthly. Card checkout stays off until Stripe card payments and payouts are active. The deposit stays off until you turn it on. Charging a cancellation fee on a card is coming soon.",
   },
   {
     question: "What payment methods can my clients use?",
     answer:
-      "It depends on your plan. On Free, clients pay at the appointment. On Starter, you can offer Cash App, Venmo, Zelle, PayPal, or pay at the appointment. Pro includes the Starter payment options, plus card checkout (Stripe) and appointment deposits. Card checkout stays off until Stripe card payments and payouts are active. The deposit stays off until you turn it on. Starter does not include card checkout. Charging a cancellation fee on a card is coming soon.",
+      "It depends on your plan. On Free, clients pay at the appointment. On Starter, you can offer Cash App, Venmo, Zelle, PayPal, or pay at the appointment. Pro includes the Starter payment options, plus card checkout (Stripe) and appointment deposits. Card checkout stays off until Stripe card payments and payouts are active. The deposit stays off until you turn it on. Starter does not include card checkout. Charging a cancellation fee on a card is coming soon. Sending invoices with payment links is Pro only.",
   },
   {
     question: "Can I approve or decline bookings before they're confirmed?",
@@ -51,6 +57,7 @@ export const AEO_FAQS: Faq[] = [
     answer:
       "Yes, on Pro. Pro supports repeating appointments every week, every two weeks, or every month. Free and Starter do not include repeating appointments. Repeating appointments are different from repeating blocks, which are back-office blocks for time you're regularly unavailable, like a daily lunch break.",
   },
+  INVOICE_FAQ,
   {
     question: "Is there a contract, and what are the cancellation and refund terms?",
     answer: POLICY,
@@ -96,13 +103,13 @@ export function barberPage(): MarketingPage {
       p("Your hours and time off: set weekly hours, add repeating blocks for things like a daily lunch break, and block vacation days or single dates."),
       p("Branded confirmation email: clients get a confirmation email with your branding when they book."),
       h2("", "Getting paid"),
-      p("On Free, clients pay at the appointment. On Starter, clients can pay with Cash App, Venmo, Zelle, PayPal, or at the appointment. On Pro, card checkout (Stripe) and appointment deposits are included. Card checkout stays off until Stripe card payments and payouts are active. The deposit stays off until you turn it on. Charging a cancellation fee on a card is coming soon."),
+      p("On Free, clients pay at the appointment. On Starter, clients can pay with Cash App, Venmo, Zelle, PayPal, or at the appointment. On Pro, card checkout (Stripe) and appointment deposits are included. Card checkout stays off until Stripe card payments and payouts are active. The deposit stays off until you turn it on. Charging a cancellation fee on a card is coming soon. Sending invoices with payment links is Pro only."),
       h2("", "Regulars on a set schedule"),
       p("Pro includes repeating appointments, so a regular who comes in every week, every two weeks, or every month can keep the same slot without rebooking each time."),
       h2("", "Which plan fits a barber"),
       p("Free ($0): you want to try online booking with one service and up to 5 bookings a week. Bookings confirm instantly."),
       p("Starter ($29 a month): you offer more than one service, take more than 5 bookings a week, want to accept or deny each request, or get paid through Cash App, Venmo, Zelle, or PayPal."),
-      p("Pro ($49 a month): you want standing appointments for regulars."),
+      p("Pro ($49 a month): you want standing appointments for regulars, or to send invoices with payment links."),
       h2("", "How Schedi compares"),
       p(`Schedi is built for one barber, with a $0 Free plan and Starter at $29 a month, a dollar under Squire's $30 a month Independent plan. Squire is built for barbershops and lists multiple barber accounts and a waitlist on its shop plans (<a href="/compare#squire">Schedi vs Squire</a>).`),
       h2("", "What Schedi doesn't do"),
@@ -147,15 +154,15 @@ export function cleaningPage(): MarketingPage {
       h2("", "Services and prices"),
       p("List each type of clean with its own price and duration, such as a standard clean, a deep clean, or a move-out clean. The Free plan includes one service. Starter and Pro include unlimited services."),
       h2("", "Getting paid"),
-      p("On Free, clients pay at the appointment. On Starter, clients can pay with Cash App, Venmo, Zelle, PayPal, or at the appointment. On Pro, card checkout (Stripe) and appointment deposits are included. Card checkout stays off until Stripe card payments and payouts are active. The deposit stays off until you turn it on. Charging a cancellation fee on a card is coming soon."),
+      p("On Free, clients pay at the appointment. On Starter, clients can pay with Cash App, Venmo, Zelle, PayPal, or at the appointment. On Pro, card checkout (Stripe) and appointment deposits are included. Card checkout stays off until Stripe card payments and payouts are active. The deposit stays off until you turn it on. Charging a cancellation fee on a card is coming soon. Sending invoices with payment links is Pro only."),
       h2("", "Managing your week"),
       p("Your roster shows every booking. You can reschedule or cancel a clean, and add a job by hand when a client calls or texts you directly. Repeating blocks cover regular unavailable time, and vacation or date blocks cover days off. Clients get a branded confirmation email when they book."),
       h2("", "Which plan fits a cleaning business"),
       p("Free ($0): one service, up to 5 bookings a week, bookings confirm instantly, and clients pay at the appointment."),
       p("Starter ($29 a month): unlimited services and bookings, approval of each request, and payment by Cash App, Venmo, Zelle, PayPal, or at the appointment. No recurring cleans."),
-      p("Pro ($49 a month): everything in Starter plus recurring cleans (weekly, biweekly, monthly)."),
+      p("Pro ($49 a month): everything in Starter plus recurring cleans (weekly, biweekly, monthly) and sending invoices with payment links."),
       h2("", "How Schedi compares"),
-      p(`Schedi has a $0 Free plan, and Starter is $29 a month, under Jobber's $49 a month Core plan with no commitment. Jobber Core is $29 a month when billed annually. Schedi Starter stays month-to-month at $29. Pro at $49 a month adds repeating cleans for one owner. Jobber is field-service software built for quotes, invoices, and crews (<a href="/compare#jobber">Schedi vs Jobber</a>).`),
+      p(`Schedi has a $0 Free plan, and Starter is $29 a month, under Jobber's $49 a month Core plan with no commitment. Jobber Core is $29 a month when billed annually. Schedi Starter stays month-to-month at $29. Pro at $49 a month adds repeating cleans and sending invoices with payment links for one owner. Jobber is field-service software built for quotes, invoices, and crews (<a href="/compare#jobber">Schedi vs Jobber</a>).`),
       h2("", "What Schedi doesn't do"),
       p("Schedi does not calculate drive time, and it does not manage multiple cleaners or crews."),
       p(`See <a href="/pricing">pricing</a> or the <a href="/">Schedi home page</a>.`),
@@ -187,7 +194,7 @@ export function featuresPage(): MarketingPage {
       h2("", "Hours and time off"),
       p("Set weekly hours, add repeating blocks for time you are regularly unavailable (such as a lunch break), and add vacation or date blocks for days off."),
       h2("", "Getting paid"),
-      p("On Free, clients pay at the appointment. On Starter, clients can pay with Cash App, Venmo, Zelle, PayPal, or at the appointment. Starter does not include card checkout. Pro includes the Starter payment options, card checkout (Stripe), appointment deposits, and repeating appointments. Card checkout stays off until Stripe card payments and payouts are active. The deposit stays off until you turn it on. Charging a cancellation fee on a card is coming soon."),
+      p("On Free, clients pay at the appointment. On Starter, clients can pay with Cash App, Venmo, Zelle, PayPal, or at the appointment. Starter does not include card checkout. Pro includes the Starter payment options, card checkout (Stripe), appointment deposits, repeating appointments, and sending invoices with payment links. Card checkout stays off until Stripe card payments and payouts are active. The deposit stays off until you turn it on. Charging a cancellation fee on a card is coming soon."),
       h2("", "Repeating appointments"),
       p("Pro ($49 a month) lets a client keep a weekly, biweekly, or monthly slot. Free and Starter do not include repeating appointments. A repeating appointment is not the same thing as a repeating block for your own time off."),
       p(`Read <a href="/pricing">pricing</a>, <a href="/for/barbers">booking software for barbers</a>, <a href="/for/cleaning-services">booking software for cleaning businesses</a>, or <a href="/compare">Schedi vs other booking tools</a>.`),
@@ -205,7 +212,7 @@ export function comparePage(): MarketingPage {
     softwareJsonLd: true,
     faqs: [],
     bodyHtml: [
-      p("Schedi is a booking page and back office for one owner. Free is $0. Starter is $29 a month. Pro is $49 a month and adds repeating appointments, card checkout (Stripe), and appointment deposits. Card checkout stays off until Stripe card payments and payouts are active. The deposit stays off until you turn it on. Charging a cancellation fee on a card is coming soon. Paid plans have no setup fee and no contract: they are month-to-month, you can cancel anytime, and the first payment is refundable within 15 days. Clients can pay with Cash App, Venmo, Zelle, PayPal, or at the appointment, with no card processing fees through Schedi. On Starter and Pro you accept or deny each request."),
+      p("Schedi is a booking page and back office for one owner. Free is $0. Starter is $29 a month. Pro is $49 a month and adds repeating appointments, card checkout (Stripe), appointment deposits, and sending invoices with payment links. Card checkout stays off until Stripe card payments and payouts are active. The deposit stays off until you turn it on. Charging a cancellation fee on a card is coming soon. Paid plans have no setup fee and no contract: they are month-to-month, you can cancel anytime, and the first payment is refundable within 15 days. Clients can pay with Cash App, Venmo, Zelle, PayPal, or at the appointment, with no card processing fees through Schedi. On Starter and Pro you accept or deny each request."),
       p("Prices as listed on each vendor's site on Oct 19, 2026. The source URL is listed in each section."),
       h2("", "Why these six tools"),
       p("Schedi is built for a solo owner. Each section below says what these six tools add."),
@@ -217,42 +224,42 @@ export function comparePage(): MarketingPage {
       p("Square Appointments is appointment software, with Square Free for solo professionals and paid plans for teams and large salons."),
 
       h2("squire", "Schedi vs Squire"),
-      p("Schedi starts at $0, and Starter is $29 a month, a dollar under Squire's $30 a month Independent plan for one barber. Clients can pay with Cash App, Venmo, Zelle, PayPal, or at the appointment, with no card processing fees through Schedi. On Starter and Pro you accept or deny each request. There is no setup fee or contract: billing is month-to-month, you can cancel anytime, and the first payment is refundable within 15 days. Pro adds repeating appointments. Setup is built for one owner."),
+      p("Schedi starts at $0, and Starter is $29 a month, a dollar under Squire's $30 a month Independent plan for one barber. Clients can pay with Cash App, Venmo, Zelle, PayPal, or at the appointment, with no card processing fees through Schedi. On Starter and Pro you accept or deny each request. There is no setup fee or contract: billing is month-to-month, you can cancel anytime, and the first payment is refundable within 15 days. Pro adds repeating appointments and sending invoices with payment links. Setup is built for one owner."),
       p("Squire is built for barbershops. Its Independent plan is for one barber. Its shop plans add more than one barber account."),
       p('Source: <a href="https://getsquire.com/pricing" rel="nofollow noopener noreferrer">https://getsquire.com/pricing</a> (checked Oct 19, 2026).'),
       p('Squire pricing as listed: Independent (individual barbers) $30 a month with a 14-day free trial. Pro (single-location shops) $50 a month. Executive $150 a month per shop. Titan $250 a month per shop. Prices are published, but the Pro, Executive, and Titan plans start with a "Get a demo" request instead of a self-serve trial.'),
       p("What Squire includes: automated email and SMS reminders on the Independent plan, online booking with no-show protection, a Flex branded app, Tap to Pay on iPhone and Android, and group appointments. Pro adds multiple barber accounts, Google and Instagram booking, and a waitlist. Executive adds unlimited email and SMS marketing. Titan adds multi-location support, a loyalty program, and gift cards."),
 
       h2("booksy", "Schedi vs Booksy"),
-      p("Schedi has a $0 Free plan, and Starter is $29 a month, just under Booksy's $29.99 a month price. Clients can pay with Cash App, Venmo, Zelle, PayPal, or at the appointment, with no card processing fees through Schedi. On Starter and Pro you accept or deny each request. There is no setup fee or contract: billing is month-to-month, you can cancel anytime, and the first payment is refundable within 15 days. Pro adds repeating appointments. Setup is built for one owner."),
+      p("Schedi has a $0 Free plan, and Starter is $29 a month, just under Booksy's $29.99 a month price. Clients can pay with Cash App, Venmo, Zelle, PayPal, or at the appointment, with no card processing fees through Schedi. On Starter and Pro you accept or deny each request. There is no setup fee or contract: billing is month-to-month, you can cancel anytime, and the first payment is refundable within 15 days. Pro adds repeating appointments and sending invoices with payment links. Setup is built for one owner."),
       p("Booksy is a booking app and client marketplace built for barbers and beauty pros."),
       p('Source: <a href="https://biz.booksy.com/en-us/pricing" rel="nofollow noopener noreferrer">https://biz.booksy.com/en-us/pricing</a> (checked Oct 19, 2026).'),
       p("Booksy pricing as listed: $29.99 a month plus tax, with all features included. Each additional team member is $20 a month. 14-day free trial with no credit card. No commitment; cancel anytime. Card processing: 2.69% + $0.30 for mobile payments and keyed-in entry, 2.49% + $0.10 on the Booksy Card Reader, 2.49% + $0.20 for Tap to Pay. Boost (optional marketplace visibility) charges a one-time 30% fee on a Boost client's first visit, up to $100."),
       p("What Booksy includes: appointment confirmations and reminders, email marketing, text message marketing (2,000 free SMS marketing messages a month), custom forms and liability waivers, Reserve with Google, waitlists, no-show protection, online gift cards, memberships and packages, team members, card readers, and a client marketplace."),
 
       h2("vagaro", "Schedi vs Vagaro"),
-      p("Schedi has a $0 Free plan, and Starter is $29 a month, under Vagaro's regular $30.00 a month price for one person. Vagaro also lists $23.99 a month for the first 6 months. Clients can pay with Cash App, Venmo, Zelle, PayPal, or at the appointment, with no card processing fees through Schedi. On Starter and Pro you accept or deny each request. There is no setup fee or contract: billing is month-to-month, you can cancel anytime, and the first payment is refundable within 15 days. Pro adds repeating appointments. Setup is built for one owner."),
+      p("Schedi has a $0 Free plan, and Starter is $29 a month, under Vagaro's regular $30.00 a month price for one person. Vagaro also lists $23.99 a month for the first 6 months. Clients can pay with Cash App, Venmo, Zelle, PayPal, or at the appointment, with no card processing fees through Schedi. On Starter and Pro you accept or deny each request. There is no setup fee or contract: billing is month-to-month, you can cancel anytime, and the first payment is refundable within 15 days. Pro adds repeating appointments and sending invoices with payment links. Setup is built for one owner."),
       p("Vagaro is an all-in-one salon and appointment system."),
       p('Source: <a href="https://www.vagaro.com/pro/pricing" rel="nofollow noopener noreferrer">https://www.vagaro.com/pro/pricing</a> (checked Oct 19, 2026).'),
       p('Vagaro pricing as listed: "Just Me" (one person) $30.00 a month, or $23.99 a month for the first 6 months as an exclusive rate (exclusions apply). Each bookable calendar license costs $10, up to seven licenses; after seven, more employees can be added at no extra cost. 30-day free trial. Cancel anytime with no cancellation fees. A free card reader is offered when you sign up for Vagaro Merchant Services.'),
       p("What Vagaro includes: features listed on every plan are AI-powered business tools and marketing, payments, calendar and resource management, customer waitlist options, memberships, packages, and gift certificates, 1,000 free emails monthly, advanced reporting, customer loyalty programs, SOAP notes, inventory tracking, invoices, a free listing on the Vagaro Marketplace, unlimited notifications and appointment reminders, and online booking on Vagaro, Instagram, Facebook, and Apple Maps."),
 
       h2("acuity", "Schedi vs Acuity Scheduling"),
-      p("Schedi has a $0 Free plan. Acuity Scheduling has no free plan. Its one-calendar plan is $20 a month billed monthly, or $16 a month billed annually, and Schedi Starter is $29 a month. Clients can pay with Cash App, Venmo, Zelle, PayPal, or at the appointment, with no card processing fees through Schedi. On Starter and Pro you accept or deny each request. There is no setup fee or contract: billing is month-to-month, you can cancel anytime, and the first payment is refundable within 15 days. Pro adds repeating appointments. Setup is built for one owner."),
+      p("Schedi has a $0 Free plan. Acuity Scheduling has no free plan. Its one-calendar plan is $20 a month billed monthly, or $16 a month billed annually, and Schedi Starter is $29 a month. Clients can pay with Cash App, Venmo, Zelle, PayPal, or at the appointment, with no card processing fees through Schedi. On Starter and Pro you accept or deny each request. There is no setup fee or contract: billing is month-to-month, you can cancel anytime, and the first payment is refundable within 15 days. Pro adds repeating appointments and sending invoices with payment links. Setup is built for one owner."),
       p("Acuity Scheduling is a general appointment scheduler."),
       p('Source: <a href="https://acuityscheduling.com/pricing" rel="nofollow noopener noreferrer">https://acuityscheduling.com/pricing</a> (checked Oct 19, 2026).'),
       p("Acuity pricing as listed (annual price / monthly price): Starter $16 / $20 a month, 1 calendar. Standard $27 / $34 a month, up to 6 calendars. Premium $55 / $69 a month, up to 36 calendars. 7-day free trial with no credit card. No free plan. No setup or cancellation fees; cancel anytime. Prices exclude taxes."),
       p("What Acuity Scheduling includes: every plan includes client self-scheduling, unlimited services and appointments, payments and deposits through providers including Stripe, PayPal, and Venmo, email confirmations and reminders, custom intake forms, automatic time zone conversion, Google Meet, Zoom, and GoToMeeting integrations, and a mobile admin app. Standard adds text message reminders, an appointment waitlist, packages and memberships, and gift certificates. Premium adds removal of the Acuity logo, a HIPAA BAA, and custom API and CSS."),
 
       h2("jobber", "Schedi vs Jobber"),
-      p("Schedi has a $0 Free plan, and Starter is $29 a month, under Jobber's $49 a month Core plan with no commitment. Jobber's Core plan is $29 a month when billed annually. Schedi Starter stays month-to-month at $29. Pro is $49 a month and adds repeating appointments for one owner. Clients can pay with Cash App, Venmo, Zelle, PayPal, or at the appointment, with no card processing fees through Schedi. On Starter and Pro you accept or deny each request. There is no setup fee or contract, you can cancel anytime, and the first payment is refundable within 15 days."),
+      p("Schedi has a $0 Free plan, and Starter is $29 a month, under Jobber's $49 a month Core plan with no commitment. Jobber's Core plan is $29 a month when billed annually. Schedi Starter stays month-to-month at $29. Pro is $49 a month and adds repeating appointments and sending invoices with payment links for one owner. Clients can pay with Cash App, Venmo, Zelle, PayPal, or at the appointment, with no card processing fees through Schedi. On Starter and Pro you accept or deny each request. There is no setup fee or contract, you can cancel anytime, and the first payment is refundable within 15 days."),
       p("Jobber is field-service software built for quotes, invoices, and crews. Schedi does not calculate drive time or manage multiple cleaners or crews."),
       p('Source: <a href="https://www.getjobber.com/pricing/" rel="nofollow noopener noreferrer">https://www.getjobber.com/pricing/</a> (checked Oct 19, 2026).'),
       p("Jobber pricing as listed for one user: Core $49 a month with no commitment, $39 a month with a 1-year commitment, or $29 a month billed annually. Connect $139 / $119 / $99 a month. Grow $199 / $169 / $149 a month. Extra users are $29 a month each. 14-day free trial with full access to Grow features and no credit card. Card processing: 2.9% + 30 cents online, 2.7% + 30 cents for Tap to Pay, 1% for bank (ACH) payments."),
       p('What Jobber includes: Core includes online job booking and scheduling, quotes, invoices and online payments, a website, reporting, and an app marketplace with 100+ tools. Connect adds automated client reminders, automatic payments, checklists, QuickBooks Online sync, and time and expense tracking. Grow adds two-way SMS, job costing, and custom automations. Jobber also lists route optimization, GPS tracking, a "Find a Time" tool that recommends slots based on travel times, crew scheduling, and iOS and Android mobile apps. Plan availability for these is not shown clearly on the pricing page.'),
 
       h2("square", "Schedi vs Square Appointments"),
-      p("Schedi has a $0 Free plan, and Starter is $29 a month, under Square Plus at $49 a month per location. Square Free is $0 a month per location. Square Free has no monthly subscription cost, and Square charges processing fees when a payment is taken. Clients can pay with Cash App, Venmo, Zelle, PayPal, or at the appointment, with no card processing fees through Schedi. On Starter and Pro you accept or deny each request. There is no setup fee or contract: billing is month-to-month, you can cancel anytime, and the first payment is refundable within 15 days. Pro adds repeating appointments. Setup is built for one owner."),
+      p("Schedi has a $0 Free plan, and Starter is $29 a month, under Square Plus at $49 a month per location. Square Free is $0 a month per location. Square Free has no monthly subscription cost, and Square charges processing fees when a payment is taken. Clients can pay with Cash App, Venmo, Zelle, PayPal, or at the appointment, with no card processing fees through Schedi. On Starter and Pro you accept or deny each request. There is no setup fee or contract: billing is month-to-month, you can cancel anytime, and the first payment is refundable within 15 days. Pro adds repeating appointments and sending invoices with payment links. Setup is built for one owner."),
       p("Square Appointments is appointment software. Square Free is for solo professionals taking payments and managing schedules. Square Plus is for growing teams needing more advanced tools and features. Square Premium is for large salons with complex staff management and booking needs."),
       p('Source: <a href="https://squareup.com/us/en/appointments/pricing" rel="nofollow noopener noreferrer">https://squareup.com/us/en/appointments/pricing</a> (checked Oct 19, 2026).'),
       p("Square Appointments pricing as listed: Square Free is $0 a month per location, with no monthly subscription cost. Processing fees apply when a payment is taken. Square Plus is $49 a month per location. Square Premium is $149 a month per location. The Plus and Premium monthly fee applies to each location. Square Plus and Square Premium each offer a free 30-day trial, and you can cancel or switch plans anytime. In-person payments (tap, dip, or swipe) are 2.6% + 15¢ on Free, 2.5% + 15¢ on Plus, and 2.4% + 15¢ on Premium. Online card payments are 3.3% + 30¢ on Free, and 2.9% + 30¢ on Plus and Premium. Cash or check is free on every plan. If you process over $250,000 per year, Square says you can talk to its team about custom pricing and processing fees."),
@@ -263,7 +270,7 @@ export function comparePage(): MarketingPage {
         <li>Barbers: Schedi has a $0 Free plan and Starter at $29 a month for one owner. Squire is built for barbershops. Booksy is a booking app and marketplace for barbers and beauty pros.</li>
         <li>Salons and pet groomers: Schedi covers booking and the schedule for one owner, and Starter is $29 a month. Vagaro's regular one-person price is $30.00 a month, or $23.99 a month for the first 6 months. Vagaro is an all-in-one salon system. Square Appointments lists Square Free at $0 a month per location, Plus at $49 a month per location, and Premium at $149 a month per location.</li>
         <li>Photographers, lesson teachers, and notaries: Schedi has a $0 Free plan. Acuity Scheduling is a general appointment scheduler. Its one-calendar plan is $20 a month ($16 billed annually), and Schedi Starter is $29 a month.</li>
-        <li>Cleaners, lawn care, and auto detailers: Schedi books one owner, with Starter at $29 a month and repeating appointments on Pro at $49 a month. Jobber is field-service software. Its Core plan is $49 a month with no commitment, or $29 a month billed annually.</li>
+        <li>Cleaners, lawn care, and auto detailers: Schedi books one owner, with Starter at $29 a month, and repeating appointments and sending invoices on Pro at $49 a month. Jobber is field-service software. Its Core plan is $49 a month with no commitment, or $29 a month billed annually.</li>
       </ul>`,
       p('Pages for specific businesses: <a href="/for/barbers">barbers</a> and <a href="/for/cleaning-services">cleaning businesses</a>. See <a href="/pricing">pricing</a>.'),
     ].join("\n"),
