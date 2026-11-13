@@ -1376,7 +1376,7 @@ describe("owner dashboard preview", () => {
     expect(denied.row).toMatchObject({ status: "denied", noShow: true });
     expect(denied.saved).toBe(0);
     const actions = new Function(
-      `${extractFunction(html, "esc")}\n${extractFunction(html, "jsArg")}\n${extractFunction(html, "appointmentIsCancelled")}\n${extractFunction(html, "appointmentIsNoShow")}\n${extractFunction(html, "bookingPaymentState")}\n${extractFunction(html, "rosterActionsHtml")}\nreturn rosterActionsHtml;`,
+      `${extractFunction(html, "esc")}\n${extractFunction(html, "jsArg")}\n${extractFunction(html, "appointmentIsCancelled")}\n${extractFunction(html, "appointmentIsNoShow")}\n${extractFunction(html, "bookingPaymentState")}\n${extractFunction(html, "invoiceMenuBadge")}\n${extractFunction(html, "rosterActionsHtml")}\nreturn rosterActionsHtml;`,
     )() as (app: Visit, big: boolean) => string;
     const marked = actions({ id: "HB-1005", status: "accepted", noShow: true, paymentStatus: "PAY AT APPOINTMENT" }, false);
     expect(marked).toContain("undoAppointmentNoShow");

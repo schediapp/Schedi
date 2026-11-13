@@ -19,7 +19,7 @@ import { readSession } from './owner-auth.js';
 import { loadPrivateAppointments } from './private-bookings.js';
 import { rateLimitOk } from './rate-limit.js';
 import { appointmentIsClientConfirmed } from './appointment-updated.js';
-import { invoiceAmountDue, invoiceFullyPaid, invoicePlanName, invoiceRemoteMethods, invoiceCashAppUrl, invoicePaypalUrl, invoiceVenmoUrl, invoiceZelleUrl } from './invoice.js';
+import { invoiceAmountDue, invoiceAllowsSend, invoiceFullyPaid, invoiceRemoteMethods, invoiceCashAppUrl, invoicePaypalUrl, invoiceVenmoUrl, invoiceZelleUrl } from './invoice.js';
 
 const OWNER_CONTACT_TOKEN = '{{schedi_owner_contact}}';
 const EM_DASH_SEP = ' \u2014 ';
@@ -430,7 +430,7 @@ export async function handleBookingMailPost(request, env, origin, deps) {
   if (!tenant) return json({ ok: false, error: 'tenant_not_found' }, 404, origin);
   if (type === 'appointment_invoice') {
     if (invoiceFullyPaid(tenant, booking)) return json({ ok: false, error: 'already_paid' }, 409, origin);
-    if (invoicePlanName(tenant) === 'free') return json({ ok: false, error: 'free_plan' }, 403, origin);
+    if (!invoiceAllowsSend(tenant)) return json({ ok: false, error: 'pro_only' }, 403, origin);
     if (!invoiceRemoteMethods(tenant).length) return json({ ok: false, error: 'no_payment_method' }, 400, origin);
     const due = invoiceAmountDue(tenant, booking);
     if (due == null || due < 0.5) return json({ ok: false, error: 'amount_due' }, 400, origin);
