@@ -2,6 +2,7 @@
  * Amount still due and the owner's remote pay methods for an owner-sent invoice.
  * Confirmation emails, card quotes, and booking-page checkout do not use this module.
  * An invoice link charges only after the owner has opened one (booking.invoiceOpen).
+ * Sending an appointment invoice is Pro only. Complimentary Pro counts as pro.
  */
 
 export function invoiceRoundMoney(n) {
@@ -24,6 +25,11 @@ export function invoicePlanName(tenant) {
   if (n === 29 || n === 49) return 'starter';
   if (n === 99) return 'pro';
   return 'free';
+}
+
+/** Appointment invoices require Pro. Starter stays starter in invoicePlanName, so this rejects it. */
+export function invoiceAllowsSend(tenant) {
+  return invoicePlanName(tenant) === 'pro';
 }
 
 function catalogPrice(tenant, serviceName) {

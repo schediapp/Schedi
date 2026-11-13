@@ -2,9 +2,11 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import { handleBookingMailPost } from "../workers/schedi-email-worker/src/booking-mail.js";
 import {
+  invoiceAllowsSend,
   invoiceAmountDue,
   invoiceFullyPaid,
   invoicePaypalUrl,
+  invoicePlanName,
   invoiceRemoteMethods,
   invoiceVenmoUrl,
 } from "../workers/schedi-email-worker/src/invoice.js";
@@ -85,6 +87,7 @@ const page = pageFns([
   "invoiceCashAppUrl",
   "invoiceZelleUrl",
   "invoiceRemoteMethods",
+  "invoiceProOnlyMessage",
   "invoiceSendBlock",
   "invoiceCardPayLink",
   "invoiceSquarePayLink",
@@ -151,6 +154,52 @@ function studio(extra: Record<string, unknown> = {}) {
   };
 }
 
+const PRO_INVOICE_MESSAGE = "Invoices are a Pro feature. Upgrade to Pro to email invoices with payment links.";
+
+function clickSendInvoice(extra: Record<string, unknown>) {
+  const tenant = studio(extra);
+  const booking = visit();
+  (tenant as { appointments: unknown[] }).appointments = [booking];
+  const src = [
+    "var tenant = " + JSON.stringify(tenant) + ";",
+    "var opened = false;",
+    "var toasts = [];",
+    "var pages = [];",
+    "var compared = false;",
+    "function getTenant() { return tenant; }",
+    "function showToast(message) { toasts.push(String(message)); }",
+    "function openInvoiceSendModal() { opened = true; }",
+    "function invoiceSendBlock() { return ''; }",
+    "var made = [];",
+    "var container = { children: [], appendChild: function (node) { node.parentNode = this; this.children.push(node); return node; }, removeChild: function (node) { this.children = this.children.filter(function (child) { return child !== node; }); } };",
+    "var document = { getElementById: function (id) { return id === 'toastContainer' ? container : null; }, createElement: function (tag) { var el = { tag: tag, className: '', textContent: '', type: '', parentNode: null, children: [], listeners: {}, setAttribute: function () {}, appendChild: function (child) { child.parentNode = this; this.children.push(child); return child; }, addEventListener: function (name, fn) { this.listeners[name] = fn; } }; made.push(el); return el; } };",
+    "var window = { schediDashGo: function (page) { pages.push(page); }, openComparePlansModal: function () { compared = true; } };",
+    extractFunction(html, "isComplimentaryPro"),
+    extractFunction(html, "normalizePlan"),
+    extractFunction(html, "invoiceProOnlyMessage"),
+    extractFunction(html, "openInvoicePlanUpgrade"),
+    extractFunction(html, "showInvoiceProUpgrade"),
+    extractFunction(html, "sendAppointmentInvoice"),
+    "window.sendAppointmentInvoice(" + JSON.stringify(booking.id) + ");",
+    "var upgrade = made.filter(function (el) { return el.tag === 'button'; })[0];",
+    "if (upgrade && upgrade.listeners.click) upgrade.listeners.click();",
+    "var title = made.filter(function (el) { return el.className === 'sd-undo-title'; })[0];",
+    "return { opened: opened, toasts: toasts, pages: pages, compared: compared, title: title ? title.textContent : '' };",
+  ].join("\n");
+  return new Function(src)() as { opened: boolean; toasts: string[]; pages: string[]; compared: boolean; title: string };
+}
+
+function invoiceBadge(extra: Record<string, unknown>) {
+  const src = [
+    "function getTenant() { return " + JSON.stringify(studio(extra)) + "; }",
+    extractFunction(html, "isComplimentaryPro"),
+    extractFunction(html, "normalizePlan"),
+    extractFunction(html, "invoiceMenuBadge"),
+    "return invoiceMenuBadge();",
+  ].join("\n");
+  return new Function(src)() as string;
+}
+
 describe("send invoice menu", () => {
   it("adds Send invoice to the agenda and appointment kebabs and leaves the client menu alone", () => {
     for (const name of ["schediAgendaVisitHtml", "rosterListActionsHtml", "rosterActionsHtml"]) {
@@ -168,6 +217,11 @@ describe("send invoice menu", () => {
     expect(extractFunction(html, "rosterListActionsHtml")).toContain("Mark paid");
     expect(extractFunction(html, "rosterListActionsHtml")).toContain("Mark unpaid");
     expect(html.split("appointment_invoice").length - 1).toBe(1);
+    for (const name of ["schediAgendaVisitHtml", "rosterListActionsHtml", "rosterActionsHtml"]) {
+      expect(extractFunction(html, name)).toContain("invoiceMenuBadge()");
+    }
+    expect(extractFunction(html, "invoiceMenuBadge")).toContain("sd-pro-tag");
+    expect(extractFunction(html, "invoiceMenuBadge")).toContain("normalizePlan");
     expect(extractFunction(html, "renderClientList")).not.toContain("Send invoice");
     expect(extractFunction(html, "renderClientList")).toContain("Book appointment");
     expect(bookingHtml).not.toContain("Send invoice");
@@ -180,8 +234,19 @@ describe("send invoice menu", () => {
     expect(submit).toContain("appointment_invoice");
     expect(submit).toContain("buildInvoiceEmail");
     expect(submit).toContain("invoiceOpen = true");
-    expect(extractFunction(html, "sendAppointmentInvoice")).not.toContain("dispatchTenantMail");
-    expect(extractFunction(html, "sendAppointmentInvoice")).toContain("openInvoiceSendModal");
+    const planGuard = submit.indexOf("normalizePlan(tenant) !== 'pro'");
+    const flag = submit.indexOf("invoiceOpen = true");
+    expect(planGuard).toBeGreaterThan(0);
+    expect(flag).toBeGreaterThan(planGuard);
+    expect(submit.slice(0, flag)).toContain("showInvoiceProUpgrade");
+    expect(submit).not.toContain("freePaymentMessage");
+    const send = extractFunction(html, "sendAppointmentInvoice");
+    expect(send).not.toContain("dispatchTenantMail");
+    expect(send).toContain("openInvoiceSendModal");
+    expect(send.indexOf("showInvoiceProUpgrade")).toBeGreaterThan(0);
+    expect(send.indexOf("showInvoiceProUpgrade")).toBeLessThan(send.indexOf("openInvoiceSendModal"));
+    expect(send).toContain("normalizePlan(tenant) !== 'pro'");
+    expect(send).not.toContain("freePaymentMessage");
     for (const name of [
       "acceptAppointment",
       "denyAppointment",
@@ -196,6 +261,39 @@ describe("send invoice menu", () => {
       expect(fn).not.toContain("appointment_invoice");
       expect(fn).not.toContain("sendAppointmentInvoice");
     }
+  });
+
+  it("blocks Free and Starter with the Pro message and opens the dialog on Pro", () => {
+    const freeClick = clickSendInvoice({ plan: "free" });
+    expect(freeClick.opened).toBe(false);
+    expect(freeClick.title).toBe(PRO_INVOICE_MESSAGE);
+    expect(freeClick.toasts).toEqual([]);
+    expect(freeClick.pages).toEqual(["billing"]);
+    expect(freeClick.compared).toBe(true);
+
+    const starterClick = clickSendInvoice({ plan: "starter" });
+    expect(starterClick.opened).toBe(false);
+    expect(starterClick.title).toBe(PRO_INVOICE_MESSAGE);
+    expect(starterClick.toasts).toEqual([]);
+    expect(starterClick.pages).toEqual(["billing"]);
+    expect(starterClick.compared).toBe(true);
+
+    const proClick = clickSendInvoice({ plan: "pro" });
+    expect(proClick.opened).toBe(true);
+    expect(proClick.title).toBe("");
+    expect(proClick.pages).toEqual([]);
+    expect(proClick.compared).toBe(false);
+
+    const complimentaryClick = clickSendInvoice({ plan: "free", complimentaryPro: true });
+    expect(complimentaryClick.opened).toBe(true);
+    expect(complimentaryClick.title).toBe("");
+
+    expect(invoiceBadge({ plan: "free" })).toContain("sd-pro-tag");
+    expect(invoiceBadge({ plan: "starter" })).toContain(">Pro<");
+    expect(invoiceBadge({ plan: "pro" })).toBe("");
+    expect(invoiceBadge({ plan: "starter", billingExempt: true })).toBe("");
+    expect(extractFunction(html, "openInvoicePlanUpgrade")).toContain("schediDashGo('billing')");
+    expect(extractFunction(html, "openInvoicePlanUpgrade")).toContain("openComparePlansModal");
   });
 });
 
@@ -216,8 +314,13 @@ describe("invoice amount and pay methods", () => {
     const noEmail = visit({ clientEmail: "" });
     expect(page.invoiceSendBlock(tenant, noEmail)).toBe("This appointment has no client email, so the invoice was not sent.");
 
+    const proOnly = "Invoices are a Pro feature. Upgrade to Pro to email invoices with payment links.";
     const free = studio({ plan: "free", stripeConnectReady: false, squareReady: false, paymentGateways: { later: true } });
-    expect(page.invoiceSendBlock(free, visit())).toBe(page.freePaymentMessage(free, "card"));
+    expect(page.invoiceProOnlyMessage()).toBe(proOnly);
+    expect(page.invoiceSendBlock(free, visit())).toBe(proOnly);
+    expect(page.freePaymentMessage(free, "card")).toBe("Free plan only allows pay at the appointment. This was not saved.");
+    expect(extractFunction(html, "invoiceSendBlock")).not.toContain("freePaymentMessage");
+    expect(extractFunction(html, "freePaymentMessage")).toContain("Free plan only allows pay at the appointment. This was not saved.");
     expect(page.invoiceRemoteMethods(free)).toEqual([]);
     expect(invoiceRemoteMethods(free)).toEqual([]);
 
@@ -228,7 +331,21 @@ describe("invoice amount and pay methods", () => {
     });
     expect(page.invoiceRemoteMethods(starter)).toEqual(["square", "cashapp", "venmo"]);
     expect(invoiceRemoteMethods(starter)).toEqual(["square", "cashapp", "venmo"]);
+    expect(page.invoiceSendBlock(starter, visit())).toBe("Invoices are a Pro feature. Upgrade to Pro to email invoices with payment links.");
     expect(page.invoiceCardPayLink(starter, visit())).toBe("");
+    const complimentary = studio({ plan: "starter", complimentaryPro: true });
+    expect(page.normalizePlan(complimentary)).toBe("pro");
+    expect(page.invoiceSendBlock(complimentary, visit())).toBe("");
+    expect(invoicePlanName(studio({ plan: "starter" }))).toBe("starter");
+    expect(invoiceAllowsSend(studio({ plan: "starter" }))).toBe(false);
+    expect(invoiceAllowsSend(studio({ plan: "free" }))).toBe(false);
+    expect(invoiceAllowsSend(studio({ plan: "pro" }))).toBe(true);
+    expect(invoiceAllowsSend(complimentary)).toBe(true);
+    expect(invoicePlanName({ monthlyPrice: 29 })).toBe("starter");
+    expect(invoicePlanName({ monthlyPrice: 49 })).toBe("starter");
+    expect(invoiceAllowsSend({ monthlyPrice: 49 })).toBe(false);
+    expect(invoicePlanName({ monthlyPrice: 99 })).toBe("pro");
+    expect(invoiceAllowsSend({ monthlyPrice: 99 })).toBe(true);
 
     const bare = studio({
       plan: "pro",
@@ -440,7 +557,31 @@ describe("invoice mail is owner initiated", () => {
       text: mail.text,
     }, studio({ plan: "free" }));
     expect(free.status).toBe(403);
-    expect(free.body.error).toBe("free_plan");
+    expect(free.body.error).toBe("pro_only");
+
+    const starterPlan = await post({
+      tenantId: "harbor",
+      bookingId: booking.id,
+      session: "owner-session-token",
+      type: "appointment_invoice",
+      subject: mail.subject,
+      html: mail.html,
+      text: mail.text,
+    }, studio({ plan: "starter" }));
+    expect(starterPlan.status).toBe(403);
+    expect(starterPlan.body.error).toBe("pro_only");
+
+    const legacyStarter = await post({
+      tenantId: "harbor",
+      bookingId: booking.id,
+      session: "owner-session-token",
+      type: "appointment_invoice",
+      subject: mail.subject,
+      html: mail.html,
+      text: mail.text,
+    }, studio({ plan: "", monthlyPrice: 49 }));
+    expect(legacyStarter.status).toBe(403);
+    expect(legacyStarter.body.error).toBe("pro_only");
 
     hoisted.bookings = [booking];
     const none = await post({
@@ -452,7 +593,7 @@ describe("invoice mail is owner initiated", () => {
       html: mail.html,
       text: mail.text,
     }, studio({
-      plan: "starter",
+      plan: "pro",
       stripeConnectReady: false,
       squareReady: false,
       paymentGateways: { later: true },

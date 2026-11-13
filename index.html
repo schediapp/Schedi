@@ -1136,6 +1136,29 @@ html.schedi-light #tenantPortalSection.schedi-newdash .sd-more > summary:active 
     cursor: pointer;
 }
 #tenantPortalSection.schedi-newdash .sd-more-menu button:hover { background: rgba(148, 163, 184, 0.1); }
+body.schedi-newdash .sd-pro-tag {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 8px;
+    padding: 0 6px;
+    height: 16px;
+    border-radius: 999px;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    line-height: 1;
+    color: #e0e7ff;
+    background: rgba(99, 102, 241, 0.22);
+    border: 1px solid rgba(165, 180, 252, 0.55);
+    vertical-align: 1px;
+    flex: none;
+}
+html.schedi-light body.schedi-newdash .sd-pro-tag {
+    color: #3730a3;
+    background: #e0e7ff;
+    border-color: #a5b4fc;
+}
 #tenantPortalSection.schedi-newdash .sd-more-menu button.sd-act-ok:hover,
 #tenantPortalSection.schedi-newdash .sd-more-menu button.sd-act-ok:focus-visible,
 #tenantPortalSection.schedi-newdash .sd-more-menu button.sd-act-ok:active {
@@ -16250,6 +16273,15 @@ function schediQrCardPixels(text, color) {
             }).sort(function (a, b) { return schediSortVisits(b, a); });
         }
 
+        function invoiceMenuBadge() {
+            var tenant = null;
+            try { tenant = (typeof getTenant === 'function') ? getTenant() : null; } catch (errTenant) { tenant = null; }
+            try {
+                if (tenant && normalizePlan(tenant) === 'pro') return '';
+            } catch (errPlan) {}
+            return '<span class="sd-pro-tag">Pro</span>';
+        }
+
         function schediAgendaVisitHtml(tenant, app, today, opts) {
             opts = opts || {};
             var id = esc(jsArg(app.id));
@@ -16277,7 +16309,7 @@ function schediQrCardPixels(text, color) {
                 '<details class="sd-more"><summary aria-label="More actions" aria-expanded="false"><i class="fa-solid fa-ellipsis-vertical" aria-hidden="true"></i></summary>' +
                 '<div class="sd-more-menu" role="menu">' +
                 payAction +
-                '<button type="button" role="menuitem" onclick="closeSchediTodayMenus(event); sendAppointmentInvoice(' + id + ')">Send invoice</button>' +
+                '<button type="button" role="menuitem" onclick="closeSchediTodayMenus(event); sendAppointmentInvoice(' + id + ')">Send invoice' + invoiceMenuBadge() + '</button>' +
                 '<button type="button" class="sd-act-ok" role="menuitem" onclick="closeSchediTodayMenus(event); openTenantRescheduleModal(' + id + ')">Reschedule</button>' +
                 noShowAction +
                 '<button type="button" class="sd-act-no" role="menuitem" onclick="closeSchediTodayMenus(event); deleteAppointment(' + id + ')">Cancel</button>' +
@@ -18015,7 +18047,7 @@ function schediQrCardPixels(text, color) {
                 } else if (decided) {
                     out.push(btn('markAppointmentPaid', 'sd-act sd-act-ok', '<i class="fa-solid fa-circle-check mr-1"></i>Mark paid'));
                 }
-                out.push(btn('sendAppointmentInvoice', 'sd-act', 'Send invoice'));
+                out.push(btn('sendAppointmentInvoice', 'sd-act', 'Send invoice' + invoiceMenuBadge()));
                 out.push(btn('openEditAppointment', 'sd-act', 'Edit'));
                 out.push(btn('openTenantRescheduleModal', 'sd-act sd-act-ok', '<i class="fa-solid fa-calendar-days mr-1"></i>Reschedule'));
                 if (decided && appointmentIsNoShow(app)) out.push(btn('undoAppointmentNoShow', 'sd-act', '<i class="fa-solid fa-rotate-left mr-1" aria-hidden="true"></i>Undo no-show'));
@@ -18046,7 +18078,7 @@ function schediQrCardPixels(text, color) {
             } else if (st === 'pending') {
                 primary.push(primaryBtn('acceptAppointment', 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30', 'Accept'));
                 primary.push(primaryBtn('denyAppointment', 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30', 'Deny'));
-                menu.push(menuBtn('sendAppointmentInvoice', '', 'Send invoice'));
+                menu.push(menuBtn('sendAppointmentInvoice', '', 'Send invoice' + invoiceMenuBadge()));
                 menu.push(menuBtn('openEditAppointment', '', 'Edit'));
                 menu.push(menuBtn('openTenantRescheduleModal', 'sd-act-ok', '<i class="fa-solid fa-calendar-days mr-1"></i>Reschedule'));
                 menu.push(menuBtn('deleteAppointment', 'sd-act-no', '<i class="fa-solid fa-xmark mr-1"></i>Cancel'));
@@ -18057,7 +18089,7 @@ function schediQrCardPixels(text, color) {
                 } else if (decided) {
                     primary.push(primaryBtn('markAppointmentPaid', 'sd-act sd-act-ok', '<i class="fa-solid fa-circle-check mr-1"></i>Mark paid'));
                 }
-                menu.push(menuBtn('sendAppointmentInvoice', '', 'Send invoice'));
+                menu.push(menuBtn('sendAppointmentInvoice', '', 'Send invoice' + invoiceMenuBadge()));
                 menu.push(menuBtn('openEditAppointment', '', 'Edit'));
                 menu.push(menuBtn('openTenantRescheduleModal', 'sd-act-ok', '<i class="fa-solid fa-calendar-days mr-1"></i>Reschedule'));
                 if (decided && appointmentIsNoShow(app)) menu.push(menuBtn('undoAppointmentNoShow', '', '<i class="fa-solid fa-rotate-left mr-1" aria-hidden="true"></i>Undo no-show'));
@@ -23296,13 +23328,16 @@ function schediQrCardPixels(text, color) {
             return out;
         }
 
+        function invoiceProOnlyMessage() {
+            return 'Invoices are a Pro feature. Upgrade to Pro to email invoices with payment links.';
+        }
+
         function invoiceSendBlock(tenant, booking) {
             if (!tenant || !booking) return 'Could not find that appointment.';
+            if (normalizePlan(tenant) !== 'pro') return invoiceProOnlyMessage();
             if (invoiceFullyPaid(tenant, booking)) return 'This visit is already marked paid.';
             var email = String(booking.clientEmail || '').trim();
             if (!email || email.indexOf('@') < 1) return 'This appointment has no client email, so the invoice was not sent.';
-            var freeMsg = freePaymentMessage(tenant, 'card');
-            if (freeMsg) return freeMsg;
             if (!invoiceRemoteMethods(tenant).length) return 'Turn on a payment method in Payments before sending an invoice.';
             var due = invoiceAmountDue(tenant, booking);
             if (due !== null && due < 0.5) return 'Nothing is due on this appointment, so the invoice was not sent.';
@@ -23563,9 +23598,51 @@ function schediQrCardPixels(text, color) {
             if (modal) modal.classList.add('hidden');
         };
 
+        function openInvoicePlanUpgrade() {
+            try { if (typeof closeInvoiceSendModal === 'function') closeInvoiceSendModal(); } catch (errClose) {}
+            var root = (typeof window !== 'undefined') ? window : globalThis;
+            try { if (root && typeof root.schediDashGo === 'function') root.schediDashGo('billing'); } catch (errGo) {}
+            try { if (root && typeof root.openComparePlansModal === 'function') root.openComparePlansModal(); } catch (errPlans) {}
+        }
+
+        function showInvoiceProUpgrade() {
+            var message = invoiceProOnlyMessage();
+            var container = document.getElementById('toastContainer');
+            if (!container) {
+                if (typeof showToast === 'function') showToast(message, 'info');
+                return;
+            }
+            var toast = document.createElement('div');
+            toast.className = 'sd-undo';
+            toast.setAttribute('role', 'status');
+            var copy = document.createElement('div');
+            copy.className = 'sd-undo-copy';
+            var title = document.createElement('strong');
+            title.className = 'sd-undo-title';
+            title.textContent = message;
+            copy.appendChild(title);
+            var button = document.createElement('button');
+            button.type = 'button';
+            button.textContent = 'Upgrade';
+            button.addEventListener('click', function () {
+                if (toast.parentNode) toast.parentNode.removeChild(toast);
+                openInvoicePlanUpgrade();
+            });
+            toast.appendChild(copy);
+            toast.appendChild(button);
+            container.appendChild(toast);
+            setTimeout(function () {
+                if (toast.parentNode) toast.parentNode.removeChild(toast);
+            }, 12000);
+        }
+
         window.sendAppointmentInvoice = function (appId) {
             var tenant = (typeof getTenant === 'function') ? getTenant() : null;
             if (!tenant) return;
+            if (normalizePlan(tenant) !== 'pro') {
+                showInvoiceProUpgrade();
+                return;
+            }
             var booking = (tenant.appointments || []).find(function (a) { return a && String(a.id) === String(appId); });
             var block = invoiceSendBlock(tenant, booking);
             if (block) {
@@ -23581,6 +23658,10 @@ function schediQrCardPixels(text, color) {
             var booking = tenant && (tenant.appointments || []).find(function (a) { return a && String(a.id) === String(invoiceSendAppId); });
             if (!tenant || !booking) {
                 showToast('Could not find that appointment.', 'error');
+                return false;
+            }
+            if (normalizePlan(tenant) !== 'pro') {
+                showInvoiceProUpgrade();
                 return false;
             }
             var block = invoiceSendBlock(tenant, booking);
