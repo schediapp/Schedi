@@ -227,6 +227,9 @@ describe("send invoice menu", () => {
     expect(bookingHtml).not.toContain("Send invoice");
     expect(bookingHtml).not.toContain("buildInvoiceEmail");
     expect(bookingHtml).not.toContain("appointment_invoice");
+    expect(extractFunction(html, "showHelpPage")).toContain("Send an invoice");
+    expect(extractFunction(html, "showHelpPage")).toContain("Free and Starter do not include sending invoices.");
+    expect(extractFunction(html, "schediPlanCompareRows")).toContain("Send invoices with payment links");
   });
 
   it("sends invoice mail only from the explicit owner submit", () => {

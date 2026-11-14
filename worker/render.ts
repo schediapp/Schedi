@@ -71,9 +71,9 @@ export function renderLlms(): string {
     "Schedi is booking software for a service business run by one owner. Clients book on a public page. The owner manages the roster, services, prices, durations, weekly hours, and time off from a back office. It is built around one owner's schedule, not a team's.",
     "",
     "Plans (USD, billed monthly):",
-    "- Free: $0. One service, up to 5 bookings a week (Monday through Sunday), pay at the appointment, instant confirmation, and a Schedi badge on the booking page. No repeating appointments and no accept or deny.",
-    "- Starter: $29 a month. Unlimited services and bookings. Cash App, Venmo, Zelle, PayPal, or pay at the appointment. Accept or deny each request. Starter does not include card checkout or repeating appointments.",
-    "- Pro: $49 a month. Everything in Starter, plus repeating appointments weekly, biweekly, or monthly, card checkout (Stripe), and appointment deposits. Card checkout stays off until Stripe card payments and payouts are active. The deposit stays off until you turn it on.",
+    "- Free: $0. One service, up to 5 bookings a week (Monday through Sunday), pay at the appointment, instant confirmation, and a Schedi badge on the booking page. No repeating appointments, no accept or deny, and no sending invoices.",
+    "- Starter: $29 a month. Unlimited services and bookings. Cash App, Venmo, Zelle, PayPal, or pay at the appointment. Accept or deny each request. Starter does not include card checkout, repeating appointments, or sending invoices.",
+    "- Pro: $49 a month. Everything in Starter, plus repeating appointments weekly, biweekly, or monthly, card checkout (Stripe), and appointment deposits. Sending invoices with payment links is included. Card checkout stays off until Stripe card payments and payouts are active. The deposit stays off until you turn it on.",
     "- Charging a cancellation fee on a card is coming soon. Free and Starter only show the rule.",
     "",
     "Billing:",
@@ -94,6 +94,7 @@ export function renderLlms(): string {
     "- What payment methods can my clients use?",
     "- Can I approve or decline bookings before they're confirmed?",
     "- Can clients book repeating appointments?",
+    "- Can I send invoices to clients?",
     "- Is there a contract, and what are the cancellation and refund terms?",
     "- Who is Schedi for?",
     "",
@@ -196,7 +197,7 @@ function jsonLd(page: MarketingPage): string {
         monthlyOffer(
           "Pro",
           "49",
-          "Billed monthly. Adds repeating appointments, card checkout (Stripe), and appointment deposits. Charging a cancellation fee on a card is coming soon.",
+          "Billed monthly. Adds repeating appointments, card checkout (Stripe), appointment deposits, and sending invoices with payment links. Charging a cancellation fee on a card is coming soon.",
         ),
       ],
     });
@@ -298,7 +299,7 @@ type PlanKey = "free" | "starter" | "pro";
 const PLANS: { key: PlanKey; name: string; blurb: string; cta: string; popular?: boolean }[] = [
   { key: "free", name: "Free", blurb: "Try Schedi with one service and get your link today.", cta: "Start free" },
   { key: "starter", name: "Starter", blurb: "For growing businesses that take Cash App, Venmo, Zelle, or PayPal.", cta: "Choose Starter" },
-  { key: "pro", name: "Pro", blurb: "Repeating visits, card checkout, and appointment deposits for one owner.", cta: "Choose Pro", popular: true },
+  { key: "pro", name: "Pro", blurb: "Repeating visits, card checkout, invoices, and appointment deposits for one owner.", cta: "Choose Pro", popular: true },
 ];
 
 export function planCardsHtml(): string {
@@ -340,7 +341,7 @@ const FEATURES: { icon: string; title: string; text: string }[] = [
   { icon: "link", title: "One link for everything", text: "Share schedi.app/your-business in your bio, a text, or on a printed QR code." },
   { icon: "calendar", title: "Open times, always current", text: "Set your hours once. Clients only see times you're actually free." },
   { icon: "bell", title: "Reminder emails", text: "Clients get a friendly reminder the morning of their visit, so fewer no-shows." },
-  { icon: "wallet", title: "Get paid your way", text: "Pay at the appointment, with Cash App, Venmo, Zelle, or PayPal, or by card on Pro." },
+  { icon: "wallet", title: "Get paid your way", text: "Pay at the appointment, with Cash App, Venmo, Zelle, or PayPal, or by card on Pro. Pro can email invoices with payment links." },
   { icon: "repeat", title: "Repeating visits", text: "Weekly, biweekly, or monthly regulars book once on Pro." },
   { icon: "shield", title: "You stay in control", text: "Accept or decline new requests, and keep every booking in one place." },
 ];

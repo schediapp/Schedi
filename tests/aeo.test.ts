@@ -548,10 +548,24 @@ describe("copy corrections", () => {
     expect(pricingHtml).toContain(
       "<th scope=\"row\">Cancellation fee on card</th><td>Rule only</td><td>Rule only</td><td>Coming soon</td>",
     );
+    expect(pricingHtml).toContain(
+      "<th scope=\"row\">Send invoices with payment links</th><td>No</td><td>No</td><td>Yes</td>",
+    );
+    expect(home).toContain("<span>Send invoices with payment links</span>");
+    expect(pricing).toContain("Can I send invoices to clients?");
+    expect(pricing).toContain("Free and Starter do not include sending invoices.");
+    expect(faqNames).toContain("Can I send invoices to clients?");
+    const helpPage = renderMarketingPage(MARKETING_PAGES.find((page) => page.path === "/help")!);
+    expect(helpPage).toContain("Can I send invoices to clients?");
+    expect(helpPage).toContain("<h2>Send an invoice</h2>");
+    expect(renderMarketingPage(MARKETING_PAGES.find((page) => page.path === "/")!)).toContain("Can I send invoices to clients?");
     expect(visible(home)).not.toContain("Can charge");
     expect(pricing).not.toContain("Can charge");
     const llms = renderLlms();
     expect(llms).toContain("card checkout (Stripe), and appointment deposits");
+    expect(llms).toContain("Sending invoices with payment links is included.");
+    expect(llms).toContain("- Can I send invoices to clients?");
+    expect(llms).not.toContain("Square");
     expect(llms).toContain("Charging a cancellation fee on a card is coming soon.");
     expect(llms).not.toContain(
       "Card checkout (Stripe), appointment deposits, and a cancellation fee on a card are coming soon.",
