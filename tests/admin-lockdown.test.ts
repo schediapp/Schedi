@@ -87,6 +87,65 @@ describe("public booking bundle", () => {
     expect(response.headers.get("x-robots-tag")).toBeNull();
   });
 
+  it("returns 404 for /blog and other missing slugs, and 200 for a real slug", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const target = String(input);
+      if (target.includes("/tenants/axeldelcidphotography")) {
+        return new Response(JSON.stringify({
+          fields: {
+            name: { stringValue: "Axel Del Cid Photography" },
+            industry: { stringValue: "Photography" },
+            slug: { stringValue: "axeldelcidphotography" },
+            seoPublic: { booleanValue: true },
+          },
+        }), { status: 200, headers: { "content-type": "application/json" } });
+      }
+      if (target.includes("/tenants/blog") || target.includes("/tenants/unknown-shop")) {
+        return new Response("", { status: 404 });
+      }
+      if (target.includes("/tenants/lookup-down")) {
+        return new Response("unavailable", { status: 503 });
+      }
+      return new Response("unexpected " + target, { status: 500 });
+    }));
+
+    for (const path of ["/blog", "/blog/", "/BLOG", "/unknown-shop"]) {
+      const response = await handleRequest(new Request("https://schedi.app" + path), env(), ctx());
+      expect(response.status, path).toBe(404);
+      expect(response.headers.get("content-type"), path).toMatch(/text\/html/);
+      expect(response.headers.get("x-robots-tag"), path).toContain("noindex");
+      expect(response.headers.get("cache-control"), path).toBe("no-store");
+      const html = await response.text();
+      expect(html, path).toContain("<title>Booking page not found</title>");
+      expect(html, path).toContain("This booking page is not available.");
+      expect(html, path).not.toContain("serviceListContainer");
+    }
+
+    const head = await handleRequest(new Request("https://schedi.app/blog", { method: "HEAD" }), env(), ctx());
+    expect(head.status).toBe(404);
+    expect(head.headers.get("x-robots-tag")).toContain("noindex");
+    expect(await head.text()).toBe("");
+
+    const nested = await handleRequest(new Request("https://schedi.app/blog/post"), env(), ctx());
+    expect(nested.status).toBe(404);
+    expect(await nested.text()).toContain("<h1>Page not found</h1>");
+
+    const real = await handleRequest(new Request("https://schedi.app/axeldelcidphotography"), env(), ctx());
+    expect(real.status).toBe(200);
+    const realHtml = await real.text();
+    expect(realHtml).toContain("Book an Appointment | Axel Del Cid Photography");
+    expect(realHtml).toContain("serviceListContainer");
+    expect(realHtml).not.toContain("Booking page not found");
+
+    const down = await handleRequest(new Request("https://schedi.app/lookup-down"), env(), ctx());
+    expect(down.status).toBe(200);
+    expect(await down.text()).toContain("serviceListContainer");
+
+    const sitemap = await handleRequest(new Request("https://schedi.app/sitemap.xml"), env(), ctx());
+    expect(sitemap.status).toBe(200);
+    expect(await sitemap.text()).not.toContain("https://schedi.app/blog");
+  });
+
   it("pauses when acceptingBookings is missing and subscriptionStatus is paused", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
       fields: {
