@@ -1,6 +1,8 @@
 // schedi-web request handler.
 // Marketing routes are rendered here so crawlers see distinct HTML.
 // App and tenant routes keep the SPA shell. Unknown marketing paths are real 404s.
+// A slug Firestore confirms is missing is a real 404 too. A lookup error is not:
+// that response stays 200 so a Firestore blip does not 404 live booking pages.
 
 import { publicDuplicateRedirect } from "./canonical";
 import { marketingPage, publicPaths } from "./content";
@@ -864,8 +866,12 @@ async function serveSpa(
   if (method === "GET" && slug && lookup?.tenant && !lookup.missing && !lookup.paused) {
     countPublishedVisit(request, env, slug, lookup.tenant.timezone);
   }
-  if (method === "HEAD") return new Response(null, { status: 200, headers });
-  return new Response(body, { status: 200, headers });
+  // 200 with this thin page is a soft 404. Only a confirmed miss (Firestore 404,
+  // including the short cache of that 404) gets status 404. missing stays false
+  // when the lookup itself fails, so those requests keep status 200.
+  const status = lookup?.missing ? 404 : 200;
+  if (method === "HEAD") return new Response(null, { status, headers });
+  return new Response(body, { status, headers });
 }
 
 function countPublishedVisit(request: Request, env: SchediEnv, slug: string, timezone: string | undefined): void {

@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { handleRequest, contentSecurityPolicy, marketingContentSecurityPolicy, type SchediEnv } from "../worker/handler";
 import {
   PREVIEW_ANALYTICS_HOST,
@@ -55,6 +55,10 @@ function rawScriptClose(html: string, from: number): number {
 }
 
 describe("cloudflare web analytics snippet", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   it("matches the dashboard snippet", () => {
     expect(WEB_ANALYTICS_SNIPPET).toBe(
       `<!-- Cloudflare Web Analytics --><script type='module' src='${WEB_ANALYTICS_SCRIPT_ORIGIN}/beacon.min.js' data-cf-beacon='{"token": "${WEB_ANALYTICS_TOKEN}"}'></script><!-- End Cloudflare Web Analytics -->`,
@@ -73,6 +77,16 @@ describe("cloudflare web analytics snippet", () => {
     "/bright-cuts/manage/token",
     "/portal/help",
   ])("inserts the beacon just before </body> on %s", async (path) => {
+    if (path === "/bright-cuts") {
+      vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+        fields: {
+          name: { stringValue: "Bright Cuts" },
+          industry: { stringValue: "Barber" },
+          slug: { stringValue: "bright-cuts" },
+          seoPublic: { booleanValue: true },
+        },
+      }), { status: 200, headers: { "content-type": "application/json" } })));
+    }
     const response = await handleRequest(new Request(`https://schedi.app${path}`), env(), ctx());
     expect(response.status).toBe(200);
     const html = await response.text();
