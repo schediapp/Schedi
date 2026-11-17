@@ -1,3 +1,4 @@
+import { PoweredBySchedi } from "@/components/powered-by";
 import { SiteHeader } from "@/components/site-header";
 import { fulfillBookingCheckout } from "@/lib/bookings";
 import { formatUsd } from "@/lib/money";
@@ -23,6 +24,7 @@ export default async function BookedPage({
       <>
         <SiteHeader />
         <main className="shell"><h1>Booking not found.</h1></main>
+        <PoweredBySchedi />
       </>
     );
   }
@@ -38,6 +40,7 @@ export default async function BookedPage({
       <>
         <SiteHeader />
         <main className="shell"><h1>Booking not found.</h1></main>
+        <PoweredBySchedi />
       </>
     );
   }
@@ -88,6 +91,7 @@ export default async function BookedPage({
           <p style={{ marginTop: 16 }}><a href={`/b/${business.slug}`}>Back to {business.name}</a></p>
         </section>
       </main>
+      <PoweredBySchedi />
     </>
   );
 }

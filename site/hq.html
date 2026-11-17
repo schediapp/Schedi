@@ -14672,6 +14672,14 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
             .biz-title { font-size: 1.5rem; }
             .biz-header-body { align-items: center; padding: 16px 20px; }
         }
+        .pub-powered { text-align: center; padding: 4px 16px 20px; font-size: 12px; line-height: 1.4; }
+        .pub-powered a { color: #94a3b8; text-decoration: underline; text-underline-offset: 2px; }
+        .pub-powered a:hover { color: #e2e8f0; }
+        html.schedi-light .pub-powered a { color: #475569 !important; }
+        html.schedi-light .pub-powered a:hover { color: #0f172a !important; }
+        @media (max-width: 640px) {
+            .pub-powered { padding-bottom: 28px; }
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col justify-between selection:bg-emerald-500 selection:text-slate-950">
@@ -15060,6 +15068,10 @@ html.schedi-newhq #hqDash [data-hqd-view][hidden] { display: none !important; }
         </div>
 
     </main>
+
+    <footer class="pub-powered">
+        <a href="https://schedi.app/?utm_source=booking_page&amp;utm_medium=referral&amp;utm_campaign=powered_by">Powered by Schedi</a>
+    </footer>
 
     <script>var __firebase_config = ${configStr};<\/script>
     <script type="module">

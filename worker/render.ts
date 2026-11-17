@@ -302,7 +302,7 @@ const PLANS: { key: PlanKey; name: string; blurb: string; cta: string; popular?:
   { key: "pro", name: "Pro", blurb: "Repeating visits, card checkout, invoices, and appointment deposits for one owner.", cta: "Choose Pro", popular: true },
 ];
 
-export function planCardsHtml(): string {
+export function planCardsHtml(options?: { feeNote?: boolean }): string {
   const price = PLAN_COMPARE_ROWS[0];
   const rows = PLAN_COMPARE_ROWS.slice(1);
   const cards = PLANS.map((plan) => {
@@ -333,7 +333,11 @@ export function planCardsHtml(): string {
       <ul class="feat">${items}</ul>
     </article>`;
   }).join("\n");
+  const feeNote = options?.feeNote
+    ? `<p class="fee-note">No commission or per-booking fees. Just a flat monthly price. Stripe's standard card processing applies when you take card payments.</p>`
+    : "";
   return `<div class="plans">${cards}</div>
+  ${feeNote}
   <p class="muted center small">Monthly prices. Upgrade, switch, or stay on Free anytime from your Business Portal. Nothing is charged until checkout finishes. On Pro, card checkout stays off until Stripe card payments and payouts are active, and the deposit stays off until you turn it on. Charging a cancellation fee on a card is coming soon.</p>`;
 }
 
@@ -422,7 +426,7 @@ function pricingSections(page: MarketingPage): string {
     </div>
   </section>
   <section class="sec tight">
-    <div class="wrap">${planCardsHtml()}</div>
+    <div class="wrap">${planCardsHtml({ feeNote: true })}</div>
   </section>`;
 }
 
@@ -539,6 +543,7 @@ h3{font-size:1.1rem;margin:1rem 0 .3rem;font-weight:700}
 .steps{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(3,1fr);gap:1.1rem}
 .num{display:inline-grid;place-items:center;width:36px;height:36px;border-radius:999px;background:var(--brand);color:var(--brand-ink);font-weight:800}
 .plans{display:grid;grid-template-columns:repeat(3,1fr);gap:1.1rem;align-items:stretch;margin-bottom:1.25rem}
+.fee-note{margin:-.15rem auto 1.15rem;max-width:42rem;text-align:center;color:var(--text);font-size:.98rem;line-height:1.5}
 .plan{position:relative;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:1.6rem 1.4rem;display:flex;flex-direction:column}
 .plan.popular{border:2px solid var(--brand);box-shadow:0 24px 60px -28px rgba(16,185,129,.55)}
 .plan h3{margin:0;font-size:1.25rem}

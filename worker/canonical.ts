@@ -106,8 +106,27 @@ const DASHBOARD_QUERY = new Set([
  * `classichq`, `classic`, `dash`) stay so a preview link is not redirected off the page that reads it.
  * `/?portal=login`, `/?forgot=1`, and `/?billing=*` keep their full query.
  */
+const POWERED_BY_QUERY = "?utm_source=booking_page&utm_medium=referral&utm_campaign=powered_by";
+
+/** Keep the booking-page referral on the home page. Other utm_* values are still dropped. */
+function poweredByHomeSearch(url: URL): string | null {
+  const params = url.searchParams;
+  if (params.get("utm_source") !== "booking_page") return null;
+  if (params.get("utm_medium") !== "referral") return null;
+  if (params.get("utm_campaign") !== "powered_by") return null;
+  const allowed = new Set(["utm_source", "utm_medium", "utm_campaign"]);
+  for (const key of params.keys()) {
+    if (!allowed.has(key.toLowerCase())) return null;
+  }
+  return POWERED_BY_QUERY;
+}
+
 function marketingSearch(url: URL, path: string): string {
   if (path === "/" && rootFunctional(url.search)) return url.search;
+  if (path === "/") {
+    const powered = poweredByHomeSearch(url);
+    if (powered) return powered;
+  }
   const params = new URLSearchParams(url.search);
   let strippedTracking = false;
   for (const key of [...params.keys()]) {
@@ -127,6 +146,8 @@ function marketingSearch(url: URL, path: string): string {
 /**
  * Returns the absolute URL to 301 to, or null when the request is already canonical.
  * Marketing pages and the home page drop tracking query params. `demo=1` stays.
+ * The home page keeps the booking-page referral query
+ * `?utm_source=booking_page&utm_medium=referral&utm_campaign=powered_by`.
  * `/?portal=login`, `/?forgot=1`, and `/?billing=*` keep their full query.
  * `/signup?ref=demo` keeps that ref. Other ref values are still removed.
  */

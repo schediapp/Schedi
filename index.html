@@ -29324,10 +29324,16 @@ function schediQrCardPixels(text, color) {
         html.schedi-pay-handoff #securePayScreen { display: flex; position: fixed; inset: 0; z-index: 80; align-items: center; justify-content: center; padding: 24px; background: #020617; }
         html.schedi-pay-handoff body > header,
         html.schedi-pay-handoff body > main { display: none !important; }
+        .pub-powered { text-align: center; padding: 4px 16px 20px; font-size: 12px; line-height: 1.4; }
+        .pub-powered a { color: #94a3b8; text-decoration: underline; text-underline-offset: 2px; }
+        .pub-powered a:hover { color: #e2e8f0; }
+        html.schedi-light .pub-powered a { color: #475569 !important; }
+        html.schedi-light .pub-powered a:hover { color: #0f172a !important; }
         @media (max-width: 640px) {
             html.schedi-newbook header { padding-left: 12px; padding-right: 12px; }
             html.schedi-newbook main { padding-left: 12px; padding-right: 12px; }
             html.schedi-newbook .svc-qty { width: 44px; height: 44px; }
+            .pub-powered { padding-bottom: 28px; }
         }
     </style>
 </head>
@@ -29726,6 +29732,10 @@ function schediQrCardPixels(text, color) {
         </div>
 
     </main>
+
+    <footer class="pub-powered">
+        <a href="https://schedi.app/?utm_source=booking_page&amp;utm_medium=referral&amp;utm_campaign=powered_by">Powered by Schedi</a>
+    </footer>
 
     <script>var __firebase_config = ${configStr};<\/script>
     <script type="module">
