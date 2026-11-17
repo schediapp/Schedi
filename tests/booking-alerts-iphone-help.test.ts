@@ -44,8 +44,8 @@ function helpApi() {
     this.client = schediHelpVideosHtml("client");
     this.guide = SCHEDI_HELP_VIDEOS.filter(function (v) { return v.slug === "owner-20-booking-alerts-iphone"; })[0];
     this.card = schediHelpGuideCard(this.guide);
-    this.empty = schediHelpGuideCard(Object.assign({}, this.guide, { file: "", poster: "" }));
-    this.filled = schediHelpGuideCard(Object.assign({}, this.guide, { file: "owner-20-booking-alerts-iphone.mp4", poster: "owner-20-booking-alerts-iphone.jpg" }));
+    this.empty = schediHelpGuideCard(Object.assign({}, this.guide, { youtube: "" }));
+    this.filled = schediHelpGuideCard(Object.assign({}, this.guide, { youtube: "8C3iOPUqtLI" }));
     this.groups = SCHEDI_HELP_VIDEO_GROUPS;
   `, sandbox);
   return sandbox;
@@ -57,8 +57,7 @@ describe("Booking alerts on iPhone help guide", () => {
   it("plays the iPhone alerts clip in the owner list", () => {
     expect(help.guide).toMatchObject({
       slug: "owner-20-booking-alerts-iphone",
-      file: "owner-20-booking-alerts-iphone.mp4?v=13",
-      poster: "owner-20-booking-alerts-iphone.jpg?v=13",
+      youtube: "8C3iOPUqtLI",
       title: "Booking alerts on iPhone",
       kind: "guide",
       aud: "owner",
@@ -69,19 +68,21 @@ describe("Booking alerts on iPhone help guide", () => {
     expect(help.owner).toContain('id="owner-22-booking-alerts-android"');
     expect(help.owner.indexOf('id="owner-22-booking-alerts-android"')).toBeGreaterThan(help.owner.indexOf('id="owner-20-booking-alerts-iphone"'));
     expect(help.owner).toContain("Booking alerts on Android (Chrome)");
-    expect(help.owner).toContain('src="/assets/help-videos/owner-22-booking-alerts-android.mp4?v=13"');
+    expect(help.owner).toContain('src="https://www.youtube-nocookie.com/embed/CpBaxKk6dLs"');
     expect(help.owner).toContain('id="owner-20-booking-alerts-iphone"');
     expect(help.owner).toContain('class="schedi-help-guide');
     expect(help.card).toContain('data-video-slug="owner-20-booking-alerts-iphone"');
-    expect(help.card).toContain("<video");
-    expect(help.card).toContain('src="/assets/help-videos/owner-20-booking-alerts-iphone.mp4?v=13"');
-    expect(help.card).toContain('poster="/assets/help-videos/owner-20-booking-alerts-iphone.jpg?v=13"');
-    expect(help.card).toContain('width="720"');
-    expect(help.card).toContain('height="1280"');
+    expect(help.card).toContain("<iframe");
+    expect(help.card).not.toContain("<video");
+    expect(help.card).toContain('src="https://www.youtube-nocookie.com/embed/8C3iOPUqtLI"');
+    expect(help.card).toContain('title="Booking alerts on iPhone"');
+    expect(help.card).toContain('loading="lazy"');
+    expect(help.card).toContain("allowfullscreen");
     expect(help.empty).toContain("hidden");
     expect(help.empty).not.toContain("<video");
-    expect(help.filled).toContain("<video");
-    expect(help.filled).toContain('src="/assets/help-videos/owner-20-booking-alerts-iphone.mp4"');
+    expect(help.empty).not.toContain("<iframe");
+    expect(help.filled).toContain("<iframe");
+    expect(help.filled).toContain('src="https://www.youtube-nocookie.com/embed/8C3iOPUqtLI"');
     expect(help.filled).toContain('data-video-slug="owner-20-booking-alerts-iphone"');
     expect(help.client).not.toContain("Booking alerts on iPhone");
   });
@@ -241,20 +242,24 @@ describe.skipIf(!chrome)("Booking alerts on iPhone help layout", () => {
           expect(helpPage.guide!.width, label).toBeGreaterThan(120);
           const frames = await page.evaluate(() => Array.from(document.querySelectorAll(".schedi-help-video-frame")).map((el) => {
             const rect = el.getBoundingClientRect();
-            const video = el.querySelector("video");
+            const frame = el.querySelector("iframe");
             return {
               w: rect.width,
               h: rect.height,
-              attrW: video ? Number(video.getAttribute("width")) : 0,
-              attrH: video ? Number(video.getAttribute("height")) : 0,
-              fit: video ? getComputedStyle(video).objectFit : "",
+              src: frame ? frame.getAttribute("src") || "" : "",
+              title: frame ? frame.getAttribute("title") || "" : "",
+              loading: frame ? frame.getAttribute("loading") || "" : "",
+              allow: frame ? frame.getAttribute("allow") || "" : "",
+              allowFullscreen: frame ? frame.hasAttribute("allowfullscreen") : false,
             };
           }));
           expect(frames.length, label).toBeGreaterThan(15);
           for (const frame of frames) {
-            expect(frame.attrW, label).toBe(720);
-            expect(frame.attrH, label).toBe(1280);
-            expect(frame.fit, label).toBe("contain");
+            expect(frame.src, label).toMatch(/^https:\/\/www\.youtube-nocookie\.com\/embed\/[A-Za-z0-9_-]+$/);
+            expect(frame.title, label).not.toBe("");
+            expect(frame.loading, label).toBe("lazy");
+            expect(frame.allow, label).toBe("accelerometer; encrypted-media; picture-in-picture");
+            expect(frame.allowFullscreen, label).toBe(true);
             expect(frame.w, label).toBeGreaterThan(40);
             expect(frame.h / frame.w, label).toBeGreaterThan(1.7);
             expect(frame.h / frame.w, label).toBeLessThan(1.85);

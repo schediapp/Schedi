@@ -15,7 +15,7 @@ export function contentSecurityPolicy(): string {
     "base-uri 'self'",
     `form-action ${formAction}`,
     `script-src 'self' 'unsafe-inline' https://js.stripe.com https://*.js.stripe.com https://*.stripe.com${isDev ? " 'unsafe-eval'" : ""}`,
-    "frame-src https://js.stripe.com https://*.js.stripe.com https://*.stripe.com https://hooks.stripe.com",
+    "frame-src https://js.stripe.com https://*.js.stripe.com https://*.stripe.com https://hooks.stripe.com https://www.youtube-nocookie.com",
     "connect-src 'self' https://api.stripe.com https://*.stripe.com",
     "img-src 'self' data: https://*.stripe.com",
     "style-src 'self' 'unsafe-inline' https://*.stripe.com",
