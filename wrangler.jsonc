@@ -1,9 +1,9 @@
 {
   // Public site worker for schedi.app. Marketing HTML is rendered in the script.
-  // Git's site/ is the SPA shell (index.html) only. Logos, help videos, favicon,
-  // manifests, and _headers stay in the deploy directory and are copied in beside
-  // that shell at deploy time. See README. /api/* and /billing/* stay on their
-  // more specific workers.
+  // Git's site/ tracks the SPA shell (index.html) and the help videos in
+  // site/assets/help-videos/. Logos, favicon, manifests, and _headers stay in
+  // the deploy directory and are copied in beside that shell at deploy time.
+  // See README. /api/* and /billing/* stay on their more specific workers.
   "name": "schedi-web",
   "compatibility_date": "2026-10-13",
   "main": "worker/index.ts",

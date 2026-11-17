@@ -39,15 +39,15 @@ describe("Help page videos", () => {
   const videos = portal.videos || [];
   const bySlug = new Map(videos.map((video) => [video.slug, video]));
 
-  it("cache-busts every portal clip and poster at v=13", () => {
+  it("cache-busts every portal clip and poster at v=17", () => {
     expect(videos.length).toBe(23);
     for (const video of videos) {
-      expect(video.file, video.slug).toMatch(/\.mp4\?v=13$/);
-      expect(video.poster, video.slug).toMatch(/\.jpg\?v=13$/);
-      expect(video.file, video.slug).toBe(`${video.slug}.mp4?v=13`);
-      expect(video.poster, video.slug).toBe(`${video.slug}.jpg?v=13`);
+      expect(video.file, video.slug).toMatch(/\.mp4\?v=17$/);
+      expect(video.poster, video.slug).toMatch(/\.jpg\?v=17$/);
+      expect(video.file, video.slug).toBe(`${video.slug}.mp4?v=17`);
+      expect(video.poster, video.slug).toBe(`${video.slug}.jpg?v=17`);
     }
-    expect(html.slice(html.indexOf("var SCHEDI_HELP_VIDEOS"), html.indexOf("var SCHEDI_HELP_VIDEO_GROUPS"))).not.toMatch(/\?v=(?!13)\d+/);
+    expect(html.slice(html.indexOf("var SCHEDI_HELP_VIDEOS"), html.indexOf("var SCHEDI_HELP_VIDEO_GROUPS"))).not.toMatch(/\?v=(?!17)\d+/);
   });
 
   it("renames the reports and time-off clips and adds the booking QR code", () => {
@@ -58,8 +58,8 @@ describe("Help page videos", () => {
     expect(bySlug.get("owner-21-booking-qr-code")).toMatchObject({
       title: "Booking QR code",
       desc: "How to show, generate, download or print, and save your booking QR code.",
-      file: "owner-21-booking-qr-code.mp4?v=13",
-      poster: "owner-21-booking-qr-code.jpg?v=13",
+      file: "owner-21-booking-qr-code.mp4?v=17",
+      poster: "owner-21-booking-qr-code.jpg?v=17",
       aud: "owner",
     });
     const setup = portal.groups?.find((group) => group[0] === "Get set up");
@@ -69,8 +69,8 @@ describe("Help page videos", () => {
       title: "Booking alerts on Android (Chrome)",
       desc: "Turn on a pop-up in Chrome on Android when a booking comes in.",
       dur: "0:29",
-      file: "owner-22-booking-alerts-android.mp4?v=13",
-      poster: "owner-22-booking-alerts-android.jpg?v=13",
+      file: "owner-22-booking-alerts-android.mp4?v=17",
+      poster: "owner-22-booking-alerts-android.jpg?v=17",
       aud: "owner",
     });
     expect(android?.kind).toBeUndefined();
@@ -88,13 +88,13 @@ describe("Help page videos", () => {
     expect(player).toContain('width="720"');
     expect(player).toContain('height="1280"');
     expect(player).toContain("object-contain");
-    expect(player).toContain('poster="/assets/help-videos/client-booking-demo.jpg?v=13"');
-    expect(player).toContain('src="/assets/help-videos/client-booking-demo.mp4?v=13"');
+    expect(player).toContain('poster="/assets/help-videos/client-booking-demo.jpg?v=17"');
+    expect(player).toContain('src="/assets/help-videos/client-booking-demo.mp4?v=17"');
     expect(html).toContain("aspect-ratio: 9 / 16");
     expect(html).toContain("object-fit: contain");
   });
 
-  it("cache-busts owner clips on the public help page at v=14 and keeps portrait markup", () => {
+  it("cache-busts every clip on the public help page at v=17 and keeps portrait markup", () => {
     const page = MARKETING_PAGES.find((item) => item.path === "/help");
     const rendered = renderMarketingPage(page!);
     const sources = rendered.match(/\/assets\/help-videos\/[^"']+/g) || [];
@@ -103,21 +103,20 @@ describe("Help page videos", () => {
     const clientSources = sources.filter((url) => url.includes("/client-booking-demo."));
     expect(ownerSources).toHaveLength(44);
     expect(clientSources).toHaveLength(2);
-    for (const url of ownerSources) expect(url, url).toMatch(/\.(mp4|jpg)\?v=14$/);
-    for (const url of clientSources) expect(url, url).toMatch(/\.(mp4|jpg)\?v=13$/);
+    for (const url of sources) expect(url, url).toMatch(/\.(mp4|jpg)\?v=17$/);
     expect(rendered).toContain(">Reports<");
     expect(rendered).toContain(">Time off and vacation<");
     expect(rendered).not.toContain("Appointments report");
     expect(rendered).not.toContain("Vacation and date blocks");
-    expect(rendered).toContain("/assets/help-videos/owner-20-booking-alerts-iphone.mp4?v=14");
-    expect(rendered).toContain("/assets/help-videos/owner-20-booking-alerts-iphone.jpg?v=14");
-    expect(rendered).toContain("/assets/help-videos/owner-22-booking-alerts-android.mp4?v=14");
-    expect(rendered).toContain("/assets/help-videos/owner-22-booking-alerts-android.jpg?v=14");
+    expect(rendered).toContain("/assets/help-videos/owner-20-booking-alerts-iphone.mp4?v=17");
+    expect(rendered).toContain("/assets/help-videos/owner-20-booking-alerts-iphone.jpg?v=17");
+    expect(rendered).toContain("/assets/help-videos/owner-22-booking-alerts-android.mp4?v=17");
+    expect(rendered).toContain("/assets/help-videos/owner-22-booking-alerts-android.jpg?v=17");
     expect(rendered).toContain("<strong>Booking alerts on Android (Chrome)</strong> (0:29). Turn on a pop-up in Chrome on Android when a booking comes in.");
     expect(rendered.indexOf("owner-22-booking-alerts-android")).toBeGreaterThan(rendered.indexOf("owner-20-booking-alerts-iphone"));
     expect(rendered.indexOf("owner-22-booking-alerts-android")).toBeLessThan(rendered.indexOf("owner-21-booking-qr-code"));
-    expect(rendered).toContain("/assets/help-videos/owner-21-booking-qr-code.mp4?v=14");
-    expect(rendered).toContain("/assets/help-videos/owner-21-booking-qr-code.jpg?v=14");
+    expect(rendered).toContain("/assets/help-videos/owner-21-booking-qr-code.mp4?v=17");
+    expect(rendered).toContain("/assets/help-videos/owner-21-booking-qr-code.jpg?v=17");
     expect(rendered).toContain("How to show, generate, download or print, and save your booking QR code.");
     expect(rendered).toContain("<strong>Booking alerts on iPhone</strong> (0:20). Turn on a pop-up on your iPhone when a booking comes in.");
     expect(rendered).toContain("<strong>Add a walk-in or phone booking</strong> (0:22). Log a walk-in or phone booking with the Walk-in toggle, saved-client suggest, open time slot, and payment status.");

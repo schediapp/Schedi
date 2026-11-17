@@ -45,14 +45,16 @@ Stripe Tax is not enabled. Client card charges do not set `application_fee_amoun
 
 `wrangler.jsonc` is the `schedi-web` worker. It serves `site/` as static assets with `run_worker_first`, on `schedi.app/*` and `www.schedi.app/*`. `/api/*` and `/billing/*` stay on their more specific workers, except `POST /api/business-logo` and `GET /logos/*`, which this worker handles. Marketing HTML is rendered in the worker. App and tenant routes use the SPA shell.
 
-Git tracks that shell only. `site/index.html` is a symlink to `../index.html`, which is the file the booking tests read. The rest of the live asset bucket is not in this repository. It lives in the deploy directory production wrangler already uses:
+Git tracks the SPA shell and the help videos. `site/index.html` is a symlink to `../index.html`, which is the file the booking tests read. All 23 help-video mp4s and their posters live in `site/assets/help-videos/` and are part of this repository.
 
-- `assets/` — logos, email marks, the home-screen icon, help-video posters, and help-video mp4s
+The rest of the live asset bucket lives in the deploy directory production wrangler already uses:
+
+- `assets/` — logos, email marks, and the home-screen icon
 - `favicon.ico`
 - `manifest.json` and `manifest.webmanifest`
 - `_headers` — Cloudflare asset headers for that directory. It is not a public URL.
 
-On 13 Oct 2026 the public non-video files the shell references, plus the favicon and both manifests, were about 1.2 MB. The help-video mp4s are separate and larger. That non-video set is under 40 MB, so it stays out of git.
+On 13 Oct 2026 the public non-video files the shell references, plus the favicon and both manifests, were about 1.2 MB. Logos, email marks, the home-screen icon, the favicon, and both manifests stay out of git. Help-video posters and mp4s are in git.
 
 ## Preview Worker
 
@@ -60,7 +62,7 @@ Marketing pages and tenant booking pages are the same `schedi-web` Worker (`work
 
 `env.preview` sets the Worker name to `schedi-web-preview`, turns on `workers.dev`, and sets `"routes": []` so the preview does not inherit `schedi.app` / `www.schedi.app`. Wrangler warns that an environment inherits top-level routes and can hijack those hostnames; the empty `routes` array is the fix.
 
-Assemble assets the same way as production (do not upload git's `site/` folder alone), then:
+Assemble assets the same way as production, including `site/assets/help-videos/` from this repo, then:
 
 ```bash
 npx wrangler deploy --config wrangler.jsonc --env preview
@@ -129,11 +131,11 @@ The script fetches `https://schedi.app/sitemap.xml` and POSTs `{host, key, keyLo
 
 Bing Webmaster Tools: verify `schedi.app` with a DNS CNAME (Cloudflare), the meta tag, or an import from Google Search Console, then submit `https://schedi.app/sitemap.xml`.
 
-A production deploy assembles the assets directory instead of uploading `site/` from git by itself:
+A production deploy assembles the assets directory. Git's `site/` folder includes the shell and `site/assets/help-videos/`. The deploy directory still holds the other files:
 
-1. Start from the deploy directory that already contains `assets/`, `favicon.ico`, `manifest.json`, `manifest.webmanifest`, and `_headers` next to the shell.
-2. Copy `site/index.html` and `site/firebase-messaging-sw.js` from this repo over that directory's copies. Leave the asset bucket in place.
-3. Deploy that combined directory with `schedi-web`. Do not replace the bucket with the repo's `site/` folder alone.
+1. Start from the deploy directory that already contains `assets/` (logos, email marks, and the home-screen icon), `favicon.ico`, `manifest.json`, `manifest.webmanifest`, and `_headers` next to the shell.
+2. Copy `site/index.html`, `site/firebase-messaging-sw.js`, and `site/assets/help-videos/` from this repo over that directory.
+3. Deploy that combined directory with `schedi-web`.
 
 ## Booking alerts (owner push)
 
