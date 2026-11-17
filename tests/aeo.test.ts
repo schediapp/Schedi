@@ -440,6 +440,11 @@ describe("canonical redirects", () => {
       ["https://www.schedi.app/signup?ref=Demo", 301, "https://schedi.app/signup?ref=demo"],
       ["https://schedi.app/signup?ref=demo&utm_source=ad", 301, "https://schedi.app/signup?ref=demo"],
       ["https://schedi.app/signup?ref=../nope", 301, "https://schedi.app/signup"],
+      ["https://schedi.app/?utm_source=booking_page&utm_medium=referral&utm_campaign=powered_by", 200, null],
+      ["https://www.schedi.app/?utm_source=booking_page&utm_medium=referral&utm_campaign=powered_by", 301, "https://schedi.app/?utm_source=booking_page&utm_medium=referral&utm_campaign=powered_by"],
+      ["https://schedi-web-preview.example.workers.dev/?utm_source=booking_page&utm_medium=referral&utm_campaign=powered_by", 200, null],
+      ["https://schedi.app/?utm_source=booking_page&utm_medium=referral&utm_campaign=powered_by&utm_content=extra", 301, "https://schedi.app/"],
+      ["https://schedi.app/?utm_source=booking_page&utm_medium=email&utm_campaign=powered_by", 301, "https://schedi.app/"],
     ];
     for (const [input, status, location] of cases) {
       const response = await handleRequest(new Request(input), env, ctx());
