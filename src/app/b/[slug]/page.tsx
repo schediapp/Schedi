@@ -1,3 +1,4 @@
+import { PoweredBySchedi } from "@/components/powered-by";
 import { SiteHeader } from "@/components/site-header";
 import { withFreshCapabilities } from "@/lib/live";
 import { formatUsd } from "@/lib/money";
@@ -108,6 +109,7 @@ export default async function BookingPage({
           </form>
         )}
       </main>
+      <PoweredBySchedi />
     </>
   );
 }
