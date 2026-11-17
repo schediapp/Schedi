@@ -173,7 +173,7 @@ describe("cloudflare web analytics CSP", () => {
       "form-action 'self' https://schedi.app https://checkout.stripe.com",
     );
     expect(directive(marketing, "form-action")).toBe("form-action 'self'");
-    expect(directive(marketing, "frame-src")).toBe("frame-src 'none'");
+    expect(directive(marketing, "frame-src")).toBe("frame-src https://www.youtube-nocookie.com");
   });
 
   it("sends the updated policies on marketing and app responses", async () => {

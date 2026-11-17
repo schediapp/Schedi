@@ -71,7 +71,12 @@ describe.skipIf(!chrome)("owner help back to portal", () => {
       for (const href of signedIn) expect(href).toBe("/login?dash=billing");
 
       await page.click("#legalSection a");
-      await page.waitForFunction(() => location.pathname === "/login" && new URLSearchParams(location.search).get("dash") === "billing", { timeout: 20000 });
+      await page.waitForFunction(() => {
+        const params = new URLSearchParams(location.search);
+        const loginHidden = document.getElementById("tenantLoginBox")?.classList.contains("hidden") === true;
+        const dashShown = document.getElementById("tenantDashboard")?.classList.contains("hidden") === false;
+        return location.pathname === "/login" && params.get("dash") === "billing" && loginHidden && dashShown;
+      }, { timeout: 20000 });
       const portal = await page.evaluate(() => ({
         path: location.pathname,
         dash: new URLSearchParams(location.search).get("dash"),

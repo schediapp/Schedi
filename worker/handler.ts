@@ -137,7 +137,7 @@ export function contentSecurityPolicy(html: boolean): string {
     "font-src 'self' data: https://cdnjs.cloudflare.com",
     "img-src 'self' data: blob: https:",
     `connect-src 'self' https://schedi.app https://schedi-connect-production.up.railway.app https://*.googleapis.com https://*.firebasestorage.app https://*.firebaseio.com wss://*.firebaseio.com ${WEB_ANALYTICS_CONNECT_ORIGIN}`,
-    "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://checkout.stripe.com",
+    "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://checkout.stripe.com https://www.youtube-nocookie.com",
     "manifest-src 'self'",
   ].join("; ");
 }
@@ -154,7 +154,7 @@ export function marketingContentSecurityPolicy(): string {
     "font-src 'self'",
     "img-src 'self' data:",
     `connect-src 'self' ${WEB_ANALYTICS_CONNECT_ORIGIN}`,
-    "frame-src 'none'",
+    "frame-src https://www.youtube-nocookie.com",
     "manifest-src 'self'",
   ].join("; ");
 }
